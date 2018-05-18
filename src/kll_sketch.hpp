@@ -9,6 +9,8 @@
 #include <ostream>
 #include <memory>
 
+#include "kll_quantile_calculator.hpp"
+
 namespace sketches {
 
 /*
@@ -130,6 +132,7 @@ class kll_sketch {
     kll_sketch(uint16_t k = DEFAULT_K);
     ~kll_sketch();
     void update(float value);
+    void merge(const kll_sketch& other);
     bool is_empty() const;
     uint64_t get_n() const;
     uint32_t get_num_retained() const;
@@ -137,7 +140,7 @@ class kll_sketch {
     float get_min_value() const;
     float get_max_value() const;
     float get_quantile(double fraction) const;
-    float* get_quantiles(const double* fractions, size_t size) const;
+    std::unique_ptr<float[]> get_quantiles(const double* fractions, size_t size) const;
     double get_rank(float vlaue) const;
 //    double* get_PMF(float* split_points, size_t size) const;
 //    double* get_CDF(float* split_points, size_t size) const;
@@ -192,6 +195,8 @@ class kll_sketch {
     void compress_while_updating();
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
+    void sort_level_zero();
+    std::unique_ptr<kll_quantile_calculator> get_quantile_calculator();
 
     static uint32_t get_serialized_size_bytes(uint8_t num_levels, uint32_t num_retained);
 };

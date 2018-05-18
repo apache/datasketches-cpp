@@ -3,10 +3,10 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include <assert.h>
-#include <algorithm>
 #include "kll_helper.hpp"
 
+#include <assert.h>
+#include <algorithm>
 
 namespace sketches {
 

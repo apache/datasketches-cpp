@@ -4,14 +4,14 @@
  */
 
 #include "kll_sketch.hpp"
+#include "kll_helper.hpp"
 
 #include <assert.h>
 #include <limits>
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
-
-#include "kll_helper.hpp"
+#include <stdexcept>
 
 namespace sketches {
 
@@ -46,9 +46,13 @@ void kll_sketch::update(float value) {
   if (levels_[0] == 0) compress_while_updating();
   n_++;
   is_level_zero_sorted_ = false;
-  const size_t nextPos = levels_[0] - 1;
+  const size_t nextPos(levels_[0] - 1);
   levels_[0] = nextPos;
   items_[nextPos] = value;
+}
+
+void kll_sketch::merge(const kll_sketch& other) {
+
 }
 
 bool kll_sketch::is_empty() const {
@@ -76,22 +80,45 @@ float kll_sketch::get_max_value() const {
 }
 
 float kll_sketch::get_quantile(double fraction) const {
-  return 0;
+  if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
+  if (fraction == 0.0) return min_value_;
+  if (fraction == 1.0) return max_value_;
+  if ((fraction < 0.0) or (fraction > 1.0)) {
+    throw std::invalid_argument("Fraction cannot be less than zero or greater than 1.0");
+  }
+  // has side effect of sorting level zero if needed
+  auto quantile_calculator(const_cast<kll_sketch*>(this)->get_quantile_calculator());
+  return quantile_calculator->get_quantile(fraction);
 }
 
-float* kll_sketch::get_quantiles(const double* fractions, size_t size) const {
-  return 0;
+std::unique_ptr<float[]> kll_sketch::get_quantiles(const double* fractions, size_t size) const {
+  if (is_empty()) { return nullptr; }
+  std::unique_ptr<kll_quantile_calculator> quantile_calculator;
+  std::unique_ptr<float[]> quantiles(new float[size]);
+  for (size_t i = 0; i < size; i++) {
+    const double fraction = fractions[i];
+    if      (fraction == 0.0) quantiles[i] = min_value_;
+    else if (fraction == 1.0) quantiles[i] = max_value_;
+    else {
+      if (!quantile_calculator) {
+        // has side effect of sorting level zero if needed
+        quantile_calculator = const_cast<kll_sketch*>(this)->get_quantile_calculator();
+      }
+      quantiles[i] = quantile_calculator->get_quantile(fraction);
+    }
+  }
+  return std::move(quantiles);
 }
 
 double kll_sketch::get_rank(float value) const {
-  if (is_empty()) std::numeric_limits<double>::quiet_NaN();
-  uint32_t level(0);
-  size_t weight(1);
-  unsigned long long total(0);
+  if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
+  uint8_t level(0);
+  uint64_t weight(1);
+  uint64_t total(0);
   while (level < num_levels_) {
-    const size_t fromIndex(levels_[level]);
-    const size_t toIndex(levels_[level + 1]); // exclusive
-    for (size_t i = fromIndex; i < toIndex; i++) {
+    const auto from_index(levels_[level]);
+    const auto to_index(levels_[level + 1]); // exclusive
+    for (uint32_t i = from_index; i < to_index; i++) {
       if (items_[i] < value) {
         total += weight;
       } else if ((level > 0) or is_level_zero_sorted_) {
@@ -190,7 +217,7 @@ std::unique_ptr<kll_sketch> kll_sketch::deserialize(std::istream& is) {
 
 /*
  * Gets the normalized rank error given k and pmf.
- * k - the configuation parameter
+ * k - the configuration parameter
  * pmf - if true, returns the "double-sided" normalized rank error for the get_PMF() function.
  * Otherwise, it is the "single-sided" normalized rank error for all the other queries.
  * Constants were derived as the best fit to 99 percentile empirically measured max error in thousands of trials
@@ -225,9 +252,7 @@ void kll_sketch::compress_while_updating(void) {
 
   // level zero might not be sorted, so we must sort it if we wish to compact it
   if (level == 0) {
-    float* beg(&(items_[adjBeg]));
-    float* end(&(items_[adjBeg + adjPop]));
-    std::sort(beg, end);
+    std::sort(&items_[adjBeg], &items_[adjBeg + adjPop]);
   }
   if (popAbove == 0) {
     kll_helper::randomly_halve_up(items_, adjBeg, adjPop);
@@ -250,9 +275,9 @@ void kll_sketch::compress_while_updating(void) {
   // so that the freed-up space can be used by level zero
   if (level > 0) {
     const size_t amount(rawBeg - levels_[0]);
-    float* src_beg(&(items_[levels_[0]]));
-    float* src_end(&(items_[levels_[0] + amount]));
-    float* dst_end(&(items_[levels_[0] + halfAdjPop + amount]));
+    const float* src_beg(&items_[levels_[0]]);
+    const float* src_end(&items_[levels_[0] + amount]);
+    float* dst_end(&items_[levels_[0] + halfAdjPop + amount]);
     std::copy_backward(src_beg, src_end, dst_end);
     for (size_t lvl = 0; lvl < level; lvl++) {
       levels_[lvl] += halfAdjPop;
@@ -274,46 +299,54 @@ uint8_t kll_sketch::find_level_to_compact() const {
 }
 
 void kll_sketch::add_empty_top_level_to_completely_full_sketch() {
-  const size_t curTotalCap(levels_[num_levels_]);
+  const size_t cur_total_cap(levels_[num_levels_]);
 
   // make sure that we are following a certain growth scheme
   assert (levels_[0] == 0);
-  assert (items_size_ == curTotalCap);
+  assert (items_size_ == cur_total_cap);
 
   // note that merging MIGHT over-grow levels_, in which case we might not have to grow it here
   if (levels_size_ < (num_levels_ + 2)) {
-    uint32_t* newLevels(new uint32_t[num_levels_ + 2]);
-    uint32_t* src_beg(&(levels_[0]));
-    uint32_t* src_end(&(levels_[levels_size_]));
-    std::copy(src_beg, src_end, newLevels);
+    uint32_t* new_levels(new uint32_t[num_levels_ + 2]);
+    std::copy(&levels_[0], &levels_[levels_size_], new_levels);
     delete [] levels_;
-    levels_ = newLevels;
+    levels_ = new_levels;
     levels_size_ = num_levels_ + 2;
   }
 
-  const size_t deltaCap(kll_helper::level_capacity(k_, num_levels_ + 1, 0, m_));
-  const size_t newTotalCap(curTotalCap + deltaCap);
+  const size_t delta_cap(kll_helper::level_capacity(k_, num_levels_ + 1, 0, m_));
+  const size_t new_total_cap(cur_total_cap + delta_cap);
 
-  float* newBuf(new float[newTotalCap]);
+  float* new_buf(new float[new_total_cap]);
 
   // copy (and shift) the current data into the new buffer
-  float* src_beg(&(items_[levels_[0]]));
-  float* src_end(&(items_[levels_[0] + curTotalCap]));
-  float* dst_beg(&(newBuf[levels_[0] + deltaCap]));
-  std::copy(src_beg, src_end, dst_beg);
+  std::copy(&items_[levels_[0]], &items_[levels_[0] + cur_total_cap], &new_buf[levels_[0] + delta_cap]);
   delete [] items_;
-  items_ = newBuf;
-  items_size_ = newTotalCap;
+  items_ = new_buf;
+  items_size_ = new_total_cap;
 
   // this loop includes the old "extra" index at the top
   for (size_t i = 0; i <= num_levels_; i++) {
-    levels_[i] += deltaCap;
+    levels_[i] += delta_cap;
   }
 
-  assert (levels_[num_levels_] == newTotalCap);
+  assert (levels_[num_levels_] == new_total_cap);
 
   num_levels_++;
-  levels_[num_levels_] = newTotalCap; // initialize the new "extra" index at the top
+  levels_[num_levels_] = new_total_cap; // initialize the new "extra" index at the top
+}
+
+void kll_sketch::sort_level_zero() {
+  if (!is_level_zero_sorted_) {
+    std::sort(&items_[0], &items_[1]);
+    is_level_zero_sorted_ = true;
+  }
+}
+
+std::unique_ptr<kll_quantile_calculator> kll_sketch::get_quantile_calculator() {
+  sort_level_zero();
+  std::unique_ptr<kll_quantile_calculator> quantile_calculator(new kll_quantile_calculator(items_, levels_, num_levels_, n_));
+  return std::move(quantile_calculator);
 }
 
 std::ostream& operator<<(std::ostream& os, kll_sketch const& sketch) {
