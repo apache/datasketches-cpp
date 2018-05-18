@@ -142,8 +142,8 @@ class kll_sketch {
     float get_quantile(double fraction) const;
     std::unique_ptr<float[]> get_quantiles(const double* fractions, size_t size) const;
     double get_rank(float vlaue) const;
-//    double* get_PMF(float* split_points, size_t size) const;
-//    double* get_CDF(float* split_points, size_t size) const;
+    std::unique_ptr<double[]> get_PMF(float* split_points, size_t size) const;
+    std::unique_ptr<double[]> get_CDF(float* split_points, size_t size) const;
     double get_normalized_rank_error(bool pmf) const;
     uint32_t get_serialized_size_bytes() const;
     void serialize(std::ostream& os) const;

@@ -338,7 +338,7 @@ void kll_sketch::add_empty_top_level_to_completely_full_sketch() {
 
 void kll_sketch::sort_level_zero() {
   if (!is_level_zero_sorted_) {
-    std::sort(&items_[0], &items_[1]);
+    std::sort(&items_[levels_[0]], &items_[levels_[1]]);
     is_level_zero_sorted_ = true;
   }
 }
@@ -353,20 +353,20 @@ std::ostream& operator<<(std::ostream& os, kll_sketch const& sketch) {
   os << "### KLL sketch summary:" << std::endl;
   os << "   K              : " << sketch.k_ << std::endl;
   os << "   min K          : " << sketch.min_k_ << std::endl;
-  os << "   M              : " << sketch.m_ << std::endl;
+  os << "   M              : " << (unsigned int) sketch.m_ << std::endl;
   os << "   N              : " << sketch.n_ << std::endl;
   os << "   Epsilon        : " << std::setprecision(3) << sketch.get_normalized_rank_error(false) * 100 << "%" << std::endl;
   os << "   Epsilon PMF    : " << sketch.get_normalized_rank_error(true) * 100 << "%" << std::endl;
   os << "   Empty          : " << (sketch.is_empty() ? "true" : "false") << std::endl;
   os << "   Estimation mode: " << (sketch.is_estimation_mode() ? "true" : "false") << std::endl;
-  os << "   Levels         : " << sketch.num_levels_ << std::endl;
-  os << "   Sorted         : " << sketch.is_level_zero_sorted_ << std::endl;
+  os << "   Levels         : " << (unsigned int) sketch.num_levels_ << std::endl;
+  os << "   Sorted         : " << (sketch.is_level_zero_sorted_ ? "true" : "false") << std::endl;
   os << "   Capacity items : " << sketch.items_size_ << std::endl;
   os << "   Retained items : " << sketch.get_num_retained() << std::endl;
   os << "   Storage bytes  : " << sketch.get_serialized_size_bytes() << std::endl;
   os << "   Min value      : " << sketch.get_min_value() << std::endl;
   os << "   Max value      : " << sketch.get_max_value() << std::endl;
-  os << "### End sketch summary";
+  os << "### End sketch summary" << std::endl;
   return os;
 }
 

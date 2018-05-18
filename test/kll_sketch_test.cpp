@@ -36,6 +36,8 @@ class Test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(std::isnan(sketch.get_min_value()));
     CPPUNIT_ASSERT(std::isnan(sketch.get_max_value()));
     CPPUNIT_ASSERT(std::isnan(sketch.get_quantile(0.5)));
+    const double fractions[3] {0, 0.5, 1};
+    CPPUNIT_ASSERT(!sketch.get_quantiles(fractions, 3));
   }
 
   void one_item() {
@@ -50,6 +52,12 @@ class Test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(1.0f, sketch.get_min_value());
     CPPUNIT_ASSERT_EQUAL(1.0f, sketch.get_max_value());
     CPPUNIT_ASSERT_EQUAL(1.0f, sketch.get_quantile(0.5));
+    const double fractions[3] {0, 0.5, 1};
+    auto quantiles(sketch.get_quantiles(fractions, 3));
+    CPPUNIT_ASSERT(quantiles);
+    CPPUNIT_ASSERT_EQUAL(1.0f, quantiles[0]);
+    CPPUNIT_ASSERT_EQUAL(1.0f, quantiles[1]);
+    CPPUNIT_ASSERT_EQUAL(1.0f, quantiles[2]);
   }
 
   void many_items_exact_mode() {
@@ -66,6 +74,13 @@ class Test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(0.0f, sketch.get_quantile(0));
     CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch.get_max_value());
     CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch.get_quantile(1));
+
+    const double fractions[3] {0, 0.5, 1};
+    auto quantiles(sketch.get_quantiles(fractions, 3));
+    CPPUNIT_ASSERT(quantiles);
+    CPPUNIT_ASSERT_EQUAL(0.0f, quantiles[0]);
+    CPPUNIT_ASSERT_EQUAL((float) n / 2, quantiles[1]);
+    CPPUNIT_ASSERT_EQUAL((float) n - 1 , quantiles[2]);
 
     for (uint32_t i = 0; i < n; i++) {
       const double trueRank = (double) i / n;
@@ -111,7 +126,7 @@ class Test: public CppUnit::TestFixture {
       previous_quantile = quantile;
     }
 
-    std::cout << sketch << std::endl;
+    //std::cout << sketch << std::endl;
   }
 
   void deserialize_from_java() {
