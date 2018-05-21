@@ -17,6 +17,7 @@ class kll_helper {
     static bool is_even(size_t value);
     static bool is_odd(size_t value);
     static uint8_t floor_of_log2_of_fraction(uint64_t numer, uint64_t denom);
+    static void validate_values(const float* values, size_t size);
     static uint8_t ub_on_num_levels(uint64_t n);
     static uint32_t compute_total_capacity(uint16_t k, uint8_t m, uint8_t num_levels);
     static uint32_t level_capacity(uint16_t k, uint8_t numLevels, uint8_t height, uint8_t minWid);

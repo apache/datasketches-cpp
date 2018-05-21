@@ -14,6 +14,7 @@
 namespace sketches {
 
 static const double RANK_EPS_FOR_K_200 = 0.0133;
+static const double NUMERIC_NOISE_TOLERANCE = 1E-6;
 
 class Test: public CppUnit::TestFixture {
 
@@ -22,6 +23,7 @@ class Test: public CppUnit::TestFixture {
   CPPUNIT_TEST(one_item);
   CPPUNIT_TEST(many_items_exact_mode);
   CPPUNIT_TEST(many_items_estimation_mode);
+  CPPUNIT_TEST(consistency_between_get_rank_and_get_PMF_CDF);
   CPPUNIT_TEST(deserialize_from_java);
   CPPUNIT_TEST(serialize_deserialize_empty);
   CPPUNIT_TEST(serialize_deserialize);
@@ -44,6 +46,9 @@ class Test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(std::isnan(sketch.get_quantile(0.5)));
     const double fractions[3] {0, 0.5, 1};
     CPPUNIT_ASSERT(!sketch.get_quantiles(fractions, 3));
+    const float split_points[1] {0};
+    CPPUNIT_ASSERT(!sketch.get_PMF(split_points, 1));
+    CPPUNIT_ASSERT(!sketch.get_CDF(split_points, 1));
   }
 
   void one_item() {
@@ -133,6 +138,26 @@ class Test: public CppUnit::TestFixture {
     }
 
     //std::cout << sketch << std::endl;
+  }
+
+  void consistency_between_get_rank_and_get_PMF_CDF() {
+    kll_sketch sketch;
+    const int n = 1000;
+    float values[n];
+    for (int i = 0; i < n; i++) {
+      sketch.update(i);
+      values[i] = i;
+    }
+
+    const auto ranks(sketch.get_CDF(values, n));
+    const auto pmf(sketch.get_PMF(values, n));
+
+    double subtotal_pmf(0);
+    for (int i = 0; i < n; i++) {
+      CPPUNIT_ASSERT_EQUAL_MESSAGE("rank vs CDF for value " + std::to_string(i), ranks[i], sketch.get_rank(values[i]));
+      subtotal_pmf += pmf[i];
+      CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("CDF vs PMF for value " + std::to_string(i), ranks[i], subtotal_pmf, NUMERIC_NOISE_TOLERANCE);
+    }
   }
 
   void deserialize_from_java() {

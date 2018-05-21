@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <algorithm>
+#include <stdexcept>
 
 namespace sketches {
 
@@ -25,6 +26,22 @@ uint8_t kll_helper::floor_of_log2_of_fraction(uint64_t numer, uint64_t denom) {
     denom <<= 1;
     if (denom > numer) return count;
     count++;
+  }
+}
+
+/*
+ * Checks the sequential validity of the given array of float values.
+ * They must be unique, monotonically increasing and not NaN.
+ * param values the given array of values
+ */
+void kll_helper::validate_values(const float* values, size_t size) {
+  for (int i = 0; i < size ; i++) {
+    if (std::isnan(values[i])) {
+      throw std::invalid_argument("Values must not be NaN");
+    }
+    if ((i < (size - 1)) and (values[i] >= values[i + 1])) {
+      throw std::invalid_argument("Values must be unique and monotonically increasing");
+    }
   }
 }
 

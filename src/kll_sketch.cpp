@@ -153,6 +153,14 @@ double kll_sketch::get_rank(float value) const {
   return (double) total / n_;
 }
 
+std::unique_ptr<double[]> kll_sketch::get_PMF(const float* split_points, size_t size) const {
+  return get_PMF_or_CDF(split_points, size, false);
+}
+
+std::unique_ptr<double[]> kll_sketch::get_CDF(const float* split_points, size_t size) const {
+  return get_PMF_or_CDF(split_points, size, true);
+}
+
 double kll_sketch::get_normalized_rank_error(bool pmf) const {
   return get_normalized_rank_error(min_k_, pmf);
 }
@@ -369,6 +377,74 @@ std::unique_ptr<kll_quantile_calculator> kll_sketch::get_quantile_calculator() {
   sort_level_zero();
   std::unique_ptr<kll_quantile_calculator> quantile_calculator(new kll_quantile_calculator(items_, levels_, num_levels_, n_));
   return std::move(quantile_calculator);
+}
+
+std::unique_ptr<double[]> kll_sketch::get_PMF_or_CDF(const float* split_points, size_t size, bool is_CDF) const {
+  if (is_empty()) return nullptr;
+  kll_helper::validate_values(split_points, size);
+  std::unique_ptr<double[]> buckets(new double[size + 1]);
+  std::fill(&buckets.get()[0], &buckets.get()[size + 1], 0);
+  uint8_t level(0);
+  uint64_t weight(1);
+  while (level < num_levels_) {
+    const auto from_index = levels_[level];
+    const auto to_index = levels_[level + 1]; // exclusive
+    if ((level == 0) and !is_level_zero_sorted_) {
+      increment_buckets_unsorted_level(from_index, to_index, weight, split_points, size, buckets.get());
+    } else {
+      increment_buckets_sorted_level(from_index, to_index, weight, split_points, size, buckets.get());
+    }
+    level++;
+    weight *= 2;
+  }
+  // normalize and, if CDF, convert to cumulative
+  if (is_CDF) {
+    double subtotal = 0;
+    for (size_t i = 0; i <= size; i++) {
+      subtotal += buckets[i];
+      buckets[i] = subtotal / n_;
+    }
+  } else {
+    for (size_t i = 0; i <= size; i++) {
+      buckets[i] /= n_;
+    }
+  }
+  return std::move(buckets);
+}
+
+void kll_sketch::increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
+    const float* split_points, size_t size, double* buckets) const
+{
+  for (uint32_t i = from_index; i < to_index; i++) {
+    size_t j;
+    for (j = 0; j < size; j++) {
+      if (items_[i] < split_points[j]) {
+        break;
+      }
+    }
+    buckets[j] += weight;
+  }
+}
+
+void kll_sketch::increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
+    const float* split_points, size_t size, double* buckets) const
+{
+  uint32_t i = from_index;
+  size_t j = 0;
+  while ((i <  to_index) and (j < size)) {
+    if (items_[i] < split_points[j]) {
+      buckets[j] += weight; // this sample goes into this bucket
+      i++; // move on to next sample and see whether it also goes into this bucket
+    } else {
+      j++; // no more samples for this bucket
+    }
+  }
+  // now either i == to_index (we are out of samples), or
+  // j == size (we are out of buckets, but there are more samples remaining)
+  // we only need to do something in the latter case
+  if (j == size) {
+    buckets[j] += weight * (to_index - i);
+  }
 }
 
 void kll_sketch::merge_higher_levels(const kll_sketch& other, uint64_t final_n) {
