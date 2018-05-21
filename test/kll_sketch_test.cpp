@@ -4,6 +4,7 @@
  */
 
 #include <kll_sketch.hpp>
+#include <kll_helper.hpp>
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
@@ -24,6 +25,11 @@ class Test: public CppUnit::TestFixture {
   CPPUNIT_TEST(deserialize_from_java);
   CPPUNIT_TEST(serialize_deserialize_empty);
   CPPUNIT_TEST(serialize_deserialize);
+  CPPUNIT_TEST(floor_of_log2_of_fraction);
+  CPPUNIT_TEST(merge);
+  CPPUNIT_TEST(merge_lower_k);
+  CPPUNIT_TEST(merge_empty_lower_k);
+  CPPUNIT_TEST(merge_min_value_from_other);
   CPPUNIT_TEST_SUITE_END();
 
   void empty() {
@@ -175,6 +181,100 @@ class Test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(false), sketch_ptr->get_normalized_rank_error(false));
     CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch_ptr->get_normalized_rank_error(true));
     CPPUNIT_ASSERT_EQUAL(sketch.get_rank(0.5), sketch_ptr->get_rank(0.5));
+  }
+
+  void floor_of_log2_of_fraction() {
+    CPPUNIT_ASSERT_EQUAL((uint8_t) 0, kll_helper::floor_of_log2_of_fraction(0, 1));
+    CPPUNIT_ASSERT_EQUAL((uint8_t) 0, kll_helper::floor_of_log2_of_fraction(1, 2));
+    CPPUNIT_ASSERT_EQUAL((uint8_t) 0, kll_helper::floor_of_log2_of_fraction(2, 2));
+    CPPUNIT_ASSERT_EQUAL((uint8_t) 0, kll_helper::floor_of_log2_of_fraction(3, 2));
+    CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(4, 2));
+    CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(5, 2));
+    CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(6, 2));
+    CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(7, 2));
+    CPPUNIT_ASSERT_EQUAL((uint8_t) 2, kll_helper::floor_of_log2_of_fraction(8, 2));
+  }
+
+  void merge() {
+    kll_sketch sketch1;
+    kll_sketch sketch2;
+    const int n = 10000;
+    for (int i = 0; i < n; i++) {
+      sketch1.update(i);
+      sketch2.update((2 * n) - i - 1);
+    }
+
+    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
+    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch1.get_max_value());
+    CPPUNIT_ASSERT_EQUAL((float) n, sketch2.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(2.0f * n - 1, sketch2.get_max_value());
+
+    sketch1.merge(sketch2);
+
+    CPPUNIT_ASSERT(!sketch1.is_empty());
+    CPPUNIT_ASSERT_EQUAL(2ull * n, sketch1.get_n());
+    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(2.0f * n - 1, sketch1.get_max_value());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sketch1.get_quantile(0.5), n * RANK_EPS_FOR_K_200);
+  }
+
+  void merge_lower_k() {
+    kll_sketch sketch1(256);
+    kll_sketch sketch2(128);
+    const int n = 10000;
+    for (int i = 0; i < n; i++) {
+      sketch1.update(i);
+      sketch2.update((2 * n) - i - 1);
+    }
+
+    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
+    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch1.get_max_value());
+    CPPUNIT_ASSERT_EQUAL((float) n, sketch2.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(2.0f * n - 1, sketch2.get_max_value());
+
+    CPPUNIT_ASSERT(sketch1.get_normalized_rank_error(false) < sketch2.get_normalized_rank_error(false));
+    CPPUNIT_ASSERT(sketch1.get_normalized_rank_error(true) < sketch2.get_normalized_rank_error(true));
+
+    sketch1.merge(sketch2);
+
+    // sketch1 must get "contaminated" by the lower K in sketch2
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
+
+    CPPUNIT_ASSERT(!sketch1.is_empty());
+    CPPUNIT_ASSERT_EQUAL(2ull * n, sketch1.get_n());
+    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(2.0f * n - 1, sketch1.get_max_value());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sketch1.get_quantile(0.5), n * RANK_EPS_FOR_K_200);
+  }
+
+  void merge_empty_lower_k() {
+    kll_sketch sketch1(256);
+    kll_sketch sketch2(128);
+    const int n = 10000;
+    for (int i = 0; i < n; i++) {
+      sketch1.update(i);
+    }
+
+    // rank error should not be affected by a merge with an empty sketch
+    const double rank_error_before_merge = sketch1.get_normalized_rank_error(true);
+    sketch1.merge(sketch2);
+    CPPUNIT_ASSERT_EQUAL(rank_error_before_merge, sketch1.get_normalized_rank_error(true));
+
+    CPPUNIT_ASSERT(!sketch1.is_empty());
+    CPPUNIT_ASSERT_EQUAL((uint64_t) n, sketch1.get_n());
+    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
+    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch1.get_max_value());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(n / 2, sketch1.get_quantile(0.5), n / 2 * RANK_EPS_FOR_K_200);
+  }
+
+  void merge_min_value_from_other() {
+    kll_sketch sketch1;
+    kll_sketch sketch2;
+    sketch1.update(1);
+    sketch2.update(2);
+    sketch2.merge(sketch1);
+    CPPUNIT_ASSERT_EQUAL(1.0f, sketch1.get_min_value());
   }
 
 };

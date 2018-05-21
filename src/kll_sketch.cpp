@@ -52,7 +52,29 @@ void kll_sketch::update(float value) {
 }
 
 void kll_sketch::merge(const kll_sketch& other) {
-
+  if (other.is_empty()) return;
+  if (m_ != other.m_) {
+    throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
+  }
+  if (is_empty()) {
+    min_value_ = other.min_value_;
+    max_value_ = other.max_value_;
+  } else {
+    if (other.min_value_ < min_value_) min_value_ = other.min_value_;
+    if (other.max_value_ > max_value_) max_value_ = other.max_value_;
+  }
+  const uint64_t final_n(n_ + other.n_);
+  if (other.num_levels_ >= 1) {
+    for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
+      update(other.items_[i]);
+    }
+  }
+  if (other.num_levels_ >= 2) {
+    merge_higher_levels(other, final_n);
+  }
+  n_ = final_n;
+  assert_correct_total_weight();
+  min_k_ = std::min(min_k_, other.min_k_);
 }
 
 bool kll_sketch::is_empty() const {
@@ -347,6 +369,86 @@ std::unique_ptr<kll_quantile_calculator> kll_sketch::get_quantile_calculator() {
   sort_level_zero();
   std::unique_ptr<kll_quantile_calculator> quantile_calculator(new kll_quantile_calculator(items_, levels_, num_levels_, n_));
   return std::move(quantile_calculator);
+}
+
+void kll_sketch::merge_higher_levels(const kll_sketch& other, uint64_t final_n) {
+  const uint32_t tmp_space_needed(get_num_retained() + other.get_num_retained_above_level_zero());
+  const std::unique_ptr<float[]> workbuf(new float[tmp_space_needed]);
+  const uint8_t ub = kll_helper::ub_on_num_levels(final_n);
+  const std::unique_ptr<uint32_t[]> worklevels(new uint32_t[ub + 2]); // ub+1 does not work
+  const std::unique_ptr<uint32_t[]> outlevels(new uint32_t[ub + 2]);
+
+  const uint8_t provisional_num_levels = std::max(num_levels_, other.num_levels_);
+
+  populate_work_arrays(other, workbuf.get(), worklevels.get(), provisional_num_levels);
+
+  // notice that workbuf is being used as both the input and output here
+  const kll_helper::compress_result result = kll_helper::general_compress(k_, m_, provisional_num_levels, workbuf.get(),
+      worklevels.get(), workbuf.get(), outlevels.get(), is_level_zero_sorted_);
+  const uint8_t final_num_levels = result.final_num_levels;
+  const uint32_t final_capacity = result.final_capacity;
+  const uint32_t final_pop = result.final_pop;
+
+  assert (final_num_levels <= ub); // can sometimes be much bigger
+
+  // now we need to transfer the results back into the "self" sketch
+  if (final_capacity != items_size_) {
+    delete [] items_;
+    items_ = new float[final_capacity];
+  }
+  const uint32_t free_space_at_bottom = final_capacity - final_pop;
+  std::copy(&workbuf[outlevels[0]], &workbuf[outlevels[0] + final_pop], &items_[free_space_at_bottom]);
+  const uint32_t the_shift(free_space_at_bottom - outlevels[0]);
+
+  if (levels_size_ < (final_num_levels + 1)) {
+    delete [] levels_;
+    levels_ = new uint32_t[final_num_levels + 1];
+  }
+
+  for (uint8_t lvl = 0; lvl < (final_num_levels + 1); lvl++) { // includes the "extra" index
+    levels_[lvl] = outlevels[lvl] + the_shift;
+  }
+
+  num_levels_ = final_num_levels;
+}
+
+void kll_sketch::populate_work_arrays(const kll_sketch& other, float* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {
+  worklevels[0] = 0;
+
+  // Note: the level zero data from "other" was already inserted into "self"
+  const uint32_t self_pop_zero(safe_level_size(0));
+  std::copy(&items_[levels_[0]], &items_[levels_[0] + self_pop_zero], &workbuf[worklevels[0]]);
+  worklevels[1] = worklevels[0] + self_pop_zero;
+
+  for (uint8_t lvl = 1; lvl < provisional_num_levels; lvl++) {
+    const uint32_t self_pop = safe_level_size(lvl);
+    const uint32_t other_pop = other.safe_level_size(lvl);
+    worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;
+
+    if ((self_pop > 0) and (other_pop == 0)) {
+      std::copy(&items_[levels_[lvl]], &items_[levels_[lvl] + self_pop], &workbuf[worklevels[lvl]]);
+    } else if ((self_pop == 0) and (other_pop > 0)) {
+      std::copy(&other.items_[other.levels_[lvl]], &other.items_[other.levels_[lvl] + other_pop], &workbuf[worklevels[lvl]]);
+    } else if ((self_pop > 0) and (other_pop > 0)) {
+      kll_helper::merge_sorted_arrays(items_, levels_[lvl], self_pop, other.items_,
+          other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
+    }
+  }
+}
+
+void kll_sketch::assert_correct_total_weight() const {
+  const uint64_t total(kll_helper::sum_the_sample_weights(num_levels_, levels_));
+  assert (total == n_);
+}
+
+uint32_t kll_sketch::safe_level_size(uint8_t level) const {
+  if (level >= num_levels_) return 0;
+  return levels_[level + 1] - levels_[level];
+}
+
+uint32_t kll_sketch::get_num_retained_above_level_zero() const {
+  if (num_levels_ == 1) return 0;
+  return levels_[num_levels_] - levels_[1];
 }
 
 std::ostream& operator<<(std::ostream& os, kll_sketch const& sketch) {
