@@ -198,9 +198,6 @@ void kll_sketch::serialize(std::ostream& os) const {
 }
 
 std::unique_ptr<kll_sketch> kll_sketch::deserialize(std::istream& is) {
-
-  // TODO: checking
-
   std::unique_ptr<kll_sketch> sketch_ptr(new kll_sketch);
   uint8_t preamble_ints;
   is.read((char*)&preamble_ints, sizeof(preamble_ints));
@@ -215,6 +212,31 @@ std::unique_ptr<kll_sketch> kll_sketch::deserialize(std::istream& is) {
   const bool is_empty = flags & (11 << kll_flags::IS_EMPTY);
   uint8_t unused;
   is.read((char*)&unused, sizeof(unused));
+
+  if (sketch_ptr->m_ != DEFAULT_M) {
+    throw std::invalid_argument("Possible corruption: M must be " + std::to_string(DEFAULT_M)
+        + ": " + std::to_string(sketch_ptr->m_));
+  }
+  if (is_empty) {
+    if (preamble_ints != PREAMBLE_INTS_EMPTY) {
+      throw std::invalid_argument("Possible corruption: preamble ints must be "
+          + std::to_string(PREAMBLE_INTS_EMPTY) + " for an empty sketch: " + std::to_string(preamble_ints));
+    }
+  } else {
+    if (preamble_ints != PREAMBLE_INTS_NONEMPTY) {
+      throw std::invalid_argument("Possible corruption: preamble ints must be "
+          + std::to_string(PREAMBLE_INTS_NONEMPTY) + " for a non-empty sketch: " + std::to_string(preamble_ints));
+    }
+  }
+  if (serial_version != SERIAL_VERSION) {
+    throw std::invalid_argument("Possible corruption: serial version mismatch: expected "
+        + std::to_string(SERIAL_VERSION) + ", got " + std::to_string(serial_version));
+  }
+  if (family_id != FAMILY) {
+    throw std::invalid_argument("Possible corruption: family mismatch: expected "
+        + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
+  }
+
   if (is_empty) {
     sketch_ptr->min_k_ = sketch_ptr->k_;
     sketch_ptr->n_ = 0;
