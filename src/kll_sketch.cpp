@@ -209,7 +209,7 @@ std::unique_ptr<kll_sketch> kll_sketch::deserialize(std::istream& is) {
   is.read((char*)&flags, sizeof(flags));
   is.read((char*)&(sketch_ptr->k_), sizeof(sketch_ptr->k_));
   is.read((char*)&(sketch_ptr->m_), sizeof(sketch_ptr->m_));
-  const bool is_empty = flags & (11 << kll_flags::IS_EMPTY);
+  const bool is_empty = flags & (1 << kll_flags::IS_EMPTY);
   uint8_t unused;
   is.read((char*)&unused, sizeof(unused));
 
