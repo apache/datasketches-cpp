@@ -140,10 +140,10 @@ class kll_sketch {
     float get_min_value() const;
     float get_max_value() const;
     float get_quantile(double fraction) const;
-    std::unique_ptr<float[]> get_quantiles(const double* fractions, size_t size) const;
+    std::unique_ptr<float[]> get_quantiles(const double* fractions, uint32_t size) const;
     double get_rank(float vlaue) const;
-    std::unique_ptr<double[]> get_PMF(const float* split_points, size_t size) const;
-    std::unique_ptr<double[]> get_CDF(const float* split_points, size_t size) const;
+    std::unique_ptr<double[]> get_PMF(const float* split_points, uint32_t size) const;
+    std::unique_ptr<double[]> get_CDF(const float* split_points, uint32_t size) const;
     double get_normalized_rank_error(bool pmf) const;
     uint32_t get_serialized_size_bytes() const;
     void serialize(std::ostream& os) const;
@@ -197,9 +197,9 @@ class kll_sketch {
     void add_empty_top_level_to_completely_full_sketch();
     void sort_level_zero();
     std::unique_ptr<kll_quantile_calculator> get_quantile_calculator();
-    std::unique_ptr<double[]> get_PMF_or_CDF(const float* split_points, size_t size, bool is_CDF) const;
-    void increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight, const float* split_points, size_t size, double* buckets) const;
-    void increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight, const float* split_points, size_t size, double* buckets) const;
+    std::unique_ptr<double[]> get_PMF_or_CDF(const float* split_points, uint32_t size, bool is_CDF) const;
+    void increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight, const float* split_points, uint32_t size, double* buckets) const;
+    void increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight, const float* split_points, uint32_t size, double* buckets) const;
     void merge_higher_levels(const kll_sketch& other, uint64_t final_n);
     void populate_work_arrays(const kll_sketch& other, float* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
     void assert_correct_total_weight() const;

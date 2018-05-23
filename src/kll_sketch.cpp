@@ -46,7 +46,7 @@ void kll_sketch::update(float value) {
   if (levels_[0] == 0) compress_while_updating();
   n_++;
   is_level_zero_sorted_ = false;
-  const size_t nextPos(levels_[0] - 1);
+  const uint32_t nextPos(levels_[0] - 1);
   levels_[0] = nextPos;
   items_[nextPos] = value;
 }
@@ -113,11 +113,11 @@ float kll_sketch::get_quantile(double fraction) const {
   return quantile_calculator->get_quantile(fraction);
 }
 
-std::unique_ptr<float[]> kll_sketch::get_quantiles(const double* fractions, size_t size) const {
+std::unique_ptr<float[]> kll_sketch::get_quantiles(const double* fractions, uint32_t size) const {
   if (is_empty()) { return nullptr; }
   std::unique_ptr<kll_quantile_calculator> quantile_calculator;
   std::unique_ptr<float[]> quantiles(new float[size]);
-  for (size_t i = 0; i < size; i++) {
+  for (uint32_t i = 0; i < size; i++) {
     const double fraction = fractions[i];
     if      (fraction == 0.0) quantiles[i] = min_value_;
     else if (fraction == 1.0) quantiles[i] = max_value_;
@@ -153,11 +153,11 @@ double kll_sketch::get_rank(float value) const {
   return (double) total / n_;
 }
 
-std::unique_ptr<double[]> kll_sketch::get_PMF(const float* split_points, size_t size) const {
+std::unique_ptr<double[]> kll_sketch::get_PMF(const float* split_points, uint32_t size) const {
   return get_PMF_or_CDF(split_points, size, false);
 }
 
-std::unique_ptr<double[]> kll_sketch::get_CDF(const float* split_points, size_t size) const {
+std::unique_ptr<double[]> kll_sketch::get_CDF(const float* split_points, uint32_t size) const {
   return get_PMF_or_CDF(split_points, size, true);
 }
 
@@ -292,47 +292,44 @@ void kll_sketch::compress_while_updating(void) {
     add_empty_top_level_to_completely_full_sketch();
   }
 
-  const size_t rawBeg(levels_[level]);
-  const size_t rawLim(levels_[level + 1]);
+  const uint32_t raw_beg(levels_[level]);
+  const uint32_t raw_lim(levels_[level + 1]);
   // +2 is OK because we already added a new top level if necessary
-  const size_t popAbove(levels_[level + 2] - rawLim);
-  const size_t rawPop(rawLim - rawBeg);
-  const bool oddPop(kll_helper::is_odd(rawPop));
-  const size_t adjBeg(oddPop ? rawBeg + 1 : rawBeg);
-  const size_t adjPop(oddPop ? rawPop - 1 : rawPop);
-  const size_t halfAdjPop(adjPop / 2);
+  const uint32_t pop_above(levels_[level + 2] - raw_lim);
+  const uint32_t raw_pop(raw_lim - raw_beg);
+  const bool odd_pop(kll_helper::is_odd(raw_pop));
+  const uint32_t adj_beg(odd_pop ? raw_beg + 1 : raw_beg);
+  const uint32_t adj_pop(odd_pop ? raw_pop - 1 : raw_pop);
+  const uint32_t half_adj_pop(adj_pop / 2);
 
   // level zero might not be sorted, so we must sort it if we wish to compact it
   if (level == 0) {
-    std::sort(&items_[adjBeg], &items_[adjBeg + adjPop]);
+    std::sort(&items_[adj_beg], &items_[adj_beg + adj_pop]);
   }
-  if (popAbove == 0) {
-    kll_helper::randomly_halve_up(items_, adjBeg, adjPop);
+  if (pop_above == 0) {
+    kll_helper::randomly_halve_up(items_, adj_beg, adj_pop);
   } else {
-    kll_helper::randomly_halve_down(items_, adjBeg, adjPop);
-    kll_helper::merge_sorted_arrays(items_, adjBeg, halfAdjPop, items_, rawLim, popAbove, items_, adjBeg + halfAdjPop);
+    kll_helper::randomly_halve_down(items_, adj_beg, adj_pop);
+    kll_helper::merge_sorted_arrays(items_, adj_beg, half_adj_pop, items_, raw_lim, pop_above, items_, adj_beg + half_adj_pop);
   }
-  levels_[level + 1] -= halfAdjPop; // adjust boundaries of the level above
-  if (oddPop) {
+  levels_[level + 1] -= half_adj_pop; // adjust boundaries of the level above
+  if (odd_pop) {
     levels_[level] = levels_[level + 1] - 1; // the current level now contains one item
-    items_[levels_[level]] = items_[rawBeg]; // namely this leftover guy
+    items_[levels_[level]] = items_[raw_beg]; // namely this leftover guy
   } else {
     levels_[level] = levels_[level + 1]; // the current level is now empty
   }
 
   // verify that we freed up halfAdjPop array slots just below the current level
-  assert (levels_[level] == (rawBeg + halfAdjPop));
+  assert (levels_[level] == (raw_beg + half_adj_pop));
 
   // finally, we need to shift up the data in the levels below
   // so that the freed-up space can be used by level zero
   if (level > 0) {
-    const size_t amount(rawBeg - levels_[0]);
-    const float* src_beg(&items_[levels_[0]]);
-    const float* src_end(&items_[levels_[0] + amount]);
-    float* dst_end(&items_[levels_[0] + halfAdjPop + amount]);
-    std::copy_backward(src_beg, src_end, dst_end);
-    for (size_t lvl = 0; lvl < level; lvl++) {
-      levels_[lvl] += halfAdjPop;
+    const uint32_t amount(raw_beg - levels_[0]);
+    std::copy_backward(&items_[levels_[0]], &items_[levels_[0] + amount], &items_[levels_[0] + half_adj_pop + amount]);
+    for (uint8_t lvl = 0; lvl < level; lvl++) {
+      levels_[lvl] += half_adj_pop;
     }
   }
 }
@@ -341,8 +338,8 @@ uint8_t kll_sketch::find_level_to_compact() const {
   uint8_t level(0);
   while (true) {
     assert (level < num_levels_);
-    const size_t pop(levels_[level + 1] - levels_[level]);
-    const size_t cap(kll_helper::level_capacity(k_, num_levels_, level, m_));
+    const uint32_t pop(levels_[level + 1] - levels_[level]);
+    const uint32_t cap(kll_helper::level_capacity(k_, num_levels_, level, m_));
     if (pop >= cap) {
       return level;
     }
@@ -351,7 +348,7 @@ uint8_t kll_sketch::find_level_to_compact() const {
 }
 
 void kll_sketch::add_empty_top_level_to_completely_full_sketch() {
-  const size_t cur_total_cap(levels_[num_levels_]);
+  const uint32_t cur_total_cap(levels_[num_levels_]);
 
   // make sure that we are following a certain growth scheme
   assert (levels_[0] == 0);
@@ -366,8 +363,8 @@ void kll_sketch::add_empty_top_level_to_completely_full_sketch() {
     levels_size_ = num_levels_ + 2;
   }
 
-  const size_t delta_cap(kll_helper::level_capacity(k_, num_levels_ + 1, 0, m_));
-  const size_t new_total_cap(cur_total_cap + delta_cap);
+  const uint32_t delta_cap(kll_helper::level_capacity(k_, num_levels_ + 1, 0, m_));
+  const uint32_t new_total_cap(cur_total_cap + delta_cap);
 
   float* new_buf(new float[new_total_cap]);
 
@@ -378,7 +375,7 @@ void kll_sketch::add_empty_top_level_to_completely_full_sketch() {
   items_size_ = new_total_cap;
 
   // this loop includes the old "extra" index at the top
-  for (size_t i = 0; i <= num_levels_; i++) {
+  for (uint8_t i = 0; i <= num_levels_; i++) {
     levels_[i] += delta_cap;
   }
 
@@ -401,7 +398,7 @@ std::unique_ptr<kll_quantile_calculator> kll_sketch::get_quantile_calculator() {
   return std::move(quantile_calculator);
 }
 
-std::unique_ptr<double[]> kll_sketch::get_PMF_or_CDF(const float* split_points, size_t size, bool is_CDF) const {
+std::unique_ptr<double[]> kll_sketch::get_PMF_or_CDF(const float* split_points, uint32_t size, bool is_CDF) const {
   if (is_empty()) return nullptr;
   kll_helper::validate_values(split_points, size);
   std::unique_ptr<double[]> buckets(new double[size + 1]);
@@ -422,12 +419,12 @@ std::unique_ptr<double[]> kll_sketch::get_PMF_or_CDF(const float* split_points, 
   // normalize and, if CDF, convert to cumulative
   if (is_CDF) {
     double subtotal = 0;
-    for (size_t i = 0; i <= size; i++) {
+    for (uint32_t i = 0; i <= size; i++) {
       subtotal += buckets[i];
       buckets[i] = subtotal / n_;
     }
   } else {
-    for (size_t i = 0; i <= size; i++) {
+    for (uint32_t i = 0; i <= size; i++) {
       buckets[i] /= n_;
     }
   }
@@ -435,10 +432,10 @@ std::unique_ptr<double[]> kll_sketch::get_PMF_or_CDF(const float* split_points, 
 }
 
 void kll_sketch::increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
-    const float* split_points, size_t size, double* buckets) const
+    const float* split_points, uint32_t size, double* buckets) const
 {
   for (uint32_t i = from_index; i < to_index; i++) {
-    size_t j;
+    uint32_t j;
     for (j = 0; j < size; j++) {
       if (items_[i] < split_points[j]) {
         break;
@@ -449,10 +446,10 @@ void kll_sketch::increment_buckets_unsorted_level(uint32_t from_index, uint32_t 
 }
 
 void kll_sketch::increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
-    const float* split_points, size_t size, double* buckets) const
+    const float* split_points, uint32_t size, double* buckets) const
 {
   uint32_t i = from_index;
-  size_t j = 0;
+  uint32_t j = 0;
   while ((i <  to_index) and (j < size)) {
     if (items_[i] < split_points[j]) {
       buckets[j] += weight; // this sample goes into this bucket

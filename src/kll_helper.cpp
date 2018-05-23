@@ -11,11 +11,11 @@
 
 namespace sketches {
 
-bool kll_helper::is_even(size_t value) {
+bool kll_helper::is_even(uint32_t value) {
   return (value & 1) == 0;
 }
 
-bool kll_helper::is_odd(size_t value) {
+bool kll_helper::is_odd(uint32_t value) {
   return (value & 1) > 0;
 }
 
@@ -34,8 +34,8 @@ uint8_t kll_helper::floor_of_log2_of_fraction(uint64_t numer, uint64_t denom) {
  * They must be unique, monotonically increasing and not NaN.
  * param values the given array of values
  */
-void kll_helper::validate_values(const float* values, size_t size) {
-  for (int i = 0; i < size ; i++) {
+void kll_helper::validate_values(const float* values, uint32_t size) {
+  for (uint32_t i = 0; i < size ; i++) {
     if (std::isnan(values[i])) {
       throw std::invalid_argument("Values must not be NaN");
     }
@@ -84,9 +84,9 @@ static const long long powers_of_three[] =  {1, 3, 9, 27, 81, 243, 729, 2187, 65
 uint32_t kll_helper::int_cap_aux_aux(uint16_t k, uint8_t depth) {
   assert (k <= (1 << 30));
   assert (depth <= 30);
-  const size_t twok(k << 1); // for rounding, we pre-multiply by 2
-  const size_t tmp((size_t) (((size_t) twok << depth) / powers_of_three[depth]));
-  const size_t result((tmp + 1) >> 1); // then here we add 1 and divide by 2
+  const uint64_t twok(k << 1); // for rounding, we pre-multiply by 2
+  const uint64_t tmp((uint64_t) (((uint64_t) twok << depth) / powers_of_three[depth]));
+  const uint64_t result((tmp + 1) >> 1); // then here we add 1 and divide by 2
   assert (result <= k);
   return result;
 }
@@ -101,40 +101,40 @@ uint64_t kll_helper::sum_the_sample_weights(uint8_t num_levels, const uint32_t* 
   return total;
 }
 
-void kll_helper::randomly_halve_down(float* buf, size_t start, size_t length) {
+void kll_helper::randomly_halve_down(float* buf, uint32_t start, uint32_t length) {
   assert (is_even(length));
-  const size_t half_length(length / 2);
-  const size_t offset(random_bit());
-  //const size_t offset(deterministic_offset()); // for validation
-  size_t j(start + offset);
-  for (size_t i = start; i < (start + half_length); i++) {
+  const uint32_t half_length(length / 2);
+  const uint32_t offset(random_bit());
+  //const uint32_t offset(deterministic_offset()); // for validation
+  uint32_t j(start + offset);
+  for (uint32_t i = start; i < (start + half_length); i++) {
     buf[i] = buf[j];
     j += 2;
   }
 }
 
-void kll_helper::randomly_halve_up(float* buf, size_t start, size_t length) {
+void kll_helper::randomly_halve_up(float* buf, uint32_t start, uint32_t length) {
   assert (is_even(length));
-  const size_t half_length(length / 2);
-  const size_t offset(random_bit());
-  //const size_t offset(deterministic_offset()); // for validation
-  size_t j((start + length) - 1 - offset);
-  for (size_t i = (start + length) - 1; i >= (start + half_length); i--) {
+  const uint32_t half_length(length / 2);
+  const uint32_t offset(random_bit());
+  //const uint32_t offset(deterministic_offset()); // for validation
+  uint32_t j((start + length) - 1 - offset);
+  for (uint32_t i = (start + length) - 1; i >= (start + half_length); i--) {
     buf[i] = buf[j];
     j -= 2;
   }
 }
 
-void kll_helper::merge_sorted_arrays(float* buf_a, size_t start_a, size_t len_a, float* buf_b, size_t start_b, size_t len_b, float* buf_c, size_t start_c) {
-  const size_t len_c(len_a + len_b);
-  const size_t lim_a(start_a + len_a);
-  const size_t lim_b(start_b + len_b);
-  const size_t lim_c(start_c + len_c);
+void kll_helper::merge_sorted_arrays(const float* buf_a, uint32_t start_a, uint32_t len_a, const float* buf_b, uint32_t start_b, uint32_t len_b, float* buf_c, uint32_t start_c) {
+  const uint32_t len_c(len_a + len_b);
+  const uint32_t lim_a(start_a + len_a);
+  const uint32_t lim_b(start_b + len_b);
+  const uint32_t lim_c(start_c + len_c);
 
-  size_t a(start_a);
-  size_t b(start_b);
+  uint32_t a(start_a);
+  uint32_t b(start_b);
 
-  for (size_t c = start_c; c < lim_c; c++) {
+  for (uint32_t c = start_c; c < lim_c; c++) {
     if (a == lim_a) {
       buf_c[c] = buf_b[b];
       b++;
@@ -263,10 +263,10 @@ kll_helper::compress_result kll_helper::general_compress(uint16_t k, uint8_t m, 
   return result;
 }
 
-static size_t next_offset = 0;
+static uint32_t next_offset = 0;
 
-size_t kll_helper::deterministic_offset() {
-  const int result(next_offset);
+uint32_t kll_helper::deterministic_offset() {
+  const uint32_t result(next_offset);
   next_offset = 1 - next_offset;
   return result;
 }
