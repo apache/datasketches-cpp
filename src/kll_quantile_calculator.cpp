@@ -98,11 +98,11 @@ void kll_quantile_calculator::blocky_tandem_merge_sort(float* items, uint64_t* w
   if (num_levels == 1) return;
 
   // duplicate the input in preparation for the "ping-pong" copy reduction strategy.
-  float* items_tmp = new float[num_items];
-  std::copy(items, &items[num_items], items_tmp);
-  uint64_t* weights_tmp = new uint64_t[num_items]; // don't need the extra one here
-  std::copy(weights, &weights[num_items], weights_tmp);
-  blocky_tandem_merge_sort_recursion(items_tmp, weights_tmp, items, weights, levels, 0, num_levels);
+  std::unique_ptr<float[]> items_tmp(new float[num_items]);
+  std::copy(items, &items[num_items], items_tmp.get());
+  std::unique_ptr<uint64_t[]> weights_tmp(new uint64_t[num_items]); // don't need the extra one here
+  std::copy(weights, &weights[num_items], weights_tmp.get());
+  blocky_tandem_merge_sort_recursion(items_tmp.get(), weights_tmp.get(), items, weights, levels, 0, num_levels);
 }
 
 void kll_quantile_calculator::blocky_tandem_merge_sort_recursion(float* items_src, uint64_t* weights_src, float* items_dst, uint64_t* weights_dst, const uint32_t* levels, uint8_t starting_level, uint8_t num_levels) {
