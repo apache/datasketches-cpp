@@ -490,6 +490,7 @@ void kll_sketch::merge_higher_levels(const kll_sketch& other, uint64_t final_n) 
   if (final_capacity != items_size_) {
     delete [] items_;
     items_ = new float[final_capacity];
+    items_size_ = final_capacity;
   }
   const uint32_t free_space_at_bottom = final_capacity - final_pop;
   std::copy(&workbuf[outlevels[0]], &workbuf[outlevels[0] + final_pop], &items_[free_space_at_bottom]);
@@ -498,6 +499,7 @@ void kll_sketch::merge_higher_levels(const kll_sketch& other, uint64_t final_n) 
   if (levels_size_ < (final_num_levels + 1)) {
     delete [] levels_;
     levels_ = new uint32_t[final_num_levels + 1];
+    levels_size_ = final_num_levels + 1;
   }
 
   for (uint8_t lvl = 0; lvl < (final_num_levels + 1); lvl++) { // includes the "extra" index
