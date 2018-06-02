@@ -46,9 +46,9 @@ void kll_sketch::update(float value) {
   if (levels_[0] == 0) compress_while_updating();
   n_++;
   is_level_zero_sorted_ = false;
-  const uint32_t nextPos(levels_[0] - 1);
-  levels_[0] = nextPos;
-  items_[nextPos] = value;
+  const uint32_t next_pos(levels_[0] - 1);
+  levels_[0] = next_pos;
+  items_[next_pos] = value;
 }
 
 void kll_sketch::merge(const kll_sketch& other) {
@@ -56,18 +56,16 @@ void kll_sketch::merge(const kll_sketch& other) {
   if (m_ != other.m_) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
   }
+  const uint64_t final_n(n_ + other.n_);
+  for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
+    update(other.items_[i]);
+  }
   if (is_empty()) {
     min_value_ = other.min_value_;
     max_value_ = other.max_value_;
   } else {
     if (other.min_value_ < min_value_) min_value_ = other.min_value_;
     if (other.max_value_ > max_value_) max_value_ = other.max_value_;
-  }
-  const uint64_t final_n(n_ + other.n_);
-  if (other.num_levels_ >= 1) {
-    for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
-      update(other.items_[i]);
-    }
   }
   if (other.num_levels_ >= 2) {
     merge_higher_levels(other, final_n);
