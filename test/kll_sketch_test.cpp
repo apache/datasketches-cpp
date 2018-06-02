@@ -32,6 +32,7 @@ class Test: public CppUnit::TestFixture {
   CPPUNIT_TEST(merge_lower_k);
   CPPUNIT_TEST(merge_empty_lower_k);
   CPPUNIT_TEST(merge_min_value_from_other);
+  CPPUNIT_TEST(merge_min_and_max_from_other);
   CPPUNIT_TEST_SUITE_END();
 
   void empty() {
@@ -281,7 +282,7 @@ class Test: public CppUnit::TestFixture {
       sketch1.update(i);
     }
 
-    // rank error should not be affected by a merge with an empty sketch
+    // rank error should not be affected by a merge with an empty sketch with lower k
     const double rank_error_before_merge = sketch1.get_normalized_rank_error(true);
     sketch1.merge(sketch2);
     CPPUNIT_ASSERT_EQUAL(rank_error_before_merge, sketch1.get_normalized_rank_error(true));
@@ -299,7 +300,17 @@ class Test: public CppUnit::TestFixture {
     sketch1.update(1);
     sketch2.update(2);
     sketch2.merge(sketch1);
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch1.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(1.0f, sketch2.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(2.0f, sketch2.get_max_value());
+  }
+
+  void merge_min_and_max_from_other() {
+    kll_sketch sketch1;
+    for (int i = 0; i < 1000000; i++) sketch1.update(i);
+    kll_sketch sketch2;
+    sketch2.merge(sketch1);
+    CPPUNIT_ASSERT_EQUAL(0.0f, sketch2.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(999999.0f, sketch2.get_max_value());
   }
 
 };

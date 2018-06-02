@@ -60,16 +60,11 @@ void kll_sketch::merge(const kll_sketch& other) {
   for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
     update(other.items_[i]);
   }
-  if (is_empty()) {
-    min_value_ = other.min_value_;
-    max_value_ = other.max_value_;
-  } else {
-    if (other.min_value_ < min_value_) min_value_ = other.min_value_;
-    if (other.max_value_ > max_value_) max_value_ = other.max_value_;
-  }
   if (other.num_levels_ >= 2) {
     merge_higher_levels(other, final_n);
   }
+  if (std::isnan(min_value_) or other.min_value_ < min_value_) min_value_ = other.min_value_;
+  if (std::isnan(max_value_) or other.max_value_ > max_value_) max_value_ = other.max_value_;
   n_ = final_n;
   assert_correct_total_weight();
   min_k_ = std::min(min_k_, other.min_k_);
