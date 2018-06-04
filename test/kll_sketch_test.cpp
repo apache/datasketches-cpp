@@ -16,9 +16,9 @@ namespace sketches {
 static const double RANK_EPS_FOR_K_200 = 0.0133;
 static const double NUMERIC_NOISE_TOLERANCE = 1E-6;
 
-class Test: public CppUnit::TestFixture {
+class kll_sketch_test: public CppUnit::TestFixture {
 
-  CPPUNIT_TEST_SUITE(Test);
+  CPPUNIT_TEST_SUITE(kll_sketch_test);
   CPPUNIT_TEST(empty);
   CPPUNIT_TEST(one_item);
   CPPUNIT_TEST(many_items_exact_mode);
@@ -315,6 +315,6 @@ class Test: public CppUnit::TestFixture {
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(Test);
+CPPUNIT_TEST_SUITE_REGISTRATION(kll_sketch_test);
 
-}
+} /* namespace sketches */
