@@ -13,6 +13,11 @@
 
 #ifdef KLL_VALIDATION
 
+// This is to make sure the implementation matches exactly the reference implementation in OCaml.
+// Conditional compilation is used because the implementation needs a few modifications
+// - from random choice to deterministic
+// - a few methods to expose internals of the sketch
+
 namespace sketches {
 
 static constexpr unsigned num_tests = 114;
