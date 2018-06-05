@@ -36,11 +36,13 @@ class kll_helper {
     static compress_result general_compress(uint16_t k, uint8_t m, uint8_t num_levels_in, float* in_buf,
         uint32_t* in_levels, float* out_buf, uint32_t* out_levels, bool is_level_zero_sorted);
 
+#ifdef KLL_VALIDATION
   private:
     static uint32_t deterministic_offset();
+#endif
 
 };
 
-}
+} /* namespace sketches */
 
 #endif

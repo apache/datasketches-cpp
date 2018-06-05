@@ -129,7 +129,7 @@ class kll_sketch {
   public:
     static const uint16_t DEFAULT_K = 200;
 
-    kll_sketch(uint16_t k = DEFAULT_K);
+    explicit kll_sketch(uint16_t k = DEFAULT_K);
     ~kll_sketch();
     void update(float value);
     void merge(const kll_sketch& other);
@@ -152,6 +152,13 @@ class kll_sketch {
     static double get_normalized_rank_error(uint16_t k, bool pmf);
 
     friend std::ostream& operator<<(std::ostream& os, kll_sketch const& sketch);
+
+#ifdef KLL_VALIDATION
+    static uint32_t next_offset;
+    uint8_t get_num_levels() { return num_levels_; }
+    uint32_t* get_levels() { return levels_; }
+    float* get_items() { return items_; }
+#endif
 
   private:
     static const uint8_t DEFAULT_M = 8;
@@ -209,6 +216,6 @@ class kll_sketch {
     static uint32_t get_serialized_size_bytes(uint8_t num_levels, uint32_t num_retained);
 };
 
-}
+} /* namespace sketches */
 
 #endif

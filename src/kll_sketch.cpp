@@ -556,9 +556,40 @@ std::ostream& operator<<(std::ostream& os, kll_sketch const& sketch) {
   os << "   Capacity items : " << sketch.items_size_ << std::endl;
   os << "   Retained items : " << sketch.get_num_retained() << std::endl;
   os << "   Storage bytes  : " << sketch.get_serialized_size_bytes() << std::endl;
-  os << "   Min value      : " << sketch.get_min_value() << std::endl;
+  os << "   Min value      : " << std::setprecision(8) << sketch.get_min_value() << std::endl;
   os << "   Max value      : " << sketch.get_max_value() << std::endl;
   os << "### End sketch summary" << std::endl;
+
+  // for debugging
+  const bool with_levels(false);
+  const bool with_data(false);
+
+  if (with_levels) {
+    os << "### KLL sketch levels:" << std::endl;
+    os << "   index: nominal capacity, actual size" << std::endl;
+    for (uint8_t i = 0; i < sketch.num_levels_; i++) {
+      os << "   " << (unsigned int) i << ": " << kll_helper::level_capacity(sketch.k_, sketch.num_levels_, i, sketch.m_) << ", " << sketch.safe_level_size(i) << std::endl;
+    }
+    os << "### End sketch levels" << std::endl;
+  }
+
+  if (with_data) {
+    os << "### KLL sketch data:" << std::endl;
+    uint8_t level(0);
+    while (level < sketch.num_levels_) {
+      const uint32_t from_index = sketch.levels_[level];
+      const uint32_t to_index = sketch.levels_[level + 1]; // exclusive
+      if (from_index < to_index) {
+        os << " level " << (unsigned int) level << ":" << std::endl;
+      }
+      for (uint32_t i = from_index; i < to_index; i++) {
+        os << "   " << sketch.items_[i] << std::endl;
+      }
+      level++;
+    }
+    os << "### End sketch data" << std::endl;
+  }
+
   return os;
 }
 
@@ -568,4 +599,8 @@ uint32_t kll_sketch::get_serialized_size_bytes(uint8_t num_levels, uint32_t num_
   return DATA_START + (num_levels * sizeof(uint32_t)) + ((num_retained + 2) * sizeof(float));
 }
 
-}
+#ifdef KLL_VALIDATION
+uint32_t kll_sketch::next_offset = 0;
+#endif
+
+} /* namespace sketches */

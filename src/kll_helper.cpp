@@ -9,6 +9,10 @@
 #include <algorithm>
 #include <stdexcept>
 
+#ifdef KLL_VALIDATION
+#include "kll_sketch.hpp"
+#endif
+
 namespace sketches {
 
 bool kll_helper::is_even(uint32_t value) {
@@ -104,8 +108,11 @@ uint64_t kll_helper::sum_the_sample_weights(uint8_t num_levels, const uint32_t* 
 void kll_helper::randomly_halve_down(float* buf, uint32_t start, uint32_t length) {
   assert (is_even(length));
   const uint32_t half_length(length / 2);
+#ifdef KLL_VALIDATION
+  const uint32_t offset(deterministic_offset());
+#else
   const uint32_t offset(random_bit());
-  //const uint32_t offset(deterministic_offset()); // for validation
+#endif
   uint32_t j(start + offset);
   for (uint32_t i = start; i < (start + half_length); i++) {
     buf[i] = buf[j];
@@ -116,8 +123,11 @@ void kll_helper::randomly_halve_down(float* buf, uint32_t start, uint32_t length
 void kll_helper::randomly_halve_up(float* buf, uint32_t start, uint32_t length) {
   assert (is_even(length));
   const uint32_t half_length(length / 2);
+#ifdef KLL_VALIDATION
+  const uint32_t offset(deterministic_offset());
+#else
   const uint32_t offset(random_bit());
-  //const uint32_t offset(deterministic_offset()); // for validation
+#endif
   uint32_t j((start + length) - 1 - offset);
   for (uint32_t i = (start + length) - 1; i >= (start + half_length); i--) {
     buf[i] = buf[j];
@@ -263,12 +273,12 @@ kll_helper::compress_result kll_helper::general_compress(uint16_t k, uint8_t m, 
   return result;
 }
 
-static uint32_t next_offset = 0;
-
+#ifdef KLL_VALIDATION
 uint32_t kll_helper::deterministic_offset() {
-  const uint32_t result(next_offset);
-  next_offset = 1 - next_offset;
+  const uint32_t result(kll_sketch::next_offset);
+  kll_sketch::next_offset = 1 - kll_sketch::next_offset;
   return result;
 }
+#endif
 
-}
+} /* namespace sketches */
