@@ -170,7 +170,7 @@ class kll_sketch {
      *      ||    7    |   6   |    5   |    4   |    3   |    2    |    1   |      0       |
      *  0   || unused  |   M   |--------K--------|  Flags |  FamID  | SerVer | PreambleInts |
      *      ||   15    |   14  |   13   |   12   |   11   |   10    |    9   |      8       |
-     *  1   ||---------------------------------N_LONG---------------------------------------|
+     *  1   ||-----------------------------------N------------------------------------------|
      *      ||   23    |   22  |   21   |   20   |   19   |    18   |   17   |      16      |
      *  2   ||---------------data----------------|--------|numLevels|-------min K-----------|
      */
@@ -199,6 +199,7 @@ class kll_sketch {
     float max_value_;
     bool is_level_zero_sorted_;
 
+    kll_sketch(uint16_t k, uint8_t flags, std::istream& is); // for deserialization
     void compress_while_updating();
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();

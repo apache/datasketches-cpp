@@ -16,6 +16,7 @@
 namespace sketches {
 
 kll_sketch::kll_sketch(uint16_t k) {
+  // TODO: check k
   k_ = k;
   m_ = DEFAULT_M;
   min_k_ = k;
@@ -163,6 +164,16 @@ uint32_t kll_sketch::get_serialized_size_bytes() const {
   return get_serialized_size_bytes(num_levels_, get_num_retained());
 }
 
+template <typename T>
+void serialize_items(std::ostream& os, const T* items, unsigned num) {
+  os.write((char*)items, sizeof(T) * num);
+}
+
+template <typename T>
+void deserialize_items(std::istream& is, T* items, unsigned num) {
+  is.read((char*)items, sizeof(T) * num);
+}
+
 void kll_sketch::serialize(std::ostream& os) const {
   const uint8_t preamble_ints(is_empty() ? PREAMBLE_INTS_EMPTY : PREAMBLE_INTS_NONEMPTY);
   os.write((char*)&preamble_ints, sizeof(preamble_ints));
@@ -185,13 +196,12 @@ void kll_sketch::serialize(std::ostream& os) const {
   os.write((char*)&num_levels_, sizeof(num_levels_));
   os.write((char*)&unused, sizeof(unused));
   os.write((char*)levels_, sizeof(levels_[0]) * num_levels_);
-  os.write((char*)&min_value_, sizeof(min_value_));
-  os.write((char*)&max_value_, sizeof(max_value_));
-  os.write((char*)&(items_[levels_[0]]), sizeof(items_[0]) * get_num_retained());
+  serialize_items<float>(os, &min_value_, 1);
+  serialize_items<float>(os, &max_value_, 1);
+  serialize_items<float>(os, &items_[levels_[0]], get_num_retained());
 }
 
 std::unique_ptr<kll_sketch> kll_sketch::deserialize(std::istream& is) {
-  std::unique_ptr<kll_sketch> sketch_ptr(new kll_sketch);
   uint8_t preamble_ints;
   is.read((char*)&preamble_ints, sizeof(preamble_ints));
   uint8_t serial_version;
@@ -200,16 +210,18 @@ std::unique_ptr<kll_sketch> kll_sketch::deserialize(std::istream& is) {
   is.read((char*)&family_id, sizeof(family_id));
   uint8_t flags;
   is.read((char*)&flags, sizeof(flags));
-  is.read((char*)&(sketch_ptr->k_), sizeof(sketch_ptr->k_));
-  is.read((char*)&(sketch_ptr->m_), sizeof(sketch_ptr->m_));
-  const bool is_empty = flags & (1 << kll_flags::IS_EMPTY);
+  uint16_t k;
+  is.read((char*)&k, sizeof(k));
+  uint8_t m;
+  is.read((char*)&m, sizeof(m));
   uint8_t unused;
   is.read((char*)&unused, sizeof(unused));
 
-  if (sketch_ptr->m_ != DEFAULT_M) {
+  if (m != DEFAULT_M) {
     throw std::invalid_argument("Possible corruption: M must be " + std::to_string(DEFAULT_M)
-        + ": " + std::to_string(sketch_ptr->m_));
+        + ": " + std::to_string(m));
   }
+  const bool is_empty(flags & (1 << kll_flags::IS_EMPTY));
   if (is_empty) {
     if (preamble_ints != PREAMBLE_INTS_EMPTY) {
       throw std::invalid_argument("Possible corruption: preamble ints must be "
@@ -230,34 +242,31 @@ std::unique_ptr<kll_sketch> kll_sketch::deserialize(std::istream& is) {
         + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
   }
 
-  if (is_empty) {
-    sketch_ptr->min_k_ = sketch_ptr->k_;
-    sketch_ptr->n_ = 0;
-    sketch_ptr->num_levels_ = 1;
-    sketch_ptr->levels_size_ = 2;
-    sketch_ptr->levels_ = new uint32_t[2] {sketch_ptr->k_, sketch_ptr->k_};
-    sketch_ptr->items_size_ = sketch_ptr->k_;
-    sketch_ptr->items_ = new float[sketch_ptr->k_];
-    sketch_ptr->min_value_ = std::numeric_limits<float>::quiet_NaN();
-    sketch_ptr->max_value_ = std::numeric_limits<float>::quiet_NaN();
-    sketch_ptr->is_level_zero_sorted_ = false;
-  } else {
-    is.read((char*)&(sketch_ptr->n_), sizeof(sketch_ptr->n_));
-    is.read((char*)&(sketch_ptr->min_k_), sizeof(sketch_ptr->min_k_));
-    is.read((char*)&(sketch_ptr->num_levels_), sizeof(sketch_ptr->num_levels_));
-    is.read((char*)&unused, sizeof(unused));
-    sketch_ptr->levels_ = new uint32_t[sketch_ptr->num_levels_ + 1];
-    // the last integer in levels_ is not serialized because it can be derived
-    is.read((char*)sketch_ptr->levels_, sizeof(sketch_ptr->levels_[0]) * sketch_ptr->num_levels_);
-    const uint32_t capacity(kll_helper::compute_total_capacity(sketch_ptr->k_, sketch_ptr->m_, sketch_ptr->num_levels_));
-    sketch_ptr->levels_[sketch_ptr->num_levels_] = capacity;
-    is.read((char*)&(sketch_ptr->min_value_), sizeof(sketch_ptr->min_value_));
-    is.read((char*)&(sketch_ptr->max_value_), sizeof(sketch_ptr->max_value_));
-    sketch_ptr->items_ = new float[capacity];
-    is.read((char*)&(sketch_ptr->items_[sketch_ptr->levels_[0]]), sizeof(sketch_ptr->items_[0]) * sketch_ptr->get_num_retained());
-    sketch_ptr->is_level_zero_sorted_ = (flags & (1 << kll_flags::IS_LEVEL_ZERO_SORTED)) > 0;
-  }
+  std::unique_ptr<kll_sketch> sketch_ptr(is_empty ? new kll_sketch(k) : new kll_sketch(k, flags, is));
   return std::move(sketch_ptr);
+}
+
+kll_sketch::kll_sketch(uint16_t k, uint8_t flags, std::istream& is) {
+  k_ = k;
+  m_ = DEFAULT_M;
+  is.read((char*)&n_, sizeof(n_));
+  is.read((char*)&min_k_, sizeof(min_k_));
+  is.read((char*)&num_levels_, sizeof(num_levels_));
+  uint8_t unused;
+  is.read((char*)&unused, sizeof(unused));
+  levels_ = new uint32_t[num_levels_ + 1];
+  levels_size_ = num_levels_ + 1;
+  // the last integer in levels_ is not serialized because it can be derived
+  is.read((char*)levels_, sizeof(levels_[0]) * num_levels_);
+  const uint32_t capacity(kll_helper::compute_total_capacity(k_, m_, num_levels_));
+  levels_[num_levels_] = capacity;
+  deserialize_items<float>(is, &min_value_, 1);
+  deserialize_items<float>(is, &max_value_, 1);
+  items_ = new float[capacity];
+  items_size_ = capacity;
+  const auto num_items(levels_[num_levels_] - levels_[0]);
+  deserialize_items<float>(is, &items_[levels_[0]], num_items);
+  is_level_zero_sorted_ = (flags & (1 << kll_flags::IS_LEVEL_ZERO_SORTED)) > 0;
 }
 
 /*

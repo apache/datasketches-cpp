@@ -198,6 +198,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
     auto sketch_ptr(kll_sketch::deserialize(s));
     CPPUNIT_ASSERT_EQUAL(sketch_ptr->get_serialized_size_bytes(), (uint32_t) s.tellg());
+    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
     CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch_ptr->is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL(sketch.get_n(), sketch_ptr->get_n());
@@ -206,7 +207,9 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_max_value(), sketch_ptr->get_max_value());
     CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(false), sketch_ptr->get_normalized_rank_error(false));
     CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch_ptr->get_normalized_rank_error(true));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(0.5), sketch_ptr->get_rank(0.5));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch_ptr->get_quantile(0.5));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(0), sketch_ptr->get_rank(0));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(n), sketch_ptr->get_rank(n));
   }
 
   void floor_of_log2_of_fraction() {
