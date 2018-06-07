@@ -16,7 +16,9 @@
 namespace sketches {
 
 kll_sketch::kll_sketch(uint16_t k) {
-  // TODO: check k
+  if (k < MIN_K or k > MAX_K) {
+    throw std::invalid_argument("K must be >= " + std::to_string(MIN_K) + " and <= " + std::to_string(MAX_K) + ": " + std::to_string(k));
+  }
   k_ = k;
   m_ = DEFAULT_M;
   min_k_ = k;

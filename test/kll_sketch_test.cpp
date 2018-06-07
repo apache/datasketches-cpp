@@ -19,7 +19,9 @@ static const double NUMERIC_NOISE_TOLERANCE = 1E-6;
 class kll_sketch_test: public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(kll_sketch_test);
+  CPPUNIT_TEST(k_limits);
   CPPUNIT_TEST(empty);
+  CPPUNIT_TEST(bad_get_quantile);
   CPPUNIT_TEST(one_item);
   CPPUNIT_TEST(many_items_exact_mode);
   CPPUNIT_TEST(many_items_estimation_mode);
@@ -28,12 +30,21 @@ class kll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(serialize_deserialize_empty);
   CPPUNIT_TEST(serialize_deserialize);
   CPPUNIT_TEST(floor_of_log2_of_fraction);
+  CPPUNIT_TEST(out_of_order_split_points);
+  CPPUNIT_TEST(nan_split_point);
   CPPUNIT_TEST(merge);
   CPPUNIT_TEST(merge_lower_k);
   CPPUNIT_TEST(merge_empty_lower_k);
   CPPUNIT_TEST(merge_min_value_from_other);
   CPPUNIT_TEST(merge_min_and_max_from_other);
   CPPUNIT_TEST_SUITE_END();
+
+  void k_limits() {
+    kll_sketch sketch1(kll_sketch::MIN_K); // this should work
+    kll_sketch sketch2(kll_sketch::MAX_K); // this should work
+    CPPUNIT_ASSERT_THROW(new kll_sketch(kll_sketch::MIN_K - 1), std::invalid_argument);
+    // MAX_K + 1 makes no sense because k is uint16_t
+  }
 
   void empty() {
     kll_sketch sketch;
@@ -50,6 +61,12 @@ class kll_sketch_test: public CppUnit::TestFixture {
     const float split_points[1] {0};
     CPPUNIT_ASSERT(!sketch.get_PMF(split_points, 1));
     CPPUNIT_ASSERT(!sketch.get_CDF(split_points, 1));
+  }
+
+  void bad_get_quantile() {
+    kll_sketch sketch;
+    sketch.update(0); // has to be non-empty to reach the check
+    CPPUNIT_ASSERT_THROW(sketch.get_quantile(-1), std::invalid_argument);
   }
 
   void one_item() {
@@ -222,6 +239,20 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(6, 2));
     CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(7, 2));
     CPPUNIT_ASSERT_EQUAL((uint8_t) 2, kll_helper::floor_of_log2_of_fraction(8, 2));
+  }
+
+  void out_of_order_split_points() {
+    kll_sketch sketch;
+    sketch.update(0); // has too be non-empty to reach the check
+    float split_points[2] = {1, 0};
+    CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 2), std::invalid_argument);
+  }
+
+  void nan_split_point() {
+    kll_sketch sketch;
+    sketch.update(0); // has too be non-empty to reach the check
+    float split_points[1] = {std::numeric_limits<float>::quiet_NaN()};
+    CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 1), std::invalid_argument);
   }
 
   void merge() {

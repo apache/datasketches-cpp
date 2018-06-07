@@ -127,7 +127,10 @@ namespace sketches {
 
 class kll_sketch {
   public:
+    static const uint8_t DEFAULT_M = 8;
     static const uint16_t DEFAULT_K = 200;
+    static const uint16_t MIN_K = DEFAULT_M;
+    static const uint16_t MAX_K = (1 << 16) - 1; // serialized as an uint16_t
 
     explicit kll_sketch(uint16_t k = DEFAULT_K);
     ~kll_sketch();
@@ -161,10 +164,6 @@ class kll_sketch {
 #endif
 
   private:
-    static const uint8_t DEFAULT_M = 8;
-    static const uint16_t MIN_K = DEFAULT_M;
-    static const uint16_t MAX_K = (1 << 16) - 1; // serialized as an uint16_t
-
     /* Serialized sketch layout:
      *  Adr:
      *      ||    7    |   6   |    5   |    4   |    3   |    2    |    1   |      0       |
