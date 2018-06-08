@@ -14,15 +14,17 @@
 #ifdef KLL_VALIDATION
 
 // This is to make sure the implementation matches exactly the reference implementation in OCaml.
-// Conditional compilation is used because the implementation needs a few modifications
-// - from random choice to deterministic
+// Conditional compilation is used because the implementation needs a few modifications:
+// - switch from random choice to deterministic
 // - a few methods to expose internals of the sketch
 
 namespace sketches {
 
-static constexpr unsigned num_tests = 114;
+uint32_t kll_next_offset; // to make kll_sketch deterministic
 
-static const int64_t correct_results[num_tests * 7] = {
+constexpr unsigned num_tests = 114;
+
+const int64_t correct_results[num_tests * 7] = {
     0, 200, 180, 3246533, 1, 180, 1098352976109474698,
     1, 200, 198, 8349603, 1, 198, 686681527497651888,
     2, 200, 217, 676491, 2, 117, 495856134049157644,
@@ -149,13 +151,13 @@ class kll_sketch_validation: public CppUnit::TestFixture {
 
   void validation() {
     for (unsigned i = 0; i < num_tests; i++) {
-      kll_sketch::next_offset = 0;
       assert (correct_results[7 * i] == i);
       unsigned k(correct_results[7 * i + 1]);
       unsigned n(correct_results[7 * i + 2]);
       unsigned stride(correct_results[7 * i + 3]);
       std::unique_ptr<int[]> input_array = make_input_array(n, stride);
-      kll_sketch sketch(k);
+      kll_sketch<float> sketch(k);
+      kll_next_offset = 0;
       for (unsigned j = 0; j < n; j++) {
         sketch.update(input_array[j]);
       }

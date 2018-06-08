@@ -37,17 +37,18 @@ class kll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(merge_empty_lower_k);
   CPPUNIT_TEST(merge_min_value_from_other);
   CPPUNIT_TEST(merge_min_and_max_from_other);
+  CPPUNIT_TEST(sketch_of_ints);
   CPPUNIT_TEST_SUITE_END();
 
   void k_limits() {
-    kll_sketch sketch1(kll_sketch::MIN_K); // this should work
-    kll_sketch sketch2(kll_sketch::MAX_K); // this should work
-    CPPUNIT_ASSERT_THROW(new kll_sketch(kll_sketch::MIN_K - 1), std::invalid_argument);
+    kll_sketch<float> sketch1(kll_sketch<float>::MIN_K); // this should work
+    kll_sketch<float> sketch2(kll_sketch<float>::MAX_K); // this should work
+    CPPUNIT_ASSERT_THROW(new kll_sketch<float>(kll_sketch<float>::MIN_K - 1), std::invalid_argument);
     // MAX_K + 1 makes no sense because k is uint16_t
   }
 
   void empty() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     CPPUNIT_ASSERT(sketch.is_empty());
     CPPUNIT_ASSERT(!sketch.is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL(0ull, sketch.get_n());
@@ -64,13 +65,13 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void bad_get_quantile() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     sketch.update(0); // has to be non-empty to reach the check
     CPPUNIT_ASSERT_THROW(sketch.get_quantile(-1), std::invalid_argument);
   }
 
   void one_item() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     sketch.update(1);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT(!sketch.is_estimation_mode());
@@ -90,7 +91,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void many_items_exact_mode() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     const uint32_t n(200);
     for (uint32_t i = 0; i < n; i++) {
       sketch.update(i);
@@ -118,7 +119,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void many_items_estimation_mode() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     const int n(1000000);
     for (int i = 0; i < n; i++) {
       sketch.update(i);
@@ -159,7 +160,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void consistency_between_get_rank_and_get_PMF_CDF() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     const int n = 1000;
     float values[n];
     for (int i = 0; i < n; i++) {
@@ -179,8 +180,10 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void deserialize_from_java() {
-    std::ifstream is("src/kll_sketch_from_java.bin", std::ios::binary);
-    auto sketch_ptr(kll_sketch::deserialize(is));
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("src/kll_sketch_from_java.bin", std::ios::binary);
+    auto sketch_ptr(kll_sketch<float>::deserialize(is));
     CPPUNIT_ASSERT(!sketch_ptr->is_empty());
     CPPUNIT_ASSERT(sketch_ptr->is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL(1000000ull, sketch_ptr->get_n());
@@ -190,11 +193,11 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void serialize_deserialize_empty() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
-    auto sketch_ptr(kll_sketch::deserialize(s));
+    auto sketch_ptr(kll_sketch<float>::deserialize(s));
     CPPUNIT_ASSERT_EQUAL(sketch_ptr->get_serialized_size_bytes(), (uint32_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
     CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch_ptr->is_estimation_mode());
@@ -207,13 +210,13 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void serialize_deserialize() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     const int n(1000);
     for (int i = 0; i < n; i++) sketch.update(i);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
-    auto sketch_ptr(kll_sketch::deserialize(s));
+    auto sketch_ptr(kll_sketch<float>::deserialize(s));
     CPPUNIT_ASSERT_EQUAL(sketch_ptr->get_serialized_size_bytes(), (uint32_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
@@ -242,22 +245,22 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void out_of_order_split_points() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     sketch.update(0); // has too be non-empty to reach the check
     float split_points[2] = {1, 0};
     CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 2), std::invalid_argument);
   }
 
   void nan_split_point() {
-    kll_sketch sketch;
+    kll_sketch<float> sketch;
     sketch.update(0); // has too be non-empty to reach the check
     float split_points[1] = {std::numeric_limits<float>::quiet_NaN()};
     CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 1), std::invalid_argument);
   }
 
   void merge() {
-    kll_sketch sketch1;
-    kll_sketch sketch2;
+    kll_sketch<float> sketch1;
+    kll_sketch<float> sketch2;
     const int n = 10000;
     for (int i = 0; i < n; i++) {
       sketch1.update(i);
@@ -279,8 +282,8 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void merge_lower_k() {
-    kll_sketch sketch1(256);
-    kll_sketch sketch2(128);
+    kll_sketch<float> sketch1(256);
+    kll_sketch<float> sketch2(128);
     const int n = 10000;
     for (int i = 0; i < n; i++) {
       sketch1.update(i);
@@ -309,8 +312,8 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void merge_empty_lower_k() {
-    kll_sketch sketch1(256);
-    kll_sketch sketch2(128);
+    kll_sketch<float> sketch1(256);
+    kll_sketch<float> sketch2(128);
     const int n = 10000;
     for (int i = 0; i < n; i++) {
       sketch1.update(i);
@@ -329,8 +332,8 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void merge_min_value_from_other() {
-    kll_sketch sketch1;
-    kll_sketch sketch2;
+    kll_sketch<float> sketch1;
+    kll_sketch<float> sketch2;
     sketch1.update(1);
     sketch2.update(2);
     sketch2.merge(sketch1);
@@ -339,12 +342,39 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void merge_min_and_max_from_other() {
-    kll_sketch sketch1;
+    kll_sketch<float> sketch1;
     for (int i = 0; i < 1000000; i++) sketch1.update(i);
-    kll_sketch sketch2;
+    kll_sketch<float> sketch2;
     sketch2.merge(sketch1);
     CPPUNIT_ASSERT_EQUAL(0.0f, sketch2.get_min_value());
     CPPUNIT_ASSERT_EQUAL(999999.0f, sketch2.get_max_value());
+  }
+
+  void sketch_of_ints() {
+    kll_sketch<int> sketch;
+    CPPUNIT_ASSERT_THROW(sketch.get_quantile(0), std::runtime_error);
+    CPPUNIT_ASSERT_THROW(sketch.get_min_value(), std::runtime_error);
+    CPPUNIT_ASSERT_THROW(sketch.get_max_value(), std::runtime_error);
+
+    const int n(1000);
+    for (int i = 0; i < n; i++) sketch.update(i);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch.serialize(s);
+    CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
+    auto sketch_ptr(kll_sketch<int>::deserialize(s));
+    CPPUNIT_ASSERT_EQUAL(sketch_ptr->get_serialized_size_bytes(), (uint32_t) s.tellg());
+    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
+    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch_ptr->is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_n(), sketch_ptr->get_n());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_num_retained(), sketch_ptr->get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_min_value(), sketch_ptr->get_min_value());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_max_value(), sketch_ptr->get_max_value());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(false), sketch_ptr->get_normalized_rank_error(false));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch_ptr->get_normalized_rank_error(true));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch_ptr->get_quantile(0.5));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(0), sketch_ptr->get_rank(0));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(n), sketch_ptr->get_rank(n));
   }
 
 };
