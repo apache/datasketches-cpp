@@ -315,6 +315,7 @@ class kll_sketch {
       return get_normalized_rank_error(min_k_, pmf);
     }
 
+    // this needs to be specialized to return correct size if sizeof(T) doesn't match the actual serialized size
     uint32_t get_serialized_size_bytes() const {
       if (is_empty()) { return EMPTY_SIZE_BYTES; }
       // the last integer in the levels_ array is not serialized because it can be derived
@@ -761,9 +762,10 @@ std::ostream& operator<<(std::ostream& os, kll_sketch<T> const& sketch) {
   os << "   Capacity items : " << sketch.items_size_ << std::endl;
   os << "   Retained items : " << sketch.get_num_retained() << std::endl;
   os << "   Storage bytes  : " << sketch.get_serialized_size_bytes() << std::endl;
+  using std::to_string; // to allow overriding to_string() for a custom type
   if (!sketch.is_empty()) {
-    os << "   Min value      : " << std::to_string(sketch.get_min_value()) << std::endl;
-    os << "   Max value      : " << std::to_string(sketch.get_max_value()) << std::endl;
+    os << "   Min value      : " << to_string(sketch.get_min_value()) << std::endl;
+    os << "   Max value      : " << to_string(sketch.get_max_value()) << std::endl;
   }
   os << "### End sketch summary" << std::endl;
 
@@ -790,7 +792,7 @@ std::ostream& operator<<(std::ostream& os, kll_sketch<T> const& sketch) {
         os << " level " << (unsigned int) level << ":" << std::endl;
       }
       for (uint32_t i = from_index; i < to_index; i++) {
-        os << "   " << std::to_string(sketch.items_[i]) << std::endl;
+        os << "   " << to_string(sketch.items_[i]) << std::endl;
       }
       level++;
     }

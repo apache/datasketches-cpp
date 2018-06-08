@@ -11,10 +11,47 @@
 #include <cmath>
 #include <cstring>
 
+// this is for debug printing of kll_sketch using ostream& operator<<()
+namespace std {
+  string to_string(const string& str) {
+    return str;
+  }
+}
+
 namespace sketches {
 
 static const double RANK_EPS_FOR_K_200 = 0.0133;
 static const double NUMERIC_NOISE_TOLERANCE = 1E-6;
+
+template <>
+void serialize_items<std::string>(std::ostream& os, const std::string* items, unsigned num) {
+  for (unsigned i = 0; i < num; i++) {
+    if (items[i].length() > 255) throw std::invalid_argument("strings must be up to 255 bytes long");
+    const uint8_t length(items[i].length());
+    os.write((char*)&length, sizeof(length));
+    os.write(items[i].data(), length);
+  }
+}
+
+template <>
+void deserialize_items<std::string>(std::istream& is, std::string* items, unsigned num) {
+  static char str[255]; // assume 255 bytes max as it was enforced during serialization
+  for (unsigned i = 0; i < num; i++) {
+    uint8_t length;
+    is.read((char*)&length, sizeof(length));
+    is.read(str, length);
+    items[i] = std::string(str, length);
+  }
+}
+
+// this method won't work for std::string as it is in the generic template
+template<>
+uint32_t kll_sketch<std::string>::get_serialized_size_bytes() const {
+  if (is_empty()) return EMPTY_SIZE_BYTES;
+  return 0; // possible to calculate the size of all retained strings (plus min and max), but slow
+  // this can throw as well, but debug pint using ostream& operator<<() won't work
+  //throw std::runtime_error("get_serialized_size_bytes() is not supported for std::string type");
+}
 
 class kll_sketch_test: public CppUnit::TestFixture {
 
@@ -38,6 +75,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(merge_min_value_from_other);
   CPPUNIT_TEST(merge_min_and_max_from_other);
   CPPUNIT_TEST(sketch_of_ints);
+  CPPUNIT_TEST(sketch_of_strings);
   CPPUNIT_TEST_SUITE_END();
 
   void k_limits() {
@@ -358,11 +396,12 @@ class kll_sketch_test: public CppUnit::TestFixture {
 
     const int n(1000);
     for (int i = 0; i < n; i++) sketch.update(i);
+
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
     auto sketch_ptr(kll_sketch<int>::deserialize(s));
-    CPPUNIT_ASSERT_EQUAL(sketch_ptr->get_serialized_size_bytes(), (uint32_t) s.tellg());
+     CPPUNIT_ASSERT_EQUAL(sketch_ptr->get_serialized_size_bytes(), (uint32_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
     CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch_ptr->is_estimation_mode());
@@ -375,6 +414,45 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch_ptr->get_quantile(0.5));
     CPPUNIT_ASSERT_EQUAL(sketch.get_rank(0), sketch_ptr->get_rank(0));
     CPPUNIT_ASSERT_EQUAL(sketch.get_rank(n), sketch_ptr->get_rank(n));
+  }
+
+  void sketch_of_strings() {
+    kll_sketch<std::string> sketch;
+    CPPUNIT_ASSERT_THROW(sketch.get_quantile(0), std::runtime_error);
+    CPPUNIT_ASSERT_THROW(sketch.get_min_value(), std::runtime_error);
+    CPPUNIT_ASSERT_THROW(sketch.get_max_value(), std::runtime_error);
+    CPPUNIT_ASSERT_EQUAL(8u, sketch.get_serialized_size_bytes());
+
+    const int n(1000);
+    for (int i = 0; i < n; i++) sketch.update(std::to_string(i));
+
+    //CPPUNIT_ASSERT_THROW(sketch.get_serialized_size_bytes(), std::runtime_error);
+
+    CPPUNIT_ASSERT_EQUAL(std::string("0"), sketch.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(std::string("999"), sketch.get_max_value());
+
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch.serialize(s);
+    auto sketch_ptr(kll_sketch<std::string>::deserialize(s));
+    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
+    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch_ptr->is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_n(), sketch_ptr->get_n());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_num_retained(), sketch_ptr->get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_min_value(), sketch_ptr->get_min_value());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_max_value(), sketch_ptr->get_max_value());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(false), sketch_ptr->get_normalized_rank_error(false));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch_ptr->get_normalized_rank_error(true));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch_ptr->get_quantile(0.5));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(std::to_string(0)), sketch_ptr->get_rank(std::to_string(0)));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(std::to_string(n)), sketch_ptr->get_rank(std::to_string(n)));
+
+    // to take a look using hexdump
+    std::ofstream os("kll-string.bin");
+    sketch.serialize(os);
+
+    // debug print
+    std::cout << sketch;
   }
 
 };
