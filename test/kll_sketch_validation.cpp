@@ -18,7 +18,7 @@
 // - switch from random choice to deterministic
 // - a few methods to expose internals of the sketch
 
-namespace sketches {
+namespace datasketches {
 
 uint32_t kll_next_offset; // to make kll_sketch deterministic
 
@@ -223,6 +223,6 @@ class kll_sketch_validation: public CppUnit::TestFixture {
 
 CPPUNIT_TEST_SUITE_REGISTRATION(kll_sketch_validation);
 
-} /* namespace sketches */
+} /* namespace datasketches */
 
 #endif

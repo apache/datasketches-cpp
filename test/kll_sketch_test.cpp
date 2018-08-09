@@ -18,7 +18,7 @@ namespace std {
   }
 }
 
-namespace sketches {
+namespace datasketches {
 
 static const double RANK_EPS_FOR_K_200 = 0.0133;
 static const double NUMERIC_NOISE_TOLERANCE = 1E-6;
@@ -459,4 +459,4 @@ class kll_sketch_test: public CppUnit::TestFixture {
 
 CPPUNIT_TEST_SUITE_REGISTRATION(kll_sketch_test);
 
-} /* namespace sketches */
+} /* namespace datasketches */

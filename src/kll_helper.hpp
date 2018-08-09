@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <assert.h>
 
-namespace sketches {
+namespace datasketches {
 
 static std::independent_bits_engine<std::mt19937, 1, uint32_t> random_bit;
 
@@ -301,6 +301,6 @@ class kll_helper {
 
 };
 
-} /* namespace sketches */
+} /* namespace datasketches */
 
 #endif // KLL_HELPER_HPP_

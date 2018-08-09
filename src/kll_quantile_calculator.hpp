@@ -10,7 +10,7 @@
 #include <cmath>
 #include <assert.h>
 
-namespace sketches {
+namespace datasketches {
 
 template <typename T>
 class kll_quantile_calculator {
@@ -163,6 +163,6 @@ class kll_quantile_calculator {
 
 };
 
-} /* namespace sketches */
+} /* namespace datasketches */
 
 #endif // KLL_QUANTILE_CALCULATOR_HPP_

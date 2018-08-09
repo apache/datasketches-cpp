@@ -15,7 +15,7 @@
 #include "kll_quantile_calculator.hpp"
 #include "kll_helper.hpp"
 
-namespace sketches {
+namespace datasketches {
 
 /*
  * Implementation of a very compact quantiles sketch with lazy compaction scheme
@@ -36,7 +36,7 @@ namespace sketches {
  * <p>The <i>normalized rank</i> (<i>rank</i>) of any specific value is defined as its
  * <i>absolute rank</i> divided by <i>N</i>.
  * Thus, the <i>normalized rank</i> is a value between zero and one.
- * In the documentation and Javadocs for this sketch <i>absolute rank</i> is never used so any
+ * In the documentation for this sketch <i>absolute rank</i> is never used so any
  * reference to just <i>rank</i> should be interpreted to mean <i>normalized rank</i>.
  *
  * <p>This sketch is configured with a parameter <i>k</i>, which affects the size of the sketch
@@ -802,6 +802,6 @@ std::ostream& operator<<(std::ostream& os, kll_sketch<T> const& sketch) {
   return os;
 }
 
-} /* namespace sketches */
+} /* namespace datasketches */
 
 #endif
