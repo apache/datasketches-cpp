@@ -6,7 +6,6 @@
 #ifndef KLL_SKETCH_HPP_
 #define KLL_SKETCH_HPP_
 
-#include <ostream>
 #include <memory>
 #include <limits>
 #include <iostream>
