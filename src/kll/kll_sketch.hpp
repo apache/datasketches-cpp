@@ -363,8 +363,8 @@ class kll_sketch {
       const uint8_t family(FAMILY);
       os.write((char*)&family, sizeof(family));
       const uint8_t flags(
-          (is_empty() ? 1 << flags::IS_EMPTY : 0)
-        | (is_level_zero_sorted_ ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
+          (is_empty() ? 1 << kll_flags::IS_EMPTY : 0)
+        | (is_level_zero_sorted_ ? 1 << kll_flags::IS_LEVEL_ZERO_SORTED : 0)
       );
       os.write((char*)&flags, sizeof(flags));
       os.write((char*)&k_, sizeof(k_));
@@ -402,7 +402,7 @@ class kll_sketch {
         throw std::invalid_argument("Possible corruption: M must be " + std::to_string(DEFAULT_M)
             + ": " + std::to_string(m));
       }
-      const bool is_empty(flags & (1 << flags::IS_EMPTY));
+      const bool is_empty(flags & (1 << kll_flags::IS_EMPTY));
       if (is_empty) {
         if (preamble_ints != PREAMBLE_INTS_EMPTY) {
           throw std::invalid_argument("Possible corruption: preamble ints must be "
@@ -466,7 +466,7 @@ class kll_sketch {
     static const uint8_t SERIAL_VERSION = 1;
     static const uint8_t FAMILY = 15;
 
-    enum flags { IS_EMPTY, IS_LEVEL_ZERO_SORTED };
+    enum kll_flags { IS_EMPTY, IS_LEVEL_ZERO_SORTED };
 
     static const uint8_t PREAMBLE_INTS_EMPTY = 2;
     static const uint8_t PREAMBLE_INTS_NONEMPTY = 5;
@@ -505,7 +505,7 @@ class kll_sketch {
       items_size_ = capacity;
       const auto num_items(levels_[num_levels_] - levels_[0]);
       deserialize_items<T>(is, &items_[levels_[0]], num_items);
-      is_level_zero_sorted_ = (flags & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
+      is_level_zero_sorted_ = (flags & (1 << kll_flags::IS_LEVEL_ZERO_SORTED)) > 0;
     }
 
     // The following code is only valid in the special case of exactly reaching capacity while updating.
