@@ -169,6 +169,39 @@ class kll_sketch {
       is_level_zero_sorted_ = false;
     }
 
+    kll_sketch(const kll_sketch& other) {
+      k_ = other.k_;
+      m_ = other.m_;
+      min_k_ = other.min_k_;
+      n_ = other.n_;
+      num_levels_ = other.num_levels_;
+      levels_size_ = other.levels_size_;
+      levels_ = new uint32_t[levels_size_];
+      std::copy(&other.levels_[0], &other.levels_[levels_size_], levels_);
+      items_size_ = other.items_size_;
+      items_ = new T[items_size_];
+      std::copy(&other.items_[0], &other.items_[items_size_], items_);
+      min_value_ = other.min_value_;
+      max_value_ = other.max_value_;
+      is_level_zero_sorted_ = other.is_level_zero_sorted_;
+    }
+
+    kll_sketch& operator=(kll_sketch other) {
+      std::swap(k_, other.k_);
+      std::swap(m_, other.m_);
+      std::swap(min_k_, other.min_k_);
+      std::swap(n_, other.n_);
+      std::swap(num_levels_, other.num_levels_);
+      std::swap(levels_size_, other.levels_size_);
+      std::swap(levels_, other.levels_);
+      std::swap(items_size_, other.items_size_);
+      std::swap(items_, other.items_);
+      std::swap(min_value_, other.min_value_);
+      std::swap(max_value_, other.max_value_);
+      std::swap(is_level_zero_sorted_, other.is_level_zero_sorted_);
+      return *this;
+    }
+
     ~kll_sketch() {
       delete [] levels_;
       delete [] items_;
@@ -480,7 +513,7 @@ class kll_sketch {
     void compress_while_updating(void) {
       const uint8_t level(find_level_to_compact());
 
-      // It is important to do add the new top level right here. Be aware that this operation
+      // It is important to add the new top level right here. Be aware that this operation
       // grows the buffer and shifts the data and also the boundaries of the data and grows the
       // levels array and increments numLevels_
       if (level == (num_levels_ - 1)) {
