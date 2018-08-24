@@ -23,11 +23,11 @@ CouponHashSet::CouponHashSet(const CouponHashSet& that)
 CouponHashSet::CouponHashSet(const CouponHashSet& that, const TgtHllType tgtHllType)
   : CouponList(that, tgtHllType) {}
 
-CouponHashSet* CouponHashSet::copy() {
+CouponHashSet* CouponHashSet::copy() const {
   return new CouponHashSet(*this);
 }
 
-CouponHashSet* CouponHashSet::copyAs(const TgtHllType tgtHllType) {
+CouponHashSet* CouponHashSet::copyAs(const TgtHllType tgtHllType) const {
   return new CouponHashSet(*this, tgtHllType);
 }
 
@@ -46,11 +46,11 @@ HllSketchImpl* CouponHashSet::couponUpdate(int coupon) {
   return this;
 }
 
-int CouponHashSet::getMemDataStart() {
+int CouponHashSet::getMemDataStart() const {
   return HllUtil::HASH_SET_INT_ARR_START;
 }
 
-int CouponHashSet::getPreInts() {
+int CouponHashSet::getPreInts() const {
   return HllUtil::HASH_SET_PREINTS;
 }
 

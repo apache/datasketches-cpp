@@ -13,21 +13,23 @@ namespace datasketches {
 class HllArray : public HllSketchImpl {
   public:
     explicit HllArray(const int lgConfigK, const TgtHllType tgtHllType);
-    explicit HllArray(HllArray& that);
+    explicit HllArray(const HllArray& that);
 
     static HllArray* newHll(const int lgConfigK, const TgtHllType tgtHllType);
 
     virtual ~HllArray();
 
-    virtual HllArray* copy() = 0;
-    virtual HllArray* copyAs(const TgtHllType tgtHllType);
+    virtual HllArray* copy() const = 0;
+    virtual HllArray* copyAs(const TgtHllType tgtHllType) const;
+
+    virtual void serialize(std::ostream& os, const bool comapct) const;
 
     virtual HllSketchImpl* couponUpdate(const int coupon);
 
-    virtual double getEstimate();
-    virtual double getCompositeEstimate();
-    virtual double getLowerBound(const int numStdDev);
-    virtual double getUpperBound(const int numStdDev);
+    virtual double getEstimate() const;
+    virtual double getCompositeEstimate() const;
+    virtual double getLowerBound(const int numStdDev) const;
+    virtual double getUpperBound(const int numStdDev) const;
 
     virtual HllSketchImpl* reset();
 
@@ -35,35 +37,35 @@ class HllArray : public HllSketchImpl {
 
     void decNumAtCurMin();
 
-    virtual CurMode getCurMode();
+    virtual CurMode getCurMode() const;
 
-    int getCurMin();
-    int getNumAtCurMin();
-    double getHipAccum();
+    int getCurMin() const;
+    int getNumAtCurMin() const;
+    double getHipAccum() const;
 
-    virtual int getHllByteArrBytes() = 0;
+    virtual int getHllByteArrBytes() const = 0;
 
-    virtual std::unique_ptr<PairIterator> getIterator() = 0;
+    virtual std::unique_ptr<PairIterator> getIterator() const = 0;
 
-    virtual std::unique_ptr<PairIterator> getAuxIterator();
+    virtual std::unique_ptr<PairIterator> getAuxIterator() const;
 
-    virtual int getUpdatableSerializationBytes();
-    virtual int getCompactSerializationBytes();
+    virtual int getUpdatableSerializationBytes() const;
+    virtual int getCompactSerializationBytes() const;
 
-    virtual bool isOutOfOrderFlag();
-    virtual bool isEmpty();
-    virtual bool isCompact();
+    virtual bool isOutOfOrderFlag() const;
+    virtual bool isEmpty() const;
+    virtual bool isCompact() const;
 
     virtual void putOutOfOrderFlag(const bool flag);
 
-    double getKxQ0();
-    double getKxQ1();
+    double getKxQ0() const;
+    double getKxQ1() const;
 
-    virtual int getMemDataStart();
-    virtual int getPreInts();
+    virtual int getMemDataStart() const;
+    virtual int getPreInts() const;
 
+    virtual int getSlot(int slotNo) const = 0;
     virtual void putSlot(const int slotNo, const int value) = 0;
-    virtual int getSlot(int slotNo) = 0;
 
     void putCurMin(const int curMin);
     void putHipAccum(const double hipAccum);
@@ -78,9 +80,9 @@ class HllArray : public HllSketchImpl {
   protected:
     // TODO: does this need to be static?
     static void hipAndKxQIncrementalUpdate(HllArray& host, const int oldValue, const int newValue);
-    double getHllBitMapEstimate(const int lgConfigK, const int curMin, const int numAtCurMin);
-    double getHllRawEstimate(const int lgConfigK, const double kxqSum);
-    virtual AuxHashMap* getAuxHashMap();
+    double getHllBitMapEstimate(const int lgConfigK, const int curMin, const int numAtCurMin) const;
+    double getHllRawEstimate(const int lgConfigK, const double kxqSum) const;
+    virtual AuxHashMap* getAuxHashMap() const;
 
     double hipAccum;
     double kxq0;

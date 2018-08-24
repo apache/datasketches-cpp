@@ -21,59 +21,48 @@ class BaseHllSketch {
     explicit BaseHllSketch() {}
     virtual ~BaseHllSketch() {}
 
-    bool isEstimationMode();
+    bool isEstimationMode() const;
 
-    virtual double getCompositeEstimate() = 0;
-    virtual double getEstimate() = 0;
-    virtual double getLowerBound(int numStdDev) = 0;
-    virtual double getUpperBound(int numStdDev) = 0;
+    virtual double getCompositeEstimate() const = 0;
+    virtual double getEstimate() const = 0;
+    virtual double getLowerBound(int numStdDev) const = 0;
+    virtual double getUpperBound(int numStdDev) const = 0;
 
-    virtual TgtHllType getTgtHllType() = 0;
-
-    virtual int getLgConfigK() = 0;
-
-    virtual bool isEmpty() = 0;
-
-    virtual bool isCompact() = 0;
+    virtual TgtHllType getTgtHllType() const = 0;
+    virtual int getLgConfigK() const = 0;
+    virtual bool isEmpty() const = 0;
+    virtual bool isCompact() const = 0;
 
     static int getSerializationVersion();
-
-    //static int getSerializationVersion(BaseHllSketch sketch);
-
-    virtual int getUpdatableSerializationBytes() = 0;
-
-    virtual int getCompactSerializationBytes() = 0;
+    virtual int getUpdatableSerializationBytes() const = 0;
+    virtual int getCompactSerializationBytes() const = 0;
 
     virtual void reset() = 0;
 
-    double getRelErr(const bool upperBound, const bool unioned,
-                     const int lgConfigK, const int numStdDev);
+    static double getRelErr(const bool upperBound, const bool unioned,
+                            const int lgConfigK, const int numStdDev);
 
-    //virtual char* toCompactByteArray();
+    virtual void serializeCompact(std::ostream& os) const = 0;
+    virtual void serializeUpdatable(std::ostream& os) const = 0;
 
-    //virtual char* toUpdatableByteArray();
-
-    virtual std::ostream& to_string(std::ostream& os);
-    virtual std::ostream& to_string(std::ostream& os, const bool summary, const bool detail, const bool auxDetail);
+    virtual std::ostream& to_string(std::ostream& os) const;
+    virtual std::ostream& to_string(std::ostream& os, const bool summary, const bool detail, const bool auxDetail) const;
     virtual std::ostream& to_string(std::ostream& os, const bool summary,
-                                    const bool detail, const bool auxDetail, const bool all) = 0;
+                                    const bool detail, const bool auxDetail, const bool all) const = 0;
 
     // TODO: is this portable?
     void update(const std::string datum);
-
     void update(const uint64_t datum);
-
     void update(const double datum);
-
     void update(const void* data, const size_t len);
 
 
   protected:
-    virtual bool isOutOfOrderFlag() = 0;
+    virtual bool isOutOfOrderFlag() const = 0;
 
     virtual void couponUpdate(int coupon) = 0;
 
-    virtual enum CurMode getCurMode() = 0;
+    virtual enum CurMode getCurMode() const = 0;
 
     static const uint64_t DEFAULT_UPDATE_SEED = 9001L;
     static const int KEY_BITS_26 = 26;

@@ -16,15 +16,15 @@ AbstractCoupons::AbstractCoupons(const int lgConfigK, const TgtHllType tgtHllTyp
 
 AbstractCoupons::~AbstractCoupons() {}
 
-double AbstractCoupons::getCompositeEstimate() { return getEstimate(); }
+double AbstractCoupons::getCompositeEstimate() const { return getEstimate(); }
 
-double AbstractCoupons::getEstimate() {
+double AbstractCoupons::getEstimate() const {
   const int couponCount = getCouponCount();
   const double est = CubicInterpolation::usingXAndYTables(couponCount);
   return fmax(est, couponCount);
 }
 
-double AbstractCoupons::getLowerBound(const int numStdDev) {
+double AbstractCoupons::getLowerBound(const int numStdDev) const {
   HllUtil::checkNumStdDev(numStdDev);
   const int couponCount = getCouponCount();
   const double est = CubicInterpolation::usingXAndYTables(couponCount);
@@ -32,7 +32,7 @@ double AbstractCoupons::getLowerBound(const int numStdDev) {
   return fmax(tmp, couponCount);
 }
 
-double AbstractCoupons::getUpperBound(const int numStdDev) {
+double AbstractCoupons::getUpperBound(const int numStdDev) const {
   HllUtil::checkNumStdDev(numStdDev);
   const int couponCount = getCouponCount();
   const double est = CubicInterpolation::usingXAndYTables(couponCount);
@@ -40,9 +40,9 @@ double AbstractCoupons::getUpperBound(const int numStdDev) {
   return fmax(tmp, couponCount);
 }
 
-bool AbstractCoupons::isEmpty() { return getCouponCount() == 0; }
+bool AbstractCoupons::isEmpty() const { return getCouponCount() == 0; }
 
-int AbstractCoupons::getUpdatableSerializationBytes() {
+int AbstractCoupons::getUpdatableSerializationBytes() const {
   return getMemDataStart() + (4 << getLgCouponArrInts());
 }
 

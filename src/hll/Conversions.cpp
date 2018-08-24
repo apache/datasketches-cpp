@@ -10,7 +10,7 @@
 
 namespace datasketches {
 
-Hll4Array* Conversions::convertToHll4(HllArray& srcHllArr) {
+Hll4Array* Conversions::convertToHll4(const HllArray& srcHllArr) {
   const int lgConfigK = srcHllArr.getLgConfigK();
   Hll4Array* hll4Array = new Hll4Array(lgConfigK);
   hll4Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());
@@ -49,7 +49,7 @@ Hll4Array* Conversions::convertToHll4(HllArray& srcHllArr) {
   return hll4Array;
 }
 
-int Conversions::curMinAndNum(HllArray& hllArr) {
+int Conversions::curMinAndNum(const HllArray& hllArr) {
   int curMin = 64;
   int numAtCurMin = 0;
   std::unique_ptr<PairIterator> itr = hllArr.getIterator();
@@ -66,7 +66,7 @@ int Conversions::curMinAndNum(HllArray& hllArr) {
   return HllUtil::pair(numAtCurMin, curMin);
 }
 
-Hll8Array* Conversions::convertToHll8(HllArray& srcHllArr) {
+Hll8Array* Conversions::convertToHll8(const HllArray& srcHllArr) {
   const int lgConfigK = srcHllArr.getLgConfigK();
   Hll8Array* hll8Array = new Hll8Array(lgConfigK);
   hll8Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());

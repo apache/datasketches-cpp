@@ -17,26 +17,27 @@ class CouponList : public AbstractCoupons {
 
     virtual ~CouponList();
 
-    virtual CouponList* copy();
-    virtual CouponList* copyAs(const TgtHllType tgtHllType);
+    virtual CouponList* copy() const;
+    virtual CouponList* copyAs(const TgtHllType tgtHllType) const;
 
     virtual HllSketchImpl* couponUpdate(int coupon);
 
+    virtual void serialize(std::ostream& os, const bool comapct) const;
+
+  protected:
     HllSketchImpl* promoteHeapListToSet(CouponList& list);
     HllSketchImpl* promoteHeapListOrSetToHll(CouponList& src);
 
-
-  protected:
-    virtual int getCouponCount();
-    virtual int getCompactSerializationBytes();
-    virtual std::unique_ptr<PairIterator> getIterator();
-    virtual int getMemDataStart();
-    virtual int getPreInts();
-    virtual bool isCompact();
-    virtual bool isOutOfOrderFlag();
+    virtual int getCouponCount() const;
+    virtual int getCompactSerializationBytes() const;
+    virtual std::unique_ptr<PairIterator> getIterator() const;
+    virtual int getMemDataStart() const;
+    virtual int getPreInts() const;
+    virtual bool isCompact() const;
+    virtual bool isOutOfOrderFlag() const;
     virtual void putOutOfOrderFlag(bool oooFlag);
 
-    virtual int getLgCouponArrInts();
+    virtual int getLgCouponArrInts() const;
     virtual int* getCouponIntArr();
 
     virtual CouponList* reset();

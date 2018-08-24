@@ -10,7 +10,7 @@
 
 namespace datasketches {
 
-Hll4Iterator::Hll4Iterator(Hll4Array& hllArray, const int lengthPairs)
+Hll4Iterator::Hll4Iterator(const Hll4Array& hllArray, const int lengthPairs)
   : HllPairIterator(lengthPairs),
     hllArray(hllArray)
 {}
@@ -35,7 +35,7 @@ Hll4Array::Hll4Array(const int lgConfigK) :
   auxHashMap = nullptr;
 }
 
-Hll4Array::Hll4Array(Hll4Array& that) :
+Hll4Array::Hll4Array(const Hll4Array& that) :
   HllArray(that)
 {
   // can determine hllByteArr size in parent class, no need to allocate here
@@ -54,27 +54,27 @@ Hll4Array::~Hll4Array() {
   }
 }
 
-Hll4Array* Hll4Array::copy() {
+Hll4Array* Hll4Array::copy() const {
   return new Hll4Array(*this);
 }
 
-std::unique_ptr<PairIterator> Hll4Array::getIterator() {
+std::unique_ptr<PairIterator> Hll4Array::getIterator() const {
   PairIterator* itr = new Hll4Iterator(*this, 1 << lgConfigK);
   return std::unique_ptr<PairIterator>(itr);
 }
 
-std::unique_ptr<PairIterator> Hll4Array::getAuxIterator() {
+std::unique_ptr<PairIterator> Hll4Array::getAuxIterator() const {
   if (auxHashMap != nullptr) {
     return auxHashMap->getIterator();
   }
   return nullptr;
 }
 
-int Hll4Array::getHllByteArrBytes() {
+int Hll4Array::getHllByteArrBytes() const {
   return hll4ArrBytes(lgConfigK);
 }
 
-AuxHashMap* Hll4Array::getAuxHashMap() {
+AuxHashMap* Hll4Array::getAuxHashMap() const {
   return auxHashMap;
 }
 
@@ -82,7 +82,7 @@ void Hll4Array::putAuxHashMap(AuxHashMap* auxHashMap) {
   this->auxHashMap = auxHashMap;
 }
 
-int Hll4Array::getSlot(const int slotNo) {
+int Hll4Array::getSlot(const int slotNo) const {
   int theByte = hllByteArr[slotNo >> 1];
   if ((slotNo & 1) > 0) { // odd?
     theByte >>= 4;

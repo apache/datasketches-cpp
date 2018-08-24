@@ -29,7 +29,7 @@ HllArray::HllArray(const int lgConfigK, const TgtHllType tgtHllType)
   hllByteArr = nullptr; // allocated in derived class
 }
 
-HllArray::HllArray(HllArray& that)
+HllArray::HllArray(const HllArray& that)
   : HllSketchImpl(that.lgConfigK, that.tgtHllType, CurMode::HLL) {
   hipAccum = that.getHipAccum();
   kxq0 = that.getKxQ0();
@@ -48,7 +48,7 @@ HllArray::~HllArray() {
   delete hllByteArr;
 }
 
-HllArray* HllArray::copyAs(const TgtHllType tgtHllType) {
+HllArray* HllArray::copyAs(const TgtHllType tgtHllType) const {
   if (tgtHllType == getTgtHllType()) {
     return (HllArray*) copy();
   }
@@ -68,6 +68,13 @@ HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
     default:
       throw std::invalid_argument("Only HLL_4, HLL_8 currently supported");
   }
+}
+
+void HllArray::serialize(std::ostream& os, const bool comapct) const {
+  // header
+
+  // array
+  return;
 }
 
 HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 (and 6 if ever added)
@@ -92,7 +99,7 @@ HllSketchImpl* HllArray::reset() {
   return new CouponList(lgConfigK, tgtHllType, CurMode::LIST);
 }
 
-double HllArray::getEstimate() {
+double HllArray::getEstimate() const {
   if (oooFlag) {
     return getCompositeEstimate();
   }
@@ -114,7 +121,7 @@ double HllArray::getEstimate() {
  * HLL4 always maintains both curMin and numAtCurMin dynamically. Nonetheless, the rules for
  * the very small values <= k where curMin = 0 still apply.
  */
-double HllArray::getLowerBound(const int numStdDev) {
+double HllArray::getLowerBound(const int numStdDev) const {
   HllUtil::checkNumStdDev(numStdDev);
   const int configK = 1 << lgConfigK;
   const double numNonZeros = ((curMin == 0) ? (configK - numAtCurMin) : configK);
@@ -138,7 +145,7 @@ double HllArray::getLowerBound(const int numStdDev) {
   return fmax(estimate / (1.0 + relErr), numNonZeros);
 }
 
-double HllArray::getUpperBound(const int numStdDev) {
+double HllArray::getUpperBound(const int numStdDev) const {
   HllUtil::checkNumStdDev(numStdDev);
   const int configK = 1 << lgConfigK;
 
@@ -169,7 +176,7 @@ double HllArray::getUpperBound(const int numStdDev) {
  * @return the composite estimate
  */
 // Original C: again-two-registers.c hhb_get_composite_estimate L1489
-double HllArray::getCompositeEstimate() {
+double HllArray::getCompositeEstimate() const {
   const double rawEst = getHllRawEstimate(lgConfigK, kxq0 + kxq1);
 
   const double* xArr = CompositeInterpolationXTable::get_x_arr(lgConfigK);
@@ -216,27 +223,27 @@ double HllArray::getCompositeEstimate() {
   return (avgEst > (crossOver * (1 << lgConfigK))) ? adjEst : linEst;
 }
 
-double HllArray::getKxQ0() {
+double HllArray::getKxQ0() const {
   return kxq0;
 }
 
-double HllArray::getKxQ1() {
+double HllArray::getKxQ1() const {
   return kxq1;
 }
 
-double HllArray::getHipAccum() {
+double HllArray::getHipAccum() const {
   return hipAccum;
 }
 
-int HllArray::getCurMin() {
+int HllArray::getCurMin() const {
   return curMin;
 }
 
-int HllArray::getNumAtCurMin() {
+int HllArray::getNumAtCurMin() const {
   return numAtCurMin;
 }
 
-CurMode HllArray::getCurMode() {
+CurMode HllArray::getCurMode() const {
   return curMode;
 }
 
@@ -268,11 +275,11 @@ void HllArray::addToHipAccum(const double delta) {
   hipAccum += delta;
 }
 
-bool HllArray::isCompact() {
+bool HllArray::isCompact() const {
   return false;
 }
 
-bool HllArray::isEmpty() {
+bool HllArray::isEmpty() const {
   const int configK = 1 << getLgConfigK();
   return (getCurMin() == 0) && (getNumAtCurMin() == configK);
 }
@@ -281,7 +288,7 @@ void HllArray::putOutOfOrderFlag(bool flag) {
   oooFlag = flag;
 }
 
-bool HllArray::isOutOfOrderFlag() {
+bool HllArray::isOutOfOrderFlag() const {
   return oooFlag;
 }
 
@@ -293,28 +300,28 @@ int HllArray::hll8ArrBytes(const int lgConfigK) {
   return 1 << lgConfigK;
 }
 
-int HllArray::getMemDataStart() {
+int HllArray::getMemDataStart() const {
   return HllUtil::HLL_BYTE_ARR_START;
 }
 
-int HllArray::getUpdatableSerializationBytes() {
+int HllArray::getUpdatableSerializationBytes() const {
   return HllUtil::HLL_BYTE_ARR_START + getHllByteArrBytes();
 }
 
-int HllArray::getCompactSerializationBytes() {
+int HllArray::getCompactSerializationBytes() const {
   // TODO: write me after HLL4 exists
   return -1;
 }
 
-int HllArray::getPreInts() {
+int HllArray::getPreInts() const {
   return HllUtil::HLL_PREINTS;
 }
 
-std::unique_ptr<PairIterator> HllArray::getAuxIterator() {
+std::unique_ptr<PairIterator> HllArray::getAuxIterator() const {
   return nullptr;
 }
 
-AuxHashMap* HllArray::getAuxHashMap() {
+AuxHashMap* HllArray::getAuxHashMap() const {
   return nullptr;
 }
 
@@ -339,7 +346,7 @@ void HllArray::hipAndKxQIncrementalUpdate(HllArray& host, const int oldValue, co
  * @return the very low range estimate
  */
 //In C: again-two-registers.c hhb_get_improved_linear_counting_estimate L1274
-double HllArray::getHllBitMapEstimate(const int lgConfigK, const int curMin, const int numAtCurMin) {
+double HllArray::getHllBitMapEstimate(const int lgConfigK, const int curMin, const int numAtCurMin) const {
   const  int configK = 1 << lgConfigK;
   const  int numUnhitBuckets =  ((curMin == 0) ? numAtCurMin : 0);
 
@@ -353,7 +360,7 @@ double HllArray::getHllBitMapEstimate(const int lgConfigK, const int curMin, con
 }
 
 //In C: again-two-registers.c hhb_get_raw_estimate L1167
-double HllArray::getHllRawEstimate(const int lgConfigK, const double kxqSum) {
+double HllArray::getHllRawEstimate(const int lgConfigK, const double kxqSum) const {
   const int configK = 1 << lgConfigK;
   double correctionFactor;
   if (lgConfigK == 4) { correctionFactor = 0.673; }

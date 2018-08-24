@@ -9,7 +9,7 @@
 
 namespace datasketches {
 
-Hll8Iterator::Hll8Iterator(Hll8Array& hllArray, const int lengthPairs)
+Hll8Iterator::Hll8Iterator(const Hll8Array& hllArray, const int lengthPairs)
   : HllPairIterator(lengthPairs),
     hllArray(hllArray)
 {}
@@ -27,7 +27,7 @@ Hll8Array::Hll8Array(const int lgConfigK) :
   std::fill(hllByteArr, hllByteArr + numBytes, 0);
 }
 
-Hll8Array::Hll8Array(Hll8Array& that) :
+Hll8Array::Hll8Array(const Hll8Array& that) :
   HllArray(that)
 {
   // can determine hllByteArr size in parent class, no need to allocate here
@@ -37,16 +37,16 @@ Hll8Array::~Hll8Array() {
   // hllByteArr deleted in parent
 }
 
-Hll8Array* Hll8Array::copy() {
+Hll8Array* Hll8Array::copy() const {
   return new Hll8Array(*this);
 }
 
-std::unique_ptr<PairIterator> Hll8Array::getIterator() {
+std::unique_ptr<PairIterator> Hll8Array::getIterator() const {
   PairIterator* itr = new Hll8Iterator(*this, 1 << lgConfigK);
   return std::unique_ptr<PairIterator>(itr);
 }
 
-int Hll8Array::getSlot(const int slotNo) {
+int Hll8Array::getSlot(const int slotNo) const {
   return (int) hllByteArr[slotNo] & HllUtil::VAL_MASK_6;
 }
 
@@ -54,7 +54,7 @@ void Hll8Array::putSlot(const int slotNo, const int value) {
   hllByteArr[slotNo] = value & HllUtil::VAL_MASK_6;
 }
 
-int Hll8Array::getHllByteArrBytes() {
+int Hll8Array::getHllByteArrBytes() const {
   return hll8ArrBytes(lgConfigK);
 }
 

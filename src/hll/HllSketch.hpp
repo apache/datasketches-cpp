@@ -22,28 +22,31 @@ class HllSketch : public BaseHllSketch {
     explicit HllSketch(const int lgConfigK, const TgtHllType tgtHllType);
     ~HllSketch();
 
-    HllSketch* copy();
-    HllSketch* copyAs(const TgtHllType tgtHllType);
+    HllSketch* copy() const;
+    HllSketch* copyAs(const TgtHllType tgtHllType) const;
 
     void reset();
 
-    std::ostream& to_string(std::ostream& os, const bool summary,
-                            const bool detail, const bool auxDetail, const bool all);
+    virtual void serializeCompact(std::ostream& os) const;
+    virtual void serializeUpdatable(std::ostream& os) const;
 
-    double getEstimate();
-    double getCompositeEstimate();
-    double getLowerBound(int numStdDev);
-    double getUpperBound(int numStdDev);
+    virtual std::ostream& to_string(std::ostream& os, const bool summary,
+                                    const bool detail, const bool auxDetail, const bool all) const;
 
-    int getLgConfigK();
-    TgtHllType getTgtHllType();
-    bool isOutOfOrderFlag();
+    double getEstimate() const;
+    double getCompositeEstimate() const;
+    double getLowerBound(int numStdDev) const;
+    double getUpperBound(int numStdDev) const;
 
-    bool isCompact();
-    bool isEmpty();
+    int getLgConfigK() const;
+    TgtHllType getTgtHllType() const;
+    bool isOutOfOrderFlag() const;
 
-    int getUpdatableSerializationBytes();
-    int getCompactSerializationBytes();
+    bool isCompact() const;
+    bool isEmpty() const;
+
+    int getUpdatableSerializationBytes() const;
+    int getCompactSerializationBytes() const;
 
     /**
      * Returns the maximum size in bytes that this sketch can grow to given lgConfigK.
@@ -60,9 +63,9 @@ class HllSketch : public BaseHllSketch {
   protected:
     HllSketchImpl* hllSketchImpl;
 
-    virtual std::unique_ptr<PairIterator> getIterator();
+    virtual std::unique_ptr<PairIterator> getIterator() const;
 
-    CurMode getCurMode();
+    CurMode getCurMode() const;
 
     // copy constructors
     HllSketch(const HllSketch& that);
@@ -70,14 +73,11 @@ class HllSketch : public BaseHllSketch {
 
     virtual void couponUpdate(int coupon);
 
-    std::string type_as_string();
-    std::string mode_as_string();
+    std::string typeAsString() const;
+    std::string modeAsString() const;
 
     friend class HllUnion;
 };
 
 std::ostream& operator<<(std::ostream& os, HllSketch& sketch);
-
-void dump_sketch(HllSketch& sketch, const bool all);
-
 }

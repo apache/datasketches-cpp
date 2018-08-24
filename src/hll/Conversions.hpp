@@ -13,11 +13,11 @@ namespace datasketches {
 
 class Conversions {
 public:
-  static Hll4Array* convertToHll4(HllArray& srcHllArr);
-  static Hll8Array* convertToHll8(HllArray& srcHllArr);
+  static Hll4Array* convertToHll4(const HllArray& srcHllArr);
+  static Hll8Array* convertToHll8(const HllArray& srcHllArr);
 
 private:
-  static int curMinAndNum(HllArray& hllArr);
+  static int curMinAndNum(const HllArray& hllArr);
 };
 
 }

@@ -39,31 +39,34 @@ class HllUnion : public BaseHllSketch {
 
     virtual ~HllUnion();
 
-    double getEstimate();
-    double getCompositeEstimate();
-    double getLowerBound(const int numStdDev);
-    double getUpperBound(const int numStdDev);
+    double getEstimate() const;
+    double getCompositeEstimate() const;
+    double getLowerBound(const int numStdDev) const;
+    double getUpperBound(const int numStdDev) const;
 
-    int getCompactSerializationBytes();
-    int getUpdatableSerializationBytes();
-    int getLgConfigK();
+    int getCompactSerializationBytes() const;
+    int getUpdatableSerializationBytes() const;
+    int getLgConfigK() const;
 
-    CurMode getCurMode();
-    TgtHllType getTgtHllType();
-    bool isCompact();
-    bool isEmpty();
-    bool isOutOfOrderFlag();
+    CurMode getCurMode() const;
+    TgtHllType getTgtHllType() const;
+    bool isCompact() const;
+    bool isEmpty() const;
+    bool isOutOfOrderFlag() const;
 
     void reset();
 
-    HllSketch* getResult();
-    HllSketch* getResult(TgtHllType tgtHllType);
+    HllSketch* getResult() const;
+    HllSketch* getResult(TgtHllType tgtHllType) const;
 
-    std::ostream& to_string(std::ostream& os, const bool summary,
-                            const bool detail, const bool auxDetail, const bool all);
+    virtual void serializeCompact(std::ostream& os) const;
+    virtual void serializeUpdatable(std::ostream& os) const;
 
-    void update(HllSketch& sketch);
-    void update(HllSketch* sketch);
+    virtual std::ostream& to_string(std::ostream& os, const bool summary,
+                                    const bool detail, const bool auxDetail, const bool all) const;
+
+    void update(const HllSketch& sketch);
+    void update(const HllSketch* sketch);
 
     static int getMaxSerializationBytes(const int lgK);
 

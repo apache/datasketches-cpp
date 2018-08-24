@@ -31,11 +31,11 @@ HllSketch::HllSketch(HllSketchImpl* that) {
   hllSketchImpl = that;
 }
 
-HllSketch* HllSketch::copy() {
+HllSketch* HllSketch::copy() const {
   return new HllSketch(*this);
 }
 
-HllSketch* HllSketch::copyAs(const TgtHllType tgtHllType) {
+HllSketch* HllSketch::copyAs(const TgtHllType tgtHllType) const {
   return new HllSketch(hllSketchImpl->copyAs(tgtHllType));
 }
 
@@ -52,24 +52,25 @@ void HllSketch::couponUpdate(int coupon) {
   }
 }
 
-void dump_sketch(HllSketch& sketch, const bool all) {
-  //std::ostringstream oss;
-  //sketch.to_string(oss, true, true, true, all);
-  sketch.to_string(std::cout, true, true, true, all);
-  //fprintf(stdout, "%s\n", oss.str().c_str());
-}
-
 std::ostream& operator<<(std::ostream& os, HllSketch& sketch) {
   return sketch.to_string(os, true, true, false, false);
 }
 
+void HllSketch::serializeCompact(std::ostream& os) const {
+  return hllSketchImpl->serialize(os, true);
+}
+
+void HllSketch::serializeUpdatable(std::ostream& os) const {
+  return hllSketchImpl->serialize(os, false);
+}
+
 std::ostream& HllSketch::to_string(std::ostream& os, const bool summary,
-                                   const bool detail, const bool auxDetail, const bool all) {
+                                   const bool detail, const bool auxDetail, const bool all) const {
   if (summary) {
     os << "### HLL SKETCH SUMMARY: " << std::endl
        << "  Log Config K   : " << getLgConfigK() << std::endl
-       << "  Hll Target     : " << type_as_string() << std::endl
-       << "  Current Mode   : " << mode_as_string() << std::endl
+       << "  Hll Target     : " << typeAsString() << std::endl
+       << "  Current Mode   : " << modeAsString() << std::endl
        << "  LB             : " << getLowerBound(1) << std::endl
        << "  Estimate       : " << getEstimate() << std::endl
        << "  UB             : " << getUpperBound(1) << std::endl
@@ -124,59 +125,59 @@ std::ostream& HllSketch::to_string(std::ostream& os, const bool summary,
   return os;
 }
 
-double HllSketch::getEstimate() {
+double HllSketch::getEstimate() const {
   return hllSketchImpl->getEstimate();
 }
 
-double HllSketch::getCompositeEstimate() {
+double HllSketch::getCompositeEstimate() const {
   return hllSketchImpl->getCompositeEstimate();
 }
 
-double HllSketch::getLowerBound(int numStdDev) {
+double HllSketch::getLowerBound(int numStdDev) const {
   return hllSketchImpl->getLowerBound(numStdDev);
 }
 
-double HllSketch::getUpperBound(int numStdDev) {
+double HllSketch::getUpperBound(int numStdDev) const {
   return hllSketchImpl->getUpperBound(numStdDev);
 }
 
-CurMode HllSketch::getCurMode() {
+CurMode HllSketch::getCurMode() const {
   return hllSketchImpl->getCurMode();
 }
 
-int HllSketch::getLgConfigK() {
+int HllSketch::getLgConfigK() const {
   return hllSketchImpl->getLgConfigK();
 }
 
-TgtHllType HllSketch::getTgtHllType() {
+TgtHllType HllSketch::getTgtHllType() const {
   return hllSketchImpl->getTgtHllType();
 }
 
-bool HllSketch::isOutOfOrderFlag() {
+bool HllSketch::isOutOfOrderFlag() const {
   return hllSketchImpl->isOutOfOrderFlag();
 }
 
-int HllSketch::getUpdatableSerializationBytes() {
+int HllSketch::getUpdatableSerializationBytes() const {
   return hllSketchImpl->getUpdatableSerializationBytes();
 }
 
-int HllSketch::getCompactSerializationBytes() {
+int HllSketch::getCompactSerializationBytes() const {
   return hllSketchImpl->getCompactSerializationBytes();
 }
 
-bool HllSketch::isCompact() {
+bool HllSketch::isCompact() const {
   return hllSketchImpl->isCompact();
 }
 
-bool HllSketch::isEmpty() {
+bool HllSketch::isEmpty() const {
   return hllSketchImpl->isEmpty();
 }
 
-std::unique_ptr<PairIterator> HllSketch::getIterator() {
+std::unique_ptr<PairIterator> HllSketch::getIterator() const {
   return hllSketchImpl->getIterator();
 }
 
-std::string HllSketch::type_as_string() {
+std::string HllSketch::typeAsString() const {
   switch (hllSketchImpl->getTgtHllType()) {
     case TgtHllType::HLL_4:
       return std::string("HLL_4");
@@ -187,7 +188,7 @@ std::string HllSketch::type_as_string() {
   }
 }
 
-std::string HllSketch::mode_as_string() {
+std::string HllSketch::modeAsString() const {
   switch (hllSketchImpl->getCurMode()) {
     case LIST:
       return std::string("LIST");
@@ -211,6 +212,5 @@ int HllSketch::getMaxUpdatableSerializationBytes(const int lgConfigK,
   }
   return HllUtil::HLL_BYTE_ARR_START + arrBytes;
 }
-
 
 }

@@ -20,15 +20,23 @@ HllSketchImpl::~HllSketchImpl() {
   std::cerr << "Num impls: " << --numImpls << "\n";
 }
 
-TgtHllType HllSketchImpl::getTgtHllType() {
+uint8_t HllSketchImpl::makeFlagsByte() const {
+  uint8_t flags(0);
+  flags |= (isEmpty() ? HllUtil::EMPTY_FLAG_MASK : 0);
+  flags |= (isCompact() ? HllUtil::COMPACT_FLAG_MASK : 0);
+  flags |= (isOutOfOrderFlag() ? HllUtil::OUT_OF_ORDER_FLAG_MASK : 0);
+  return flags;
+}
+
+TgtHllType HllSketchImpl::getTgtHllType() const {
   return tgtHllType;
 }
 
-int HllSketchImpl::getLgConfigK() {
+int HllSketchImpl::getLgConfigK() const {
   return lgConfigK;
 }
 
-CurMode HllSketchImpl::getCurMode() {
+CurMode HllSketchImpl::getCurMode() const {
   return curMode;
 }
 

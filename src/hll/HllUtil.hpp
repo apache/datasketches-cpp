@@ -18,6 +18,14 @@ enum CurMode { LIST = 0, SET, HLL };
 class HllUtil {
 public:
   // preamble stuff
+  static const int SER_VER = 1;
+  static const int FAMILY_ID = 7;
+
+  static const int EMPTY_FLAG_MASK          = 4;
+  static const int COMPACT_FLAG_MASK        = 8;
+  static const int OUT_OF_ORDER_FLAG_MASK   = 16;
+
+
   // Coupon List
   static const int LIST_INT_ARR_START = 8;
   static const int LIST_PREINTS = 2;

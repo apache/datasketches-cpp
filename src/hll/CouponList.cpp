@@ -56,12 +56,34 @@ CouponList::~CouponList() {
   delete couponIntArr;
 }
 
-CouponList* CouponList::copy() {
+CouponList* CouponList::copy() const {
   return new CouponList(*this);
 }
 
-CouponList* CouponList::copyAs(const TgtHllType tgtHllType) {
+CouponList* CouponList::copyAs(const TgtHllType tgtHllType) const {
   return new CouponList(*this, tgtHllType);
+}
+
+void CouponList::serialize(std::ostream& os, const bool comapct) const {
+  // header
+  const uint8_t preInts(getPreInts());
+  os.write((char*)&preInts, sizeof(preInts));
+  const uint8_t serialVersion(HllUtil::SER_VER);
+  os.write((char*)&serialVersion, sizeof(serialVersion));
+  const uint8_t familyId(HllUtil::FAMILY_ID);
+  os.write((char*)&familyId, sizeof(familyId));
+  const uint8_t lgKByte((uint8_t) lgConfigK);
+  os.write((char*)&lgKByte, sizeof(lgKByte));
+  const uint8_t lgArrIntsByte((uint8_t) lgCouponArrInts);
+  os.write((char*)&lgArrIntsByte, sizeof(lgArrIntsByte));
+
+  // flags
+  // list: list count, set: unused
+  // mode
+  // list: data start, set: set count
+
+  // coupoons
+  return;
 }
 
 HllSketchImpl* CouponList::couponUpdate(int coupon) {
@@ -88,25 +110,25 @@ HllSketchImpl* CouponList::couponUpdate(int coupon) {
   throw std::runtime_error("Array invalid: no empties and no duplicates");
 }
 
-int CouponList::getCouponCount() {
+int CouponList::getCouponCount() const {
   return couponCount;
 }
 
-int CouponList::getCompactSerializationBytes() {
+int CouponList::getCompactSerializationBytes() const {
   return getMemDataStart() + (couponCount << 2);
 }
 
-int CouponList::getMemDataStart() {
+int CouponList::getMemDataStart() const {
   return HllUtil::LIST_INT_ARR_START;
 }
 
-int CouponList::getPreInts() {
+int CouponList::getPreInts() const {
   return HllUtil::LIST_PREINTS;
 }
 
-bool CouponList::isCompact() { return false; }
+bool CouponList::isCompact() const { return false; }
 
-bool CouponList::isOutOfOrderFlag() { return oooFlag; }
+bool CouponList::isOutOfOrderFlag() const { return oooFlag; }
 
 void CouponList::putOutOfOrderFlag(bool oooFlag) {
   this->oooFlag = oooFlag;
@@ -116,7 +138,7 @@ CouponList* CouponList::reset() {
   return new CouponList(lgConfigK, tgtHllType, CurMode::LIST);
 }
 
-int CouponList::getLgCouponArrInts() {
+int CouponList::getLgCouponArrInts() const {
   return lgCouponArrInts;
 }
 
@@ -124,7 +146,7 @@ int* CouponList::getCouponIntArr() {
   return couponIntArr;
 }
 
-std::unique_ptr<PairIterator> CouponList::getIterator() {
+std::unique_ptr<PairIterator> CouponList::getIterator() const {
   PairIterator* itr = new IntArrayPairIterator(couponIntArr, 1 << lgCouponArrInts, lgConfigK);
   return std::unique_ptr<PairIterator>(itr);
 }

@@ -24,16 +24,16 @@ static int BaseHllSketch::getSerializationVersion(BaseHllSketch sketch) {
 }
 */
 
-bool BaseHllSketch::isEstimationMode() {
+bool BaseHllSketch::isEstimationMode() const {
   return true;
 }
 
 
-std::ostream& BaseHllSketch::to_string(std::ostream& os) {
+std::ostream& BaseHllSketch::to_string(std::ostream& os) const {
   return to_string(os, true, false, false, false);
 }
 
-std::ostream& BaseHllSketch::to_string(std::ostream& os, const bool summary, const bool detail, const bool auxDetail) {
+std::ostream& BaseHllSketch::to_string(std::ostream& os, const bool summary, const bool detail, const bool auxDetail) const {
   return to_string(os, summary, detail, auxDetail, false);
 }
 

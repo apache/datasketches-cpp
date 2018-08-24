@@ -18,35 +18,37 @@ class HllSketchImpl {
     HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode);
     virtual ~HllSketchImpl();
 
-    virtual HllSketchImpl* copy() = 0;
-    virtual HllSketchImpl* copyAs(TgtHllType tgtHllType) = 0;
+    virtual HllSketchImpl* copy() const = 0;
+    virtual HllSketchImpl* copyAs(TgtHllType tgtHllType) const = 0;
     virtual HllSketchImpl* reset() = 0;
 
     virtual HllSketchImpl* couponUpdate(int coupon) = 0;
 
-    CurMode getCurMode();
+    CurMode getCurMode() const;
 
-    virtual double getEstimate() = 0;
-    virtual double getCompositeEstimate() = 0;
-    virtual double getUpperBound(int numStdDev) = 0;
-    virtual double getLowerBound(int numStdDev) = 0;
+    virtual double getEstimate() const = 0;
+    virtual double getCompositeEstimate() const = 0;
+    virtual double getUpperBound(int numStdDev) const = 0;
+    virtual double getLowerBound(int numStdDev) const = 0;
 
-    virtual std::unique_ptr<PairIterator> getIterator() = 0;
+    virtual std::unique_ptr<PairIterator> getIterator() const = 0;
 
-    int getLgConfigK();
+    int getLgConfigK() const;
 
-    virtual int getMemDataStart() = 0;
+    virtual int getMemDataStart() const = 0;
 
-    virtual int getPreInts() = 0;
+    virtual int getPreInts() const = 0;
 
-    TgtHllType getTgtHllType();
+    TgtHllType getTgtHllType() const;
 
-    virtual int getUpdatableSerializationBytes() = 0;
-    virtual int getCompactSerializationBytes() = 0;
+    virtual int getUpdatableSerializationBytes() const = 0;
+    virtual int getCompactSerializationBytes() const = 0;
 
-    virtual bool isCompact() = 0;
-    virtual bool isEmpty() = 0;
-    virtual bool isOutOfOrderFlag() = 0;
+    virtual void serialize(std::ostream& os, const bool comapct) const = 0;
+
+    virtual bool isCompact() const = 0;
+    virtual bool isEmpty() const = 0;
+    virtual bool isOutOfOrderFlag() const = 0;
     virtual void putOutOfOrderFlag(bool oooFlag) = 0;
 
     //virtual byte[] toCompactByteArray();
@@ -54,6 +56,8 @@ class HllSketchImpl {
     //virtual byte[] toUpdatableByteArray();
 
   protected:
+    uint8_t makeFlagsByte() const;
+
     const int lgConfigK;
     const TgtHllType tgtHllType;
     const CurMode curMode;

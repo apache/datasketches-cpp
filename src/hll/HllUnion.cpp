@@ -31,19 +31,19 @@ HllUnion::~HllUnion() {
   }
 }
 
-HllSketch* HllUnion::getResult() {
+HllSketch* HllUnion::getResult() const {
   return gadget->copyAs(TgtHllType::HLL_4);
 }
 
-HllSketch* HllUnion::getResult(TgtHllType tgtHllType) {
+HllSketch* HllUnion::getResult(TgtHllType tgtHllType) const {
   return gadget->copyAs(tgtHllType);
 }
 
-void HllUnion::update(HllSketch* sketch) {
+void HllUnion::update(const HllSketch* sketch) {
   unionImpl(sketch->hllSketchImpl, lgMaxK);
 }
 
-void HllUnion::update(HllSketch& sketch) {
+void HllUnion::update(const HllSketch& sketch) {
   unionImpl(sketch.hllSketchImpl, lgMaxK);
 }
 
@@ -56,36 +56,44 @@ void HllUnion::couponUpdate(const int coupon) {
   }
 }
 
+void HllUnion::serializeCompact(std::ostream& os) const {
+  return gadget->serializeCompact(os);
+}
+
+void HllUnion::serializeUpdatable(std::ostream& os) const {
+  return gadget->serializeUpdatable(os);
+}
+
 std::ostream& HllUnion::to_string(std::ostream& os, const bool summary,
-                               const bool detail, const bool auxDetail, const bool all) {
+                               const bool detail, const bool auxDetail, const bool all) const {
   return gadget->to_string(os, summary, detail, auxDetail, all);
 }
 
-double HllUnion::getEstimate() {
+double HllUnion::getEstimate() const {
   return gadget->getEstimate();
 }
 
-double HllUnion::getCompositeEstimate() {
+double HllUnion::getCompositeEstimate() const {
   return gadget->getCompositeEstimate();
 }
 
-double HllUnion::getLowerBound(const int numStdDev) {
+double HllUnion::getLowerBound(const int numStdDev) const {
   return gadget->getLowerBound(numStdDev);
 }
 
-double HllUnion::getUpperBound(const int numStdDev) {
+double HllUnion::getUpperBound(const int numStdDev) const {
   return gadget->getUpperBound(numStdDev);
 }
 
-int HllUnion::getCompactSerializationBytes() {
+int HllUnion::getCompactSerializationBytes() const {
   return gadget->getCompactSerializationBytes();
 }
 
-int HllUnion::getUpdatableSerializationBytes() {
+int HllUnion::getUpdatableSerializationBytes() const {
   return gadget->getUpdatableSerializationBytes();
 }
 
-int HllUnion::getLgConfigK() {
+int HllUnion::getLgConfigK() const {
   return gadget->getLgConfigK();
 }
 
@@ -93,23 +101,23 @@ void HllUnion::reset() {
   gadget->reset();
 }
 
-bool HllUnion::isCompact() {
+bool HllUnion::isCompact() const {
   return gadget->isCompact();
 }
 
-bool HllUnion::isEmpty() {
+bool HllUnion::isEmpty() const {
   return gadget->isEmpty();
 }
 
-bool HllUnion::isOutOfOrderFlag() {
+bool HllUnion::isOutOfOrderFlag() const {
   return gadget->isOutOfOrderFlag();
 }
 
-CurMode HllUnion::getCurMode() {
+CurMode HllUnion::getCurMode() const {
   return gadget->getCurMode();
 }
 
-TgtHllType HllUnion::getTgtHllType() {
+TgtHllType HllUnion::getTgtHllType() const {
   return TgtHllType::HLL_8;
 }
 

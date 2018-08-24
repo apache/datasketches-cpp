@@ -17,13 +17,13 @@ class CouponHashSet : public CouponList {
 
     virtual ~CouponHashSet();
 
-    virtual CouponHashSet* copy();
-    virtual CouponHashSet* copyAs(const TgtHllType tgtHllType);
+    virtual CouponHashSet* copy() const;
+    virtual CouponHashSet* copyAs(const TgtHllType tgtHllType) const;
 
     virtual HllSketchImpl* couponUpdate(int coupon);
 
-    virtual int getMemDataStart();
-    virtual int getPreInts();
+    virtual int getMemDataStart() const;
+    virtual int getPreInts() const;
 
     friend class CouponList; // so it can access fields declared in CouponList
 

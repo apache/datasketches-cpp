@@ -14,38 +14,19 @@ class AbstractCoupons : public HllSketchImpl {
     AbstractCoupons(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode);
     virtual ~AbstractCoupons();
 
-    virtual int getCouponCount() = 0;
+    virtual int getCouponCount() const = 0;
 
-    virtual int getLgCouponArrInts() = 0;
+    virtual int getLgCouponArrInts() const = 0;
     virtual int* getCouponIntArr() = 0;
 
-    virtual double getEstimate();
-    virtual double getCompositeEstimate();
-    virtual double getUpperBound(const int numStdDev);
-    virtual double getLowerBound(const int numStdDev);
+    virtual double getEstimate() const;
+    virtual double getCompositeEstimate() const;
+    virtual double getUpperBound(const int numStdDev) const;
+    virtual double getLowerBound(const int numStdDev) const;
 
-    virtual int getUpdatableSerializationBytes();
-    //virtual int getCompactSerializationBytes();
+    virtual int getUpdatableSerializationBytes() const;
 
-    //virtual int getPreInts();
-    //virtual int getMemDataStart();
-
-    virtual bool isEmpty();
-
-    //virtual bool isCompact();
-
-    //virtual HllSketchImpl* copy();
-
-    //virtual HllSketchImpl* copyAs(TgtHllType tgtHllType);
-
-    //virtual bool isOutOfOrderFlag();
-    //virtual void putOutOfOrderFlag(bool oooFlag);
-
-    //virtual HllSketchImpl* reset() = 0;
-
-    //char[] toCompactByteArray();
-
-    //char[] toUpdateableByteArray();
+    virtual bool isEmpty() const;
 };
 
 }

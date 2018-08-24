@@ -13,18 +13,18 @@ namespace datasketches {
 class Hll8Array : public HllArray {
   public:
     explicit Hll8Array(const int lgConfigK);
-    explicit Hll8Array(Hll8Array& that);
+    explicit Hll8Array(const Hll8Array& that);
 
     virtual ~Hll8Array();
 
-    virtual Hll8Array* copy();
+    virtual Hll8Array* copy() const;
 
-    virtual std::unique_ptr<PairIterator> getIterator();
+    virtual std::unique_ptr<PairIterator> getIterator() const;
 
-    virtual int getSlot(const int slotNo);
+    virtual int getSlot(const int slotNo) const;
     virtual void putSlot(const int slotNo, const int value);
 
-    virtual int getHllByteArrBytes();
+    virtual int getHllByteArrBytes() const;
 
   protected:
     friend class Hll8Iterator;
@@ -32,13 +32,13 @@ class Hll8Array : public HllArray {
 
 class Hll8Iterator : public HllPairIterator {
   public:
-    Hll8Iterator(Hll8Array& array, const int lengthPairs);
+    Hll8Iterator(const Hll8Array& array, const int lengthPairs);
     virtual int value();
 
     virtual ~Hll8Iterator();
 
   private:
-    Hll8Array& hllArray;
+    const Hll8Array& hllArray;
 };
 
 }
