@@ -5,18 +5,20 @@
 
 #include "CouponList.hpp"
 #include "CouponHashSet.hpp"
+#include "CubicInterpolation.hpp"
 #include "HllUtil.hpp"
 #include "IntArrayPairIterator.hpp"
 #include "HllArray.hpp"
 
 #include <iostream>
 #include <cstring>
+#include <cmath>
 #include <algorithm>
 
 namespace datasketches {
 
 CouponList::CouponList(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode)
-  : AbstractCoupons(lgConfigK, tgtHllType, curMode) {
+  : HllSketchImpl(lgConfigK, tgtHllType, curMode) {
     if (curMode == CurMode::LIST) {
       lgCouponArrInts = HllUtil::LG_INIT_LIST_SIZE;
       oooFlag = false;
@@ -31,7 +33,7 @@ CouponList::CouponList(const int lgConfigK, const TgtHllType tgtHllType, const C
 }
 
 CouponList::CouponList(const CouponList& that)
-  : AbstractCoupons(that.lgConfigK, that.tgtHllType, that.curMode),
+  : HllSketchImpl(that.lgConfigK, that.tgtHllType, that.curMode),
     lgCouponArrInts(that.lgCouponArrInts),
     couponCount(that.couponCount),
     oooFlag(that.oooFlag) {
@@ -42,7 +44,7 @@ CouponList::CouponList(const CouponList& that)
 }
 
 CouponList::CouponList(const CouponList& that, const TgtHllType tgtHllType)
-  : AbstractCoupons(that.lgConfigK, tgtHllType, that.curMode),
+  : HllSketchImpl(that.lgConfigK, tgtHllType, that.curMode),
     lgCouponArrInts(that.lgCouponArrInts),
     couponCount(that.couponCount),
     oooFlag(that.oooFlag) {
@@ -108,6 +110,36 @@ HllSketchImpl* CouponList::couponUpdate(int coupon) {
     // cell not empty and not a duplicate, continue
   }
   throw std::runtime_error("Array invalid: no empties and no duplicates");
+}
+
+double CouponList::getCompositeEstimate() const { return getEstimate(); }
+
+double CouponList::getEstimate() const {
+  const int couponCount = getCouponCount();
+  const double est = CubicInterpolation::usingXAndYTables(couponCount);
+  return fmax(est, couponCount);
+}
+
+double CouponList::getLowerBound(const int numStdDev) const {
+  HllUtil::checkNumStdDev(numStdDev);
+  const int couponCount = getCouponCount();
+  const double est = CubicInterpolation::usingXAndYTables(couponCount);
+  const double tmp = est / (1.0 + (numStdDev * HllUtil::COUPON_RSE));
+  return fmax(tmp, couponCount);
+}
+
+double CouponList::getUpperBound(const int numStdDev) const {
+  HllUtil::checkNumStdDev(numStdDev);
+  const int couponCount = getCouponCount();
+  const double est = CubicInterpolation::usingXAndYTables(couponCount);
+  const double tmp = est / (1.0 - (numStdDev * HllUtil::COUPON_RSE));
+  return fmax(tmp, couponCount);
+}
+
+bool CouponList::isEmpty() const { return getCouponCount() == 0; }
+
+int CouponList::getUpdatableSerializationBytes() const {
+  return getMemDataStart() + (4 << getLgCouponArrInts());
 }
 
 int CouponList::getCouponCount() const {

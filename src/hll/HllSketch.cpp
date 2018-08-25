@@ -84,7 +84,7 @@ std::ostream& HllSketch::to_string(std::ostream& os, const bool summary,
          << "  KxQ1         : " << hllArray->getKxQ1() << std::endl;
     } else {
       os << "  Coupon count : "
-         << std::to_string(((AbstractCoupons*) hllSketchImpl)->getCouponCount()) << std::endl;
+         << std::to_string(((CouponList*) hllSketchImpl)->getCouponCount()) << std::endl;
     }
   }
 

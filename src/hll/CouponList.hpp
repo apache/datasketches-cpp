@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "AbstractCoupons.hpp"
+#include "HllSketchImpl.hpp"
 
 namespace datasketches {
 
-class CouponList : public AbstractCoupons {
+class CouponList : public HllSketchImpl {
   public:
     explicit CouponList(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode);
     explicit CouponList(const CouponList& that);
@@ -24,11 +24,19 @@ class CouponList : public AbstractCoupons {
 
     virtual void serialize(std::ostream& os, const bool comapct) const;
 
+    virtual double getEstimate() const;
+    virtual double getCompositeEstimate() const;
+    virtual double getUpperBound(const int numStdDev) const;
+    virtual double getLowerBound(const int numStdDev) const;
+
+    virtual bool isEmpty() const;
+    virtual int getCouponCount() const;
+
   protected:
     HllSketchImpl* promoteHeapListToSet(CouponList& list);
     HllSketchImpl* promoteHeapListOrSetToHll(CouponList& src);
 
-    virtual int getCouponCount() const;
+    virtual int getUpdatableSerializationBytes() const;
     virtual int getCompactSerializationBytes() const;
     virtual std::unique_ptr<PairIterator> getIterator() const;
     virtual int getMemDataStart() const;
