@@ -22,7 +22,7 @@ class HllArray : public HllSketchImpl {
     virtual HllArray* copy() const = 0;
     virtual HllArray* copyAs(const TgtHllType tgtHllType) const;
 
-    virtual void serialize(std::ostream& os, const bool comapct) const;
+    virtual void serialize(std::ostream& os, const bool compact) const;
 
     virtual HllSketchImpl* couponUpdate(const int coupon);
 
@@ -46,7 +46,6 @@ class HllArray : public HllSketchImpl {
     virtual int getHllByteArrBytes() const = 0;
 
     virtual std::unique_ptr<PairIterator> getIterator() const = 0;
-
     virtual std::unique_ptr<PairIterator> getAuxIterator() const;
 
     virtual int getUpdatableSerializationBytes() const;

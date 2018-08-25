@@ -66,7 +66,7 @@ CouponList* CouponList::copyAs(const TgtHllType tgtHllType) const {
   return new CouponList(*this, tgtHllType);
 }
 
-void CouponList::serialize(std::ostream& os, const bool comapct) const {
+void CouponList::serialize(std::ostream& os, const bool compact) const {
   // header
   const uint8_t preInts(getPreInts());
   os.write((char*)&preInts, sizeof(preInts));
@@ -78,13 +78,46 @@ void CouponList::serialize(std::ostream& os, const bool comapct) const {
   os.write((char*)&lgKByte, sizeof(lgKByte));
   const uint8_t lgArrIntsByte((uint8_t) lgCouponArrInts);
   os.write((char*)&lgArrIntsByte, sizeof(lgArrIntsByte));
+  const uint8_t flagsByte(makeFlagsByte(compact));
+  os.write((char*)&flagsByte, sizeof(flagsByte));
 
-  // flags
-  // list: list count, set: unused
-  // mode
-  // list: data start, set: set count
+  if (curMode == LIST) {
+    const uint8_t listCount((uint8_t) couponCount);
+    os.write((char*)&listCount, sizeof(listCount));
+  } else { // curMode == SET
+    const uint8_t unused(0);
+    os.write((char*)&unused, sizeof(unused));
+  }
 
-  // coupoons
+  const uint8_t modeByte(makeModeByte());
+  os.write((char*)&modeByte, sizeof(modeByte));
+
+  if (curMode == SET) {
+    // writing as int, already stored as int
+    os.write((char*)&couponCount, sizeof(couponCount));
+  }
+
+  // coupons
+  // isCompact() is always false for now
+  const int sw = (isCompact() ? 0 : 2) | (compact ? 0 : 1);
+  switch (sw) {
+    case 0: { // src updatable, dst compact
+      std::unique_ptr<PairIterator> itr = getIterator();
+      while (itr->nextValid()) {
+        const int pairValue = itr->getPair();
+        os.write((char*)&pairValue, sizeof(pairValue));
+      }
+      break;
+    }
+    case 1: { // src updatable, dst updatable
+      os.write((char*)couponIntArr, (1 << lgCouponArrInts) * sizeof(int));
+      break;
+    }
+
+    default:
+      throw std::runtime_error("Impossible condition when serializing");
+  }
+  
   return;
 }
 

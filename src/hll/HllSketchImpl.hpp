@@ -44,19 +44,16 @@ class HllSketchImpl {
     virtual int getUpdatableSerializationBytes() const = 0;
     virtual int getCompactSerializationBytes() const = 0;
 
-    virtual void serialize(std::ostream& os, const bool comapct) const = 0;
+    virtual void serialize(std::ostream& os, const bool compact) const = 0;
 
     virtual bool isCompact() const = 0;
     virtual bool isEmpty() const = 0;
     virtual bool isOutOfOrderFlag() const = 0;
     virtual void putOutOfOrderFlag(bool oooFlag) = 0;
 
-    //virtual byte[] toCompactByteArray();
-
-    //virtual byte[] toUpdatableByteArray();
-
   protected:
-    uint8_t makeFlagsByte() const;
+    uint8_t makeFlagsByte(const bool compact) const;
+    uint8_t makeModeByte() const;
 
     const int lgConfigK;
     const TgtHllType tgtHllType;

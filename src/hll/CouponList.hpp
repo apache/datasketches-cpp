@@ -22,7 +22,7 @@ class CouponList : public HllSketchImpl {
 
     virtual HllSketchImpl* couponUpdate(int coupon);
 
-    virtual void serialize(std::ostream& os, const bool comapct) const;
+    virtual void serialize(std::ostream& os, const bool compact) const;
 
     virtual double getEstimate() const;
     virtual double getCompositeEstimate() const;

@@ -70,10 +70,48 @@ HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
   }
 }
 
-void HllArray::serialize(std::ostream& os, const bool comapct) const {
+void HllArray::serialize(std::ostream& os, const bool compact) const {
   // header
+  const uint8_t preInts(getPreInts());
+  os.write((char*)&preInts, sizeof(preInts));
+  const uint8_t serialVersion(HllUtil::SER_VER);
+  os.write((char*)&serialVersion, sizeof(serialVersion));
+  const uint8_t familyId(HllUtil::FAMILY_ID);
+  os.write((char*)&familyId, sizeof(familyId));
+  const uint8_t lgKByte((uint8_t) lgConfigK);
+  os.write((char*)&lgKByte, sizeof(lgKByte));
+  const uint8_t unused(0);
+  os.write((char*)&unused, sizeof(unused));
+  const uint8_t flagsByte(makeFlagsByte(compact));
+  os.write((char*)&flagsByte, sizeof(flagsByte));
+  const uint8_t curMinByte((uint8_t) curMin);
+  os.write((char*)&curMinByte, sizeof(curMinByte));
+  const uint8_t modeByte(makeModeByte());
+  os.write((char*)&modeByte, sizeof(modeByte));
 
-  // array
+  // estimator data
+  os.write((char*)&hipAccum, sizeof(hipAccum));
+  os.write((char*)&kxq0, sizeof(kxq0));
+  os.write((char*)&kxq1, sizeof(kxq1));
+
+  // array data
+  os.write((char*)&numAtCurMin, sizeof(numAtCurMin));
+
+  AuxHashMap* auxHashMap = getAuxHashMap();
+  const int auxCount = (auxHashMap == nullptr ? 0 : auxHashMap->getAuxCount());
+  os.write((char*)&auxCount, sizeof(auxCount));
+  os.write((char*)hllByteArr, getHllByteArrBytes());
+
+  if (compact) {
+    std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
+    while (itr->nextValid()) {
+      const int pairValue = itr->getPair();
+      os.write((char*)&pairValue, sizeof(pairValue));
+    }
+  } else {
+    os.write((char*)auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
+  }
+
   return;
 }
 
