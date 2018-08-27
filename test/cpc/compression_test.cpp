@@ -10,8 +10,6 @@ extern "C" {
 
 #include "fm85Compression.h"
 
-void getTwoRandomHashes (U64 twoHashes[]);
-
 }
 
 #include "MurmurHash3.h"
