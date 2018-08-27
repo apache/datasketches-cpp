@@ -66,6 +66,40 @@ CouponList* CouponList::copyAs(const TgtHllType tgtHllType) const {
   return new CouponList(*this, tgtHllType);
 }
 
+CouponList* CouponList::newList(std::istream& is) {
+  uint8_t listHeader[8];
+  is.read((char*)listHeader, 8 * sizeof(uint8_t));
+
+  if (listHeader[0] != HllUtil::LIST_PREINTS) {
+    throw std::invalid_argument("Incorrect number of preInts in input stream");
+  }
+  if (listHeader[1] != HllUtil::SER_VER) {
+    throw std::invalid_argument("Wrong ser ver in input stream");
+  }
+  if (listHeader[2] != HllUtil::FAMILY_ID) {
+    throw std::invalid_argument("Input stream is not an HLL sketch");
+  }
+
+  CurMode curMode = extractCurMode(listHeader[7]);
+  if (curMode != LIST) {
+    throw std::invalid_argument("Calling list construtor with non-list mode data");
+  }
+
+  TgtHllType tgtHllType = extractTgtHllType(listHeader[7]);
+
+  const int lgK = (int) listHeader[3];
+  //const int lgArrInts = (int) listHeader[4];
+  bool oooFlag = ((listHeader[5] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  //bool emptyFlag = ((listHeader[5] & HllUtil::EMPTY_FLAG_MASK) ? true : false);
+
+  CouponList* sketch = new CouponList(lgK, tgtHllType, curMode);
+  const int couponCount = (int) listHeader[6];
+  is.read((char*)&(sketch->couponIntArr), couponCount * sizeof(int));
+  sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
+  
+  return sketch;
+}
+
 void CouponList::serialize(std::ostream& os, const bool compact) const {
   // header
   const uint8_t preInts(getPreInts());

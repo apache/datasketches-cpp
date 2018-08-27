@@ -20,13 +20,15 @@ class HllSketch : public BaseHllSketch {
   public:
     explicit HllSketch(const int lgConfigK);
     explicit HllSketch(const int lgConfigK, const TgtHllType tgtHllType);
+    static HllSketch* deserialize(std::istream& is);
+
     ~HllSketch();
 
     HllSketch* copy() const;
     HllSketch* copyAs(const TgtHllType tgtHllType) const;
 
     void reset();
-
+    
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
 

@@ -16,13 +16,14 @@ class HllArray : public HllSketchImpl {
     explicit HllArray(const HllArray& that);
 
     static HllArray* newHll(const int lgConfigK, const TgtHllType tgtHllType);
+    static HllArray* newHll(std::istream& is);
+
+    virtual void serialize(std::ostream& os, const bool compact) const;
 
     virtual ~HllArray();
 
     virtual HllArray* copy() const = 0;
     virtual HllArray* copyAs(const TgtHllType tgtHllType) const;
-
-    virtual void serialize(std::ostream& os, const bool compact) const;
 
     virtual HllSketchImpl* couponUpdate(const int coupon);
 

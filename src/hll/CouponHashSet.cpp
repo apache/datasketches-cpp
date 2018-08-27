@@ -23,6 +23,57 @@ CouponHashSet::CouponHashSet(const CouponHashSet& that)
 CouponHashSet::CouponHashSet(const CouponHashSet& that, const TgtHllType tgtHllType)
   : CouponList(that, tgtHllType) {}
 
+CouponHashSet* CouponHashSet::newSet(std::istream& is) {
+  uint8_t listHeader[8];
+  is.read((char*)listHeader, 8 * sizeof(uint8_t));
+
+  if (listHeader[0] != HllUtil::LIST_PREINTS) {
+    throw std::invalid_argument("Incorrect number of preInts in input stream");
+  }
+  if (listHeader[1] != HllUtil::SER_VER) {
+    throw std::invalid_argument("Wrong ser ver in input stream");
+  }
+  if (listHeader[2] != HllUtil::FAMILY_ID) {
+    throw std::invalid_argument("Input stream is not an HLL sketch");
+  }
+
+  CurMode curMode = extractCurMode(listHeader[7]);
+  if (curMode != SET) {
+    throw std::invalid_argument("Calling set construtor with non-set mode data");
+  }
+
+  TgtHllType tgtHllType = extractTgtHllType(listHeader[7]);
+
+  const int lgK = (int) listHeader[3];
+  const int lgArrInts = (int) listHeader[4];
+  bool compactFlag = ((listHeader[5] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
+  //bool oooFlag = ((listHeader[5] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  //bool emptyFlag = ((listHeader[5] & HllUtil::EMPTY_FLAG_MASK) ? true : false);
+
+  CouponHashSet* sketch = new CouponHashSet(lgK, tgtHllType);
+  sketch->putOutOfOrderFlag(true);
+
+  int couponCount;
+  is.read((char*)&couponCount, sizeof(couponCount));
+
+  if (compactFlag) {
+    for (int i = 0; i < couponCount; ++i) {
+      int coupon;
+      is.read((char*)&coupon, sizeof(coupon));
+      if (coupon == HllUtil::EMPTY) { continue; }
+      sketch->couponUpdate(coupon);
+    }
+  } else {
+    int* tmp = sketch->couponIntArr;
+    sketch->lgCouponArrInts = lgArrInts;
+    sketch->couponIntArr = new int[1 << lgArrInts];
+    is.read((char*)&(sketch->couponIntArr), couponCount * sizeof(int));
+    delete tmp;
+  } 
+
+  return sketch;
+}
+
 CouponHashSet* CouponHashSet::copy() const {
   return new CouponHashSet(*this);
 }

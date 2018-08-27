@@ -4,6 +4,9 @@
  */
 
 #include "HllSketchImpl.hpp"
+#include "HllArray.hpp"
+#include "CouponList.hpp"
+#include "CouponHashSet.hpp"
 
 namespace datasketches {
 
@@ -18,6 +21,47 @@ HllSketchImpl::HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType, c
 
 HllSketchImpl::~HllSketchImpl() {
   std::cerr << "Num impls: " << --numImpls << "\n";
+}
+
+HllSketchImpl* HllSketchImpl::deserialize(std::istream& is) {
+  // we'll hand off the sketch based on PreInts so we don't need
+  // to move the stream pointer back and forth -- perhaps somewhat fragile
+  const int preInts = is.peek();
+  if (preInts == HllUtil::HLL_PREINTS) {
+    return HllArray::newHll(is);
+  } else if (preInts == HllUtil::HASH_SET_PREINTS) {
+    return CouponHashSet::newSet(is);
+  } else if (preInts == HllUtil::LIST_PREINTS) {
+    return CouponList::newList(is);
+  } else {
+    throw std::invalid_argument("Attempt to deserialize Unknown object type");
+  }
+}
+
+TgtHllType HllSketchImpl::extractTgtHllType(const uint8_t modeByte) {
+  switch ((modeByte >> 2) & 0x3) {
+  case 0:
+    return TgtHllType::HLL_4;
+  case 1:
+    throw std::invalid_argument("HLL_6 not yet supported");
+  case 2:
+    return TgtHllType::HLL_8;
+  default:
+    throw std::invalid_argument("Invalid current sketch mode");
+  }
+}
+
+CurMode HllSketchImpl::extractCurMode(const uint8_t modeByte) {
+  switch (modeByte & 0x3) {
+  case 0:
+    return CurMode::LIST;
+  case 1:
+    return CurMode::SET;
+  case 2:
+    return CurMode::HLL;
+  default:
+    throw std::invalid_argument("Invalid current sketch mode");
+  }
 }
 
 uint8_t HllSketchImpl::makeFlagsByte(const bool compact) const {

@@ -31,6 +31,11 @@ HllSketch::HllSketch(HllSketchImpl* that) {
   hllSketchImpl = that;
 }
 
+HllSketch* HllSketch::deserialize(std::istream& is) {
+  HllSketchImpl* impl = HllSketchImpl::deserialize(is);
+  return new HllSketch(impl);
+}
+
 HllSketch* HllSketch::copy() const {
   return new HllSketch(*this);
 }

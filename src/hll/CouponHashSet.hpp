@@ -10,11 +10,14 @@
 namespace datasketches {
 
 class CouponHashSet : public CouponList {
+  public:
+    static CouponHashSet* newSet(std::istream& is);
+
   protected:
     explicit CouponHashSet(const int lgConfigK, const TgtHllType tgtHllType);
     explicit CouponHashSet(const CouponHashSet& that);
     explicit CouponHashSet(const CouponHashSet& that, const TgtHllType tgtHllType);
-
+    
     virtual ~CouponHashSet();
 
     virtual CouponHashSet* copy() const;

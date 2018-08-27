@@ -11,12 +11,13 @@
 
 namespace datasketches {
 
-class HllSketch;
-
 class HllSketchImpl {
   public:
     HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode);
     virtual ~HllSketchImpl();
+
+    virtual void serialize(std::ostream& os, const bool compact) const = 0;
+    static HllSketchImpl* deserialize(std::istream& os);
 
     virtual HllSketchImpl* copy() const = 0;
     virtual HllSketchImpl* copyAs(TgtHllType tgtHllType) const = 0;
@@ -44,14 +45,14 @@ class HllSketchImpl {
     virtual int getUpdatableSerializationBytes() const = 0;
     virtual int getCompactSerializationBytes() const = 0;
 
-    virtual void serialize(std::ostream& os, const bool compact) const = 0;
-
     virtual bool isCompact() const = 0;
     virtual bool isEmpty() const = 0;
     virtual bool isOutOfOrderFlag() const = 0;
     virtual void putOutOfOrderFlag(bool oooFlag) = 0;
 
   protected:
+    static TgtHllType extractTgtHllType(const uint8_t modeByte);
+    static CurMode extractCurMode(const uint8_t modeByte);
     uint8_t makeFlagsByte(const bool compact) const;
     uint8_t makeModeByte() const;
 

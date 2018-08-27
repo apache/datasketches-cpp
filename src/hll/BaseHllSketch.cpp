@@ -13,21 +13,12 @@
 namespace datasketches {
 
 int BaseHllSketch::getSerializationVersion() {
-  // TODO: write me -- define value somewhere
-  return -1;
+  return HllUtil::SER_VER;
 }
-
-/*
-static int BaseHllSketch::getSerializationVersion(BaseHllSketch sketch) {
-  // TODO: read SER_VER byte to get value
-  return -1;
-}
-*/
 
 bool BaseHllSketch::isEstimationMode() const {
   return true;
 }
-
 
 std::ostream& BaseHllSketch::to_string(std::ostream& os) const {
   return to_string(os, true, false, false, false);
@@ -36,7 +27,6 @@ std::ostream& BaseHllSketch::to_string(std::ostream& os) const {
 std::ostream& BaseHllSketch::to_string(std::ostream& os, const bool summary, const bool detail, const bool auxDetail) const {
   return to_string(os, summary, detail, auxDetail, false);
 }
-
 
 int BaseHllSketch::coupon(const uint64_t hash[]) {
   int addr26 = (int) (hash[0] & KEY_MASK_26);

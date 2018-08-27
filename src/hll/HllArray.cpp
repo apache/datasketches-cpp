@@ -70,6 +70,10 @@ HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
   }
 }
 
+HllArray* HllArray::newHll(std::istream& is) {
+  return nullptr;
+}
+
 void HllArray::serialize(std::ostream& os, const bool compact) const {
   // header
   const uint8_t preInts(getPreInts());

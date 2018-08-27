@@ -15,14 +15,15 @@ class CouponList : public HllSketchImpl {
     explicit CouponList(const CouponList& that);
     explicit CouponList(const CouponList& that, const TgtHllType tgtHllType);
 
+    static CouponList* newList(std::istream& is);
+    virtual void serialize(std::ostream& os, const bool compact) const;
+
     virtual ~CouponList();
 
     virtual CouponList* copy() const;
     virtual CouponList* copyAs(const TgtHllType tgtHllType) const;
 
     virtual HllSketchImpl* couponUpdate(int coupon);
-
-    virtual void serialize(std::ostream& os, const bool compact) const;
 
     virtual double getEstimate() const;
     virtual double getCompositeEstimate() const;
