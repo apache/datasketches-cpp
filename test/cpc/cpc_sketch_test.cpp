@@ -15,6 +15,7 @@ static const double RELATIVE_ERROR_FOR_LG_K_11 = 0.02;
 class cpc_sketch_test: public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(cpc_sketch_test);
+  CPPUNIT_TEST(lg_k_limits);
   CPPUNIT_TEST(empty);
   CPPUNIT_TEST(one_value);
   CPPUNIT_TEST(many_values);
@@ -25,6 +26,13 @@ class cpc_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(serialize_deserialize_sliding);
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST_SUITE_END();
+
+  void lg_k_limits() {
+    cpc_sketch s1(CPC_MIN_LG_K); // this should work
+    cpc_sketch s2(CPC_MAX_LG_K); // this should work
+    CPPUNIT_ASSERT_THROW(cpc_sketch s3(CPC_MIN_LG_K - 1), std::invalid_argument);
+    CPPUNIT_ASSERT_THROW(cpc_sketch s4(CPC_MAX_LG_K + 1), std::invalid_argument);
+  }
 
   void empty() {
     cpc_sketch sketch(11);

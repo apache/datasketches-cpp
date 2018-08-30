@@ -19,6 +19,8 @@ extern "C" {
 
 #include "MurmurHash3.h"
 
+#include "cpc_common.hpp"
+
 namespace datasketches {
 
 /*
@@ -33,7 +35,9 @@ class cpc_sketch {
 
     explicit cpc_sketch(uint8_t lg_k) {
       fm85Init();
-      // TODO: check lg_k
+      if (lg_k < CPC_MIN_LG_K or lg_k > CPC_MAX_LG_K) {
+        throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
+      }
       state = fm85Make(lg_k);
     }
 
@@ -68,8 +72,12 @@ class cpc_sketch {
     }
 
     void update(uint64_t value) {
+      update(&value, sizeof(value));
+    }
+
+    void update(const void* value, int size) {
       uint64_t hashes[2];
-      MurmurHash3_x64_128(&value, sizeof(value), DEFAULT_SEED, hashes);
+      MurmurHash3_x64_128(value, size, DEFAULT_SEED, hashes);
       fm85Update(state, hashes[0], hashes[1]);
     }
 
@@ -128,6 +136,7 @@ class cpc_sketch {
     }
 
     static std::unique_ptr<cpc_sketch> deserialize(std::istream& is) {
+      fm85Init();
       uint8_t preamble_ints;
       is.read((char*)&preamble_ints, sizeof(preamble_ints));
       uint8_t serial_version;

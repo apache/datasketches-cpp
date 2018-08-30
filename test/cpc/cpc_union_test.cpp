@@ -15,9 +15,17 @@ static const double RELATIVE_ERROR_FOR_LG_K_11 = 0.02;
 class cpc_union_test: public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(cpc_union_test);
+  CPPUNIT_TEST(lg_k_limits);
   CPPUNIT_TEST(empty);
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST_SUITE_END();
+
+  void lg_k_limits() {
+    cpc_union u1(CPC_MIN_LG_K); // this should work
+    cpc_union u2(CPC_MAX_LG_K); // this should work
+    CPPUNIT_ASSERT_THROW(cpc_union u3(CPC_MIN_LG_K - 1), std::invalid_argument);
+    CPPUNIT_ASSERT_THROW(cpc_union u4(CPC_MAX_LG_K + 1), std::invalid_argument);
+  }
 
   void empty() {
     cpc_union u(11);

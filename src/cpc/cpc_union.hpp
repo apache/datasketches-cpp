@@ -38,7 +38,9 @@ class cpc_union {
   public:
     explicit cpc_union(uint8_t lg_k) {
       fm85Init();
-      // TODO: check lg_k
+      if (lg_k < CPC_MIN_LG_K or lg_k > CPC_MAX_LG_K) {
+        throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
+      }
       state = ug85Make(lg_k);
     }
 
