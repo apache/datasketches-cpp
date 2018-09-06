@@ -207,7 +207,7 @@ class kll_sketch {
       delete [] items_;
     }
 
-    void update(T value) {
+    void update(const T& value) {
       if (is_empty()) {
         min_value_ = value;
         max_value_ = value;
@@ -314,7 +314,7 @@ class kll_sketch {
       return std::move(quantiles);
     }
 
-    double get_rank(T value) const {
+    double get_rank(const T& value) const {
       if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
       uint8_t level(0);
       uint64_t weight(1);
@@ -555,7 +555,7 @@ class kll_sketch {
       // so that the freed-up space can be used by level zero
       if (level > 0) {
         const uint32_t amount(raw_beg - levels_[0]);
-        std::copy_backward(&items_[levels_[0]], &items_[levels_[0] + amount], &items_[levels_[0] + half_adj_pop + amount]);
+        std::move_backward(&items_[levels_[0]], &items_[levels_[0] + amount], &items_[levels_[0] + half_adj_pop + amount]);
         for (uint8_t lvl = 0; lvl < level; lvl++) {
           levels_[lvl] += half_adj_pop;
         }
@@ -596,8 +596,8 @@ class kll_sketch {
 
       T* new_buf(new T[new_total_cap]);
 
-      // copy (and shift) the current data into the new buffer
-      std::copy(&items_[levels_[0]], &items_[levels_[0] + cur_total_cap], &new_buf[levels_[0] + delta_cap]);
+      // move (and shift) the current data into the new buffer
+      std::move(&items_[levels_[0]], &items_[levels_[0] + cur_total_cap], &new_buf[levels_[0] + delta_cap]);
       delete [] items_;
       items_ = new_buf;
       items_size_ = new_total_cap;
@@ -721,7 +721,7 @@ class kll_sketch {
         items_size_ = final_capacity;
       }
       const uint32_t free_space_at_bottom = final_capacity - final_pop;
-      std::copy(&workbuf[outlevels[0]], &workbuf[outlevels[0] + final_pop], &items_[free_space_at_bottom]);
+      std::move(&workbuf[outlevels[0]], &workbuf[outlevels[0] + final_pop], &items_[free_space_at_bottom]);
       const uint32_t the_shift(free_space_at_bottom - outlevels[0]);
 
       if (levels_size_ < (final_num_levels + 1)) {
@@ -742,7 +742,7 @@ class kll_sketch {
 
       // Note: the level zero data from "other" was already inserted into "self"
       const uint32_t self_pop_zero(safe_level_size(0));
-      std::copy(&items_[levels_[0]], &items_[levels_[0] + self_pop_zero], &workbuf[worklevels[0]]);
+      std::move(&items_[levels_[0]], &items_[levels_[0] + self_pop_zero], &workbuf[worklevels[0]]);
       worklevels[1] = worklevels[0] + self_pop_zero;
 
       for (uint8_t lvl = 1; lvl < provisional_num_levels; lvl++) {
@@ -751,7 +751,7 @@ class kll_sketch {
         worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;
 
         if ((self_pop > 0) and (other_pop == 0)) {
-          std::copy(&items_[levels_[lvl]], &items_[levels_[lvl] + self_pop], &workbuf[worklevels[lvl]]);
+          std::move(&items_[levels_[lvl]], &items_[levels_[lvl] + self_pop], &workbuf[worklevels[lvl]]);
         } else if ((self_pop == 0) and (other_pop > 0)) {
           std::copy(&other.items_[other.levels_[lvl]], &other.items_[other.levels_[lvl] + other_pop], &workbuf[worklevels[lvl]]);
         } else if ((self_pop > 0) and (other_pop > 0)) {

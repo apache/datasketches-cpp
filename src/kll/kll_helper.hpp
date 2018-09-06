@@ -122,7 +122,7 @@ class kll_helper {
     #endif
       uint32_t j(start + offset);
       for (uint32_t i = start; i < (start + half_length); i++) {
-        buf[i] = buf[j];
+        buf[i] = std::move(buf[j]);
         j += 2;
       }
     }
@@ -138,7 +138,7 @@ class kll_helper {
     #endif
       uint32_t j((start + length) - 1 - offset);
       for (uint32_t i = (start + length) - 1; i >= (start + half_length); i--) {
-        buf[i] = buf[j];
+        buf[i] = std::move(buf[j]);
         j -= 2;
       }
     }
@@ -155,16 +155,16 @@ class kll_helper {
 
       for (uint32_t c = start_c; c < lim_c; c++) {
         if (a == lim_a) {
-          buf_c[c] = buf_b[b];
+          buf_c[c] = std::move(buf_b[b]);
           b++;
         } else if (b == lim_b) {
-          buf_c[c] = buf_a[a];
+          buf_c[c] = std::move(buf_a[a]);
           a++;
         } else if (buf_a[a] < buf_b[b]) {
-          buf_c[c] = buf_a[a];
+          buf_c[c] = std::move(buf_a[a]);
           a++;
         } else {
-          buf_c[c] = buf_b[b];
+          buf_c[c] = std::move(buf_b[b]);
           b++;
         }
       }
@@ -225,10 +225,10 @@ class kll_helper {
         const auto raw_pop(raw_lim - raw_beg);
 
         if ((current_item_count < target_item_count) or (raw_pop < level_capacity(k, num_levels, cur_level, m))) {
-          // copy level over as is
+          // move level over as is
           // because in_buf and out_buf could be the same, make sure we are not moving data upwards!
           assert (raw_beg >= out_levels[cur_level]);
-          std::copy(&in_buf[raw_beg], &in_buf[raw_lim], &out_buf[out_levels[cur_level]]);
+          std::move(&in_buf[raw_beg], &in_buf[raw_lim], &out_buf[out_levels[cur_level]]);
           out_levels[cur_level + 1] = out_levels[cur_level] + raw_pop;
         } else {
           // The sketch is too full AND this level is too full, so we compact it

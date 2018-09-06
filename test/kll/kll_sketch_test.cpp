@@ -11,7 +11,7 @@
 #include <cmath>
 #include <cstring>
 
-// this is for debug printing of kll_sketch using ostream& operator<<()
+// this is for debug printing of kll_sketch<std::string> using ostream& operator<<()
 namespace std {
   string to_string(const string& str) {
     return str;
@@ -48,8 +48,10 @@ void deserialize_items<std::string>(std::istream& is, std::string* items, unsign
 template<>
 uint32_t kll_sketch<std::string>::get_serialized_size_bytes() const {
   if (is_empty()) return EMPTY_SIZE_BYTES;
-  return 0; // possible to calculate the size of all retained strings (plus min and max), but slow
-  // this can throw as well, but debug pint using ostream& operator<<() won't work
+  // it is possible to calculate the size of all retained strings (plus min and max), but slow
+  // and this is just an example, so let's not worry
+  return 0;
+  // another approach would be to throw, but debug pint using ostream& operator<<() won't work
   //throw std::runtime_error("get_serialized_size_bytes() is not supported for std::string type");
 }
 
