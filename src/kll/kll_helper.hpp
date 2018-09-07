@@ -102,8 +102,10 @@ class kll_helper {
     template <typename T>
     static void validate_values(const T* values, uint32_t size) {
       for (uint32_t i = 0; i < size ; i++) {
-        if (std::is_floating_point<T>::value and std::isnan(values[i])) {
-          throw std::invalid_argument("Values must not be NaN");
+        if constexpr (std::is_floating_point<T>::value) {
+          if (std::isnan(values[i])) {
+            throw std::invalid_argument("Values must not be NaN");
+          }
         }
         if ((i < (size - 1)) and !(values[i] < values[i + 1])) {
           throw std::invalid_argument("Values must be unique and monotonically increasing");
