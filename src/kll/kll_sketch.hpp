@@ -347,12 +347,32 @@ class kll_sketch {
       return get_normalized_rank_error(min_k_, pmf);
     }
 
-    // this needs to be specialized to return correct size if sizeof(T) doesn't match the actual serialized size
+    // this may need to be specialized to return correct size if sizeof(T) does not match the actual serialized size of an item
+    // this method is for the user's convenience to predict the sketch size before serialization
+    // and is not used in the serialization and deserialization code
+    // predicting the size before serialization may not make sense if the item type is not of a fixed size (like string)
     uint32_t get_serialized_size_bytes() const {
       if (is_empty()) { return EMPTY_SIZE_BYTES; }
-      // the last integer in the levels_ array is not serialized because it can be derived
-      // +2 items for min and max
-      return DATA_START + (num_levels_ * sizeof(uint32_t)) + ((get_num_retained() + 2) * sizeof(T));
+      return get_serialized_size_bytes(num_levels_, get_num_retained(), get_sizeof_item());
+    }
+
+    // this may need to be specialized to return correct size if sizeof(T) does not match the actual serialized size of an item
+    // this method is for the user's convenience to predict the sketch size before serialization
+    // and is not used in the serialization and deserialization code
+    // predicting the size before serialization may not make sense if the item type is not of a fixed size (like string)
+    static uint32_t get_sizeof_item() {
+      return sizeof(T);
+    }
+
+    // this may need to be specialized to return correct size if sizeof(T) does not match the actual serialized size of an item
+    // this method is for the user's convenience to predict the sketch size before serialization
+    // and is not used in the serialization and deserialization code
+    // predicting the size before serialization may not make sense if the item type is not of a fixed size (like string)
+    static uint32_t get_max_serialized_size_bytes(uint16_t k, uint64_t n) {
+      const uint8_t num_levels = kll_helper::ub_on_num_levels(n);
+      const uint32_t max_capacity = kll_helper::compute_total_capacity(k, DEFAULT_M, num_levels);
+      const uint32_t max_num_items = n < max_capacity ? n : max_capacity;
+      return get_serialized_size_bytes(num_levels, max_num_items, get_sizeof_item());
     }
 
     void serialize(std::ostream& os) const {
@@ -774,6 +794,12 @@ class kll_sketch {
     uint32_t get_num_retained_above_level_zero() const {
       if (num_levels_ == 1) return 0;
       return levels_[num_levels_] - levels_[1];
+    }
+
+    static uint32_t get_serialized_size_bytes(uint8_t num_levels, uint32_t num_items, uint32_t sizeof_item) {
+      // the last integer in the levels_ array is not serialized because it can be derived
+      // +2 items for min and max
+      return DATA_START + (num_levels * sizeof(uint32_t)) + ((num_items + 2) * sizeof_item);
     }
 
 };

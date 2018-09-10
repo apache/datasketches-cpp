@@ -23,6 +23,7 @@ namespace datasketches {
 static const double RANK_EPS_FOR_K_200 = 0.0133;
 static const double NUMERIC_NOISE_TOLERANCE = 1E-6;
 
+// --- simple example of kll_sketch<std::string>
 template <>
 void serialize_items<std::string>(std::ostream& os, const std::string* items, unsigned num) {
   for (unsigned i = 0; i < num; i++) {
@@ -44,16 +45,21 @@ void deserialize_items<std::string>(std::istream& is, std::string* items, unsign
   }
 }
 
-// this method won't work for std::string as it is in the generic template
+// this method does not make sense for std::string as it is in the generic template
 template<>
 uint32_t kll_sketch<std::string>::get_serialized_size_bytes() const {
   if (is_empty()) return EMPTY_SIZE_BYTES;
   // it is possible to calculate the size of all retained strings (plus min and max), but slow
-  // and this is just an example, so let's not worry
+  // it is not recommended to use this method with variable-size objects
   return 0;
-  // another approach would be to throw, but debug pint using ostream& operator<<() won't work
-  //throw std::runtime_error("get_serialized_size_bytes() is not supported for std::string type");
 }
+
+// this method does not make sense for std::string as it is in the generic template
+template<>
+uint32_t kll_sketch<std::string>::get_sizeof_item() {
+  return 255; // assume 255 bytes max as it was enforced during serialization
+}
+// ---
 
 class kll_sketch_test: public CppUnit::TestFixture {
 
@@ -428,7 +434,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     const int n(1000);
     for (int i = 0; i < n; i++) sketch.update(std::to_string(i));
 
-    //CPPUNIT_ASSERT_THROW(sketch.get_serialized_size_bytes(), std::runtime_error);
+    CPPUNIT_ASSERT_EQUAL(0u, sketch.get_serialized_size_bytes()); // as implemented above
 
     CPPUNIT_ASSERT_EQUAL(std::string("0"), sketch.get_min_value());
     CPPUNIT_ASSERT_EQUAL(std::string("999"), sketch.get_max_value());
@@ -448,6 +454,8 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch_ptr->get_quantile(0.5));
     CPPUNIT_ASSERT_EQUAL(sketch.get_rank(std::to_string(0)), sketch_ptr->get_rank(std::to_string(0)));
     CPPUNIT_ASSERT_EQUAL(sketch.get_rank(std::to_string(n)), sketch_ptr->get_rank(std::to_string(n)));
+
+    CPPUNIT_ASSERT_EQUAL(789u, kll_sketch<std::string>::get_max_serialized_size_bytes(kll_sketch<std::string>::DEFAULT_K, 1ull)); // as a result of get_sizeof_item() as implemented above
 
     // to take a look using hexdump
     std::ofstream os("kll-string.bin");
