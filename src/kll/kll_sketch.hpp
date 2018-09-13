@@ -236,7 +236,9 @@ class kll_sketch {
         merge_higher_levels(other, final_n);
       }
       n_ = final_n;
-      min_k_ = std::min(min_k_, other.min_k_);
+      if (other.is_estimation_mode()) {
+        min_k_ = std::min(min_k_, other.min_k_);
+      }
       if (is_empty() or other.min_value_ < min_value_) min_value_ = other.min_value_;
       if (is_empty() or max_value_ < other.max_value_) max_value_ = other.max_value_;
       assert_correct_total_weight();
@@ -376,29 +378,33 @@ class kll_sketch {
     }
 
     void serialize(std::ostream& os) const {
-      const uint8_t preamble_ints(is_empty() ? PREAMBLE_INTS_EMPTY : PREAMBLE_INTS_NONEMPTY);
+      const bool is_single_item = n_ == 1;
+      const uint8_t preamble_ints(is_empty() or is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
       os.write((char*)&preamble_ints, sizeof(preamble_ints));
-      const uint8_t serial_version(SERIAL_VERSION);
+      const uint8_t serial_version(is_single_item ? SERIAL_VERSION_2 : SERIAL_VERSION_1);
       os.write((char*)&serial_version, sizeof(serial_version));
       const uint8_t family(FAMILY);
       os.write((char*)&family, sizeof(family));
-      const uint8_t flags(
-          (is_empty() ? 1 << kll_flags::IS_EMPTY : 0)
-        | (is_level_zero_sorted_ ? 1 << kll_flags::IS_LEVEL_ZERO_SORTED : 0)
+      const uint8_t flags_byte(
+          (is_empty() ? 1 << flags::IS_EMPTY : 0)
+        | (is_level_zero_sorted_ ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
+        | (is_single_item ? 1 << flags::IS_SINGLE_ITEM : 0)
       );
-      os.write((char*)&flags, sizeof(flags));
+      os.write((char*)&flags_byte, sizeof(flags_byte));
       os.write((char*)&k_, sizeof(k_));
       os.write((char*)&m_, sizeof(m_));
       const uint8_t unused(0);
       os.write((char*)&unused, sizeof(unused));
       if (is_empty()) return;
-      os.write((char*)&n_, sizeof(n_));
-      os.write((char*)&min_k_, sizeof(min_k_));
-      os.write((char*)&num_levels_, sizeof(num_levels_));
-      os.write((char*)&unused, sizeof(unused));
-      os.write((char*)levels_, sizeof(levels_[0]) * num_levels_);
-      serialize_items<T>(os, &min_value_, 1);
-      serialize_items<T>(os, &max_value_, 1);
+      if (!is_single_item) {
+        os.write((char*)&n_, sizeof(n_));
+        os.write((char*)&min_k_, sizeof(min_k_));
+        os.write((char*)&num_levels_, sizeof(num_levels_));
+        os.write((char*)&unused, sizeof(unused));
+        os.write((char*)levels_, sizeof(levels_[0]) * num_levels_);
+        serialize_items<T>(os, &min_value_, 1);
+        serialize_items<T>(os, &max_value_, 1);
+      }
       serialize_items<T>(os, &items_[levels_[0]], get_num_retained());
     }
 
@@ -409,8 +415,8 @@ class kll_sketch {
       is.read((char*)&serial_version, sizeof(serial_version));
       uint8_t family_id;
       is.read((char*)&family_id, sizeof(family_id));
-      uint8_t flags;
-      is.read((char*)&flags, sizeof(flags));
+      uint8_t flags_byte;
+      is.read((char*)&flags_byte, sizeof(flags_byte));
       uint16_t k;
       is.read((char*)&k, sizeof(k));
       uint8_t m;
@@ -422,28 +428,30 @@ class kll_sketch {
         throw std::invalid_argument("Possible corruption: M must be " + std::to_string(DEFAULT_M)
             + ": " + std::to_string(m));
       }
-      const bool is_empty(flags & (1 << kll_flags::IS_EMPTY));
-      if (is_empty) {
-        if (preamble_ints != PREAMBLE_INTS_EMPTY) {
+      const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
+      const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM));
+      if (is_empty or is_single_item) {
+        if (preamble_ints != PREAMBLE_INTS_SHORT) {
           throw std::invalid_argument("Possible corruption: preamble ints must be "
-              + std::to_string(PREAMBLE_INTS_EMPTY) + " for an empty sketch: " + std::to_string(preamble_ints));
+              + std::to_string(PREAMBLE_INTS_SHORT) + " for an empty or single item sketch: " + std::to_string(preamble_ints));
         }
       } else {
-        if (preamble_ints != PREAMBLE_INTS_NONEMPTY) {
+        if (preamble_ints != PREAMBLE_INTS_FULL) {
           throw std::invalid_argument("Possible corruption: preamble ints must be "
-              + std::to_string(PREAMBLE_INTS_NONEMPTY) + " for a non-empty sketch: " + std::to_string(preamble_ints));
+              + std::to_string(PREAMBLE_INTS_FULL) + " for a sketch with more than one item: " + std::to_string(preamble_ints));
         }
       }
-      if (serial_version != SERIAL_VERSION) {
+      if (serial_version != SERIAL_VERSION_1 and serial_version != SERIAL_VERSION_2) {
         throw std::invalid_argument("Possible corruption: serial version mismatch: expected "
-            + std::to_string(SERIAL_VERSION) + ", got " + std::to_string(serial_version));
+            + std::to_string(SERIAL_VERSION_1) + " or " + std::to_string(SERIAL_VERSION_2)
+            + ", got " + std::to_string(serial_version));
       }
       if (family_id != FAMILY) {
         throw std::invalid_argument("Possible corruption: family mismatch: expected "
             + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
       }
 
-      std::unique_ptr<kll_sketch<T>> sketch_ptr(is_empty ? new kll_sketch<T>(k) : new kll_sketch<T>(k, flags, is));
+      std::unique_ptr<kll_sketch<T>> sketch_ptr(is_empty ? new kll_sketch<T>(k) : new kll_sketch<T>(k, flags_byte, is));
       return std::move(sketch_ptr);
     }
 
@@ -481,15 +489,17 @@ class kll_sketch {
      */
 
     static const size_t EMPTY_SIZE_BYTES = 8;
+    static const size_t DATA_START_SINGLE_ITEM = 8;
     static const size_t DATA_START = 20;
 
-    static const uint8_t SERIAL_VERSION = 1;
+    static const uint8_t SERIAL_VERSION_1 = 1;
+    static const uint8_t SERIAL_VERSION_2 = 2;
     static const uint8_t FAMILY = 15;
 
-    enum kll_flags { IS_EMPTY, IS_LEVEL_ZERO_SORTED };
+    enum flags { IS_EMPTY, IS_LEVEL_ZERO_SORTED, IS_SINGLE_ITEM };
 
-    static const uint8_t PREAMBLE_INTS_EMPTY = 2;
-    static const uint8_t PREAMBLE_INTS_NONEMPTY = 5;
+    static const uint8_t PREAMBLE_INTS_SHORT = 2; // for empty and single item
+    static const uint8_t PREAMBLE_INTS_FULL = 5;
 
     uint16_t k_;
     uint8_t m_; // minimum buffer "width"
@@ -505,27 +515,45 @@ class kll_sketch {
     bool is_level_zero_sorted_;
 
     // for deserialization
-    kll_sketch(uint16_t k, uint8_t flags, std::istream& is) {
+    // the common part of the preamble was read and compatibility checks were done
+    kll_sketch(uint16_t k, uint8_t flags_byte, std::istream& is) {
       k_ = k;
       m_ = DEFAULT_M;
-      is.read((char*)&n_, sizeof(n_));
-      is.read((char*)&min_k_, sizeof(min_k_));
-      is.read((char*)&num_levels_, sizeof(num_levels_));
-      uint8_t unused;
-      is.read((char*)&unused, sizeof(unused));
+      const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
+      if (is_single_item) {
+        n_ = 1;
+        min_k_ = k_;
+        num_levels_ = 1;
+      } else {
+        is.read((char*)&n_, sizeof(n_));
+        is.read((char*)&min_k_, sizeof(min_k_));
+        is.read((char*)&num_levels_, sizeof(num_levels_));
+        uint8_t unused;
+        is.read((char*)&unused, sizeof(unused));
+      }
       levels_ = new uint32_t[num_levels_ + 1];
       levels_size_ = num_levels_ + 1;
-      // the last integer in levels_ is not serialized because it can be derived
-      is.read((char*)levels_, sizeof(levels_[0]) * num_levels_);
       const uint32_t capacity(kll_helper::compute_total_capacity(k_, m_, num_levels_));
+      if (is_single_item) {
+        levels_[0] = capacity - 1;
+      } else {
+        // the last integer in levels_ is not serialized because it can be derived
+        is.read((char*)levels_, sizeof(levels_[0]) * num_levels_);
+      }
       levels_[num_levels_] = capacity;
-      deserialize_items<T>(is, &min_value_, 1);
-      deserialize_items<T>(is, &max_value_, 1);
+      if (!is_single_item) {
+        deserialize_items<T>(is, &min_value_, 1);
+        deserialize_items<T>(is, &max_value_, 1);
+      }
       items_ = new T[capacity];
       items_size_ = capacity;
       const auto num_items(levels_[num_levels_] - levels_[0]);
       deserialize_items<T>(is, &items_[levels_[0]], num_items);
-      is_level_zero_sorted_ = (flags & (1 << kll_flags::IS_LEVEL_ZERO_SORTED)) > 0;
+      if (is_single_item) {
+        min_value_ = items_[levels_[0]];
+        max_value_ = items_[levels_[0]];
+      }
+      is_level_zero_sorted_ = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
     }
 
     // The following code is only valid in the special case of exactly reaching capacity while updating.
@@ -797,6 +825,9 @@ class kll_sketch {
     }
 
     static uint32_t get_serialized_size_bytes(uint8_t num_levels, uint32_t num_items, uint32_t sizeof_item) {
+      if (num_levels == 1 and num_items == 1) {
+        return DATA_START_SINGLE_ITEM + sizeof_item;
+      }
       // the last integer in the levels_ array is not serialized because it can be derived
       // +2 items for min and max
       return DATA_START + (num_levels * sizeof(uint32_t)) + ((num_items + 2) * sizeof_item);
