@@ -53,6 +53,8 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     for (int i = 0; i < n; i++) sketch.update(i);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sketch.get_estimate(), n * RELATIVE_ERROR_FOR_LG_K_11);
+    CPPUNIT_ASSERT(sketch.get_estimate() > sketch.get_lower_bound(1));
+    CPPUNIT_ASSERT(sketch.get_estimate() < sketch.get_upper_bound(1));
   }
 
   void serialize_deserialize_empty() {

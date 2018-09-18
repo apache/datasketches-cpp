@@ -14,6 +14,7 @@ extern "C" {
 #include "fm85.h"
 #include "fm85Compression.h"
 #include "iconEstimator.h"
+#include "fm85Confidence.h"
 
 }
 
@@ -63,12 +64,14 @@ class cpc_sketch {
       return getIconEstimate(state->lgK, state->numCoupons);
     }
 
-    double get_lower_bound(int num_std_dev) {
-      return 0; // TODO
+    double get_lower_bound(int kappa) {
+      if (!state->mergeFlag) return getHIPConfidenceLB(state, kappa);
+      return getIconConfidenceLB(state, kappa);
     }
 
-    double get_upper_bound(int num_std_dev) {
-      return 0; // TODO
+    double get_upper_bound(int kappa) {
+      if (!state->mergeFlag) return getHIPConfidenceUB(state, kappa);
+      return getIconConfidenceUB(state, kappa);
     }
 
     void update(uint64_t value) {
