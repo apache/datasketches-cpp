@@ -36,6 +36,7 @@ class HllUnion : public BaseHllSketch {
   public:
     explicit HllUnion(const int lgMaxK);
     explicit HllUnion(HllSketch& sketch);
+    static HllUnion* deserialize(std::istream& is);
 
     virtual ~HllUnion();
 

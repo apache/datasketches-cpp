@@ -31,6 +31,14 @@ HllUnion::~HllUnion() {
   }
 }
 
+HllUnion* HllUnion::deserialize(std::istream& is) {
+  HllSketch* sk = HllSketch::deserialize(is);
+  if (sk == nullptr) { return nullptr; }
+  HllUnion* hllUnion = new HllUnion(sk->getLgConfigK());
+  hllUnion->update(sk);
+  return hllUnion;
+}
+
 HllSketch* HllUnion::getResult() const {
   return gadget->copyAs(TgtHllType::HLL_4);
 }

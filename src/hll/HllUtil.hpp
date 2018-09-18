@@ -73,6 +73,9 @@ public:
   static int getLow26(const int coupon);
   static int getValue(const int coupon);
   static double invPow2(const int e);
+  static unsigned int ceilingPowerOf2(unsigned int n);
+  static unsigned int simpleIntLog2(unsigned int n); // n must be power of 2
+  static unsigned int numberOfTrailingZeros(unsigned int n);
 };
 
 inline int HllUtil::checkLgK(const int lgK) {
@@ -111,6 +114,56 @@ inline double HllUtil::invPow2(const int e) {
   } conv;
   conv.longVal = (1023L - e) << 52;
   return conv.doubleVal;
+}
+
+// compute the next highest power of 2 of 32-bit n
+// taken from https://graphics.stanford.edu/~seander/bithacks.html
+inline unsigned int HllUtil::ceilingPowerOf2(unsigned int n) {
+  n--;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  return n++;
+}
+
+inline unsigned int HllUtil::simpleIntLog2(unsigned int n) {
+  const unsigned int e = numberOfTrailingZeros(n);
+  assert(n == (1U << e));
+  return e;
+}
+
+// taken from https://graphics.stanford.edu/~seander/bithacks.html
+// input is 32-bit word to count zero bits on right
+inline unsigned int HllUtil::numberOfTrailingZeros(unsigned int v) {
+  unsigned int c;     // c will be the number of zero bits on the right,
+                      // so if v is 1101000 (base 2), then c will be 3
+  // NOTE: if 0 == v, then c = 31.
+  if (v & 0x1) {
+    // special case for odd v (assumed to happen half of the time)
+    c = 0;
+  } else {
+    c = 1;
+    if ((v & 0xffff) == 0) {  
+      v >>= 16;  
+      c += 16;
+    }
+    if ((v & 0xff) == 0) {  
+      v >>= 8;  
+      c += 8;
+    }
+    if ((v & 0xf) == 0) {  
+      v >>= 4;
+      c += 4;
+    }
+    if ((v & 0x3) == 0) {  
+      v >>= 2;
+      c += 2;
+    }
+    c -= v & 0x1;
+  }
+  return c;	
 }
 
 }

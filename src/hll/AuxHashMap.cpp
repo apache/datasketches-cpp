@@ -30,6 +30,36 @@ AuxHashMap::AuxHashMap(AuxHashMap& that)
   std::copy(that.auxIntArr, that.auxIntArr + numItems, auxIntArr);
 }
 
+// TODO: reading from stream, ened lgAuxArrInts passed in
+AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
+                                    const int auxCount, const int lgAuxArrInts,
+                                    const bool srcCompact) {
+  int lgArrInts = lgAuxArrInts;
+  if (srcCompact) { // early compact versions didn't use LgArr byte field so ignore input
+    int ceilInts = HllUtil::ceilingPowerOf2(auxCount);
+    if ((HllUtil::RESIZE_DENOM * auxCount) > (HllUtil::RESIZE_NUMER * ceilInts)) {
+      ceilInts <<= 1;
+    }
+    int maxVal = (ceilInts > (1 << HllUtil::LG_AUX_ARR_INTS[lgConfigK])
+                  ? ceilInts : (1 << HllUtil::LG_AUX_ARR_INTS[lgConfigK]));
+    lgArrInts = HllUtil::simpleIntLog2(maxVal);
+  }
+  
+  AuxHashMap* auxHashMap = new AuxHashMap(lgArrInts, lgConfigK);
+  int configKmask = (1 << lgConfigK) - 1;
+
+  int itemsToRead = (srcCompact ? auxCount : (1 << lgAuxArrInts));
+  for (int i = 0; i < itemsToRead; ++i) {
+    int pair;
+    is.read((char*)&pair, sizeof(pair));
+    int slotNo = HllUtil::getLow26(pair) & configKmask;
+    int value = HllUtil::getValue(pair);
+    auxHashMap->mustAdd(slotNo, value);
+  }
+
+  return auxHashMap;
+}
+
 AuxHashMap::~AuxHashMap() {
   // should be no way to have an object without a valid array
   delete auxIntArr;
@@ -45,6 +75,10 @@ int AuxHashMap::getAuxCount() {
 
 int* AuxHashMap::getAuxIntArr() {
   return auxIntArr;
+}
+
+int AuxHashMap::getLgAuxArrInts() {
+  return lgAuxArrInts;
 }
 
 int AuxHashMap::getCompactSizeBytes() {

@@ -30,7 +30,7 @@ class hll_sketch_test: public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(hll_sketch_test);
   CPPUNIT_TEST(simple_union);
-  CPPUNIT_TEST(k_limits);
+  //CPPUNIT_TEST(k_limits);
   //CPPUNIT_TEST(empty);
   CPPUNIT_TEST_SUITE_END();
 

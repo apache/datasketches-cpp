@@ -25,7 +25,7 @@ HllSketchImpl::~HllSketchImpl() {
 
 HllSketchImpl* HllSketchImpl::deserialize(std::istream& is) {
   // we'll hand off the sketch based on PreInts so we don't need
-  // to move the stream pointer back and forth -- perhaps somewhat fragile
+  // to move the stream pointer back and forth -- perhaps somewhat fragile?
   const int preInts = is.peek();
   if (preInts == HllUtil::HLL_PREINTS) {
     return HllArray::newHll(is);

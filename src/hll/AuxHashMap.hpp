@@ -15,6 +15,9 @@ class AuxHashMap {
   public:
     explicit AuxHashMap(int lgAuxArrInts, int lgConfigK);
     explicit AuxHashMap(AuxHashMap& that);
+    static AuxHashMap* deserialize(std::istream& is, const int lgConfigK,
+                                   const int auxCount, const int lgAuxArrInts,
+                                   const bool srcCompact);
     virtual ~AuxHashMap();
 
     AuxHashMap* copy();

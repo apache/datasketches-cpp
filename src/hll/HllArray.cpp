@@ -71,7 +71,59 @@ HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
 }
 
 HllArray* HllArray::newHll(std::istream& is) {
-  return nullptr;
+  uint8_t listHeader[8];
+  is.read((char*)listHeader, 8 * sizeof(uint8_t));
+
+  if (listHeader[0] != HllUtil::LIST_PREINTS) {
+    throw std::invalid_argument("Incorrect number of preInts in input stream");
+  }
+  if (listHeader[1] != HllUtil::SER_VER) {
+    throw std::invalid_argument("Wrong ser ver in input stream");
+  }
+  if (listHeader[2] != HllUtil::FAMILY_ID) {
+    throw std::invalid_argument("Input stream is not an HLL sketch");
+  }
+
+  CurMode curMode = extractCurMode(listHeader[7]);
+  if (curMode != HLL) {
+    throw std::invalid_argument("Calling HLL construtor with non-HLL mode data");
+  }
+
+  TgtHllType tgtHllType = extractTgtHllType(listHeader[7]);
+  bool oooFlag = ((listHeader[5] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  bool comapctFlag = ((listHeader[5] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
+
+  const int lgK = (int) listHeader[3];
+  const int curMin = (int) listHeader[6];
+
+  HllArray* sketch = newHll(lgK, tgtHllType);
+  sketch->putCurMin(curMin);
+  sketch->putOutOfOrderFlag(oooFlag);
+
+  double hip, kxq0, kxq1;
+  is.read((char*)&hip, sizeof(hip));
+  is.read((char*)&kxq0, sizeof(kxq0));
+  is.read((char*)&kxq1, sizeof(kxq1));
+  sketch->putHipAccum(hip);
+  sketch->putKxQ0(kxq0);
+  sketch->putKxQ1(kxq1);
+
+  int numAtCurMin, auxCount;
+  is.read((char*)&numAtCurMin, sizeof(numAtCurMin));
+  is.read((char*)&auxCount, sizeof(auxCount));
+  sketch->putNumAtCurMin(numAtCurMin);
+  
+  is.read((char*)sketch->hllByteArr, sketch->getHllByteArrBytes());
+  
+  if (auxCount > 0) { // necessarily TgtHllType == HLL_4
+    int auxLgIntArrSize = (int) listHeader[4];
+    AuxHashMap* auxHashMap = AuxHashMap::deserialize(is, lgK, auxCount, auxLgIntArrSize, comapctFlag);
+    ((Hll4Array*)sketch)->putAuxHashMap(auxHashMap);
+  }
+
+  // TODO: finish me!
+
+  return sketch;
 }
 
 void HllArray::serialize(std::ostream& os, const bool compact) const {
@@ -84,8 +136,14 @@ void HllArray::serialize(std::ostream& os, const bool compact) const {
   os.write((char*)&familyId, sizeof(familyId));
   const uint8_t lgKByte((uint8_t) lgConfigK);
   os.write((char*)&lgKByte, sizeof(lgKByte));
-  const uint8_t unused(0);
-  os.write((char*)&unused, sizeof(unused));
+
+  AuxHashMap* auxHashMap = getAuxHashMap();
+  uint8_t lgArrByte(0);
+  if (auxHashMap != nullptr) {
+    lgArrByte = auxHashMap->getLgAuxArrInts();
+  }
+  os.write((char*)&lgArrByte, sizeof(lgArrByte));
+
   const uint8_t flagsByte(makeFlagsByte(compact));
   os.write((char*)&flagsByte, sizeof(flagsByte));
   const uint8_t curMinByte((uint8_t) curMin);
@@ -101,11 +159,11 @@ void HllArray::serialize(std::ostream& os, const bool compact) const {
   // array data
   os.write((char*)&numAtCurMin, sizeof(numAtCurMin));
 
-  AuxHashMap* auxHashMap = getAuxHashMap();
   const int auxCount = (auxHashMap == nullptr ? 0 : auxHashMap->getAuxCount());
   os.write((char*)&auxCount, sizeof(auxCount));
   os.write((char*)hllByteArr, getHllByteArrBytes());
 
+  // aux map, if needed
   if (compact) {
     std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
     while (itr->nextValid()) {
@@ -201,7 +259,6 @@ double HllArray::getUpperBound(const int numStdDev) const {
     rseFactor = HllUtil::HLL_HIP_RSE_FACTOR;
   }
 
-  // TODO: add RelativeErrorTables to handle -1 case
   double relErr;
   if (lgConfigK > 12) {
     relErr = (-1.0) * (numStdDev * rseFactor) / sqrt(configK);
@@ -351,8 +408,9 @@ int HllArray::getUpdatableSerializationBytes() const {
 }
 
 int HllArray::getCompactSerializationBytes() const {
-  // TODO: write me after HLL4 exists
-  return -1;
+  AuxHashMap* auxHashMap = getAuxHashMap();
+  const int auxCountBytes = ((auxHashMap == nullptr) ? 0 : auxHashMap->getCompactSizeBytes());
+  return HllUtil::HLL_BYTE_ARR_START + getHllByteArrBytes() + auxCountBytes;
 }
 
 int HllArray::getPreInts() const {
