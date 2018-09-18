@@ -30,7 +30,6 @@ AuxHashMap::AuxHashMap(AuxHashMap& that)
   std::copy(that.auxIntArr, that.auxIntArr + numItems, auxIntArr);
 }
 
-// TODO: reading from stream, ened lgAuxArrInts passed in
 AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
                                     const int auxCount, const int lgAuxArrInts,
                                     const bool srcCompact) {
