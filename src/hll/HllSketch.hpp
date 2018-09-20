@@ -18,8 +18,7 @@ class HllSketchImpl;
 
 class HllSketch : public BaseHllSketch {
   public:
-    explicit HllSketch(const int lgConfigK);
-    explicit HllSketch(const int lgConfigK, const TgtHllType tgtHllType);
+    explicit HllSketch(const int lgConfigK, const TgtHllType tgtHllType = HLL_4);
     static HllSketch* deserialize(std::istream& is);
 
     ~HllSketch();
@@ -62,12 +61,11 @@ class HllSketch : public BaseHllSketch {
     */
     static int getMaxUpdatableSerializationBytes(const int lgK, TgtHllType tgtHllType);
 
+    virtual std::unique_ptr<PairIterator> getIterator() const;
+    CurMode getCurrentMode() const;
+
   protected:
     HllSketchImpl* hllSketchImpl;
-
-    virtual std::unique_ptr<PairIterator> getIterator() const;
-
-    CurMode getCurMode() const;
 
     // copy constructors
     HllSketch(const HllSketch& that);

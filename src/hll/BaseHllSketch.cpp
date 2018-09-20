@@ -61,6 +61,10 @@ void BaseHllSketch::update(const uint64_t datum) {
   update(&datum, sizeof(datum));
 }
 
+void BaseHllSketch::update(const int datum) {
+  update(&datum, sizeof(datum));
+}
+
 void BaseHllSketch::update(const double datum) {
   double d = ((datum == 0.0) ? 0.0 : datum); // canonicalize -0.0, 0.0
   d = (std::isnan(d) ? NAN : d); // canonicalize NaN, although portability to Java not guaranteed

@@ -73,7 +73,7 @@ void HllUnion::serializeUpdatable(std::ostream& os) const {
 }
 
 std::ostream& HllUnion::to_string(std::ostream& os, const bool summary,
-                               const bool detail, const bool auxDetail, const bool all) const {
+                                  const bool detail, const bool auxDetail, const bool all) const {
   return gadget->to_string(os, summary, detail, auxDetail, all);
 }
 
@@ -121,8 +121,8 @@ bool HllUnion::isOutOfOrderFlag() const {
   return gadget->isOutOfOrderFlag();
 }
 
-CurMode HllUnion::getCurMode() const {
-  return gadget->getCurMode();
+CurMode HllUnion::getCurrentMode() const {
+  return gadget->getCurrentMode();
 }
 
 TgtHllType HllUnion::getTgtHllType() const {

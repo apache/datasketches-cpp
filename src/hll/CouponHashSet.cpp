@@ -27,7 +27,7 @@ CouponHashSet* CouponHashSet::newSet(std::istream& is) {
   uint8_t listHeader[8];
   is.read((char*)listHeader, 8 * sizeof(uint8_t));
 
-  if (listHeader[0] != HllUtil::LIST_PREINTS) {
+  if (listHeader[0] != HllUtil::HASH_SET_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
   if (listHeader[1] != HllUtil::SER_VER) {
@@ -55,6 +55,8 @@ CouponHashSet* CouponHashSet::newSet(std::istream& is) {
 
   int couponCount;
   is.read((char*)&couponCount, sizeof(couponCount));
+  // Don't set couponCount here;
+  // we'll set later if updatable, and increment with updates if compact
 
   if (compactFlag) {
     for (int i = 0; i < couponCount; ++i) {
@@ -62,12 +64,21 @@ CouponHashSet* CouponHashSet::newSet(std::istream& is) {
       is.read((char*)&coupon, sizeof(coupon));
       if (coupon == HllUtil::EMPTY) { continue; }
       sketch->couponUpdate(coupon);
+
+      /*
+      HllSketchImpl* result = sketch->couponUpdate(coupon);
+      if (result != sketch) {
+        delete sketch;
+        sketch = result;
+      }
+      */
     }
   } else {
     int* tmp = sketch->couponIntArr;
     sketch->lgCouponArrInts = lgArrInts;
     sketch->couponIntArr = new int[1 << lgArrInts];
-    is.read((char*)&(sketch->couponIntArr), couponCount * sizeof(int));
+    sketch->couponCount = couponCount;
+    is.read((char*)sketch->couponIntArr, couponCount * sizeof(int));
     delete tmp;
   } 
 
@@ -110,20 +121,22 @@ bool CouponHashSet::checkGrowOrPromote() {
     if (lgCouponArrInts == (lgConfigK - 3)) { // at max size
       return true; // promote to HLL
     }
-    growHashSet(++lgCouponArrInts);
+    int tgtLgCoupArrSize = lgCouponArrInts + 1;
+    growHashSet(lgCouponArrInts, tgtLgCoupArrSize);
   }
   return false;
 }
 
-void CouponHashSet::growHashSet(const int tgtLgCoupArrSize) {
+void CouponHashSet::growHashSet(const int srcLgCoupArrSize, const int tgtLgCoupArrSize) {
   const int tgtLen = 1 << tgtLgCoupArrSize;
   int* tgtCouponIntArr = new int[tgtLen];
   std::fill(tgtCouponIntArr, tgtCouponIntArr + tgtLen, 0);
 
-  for (int i = 0; i < tgtLen; ++i) { // scan existing array for non-zero values
+  const int srcLen = 1 << srcLgCoupArrSize;
+  for (int i = 0; i < srcLen; ++i) { // scan existing array for non-zero values
     const int fetched = couponIntArr[i];
     if (fetched != HllUtil::EMPTY) {
-      const int idx = find(tgtCouponIntArr, tgtLen, fetched); // search TGT array
+      const int idx = find(tgtCouponIntArr, tgtLgCoupArrSize, fetched); // search TGT array
       if (idx < 0) { // found EMPTY
         tgtCouponIntArr[~idx] = fetched; // insert
         continue;

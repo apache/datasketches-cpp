@@ -32,7 +32,7 @@ class CouponHashSet : public CouponList {
 
   private:
     bool checkGrowOrPromote();
-    void growHashSet(const int tgtLgCoupArrSize);
+    void growHashSet(const int srcLgCoupArrSize, const int tgtLgCoupArrSize);
 };
 
 }

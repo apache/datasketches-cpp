@@ -52,6 +52,7 @@ class BaseHllSketch {
 
     // TODO: is this portable?
     void update(const std::string datum);
+    void update(const int datum);
     void update(const uint64_t datum);
     void update(const double datum);
     void update(const void* data, const size_t len);
@@ -62,7 +63,7 @@ class BaseHllSketch {
 
     virtual void couponUpdate(int coupon) = 0;
 
-    virtual enum CurMode getCurMode() const = 0;
+    virtual enum CurMode getCurrentMode() const = 0;
 
     static const uint64_t DEFAULT_UPDATE_SEED = 9001L;
     static const int KEY_BITS_26 = 26;

@@ -80,7 +80,7 @@ std::ostream& HllSketch::to_string(std::ostream& os, const bool summary,
        << "  Estimate       : " << getEstimate() << std::endl
        << "  UB             : " << getUpperBound(1) << std::endl
        << "  OutOfOrder flag: " << isOutOfOrderFlag() << std::endl;
-    if (getCurMode() == HLL) {
+    if (getCurrentMode() == HLL) {
       HllArray* hllArray = (HllArray*) hllSketchImpl;
       os << "  CurMin       : " << hllArray->getCurMin() << std::endl
          << "  NumAtCurMin  : " << hllArray->getNumAtCurMin() << std::endl
@@ -108,7 +108,7 @@ std::ostream& HllSketch::to_string(std::ostream& os, const bool summary,
     }
   }
   if (auxDetail) {
-    if ((getCurMode() == HLL) && (getTgtHllType() == HLL_4)) {
+    if ((getCurrentMode() == HLL) && (getTgtHllType() == HLL_4)) {
       HllArray* hllArray = (HllArray*) hllSketchImpl;
       std::unique_ptr<PairIterator> auxItr = hllArray->getAuxIterator();
       if (auxItr != nullptr) {
@@ -146,7 +146,7 @@ double HllSketch::getUpperBound(int numStdDev) const {
   return hllSketchImpl->getUpperBound(numStdDev);
 }
 
-CurMode HllSketch::getCurMode() const {
+CurMode HllSketch::getCurrentMode() const {
   return hllSketchImpl->getCurMode();
 }
 

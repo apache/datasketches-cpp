@@ -94,7 +94,8 @@ CouponList* CouponList::newList(std::istream& is) {
 
   CouponList* sketch = new CouponList(lgK, tgtHllType, curMode);
   const int couponCount = (int) listHeader[6];
-  is.read((char*)&(sketch->couponIntArr), couponCount * sizeof(int));
+  sketch->couponCount = couponCount;
+  is.read((char*)sketch->couponIntArr, couponCount * sizeof(int));
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
   
   return sketch;
@@ -133,18 +134,18 @@ void CouponList::serialize(std::ostream& os, const bool compact) const {
 
   // coupons
   // isCompact() is always false for now
-  const int sw = (isCompact() ? 0 : 2) | (compact ? 0 : 1);
+  const int sw = (isCompact() ? 2 : 0) | (compact ? 1 : 0);
   switch (sw) {
-    case 0: { // src updatable, dst compact
+    case 0: { // src updatable, dst updatable
+      os.write((char*)couponIntArr, (1 << lgCouponArrInts) * sizeof(int));
+      break;
+    }
+    case 1: { // src updatable, dst compact
       std::unique_ptr<PairIterator> itr = getIterator();
       while (itr->nextValid()) {
         const int pairValue = itr->getPair();
         os.write((char*)&pairValue, sizeof(pairValue));
       }
-      break;
-    }
-    case 1: { // src updatable, dst updatable
-      os.write((char*)couponIntArr, (1 << lgCouponArrInts) * sizeof(int));
       break;
     }
 

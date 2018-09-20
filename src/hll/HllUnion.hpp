@@ -49,7 +49,7 @@ class HllUnion : public BaseHllSketch {
     int getUpdatableSerializationBytes() const;
     int getLgConfigK() const;
 
-    CurMode getCurMode() const;
+    CurMode getCurrentMode() const;
     TgtHllType getTgtHllType() const;
     bool isCompact() const;
     bool isEmpty() const;
