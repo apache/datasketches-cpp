@@ -43,7 +43,7 @@ TgtHllType HllSketchImpl::extractTgtHllType(const uint8_t modeByte) {
   case 0:
     return TgtHllType::HLL_4;
   case 1:
-    throw std::invalid_argument("HLL_6 not yet supported");
+    return TgtHllType::HLL_6;
   case 2:
     return TgtHllType::HLL_8;
   default:
@@ -102,11 +102,9 @@ uint8_t HllSketchImpl::makeModeByte() const {
   case HLL_4:
     byte |= (0 << 2);  // for completeness
     break;
-  /*
   case HLL_6:
     byte |= (1 << 2);
     break;
-  */
   case HLL_8:
     byte = (2 << 2); 
     break;

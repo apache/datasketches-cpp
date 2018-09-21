@@ -74,7 +74,7 @@ class HllArray : public HllSketchImpl {
     void putNumAtCurMin(const int numAtCurMin);
 
     static int hll4ArrBytes(const int lgConfigK);
-    //static int hll6ArrBytes(const int lgConfigK);
+    static int hll6ArrBytes(const int lgConfigK);
     static int hll8ArrBytes(const int lgConfigK);
 
   protected:

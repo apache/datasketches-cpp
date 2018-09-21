@@ -186,6 +186,8 @@ std::string HllSketch::typeAsString() const {
   switch (hllSketchImpl->getTgtHllType()) {
     case TgtHllType::HLL_4:
       return std::string("HLL_4");
+    case TgtHllType::HLL_6:
+      return std::string("HLL_6");
     case TgtHllType::HLL_8:
       return std::string("HLL_8");
     default:

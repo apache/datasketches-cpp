@@ -66,6 +66,25 @@ int Conversions::curMinAndNum(const HllArray& hllArr) {
   return HllUtil::pair(numAtCurMin, curMin);
 }
 
+Hll6Array* Conversions::convertToHll6(const HllArray& srcHllArr) {
+  const int lgConfigK = srcHllArr.getLgConfigK();
+  Hll6Array* hll6Array = new Hll6Array(lgConfigK);
+  hll6Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());
+
+  int numZeros = 1 << lgConfigK;
+  std::unique_ptr<PairIterator> itr = srcHllArr.getIterator();
+  while (itr->nextAll()) {
+    if (itr->getValue() != HllUtil::EMPTY) {
+      --numZeros;
+      hll6Array->couponUpdate(itr->getPair());
+    }
+  }
+
+  hll6Array->putNumAtCurMin(numZeros);
+  hll6Array->putHipAccum(srcHllArr.getHipAccum());
+  return hll6Array;
+}
+
 Hll8Array* Conversions::convertToHll8(const HllArray& srcHllArr) {
   const int lgConfigK = srcHllArr.getLgConfigK();
   Hll8Array* hll8Array = new Hll8Array(lgConfigK);

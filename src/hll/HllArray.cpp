@@ -10,6 +10,7 @@
 #include "RelativeErrorTables.hpp"
 #include "CouponList.hpp"
 #include "Hll8Array.hpp"
+#include "Hll6Array.hpp"
 #include "Hll4Array.hpp"
 #include "Conversions.hpp"
 
@@ -54,6 +55,8 @@ HllArray* HllArray::copyAs(const TgtHllType tgtHllType) const {
   }
   if (tgtHllType == TgtHllType::HLL_4) {
     return Conversions::convertToHll4(*this);
+  } else if (tgtHllType == TgtHllType::HLL_6) {
+    return Conversions::convertToHll6(*this);
   } else { // tgtHllType == HLL_8
     return Conversions::convertToHll8(*this);
   }
@@ -63,10 +66,12 @@ HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
   switch (tgtHllType) {
     case HLL_8:
       return (HllArray*) new Hll8Array(lgConfigK);
+    case HLL_6:
+      return (HllArray*) new Hll6Array(lgConfigK);
     case HLL_4:
       return (HllArray*) new Hll4Array(lgConfigK);
     default:
-      throw std::invalid_argument("Only HLL_4, HLL_8 currently supported");
+      throw std::invalid_argument("Impossible HLL type");
   }
 }
 
@@ -120,8 +125,6 @@ HllArray* HllArray::newHll(std::istream& is) {
     AuxHashMap* auxHashMap = AuxHashMap::deserialize(is, lgK, auxCount, auxLgIntArrSize, comapctFlag);
     ((Hll4Array*)sketch)->putAuxHashMap(auxHashMap);
   }
-
-  // TODO: finish me!
 
   return sketch;
 }
@@ -177,7 +180,7 @@ void HllArray::serialize(std::ostream& os, const bool compact) const {
   return;
 }
 
-HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 (and 6 if ever added)
+HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 and HLL_6
   const int configKmask = (1 << getLgConfigK()) - 1;
   const int slotNo = HllUtil::getLow26(coupon) & configKmask;
   const int newVal = HllUtil::getValue(coupon);
@@ -186,6 +189,9 @@ HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 (and 
   const int curVal = getSlot(slotNo);
   if (newVal > curVal) {
     putSlot(slotNo, newVal);
+    if (getSlot(slotNo) != newVal) {
+      assert(false);
+    }
     hipAndKxQIncrementalUpdate(*this, curVal, newVal);
     if (curVal == 0) {
       decNumAtCurMin(); // interpret numAtCurMin as num zeros
@@ -393,6 +399,11 @@ bool HllArray::isOutOfOrderFlag() const {
 
 int HllArray::hll4ArrBytes(const int lgConfigK) {
   return 1 << (lgConfigK - 1);
+}
+
+int HllArray::hll6ArrBytes(const int lgConfigK) {
+  const int numSlots = 1 << lgConfigK;
+  return ((numSlots * 3) >> 2) + 1;
 }
 
 int HllArray::hll8ArrBytes(const int lgConfigK) {

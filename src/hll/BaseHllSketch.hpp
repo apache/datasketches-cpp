@@ -11,6 +11,7 @@ namespace datasketches {
 
 enum TgtHllType {
     HLL_4 = 0,
+    HLL_6,
     HLL_8
 };
 
