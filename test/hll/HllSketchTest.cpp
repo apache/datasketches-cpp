@@ -18,7 +18,7 @@ namespace datasketches {
 class hllSketchTest : public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(hllSketchTest);
-  //CPPUNIT_TEST(checkCopies);
+  CPPUNIT_TEST(checkCopies);
   CPPUNIT_TEST(checkCopyAs);
   //CPPUNIT_TEST(checkMisc1);
   //CPPUNIT_TEST(checkNumStdDev);
@@ -81,43 +81,6 @@ class hllSketchTest : public CppUnit::TestFixture {
   }
 
   void checkCopyAs() {
-    /*
-    int lgK = 4;
-    HllSketch* sk1 = new HllSketch(lgK, HLL_4);
-    HllSketch* sk2 = new HllSketch(lgK, HLL_6);
-
-    for (int i = 0; i < 7; ++i) {
-      sk1->update(i);
-      sk2->update(i);
-    }
-    CPPUNIT_ASSERT_EQUAL(sk1->getCurrentMode(), CurMode::LIST);
-    CPPUNIT_ASSERT_EQUAL(sk1->getCurrentMode(), sk2->getCurrentMode());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1->getEstimate(), sk2->getEstimate(), 0.0);
-
-    for (int i = 7; i < 24; ++i) {
-      sk1->update(i);
-      sk2->update(i);
-    }
-    //CPPUNIT_ASSERT_EQUAL(sk1->getCurrentMode(), CurMode::SET);
-    CPPUNIT_ASSERT_EQUAL(sk1->getCurrentMode(), CurMode::HLL);
-    CPPUNIT_ASSERT_EQUAL(sk1->getCurrentMode(), sk2->getCurrentMode());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1->getEstimate(), sk2->getEstimate(), 0.0);
-
-    //for (int i = 24; sk1->getCurrentMode() != HLL; ++i) {
-    for (int i = 24; i < 100000; ++i) {
-      sk1->update(i);
-      sk2->update(i);
-    }
-    CPPUNIT_ASSERT_EQUAL(sk1->getCurrentMode(), CurMode::HLL);
-    CPPUNIT_ASSERT_EQUAL(sk1->getCurrentMode(), sk2->getCurrentMode());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1->getEstimate(), sk2->getEstimate(), 0.0);
-
-    sk1->to_string(std::cout, true, true, true, true);
-    sk2->to_string(std::cout, true, true, true, true);
-
-    delete sk1;
-    delete sk2;
-    */
     copyAs(HLL_4, HLL_4);
     copyAs(HLL_4, HLL_6);
     copyAs(HLL_4, HLL_8);
@@ -135,7 +98,7 @@ class hllSketchTest : public CppUnit::TestFixture {
     int n2 = 24;
     int n3 = 1000;
     int base = 0;
-    std::cerr << srcType << "\t" << dstType << "\n"; std::cerr.flush();
+
     HllSketch* src = new HllSketch(lgK, srcType);
     for (int i = 0; i < n1; ++i) {
       src->update(i + base);
