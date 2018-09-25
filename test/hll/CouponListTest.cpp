@@ -4,8 +4,8 @@
  */
 
 #include "src/hll/hll.hpp"
-//#include "src/hll/HllSketch.hpp"
-//#include "src/hll/HllUnion.hpp"
+#include "src/hll/HllSketch.hpp"
+#include "src/hll/HllUnion.hpp"
 #include "src/hll/HllUtil.hpp"
 
 #include <cppunit/TestFixture.h>
@@ -30,9 +30,9 @@ class couponListTest : public CppUnit::TestFixture {
 
   void checkIterator() {
     int lgConfigK = 8;
-    HllSketch* sk = new HllSketch(lgConfigK);
+    HllSketch* sk = HllSketch::newInstance(lgConfigK);
     for (int i = 0; i < 7; ++i) { sk->update(i); }
-    std::unique_ptr<PairIterator> itr = sk->getIterator();
+    std::unique_ptr<PairIterator> itr = static_cast<HllSketchPvt*>(sk)->getIterator();
     println_string(itr->getHeader());
     while (itr->nextAll()) {
       int key = itr->getKey();
@@ -50,7 +50,8 @@ class couponListTest : public CppUnit::TestFixture {
 
   void checkDuplicatesAndMisc() {
     int lgConfigK = 8;
-    HllSketch* sk = new HllSketch(lgConfigK);
+    HllSketch* skContainer = HllSketch::newInstance(lgConfigK);
+    HllSketchPvt* sk = static_cast<HllSketchPvt*>(skContainer);
 
     for (int i = 1; i <= 7; ++i) {
       sk->update(i);
@@ -90,7 +91,7 @@ class couponListTest : public CppUnit::TestFixture {
   }
 
   void serializeDeserialize(const int lgK) {
-    HllSketch* sk1 = new HllSketch(lgK);
+    HllSketch* sk1 = HllSketch::newInstance(lgK);
 
     int u = (lgK < 8) ? 7 : (((1 << (lgK - 3))/ 4) * 3);
     for (int i = 0; i < u; ++i) {

@@ -179,6 +179,11 @@ int HllUnion::getMaxSerializationBytes(const int lgK) {
   return HllSketch::getMaxUpdatableSerializationBytes(lgK, TgtHllType::HLL_8);
 }
 
+double HllUnion::getRelErr(const bool upperBound, const bool unioned,
+                           const int lgConfigK, const int numStdDev) {
+  return HllUtil::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
+}
+
 HllSketchImpl* HllUnionPvt::copyOrDownsampleHll(HllSketchImpl* srcImpl, const int tgtLgK) {
   assert(srcImpl->getCurMode() == CurMode::HLL);
   HllArray* src = (HllArray*) srcImpl;

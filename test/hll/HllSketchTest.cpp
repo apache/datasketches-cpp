@@ -3,6 +3,7 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
+#include "src/hll/hll.hpp"
 #include "src/hll/HllSketch.hpp"
 #include "src/hll/HllUnion.hpp"
 #include "src/hll/HllUtil.hpp"
@@ -36,7 +37,8 @@ class hllSketchTest : public CppUnit::TestFixture {
   }
 
   void runCheckCopy(int lgConfigK, TgtHllType tgtHllType) {
-    HllSketch* sk = new HllSketch(lgConfigK, tgtHllType);
+    HllSketch* skContainer = HllSketch::newInstance(lgConfigK, tgtHllType);
+    HllSketchPvt* sk = static_cast<HllSketchPvt*>(skContainer);
 
     for (int i = 0; i < 7; ++i) {
       sk->update(i);
@@ -44,7 +46,8 @@ class hllSketchTest : public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sk->getCurrentMode(), CurMode::LIST);
 
     HllSketch* skCopy = sk->copy();
-    CPPUNIT_ASSERT_EQUAL(skCopy->getCurrentMode(), CurMode::LIST);
+    HllSketchPvt* skCopyPvt = static_cast<HllSketchPvt*>(skCopy);
+    CPPUNIT_ASSERT_EQUAL(skCopyPvt->getCurrentMode(), CurMode::LIST);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(skCopy->getEstimate(), sk->getEstimate(), 0.0);
 
     // no access to hllSketchImpl, so we'll ensure those differ by adding more
@@ -53,12 +56,17 @@ class hllSketchTest : public CppUnit::TestFixture {
       sk->update(i);
     }
     CPPUNIT_ASSERT_EQUAL(sk->getCurrentMode(), CurMode::SET);
-    CPPUNIT_ASSERT(sk->getCurrentMode() != skCopy->getCurrentMode());
+    CPPUNIT_ASSERT(sk->getCurrentMode() != skCopyPvt->getCurrentMode());
+    std::cout << sk->getEstimate() << "\n";
+    std::cout << skContainer->getEstimate() << "\n";
+    std::cout << skCopyPvt->getEstimate() << "\n";
+    std::cout << skCopy->getEstimate() << "\n";
     CPPUNIT_ASSERT_GREATER(16.0, sk->getEstimate() - skCopy->getEstimate());
 
     delete skCopy;
     skCopy = sk->copy();
-    CPPUNIT_ASSERT_EQUAL(skCopy->getCurrentMode(), CurMode::SET);
+    skCopyPvt = static_cast<HllSketchPvt*>(skCopy);
+    CPPUNIT_ASSERT_EQUAL(skCopyPvt->getCurrentMode(), CurMode::SET);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(skCopy->getEstimate(), sk->getEstimate(), 0.0);
 
     int u = (sk->getTgtHllType() == HLL_4) ? 100000 : 25;
@@ -66,15 +74,16 @@ class hllSketchTest : public CppUnit::TestFixture {
       sk->update(i);
     }
     CPPUNIT_ASSERT_EQUAL(sk->getCurrentMode(), CurMode::HLL);
-    CPPUNIT_ASSERT(sk->getCurrentMode() != skCopy->getCurrentMode());
+    CPPUNIT_ASSERT(sk->getCurrentMode() != skCopyPvt->getCurrentMode());
     CPPUNIT_ASSERT(sk->getEstimate() != skCopy->getEstimate()); // either 1 or 100k difference
 
     delete skCopy;
     skCopy = sk->copy();
-    CPPUNIT_ASSERT_EQUAL(skCopy->getCurrentMode(), CurMode::HLL);
+    skCopyPvt = static_cast<HllSketchPvt*>(skCopy);
+    CPPUNIT_ASSERT_EQUAL(skCopyPvt->getCurrentMode(), CurMode::HLL);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(skCopy->getEstimate(), sk->getEstimate(), 0.0);
 
-    // TODO: can we check that the impls differ?
+    CPPUNIT_ASSERT(sk->hllSketchImpl != skCopyPvt->hllSketchImpl);
 
     delete sk;
     delete skCopy;
@@ -99,7 +108,7 @@ class hllSketchTest : public CppUnit::TestFixture {
     int n3 = 1000;
     int base = 0;
 
-    HllSketch* src = new HllSketch(lgK, srcType);
+    HllSketch* src = HllSketch::newInstance(lgK, srcType);
     for (int i = 0; i < n1; ++i) {
       src->update(i + base);
     }

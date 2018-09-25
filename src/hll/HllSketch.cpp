@@ -26,7 +26,7 @@ HllSketch* HllSketch::deserialize(std::istream& is) {
 HllSketch::~HllSketch() {}
 
 HllSketchPvt::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
-  hllSketchImpl = new CouponList(lgConfigK, tgtHllType, CurMode::LIST); 
+  hllSketchImpl = new CouponList(HllUtil::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
 }
 
 HllSketchPvt* HllSketchPvt::deserialize(std::istream& is) {
@@ -51,7 +51,7 @@ HllSketchPvt::HllSketchPvt(HllSketchImpl* that) {
 }
 
 HllSketch* HllSketchPvt::copy() const {
-  return new HllSketchPvt(*this);
+  return new HllSketchPvt(this->hllSketchImpl->copy());
 }
 
 HllSketch* HllSketchPvt::copyAs(const TgtHllType tgtHllType) const {
@@ -203,6 +203,10 @@ bool HllSketchPvt::isOutOfOrderFlag() const {
   return hllSketchImpl->isOutOfOrderFlag();
 }
 
+bool HllSketchPvt::isEstimationMode() const {
+  return true;
+}
+
 int HllSketchPvt::getUpdatableSerializationBytes() const {
   return hllSketchImpl->getUpdatableSerializationBytes();
 }
@@ -259,6 +263,11 @@ int HllSketch::getMaxUpdatableSerializationBytes(const int lgConfigK,
     arrBytes = HllArray::hll8ArrBytes(lgConfigK);
   }
   return HllUtil::HLL_BYTE_ARR_START + arrBytes;
+}
+
+double HllSketch::getRelErr(const bool upperBound, const bool unioned,
+                           const int lgConfigK, const int numStdDev) {
+  return HllUtil::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
 }
 
 }

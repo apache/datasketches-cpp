@@ -3,8 +3,7 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include "src/hll/HllSketch.hpp"
-#include "src/hll/HllUnion.hpp"
+#include "src/hll/hll.hpp"
 #include "src/hll/HllUtil.hpp"
 
 #include <cppunit/TestFixture.h>
@@ -37,8 +36,8 @@ class hll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
   void simple_union() {
-    HllSketch* s1 = new HllSketch(8, TgtHllType::HLL_8);
-    HllSketch* s2 = new HllSketch(8, TgtHllType::HLL_8);
+    HllSketch* s1 = HllSketch::newInstance(8, TgtHllType::HLL_8);
+    HllSketch* s2 = HllSketch::newInstance(8, TgtHllType::HLL_8);
 
     int n = 10000;
     for (int i = 0; i < n; ++i) {
@@ -46,7 +45,7 @@ class hll_sketch_test: public CppUnit::TestFixture {
       s2->update((uint64_t) i + (n / 2));
     }
 
-    HllUnion* hllUnion = new HllUnion(8);
+    HllUnion* hllUnion = HllUnion::newInstance(8);
     hllUnion->update(s1);
     hllUnion->update(s2);
 
@@ -59,16 +58,13 @@ class hll_sketch_test: public CppUnit::TestFixture {
   }
 
   void k_limits() {
-    HllSketch* sketch1 = new HllSketch(HllUtil::MIN_LOG_K, TgtHllType::HLL_8);
-    HllSketch* sketch2 = new HllSketch(HllUtil::MAX_LOG_K, TgtHllType::HLL_4);
+    HllSketch* sketch1 = HllSketch::newInstance(HllUtil::MIN_LOG_K, TgtHllType::HLL_8);
+    HllSketch* sketch2 = HllSketch::newInstance(HllUtil::MAX_LOG_K, TgtHllType::HLL_4);
     delete sketch1;
     delete sketch2;
-    HllSketch testSketch(5, TgtHllType::HLL_8);
-    CPPUNIT_ASSERT_THROW(new HllSketch(HllUtil::MIN_LOG_K - 1, TgtHllType::HLL_4), std::invalid_argument);
-    CPPUNIT_ASSERT_THROW(new HllSketch(HllUtil::MAX_LOG_K + 1, TgtHllType::HLL_8), std::invalid_argument);
+    CPPUNIT_ASSERT_THROW(HllSketch::newInstance(HllUtil::MIN_LOG_K - 1, TgtHllType::HLL_4), std::invalid_argument);
+    CPPUNIT_ASSERT_THROW(HllSketch::newInstance(HllUtil::MAX_LOG_K + 1, TgtHllType::HLL_8), std::invalid_argument);
   }
-
-
 
 };
 
