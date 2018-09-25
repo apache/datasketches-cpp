@@ -6,6 +6,7 @@
 #pragma once
 
 #include "HllSketchImpl.hpp"
+#include "HllUtil.hpp"
 #include "AuxHashMap.hpp"
 
 namespace datasketches {

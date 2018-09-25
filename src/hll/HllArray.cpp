@@ -4,6 +4,7 @@
  */
 
 #include "HllArray.hpp"
+#include "HllUtil.hpp"
 #include "HarmonicNumbers.hpp"
 #include "CubicInterpolation.hpp"
 #include "CompositeInterpolationXTable.hpp"

@@ -3,7 +3,11 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include "BaseHllSketch.hpp"
+#ifndef _HLLUNION_H_
+#define _HLLUNION_H_
+
+#include "hll.hpp"
+#include "HllUtil.hpp"
 #include "HllSketch.hpp"
 
 namespace datasketches {
@@ -26,54 +30,62 @@ namespace datasketches {
  * <p>First, the user cannot specify the {@link TgtHllType} as an input parameter.
  * Instead, it is specified for the sketch returned with {@link #getResult(TgtHllType)}.
  *
- * <p>Second, the internal effective value of log-base-2 of <i>K</i> for the union operation can
+ * <p>Second, the internal effective value of log-base-2 of <i>k</i> for the union operation can
  * change dynamically based on the smallest <i>lgConfigK</i> that the union operation has seen.
  *
  * @author Lee Rhodes
  * @author Kevin Lang
  */
-class HllUnion : public BaseHllSketch {
+class HllUnionPvt : public HllUnion {
   public:
-    explicit HllUnion(const int lgMaxK);
-    explicit HllUnion(HllSketch& sketch);
-    static HllUnion* deserialize(std::istream& is);
+    explicit HllUnionPvt(const int lgMaxK);
+    explicit HllUnionPvt(HllSketch& sketch);
+    static HllUnionPvt* deserialize(std::istream& is);
 
-    virtual ~HllUnion();
+    virtual ~HllUnionPvt();
 
-    double getEstimate() const;
-    double getCompositeEstimate() const;
-    double getLowerBound(const int numStdDev) const;
-    double getUpperBound(const int numStdDev) const;
+    virtual double getEstimate() const;
+    virtual double getCompositeEstimate() const;
+    virtual double getLowerBound(const int numStdDev) const;
+    virtual double getUpperBound(const int numStdDev) const;
 
-    int getCompactSerializationBytes() const;
-    int getUpdatableSerializationBytes() const;
-    int getLgConfigK() const;
+    virtual int getCompactSerializationBytes() const;
+    virtual int getUpdatableSerializationBytes() const;
+    virtual int getLgConfigK() const;
 
-    CurMode getCurrentMode() const;
-    TgtHllType getTgtHllType() const;
-    bool isCompact() const;
-    bool isEmpty() const;
-    bool isOutOfOrderFlag() const;
+    virtual TgtHllType getTgtHllType() const;
+    virtual bool isCompact() const;
+    virtual bool isEmpty() const;
 
-    void reset();
+    virtual void reset();
 
-    HllSketch* getResult() const;
-    HllSketch* getResult(TgtHllType tgtHllType) const;
+    virtual HllSketch* getResult() const;
+    virtual HllSketch* getResult(TgtHllType tgtHllType) const;
 
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
 
-    virtual std::ostream& to_string(std::ostream& os, const bool summary,
-                                    const bool detail, const bool auxDetail, const bool all) const;
+    virtual std::ostream& to_string(std::ostream& os,
+                                    const bool summary = true,
+                                    const bool detail = false,
+                                    const bool auxDetail = false,
+                                    const bool all = false) const;
 
-    void update(const HllSketch& sketch);
-    void update(const HllSketch* sketch);
+    virtual void update(const HllSketch& sketch);
+    virtual void update(const HllSketch* sketch);
+    virtual void update(const std::string datum);
+    virtual void update(const int datum);
+    virtual void update(const uint64_t datum);
+    virtual void update(const double datum);
+    virtual void update(const void* data, const size_t len);
 
-    static int getMaxSerializationBytes(const int lgK);
-
-
-  protected:
     void couponUpdate(const int coupon);
+
+    CurMode getCurrentMode() const;
+    int getSerializationVersion() const;
+    bool isOutOfOrderFlag() const;
+    bool isEstimationMode() const;
+
 
    /**
     * Union the given source and destination sketches. This static method examines the state of
@@ -96,7 +108,9 @@ class HllUnion : public BaseHllSketch {
     static HllSketchImpl* leakFreeCouponUpdate(HllSketchImpl* impl, const int coupon);
 
     const int lgMaxK;
-    HllSketch* gadget;
+    HllSketchPvt* gadget;
 };
 
 }
+
+#endif // _HLLUNION_H_

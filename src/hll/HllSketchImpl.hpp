@@ -3,8 +3,10 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _HLLSKETCHIMPL_H_
+#define _HLLSKETCHIMPL_H_
 
+#include "HllUtil.hpp"
 #include "HllSketch.hpp"
 
 #include <memory>
@@ -25,7 +27,7 @@ class HllSketchImpl {
 
     virtual HllSketchImpl* couponUpdate(int coupon) = 0;
 
-    CurMode getCurMode() const;
+    virtual CurMode getCurMode() const;
 
     virtual double getEstimate() const = 0;
     virtual double getCompositeEstimate() const = 0;
@@ -62,3 +64,5 @@ class HllSketchImpl {
 };
 
 }
+
+#endif // _HLLSKETCHIMPL_H_
