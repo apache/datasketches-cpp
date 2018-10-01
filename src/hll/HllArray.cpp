@@ -80,7 +80,7 @@ HllArray* HllArray::newHll(std::istream& is) {
   uint8_t listHeader[8];
   is.read((char*)listHeader, 8 * sizeof(uint8_t));
 
-  if (listHeader[0] != HllUtil::LIST_PREINTS) {
+  if (listHeader[0] != HllUtil::HLL_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
   if (listHeader[1] != HllUtil::SER_VER) {
