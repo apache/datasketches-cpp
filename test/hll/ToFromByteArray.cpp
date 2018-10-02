@@ -8,15 +8,8 @@
 #include "src/hll/CouponHashSet.hpp"
 #include "src/hll/HllArray.hpp"
 
-#include "src/hll/HllSketch.hpp"
-#include "src/hll/HllUnion.hpp"
-#include "src/hll/HllUtil.hpp"
-
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
-#include <ostream>
-#include <cmath>
-#include <string>
 
 namespace datasketches {
 
