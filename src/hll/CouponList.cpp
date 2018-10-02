@@ -95,7 +95,9 @@ CouponList* CouponList::newList(std::istream& is) {
   CouponList* sketch = new CouponList(lgK, tgtHllType, curMode);
   const int couponCount = (int) listHeader[6];
   sketch->couponCount = couponCount;
-  is.read((char*)sketch->couponIntArr, couponCount * sizeof(int));
+  // for stream processing, read entire list so read pointer ends up set correctly
+  //is.read((char*)sketch->couponIntArr, couponCount * sizeof(int));
+  is.read((char*)sketch->couponIntArr, (1 << sketch->lgCouponArrInts) * sizeof(int));
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
   
   return sketch;

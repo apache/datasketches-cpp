@@ -23,7 +23,7 @@ namespace datasketches {
 class ToFromByteArray : public CppUnit::TestFixture {
 
   // list of values defined at bottom of file
-  static const int nArr[]; // = {1, 30, 10, 30, 100, 300, 1000, 3000, 10000, 30000};
+  static const int nArr[]; // = {1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000};
 
   CPPUNIT_TEST_SUITE(ToFromByteArray);
   CPPUNIT_TEST(deserializeFromJava);
