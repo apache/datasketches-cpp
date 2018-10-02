@@ -168,14 +168,16 @@ void HllArray::serialize(std::ostream& os, const bool compact) const {
   os.write((char*)hllByteArr, getHllByteArrBytes());
 
   // aux map, if needed
-  if (compact) {
-    std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
-    while (itr->nextValid()) {
-      const int pairValue = itr->getPair();
-      os.write((char*)&pairValue, sizeof(pairValue));
+  if (auxCount > 0) {
+    if (compact) {
+      std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
+      while (itr->nextValid()) {
+        const int pairValue = itr->getPair();
+        os.write((char*)&pairValue, sizeof(pairValue));
+      }
+    } else {
+      os.write((char*)auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
     }
-  } else {
-    os.write((char*)auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
   }
 
   return;

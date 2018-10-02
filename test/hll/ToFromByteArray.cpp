@@ -22,8 +22,12 @@ namespace datasketches {
 
 class ToFromByteArray : public CppUnit::TestFixture {
 
+  // list of values defined at bottom of file
+  static const int nArr[]; // = {1, 30, 10, 30, 100, 300, 1000, 3000, 10000, 30000};
+
   CPPUNIT_TEST_SUITE(ToFromByteArray);
   CPPUNIT_TEST(deserializeFromJava);
+  CPPUNIT_TEST(toFromSketch);
   CPPUNIT_TEST_SUITE_END();
 
   void deserializeFromJava() {
@@ -128,11 +132,43 @@ class ToFromByteArray : public CppUnit::TestFixture {
     CPPUNIT_ASSERT_DOUBLES_EQUAL(ha->getKxQ1(), 0.0, 0.0);
     ifs.close();
     delete sk;
-
   }
 
+  void toFrom(const int lgConfigK, const TgtHllType tgtHllType, const int n) {
+    HllSketch* src = HllSketch::newInstance(lgConfigK, tgtHllType);
+    for (int i = 0; i < n; ++i) {
+      src->update(i);
+    }
+
+    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+    src->serializeCompact(ss);
+    HllSketch* dst = HllSketch::deserialize(ss);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(src->getEstimate(), dst->getEstimate(), 0.0);
+    delete dst;
+
+    ss.clear();
+    src->serializeUpdatable(ss);
+    dst = HllSketch::deserialize(ss);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(src->getEstimate(), dst->getEstimate(), 0.0);
+    delete dst;
+
+    delete src;
+  }
+
+  void toFromSketch() {
+    for (int i = 0; i < 10; ++i) {
+      int n = nArr[i];
+      for (int lgK = 4; lgK <= 13; ++lgK) {
+        toFrom(lgK, HLL_4, n);
+        toFrom(lgK, HLL_6, n);
+        toFrom(lgK, HLL_8, n);
+      }
+    }
+  }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(ToFromByteArray);
+
+const int ToFromByteArray::nArr[] = {1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000};
 
 } /* namespace datasketches */
