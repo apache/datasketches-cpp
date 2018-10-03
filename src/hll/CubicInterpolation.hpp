@@ -10,12 +10,12 @@ namespace datasketches {
 class CubicInterpolation {
   public:
     static double usingXAndYTables(const double xArr[], const double yArr[],
-                            const int len, const double x);
+                                   const int len, const double x);
 
     static double usingXAndYTables(const double x);
 
     static double usingXArrAndYStride(const double xArr[], const int xArrLen,
-                               const double yStride, const double x);
+                                      const double yStride, const double x);
 };
 
 }

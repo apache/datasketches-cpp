@@ -104,4 +104,3 @@ class CrossCountingTest : public CppUnit::TestFixture {
 CPPUNIT_TEST_SUITE_REGISTRATION(CrossCountingTest);
 
 } /* namespace datasketches */
-
