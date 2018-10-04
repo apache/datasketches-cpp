@@ -258,7 +258,9 @@ int HllSketch::getMaxUpdatableSerializationBytes(const int lgConfigK,
   int arrBytes;
   if (tgtHllType == TgtHllType::HLL_4) {
     const int auxBytes = 4 << HllUtil::LG_AUX_ARR_INTS[lgConfigK];
-    arrBytes =  HllArray::hll4ArrBytes(lgConfigK) + auxBytes;
+    arrBytes = HllArray::hll4ArrBytes(lgConfigK) + auxBytes;
+  } else if (tgtHllType == TgtHllType::HLL_6) {
+    arrBytes = HllArray::hll6ArrBytes(lgConfigK);
   } else { //HLL_8
     arrBytes = HllArray::hll8ArrBytes(lgConfigK);
   }

@@ -78,12 +78,13 @@ class HllArray : public HllSketchImpl {
     static int hll6ArrBytes(const int lgConfigK);
     static int hll8ArrBytes(const int lgConfigK);
 
+    virtual AuxHashMap* getAuxHashMap() const;
+
   protected:
     // TODO: does this need to be static?
     static void hipAndKxQIncrementalUpdate(HllArray& host, const int oldValue, const int newValue);
     double getHllBitMapEstimate(const int lgConfigK, const int curMin, const int numAtCurMin) const;
     double getHllRawEstimate(const int lgConfigK, const double kxqSum) const;
-    virtual AuxHashMap* getAuxHashMap() const;
 
     double hipAccum;
     double kxq0;

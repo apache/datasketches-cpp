@@ -167,20 +167,24 @@ void HllArray::serialize(std::ostream& os, const bool compact) const {
   os.write((char*)&auxCount, sizeof(auxCount));
   os.write((char*)hllByteArr, getHllByteArrBytes());
 
-  // aux map, if needed
-  if (auxCount > 0) {
-    if (compact) {
-      std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
-      while (itr->nextValid()) {
-        const int pairValue = itr->getPair();
-        os.write((char*)&pairValue, sizeof(pairValue));
+  // aux map if HLL_4
+  if (tgtHllType == HLL_4) {
+    if (auxHashMap != nullptr) {
+      if (compact) {
+        std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
+        while (itr->nextValid()) {
+          const int pairValue = itr->getPair();
+          os.write((char*)&pairValue, sizeof(pairValue));
+        }
+      } else {
+        os.write((char*)auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
       }
-    } else {
-      os.write((char*)auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
+    } else if (!compact) {
+      // if updatable, we write even if currently unused so the binary can be wrapped      
+      int auxBytes = 4 << HllUtil::LG_AUX_ARR_INTS[lgConfigK];
+      std::fill_n(std::ostreambuf_iterator<char>(os), auxBytes, 0);
     }
   }
-
-  return;
 }
 
 HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 and HLL_6

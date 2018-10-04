@@ -16,15 +16,15 @@
 
 namespace datasketches {
 
-class couponListTest : public CppUnit::TestFixture {
+class CouponListTest : public CppUnit::TestFixture {
 
-  CPPUNIT_TEST_SUITE(couponListTest);
+  CPPUNIT_TEST_SUITE(CouponListTest);
   CPPUNIT_TEST(checkIterator);
   CPPUNIT_TEST(checkDuplicatesAndMisc);
   CPPUNIT_TEST(checkSerializeDeserialize);
   CPPUNIT_TEST_SUITE_END();
 
-  void println_string(const std::string str) {
+  void println_string(std::string str) {
     //std::cout << str << "\n";
   }
 
@@ -98,27 +98,20 @@ class couponListTest : public CppUnit::TestFixture {
       sk1->update(i);
     }
     double est1 = sk1->getEstimate();
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(est1, u, u * 100.0e-6);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(est1, u, u * 1e-4);
 
-    std::ostringstream oss;
-    sk1->serializeCompact(oss);
-    std::string bytes = oss.str();
-    //std::cout << dumpAsHex(bytes.c_str(), bytes.length()) << "\n";;
-    
-    std::istringstream iss(bytes);
-    HllSketch* sk2 = HllSketch::deserialize(iss);
+    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+    sk1->serializeCompact(ss);
+    HllSketch* sk2 = HllSketch::deserialize(ss);
     double est2 = sk2->getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
     delete sk2;
 
-    oss.str(std::string());
-    oss.clear();
+    ss.str(std::string());
+    ss.clear();
 
-    sk1->serializeUpdatable(oss);
-    bytes = oss.str();
-    iss.str(bytes);
-    iss.clear();
-    sk2 = HllSketch::deserialize(iss);
+    sk1->serializeUpdatable(ss);
+    sk2 = HllSketch::deserialize(ss);
     est2 = sk2->getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
 
@@ -133,6 +126,6 @@ class couponListTest : public CppUnit::TestFixture {
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(couponListTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(CouponListTest);
 
 } /* namespace datasketches */
