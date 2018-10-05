@@ -28,9 +28,8 @@ class HllArrayTest : public CppUnit::TestFixture {
     u->update(sk); // merge
     HllSketch* res = u->getResult(TgtHllType::HLL_8);
     double est = res->getCompositeEstimate();
-    //CPPUNIT_ASSERT_DOUBLES_EQUAL(est, sk->getEstimate(), 0.0);
-    // TODO: fix union so we use above and delete this next line
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(est, est, 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(est, sk->getCompositeEstimate(), 0.0);
+
     delete res;
     delete u;
     delete sk;

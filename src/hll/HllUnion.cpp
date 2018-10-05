@@ -44,8 +44,16 @@ HllUnionPvt::~HllUnionPvt() {
 HllUnionPvt* HllUnionPvt::deserialize(std::istream& is) {
   HllSketch* sk = HllSketch::deserialize(is);
   if (sk == nullptr) { return nullptr; }
-  HllUnionPvt* hllUnion = new HllUnionPvt(sk->getLgConfigK());
-  hllUnion->update(sk);
+  // we're using the sketch's lgConfigK to initialize the union so
+  // we can initialize the Union with it as long as it's HLL_8.
+  HllUnionPvt* hllUnion;
+  if (sk->getTgtHllType() == HLL_8) {
+    hllUnion = new HllUnionPvt(*sk);
+  } else {
+    HllUnionPvt* hllUnion = new HllUnionPvt(sk->getLgConfigK());
+    hllUnion->update(sk);
+    delete sk;
+  }
   return hllUnion;
 }
 
