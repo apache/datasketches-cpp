@@ -24,7 +24,7 @@ IntArrayPairIterator::~IntArrayPairIterator() {
 }
 
 std::string IntArrayPairIterator::getHeader() {
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << std::left
      << std::setw(10) << "Index"
      << std::setw(10) << "Key"
@@ -34,7 +34,7 @@ std::string IntArrayPairIterator::getHeader() {
 }
 
 std::string IntArrayPairIterator::getString() {
-  std::stringstream ss;
+  std::ostringstream ss;
   ss << std::left
      << std::setw(10) << getIndex()
      << std::setw(10) << getKey()

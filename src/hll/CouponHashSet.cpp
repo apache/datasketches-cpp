@@ -78,7 +78,9 @@ CouponHashSet* CouponHashSet::newSet(std::istream& is) {
     sketch->lgCouponArrInts = lgArrInts;
     sketch->couponIntArr = new int[1 << lgArrInts];
     sketch->couponCount = couponCount;
-    is.read((char*)sketch->couponIntArr, couponCount * sizeof(int));
+    // for stream processing, read entire list so read pointer ends up set correctly
+    //is.read((char*)sketch->couponIntArr, couponCount * sizeof(int));
+    is.read((char*)sketch->couponIntArr, (1 << sketch->lgCouponArrInts) * sizeof(int));
     delete tmp;
   } 
 

@@ -144,14 +144,14 @@ void AuxHashMap::growAuxSpace() {
   int* oldArray = auxIntArr;
   const int oldArrLen = 1 << lgAuxArrInts;
   const int configKmask = (1 << lgConfigK) - 1;
-  const int newArrLen = ++lgAuxArrInts;
+  const int newArrLen = 1 << ++lgAuxArrInts;
   auxIntArr = new int[newArrLen];
   std::fill(auxIntArr, auxIntArr + newArrLen, 0);
   for (int i = 0; i < oldArrLen; ++i) {
     const int fetched = oldArray[i];
     if (fetched != HllUtil::EMPTY) {
       // find empty in new array
-      const int idx = find(auxIntArr, lgAuxArrInts, lgConfigK, fetched * configKmask);
+      const int idx = find(auxIntArr, lgAuxArrInts, lgConfigK, fetched & configKmask);
       auxIntArr[~idx] = fetched;
     }
   }

@@ -4,6 +4,7 @@
  */
 
 #include "Conversions.hpp"
+#include "HllUtil.hpp"
 #include "HllArray.hpp"
 
 #include <memory>

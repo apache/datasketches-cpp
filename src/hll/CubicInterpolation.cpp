@@ -3,15 +3,16 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include <cassert>
-
 #include "CubicInterpolation.hpp"
+
+#include <cassert>
+#include <sstream>
 
 namespace datasketches {
 
-static double interpolateUsingXAndYTables(double xArr[], double yArr[], int offset, double x);
-static double cubicInterpolate(double x0, double y0, double x1, double y1,
-                               double x2, double y2, double x3, double y3, double x);
+static double interpolateUsingXAndYTables(const double xArr[], const double yArr[], const int offset, const double x);
+static double cubicInterpolate(const double x0, const double y0, const double x1, const double y1,
+                               const double x2, const double y2, const double x3, const double y3, const double x);
 static int findStraddle(const double xArr[], const int len, const double x);
 static int recursiveFindStraddle(const double xArr[], const int l, const int r, const double x);
 static double interpolateUsingXArrAndYStride(const double xArr[], const double yStride,
@@ -20,7 +21,7 @@ static double interpolateUsingXArrAndYStride(const double xArr[], const double y
 const int numEntries = 40;
 
 //Computed for Coupon lgK = 26 ONLY. Designed for the cubic interpolator function.
-double xArr[numEntries] = {
+const double xArrComputed[numEntries] = {
     0.0, 1.0, 20.0, 400.0,
     8000.0, 160000.0, 300000.0, 600000.0,
     900000.0, 1200000.0, 1500000.0, 1800000.0,
@@ -34,7 +35,7 @@ double xArr[numEntries] = {
 };
 
 //Computed for Coupon lgK = 26 ONLY. Designed for the cubic interpolator function.
-double yArr[numEntries] =  {
+const double yArrComputed[numEntries] =  {
     0.0000000000000000, 1.0000000000000000, 20.0000009437402611, 400.0003963713384110,
     8000.1589294602090376, 160063.6067763759638183, 300223.7071597663452849, 600895.5933856170158833,
     902016.8065120954997838, 1203588.4983199508860707, 1505611.8245524743106216, 1808087.9449319066479802,
@@ -47,21 +48,18 @@ double yArr[numEntries] =  {
     9520624.7036988288164139, 9835293.9703129194676876, 10150448.9097250290215015, 10466090.8000503256917000
 };
 
+double CubicInterpolation::usingXAndYTables(const double x) {
+  return usingXAndYTables(xArrComputed, yArrComputed, numEntries, x);
+}
 
-/**
- * Cubic interpolation using interpolation X and Y tables.
- *
- * @param xArr xArr
- * @param yArr yArr
- * @param x x
- * @return cubic interpolation
- */
-//Used by AbstractCoupons
-//In C: again-two-registers cubic_interpolate_using_table L1377
-/*
-double usingXAndYTables(double xArr[], double yArr[], int len, double x) {
+double CubicInterpolation::usingXAndYTables(const double xArr[], const double yArr[],
+                                            const int len, const double x) {
   int offset;
-  assert (len >= 4 && x >= xArr[0] && x <= xArr[len-1]);
+  if (x < xArr[0] || x > xArr[len-1]) {
+    std::ostringstream oss;
+    oss << "x value out of range: " << x << "\n";
+    throw std::invalid_argument(oss.str());
+  }
 
   if (x ==  xArr[len-1]) { // corner case
     return (yArr[len-1]);
@@ -69,30 +67,6 @@ double usingXAndYTables(double xArr[], double yArr[], int len, double x) {
 
   offset = findStraddle (xArr, len, x);
   assert (offset >= 0 && offset <= len-2);
-
-  if (offset == 0) { // corner case
-    return (interpolateUsingXAndYTables(xArr, yArr, (offset-0), x));
-  }
-  else if (offset == len-2) { // corner case
-    return (interpolateUsingXAndYTables(xArr, yArr, (offset-2), x));
-  }
-  else { // main case
-    return (interpolateUsingXAndYTables(xArr, yArr, (offset-1), x));
-  }
-  assert (1 == 0); // can't reach here
-}
-*/
-
-double CubicInterpolation::usingXAndYTables(double x) {
-  int offset;
-  assert (numEntries >= 4 && x >= xArr[0] && x <= xArr[numEntries-1]);
-
-  if (x ==  xArr[numEntries-1]) { // corner case
-    return (yArr[numEntries-1]);
-  }
-
-  offset = findStraddle (xArr, numEntries, x);
-  assert (offset >= 0 && offset <= numEntries-2);
 
   if (offset == 0) { // corner case
     return (interpolateUsingXAndYTables(xArr, yArr, (offset-0), x));
@@ -107,7 +81,8 @@ double CubicInterpolation::usingXAndYTables(double x) {
 }
 
 // In C: again-two-registers cubic_interpolate_aux L1368
-static double interpolateUsingXAndYTables(double xArr[], double yArr[], int offset, double x) {
+static double interpolateUsingXAndYTables(const double xArr[], const double yArr[],
+                                          const int offset, const double x) {
     return (cubicInterpolate(xArr[offset+0], yArr[offset+0],
                         xArr[offset+1], yArr[offset+1],
                         xArr[offset+2], yArr[offset+2],
@@ -115,8 +90,11 @@ static double interpolateUsingXAndYTables(double xArr[], double yArr[], int offs
                         x) );
 }
 
-static inline double cubicInterpolate(double x0, double y0, double x1, double y1,
-                     double x2, double y2, double x3, double y3, double x)
+static inline double cubicInterpolate(const double x0, const double y0,
+                                      const double x1, const double y1,
+                                      const double x2, const double y2,
+                                      const double x3, const double y3,
+                                      const double x)
 {
   double l0_numer = (x - x1) * (x - x2) * (x - x3);
   double l1_numer = (x - x0) * (x - x2) * (x - x3);
@@ -170,7 +148,8 @@ static int recursiveFindStraddle(const double xArr[], const int l, const int r, 
  */
 //In C: again-two-registers cubic_interpolate_with_x_arr_and_y_stride L1411
 // Used by HllEstimators
-double CubicInterpolation::usingXArrAndYStride(const double xArr[], const int xArrLen, const double yStride, const double x) {
+double CubicInterpolation::usingXArrAndYStride(const double xArr[], const int xArrLen,
+                                               const double yStride, const double x) {
   const int xArrLenM1 = xArrLen - 1;
 
   assert ((xArrLen >= 4) && (x >= xArr[0]) && (x <= xArr[xArrLenM1]));

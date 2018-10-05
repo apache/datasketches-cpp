@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include "MurmurHash3.h"
+#include "RelativeErrorTables.hpp"
+
 #include <cassert>
 #include <cmath>
 #include <exception>
@@ -24,7 +27,6 @@ public:
   static const int EMPTY_FLAG_MASK          = 4;
   static const int COMPACT_FLAG_MASK        = 8;
   static const int OUT_OF_ORDER_FLAG_MASK   = 16;
-
 
   // Coupon List
   static const int LIST_INT_ARR_START = 8;
@@ -46,6 +48,8 @@ public:
   static const int MIN_LOG_K = 4;
   static const int MAX_LOG_K = 21;
 
+  static const uint64_t DEFAULT_UPDATE_SEED = 9001L;
+
   static const double HLL_HIP_RSE_FACTOR; // sqrt(log(2.0)) = 0.8325546
   static const double HLL_NON_HIP_RSE_FACTOR; // sqrt((3.0 * log(2.0)) - 1.0) = 1.03896
   static const double COUPON_RSE_FACTOR; // 0.409 at transition point not the asymptote
@@ -66,6 +70,9 @@ public:
   */
   static const int LG_AUX_ARR_INTS[];
 
+  static int coupon(const uint64_t hash[]);
+  static void hash(const void* key, const int keyLen, const uint64_t seed, uint64_t* result);
+
   static int checkLgK(const int lgK);
   static void checkMemSize(const uint64_t minBytes, const uint64_t capBytes);
   static inline void checkNumStdDev(const int numStdDev);
@@ -75,8 +82,27 @@ public:
   static double invPow2(const int e);
   static unsigned int ceilingPowerOf2(unsigned int n);
   static unsigned int simpleIntLog2(unsigned int n); // n must be power of 2
+  static unsigned int getNumberOfLeadingZeros(uint64_t x);
   static unsigned int numberOfTrailingZeros(unsigned int n);
+  static double getRelErr(const bool upperBound, const bool unioned,
+                          const int lgConfigK, const int numStdDev);
 };
+
+inline int HllUtil::coupon(const uint64_t hash[]) {
+  int addr26 = (int) (hash[0] & KEY_MASK_26);
+  int lz = getNumberOfLeadingZeros(hash[1]);
+  int value = ((lz > 62 ? 62 : lz) + 1); 
+  return (value << KEY_BITS_26) | addr26;
+}
+
+inline void HllUtil::hash(const void* key, const int keyLen, const uint64_t seed, uint64_t* result) {
+  MurmurHash3_x64_128(key, keyLen, DEFAULT_UPDATE_SEED, result);
+}
+
+inline double HllUtil::getRelErr(const bool upperBound, const bool unioned,
+                          const int lgConfigK, const int numStdDev) {
+  return RelativeErrorTables::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
+}
 
 inline int HllUtil::checkLgK(const int lgK) {
   if ((lgK >= HllUtil::MIN_LOG_K) && (lgK <= HllUtil::MAX_LOG_K)) { return lgK; }
@@ -164,6 +190,21 @@ inline unsigned int HllUtil::numberOfTrailingZeros(unsigned int v) {
     c -= v & 0x1;
   }
   return c;	
+}
+
+inline unsigned int HllUtil::getNumberOfLeadingZeros(const uint64_t x) {
+  if (x == 0)
+    return 64;
+
+  // we know at least some 1 bit, so iterate until it's in leftmost position
+  // -- making endian assumptions here
+  unsigned int n = 0;
+  uint64_t val = x;
+  while ((val & 0x8000000000000000L) == 0) {
+    ++n;
+    val <<= 1;
+  }
+  return n;
 }
 
 }

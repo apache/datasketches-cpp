@@ -26,6 +26,7 @@ class Hll4Array : public HllArray {
     virtual int getSlot(const int slotNo) const;
     virtual void putSlot(const int slotNo, const int value);
 
+    virtual int getUpdatableSerializationBytes() const;
     virtual int getHllByteArrBytes() const;
 
     virtual HllSketchImpl* couponUpdate(const int coupon);

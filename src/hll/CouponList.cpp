@@ -89,14 +89,22 @@ CouponList* CouponList::newList(std::istream& is) {
 
   const int lgK = (int) listHeader[3];
   //const int lgArrInts = (int) listHeader[4];
+  bool compact = ((listHeader[5] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
   bool oooFlag = ((listHeader[5] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  //bool emptyFlag = ((listHeader[5] & HllUtil::EMPTY_FLAG_MASK) ? true : false);
+  bool emptyFlag = ((listHeader[5] & HllUtil::EMPTY_FLAG_MASK) ? true : false);
 
   CouponList* sketch = new CouponList(lgK, tgtHllType, curMode);
   const int couponCount = (int) listHeader[6];
   sketch->couponCount = couponCount;
-  is.read((char*)sketch->couponIntArr, couponCount * sizeof(int));
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
+
+  if (!emptyFlag) {
+    // For stream processing, need to read entire number written to stream so read
+    // pointer ends up set correctly.
+    // If not compact, still need to read empty items even though in order.
+    int numToRead = (compact ? couponCount : (1 << sketch->lgCouponArrInts));
+    is.read((char*)sketch->couponIntArr, numToRead * sizeof(int));
+  }
   
   return sketch;
 }

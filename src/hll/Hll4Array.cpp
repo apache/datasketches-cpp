@@ -70,6 +70,17 @@ std::unique_ptr<PairIterator> Hll4Array::getAuxIterator() const {
   return nullptr;
 }
 
+int Hll4Array::getUpdatableSerializationBytes() const {
+  AuxHashMap* auxHashMap = getAuxHashMap();
+  int auxBytes;
+  if (auxHashMap == nullptr) {
+    auxBytes = 4 << HllUtil::LG_AUX_ARR_INTS[lgConfigK];
+  } else {
+    auxBytes = 4 << auxHashMap->getLgAuxArrInts();
+  }
+  return HllUtil::HLL_BYTE_ARR_START + getHllByteArrBytes() + auxBytes;
+}
+
 int Hll4Array::getHllByteArrBytes() const {
   return hll4ArrBytes(lgConfigK);
 }

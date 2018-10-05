@@ -3,6 +3,7 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
+#include "src/hll/hll.hpp"
 #include "src/hll/HllSketch.hpp"
 #include "src/hll/HllUnion.hpp"
 #include "src/hll/HllUtil.hpp"
@@ -15,23 +16,23 @@
 
 namespace datasketches {
 
-class couponListTest : public CppUnit::TestFixture {
+class CouponListTest : public CppUnit::TestFixture {
 
-  CPPUNIT_TEST_SUITE(couponListTest);
+  CPPUNIT_TEST_SUITE(CouponListTest);
   CPPUNIT_TEST(checkIterator);
   CPPUNIT_TEST(checkDuplicatesAndMisc);
   CPPUNIT_TEST(checkSerializeDeserialize);
   CPPUNIT_TEST_SUITE_END();
 
-  void println_string(const std::string str) {
+  void println_string(std::string str) {
     //std::cout << str << "\n";
   }
 
   void checkIterator() {
     int lgConfigK = 8;
-    HllSketch* sk = new HllSketch(lgConfigK);
+    HllSketch* sk = HllSketch::newInstance(lgConfigK);
     for (int i = 0; i < 7; ++i) { sk->update(i); }
-    std::unique_ptr<PairIterator> itr = sk->getIterator();
+    std::unique_ptr<PairIterator> itr = static_cast<HllSketchPvt*>(sk)->getIterator();
     println_string(itr->getHeader());
     while (itr->nextAll()) {
       int key = itr->getKey();
@@ -49,7 +50,8 @@ class couponListTest : public CppUnit::TestFixture {
 
   void checkDuplicatesAndMisc() {
     int lgConfigK = 8;
-    HllSketch* sk = new HllSketch(lgConfigK);
+    HllSketch* skContainer = HllSketch::newInstance(lgConfigK);
+    HllSketchPvt* sk = static_cast<HllSketchPvt*>(skContainer);
 
     for (int i = 1; i <= 7; ++i) {
       sk->update(i);
@@ -89,34 +91,27 @@ class couponListTest : public CppUnit::TestFixture {
   }
 
   void serializeDeserialize(const int lgK) {
-    HllSketch* sk1 = new HllSketch(lgK);
+    HllSketch* sk1 = HllSketch::newInstance(lgK);
 
     int u = (lgK < 8) ? 7 : (((1 << (lgK - 3))/ 4) * 3);
     for (int i = 0; i < u; ++i) {
       sk1->update(i);
     }
     double est1 = sk1->getEstimate();
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(est1, u, u * 100.0e-6);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(est1, u, u * 1e-4);
 
-    std::ostringstream oss;
-    sk1->serializeCompact(oss);
-    std::string bytes = oss.str();
-    //std::cout << dumpAsHex(bytes.c_str(), bytes.length()) << "\n";;
-    
-    std::istringstream iss(bytes);
-    HllSketch* sk2 = HllSketch::deserialize(iss);
+    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+    sk1->serializeCompact(ss);
+    HllSketch* sk2 = HllSketch::deserialize(ss);
     double est2 = sk2->getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
     delete sk2;
 
-    oss.str(std::string());
-    oss.clear();
+    ss.str(std::string());
+    ss.clear();
 
-    sk1->serializeUpdatable(oss);
-    bytes = oss.str();
-    iss.str(bytes);
-    iss.clear();
-    sk2 = HllSketch::deserialize(iss);
+    sk1->serializeUpdatable(ss);
+    sk2 = HllSketch::deserialize(ss);
     est2 = sk2->getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
 
@@ -131,6 +126,6 @@ class couponListTest : public CppUnit::TestFixture {
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(couponListTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(CouponListTest);
 
 } /* namespace datasketches */

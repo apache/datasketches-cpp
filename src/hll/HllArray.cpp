@@ -4,6 +4,7 @@
  */
 
 #include "HllArray.hpp"
+#include "HllUtil.hpp"
 #include "HarmonicNumbers.hpp"
 #include "CubicInterpolation.hpp"
 #include "CompositeInterpolationXTable.hpp"
@@ -79,7 +80,7 @@ HllArray* HllArray::newHll(std::istream& is) {
   uint8_t listHeader[8];
   is.read((char*)listHeader, 8 * sizeof(uint8_t));
 
-  if (listHeader[0] != HllUtil::LIST_PREINTS) {
+  if (listHeader[0] != HllUtil::HLL_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
   if (listHeader[1] != HllUtil::SER_VER) {
@@ -166,18 +167,24 @@ void HllArray::serialize(std::ostream& os, const bool compact) const {
   os.write((char*)&auxCount, sizeof(auxCount));
   os.write((char*)hllByteArr, getHllByteArrBytes());
 
-  // aux map, if needed
-  if (compact) {
-    std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
-    while (itr->nextValid()) {
-      const int pairValue = itr->getPair();
-      os.write((char*)&pairValue, sizeof(pairValue));
+  // aux map if HLL_4
+  if (tgtHllType == HLL_4) {
+    if (auxHashMap != nullptr) {
+      if (compact) {
+        std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
+        while (itr->nextValid()) {
+          const int pairValue = itr->getPair();
+          os.write((char*)&pairValue, sizeof(pairValue));
+        }
+      } else {
+        os.write((char*)auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
+      }
+    } else if (!compact) {
+      // if updatable, we write even if currently unused so the binary can be wrapped      
+      int auxBytes = 4 << HllUtil::LG_AUX_ARR_INTS[lgConfigK];
+      std::fill_n(std::ostreambuf_iterator<char>(os), auxBytes, 0);
     }
-  } else {
-    os.write((char*)auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
   }
-
-  return;
 }
 
 HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 and HLL_6

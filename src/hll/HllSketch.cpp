@@ -15,40 +15,84 @@
 
 namespace datasketches {
 
-HllSketch::HllSketch(const int lgConfigK, const TgtHllType tgtHllType) {
-  hllSketchImpl = new CouponList(HllUtil::checkLgK(lgConfigK), tgtHllType, LIST);
-}
-
-HllSketch::~HllSketch() {
-  delete hllSketchImpl;
-}
-
-HllSketch::HllSketch(const HllSketch& that) {
-  hllSketchImpl = that.hllSketchImpl->copy();
-}
-
-HllSketch::HllSketch(HllSketchImpl* that) {
-  hllSketchImpl = that;
+HllSketch* HllSketch::newInstance(const int lgConfigK, const TgtHllType tgtHllType) {
+  return new HllSketchPvt(lgConfigK, tgtHllType);
 }
 
 HllSketch* HllSketch::deserialize(std::istream& is) {
+  return HllSketchPvt::deserialize(is);
+}
+
+HllSketch::~HllSketch() {}
+
+HllSketchPvt::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
+  hllSketchImpl = new CouponList(HllUtil::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
+}
+
+HllSketchPvt* HllSketchPvt::deserialize(std::istream& is) {
   HllSketchImpl* impl = HllSketchImpl::deserialize(is);
-  return new HllSketch(impl);
+  return new HllSketchPvt(impl);
 }
 
-HllSketch* HllSketch::copy() const {
-  return new HllSketch(*this);
+HllSketchPvt::~HllSketchPvt() {
+  delete hllSketchImpl;
 }
 
-HllSketch* HllSketch::copyAs(const TgtHllType tgtHllType) const {
-  return new HllSketch(hllSketchImpl->copyAs(tgtHllType));
+std::ostream& operator<<(std::ostream& os, HllSketch& sketch) {
+  return sketch.to_string(os, true, true, false, false);
 }
 
-void HllSketch::reset() {
-  hllSketchImpl = hllSketchImpl->reset();
+HllSketchPvt::HllSketchPvt(const HllSketch& that) {
+  hllSketchImpl = static_cast<HllSketchPvt>(that).hllSketchImpl->copy();
 }
 
-void HllSketch::couponUpdate(int coupon) {
+HllSketchPvt::HllSketchPvt(HllSketchImpl* that) {
+  hllSketchImpl = that;
+}
+
+HllSketch* HllSketchPvt::copy() const {
+  return new HllSketchPvt(this->hllSketchImpl->copy());
+}
+
+HllSketch* HllSketchPvt::copyAs(const TgtHllType tgtHllType) const {
+  return new HllSketchPvt(hllSketchImpl->copyAs(tgtHllType));
+}
+
+void HllSketchPvt::reset() {
+  HllSketchImpl* newImpl = hllSketchImpl->reset();
+  delete hllSketchImpl;
+  hllSketchImpl = newImpl;
+}
+
+void HllSketchPvt::update(const std::string datum) {
+  if (datum.empty()) { return; }
+  uint64_t hashResult[2];
+  HllUtil::hash(datum.c_str(), datum.length(), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
+}
+
+void HllSketchPvt::update(const uint64_t datum) {
+  update(&datum, sizeof(datum));
+}
+
+void HllSketchPvt::update(const int datum) {
+  update(&datum, sizeof(datum));
+}
+
+void HllSketchPvt::update(const double datum) {
+  double d = ((datum == 0.0) ? 0.0 : datum); // canonicalize -0.0, 0.0
+  d = (std::isnan(d) ? NAN : d); // canonicalize NaN, although portability to Java not guaranteed
+  update(&d, sizeof(d));
+}
+
+void HllSketchPvt::update(const void* data, const size_t len) {
+  if (data == nullptr) { return; }
+  uint64_t hashResult[2];
+  HllUtil::hash(data, len, HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
+}
+
+void HllSketchPvt::couponUpdate(int coupon) {
   if (coupon == HllUtil::EMPTY) { return; }
   HllSketchImpl* result = this->hllSketchImpl->couponUpdate(coupon);
   if (result != this->hllSketchImpl) {
@@ -57,20 +101,19 @@ void HllSketch::couponUpdate(int coupon) {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, HllSketch& sketch) {
-  return sketch.to_string(os, true, true, false, false);
-}
-
-void HllSketch::serializeCompact(std::ostream& os) const {
+void HllSketchPvt::serializeCompact(std::ostream& os) const {
   return hllSketchImpl->serialize(os, true);
 }
 
-void HllSketch::serializeUpdatable(std::ostream& os) const {
+void HllSketchPvt::serializeUpdatable(std::ostream& os) const {
   return hllSketchImpl->serialize(os, false);
 }
 
-std::ostream& HllSketch::to_string(std::ostream& os, const bool summary,
-                                   const bool detail, const bool auxDetail, const bool all) const {
+std::ostream& HllSketchPvt::to_string(std::ostream& os,
+                                      const bool summary,
+                                      const bool detail,
+                                      const bool auxDetail,
+                                      const bool all) const {
   if (summary) {
     os << "### HLL SKETCH SUMMARY: " << std::endl
        << "  Log Config K   : " << getLgConfigK() << std::endl
@@ -130,59 +173,63 @@ std::ostream& HllSketch::to_string(std::ostream& os, const bool summary,
   return os;
 }
 
-double HllSketch::getEstimate() const {
+double HllSketchPvt::getEstimate() const {
   return hllSketchImpl->getEstimate();
 }
 
-double HllSketch::getCompositeEstimate() const {
+double HllSketchPvt::getCompositeEstimate() const {
   return hllSketchImpl->getCompositeEstimate();
 }
 
-double HllSketch::getLowerBound(int numStdDev) const {
+double HllSketchPvt::getLowerBound(int numStdDev) const {
   return hllSketchImpl->getLowerBound(numStdDev);
 }
 
-double HllSketch::getUpperBound(int numStdDev) const {
+double HllSketchPvt::getUpperBound(int numStdDev) const {
   return hllSketchImpl->getUpperBound(numStdDev);
 }
 
-CurMode HllSketch::getCurrentMode() const {
+CurMode HllSketchPvt::getCurrentMode() const {
   return hllSketchImpl->getCurMode();
 }
 
-int HllSketch::getLgConfigK() const {
+int HllSketchPvt::getLgConfigK() const {
   return hllSketchImpl->getLgConfigK();
 }
 
-TgtHllType HllSketch::getTgtHllType() const {
+TgtHllType HllSketchPvt::getTgtHllType() const {
   return hllSketchImpl->getTgtHllType();
 }
 
-bool HllSketch::isOutOfOrderFlag() const {
+bool HllSketchPvt::isOutOfOrderFlag() const {
   return hllSketchImpl->isOutOfOrderFlag();
 }
 
-int HllSketch::getUpdatableSerializationBytes() const {
+bool HllSketchPvt::isEstimationMode() const {
+  return true;
+}
+
+int HllSketchPvt::getUpdatableSerializationBytes() const {
   return hllSketchImpl->getUpdatableSerializationBytes();
 }
 
-int HllSketch::getCompactSerializationBytes() const {
+int HllSketchPvt::getCompactSerializationBytes() const {
   return hllSketchImpl->getCompactSerializationBytes();
 }
 
-bool HllSketch::isCompact() const {
+bool HllSketchPvt::isCompact() const {
   return hllSketchImpl->isCompact();
 }
 
-bool HllSketch::isEmpty() const {
+bool HllSketchPvt::isEmpty() const {
   return hllSketchImpl->isEmpty();
 }
 
-std::unique_ptr<PairIterator> HllSketch::getIterator() const {
+std::unique_ptr<PairIterator> HllSketchPvt::getIterator() const {
   return hllSketchImpl->getIterator();
 }
 
-std::string HllSketch::typeAsString() const {
+std::string HllSketchPvt::typeAsString() const {
   switch (hllSketchImpl->getTgtHllType()) {
     case TgtHllType::HLL_4:
       return std::string("HLL_4");
@@ -195,7 +242,7 @@ std::string HllSketch::typeAsString() const {
   }
 }
 
-std::string HllSketch::modeAsString() const {
+std::string HllSketchPvt::modeAsString() const {
   switch (hllSketchImpl->getCurMode()) {
     case LIST:
       return std::string("LIST");
@@ -213,11 +260,18 @@ int HllSketch::getMaxUpdatableSerializationBytes(const int lgConfigK,
   int arrBytes;
   if (tgtHllType == TgtHllType::HLL_4) {
     const int auxBytes = 4 << HllUtil::LG_AUX_ARR_INTS[lgConfigK];
-    arrBytes =  HllArray::hll4ArrBytes(lgConfigK) + auxBytes;
+    arrBytes = HllArray::hll4ArrBytes(lgConfigK) + auxBytes;
+  } else if (tgtHllType == TgtHllType::HLL_6) {
+    arrBytes = HllArray::hll6ArrBytes(lgConfigK);
   } else { //HLL_8
     arrBytes = HllArray::hll8ArrBytes(lgConfigK);
   }
   return HllUtil::HLL_BYTE_ARR_START + arrBytes;
+}
+
+double HllSketch::getRelErr(const bool upperBound, const bool unioned,
+                           const int lgConfigK, const int numStdDev) {
+  return HllUtil::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
 }
 
 }

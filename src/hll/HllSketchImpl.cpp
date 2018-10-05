@@ -106,7 +106,7 @@ uint8_t HllSketchImpl::makeModeByte() const {
     byte |= (1 << 2);
     break;
   case HLL_8:
-    byte = (2 << 2); 
+    byte |= (2 << 2); 
     break;
   }
 
