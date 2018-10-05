@@ -59,7 +59,9 @@ HllSketch* HllSketchPvt::copyAs(const TgtHllType tgtHllType) const {
 }
 
 void HllSketchPvt::reset() {
-  hllSketchImpl = hllSketchImpl->reset();
+  HllSketchImpl* newImpl = hllSketchImpl->reset();
+  delete hllSketchImpl;
+  hllSketchImpl = newImpl;
 }
 
 void HllSketchPvt::update(const std::string datum) {

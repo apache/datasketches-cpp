@@ -25,6 +25,7 @@ class HllUnionTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkUbLb);
   CPPUNIT_TEST(checkEmptyCoupon);
   CPPUNIT_TEST(checkConversions);
+  CPPUNIT_TEST(checkMisc);
   CPPUNIT_TEST_SUITE_END();
 
   int min(int a, int b) {
@@ -285,10 +286,10 @@ class HllUnionTest : public CppUnit::TestFixture {
     for (int i = 0; i < 20; ++i) { hllUnion->update(i); } // SET mode
     hllUnion->couponUpdate(0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(20.0, hllUnion->getEstimate(), 0.001);
-    CPPUNIT_ASSERT(hllUnion->getTgtHllType() == HLL_8);
+    CPPUNIT_ASSERT_EQUAL(HLL_8, hllUnion->getTgtHllType());
     int bytes = hllUnion->getUpdatableSerializationBytes();
     CPPUNIT_ASSERT(bytes <= HllUnion::getMaxSerializationBytes(lgK));
-    CPPUNIT_ASSERT(hllUnion->isCompact() == false);
+    CPPUNIT_ASSERT_EQUAL(false, hllUnion->isCompact());
     
     delete hllUnion;
   }
@@ -318,6 +319,28 @@ class HllUnionTest : public CppUnit::TestFixture {
     delete sk1;
     delete sk2;
     delete hllUnion;
+  }
+
+  // moved from UnionCaseTest in java
+  void checkMisc() {
+    HllUnion* u = HllUnion::newInstance(12);
+    int bytes = u->getCompactSerializationBytes();
+    CPPUNIT_ASSERT_EQUAL(8, bytes);
+    bytes = HllUnion::getMaxSerializationBytes(7);
+    CPPUNIT_ASSERT_EQUAL(40 + 128, bytes);
+    double v = u->getEstimate();
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, v, 0.0);
+    v = u->getLowerBound(1);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, v, 0.0);
+    v = u->getUpperBound(1);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, v, 0.0);
+    CPPUNIT_ASSERT(u->isEmpty());
+    u->reset();
+    CPPUNIT_ASSERT(u->isEmpty());
+    std::ostringstream oss(std::ios::binary);
+    u->serializeCompact(oss);
+    CPPUNIT_ASSERT_EQUAL(8, static_cast<int>(oss.tellp()));
+    delete u;
   }
 
 };
