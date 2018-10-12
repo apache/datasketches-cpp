@@ -26,26 +26,7 @@ class hllSketchTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(exerciseToString);
   CPPUNIT_TEST(checkEmptyCoupon);
   CPPUNIT_TEST(checkCompactFlag);
-  CPPUNIT_TEST(makeSketch);
   CPPUNIT_TEST_SUITE_END();
-
-  void makeSketch() {
-    HllSketch* sk = HllSketch::newInstance(12, HLL_4);
-    sk->update((int64_t) 1);
-    sk->update((int32_t) 2);
-    sk->update((int16_t) 3);
-    sk->update((int8_t) 4);
-    sk->update((double) 6.0);
-    sk->update((float) 7.0);
-    sk->update(NAN);
-    sk->update(std::string("some text in a string"));
-
-    std::ofstream ofs;
-    ofs.open("hll4_12_cpp.bin", std::ios::binary | std::ios::out);
-    sk->serializeCompact(ofs);
-    ofs.close();
-    delete sk;
-  }
 
   void checkCopies() {
     runCheckCopy(14, HLL_4);

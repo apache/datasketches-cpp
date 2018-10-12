@@ -10,17 +10,24 @@
 
 namespace datasketches {
 
+#ifdef DEBUG
 static int numImpls = 0;
+#endif 
 
 HllSketchImpl::HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode)
   : lgConfigK(lgConfigK),
     tgtHllType(tgtHllType),
     curMode(curMode)
-{ std::cerr << "Num impls: " << ++numImpls << "\n";
- }
+{
+#ifdef DEBUG
+  std::cerr << "Num impls: " << ++numImpls << "\n";
+#endif
+}
 
 HllSketchImpl::~HllSketchImpl() {
+#ifdef DEBUG
   std::cerr << "Num impls: " << --numImpls << "\n";
+#endif
 }
 
 HllSketchImpl* HllSketchImpl::deserialize(std::istream& is) {
