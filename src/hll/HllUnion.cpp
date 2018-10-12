@@ -74,31 +74,51 @@ void HllUnionPvt::update(const HllSketch& sketch) {
 }
 
 void HllUnionPvt::update(const std::string datum) {
-  if (datum.empty()) { return; }
-  uint64_t hashResult[2];
-  HllUtil::hash(datum.c_str(), datum.length(), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  gadget->update(datum);
 }
 
 void HllUnionPvt::update(const uint64_t datum) {
-  update(&datum, sizeof(datum));
+  gadget->update(datum);
 }
 
-void HllUnionPvt::update(const int datum) {
-  update(&datum, sizeof(datum));
+void HllUnionPvt::update(const uint32_t datum) {
+  gadget->update(datum);
+}
+
+void HllUnionPvt::update(const uint16_t datum) {
+  gadget->update(datum);
+}
+
+void HllUnionPvt::update(const uint8_t datum) {
+  gadget->update(datum);
+}
+
+void HllUnionPvt::update(const int64_t datum) {
+  gadget->update(datum);
+}
+
+void HllUnionPvt::update(const int32_t datum) {
+  gadget->update(datum);
+}
+
+void HllUnionPvt::update(const int16_t datum) {
+  gadget->update(datum);
+}
+
+void HllUnionPvt::update(const int8_t datum) {
+  gadget->update(datum);
 }
 
 void HllUnionPvt::update(const double datum) {
-  double d = ((datum == 0.0) ? 0.0 : datum); // canonicalize -0.0, 0.0
-  d = (std::isnan(d) ? NAN : d); // canonicalize NaN, although portability to Java not guaranteed
-  update(&d, sizeof(d));
+  gadget->update(datum);
 }
 
-void HllUnionPvt::update(const void* data, const size_t len) {
-  if (data == nullptr) { return; }
-  uint64_t hashResult[2];
-  HllUtil::hash(data, len, HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+void HllUnionPvt::update(const float datum) {
+  gadget->update(datum);
+}
+
+void HllUnionPvt::update(const void* data, const size_t lengthBytes) {
+  gadget->update(data, lengthBytes);
 }
 
 void HllUnionPvt::couponUpdate(const int coupon) {

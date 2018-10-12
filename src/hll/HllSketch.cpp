@@ -15,6 +15,11 @@
 
 namespace datasketches {
 
+typedef union {
+  int64_t longBytes;
+  double doubleBytes;
+} longDoubleUnion;
+
 HllSketch* HllSketch::newInstance(const int lgConfigK, const TgtHllType tgtHllType) {
   return new HllSketchPvt(lgConfigK, tgtHllType);
 }
@@ -72,23 +77,89 @@ void HllSketchPvt::update(const std::string datum) {
 }
 
 void HllSketchPvt::update(const uint64_t datum) {
-  update(&datum, sizeof(datum));
+  uint64_t hashResult[2];
+  HllUtil::hash(&datum, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
 }
 
-void HllSketchPvt::update(const int datum) {
-  update(&datum, sizeof(datum));
+void HllSketchPvt::update(const uint32_t datum) {
+  uint64_t val = static_cast<uint64_t>(datum);
+  uint64_t hashResult[2];
+  HllUtil::hash(&val, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
+}
+
+void HllSketchPvt::update(const uint16_t datum) {
+  uint64_t val = static_cast<uint64_t>(datum);
+  uint64_t hashResult[2];
+  HllUtil::hash(&val, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
+}
+
+void HllSketchPvt::update(const uint8_t datum) {
+  uint64_t val = static_cast<uint64_t>(datum);
+  uint64_t hashResult[2];
+  HllUtil::hash(&val, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
+}
+
+void HllSketchPvt::update(const int64_t datum) {
+  uint64_t hashResult[2];
+  HllUtil::hash(&datum, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
+}
+
+void HllSketchPvt::update(const int32_t datum) {
+  int64_t val = static_cast<int64_t>(datum);
+  uint64_t hashResult[2];
+  HllUtil::hash(&val, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
+}
+
+void HllSketchPvt::update(const int16_t datum) {
+  int64_t val = static_cast<int64_t>(datum);
+  uint64_t hashResult[2];
+  HllUtil::hash(&val, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
+}
+
+void HllSketchPvt::update(const int8_t datum) {
+  int64_t val = static_cast<int64_t>(datum);
+  uint64_t hashResult[2];
+  HllUtil::hash(&val, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const double datum) {
-  double d = ((datum == 0.0) ? 0.0 : datum); // canonicalize -0.0, 0.0
-  d = (std::isnan(d) ? NAN : d); // canonicalize NaN, although portability to Java not guaranteed
-  update(&d, sizeof(d));
+  longDoubleUnion d;
+  d.doubleBytes = static_cast<double>(datum);
+  if (datum == 0.0) {
+    d.doubleBytes = 0.0; // canonicalize -0.0 to 0.0
+  } else if (std::isnan(d.doubleBytes)) {
+    d.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
+  }
+  uint64_t hashResult[2];
+  HllUtil::hash(&d, sizeof(double), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
 }
 
-void HllSketchPvt::update(const void* data, const size_t len) {
+void HllSketchPvt::update(const float datum) {
+  longDoubleUnion d;
+  d.doubleBytes = static_cast<double>(datum);
+  if (datum == 0.0) {
+    d.doubleBytes = 0.0; // canonicalize -0.0 to 0.0
+  } else if (std::isnan(d.doubleBytes)) {
+    d.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
+  }
+  uint64_t hashResult[2];
+  HllUtil::hash(&d, sizeof(double), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil::coupon(hashResult));
+}
+
+void HllSketchPvt::update(const void* data, const size_t lengthBytes) {
   if (data == nullptr) { return; }
   uint64_t hashResult[2];
-  HllUtil::hash(data, len, HllUtil::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil::hash(data, lengthBytes, HllUtil::DEFAULT_UPDATE_SEED, hashResult);
   couponUpdate(HllUtil::coupon(hashResult));
 }
 

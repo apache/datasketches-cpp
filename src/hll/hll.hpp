@@ -39,10 +39,17 @@ class HllSketch {
                                     const bool all = false) const = 0;
 
     virtual void update(const std::string datum) = 0;
-    virtual void update(const int datum) = 0;
     virtual void update(const uint64_t datum) = 0;
+    virtual void update(const uint32_t datum) = 0;
+    virtual void update(const uint16_t datum) = 0;
+    virtual void update(const uint8_t datum) = 0;
+    virtual void update(const int64_t datum) = 0;
+    virtual void update(const int32_t datum) = 0;
+    virtual void update(const int16_t datum) = 0;
+    virtual void update(const int8_t datum) = 0;
     virtual void update(const double datum) = 0;
-    virtual void update(const void* data, const size_t len) = 0;
+    virtual void update(const float datum) = 0;
+    virtual void update(const void* data, const size_t lengthBytes) = 0;
 
     virtual double getEstimate() const = 0;
     virtual double getCompositeEstimate() const = 0;
@@ -111,10 +118,17 @@ class HllUnion {
     virtual void update(const HllSketch& sketch) = 0;
     virtual void update(const HllSketch* sketch) = 0;
     virtual void update(const std::string datum) = 0;
-    virtual void update(const int datum) = 0;
     virtual void update(const uint64_t datum) = 0;
+    virtual void update(const uint32_t datum) = 0;
+    virtual void update(const uint16_t datum) = 0;
+    virtual void update(const uint8_t datum) = 0;
+    virtual void update(const int64_t datum) = 0;
+    virtual void update(const int32_t datum) = 0;
+    virtual void update(const int16_t datum) = 0;
+    virtual void update(const int8_t datum) = 0;
     virtual void update(const double datum) = 0;
-    virtual void update(const void* data, const size_t len) = 0;
+    virtual void update(const float datum) = 0;
+    virtual void update(const void* data, const size_t lengthBytes) = 0;
 
     static int getMaxSerializationBytes(const int lgK);
     static double getRelErr(const bool upperBound, const bool unioned,

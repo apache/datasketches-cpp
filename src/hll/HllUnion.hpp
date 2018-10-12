@@ -74,10 +74,17 @@ class HllUnionPvt : public HllUnion {
     virtual void update(const HllSketch& sketch);
     virtual void update(const HllSketch* sketch);
     virtual void update(const std::string datum);
-    virtual void update(const int datum);
     virtual void update(const uint64_t datum);
+    virtual void update(const uint32_t datum);
+    virtual void update(const uint16_t datum);
+    virtual void update(const uint8_t datum);
+    virtual void update(const int64_t datum);
+    virtual void update(const int32_t datum);
+    virtual void update(const int16_t datum);
+    virtual void update(const int8_t datum);
     virtual void update(const double datum);
-    virtual void update(const void* data, const size_t len);
+    virtual void update(const float datum);
+    virtual void update(const void* data, const size_t lengthBytes);
 
     void couponUpdate(const int coupon);
 
