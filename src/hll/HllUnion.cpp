@@ -50,7 +50,7 @@ HllUnionPvt* HllUnionPvt::deserialize(std::istream& is) {
   if (sk->getTgtHllType() == HLL_8) {
     hllUnion = new HllUnionPvt(*sk);
   } else {
-    HllUnionPvt* hllUnion = new HllUnionPvt(sk->getLgConfigK());
+    hllUnion = new HllUnionPvt(sk->getLgConfigK());
     hllUnion->update(sk);
     delete sk;
   }
