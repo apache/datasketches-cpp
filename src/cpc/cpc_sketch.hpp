@@ -34,7 +34,7 @@ namespace datasketches {
 class cpc_sketch {
   public:
 
-    explicit cpc_sketch(uint8_t lg_k) {
+    explicit cpc_sketch(uint8_t lg_k, uint32_t seed = DEFAULT_SEED) : seed(seed) {
       fm85Init();
       if (lg_k < CPC_MIN_LG_K or lg_k > CPC_MAX_LG_K) {
         throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
@@ -42,11 +42,10 @@ class cpc_sketch {
       state = fm85Make(lg_k);
     }
 
-    cpc_sketch(const cpc_sketch& other) {
-      state = fm85Copy(other.state);
-    }
+    cpc_sketch(const cpc_sketch& other) : state(fm85Copy(other.state)), seed(other.seed) {}
 
     cpc_sketch& operator=(cpc_sketch other) {
+      seed = other.seed;
       std::swap(state, other.state); // @suppress("Invalid arguments")
       return *this;
     }
@@ -80,7 +79,7 @@ class cpc_sketch {
 
     void update(const void* value, int size) {
       uint64_t hashes[2];
-      MurmurHash3_x64_128(value, size, DEFAULT_SEED, hashes);
+      MurmurHash3_x64_128(value, size, seed, hashes);
       fm85Update(state, hashes[0], hashes[1]);
     }
 
@@ -105,7 +104,7 @@ class cpc_sketch {
         | (has_window ? 1 << flags::HAS_WINDOW : 0)
       );
       os.write((char*)&flags_byte, sizeof(flags_byte));
-      const uint16_t seed_hash(0); // unused for now
+      const uint16_t seed_hash(compute_seed_hash(seed));
       os.write((char*)&seed_hash, sizeof(seed_hash));
       if (!is_empty()) {
         const uint32_t num_coupons(compressed->numCoupons);
@@ -138,7 +137,7 @@ class cpc_sketch {
       fm85Free(compressed);
     }
 
-    static std::unique_ptr<cpc_sketch> deserialize(std::istream& is) {
+    static std::unique_ptr<cpc_sketch> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED) {
       fm85Init();
       uint8_t preamble_ints;
       is.read((char*)&preamble_ints, sizeof(preamble_ints));
@@ -208,8 +207,8 @@ class cpc_sketch {
 
       uint8_t expected_preamble_ints(get_preamble_ints(&compressed));
       if (preamble_ints != expected_preamble_ints) {
-        throw std::invalid_argument("Possible corruption: preamble ints: expected " + std::to_string(expected_preamble_ints)
-            + ", got " + std::to_string(preamble_ints));
+        throw std::invalid_argument("Possible corruption: preamble ints: expected "
+            + std::to_string(expected_preamble_ints) + ", got " + std::to_string(preamble_ints));
       }
       if (serial_version != SERIAL_VERSION) {
         throw std::invalid_argument("Possible corruption: serial version: expected "
@@ -219,10 +218,14 @@ class cpc_sketch {
         throw std::invalid_argument("Possible corruption: family: expected "
             + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
       }
+      if (seed_hash != compute_seed_hash(seed)) {
+        throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
+            + std::to_string(compute_seed_hash(seed)));
+      }
       FM85* uncompressed = fm85Uncompress(&compressed);
       delete [] compressed.compressedSurprisingValues;
       delete [] compressed.compressedWindow;
-      std::unique_ptr<cpc_sketch> sketch_ptr(new cpc_sketch(uncompressed));
+      std::unique_ptr<cpc_sketch> sketch_ptr(new cpc_sketch(uncompressed, seed));
       return std::move(sketch_ptr);
     }
 
@@ -243,13 +246,12 @@ class cpc_sketch {
     enum flags { HAS_HIP, HAS_TABLE, HAS_WINDOW };
 
     FM85* state;
+    uint64_t seed;
 
     // for deserialization and cpc_union::get_result()
-    cpc_sketch(FM85* state) {
-      this->state = state;
-    }
+    cpc_sketch(FM85* state, uint64_t seed = DEFAULT_SEED) : state(state), seed(seed) {}
 
-    static uint8_t get_preamble_ints(FM85* state) {
+    static uint8_t get_preamble_ints(const FM85* state) {
       uint8_t preamble_ints(2);
       if (state->numCoupons > 0) {
         preamble_ints += 1; // number of coupons
@@ -270,7 +272,7 @@ class cpc_sketch {
       return preamble_ints;
     }
 
-    static void write_hip(FM85* state, std::ostream& os) {
+    static void write_hip(const FM85* state, std::ostream& os) {
       os.write((char*)&state->kxp, sizeof(FM85::kxp));
       os.write((char*)&state->hipEstAccum, sizeof(FM85::hipEstAccum));
     }
@@ -278,6 +280,12 @@ class cpc_sketch {
     static void read_hip(FM85* state, std::istream& is) {
       is.read((char*)&state->kxp, sizeof(FM85::kxp));
       is.read((char*)&state->hipEstAccum, sizeof(FM85::hipEstAccum));
+    }
+
+    static uint16_t compute_seed_hash(uint64_t seed) {
+      uint64_t hashes[2];
+      MurmurHash3_x64_128(&seed, sizeof(seed), 0, hashes);
+      return hashes[0] & 0xffff;
     }
 
 };
