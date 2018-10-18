@@ -24,6 +24,7 @@ class cpc_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(serialize_deserialize_hybrid);
   CPPUNIT_TEST(serialize_deserialize_pinned);
   CPPUNIT_TEST(serialize_deserialize_sliding);
+  CPPUNIT_TEST(serialize_deserialize_empty_custom_seed);
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST_SUITE_END();
 
@@ -134,6 +135,18 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     s2.update(2);
     s1 = s2; // operator=
     CPPUNIT_ASSERT_DOUBLES_EQUAL(2, s1.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void serialize_deserialize_empty_custom_seed() {
+    cpc_sketch sketch(11, 123);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch.serialize(s);
+    auto sketch_ptr(cpc_sketch::deserialize(s, 123));
+    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+
+    // incompatible seed
+    CPPUNIT_ASSERT_THROW(cpc_sketch::deserialize(s), std::invalid_argument);
   }
 
 };

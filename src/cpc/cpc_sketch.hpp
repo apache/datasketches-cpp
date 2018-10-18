@@ -34,7 +34,7 @@ namespace datasketches {
 class cpc_sketch {
   public:
 
-    explicit cpc_sketch(uint8_t lg_k, uint32_t seed = DEFAULT_SEED) : seed(seed) {
+    explicit cpc_sketch(uint8_t lg_k, uint64_t seed = DEFAULT_SEED) : seed(seed) {
       fm85Init();
       if (lg_k < CPC_MIN_LG_K or lg_k > CPC_MAX_LG_K) {
         throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
@@ -239,7 +239,6 @@ class cpc_sketch {
     friend class cpc_union;
 
   private:
-    static const uint64_t DEFAULT_SEED = 9001;
     static const uint8_t SERIAL_VERSION = 1;
     static const uint8_t FAMILY = 16;
 
@@ -280,12 +279,6 @@ class cpc_sketch {
     static void read_hip(FM85* state, std::istream& is) {
       is.read((char*)&state->kxp, sizeof(FM85::kxp));
       is.read((char*)&state->hipEstAccum, sizeof(FM85::hipEstAccum));
-    }
-
-    static uint16_t compute_seed_hash(uint64_t seed) {
-      uint64_t hashes[2];
-      MurmurHash3_x64_128(&seed, sizeof(seed), 0, hashes);
-      return hashes[0] & 0xffff;
     }
 
 };
