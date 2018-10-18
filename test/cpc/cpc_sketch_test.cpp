@@ -26,6 +26,7 @@ class cpc_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(serialize_deserialize_sliding);
   CPPUNIT_TEST(serialize_deserialize_empty_custom_seed);
   CPPUNIT_TEST(copy);
+  CPPUNIT_TEST(kappa_range);
   CPPUNIT_TEST_SUITE_END();
 
   void lg_k_limits() {
@@ -39,6 +40,8 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     cpc_sketch sketch(11);
     CPPUNIT_ASSERT(sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(0.0, sketch.get_estimate());
+    CPPUNIT_ASSERT_EQUAL(0.0, sketch.get_lower_bound(1));
+    CPPUNIT_ASSERT_EQUAL(0.0, sketch.get_upper_bound(1));
   }
 
   void one_value() {
@@ -46,6 +49,8 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     sketch.update(1);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(1, sketch.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    CPPUNIT_ASSERT(sketch.get_estimate() >= sketch.get_lower_bound(1));
+    CPPUNIT_ASSERT(sketch.get_estimate() <= sketch.get_upper_bound(1));
   }
 
   void many_values() {
@@ -54,8 +59,8 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     for (int i = 0; i < n; i++) sketch.update(i);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sketch.get_estimate(), n * RELATIVE_ERROR_FOR_LG_K_11);
-    CPPUNIT_ASSERT(sketch.get_estimate() > sketch.get_lower_bound(1));
-    CPPUNIT_ASSERT(sketch.get_estimate() < sketch.get_upper_bound(1));
+    CPPUNIT_ASSERT(sketch.get_estimate() >= sketch.get_lower_bound(1));
+    CPPUNIT_ASSERT(sketch.get_estimate() <= sketch.get_upper_bound(1));
   }
 
   void serialize_deserialize_empty() {
@@ -147,6 +152,18 @@ class cpc_sketch_test: public CppUnit::TestFixture {
 
     // incompatible seed
     CPPUNIT_ASSERT_THROW(cpc_sketch::deserialize(s), std::invalid_argument);
+  }
+
+  void kappa_range() {
+    cpc_sketch s(11);
+    CPPUNIT_ASSERT_EQUAL(0.0, s.get_lower_bound(1));
+    CPPUNIT_ASSERT_EQUAL(0.0, s.get_upper_bound(1));
+    CPPUNIT_ASSERT_EQUAL(0.0, s.get_lower_bound(2));
+    CPPUNIT_ASSERT_EQUAL(0.0, s.get_upper_bound(2));
+    CPPUNIT_ASSERT_EQUAL(0.0, s.get_lower_bound(3));
+    CPPUNIT_ASSERT_EQUAL(0.0, s.get_upper_bound(3));
+    CPPUNIT_ASSERT_THROW(s.get_lower_bound(4), std::invalid_argument);
+    CPPUNIT_ASSERT_THROW(s.get_upper_bound(4), std::invalid_argument);
   }
 
 };

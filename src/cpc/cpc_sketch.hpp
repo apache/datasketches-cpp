@@ -63,12 +63,18 @@ class cpc_sketch {
       return getIconEstimate(state->lgK, state->numCoupons);
     }
 
-    double get_lower_bound(int kappa) {
+    double get_lower_bound(unsigned kappa) {
+      if (kappa > 3) {
+        throw std::invalid_argument("kappa must be 1, 2 or 3");
+      }
       if (!state->mergeFlag) return getHIPConfidenceLB(state, kappa);
       return getIconConfidenceLB(state, kappa);
     }
 
-    double get_upper_bound(int kappa) {
+    double get_upper_bound(unsigned kappa) {
+      if (kappa > 3) {
+        throw std::invalid_argument("kappa must be 1, 2 or 3");
+      }
       if (!state->mergeFlag) return getHIPConfidenceUB(state, kappa);
       return getIconConfidenceUB(state, kappa);
     }
