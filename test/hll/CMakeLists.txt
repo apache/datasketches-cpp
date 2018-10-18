@@ -1,0 +1,20 @@
+add_library(
+    hlltest
+    SHARED
+    AuxHashMapTest.cpp
+    CouponListTest.cpp
+    CrossCountingTest.cpp
+    HllArrayTest.cpp
+    HllSketchTest.cpp
+    HllUnionTest.cpp
+    TablesTest.cpp
+    ToFromByteArray.cpp
+    UnionCaseTest.cpp
+    hll_sketch_test.cpp
+)
+target_link_libraries(
+    hlltest
+    sketchescore
+    cppunit
+)
+

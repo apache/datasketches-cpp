@@ -1,0 +1,11 @@
+add_library(
+    klltest
+    SHARED
+    kll_sketch_test.cpp
+    kll_sketch_validation.cpp
+)
+target_link_libraries(
+    klltest
+    sketchescore
+    cppunit
+)

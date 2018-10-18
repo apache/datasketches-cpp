@@ -3,10 +3,10 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include "src/hll/hll.hpp"
-#include "src/hll/CouponList.hpp"
-#include "src/hll/CouponHashSet.hpp"
-#include "src/hll/HllArray.hpp"
+#include "hll.hpp"
+#include "CouponList.hpp"
+#include "CouponHashSet.hpp"
+#include "HllArray.hpp"
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
@@ -25,7 +25,7 @@ class ToFromByteArray : public CppUnit::TestFixture {
 
   void deserializeFromJava() {
     std::ifstream ifs;
-    ifs.open("test/hll/list_from_java.bin", std::ios::binary);
+    ifs.open("hll/list_from_java.bin", std::ios::binary);
     HllSketch* sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -40,7 +40,7 @@ class ToFromByteArray : public CppUnit::TestFixture {
     delete sk;
 
 
-    ifs.open("test/hll/compact_set_from_java.bin", std::ios::binary);
+    ifs.open("hll/compact_set_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -55,7 +55,7 @@ class ToFromByteArray : public CppUnit::TestFixture {
     delete sk;
 
 
-    ifs.open("test/hll/updatable_set_from_java.bin", std::ios::binary);
+    ifs.open("hll/updatable_set_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -70,7 +70,7 @@ class ToFromByteArray : public CppUnit::TestFixture {
     delete sk;
 
 
-    ifs.open("test/hll/array6_from_java.bin", std::ios::binary);
+    ifs.open("hll/array6_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -89,7 +89,7 @@ class ToFromByteArray : public CppUnit::TestFixture {
     delete sk;
 
 
-    ifs.open("test/hll/compact_array4_from_java.bin", std::ios::binary);
+    ifs.open("hll/compact_array4_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -108,7 +108,7 @@ class ToFromByteArray : public CppUnit::TestFixture {
     delete sk;
 
 
-    ifs.open("test/hll/updatable_array4_from_java.bin", std::ios::binary);
+    ifs.open("hll/updatable_array4_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);

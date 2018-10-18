@@ -1,0 +1,23 @@
+add_library(
+    sketchescore
+    SHARED
+    hll/AuxHashMap.cpp
+    hll/CompositeInterpolationXTable.cpp
+    hll/Conversions.cpp
+    hll/CouponHashSet.cpp
+    hll/CouponList.cpp
+    hll/CubicInterpolation.cpp
+    hll/HarmonicNumbers.cpp
+    hll/Hll4Array.cpp
+    hll/Hll6Array.cpp
+    hll/Hll8Array.cpp
+    hll/HllArray.cpp
+    hll/HllPairIterator.cpp
+    hll/HllSketch.cpp
+    hll/HllSketchImpl.cpp
+    hll/HllUnion.cpp
+    hll/HllUtil.cpp
+    hll/IntArrayPairIterator.cpp
+    hll/RelativeErrorTables.cpp
+    hll/murmur3.cpp
+)

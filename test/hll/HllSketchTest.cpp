@@ -3,11 +3,11 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include "src/hll/hll.hpp"
-#include "src/hll/HllSketch.hpp"
-#include "src/hll/CouponList.hpp"
-#include "src/hll/CouponHashSet.hpp"
-#include "src/hll/HllArray.hpp"
+#include "hll.hpp"
+#include "HllSketch.hpp"
+#include "CouponList.hpp"
+#include "CouponHashSet.hpp"
+#include "HllArray.hpp"
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
