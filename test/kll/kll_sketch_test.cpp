@@ -11,7 +11,7 @@
 #include <cmath>
 #include <cstring>
 
-// this is for debug printing of kll_sketch using ostream& operator<<()
+// this is for debug printing of kll_sketch<std::string> using ostream& operator<<()
 namespace std {
   string to_string(const string& str) {
     return str;
@@ -23,6 +23,7 @@ namespace datasketches {
 static const double RANK_EPS_FOR_K_200 = 0.0133;
 static const double NUMERIC_NOISE_TOLERANCE = 1E-6;
 
+// --- simple example of kll_sketch<std::string>
 template <>
 void serialize_items<std::string>(std::ostream& os, const std::string* items, unsigned num) {
   for (unsigned i = 0; i < num; i++) {
@@ -44,14 +45,21 @@ void deserialize_items<std::string>(std::istream& is, std::string* items, unsign
   }
 }
 
-// this method won't work for std::string as it is in the generic template
+// this method does not make sense for std::string as it is in the generic template
 template<>
 uint32_t kll_sketch<std::string>::get_serialized_size_bytes() const {
   if (is_empty()) return EMPTY_SIZE_BYTES;
-  return 0; // possible to calculate the size of all retained strings (plus min and max), but slow
-  // this can throw as well, but debug pint using ostream& operator<<() won't work
-  //throw std::runtime_error("get_serialized_size_bytes() is not supported for std::string type");
+  // it is possible to calculate the size of all retained strings (plus min and max), but slow
+  // it is not recommended to use this method with variable-size objects
+  return 0;
 }
+
+// this method does not make sense for std::string as it is in the generic template
+template<>
+uint32_t kll_sketch<std::string>::get_sizeof_item() {
+  return 255; // assume 255 bytes max as it was enforced during serialization
+}
+// ---
 
 class kll_sketch_test: public CppUnit::TestFixture {
 
@@ -65,13 +73,15 @@ class kll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(consistency_between_get_rank_and_get_PMF_CDF);
   CPPUNIT_TEST(deserialize_from_java);
   CPPUNIT_TEST(serialize_deserialize_empty);
+  CPPUNIT_TEST(serialize_deserialize_one_item);
+  CPPUNIT_TEST(deserialize_one_item_v1);
   CPPUNIT_TEST(serialize_deserialize);
   CPPUNIT_TEST(floor_of_log2_of_fraction);
   CPPUNIT_TEST(out_of_order_split_points);
   CPPUNIT_TEST(nan_split_point);
   CPPUNIT_TEST(merge);
   CPPUNIT_TEST(merge_lower_k);
-  CPPUNIT_TEST(merge_empty_lower_k);
+  CPPUNIT_TEST(merge_exact_mode_lower_k);
   CPPUNIT_TEST(merge_min_value_from_other);
   CPPUNIT_TEST(merge_min_and_max_from_other);
   CPPUNIT_TEST(sketch_of_ints);
@@ -247,6 +257,39 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch_ptr->get_normalized_rank_error(true));
   }
 
+  void serialize_deserialize_one_item() {
+    kll_sketch<float> sketch;
+    sketch.update(1);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch.serialize(s);
+    CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
+    auto sketch_ptr(kll_sketch<float>::deserialize(s));
+    CPPUNIT_ASSERT_EQUAL(sketch_ptr->get_serialized_size_bytes(), (uint32_t) s.tellg());
+    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
+    CPPUNIT_ASSERT(!sketch_ptr->is_empty());
+    CPPUNIT_ASSERT(!sketch_ptr->is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(1ull, sketch_ptr->get_n());
+    CPPUNIT_ASSERT_EQUAL(1u, sketch_ptr->get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(1.0f, sketch_ptr->get_min_value());
+    CPPUNIT_ASSERT_EQUAL(1.0f, sketch_ptr->get_max_value());
+    CPPUNIT_ASSERT_EQUAL(1.0f, sketch_ptr->get_quantile(0.5));
+    CPPUNIT_ASSERT_EQUAL(0.0, sketch_ptr->get_rank(1));
+    CPPUNIT_ASSERT_EQUAL(1.0, sketch_ptr->get_rank(2));
+  }
+
+  void deserialize_one_item_v1() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/kll/kll_sketch_float_one_item_v1.bin", std::ios::binary);
+    auto sketch_ptr(kll_sketch<float>::deserialize(is));
+    CPPUNIT_ASSERT(!sketch_ptr->is_empty());
+    CPPUNIT_ASSERT(!sketch_ptr->is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(1ull, sketch_ptr->get_n());
+    CPPUNIT_ASSERT_EQUAL(1u, sketch_ptr->get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(1.0f, sketch_ptr->get_min_value());
+    CPPUNIT_ASSERT_EQUAL(1.0f, sketch_ptr->get_max_value());
+  }
+
   void serialize_deserialize() {
     kll_sketch<float> sketch;
     const int n(1000);
@@ -349,7 +392,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sketch1.get_quantile(0.5), n * RANK_EPS_FOR_K_200);
   }
 
-  void merge_empty_lower_k() {
+  void merge_exact_mode_lower_k() {
     kll_sketch<float> sketch1(256);
     kll_sketch<float> sketch2(128);
     const int n = 10000;
@@ -367,6 +410,11 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
     CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch1.get_max_value());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(n / 2, sketch1.get_quantile(0.5), n / 2 * RANK_EPS_FOR_K_200);
+
+    sketch2.update(0);
+    sketch1.merge(sketch2);
+    // rank error should not be affected by a merge with a sketch in exact mode with lower k
+    CPPUNIT_ASSERT_EQUAL(rank_error_before_merge, sketch1.get_normalized_rank_error(true));
   }
 
   void merge_min_value_from_other() {
@@ -401,7 +449,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     sketch.serialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
     auto sketch_ptr(kll_sketch<int>::deserialize(s));
-     CPPUNIT_ASSERT_EQUAL(sketch_ptr->get_serialized_size_bytes(), (uint32_t) s.tellg());
+    CPPUNIT_ASSERT_EQUAL(sketch_ptr->get_serialized_size_bytes(), (uint32_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
     CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch_ptr->is_estimation_mode());
@@ -426,7 +474,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     const int n(1000);
     for (int i = 0; i < n; i++) sketch.update(std::to_string(i));
 
-    //CPPUNIT_ASSERT_THROW(sketch.get_serialized_size_bytes(), std::runtime_error);
+    CPPUNIT_ASSERT_EQUAL(0u, sketch.get_serialized_size_bytes()); // as implemented above
 
     CPPUNIT_ASSERT_EQUAL(std::string("0"), sketch.get_min_value());
     CPPUNIT_ASSERT_EQUAL(std::string("999"), sketch.get_max_value());
@@ -446,6 +494,8 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch_ptr->get_quantile(0.5));
     CPPUNIT_ASSERT_EQUAL(sketch.get_rank(std::to_string(0)), sketch_ptr->get_rank(std::to_string(0)));
     CPPUNIT_ASSERT_EQUAL(sketch.get_rank(std::to_string(n)), sketch_ptr->get_rank(std::to_string(n)));
+
+    CPPUNIT_ASSERT_EQUAL(263u, kll_sketch<std::string>::get_max_serialized_size_bytes(kll_sketch<std::string>::DEFAULT_K, 1ull)); // 8 + 255 as a result of get_sizeof_item() as implemented above
 
     // to take a look using hexdump
     std::ofstream os("kll-string.bin");

@@ -1,0 +1,33 @@
+# Eclipse project files 
+.cproject
+.project
+.settings/
+
+# Visual Studio Code
+.vscode/
+
+# OSX files
+.DS_Store
+
+# Compiler output, build specific
+*.a
+*.so
+*.dll
+*.dylib
+bin/
+build/
+lib/
+
+# Log file
+
+# Package Files #
+*.zip
+*.tar.gz
+
+# Other
+local/
+tmp/
+_site/
+_*
+_*/
+
