@@ -248,7 +248,7 @@ class cpc_sketch {
     static const uint8_t SERIAL_VERSION = 1;
     static const uint8_t FAMILY = 16;
 
-    enum flags { HAS_HIP, HAS_TABLE, HAS_WINDOW };
+    enum flags { IS_BIG_ENDIAN, IS_READ_OLY, HAS_HIP, HAS_TABLE, HAS_WINDOW };
 
     FM85* state;
     uint64_t seed;
