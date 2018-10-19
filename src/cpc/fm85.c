@@ -16,8 +16,7 @@
 U32 rowColFromTwoHashes (U64 hash0, U64 hash1, Short lgK) {
   assert (lgK <= 26);
   Long k = (1LL << lgK);
-  //Short col = countLeadingZerosInUnsignedLong (hash1); // 0 <= col <= 64
-  Short col = __builtin_clz(hash1);
+  Short col = countLeadingZerosInUnsignedLong (hash1); // 0 <= col <= 64
   if (col > 63) col = 63;                    // clip so that 0 <= col <= 63
   Long row = hash0 & (k - 1);
   U32 rowCol = (U32) ((row << 6) | col);
