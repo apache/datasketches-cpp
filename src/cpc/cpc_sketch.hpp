@@ -105,7 +105,8 @@ class cpc_sketch {
       const bool has_table(compressed->compressedSurprisingValues != nullptr);
       const bool has_window(compressed->compressedWindow != nullptr);
       const uint8_t flags_byte(
-          (has_hip ? 1 << flags::HAS_HIP : 0)
+        (1 << flags::IS_READ_ONLY)
+        | (has_hip ? 1 << flags::HAS_HIP : 0)
         | (has_table ? 1 << flags::HAS_TABLE : 0)
         | (has_window ? 1 << flags::HAS_WINDOW : 0)
       );
@@ -248,7 +249,7 @@ class cpc_sketch {
     static const uint8_t SERIAL_VERSION = 1;
     static const uint8_t FAMILY = 16;
 
-    enum flags { IS_BIG_ENDIAN, IS_READ_OLY, HAS_HIP, HAS_TABLE, HAS_WINDOW };
+    enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, HAS_HIP, HAS_TABLE, HAS_WINDOW };
 
     FM85* state;
     uint64_t seed;
