@@ -1,8 +1,3 @@
-/*
- * Copyright 2018, Oath Inc. Licensed under the terms of the
- * Apache License 2.0. See LICENSE file at the project root for terms.
- */
-
 //-----------------------------------------------------------------------------
 // MurmurHash3 was written by Austin Appleby, and is placed in the public
 // domain. The author hereby disclaims copyright to this source code.
