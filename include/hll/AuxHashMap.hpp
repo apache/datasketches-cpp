@@ -8,6 +8,7 @@
 #include "IntArrayPairIterator.hpp"
 
 #include <memory>
+#include <stdexcept>
 
 namespace datasketches {
 

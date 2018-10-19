@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <stdexcept>
 
 namespace datasketches {
 
