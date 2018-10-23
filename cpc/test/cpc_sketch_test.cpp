@@ -85,6 +85,10 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
     CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
 
+    // updating again with the same values should not change the sketch
+    for (int i = 0; i < n; i++) sketch_ptr->update(i);
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+
     std::ofstream os("cpc-sparse.bin");
     sketch.serialize(os);
   }
@@ -97,6 +101,10 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     sketch.serialize(s);
     auto sketch_ptr(cpc_sketch::deserialize(s));
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+
+    // updating again with the same values should not change the sketch
+    for (int i = 0; i < n; i++) sketch_ptr->update(i);
     CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
 
     std::ofstream os("cpc-hybrid.bin");
@@ -113,6 +121,10 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
     CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
 
+    // updating again with the same values should not change the sketch
+    for (int i = 0; i < n; i++) sketch_ptr->update(i);
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+
     std::ofstream os("cpc-pinned.bin");
     sketch.serialize(os);
   }
@@ -125,6 +137,10 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     sketch.serialize(s);
     auto sketch_ptr(cpc_sketch::deserialize(s));
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+
+    // updating again with the same values should not change the sketch
+    for (int i = 0; i < n; i++) sketch_ptr->update(i);
     CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
 
     std::ofstream os("cpc-sliding.bin");
