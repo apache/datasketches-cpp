@@ -29,7 +29,7 @@ else
   CFLAGS += -std=c++11 -stdlib=libc++ -O0 -g
 endif
 
-all: cpc
+all: cpc hll
 
 # build directory doesn't exist until after make all,
 # so this is a separate command
@@ -42,7 +42,7 @@ $(TARGET): $(wildcard build/**/*) # doesn't complain if nothing matches
 	@echo "  Linking $(TARGET)";
 	@$(CC) $^ -dynamiclib -o $(TARGET) 
 
-.PHONY: common cpc common_test cpc_test kll_test clean
+.PHONY: common cpc hll common_test cpc_test hll_test kll_test clean
 
 common:
 	@$(MAKE) -C common
@@ -50,6 +50,8 @@ common:
 cpc: common
 	@$(MAKE) -C cpc
 
+hll: common
+	@$(MAKE) -C hll
 
 common_test:
 	@$(MAKE) -C common test
@@ -57,13 +59,18 @@ common_test:
 cpc_test: cpc common_test
 	@$(MAKE) -C cpc test
 
+hll_test: hll common_test
+	@$(MAKE) -C hll test
+
 kll_test: common_test
 	@$(MAKE) -C kll test
 
 
-test: cpc_test kll_test
+test: cpc_test hll_test kll_test
 	@echo "CPC tests:"
 	@cd cpc; ./cpc_test
+	@echo "HLL tests:"
+	@cd hll; ./hll_test
 	@echo "KLL tests:"
 	@cd kll; ./kll_test
 
@@ -72,6 +79,7 @@ clean:
 	@echo "Cleaning $(TARGET)..."; $(RM) -r $(BUILDDIR) $(TARGET)
 	@$(MAKE) -C common clean
 	@$(MAKE) -C cpc clean
+	@$(MAKE) -C hll clean
 	@$(MAKE) -C kll clean
 
 # TODO: also copy headers to /usr/local/include

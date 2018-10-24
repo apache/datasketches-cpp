@@ -65,13 +65,6 @@ CouponHashSet* CouponHashSet::newSet(std::istream& is) {
       if (coupon == HllUtil::EMPTY) { continue; }
       sketch->couponUpdate(coupon);
 
-      /*
-      HllSketchImpl* result = sketch->couponUpdate(coupon);
-      if (result != sketch) {
-        delete sketch;
-        sketch = result;
-      }
-      */
     }
   } else {
     int* tmp = sketch->couponIntArr;

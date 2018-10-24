@@ -3,8 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include "src/hll/hll.hpp"
-#include "src/hll/HllUtil.hpp"
+#include "hll.hpp"
+#include "HllUtil.hpp"
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
