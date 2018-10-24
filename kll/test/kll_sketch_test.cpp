@@ -230,7 +230,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   void deserialize_from_java() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/kll/kll_sketch_from_java.bin", std::ios::binary);
+    is.open("test/kll_sketch_from_java.bin", std::ios::binary);
     auto sketch_ptr(kll_sketch<float>::deserialize(is));
     CPPUNIT_ASSERT(!sketch_ptr->is_empty());
     CPPUNIT_ASSERT(sketch_ptr->is_estimation_mode());
@@ -280,7 +280,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   void deserialize_one_item_v1() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/kll/kll_sketch_float_one_item_v1.bin", std::ios::binary);
+    is.open("test/kll_sketch_float_one_item_v1.bin", std::ios::binary);
     auto sketch_ptr(kll_sketch<float>::deserialize(is));
     CPPUNIT_ASSERT(!sketch_ptr->is_empty());
     CPPUNIT_ASSERT(!sketch_ptr->is_estimation_mode());

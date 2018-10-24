@@ -5,31 +5,18 @@ else
   CC := g++
 endif
 
-SRCDIR := src
-TSTDIR := test
 BUILDDIR := build
-#TARGETDIR := bin
 TARGETDIR := lib
 
-#EXECUTABLE := ds
 LIBRARY := libdatasketches.dylib
-#TARGET := $(TARGETDIR)/$(EXECUTABLE)
 TARGET := $(TARGETDIR)/$(LIBRARY)
 
 INSTALLLIBDIR := /usr/local/lib
 
-SRCEXT := cpp
-SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
-OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-
-#INCDIRS := $(shell find include/*/* -name '*.h' -exec dirname {} \; | sort | uniq)
-INCDIRS := $(shell find $(SRCDIR) -type d)
-INCLIST := $(patsubst $(SRCDIR)/%,-I $(SRCDIR)/%,$(INCDIRS))
-BUILDLIST := $(patsubst src/%,$(BUILDDIR)/%,$(INCDIRS))
+#OBJECTS := $(shell find $(BUILDDIR) -type f -name *.o)
 
 CFLAGS := -c -g -Wall
 INC := -I $(INCLIST) -I /usr/local/include
-#LIB := -L /usr/local/lib
 
 ifeq ($(UNAME_S),Linux)
     #CFLAGS += -std=gnu++11 -O2 # -fPIC
@@ -42,24 +29,54 @@ else
   CFLAGS += -std=c++11 -stdlib=libc++ -O0 -g
 endif
 
-	#@echo "  Linking $(TARGET)"; $(CC) $^ -o $(TARGET) $(LIB)
-$(TARGET): $(OBJECTS)
+all: cpc
+
+# build directory doesn't exist until after make all,
+# so this is a separate command
+library: $(TARGET)
+
+
+$(TARGET): $(wildcard build/**/*) # doesn't complain if nothing matches
 	@mkdir -p $(TARGETDIR)
 	@echo "Linking..."
-	@echo "  Linking $(TARGET)"; $(CC) $^ -dynamiclib -o $(TARGET) 
+	@echo "  Linking $(TARGET)";
+	@$(CC) $^ -dynamiclib -o $(TARGET) 
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
-	@mkdir -p $(BUILDLIST)
-	@echo "Compiling $<..."; $(CC) $(CFLAGS) $(INC) -c -o $@ $<
+.PHONY: common cpc common_test cpc_test kll_test clean
+
+common:
+	@$(MAKE) -C common
+
+cpc: common
+	@$(MAKE) -C cpc
+
+
+common_test:
+	@$(MAKE) -C common test
+
+cpc_test: cpc common_test
+	@$(MAKE) -C cpc test
+
+kll_test: common_test
+	@$(MAKE) -C kll test
+
+
+test: cpc_test kll_test
+	@echo "CPC tests:"
+	@cd cpc; ./cpc_test
+	@echo "KLL tests:"
+	@cd kll; ./kll_test
+
 
 clean:
 	@echo "Cleaning $(TARGET)..."; $(RM) -r $(BUILDDIR) $(TARGET)
+	@$(MAKE) -C common clean
+	@$(MAKE) -C cpc clean
+	@$(MAKE) -C kll clean
 
 # TODO: also copy headers to /usr/local/include
-install:
-	@echo "Installing $(LIBRARY)..."; cp $(TARGET) $(INSTALLLIBDIR)
-  
-distclean:
-	@echo "Removing $(LIBRARY)"; rm $(INSTALLLIBDIR)/$(LIBRARY)
-
-.PHONY: clean
+#install:
+#	@echo "Installing $(LIBRARY)..."; cp $(TARGET) $(INSTALLLIBDIR)
+ 
+#distclean:
+#	@echo "Removing $(LIBRARY)"; rm $(INSTALLLIBDIR)/$(LIBRARY)
