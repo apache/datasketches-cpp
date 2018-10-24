@@ -29,44 +29,51 @@ else
   CFLAGS += -std=c++11 -stdlib=libc++ -O0 -g
 endif
 
-all: cpc hll
+# need to explicitly add command to run tests, too
+MODULES := cpc hll kll
+TEST_MODULES := $(addsuffix _test, $(MODULES))
+CLEAN_MODULES := $(addsuffix _clean, $(MODULES))
+
+all: $(MODULES)
 
 # build directory doesn't exist until after make all,
 # so this is a separate command
 library: $(TARGET)
 
-
+# TODO: can we use $(MODULES) to build a list of *.o files?
 $(TARGET): $(wildcard build/**/*) # doesn't complain if nothing matches
 	@mkdir -p $(TARGETDIR)
 	@echo "Linking..."
 	@echo "  Linking $(TARGET)";
 	@$(CC) $^ -dynamiclib -o $(TARGET) 
 
-.PHONY: common cpc hll common_test cpc_test hll_test kll_test clean
+.PHONY: clean
 
 common:
 	@$(MAKE) -C common
 
-cpc: common
-	@$(MAKE) -C cpc
-
-hll: common
-	@$(MAKE) -C hll
-
 common_test:
 	@$(MAKE) -C common test
 
-cpc_test: cpc common_test
-	@$(MAKE) -C cpc test
-
-hll_test: hll common_test
-	@$(MAKE) -C hll test
-
-kll_test: common_test
-	@$(MAKE) -C kll test
+common_clean:
+	@$(MAKE) -C common clean
 
 
-test: cpc_test hll_test kll_test
+define MODULETASKS
+$(1): common
+	@$(MAKE) -C $(1)
+
+$(1)_test: $(1) common_test
+	@$(MAKE) -C $(1) test
+
+$(1)_clean:
+	@$(MAKE) -C $(1) clean
+endef
+
+# expand the targets for each module
+$(foreach MODULE,$(MODULES),$(eval $(call MODULETASKS,$(MODULE))))
+
+test: $(TEST_MODULES)
 	@echo "CPC tests:"
 	@cd cpc; ./cpc_test
 	@echo "HLL tests:"
@@ -75,16 +82,13 @@ test: cpc_test hll_test kll_test
 	@cd kll; ./kll_test
 
 
-clean:
-	@echo "Cleaning $(TARGET)..."; $(RM) -r $(BUILDDIR) $(TARGET)
-	@$(MAKE) -C common clean
-	@$(MAKE) -C cpc clean
-	@$(MAKE) -C hll clean
-	@$(MAKE) -C kll clean
+clean: common_clean $(CLEAN_MODULES)
+	@echo "Cleaning $(TARGET)..."
+	@$(RM) -r $(BUILDDIR) $(TARGET)
 
 # TODO: also copy headers to /usr/local/include
 #install:
 #	@echo "Installing $(LIBRARY)..."; cp $(TARGET) $(INSTALLLIBDIR)
- 
+
 #distclean:
 #	@echo "Removing $(LIBRARY)"; rm $(INSTALLLIBDIR)/$(LIBRARY)

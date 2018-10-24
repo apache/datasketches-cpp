@@ -40,6 +40,9 @@ else
   CPPFLAGS += -std=c++11 -stdlib=libc++ $(COMMON_FLAGS)
 endif
 
+.PHONY: all clean
+
+all:
 
 test: $(TARGET)
 
@@ -53,7 +56,6 @@ $(TARGET): $(TSTOBJS)
 	@$(CC) $^ -o $(TARGET) $(LIB) $(COMMONTSTOBJ)/*.o
 
 
-.PHONY: clean
 clean:
 	@echo "Cleaning $(MODULE)...";
 	@$(RM) -r $(BUILDDIR) $(TSTBUILD) $(MODULE)_test *.bin
