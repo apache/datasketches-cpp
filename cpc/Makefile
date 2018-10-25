@@ -44,7 +44,7 @@ ifeq ($(UNAME_S),Linux)
     #INC += -I /usr/pgsql-$(PG_VER)/include
     #LIB += -L /usr/pgsql-$(PG_VER)/lib
 else
-  CFLAGS += $(COMMON_FLAGS)
+  CFLAGS += -x c $(COMMON_FLAGS)
   CPPFLAGS += -std=c++11 -stdlib=libc++ $(COMMON_FLAGS)
 endif
 
@@ -52,7 +52,7 @@ endif
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(BUILDDIR)
 	@echo "Compiling $<...";
-	@$(CC) -x c $(CFLAGS) $(INC) -c -o $@ $<
+	@$(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(BUILDDIR)
