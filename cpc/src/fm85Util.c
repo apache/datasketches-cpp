@@ -7,12 +7,14 @@
 
 #include "fm85Util.h"
 
+extern void* (*fm85alloc)(size_t);
+
 /******************************************/
 
 void * shallowCopy (void * oldObject, size_t numBytes) {
   if (oldObject == NULL || numBytes == 0) { FATAL_ERROR ("shallowCopyObject: bad arguments"); }
-  void * newObject = malloc (numBytes);
-  if (newObject == NULL) { FATAL_ERROR ("shallowCopyObject: malloc failed"); }
+  void * newObject = fm85alloc (numBytes);
+  if (newObject == NULL) { FATAL_ERROR ("shallowCopyObject: allocation failed"); }
   memcpy (newObject, oldObject, numBytes);
   return (newObject);
 }
