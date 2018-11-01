@@ -456,7 +456,7 @@ class kll_sketch {
             + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
       }
 
-      typedef typename A::template rebind<kll_sketch<T>>::other AA;
+      typedef typename A::template rebind<kll_sketch<T, A>>::other AA;
       AA a;
       std::unique_ptr<kll_sketch<T, A>, std::function<void(kll_sketch<T, A>*)>> sketch_ptr(
           is_empty ? new (a.allocate(1)) kll_sketch<T, A>(k) : new (a.allocate(1)) kll_sketch<T, A>(k, flags_byte, is),
