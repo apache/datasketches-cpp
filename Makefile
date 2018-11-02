@@ -1,9 +1,11 @@
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-  CC := clang++ -arch x86_64
-else
-  CC := g++
-endif
+include common.mk
+
+# UNAME_S := $(shell uname -s)
+# ifeq ($(UNAME_S),Darwin)
+#   CC := clang++ -arch x86_64
+# else
+#   CC := g++
+# endif
 
 BUILDDIR := build
 TARGETDIR := lib
@@ -15,19 +17,20 @@ INSTALLLIBDIR := /usr/local/lib
 
 #OBJECTS := $(shell find $(BUILDDIR) -type f -name *.o)
 
-CFLAGS := -c -g -Wall
+#CFLAGS := -O0 -g3 -c -Wall -pedantic
+#CFLAGS := -O3 -g0 -c -Wall -pedantic -fpic
 INC := -I $(INCLIST) -I /usr/local/include
 
-ifeq ($(UNAME_S),Linux)
-    #CFLAGS += -std=gnu++11 -O2 # -fPIC
+# ifeq ($(UNAME_S),Linux)
+#     #CFLAGS += -std=gnu++11 -O2 # -fPIC
 
-    # PostgreSQL Special
-    #PG_VER := 9.3
-    #INC += -I /usr/pgsql-$(PG_VER)/include
-    #LIB += -L /usr/pgsql-$(PG_VER)/lib
-else
-  CFLAGS += -std=c++11 -stdlib=libc++ -O0 -g
-endif
+#     # PostgreSQL Special
+#     #PG_VER := 9.3
+#     #INC += -I /usr/pgsql-$(PG_VER)/include
+#     #LIB += -L /usr/pgsql-$(PG_VER)/lib
+# else
+#   CFLAGS += -std=c++11 -stdlib=libc++
+# endif
 
 # need to explicitly add command to run tests, too
 MODULES := cpc hll kll
@@ -38,16 +41,17 @@ all: $(MODULES)
 
 # build directory doesn't exist until after make all,
 # so this is a separate command
-library: $(TARGET)
+library: $(LIBRARY)
 
 # TODO: can we use $(MODULES) to build a list of *.o files?
-$(TARGET): $(wildcard build/**/*) # doesn't complain if nothing matches
+$(LIBRARY): $(wildcard build/**/*) # doesn't complain if nothing matches
 	@mkdir -p $(TARGETDIR)
 	@echo "Linking..."
-	@echo "  Linking $(TARGET)";
-	@$(CC) $^ -dynamiclib -o $(TARGET) 
+	@echo "  Linking $(LIBRARY)";
+	@$(CC) $^ -dynamiclib -o $@
+	@mv $(LIBRARY) $(TARGETDIR)
 
-.PHONY: clean
+.PHONY: clean common
 
 common:
 	@$(MAKE) -C common
