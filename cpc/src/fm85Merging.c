@@ -10,7 +10,7 @@
 
 UG85 * ug85Make (Short lgK) {
   assert (lgK >= 4);
-  UG85 * self = (UG85 *) malloc (sizeof(UG85));
+  UG85 * self = (UG85 *) fm85alloc (sizeof(UG85));
   assert (self != NULL);
   self->lgK = lgK;
   // We begin with the accumulator holding an EMPTY sketch object.
@@ -25,8 +25,8 @@ UG85 * ug85Make (Short lgK) {
 void ug85Free (UG85 * self) {
   if (self != NULL) {
     if (self->accumulator != NULL) { fm85Free (self->accumulator); }
-    if (self->bitMatrix != NULL) { free (self->bitMatrix); }
-    free (self);
+    if (self->bitMatrix != NULL) { fm85free (self->bitMatrix); }
+    fm85free (self);
   }
 }
 
@@ -122,12 +122,12 @@ void ug85ReduceK (UG85 * unioner, Short newLgK) {
   if (unioner->bitMatrix != NULL) { // downsample the unioner's bit matrix
     assert (unioner->accumulator == NULL);
     Long newK = (1LL << newLgK);
-    U64 * newMatrix = (U64 *) malloc ((size_t) (newK * sizeof(U64)));
+    U64 * newMatrix = (U64 *) fm85alloc ((size_t) (newK * sizeof(U64)));
     assert (newMatrix != NULL);
     Long i = 0;
     for (i = 0; i < newK; i++) { newMatrix[i] = 0LL; } // clear the bit matrix
     orMatrixIntoMatrix (newMatrix, newLgK, unioner->bitMatrix, unioner->lgK);
-    free (unioner->bitMatrix);
+    fm85free (unioner->bitMatrix);
     unioner->bitMatrix = newMatrix;
     unioner->lgK = newLgK;
     return;
@@ -237,7 +237,7 @@ void ug85MergeInto (UG85 * unioner, FM85 * source) {
   assert (SLIDING == sourceFlavor); // Case D
   U64 * sourceMatrix = bitMatrixOfSketch (source);
   orMatrixIntoMatrix (unioner->bitMatrix, unioner->lgK, sourceMatrix, source->lgK);
-  free (sourceMatrix);
+  fm85free (sourceMatrix);
 
   return;
 }
@@ -279,7 +279,7 @@ FM85 * ug85GetResult (UG85 * unioner) {
   Short offset = determineCorrectOffset (lgK, numCoupons);
   result->windowOffset = offset;
 
-  U8 * window = (U8 *) malloc ((size_t) (k * sizeof(U8)));
+  U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
   assert (window != NULL);
   //  bzero ((void *) window, (size_t) k); // don't need to zero the window's memory
   assert (result->slidingWindow == NULL);

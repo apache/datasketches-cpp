@@ -9,13 +9,16 @@
 #include "u32Table.h"
 #include "fm85Util.h"
 
+extern void* (*fm85alloc)(size_t);
+extern void (*fm85free)(void*);
+
 /*******************************************************/
 
 u32Table * u32TableMake (Short lgSize, Short numValidBits) {
   assert (lgSize >= 2);
   Long numSlots = (1LL << lgSize);
-  u32Table * self = (u32Table *) malloc (sizeof(u32Table));
-  U32 * arr = (U32 *) malloc ((size_t) (numSlots * sizeof(U32)));
+  u32Table * self = (u32Table *) fm85alloc (sizeof(u32Table));
+  U32 * arr = (U32 *) fm85alloc ((size_t) (numSlots * sizeof(U32)));
   assert (self != NULL);
   assert (arr != NULL);
   Long i = 0;
@@ -46,8 +49,8 @@ u32Table * u32TableCopy (u32Table * self) {
 
 void u32TableFree (u32Table * self) {
   if (self != NULL) {
-    if (self->slots != NULL) free (self->slots);
-    free (self);
+    if (self->slots != NULL) fm85free (self->slots);
+    fm85free (self);
   }
 }
 
@@ -141,7 +144,7 @@ void privateU32TableRebuild (u32Table * self, Short newLgSize) {
   //  printf ("rebuilding: %lld -> %lld; %lld items in table\n", oldSize, newSize, self->numItems); fflush (stdout);
   assert (newSize > self->numItems); // TODO
   U32 * oldSlots = self->slots;
-  U32 * newSlots = (U32 *) malloc ((size_t) (newSize * sizeof(U32)));
+  U32 * newSlots = (U32 *) fm85alloc ((size_t) (newSize * sizeof(U32)));
   assert (newSlots != NULL);
   Long i;
   for (i = 0; i < newSize; i++) { 
@@ -155,7 +158,7 @@ void privateU32TableRebuild (u32Table * self, Short newLgSize) {
       u32TableMustInsert (self, item);
     }
   }
-  free (oldSlots);
+  fm85free (oldSlots);
   return;
 }
 
@@ -219,7 +222,7 @@ U32 * u32TableUnwrappingGetItems (u32Table * self, Long * returnNumItems) {
   if (self->numItems < 1) { return (NULL); }
   U32 * slots = self->slots;
   Long tableSize = (1LL << self->lgSize);
-  U32 * result = (U32 *) malloc ((size_t) (self->numItems * sizeof(U32)));  
+  U32 * result = (U32 *) fm85alloc ((size_t) (self->numItems * sizeof(U32)));
   assert (result != NULL);
   Long i = 0;
   Long l = 0;
@@ -287,7 +290,7 @@ void introspectiveInsertionSort(U32 a[], Long l, Long r) // r points AT the righ
     a[j] = v; 
     cost += (i - j); // distance moved is a measure of work
     if (cost > costLimit) {
-      fprintf (stderr, "switching to the other sorting algorithm\n"); fflush (stderr);
+      //fprintf (stderr, "switching to the other sorting algorithm\n"); fflush (stderr);
       u32KnuthShellSort3(a, l, r); // In the Java version, this should be the system's array sort.
       return;
     }

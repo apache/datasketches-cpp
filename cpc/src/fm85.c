@@ -30,12 +30,23 @@ U32 rowColFromTwoHashes (U64 hash0, U64 hash1, Short lgK) {
 
 Boolean fm85Initialized = 0;
 
+// This is to support custom allocator and deallocator
+void* (*fm85alloc)(size_t);
+void (*fm85free)(void*);
+
 // This stuff would be handled by Java's mechanism
 // for initializing class variables.
 
 void fm85Init (void) {
+  fm85InitAD(&malloc, &free);
+}
+
+// This is to support custom allocator and deallocator
+void fm85InitAD (void* (*alloc)(size_t), void (*dealloc)(void*)) {
   if (!fm85Initialized) {
     fm85Initialized = 1;
+    fm85alloc = alloc;
+    fm85free = dealloc;
     fillByteLeadingZerosTable();
     fillByteTrailingZerosTable();
     makeTheDecodingTables();
@@ -78,7 +89,7 @@ Short determineCorrectOffset (Short lgK, Long c) {
 
 FM85 * fm85Make (Short lgK) {
   assert (lgK >= 4 && lgK <= 26);
-  FM85 * self = (FM85 *) malloc (sizeof(FM85));
+  FM85 * self = (FM85 *) fm85alloc (sizeof(FM85));
   assert (self != NULL);
   self->lgK = lgK;
   self->isCompressed = 0;
@@ -138,10 +149,10 @@ FM85 * fm85Copy (FM85 * self) {
 void fm85Free (FM85 * self) {
   if (self != NULL) {
     if (self->surprisingValueTable != NULL) u32TableFree (self->surprisingValueTable);
-    if (self->slidingWindow != NULL) free (self->slidingWindow);
-    if (self->compressedSurprisingValues != NULL) free (self->compressedSurprisingValues);
-    if (self->compressedWindow != NULL) free (self->compressedWindow);
-    free (self);
+    if (self->slidingWindow != NULL) fm85free (self->slidingWindow);
+    if (self->compressedSurprisingValues != NULL) fm85free (self->compressedSurprisingValues);
+    if (self->compressedWindow != NULL) fm85free (self->compressedWindow);
+    fm85free (self);
   }
 }
 
@@ -162,7 +173,7 @@ U64 * bitMatrixOfSketch (FM85 * self) {
   Short offset = self->windowOffset;
   assert (offset >= 0 && offset <= 56);
   Long i = 0;
-  U64 * matrix = (U64 *) malloc ((size_t) (k * sizeof(U64)));
+  U64 * matrix = (U64 *) fm85alloc ((size_t) (k * sizeof(U64)));
   assert (matrix != NULL);
 
 // Fill the matrix with default rows in which the "early zone" is filled with ones.
@@ -217,7 +228,7 @@ void promoteSparseToWindowed (FM85 * self) {
   assert (c32 == 3 * k || (self->lgK == 4 && c32 > 3 * k));
   Long i;
 
-  U8 * window = (U8 *) malloc ((size_t) (k * sizeof(U8)));
+  U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
   assert (window != NULL);
   bzero ((void *) window, (size_t) k); // zero the memory (because we will be OR'ing into it)
 
@@ -339,7 +350,7 @@ void modifyOffset (FM85 * self, Short newOffset) {
     }
   }
 
-  free (bitMatrix);
+  fm85free (bitMatrix);
   self->windowOffset = newOffset;
 
   self->firstInterestingColumn = countTrailingZerosInUnsignedLong (allSurprisesORed);

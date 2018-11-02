@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <memory>
+#include <functional>
 
 extern "C" {
 
@@ -31,11 +32,14 @@ namespace datasketches {
  * author Alexander Saydakov
  */
 
+class cpc_sketch;
+typedef typename std::unique_ptr<cpc_sketch, std::function<void(cpc_sketch*)>> cpc_sketch_unique_ptr;
+
 class cpc_sketch {
   public:
 
-    explicit cpc_sketch(uint8_t lg_k, uint64_t seed = DEFAULT_SEED) : seed(seed) {
-      fm85Init();
+    explicit cpc_sketch(uint8_t lg_k, uint64_t seed = DEFAULT_SEED, void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free) : seed(seed) {
+      fm85InitAD(alloc, dealloc);
       if (lg_k < CPC_MIN_LG_K or lg_k > CPC_MAX_LG_K) {
         throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
       }
@@ -144,8 +148,9 @@ class cpc_sketch {
       fm85Free(compressed);
     }
 
-    static std::unique_ptr<cpc_sketch> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED) {
-      fm85Init();
+    static cpc_sketch_unique_ptr
+    deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free) {
+      fm85InitAD(alloc, dealloc);
       uint8_t preamble_ints;
       is.read((char*)&preamble_ints, sizeof(preamble_ints));
       uint8_t serial_version;
@@ -232,7 +237,10 @@ class cpc_sketch {
       FM85* uncompressed = fm85Uncompress(&compressed);
       delete [] compressed.compressedSurprisingValues;
       delete [] compressed.compressedWindow;
-      std::unique_ptr<cpc_sketch> sketch_ptr(new cpc_sketch(uncompressed, seed));
+      cpc_sketch_unique_ptr sketch_ptr(
+          (new (alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed)),
+          [dealloc](cpc_sketch* s) { dealloc(s); }
+      );
       return std::move(sketch_ptr);
     }
 
