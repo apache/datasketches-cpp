@@ -56,10 +56,14 @@ typedef struct fm85_sketch_type
 
 } FM85;
 
+extern void* (*fm85alloc)(size_t);
+extern void (*fm85free)(void*);
+
 /*******************************************************/
 // These routines are exported.
 
 void fm85Init (void); // Call this before anything else.
+void fm85InitAD (void* (*alloc)(size_t), void (*dealloc)(void*)); // or this to use custom allocator and deallocator
 
 FM85 * fm85Make (Short lgK);
 

@@ -10,6 +10,7 @@
 #include <limits>
 #include <iostream>
 #include <iomanip>
+#include <functional>
 
 #include "kll_quantile_calculator.hpp"
 #include "kll_helper.hpp"
@@ -140,16 +141,18 @@ void deserialize_items(std::istream& is, T* items, unsigned num) {
   is.read((char*)items, sizeof(T) * num);
 }
 
-
-template <typename T>
+template <typename T, typename A = std::allocator<void>>
 class kll_sketch {
+  typedef typename A::template rebind<T>::other AllocT;
+  typedef typename A::template rebind<uint32_t>::other AllocU32;
+
   public:
     static const uint8_t DEFAULT_M = 8;
     static const uint16_t DEFAULT_K = 200;
     static const uint16_t MIN_K = DEFAULT_M;
     static const uint16_t MAX_K = (1 << 16) - 1; // serialized as an uint16_t
 
-    explicit kll_sketch(uint16_t k = DEFAULT_K) {
+    explicit kll_sketch(uint16_t k = DEFAULT_K) : alloc_t(AllocT()), alloc_u32(AllocU32()) {
       if (k < MIN_K or k > MAX_K) {
         throw std::invalid_argument("K must be >= " + std::to_string(MIN_K) + " and <= " + std::to_string(MAX_K) + ": " + std::to_string(k));
       }
@@ -159,9 +162,10 @@ class kll_sketch {
       n_ = 0;
       num_levels_ = 1;
       levels_size_ = 2;
-      levels_ = new uint32_t[2] {k_, k_};
+      levels_ = new (alloc_u32.allocate(2)) uint32_t[2] {k_, k_};
       items_size_ = k_;
-      items_ = new T[k_];
+      items_ = alloc_t.allocate(items_size_);
+      for (unsigned i = 0; i < items_size_; i++) alloc_t.construct(&items_[i], T());
       if (std::is_floating_point<T>::value) {
         min_value_ = std::numeric_limits<T>::quiet_NaN();
         max_value_ = std::numeric_limits<T>::quiet_NaN();
@@ -169,18 +173,18 @@ class kll_sketch {
       is_level_zero_sorted_ = false;
     }
 
-    kll_sketch(const kll_sketch& other) {
+    kll_sketch(const kll_sketch& other) : alloc_t(AllocT()), alloc_u32(AllocU32()) {
       k_ = other.k_;
       m_ = other.m_;
       min_k_ = other.min_k_;
       n_ = other.n_;
       num_levels_ = other.num_levels_;
       levels_size_ = other.levels_size_;
-      levels_ = new uint32_t[levels_size_];
+      levels_ = alloc_u32.allocate(levels_size_);
       std::copy(&other.levels_[0], &other.levels_[levels_size_], levels_);
       items_size_ = other.items_size_;
-      items_ = new T[items_size_];
-      std::copy(&other.items_[0], &other.items_[items_size_], items_);
+      items_ = alloc_t.allocate(items_size_);
+      for (unsigned i = 0; i < items_size_; i++) alloc_t.construct(&items_[i], other[i]);
       min_value_ = other.min_value_;
       max_value_ = other.max_value_;
       is_level_zero_sorted_ = other.is_level_zero_sorted_;
@@ -203,8 +207,9 @@ class kll_sketch {
     }
 
     ~kll_sketch() {
-      delete [] levels_;
-      delete [] items_;
+      alloc_u32.deallocate(levels_, levels_size_);
+      for (unsigned i = 0; i < items_size_; i++) alloc_t.destroy(&items_[i]);
+      alloc_t.deallocate(items_, items_size_);
     }
 
     void update(const T& value) {
@@ -293,7 +298,7 @@ class kll_sketch {
         throw std::invalid_argument("Fraction cannot be less than zero or greater than 1.0");
       }
       // has side effect of sorting level zero if needed
-      auto quantile_calculator(const_cast<kll_sketch<T>*>(this)->get_quantile_calculator());
+      auto quantile_calculator(const_cast<kll_sketch*>(this)->get_quantile_calculator());
       return quantile_calculator->get_quantile(fraction);
     }
 
@@ -408,7 +413,7 @@ class kll_sketch {
       serialize_items<T>(os, &items_[levels_[0]], get_num_retained());
     }
 
-    static std::unique_ptr<kll_sketch<T>> deserialize(std::istream& is) {
+    static std::unique_ptr<kll_sketch<T, A>, std::function<void(kll_sketch<T, A>*)>> deserialize(std::istream& is) {
       uint8_t preamble_ints;
       is.read((char*)&preamble_ints, sizeof(preamble_ints));
       uint8_t serial_version;
@@ -451,7 +456,12 @@ class kll_sketch {
             + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
       }
 
-      std::unique_ptr<kll_sketch<T>> sketch_ptr(is_empty ? new kll_sketch<T>(k) : new kll_sketch<T>(k, flags_byte, is));
+      typedef typename A::template rebind<kll_sketch<T, A>>::other AA;
+      AA a;
+      std::unique_ptr<kll_sketch<T, A>, std::function<void(kll_sketch<T, A>*)>> sketch_ptr(
+          is_empty ? new (a.allocate(1)) kll_sketch<T, A>(k) : new (a.allocate(1)) kll_sketch<T, A>(k, flags_byte, is),
+          [](kll_sketch<T, A>* s) { AA a; a.deallocate(s, 1); }
+      );
       return std::move(sketch_ptr);
     }
 
@@ -468,8 +478,8 @@ class kll_sketch {
           : 2.296 / pow(k, 0.9723);
     }
 
-    template <typename TT>
-    friend std::ostream& operator<<(std::ostream& os, kll_sketch<TT> const& sketch);
+    template <typename TT, typename AA>
+    friend std::ostream& operator<<(std::ostream& os, kll_sketch<TT, AA> const& sketch);
 
 #ifdef KLL_VALIDATION
     uint8_t get_num_levels() { return num_levels_; }
@@ -514,9 +524,12 @@ class kll_sketch {
     T max_value_;
     bool is_level_zero_sorted_;
 
+    AllocT alloc_t;
+    AllocU32 alloc_u32;
+
     // for deserialization
     // the common part of the preamble was read and compatibility checks were done
-    kll_sketch(uint16_t k, uint8_t flags_byte, std::istream& is) {
+    kll_sketch(uint16_t k, uint8_t flags_byte, std::istream& is) : alloc_t(AllocT()), alloc_u32(AllocU32()) {
       k_ = k;
       m_ = DEFAULT_M;
       const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
@@ -531,7 +544,7 @@ class kll_sketch {
         uint8_t unused;
         is.read((char*)&unused, sizeof(unused));
       }
-      levels_ = new uint32_t[num_levels_ + 1];
+      levels_ = alloc_u32.allocate(num_levels_ + 1);
       levels_size_ = num_levels_ + 1;
       const uint32_t capacity(kll_helper::compute_total_capacity(k_, m_, num_levels_));
       if (is_single_item) {
@@ -545,8 +558,9 @@ class kll_sketch {
         deserialize_items<T>(is, &min_value_, 1);
         deserialize_items<T>(is, &max_value_, 1);
       }
-      items_ = new T[capacity];
+      items_ = alloc_t.allocate(capacity);
       items_size_ = capacity;
+      for (unsigned i = 0; i < items_size_; i++) alloc_t.construct(&items_[i], T());
       const auto num_items(levels_[num_levels_] - levels_[0]);
       deserialize_items<T>(is, &items_[levels_[0]], num_items);
       if (is_single_item) {
@@ -632,9 +646,9 @@ class kll_sketch {
 
       // note that merging MIGHT over-grow levels_, in which case we might not have to grow it here
       if (levels_size_ < (num_levels_ + 2)) {
-        uint32_t* new_levels(new uint32_t[num_levels_ + 2]);
+        uint32_t* new_levels(alloc_u32.allocate(num_levels_ + 2));
         std::copy(&levels_[0], &levels_[levels_size_], new_levels);
-        delete [] levels_;
+        alloc_u32.deallocate(levels_, levels_size_);
         levels_ = new_levels;
         levels_size_ = num_levels_ + 2;
       }
@@ -642,11 +656,13 @@ class kll_sketch {
       const uint32_t delta_cap(kll_helper::level_capacity(k_, num_levels_ + 1, 0, m_));
       const uint32_t new_total_cap(cur_total_cap + delta_cap);
 
-      T* new_buf(new T[new_total_cap]);
+      T* new_buf(alloc_t.allocate(new_total_cap));
+      for (unsigned i = 0; i < new_total_cap; i++) alloc_t.construct(&new_buf[i], T());
 
       // move (and shift) the current data into the new buffer
       std::move(&items_[levels_[0]], &items_[levels_[0] + cur_total_cap], &new_buf[levels_[0] + delta_cap]);
-      delete [] items_;
+      for (unsigned i = 0; i < items_size_; i++) alloc_t.destroy(&items_[i]);
+      alloc_t.deallocate(items_, items_size_);
       items_ = new_buf;
       items_size_ = new_total_cap;
 
@@ -764,17 +780,19 @@ class kll_sketch {
 
       // now we need to transfer the results back into the "self" sketch
       if (final_capacity != items_size_) {
-        delete [] items_;
-        items_ = new T[final_capacity];
+        for (unsigned i = 0; i < items_size_; i++) alloc_t.destroy(&items_[i]);
+        alloc_t.deallocate(items_, items_size_);
+        items_ = alloc_t.allocate(final_capacity);
         items_size_ = final_capacity;
+        for (unsigned i = 0; i < items_size_; i++) alloc_t.construct(&items_[i], T());
       }
       const uint32_t free_space_at_bottom = final_capacity - final_pop;
       std::move(&workbuf[outlevels[0]], &workbuf[outlevels[0] + final_pop], &items_[free_space_at_bottom]);
       const uint32_t the_shift(free_space_at_bottom - outlevels[0]);
 
       if (levels_size_ < (final_num_levels + 1)) {
-        delete [] levels_;
-        levels_ = new uint32_t[final_num_levels + 1];
+        alloc_u32.deallocate(levels_, levels_size_);
+        levels_ = alloc_u32.allocate(final_num_levels + 1);
         levels_size_ = final_num_levels + 1;
       }
 
@@ -835,8 +853,8 @@ class kll_sketch {
 
 };
 
-template <typename T>
-std::ostream& operator<<(std::ostream& os, kll_sketch<T> const& sketch) {
+template <typename T, typename A>
+std::ostream& operator<<(std::ostream& os, kll_sketch<T, A> const& sketch) {
   os << "### KLL sketch summary:" << std::endl;
   os << "   K              : " << sketch.k_ << std::endl;
   os << "   min K          : " << sketch.min_k_ << std::endl;

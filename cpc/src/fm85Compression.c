@@ -15,7 +15,8 @@
 
 /***************************************************************/
 /***************************************************************/
-
+// Intentionally uses malloc instead of the custom allocator
+// since it is for global initialization, not for allocating instances.
 U8 * makeInversePermutation (U8 * permu, int length) {
   U8 * inverse = (U8 *) malloc (((size_t) length) * sizeof(U8));
   assert (inverse != NULL);
@@ -36,6 +37,8 @@ U8 * makeInversePermutation (U8 * permu, int length) {
    of length at most 12, this builds a size-4096 decoding table */
 
 // The second argument is typically 256, but can be other values such as 65.
+// Intentionally uses malloc instead of the custom allocator
+// since it is for global initialization, not for allocating instances.
 U16 * makeDecodingTable (U16 * encodingTable, int numByteValues) { 
   int byteValue;
   U16 * decodingTable = (U16 *) malloc (((size_t) 4096) * sizeof(U16));
@@ -468,7 +471,7 @@ Short determinePseudoPhase (Short lgK, Long c) {
 void compressTheWindow (FM85 * target, FM85 * source) {
   Long k = (1LL << source->lgK);  
   Long windowBufLen = safeLengthForCompressedWindowBuf (k);
-  U32 * windowBuf = (U32 *) malloc ((size_t) (windowBufLen * sizeof(U32)));
+  U32 * windowBuf = (U32 *) fm85alloc ((size_t) (windowBufLen * sizeof(U32)));
   assert (windowBuf != NULL);
   Short pseudoPhase = determinePseudoPhase (source->lgK, source->numCoupons);
   target->cwLength = lowLevelCompressBytes (source->slidingWindow, k,
@@ -478,10 +481,10 @@ void compressTheWindow (FM85 * target, FM85 * source) {
   // At this point we free the unused portion of the compression output buffer.
   // Note: realloc caused strange timing spikes for lgK = 11 and 12.
 
-  U32 * shorterBuf = (U32 *) malloc (((size_t) target->cwLength) * sizeof(U32));
+  U32 * shorterBuf = (U32 *) fm85alloc (((size_t) target->cwLength) * sizeof(U32));
   if (shorterBuf == NULL) { FATAL_ERROR ("Out of Memory"); }
   memcpy ((void *) shorterBuf, (void *) windowBuf, ((size_t) target->cwLength) * sizeof(U32));
-  free (windowBuf);
+  fm85free (windowBuf);
   target->compressedWindow = shorterBuf;
 
   return;
@@ -492,7 +495,7 @@ void compressTheWindow (FM85 * target, FM85 * source) {
 
 void uncompressTheWindow (FM85 * target, FM85 * source) {
   Long k = (1LL << source->lgK);  
-  U8 * window = (U8 *) malloc ((size_t) (k * sizeof(U8)));
+  U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
   assert (window != NULL);
   // bzero ((void *) window, (size_t) k); // zeroing not needed here (unlike the Hybrid Flavor)
   assert (target->slidingWindow == NULL);
@@ -515,7 +518,7 @@ void compressTheSurprisingValues (FM85 * target, FM85 * source, U32 * pairs, Lon
   Long k = (1LL << source->lgK);
   Long numBaseBits = golombChooseNumberOfBaseBits (k + numPairs, numPairs);
   Long pairBufLen = safeLengthForCompressedPairBuf (k, numPairs, numBaseBits);
-  U32 * pairBuf = (U32 *) malloc ((size_t) (pairBufLen * sizeof(U32)));
+  U32 * pairBuf = (U32 *) fm85alloc ((size_t) (pairBufLen * sizeof(U32)));
   assert (pairBuf != NULL);
 
   target->csvLength = lowLevelCompressPairs (pairs, numPairs, numBaseBits, pairBuf);
@@ -523,10 +526,10 @@ void compressTheSurprisingValues (FM85 * target, FM85 * source, U32 * pairs, Lon
   // At this point we free the unused portion of the compression output buffer.
   // Note: realloc caused strange timing spikes for lgK = 11 and 12.
 
-  U32 * shorterBuf = (U32 *) malloc (((size_t) target->csvLength) * sizeof(U32));
+  U32 * shorterBuf = (U32 *) fm85alloc (((size_t) target->csvLength) * sizeof(U32));
   if (shorterBuf == NULL) { FATAL_ERROR ("Out of Memory"); }
   memcpy ((void *) shorterBuf, (void *) pairBuf, ((size_t) target->csvLength) * sizeof(U32));
-  free (pairBuf);
+  fm85free (pairBuf);
   target->compressedSurprisingValues = shorterBuf;
 }
 
@@ -540,7 +543,7 @@ U32 * uncompressTheSurprisingValues (FM85 * source) {
   Long k = (1LL << source->lgK);  
   Long numPairs = source->numCompressedSurprisingValues;
   assert (numPairs > 0);
-  U32 * pairs = (U32 *) malloc ((size_t) numPairs * sizeof(U32));
+  U32 * pairs = (U32 *) fm85alloc ((size_t) numPairs * sizeof(U32));
   assert (pairs != NULL);
   Long numBaseBits = golombChooseNumberOfBaseBits (k + numPairs, numPairs);
   lowLevelUncompressPairs(pairs, numPairs, numBaseBits, 
@@ -566,11 +569,11 @@ void uncompressEmptyFlavor (FM85 * target, FM85 * source) {
 
 void compressSparseFlavor (FM85 * target, FM85 * source) {
   assert (source->slidingWindow == NULL); // there is no window to compress
-  Long numPairs = 0; 
+  Long numPairs = 0;
   U32 * pairs = u32TableUnwrappingGetItems (source->surprisingValueTable, &numPairs);
   introspectiveInsertionSort(pairs, 0, numPairs-1);
   compressTheSurprisingValues (target, source, pairs, numPairs);
-  free (pairs);
+  if (pairs) fm85free (pairs);
   return;
 }
 
@@ -583,7 +586,7 @@ void uncompressSparseFlavor (FM85 * target, FM85 * source) {
   Long numPairs = source->numCompressedSurprisingValues;
   u32Table * table = makeU32TableFromPairsArray (pairs, numPairs, source->lgK);
   target->surprisingValueTable = table;
-  free (pairs);
+  fm85free (pairs);
   return;
 }
 
@@ -594,7 +597,7 @@ void uncompressSparseFlavor (FM85 * target, FM85 * source) {
 
 U32 * trickyGetPairsFromWindow (U8 * window, Long k, Long numPairsToGet, Long emptySpace) {
   Long outputLength = emptySpace + numPairsToGet;
-  U32 * pairs = (U32 *) malloc ((size_t) (outputLength * sizeof(U32)));
+  U32 * pairs = (U32 *) fm85alloc ((size_t) (outputLength * sizeof(U32)));
   assert (pairs != NULL);
   Long rowIndex = 0;
   Long pairIndex = emptySpace;
@@ -634,8 +637,8 @@ void compressHybridFlavor (FM85 * target, FM85 * source) {
   //  for (i = 0; i < source->numCoupons-1; i++) { assert (allPairs[i] < allPairs[i+1]); }
 
   compressTheSurprisingValues (target, source, allPairs, source->numCoupons);
-  free (pairsFromTable);
-  free (allPairs);
+  if (pairsFromTable) fm85free (pairsFromTable);
+  fm85free (allPairs);
   return;
 }
 
@@ -652,7 +655,7 @@ void uncompressHybridFlavor (FM85 * target, FM85 * source) {
 
   Long k = (1LL << source->lgK);
 
-  U8 * window = (U8 *) malloc ((size_t) (k * sizeof(U8)));
+  U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
   assert (window != NULL);
   bzero ((void *) window, (size_t) k); // important: zero the memory
   
@@ -681,7 +684,7 @@ void uncompressHybridFlavor (FM85 * target, FM85 * source) {
   target->surprisingValueTable = table;
   target->slidingWindow = window;
 
-  free (pairs);
+  fm85free (pairs);
 
   return;
 }
@@ -714,7 +717,7 @@ void compressPinnedFlavor (FM85 * target, FM85 * source) {
 
     introspectiveInsertionSort(pairs, 0, numPairs-1);
     compressTheSurprisingValues (target, source, pairs, numPairs);
-    free (pairs);
+    if (pairs) fm85free (pairs);
   }
   return;
 }
@@ -740,7 +743,7 @@ void uncompressPinnedFlavor (FM85 * target, FM85 * source) {
     }
     u32Table * table = makeU32TableFromPairsArray (pairs, numPairs, source->lgK);
     target->surprisingValueTable = table;
-    free (pairs);
+    fm85free (pairs);
   }
   return;
 }
@@ -788,7 +791,7 @@ void compressSlidingFlavor (FM85 * target, FM85 * source) {
 
     introspectiveInsertionSort(pairs, 0, numPairs-1);
     compressTheSurprisingValues (target, source, pairs, numPairs);
-    free (pairs);
+    if (pairs) fm85free (pairs);
   }
   return;
 }
@@ -831,7 +834,7 @@ void uncompressSlidingFlavor (FM85 * target, FM85 * source) {
     u32Table * table = makeU32TableFromPairsArray (pairs, numPairs, source->lgK);
     target->surprisingValueTable = table;
 
-    free (pairs);
+    fm85free (pairs);
   }
   return;
 }
@@ -844,7 +847,7 @@ void uncompressSlidingFlavor (FM85 * target, FM85 * source) {
 FM85 * fm85Compress (FM85 * source) {
   assert (source->isCompressed == 0);
 
-  FM85 * target = (FM85 *) malloc (sizeof(FM85));
+  FM85 * target = (FM85 *) fm85alloc (sizeof(FM85));
   assert (target != NULL);
 
   target->lgK = source->lgK;
@@ -905,7 +908,7 @@ FM85 * fm85Compress (FM85 * source) {
 FM85 * fm85Uncompress (FM85 * source) {
   assert (source->isCompressed == 1);
 
-  FM85 * target = (FM85 *) malloc (sizeof(FM85));
+  FM85 * target = (FM85 *) fm85alloc (sizeof(FM85));
   assert (target != NULL);
 
   target->lgK = source->lgK;
