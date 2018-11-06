@@ -239,7 +239,7 @@ class cpc_sketch {
       delete [] compressed.compressedWindow;
       cpc_sketch_unique_ptr sketch_ptr(
           (new (alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed)),
-          [dealloc](cpc_sketch* s) { dealloc(s); }
+          [dealloc](cpc_sketch* s) { s->~cpc_sketch(); dealloc(s); }
       );
       return std::move(sketch_ptr);
     }
