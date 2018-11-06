@@ -138,6 +138,6 @@ class HllUnion {
 
 std::ostream& operator<<(std::ostream& os, HllSketch& sketch);
 
-}; // namespace datasketches
+} // namespace datasketches
 
 #endif // _HLL_H_

@@ -103,9 +103,12 @@ int Hll4Array::getSlot(const int slotNo) const {
 
 HllSketchImpl* Hll4Array::couponUpdate(const int coupon) {
   const int newValue = HllUtil::getValue(coupon);
+  assert(newValue > 0);
+
   if (newValue <= curMin) {
-    return this; // quick rejectio, but only works for large N
+    return this; // quick rejection, but only works for large N
   }
+
   const int configKmask = (1 << lgConfigK) - 1;
   const int slotNo = HllUtil::getLow26(coupon) & configKmask;
   internalHll4Update(slotNo, newValue);

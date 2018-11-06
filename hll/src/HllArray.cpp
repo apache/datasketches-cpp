@@ -196,9 +196,6 @@ HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 and H
   const int curVal = getSlot(slotNo);
   if (newVal > curVal) {
     putSlot(slotNo, newVal);
-    if (getSlot(slotNo) != newVal) {
-      assert(false);
-    }
     hipAndKxQIncrementalUpdate(*this, curVal, newVal);
     if (curVal == 0) {
       decNumAtCurMin(); // interpret numAtCurMin as num zeros
