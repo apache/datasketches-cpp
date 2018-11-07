@@ -35,4 +35,8 @@ std::ostream& operator<<(std::ostream& os, cpc_sketch const& sketch) {
   return os;
 }
 
+void cpc_cleanup() {
+  fm85Clean();
+}
+
 } /* namespace datasketches */

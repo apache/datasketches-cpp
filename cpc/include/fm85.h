@@ -65,6 +65,8 @@ extern void (*fm85free)(void*);
 void fm85Init (void); // Call this before anything else.
 void fm85InitAD (void* (*alloc)(size_t), void (*dealloc)(void*)); // or this to use custom allocator and deallocator
 
+void fm85Clean (void); // Call this at the end to clean up (optional)
+
 FM85 * fm85Make (Short lgK);
 
 FM85 * fm85Copy (FM85 * self);

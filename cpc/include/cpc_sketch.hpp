@@ -308,6 +308,9 @@ class cpc_sketch {
 
 };
 
+// optional deallocation of globally allocated compression tables
+void cpc_cleanup();
+
 } /* namespace datasketches */
 
 #endif
