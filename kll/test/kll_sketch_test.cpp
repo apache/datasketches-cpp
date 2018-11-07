@@ -86,6 +86,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(merge_min_and_max_from_other);
   CPPUNIT_TEST(sketch_of_ints);
   CPPUNIT_TEST(sketch_of_strings);
+  CPPUNIT_TEST(copy);
   CPPUNIT_TEST_SUITE_END();
 
   void k_limits() {
@@ -503,6 +504,25 @@ class kll_sketch_test: public CppUnit::TestFixture {
 
     // debug print
     std::cout << sketch;
+  }
+
+  void copy() {
+    kll_sketch<int> sketch1;
+    const int n(1000);
+    for (int i = 0; i < n; i++) sketch1.update(i);
+
+    // copy constructor
+    kll_sketch<int> sketch2(sketch1);
+    for (int i = 0; i < n; i++) {
+      CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(i), sketch2.get_rank(i));
+    }
+
+    // copy assignment
+    kll_sketch<int> sketch3;
+    sketch3 = sketch1;
+    for (int i = 0; i < n; i++) {
+      CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(i), sketch3.get_rank(i));
+    }
   }
 
 };
