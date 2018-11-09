@@ -71,14 +71,15 @@ public:
   static const int LG_AUX_ARR_INTS[];
 
   static int coupon(const uint64_t hash[]);
-  static void hash(const void* key, const int keyLen, const uint64_t seed, uint64_t* result);
+  static int coupon(const HashState& hashState);
+  static void hash(const void* key, const int keyLen, const uint64_t seed, HashState& result);
 
   static int checkLgK(const int lgK);
   static void checkMemSize(const uint64_t minBytes, const uint64_t capBytes);
   static inline void checkNumStdDev(const int numStdDev);
   static int pair(const int slotNo, const int value);
-  static int getLow26(const int coupon);
-  static int getValue(const int coupon);
+  static int getLow26(const unsigned int coupon);
+  static int getValue(const unsigned int coupon);
   static double invPow2(const int e);
   static unsigned int ceilingPowerOf2(unsigned int n);
   static unsigned int simpleIntLog2(unsigned int n); // n must be power of 2
@@ -95,7 +96,14 @@ inline int HllUtil::coupon(const uint64_t hash[]) {
   return (value << KEY_BITS_26) | addr26;
 }
 
-inline void HllUtil::hash(const void* key, const int keyLen, const uint64_t seed, uint64_t* result) {
+inline int HllUtil::coupon(const HashState& hashState) {
+  int addr26 = (int) (hashState.h1& KEY_MASK_26);
+  int lz = getNumberOfLeadingZeros(hashState.h2);
+  int value = ((lz > 62 ? 62 : lz) + 1); 
+  return (value << KEY_BITS_26) | addr26;
+}
+
+inline void HllUtil::hash(const void* key, const int keyLen, const uint64_t seed, HashState& result) {
   MurmurHash3_x64_128(key, keyLen, DEFAULT_UPDATE_SEED, result);
 }
 
@@ -129,9 +137,13 @@ inline int HllUtil::pair(const int slotNo, const int value) {
   return (value << HllUtil::KEY_BITS_26) | (slotNo & HllUtil::KEY_MASK_26);
 }
 
-inline int HllUtil::getLow26(const int coupon) { return coupon & HllUtil::KEY_MASK_26; }
+inline int HllUtil::getLow26(const unsigned int coupon) {
+  return coupon & HllUtil::KEY_MASK_26;
+}
 
-inline int HllUtil::getValue(const int coupon) { return coupon >> HllUtil::KEY_BITS_26; }
+inline int HllUtil::getValue(const unsigned int coupon) {
+  return coupon >> HllUtil::KEY_BITS_26;
+}
 
 inline double HllUtil::invPow2(const int e) {
   union {
