@@ -19,7 +19,7 @@ of that file into this one.
 
 Only the encoding tables are defined by this file. The
 decoding tables (which are exact inverses) are created
-a library startup time by the function makeDecodingTable ()
+at library startup time by the function makeDecodingTable ()
 which is defined in fm85Compression.c
 */
 

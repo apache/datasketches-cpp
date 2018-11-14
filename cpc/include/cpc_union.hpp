@@ -72,7 +72,7 @@ class cpc_union {
     cpc_sketch_unique_ptr get_result() const {
       cpc_sketch_unique_ptr sketch_ptr(
           new (fm85alloc(sizeof(cpc_sketch))) cpc_sketch(ug85GetResult(state), seed),
-          [fm85free](cpc_sketch* s) { fm85free(s); }
+          [](cpc_sketch* s) { s->~cpc_sketch(); fm85free(s); }
       );
       return std::move(sketch_ptr);
     }

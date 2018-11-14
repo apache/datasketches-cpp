@@ -27,6 +27,7 @@
 /****************************************/
 
 void makeTheDecodingTables (void); // call this at startup
+void freeTheDecodingTables (void); // call this at the end
 
 /****************************************/
 // Here "pairs" refers to row/column pairs that specify 

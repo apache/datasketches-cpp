@@ -104,6 +104,17 @@ void makeTheDecodingTables (void) {
   //  fprintf (stderr, "tables okay\n"); fflush (stderr);
 }
 
+void freeTheDecodingTables (void) {
+  int i;
+  free(lengthLimitedUnaryDecodingTable65);
+  for (i = 0; i < (16 + 6); i++) {
+    free(decodingTablesForHighEntropyByte[i]);
+  }
+  for (i = 0; i < 16; i++) {
+    free(columnPermutationsForDecoding[i]);
+  }
+}
+
 /***************************************************************/
 /***************************************************************/
 

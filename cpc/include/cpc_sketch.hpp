@@ -16,6 +16,7 @@ extern "C" {
 #include "fm85Compression.h"
 #include "iconEstimator.h"
 #include "fm85Confidence.h"
+#include "fm85Util.h"
 
 }
 
@@ -239,7 +240,7 @@ class cpc_sketch {
       delete [] compressed.compressedWindow;
       cpc_sketch_unique_ptr sketch_ptr(
           (new (alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed)),
-          [dealloc](cpc_sketch* s) { dealloc(s); }
+          [dealloc](cpc_sketch* s) { s->~cpc_sketch(); dealloc(s); }
       );
       return std::move(sketch_ptr);
     }
@@ -247,6 +248,15 @@ class cpc_sketch {
     // for debugging
     uint64_t get_num_coupons() const {
       return state->numCoupons;
+    }
+
+    // for debugging
+    // this should catch some forms of corruption during serialization-deserialization
+    bool validate() const {
+      U64* bit_matrix = bitMatrixOfSketch(state);
+      const long long num_bits_set = countBitsSetInMatrix(bit_matrix, 1LL << state->lgK);
+      fm85free(bit_matrix);
+      return num_bits_set == state->numCoupons;
     }
 
     friend std::ostream& operator<<(std::ostream& os, cpc_sketch const& sketch);
@@ -297,6 +307,9 @@ class cpc_sketch {
     }
 
 };
+
+// optional deallocation of globally allocated compression tables
+void cpc_cleanup();
 
 } /* namespace datasketches */
 

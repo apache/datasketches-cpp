@@ -55,6 +55,11 @@ void fm85InitAD (void* (*alloc)(size_t), void (*dealloc)(void*)) {
   }
 }
 
+void fm85Clean (void) {
+  freeTheDecodingTables();
+  fm85Initialized = 0;
+}
+
 /*******************************************************/
 // The flavor is a function of K and C (the number of collected coupons).
 

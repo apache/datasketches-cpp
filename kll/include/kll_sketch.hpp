@@ -184,7 +184,7 @@ class kll_sketch {
       std::copy(&other.levels_[0], &other.levels_[levels_size_], levels_);
       items_size_ = other.items_size_;
       items_ = alloc_t.allocate(items_size_);
-      for (unsigned i = 0; i < items_size_; i++) alloc_t.construct(&items_[i], other[i]);
+      for (unsigned i = 0; i < items_size_; i++) alloc_t.construct(&items_[i], other.items_[i]);
       min_value_ = other.min_value_;
       max_value_ = other.max_value_;
       is_level_zero_sorted_ = other.is_level_zero_sorted_;
