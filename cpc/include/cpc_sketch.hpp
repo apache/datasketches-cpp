@@ -89,9 +89,9 @@ class cpc_sketch {
     }
 
     void update(const void* value, int size) {
-      uint64_t hashes[2];
+      HashState hashes;
       MurmurHash3_x64_128(value, size, seed, hashes);
-      fm85Update(state, hashes[0], hashes[1]);
+      fm85Update(state, hashes.h1, hashes.h2);
     }
 
     void serialize(std::ostream& os) const {

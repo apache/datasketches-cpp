@@ -1,92 +1,48 @@
-include common.mk
-
-# UNAME_S := $(shell uname -s)
-# ifeq ($(UNAME_S),Darwin)
-#   CC := clang++ -arch x86_64
-# else
-#   CC := g++
-# endif
+include config.mk
 
 BUILDDIR := build
 TARGETDIR := lib
 
-LIBRARY := libdatasketches.dylib
+LIBRARY := libdatasketches.$(LIB_SUFFIX)
 TARGET := $(TARGETDIR)/$(LIBRARY)
 
-INSTALLLIBDIR := /usr/local/lib
+INC := -I /usr/local/include
+LIB := -L /usr/local/lib -lcppunit
 
-#OBJECTS := $(shell find $(BUILDDIR) -type f -name *.o)
+MODULES := hll cpc kll
 
-#CFLAGS := -O0 -g3 -c -Wall -pedantic
-#CFLAGS := -O3 -g0 -c -Wall -pedantic -fpic
-INC := -I $(INCLIST) -I /usr/local/include
+.PHONY: all
+all: $(MODULES) $(LIBRARY)
 
-# ifeq ($(UNAME_S),Linux)
-#     #CFLAGS += -std=gnu++11 -O2 # -fPIC
+include common/common.mk
 
-#     # PostgreSQL Special
-#     #PG_VER := 9.3
-#     #INC += -I /usr/pgsql-$(PG_VER)/include
-#     #LIB += -L /usr/pgsql-$(PG_VER)/lib
-# else
-#   CFLAGS += -std=c++11 -stdlib=libc++
-# endif
+INCLIST := $(COM_INCLIST)
+OBJECTS := $(COM_OBJECTS)
 
-# need to explicitly add command to run tests, too
-MODULES := cpc hll kll
-TEST_MODULES := $(addsuffix _test, $(MODULES))
-CLEAN_MODULES := $(addsuffix _clean, $(MODULES))
-
-all: $(MODULES)
-
-# build directory doesn't exist until after make all,
-# so this is a separate command
-library: $(LIBRARY)
-
-# TODO: can we use $(MODULES) to build a list of *.o files?
-$(LIBRARY): $(wildcard build/**/*) # doesn't complain if nothing matches
-	@mkdir -p $(TARGETDIR)
-	@echo "Linking..."
-	@echo "  Linking $(LIBRARY)";
-	@$(CC) $^ -dynamiclib -o $@
-	@mv $(LIBRARY) $(TARGETDIR)
-
-.PHONY: clean common
-
-common:
-	@$(MAKE) -C common
-
-common_test:
-	@$(MAKE) -C common test
-
-common_clean:
-	@$(MAKE) -C common clean
-
-
+# pull in configs for each of the specified modules
 define MODULETASKS
-$(1): common
-	@$(MAKE) -C $(1)
-
-$(1)_test: $(1) common_test
-	@$(MAKE) -C $(1) test
-
-$(1)_clean:
-	@$(MAKE) -C $(1) clean
+include $(1)/$(1).mk
 endef
-
-# expand the targets for each module
 $(foreach MODULE,$(MODULES),$(eval $(call MODULETASKS,$(MODULE))))
 
-test: $(TEST_MODULES)
-	@echo "CPC tests:"
-	@cd cpc; ./cpc_test
-	@echo "HLL tests:"
-	@cd hll; ./hll_test
-	@echo "KLL tests:"
-	@cd kll; ./kll_test
+INCLIST += $(foreach mod, $(MODULES), $($(shell echo $(mod) | tr a-z A-Z)_INCLIST))
+OBJECTS += $(foreach mod, $(MODULES), $($(shell echo $(mod) | tr a-z A-Z)_OBJECTS))
 
+TEST_MODULES := common_test $(addsuffix _test, $(MODULES))
+CLEAN_MODULES := common_clean $(addsuffix _clean, $(MODULES))
+EXEC_MODULES := $(addsuffix _exec, $(MODULES))
 
-clean: common_clean $(CLEAN_MODULES)
+$(LIBRARY): $(OBJECTS) 
+	@mkdir -p $(TARGETDIR)
+	@echo "Linking $(LIBRARY)"
+	@$(CC) $^ -dynamiclib $(CPPFLAGS) -o $@
+	@mv $(LIBRARY) $(TARGETDIR)
+
+.PHONY: test clean
+
+test: $(TEST_MODULES) $(EXEC_MODULES)
+
+clean: $(CLEAN_MODULES)
 	@echo "Cleaning $(TARGET)..."
 	@$(RM) -r $(BUILDDIR) $(TARGET)
 
