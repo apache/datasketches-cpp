@@ -151,25 +151,24 @@ class cpc_sketch {
       fm85Free(compressed);
     }
 
-    std::pair<ptr_with_deleter, const size_t> serialize(unsigned header_size = 0) const {
+    std::pair<ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const {
       FM85* compressed = fm85Compress(state);
       const uint8_t preamble_ints(get_preamble_ints(compressed));
-
-      const size_t size = (header_size + preamble_ints + compressed->csvLength + compressed->cwLength) * sizeof(uint32_t);
+      const size_t size = header_size_bytes + (preamble_ints + compressed->csvLength + compressed->cwLength) * sizeof(uint32_t);
       ptr_with_deleter data_ptr(
           fm85alloc(size),
           [](void* ptr) { fm85free(ptr); }
       );
-      size_t offset = header_size;
-      offset += copy_to_mem(data_ptr.get() + offset, &preamble_ints, sizeof(preamble_ints));
+      void* ptr = data_ptr.get() + header_size_bytes;
+      ptr += copy_to_mem(ptr, &preamble_ints, sizeof(preamble_ints));
       const uint8_t serial_version(SERIAL_VERSION);
-      offset += copy_to_mem(data_ptr.get() + offset, &serial_version, sizeof(serial_version));
+      ptr += copy_to_mem(ptr, &serial_version, sizeof(serial_version));
       const uint8_t family(FAMILY);
-      offset += copy_to_mem(data_ptr.get() + offset, &family, sizeof(family));
+      ptr += copy_to_mem(ptr, &family, sizeof(family));
       const uint8_t lg_k(compressed->lgK);
-      offset += copy_to_mem(data_ptr.get() + offset, &lg_k, sizeof(lg_k));
+      ptr += copy_to_mem(ptr, &lg_k, sizeof(lg_k));
       const uint8_t first_interesting_column(compressed->firstInterestingColumn);
-      offset += copy_to_mem(data_ptr.get() + offset, &first_interesting_column, sizeof(first_interesting_column));
+      ptr += copy_to_mem(ptr, &first_interesting_column, sizeof(first_interesting_column));
       const bool has_hip(!compressed->mergeFlag);
       const bool has_table(compressed->compressedSurprisingValues != nullptr);
       const bool has_window(compressed->compressedWindow != nullptr);
@@ -179,38 +178,38 @@ class cpc_sketch {
         | (has_table ? 1 << flags::HAS_TABLE : 0)
         | (has_window ? 1 << flags::HAS_WINDOW : 0)
       );
-      offset += copy_to_mem(data_ptr.get() + offset, &flags_byte, sizeof(flags_byte));
+      ptr += copy_to_mem(ptr, &flags_byte, sizeof(flags_byte));
       const uint16_t seed_hash(compute_seed_hash(seed));
-      offset += copy_to_mem(data_ptr.get() + offset, &seed_hash, sizeof(seed_hash));
+      ptr += copy_to_mem(ptr, &seed_hash, sizeof(seed_hash));
       if (!is_empty()) {
         const uint32_t num_coupons(compressed->numCoupons);
-        offset += copy_to_mem(data_ptr.get() + offset, &num_coupons, sizeof(num_coupons));
+        ptr += copy_to_mem(ptr, &num_coupons, sizeof(num_coupons));
         if (has_table && has_window) {
           // if there is no window it is the same as number of coupons
           const uint32_t num_values(compressed->numCompressedSurprisingValues);
-          offset += copy_to_mem(data_ptr.get() + offset, &num_values, sizeof(num_values));
+          ptr += copy_to_mem(ptr, &num_values, sizeof(num_values));
           // HIP values are at the same offset because of alignment, which can be in two different places in the sequence of fields
           // this is the first HIP decision point
-          if (has_hip) offset += copy_hip_to_mem(compressed, data_ptr.get() + offset);
+          if (has_hip) ptr += copy_hip_to_mem(compressed, ptr);
         }
         if (has_table) {
           const uint32_t csv_length(compressed->csvLength);
-          offset += copy_to_mem(data_ptr.get() + offset, &csv_length, sizeof(csv_length));
+          ptr += copy_to_mem(ptr, &csv_length, sizeof(csv_length));
         }
         if (has_window) {
           const uint32_t cw_length(compressed->cwLength);
-          offset += copy_to_mem(data_ptr.get() + offset, &cw_length, sizeof(cw_length));
+          ptr += copy_to_mem(ptr, &cw_length, sizeof(cw_length));
         }
         // this is the second HIP decision point
-        if (has_hip && !(has_table && has_window)) offset += copy_hip_to_mem(compressed, data_ptr.get() + offset);
+        if (has_hip && !(has_table && has_window)) ptr += copy_hip_to_mem(compressed, ptr);
         if (has_window) {
-          offset += copy_to_mem(data_ptr.get() + offset, compressed->compressedWindow, compressed->cwLength * sizeof(uint32_t));
+          ptr += copy_to_mem(ptr, compressed->compressedWindow, compressed->cwLength * sizeof(uint32_t));
         }
         if (has_table) {
-          offset += copy_to_mem(data_ptr.get() + offset, compressed->compressedSurprisingValues, compressed->csvLength * sizeof(uint32_t));
+          ptr += copy_to_mem(ptr, compressed->compressedSurprisingValues, compressed->csvLength * sizeof(uint32_t));
         }
-        assert(offset == size);
       }
+      assert(ptr == data_ptr.get() + size);
       fm85Free(compressed);
       return std::make_pair(std::move(data_ptr), size);
     }
@@ -282,6 +281,104 @@ class cpc_sketch {
         }
         if (!has_window) compressed.numCompressedSurprisingValues = compressed.numCoupons;
       }
+      compressed.windowOffset = determineCorrectOffset(compressed.lgK, compressed.numCoupons);
+
+      uint8_t expected_preamble_ints(get_preamble_ints(&compressed));
+      if (preamble_ints != expected_preamble_ints) {
+        throw std::invalid_argument("Possible corruption: preamble ints: expected "
+            + std::to_string(expected_preamble_ints) + ", got " + std::to_string(preamble_ints));
+      }
+      if (serial_version != SERIAL_VERSION) {
+        throw std::invalid_argument("Possible corruption: serial version: expected "
+            + std::to_string(SERIAL_VERSION) + ", got " + std::to_string(serial_version));
+      }
+      if (family_id != FAMILY) {
+        throw std::invalid_argument("Possible corruption: family: expected "
+            + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
+      }
+      if (seed_hash != compute_seed_hash(seed)) {
+        throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
+            + std::to_string(compute_seed_hash(seed)));
+      }
+      FM85* uncompressed = fm85Uncompress(&compressed);
+      delete [] compressed.compressedSurprisingValues;
+      delete [] compressed.compressedWindow;
+      cpc_sketch_unique_ptr sketch_ptr(
+          new (alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
+          [](cpc_sketch* s) { s->~cpc_sketch(); fm85free(s); }
+      );
+      return std::move(sketch_ptr);
+    }
+
+    static cpc_sketch_unique_ptr
+    deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free) {
+      fm85InitAD(alloc, dealloc);
+      const void* ptr = bytes;
+      uint8_t preamble_ints;
+      ptr += copy_from_mem(ptr, &preamble_ints, sizeof(preamble_ints));
+      uint8_t serial_version;
+      ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+      uint8_t family_id;
+      ptr += copy_from_mem(ptr, &family_id, sizeof(family_id));
+      uint8_t lg_k;
+      ptr += copy_from_mem(ptr, &lg_k, sizeof(lg_k));
+      uint8_t first_interesting_column;
+      ptr += copy_from_mem(ptr, &first_interesting_column, sizeof(first_interesting_column));
+      uint8_t flags_byte;
+      ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
+      uint16_t seed_hash;
+      ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
+      const bool has_hip(flags_byte & (1 << flags::HAS_HIP));
+      const bool has_table(flags_byte & (1 << flags::HAS_TABLE));
+      const bool has_window(flags_byte & (1 << flags::HAS_WINDOW));
+      FM85 compressed;
+      compressed.isCompressed = 1;
+      compressed.mergeFlag = has_hip ? 0 : 1;
+      compressed.lgK = lg_k;
+      compressed.firstInterestingColumn = first_interesting_column;
+      compressed.numCoupons = 0;
+      compressed.numCompressedSurprisingValues = 0;
+      compressed.kxp = 1 << lg_k;
+      compressed.hipEstAccum = 0;
+      compressed.hipErrAccum = 0;
+      compressed.csvLength = 0;
+      compressed.cwLength = 0;
+      compressed.compressedSurprisingValues = nullptr;
+      compressed.compressedWindow = nullptr;
+      compressed.surprisingValueTable = nullptr;
+      compressed.slidingWindow = nullptr;
+      if (has_table || has_window) {
+        uint32_t num_coupons;
+        ptr += copy_from_mem(ptr, &num_coupons, sizeof(num_coupons));
+        compressed.numCoupons = num_coupons;
+        if (has_table && has_window) {
+          uint32_t num_values;
+          ptr += copy_from_mem(ptr, &num_values, sizeof(num_values));
+          compressed.numCompressedSurprisingValues = num_values;
+          if (has_hip) ptr += copy_hip_from_mem(&compressed, ptr);
+        }
+        if (has_table) {
+          uint32_t csv_length;
+          ptr += copy_from_mem(ptr, &csv_length, sizeof(csv_length));
+          compressed.csvLength = csv_length;
+        }
+        if (has_window) {
+          uint32_t cw_length;
+          ptr += copy_from_mem(ptr, &cw_length, sizeof(cw_length));
+          compressed.cwLength = cw_length;
+        }
+        if (has_hip && !(has_table && has_window)) ptr += copy_hip_from_mem(&compressed, ptr);
+        if (has_window) {
+          compressed.compressedWindow = new uint32_t[compressed.cwLength];
+          ptr += copy_from_mem(ptr, compressed.compressedWindow, compressed.cwLength * sizeof(uint32_t));
+        }
+        if (has_table) {
+          compressed.compressedSurprisingValues = new uint32_t[compressed.csvLength];
+          ptr += copy_from_mem(ptr, compressed.compressedSurprisingValues, compressed.csvLength * sizeof(uint32_t));
+        }
+        if (!has_window) compressed.numCompressedSurprisingValues = compressed.numCoupons;
+      }
+      assert(ptr == bytes + size);
       compressed.windowOffset = determineCorrectOffset(compressed.lgK, compressed.numCoupons);
 
       uint8_t expected_preamble_ints(get_preamble_ints(&compressed));
@@ -385,6 +482,11 @@ class cpc_sketch {
     }
 
     static inline size_t copy_to_mem(void* dst, const void* src, size_t size) {
+      memcpy(dst, src, size);
+      return size;
+    }
+
+    static inline size_t copy_from_mem(const void* src, void* dst, size_t size) {
       memcpy(dst, src, size);
       return size;
     }

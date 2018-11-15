@@ -26,6 +26,11 @@ class cpc_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(serialize_deserialize_hybrid);
   CPPUNIT_TEST(serialize_deserialize_pinned);
   CPPUNIT_TEST(serialize_deserialize_sliding);
+  CPPUNIT_TEST(serialize_deserialize_empty_bytes);
+  CPPUNIT_TEST(serialize_deserialize_sparse_bytes);
+  CPPUNIT_TEST(serialize_deserialize_hybrid_bytes);
+  CPPUNIT_TEST(serialize_deserialize_pinned_bytes);
+  CPPUNIT_TEST(serialize_deserialize_sliding_bytes);
   CPPUNIT_TEST(serialize_deserialize_empty_custom_seed);
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST(kappa_range);
@@ -163,6 +168,82 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     sketch.serialize(os);
   }
 
+  void serialize_deserialize_empty_bytes() {
+    cpc_sketch sketch(11);
+    auto data = sketch.serialize();
+    auto sketch_ptr(cpc_sketch::deserialize(data.first.get(), data.second));
+    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+    CPPUNIT_ASSERT(sketch_ptr->validate());
+
+    std::ofstream os("cpc-empty.bin");
+    sketch.serialize(os);
+  }
+
+  void serialize_deserialize_hybrid_bytes() {
+    cpc_sketch sketch(11);
+    const int n(200);
+    for (int i = 0; i < n; i++) sketch.update(i);
+    auto data = sketch.serialize();
+    auto sketch_ptr(cpc_sketch::deserialize(data.first.get(), data.second));
+    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+    CPPUNIT_ASSERT(sketch_ptr->validate());
+
+    // updating again with the same values should not change the sketch
+    for (int i = 0; i < n; i++) sketch_ptr->update(i);
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+    CPPUNIT_ASSERT(sketch_ptr->validate());
+  }
+
+  void serialize_deserialize_sparse_bytes() {
+    cpc_sketch sketch(11);
+    const int n(100);
+    for (int i = 0; i < n; i++) sketch.update(i);
+    auto data = sketch.serialize();
+    auto sketch_ptr(cpc_sketch::deserialize(data.first.get(), data.second));
+    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+    CPPUNIT_ASSERT(sketch_ptr->validate());
+
+    // updating again with the same values should not change the sketch
+    for (int i = 0; i < n; i++) sketch_ptr->update(i);
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+    CPPUNIT_ASSERT(sketch_ptr->validate());
+  }
+
+  void serialize_deserialize_pinned_bytes() {
+    cpc_sketch sketch(11);
+    const int n(2000);
+    for (int i = 0; i < n; i++) sketch.update(i);
+    auto data = sketch.serialize();
+    auto sketch_ptr(cpc_sketch::deserialize(data.first.get(), data.second));
+    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+    CPPUNIT_ASSERT(sketch_ptr->validate());
+
+    // updating again with the same values should not change the sketch
+    for (int i = 0; i < n; i++) sketch_ptr->update(i);
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+    CPPUNIT_ASSERT(sketch_ptr->validate());
+  }
+
+  void serialize_deserialize_sliding_bytes() {
+    cpc_sketch sketch(11);
+    const int n(20000);
+    for (int i = 0; i < n; i++) sketch.update(i);
+    auto data = sketch.serialize();
+    auto sketch_ptr(cpc_sketch::deserialize(data.first.get(), data.second));
+    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch_ptr->is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+    CPPUNIT_ASSERT(sketch_ptr->validate());
+
+    // updating again with the same values should not change the sketch
+    for (int i = 0; i < n; i++) sketch_ptr->update(i);
+    CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), sketch_ptr->get_estimate());
+    CPPUNIT_ASSERT(sketch_ptr->validate());
+  }
+
   void copy() {
     cpc_sketch s1(11);
     s1.update(1);
@@ -215,14 +296,15 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     cpc_sketch sketch(11);
     const int n(2000);
     for (int i = 0; i < n; i++) sketch.update(i);
-    auto data(sketch.serialize());
+    const int header_size_bytes = 4;
+    auto data(sketch.serialize(header_size_bytes));
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    CPPUNIT_ASSERT_EQUAL(data.second, (size_t) s.tellp());
+    CPPUNIT_ASSERT_EQUAL(data.second - header_size_bytes, (size_t) s.tellp());
 
     char* pp = new char[s.tellp()];
     s.read(pp, s.tellp());
-    CPPUNIT_ASSERT(std::memcmp(pp, data.first.get(), data.second) == 0);
+    CPPUNIT_ASSERT(std::memcmp(pp, data.first.get() + header_size_bytes, data.second - header_size_bytes) == 0);
   }
 
 };
