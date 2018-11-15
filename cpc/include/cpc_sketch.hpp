@@ -33,8 +33,10 @@ namespace datasketches {
  * author Alexander Saydakov
  */
 
+typedef std::unique_ptr<void, void(*)(void*)> ptr_with_deleter;
+
 class cpc_sketch;
-typedef typename std::unique_ptr<cpc_sketch, std::function<void(cpc_sketch*)>> cpc_sketch_unique_ptr;
+typedef std::unique_ptr<cpc_sketch, void(*)(cpc_sketch*)> cpc_sketch_unique_ptr;
 
 class cpc_sketch {
   public:
@@ -149,6 +151,70 @@ class cpc_sketch {
       fm85Free(compressed);
     }
 
+    std::pair<ptr_with_deleter, const size_t> serialize(unsigned header_size = 0) const {
+      FM85* compressed = fm85Compress(state);
+      const uint8_t preamble_ints(get_preamble_ints(compressed));
+
+      const size_t size = (header_size + preamble_ints + compressed->csvLength + compressed->cwLength) * sizeof(uint32_t);
+      ptr_with_deleter data_ptr(
+          fm85alloc(size),
+          [](void* ptr) { fm85free(ptr); }
+      );
+      size_t offset = header_size;
+      offset += copy_to_mem(data_ptr.get() + offset, &preamble_ints, sizeof(preamble_ints));
+      const uint8_t serial_version(SERIAL_VERSION);
+      offset += copy_to_mem(data_ptr.get() + offset, &serial_version, sizeof(serial_version));
+      const uint8_t family(FAMILY);
+      offset += copy_to_mem(data_ptr.get() + offset, &family, sizeof(family));
+      const uint8_t lg_k(compressed->lgK);
+      offset += copy_to_mem(data_ptr.get() + offset, &lg_k, sizeof(lg_k));
+      const uint8_t first_interesting_column(compressed->firstInterestingColumn);
+      offset += copy_to_mem(data_ptr.get() + offset, &first_interesting_column, sizeof(first_interesting_column));
+      const bool has_hip(!compressed->mergeFlag);
+      const bool has_table(compressed->compressedSurprisingValues != nullptr);
+      const bool has_window(compressed->compressedWindow != nullptr);
+      const uint8_t flags_byte(
+        (1 << flags::IS_COMPRESSED)
+        | (has_hip ? 1 << flags::HAS_HIP : 0)
+        | (has_table ? 1 << flags::HAS_TABLE : 0)
+        | (has_window ? 1 << flags::HAS_WINDOW : 0)
+      );
+      offset += copy_to_mem(data_ptr.get() + offset, &flags_byte, sizeof(flags_byte));
+      const uint16_t seed_hash(compute_seed_hash(seed));
+      offset += copy_to_mem(data_ptr.get() + offset, &seed_hash, sizeof(seed_hash));
+      if (!is_empty()) {
+        const uint32_t num_coupons(compressed->numCoupons);
+        offset += copy_to_mem(data_ptr.get() + offset, &num_coupons, sizeof(num_coupons));
+        if (has_table && has_window) {
+          // if there is no window it is the same as number of coupons
+          const uint32_t num_values(compressed->numCompressedSurprisingValues);
+          offset += copy_to_mem(data_ptr.get() + offset, &num_values, sizeof(num_values));
+          // HIP values are at the same offset because of alignment, which can be in two different places in the sequence of fields
+          // this is the first HIP decision point
+          if (has_hip) offset += copy_hip_to_mem(compressed, data_ptr.get() + offset);
+        }
+        if (has_table) {
+          const uint32_t csv_length(compressed->csvLength);
+          offset += copy_to_mem(data_ptr.get() + offset, &csv_length, sizeof(csv_length));
+        }
+        if (has_window) {
+          const uint32_t cw_length(compressed->cwLength);
+          offset += copy_to_mem(data_ptr.get() + offset, &cw_length, sizeof(cw_length));
+        }
+        // this is the second HIP decision point
+        if (has_hip && !(has_table && has_window)) offset += copy_hip_to_mem(compressed, data_ptr.get() + offset);
+        if (has_window) {
+          offset += copy_to_mem(data_ptr.get() + offset, compressed->compressedWindow, compressed->cwLength * sizeof(uint32_t));
+        }
+        if (has_table) {
+          offset += copy_to_mem(data_ptr.get() + offset, compressed->compressedSurprisingValues, compressed->csvLength * sizeof(uint32_t));
+        }
+        assert(offset == size);
+      }
+      fm85Free(compressed);
+      return std::make_pair(std::move(data_ptr), size);
+    }
+
     static cpc_sketch_unique_ptr
     deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free) {
       fm85InitAD(alloc, dealloc);
@@ -239,8 +305,8 @@ class cpc_sketch {
       delete [] compressed.compressedSurprisingValues;
       delete [] compressed.compressedWindow;
       cpc_sketch_unique_ptr sketch_ptr(
-          (new (alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed)),
-          [dealloc](cpc_sketch* s) { s->~cpc_sketch(); dealloc(s); }
+          new (alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
+          [](cpc_sketch* s) { s->~cpc_sketch(); fm85free(s); }
       );
       return std::move(sketch_ptr);
     }
@@ -296,16 +362,32 @@ class cpc_sketch {
       return preamble_ints;
     }
 
-    static void write_hip(const FM85* state, std::ostream& os) {
+    static inline void write_hip(const FM85* state, std::ostream& os) {
       os.write((char*)&state->kxp, sizeof(FM85::kxp));
       os.write((char*)&state->hipEstAccum, sizeof(FM85::hipEstAccum));
     }
 
-    static void read_hip(FM85* state, std::istream& is) {
+    static inline void read_hip(FM85* state, std::istream& is) {
       is.read((char*)&state->kxp, sizeof(FM85::kxp));
       is.read((char*)&state->hipEstAccum, sizeof(FM85::hipEstAccum));
     }
 
+    static inline size_t copy_hip_to_mem(const FM85* state, void* dst) {
+      memcpy(dst, &state->kxp, sizeof(FM85::kxp));
+      memcpy(dst + sizeof(FM85::kxp), &state->hipEstAccum, sizeof(FM85::hipEstAccum));
+      return sizeof(FM85::kxp) + sizeof(FM85::hipEstAccum);
+    }
+
+    static inline size_t copy_hip_from_mem(FM85* state, const void* src) {
+      memcpy(&state->kxp, src, sizeof(FM85::kxp));
+      memcpy(&state->hipEstAccum, src + sizeof(FM85::kxp), sizeof(FM85::hipEstAccum));
+      return sizeof(FM85::kxp) + sizeof(FM85::hipEstAccum);
+    }
+
+    static inline size_t copy_to_mem(void* dst, const void* src, size_t size) {
+      memcpy(dst, src, size);
+      return size;
+    }
 };
 
 // optional deallocation of globally allocated compression tables

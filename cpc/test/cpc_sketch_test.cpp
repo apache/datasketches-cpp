@@ -3,6 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
+#include <cstring>
+
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 
@@ -28,6 +30,7 @@ class cpc_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST(kappa_range);
   CPPUNIT_TEST(validate_fail);
+  CPPUNIT_TEST(serialize_both_ways);
   CPPUNIT_TEST_SUITE_END();
 
   void lg_k_limits() {
@@ -206,6 +209,20 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     s << "corrupt data";
     auto sketch_ptr(cpc_sketch::deserialize(s));
     CPPUNIT_ASSERT(!sketch_ptr->validate());
+  }
+
+  void serialize_both_ways() {
+    cpc_sketch sketch(11);
+    const int n(2000);
+    for (int i = 0; i < n; i++) sketch.update(i);
+    auto data(sketch.serialize());
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch.serialize(s);
+    CPPUNIT_ASSERT_EQUAL(data.second, (size_t) s.tellp());
+
+    char* pp = new char[s.tellp()];
+    s.read(pp, s.tellp());
+    CPPUNIT_ASSERT(std::memcmp(pp, data.first.get(), data.second) == 0);
   }
 
 };
