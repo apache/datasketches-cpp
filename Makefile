@@ -1,82 +1,54 @@
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-  CC := clang++ -arch x86_64
-else
-  CC := g++
-endif
+include config.mk
 
 BUILDDIR := build
 TARGETDIR := lib
 
-LIBRARY := libdatasketches.dylib
+LIBRARY := libdatasketches.$(LIB_SUFFIX)
 TARGET := $(TARGETDIR)/$(LIBRARY)
 
-INSTALLLIBDIR := /usr/local/lib
+INC := -I /usr/local/include
+LIB := -L /usr/local/lib -lcppunit
 
-#OBJECTS := $(shell find $(BUILDDIR) -type f -name *.o)
+MODULES := hll cpc kll
 
-CFLAGS := -c -g -Wall
-INC := -I $(INCLIST) -I /usr/local/include
+.PHONY: all
+all: $(MODULES) $(LIBRARY)
 
-ifeq ($(UNAME_S),Linux)
-    #CFLAGS += -std=gnu++11 -O2 # -fPIC
+include common/common.mk
 
-    # PostgreSQL Special
-    #PG_VER := 9.3
-    #INC += -I /usr/pgsql-$(PG_VER)/include
-    #LIB += -L /usr/pgsql-$(PG_VER)/lib
-else
-  CFLAGS += -std=c++11 -stdlib=libc++ -O0 -g
-endif
+INCLIST := $(COM_INCLIST)
+OBJECTS := $(COM_OBJECTS)
 
-all: cpc
+# pull in configs for each of the specified modules
+define MODULETASKS
+include $(1)/$(1).mk
+endef
+$(foreach MODULE,$(MODULES),$(eval $(call MODULETASKS,$(MODULE))))
 
-# build directory doesn't exist until after make all,
-# so this is a separate command
-library: $(TARGET)
+INCLIST += $(foreach mod, $(MODULES), $($(shell echo $(mod) | tr a-z A-Z)_INCLIST))
+OBJECTS += $(foreach mod, $(MODULES), $($(shell echo $(mod) | tr a-z A-Z)_OBJECTS))
 
+TEST_MODULES := common_test $(addsuffix _test, $(MODULES))
+CLEAN_MODULES := common_clean $(addsuffix _clean, $(MODULES))
+EXEC_MODULES := $(addsuffix _exec, $(MODULES))
 
-$(TARGET): $(wildcard build/**/*) # doesn't complain if nothing matches
+$(LIBRARY): $(OBJECTS) 
 	@mkdir -p $(TARGETDIR)
-	@echo "Linking..."
-	@echo "  Linking $(TARGET)";
-	@$(CC) $^ -dynamiclib -o $(TARGET) 
+	@echo "Linking $(LIBRARY)"
+	@$(CC) $^ -dynamiclib $(CPPFLAGS) -o $@
+	@mv $(LIBRARY) $(TARGETDIR)
 
-.PHONY: common cpc common_test cpc_test kll_test clean
+.PHONY: test clean
 
-common:
-	@$(MAKE) -C common
+test: $(TEST_MODULES) $(EXEC_MODULES)
 
-cpc: common
-	@$(MAKE) -C cpc
-
-
-common_test:
-	@$(MAKE) -C common test
-
-cpc_test: cpc common_test
-	@$(MAKE) -C cpc test
-
-kll_test: common_test
-	@$(MAKE) -C kll test
-
-
-test: cpc_test kll_test
-	@echo "CPC tests:"
-	@cd cpc; ./cpc_test
-	@echo "KLL tests:"
-	@cd kll; ./kll_test
-
-
-clean:
-	@echo "Cleaning $(TARGET)..."; $(RM) -r $(BUILDDIR) $(TARGET)
-	@$(MAKE) -C common clean
-	@$(MAKE) -C cpc clean
-	@$(MAKE) -C kll clean
+clean: $(CLEAN_MODULES)
+	@echo "Cleaning $(TARGET)..."
+	@$(RM) -r $(BUILDDIR) $(TARGET)
 
 # TODO: also copy headers to /usr/local/include
 #install:
 #	@echo "Installing $(LIBRARY)..."; cp $(TARGET) $(INSTALLLIBDIR)
-  
+
 #distclean:
 #	@echo "Removing $(LIBRARY)"; rm $(INSTALLLIBDIR)/$(LIBRARY)
