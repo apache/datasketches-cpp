@@ -304,7 +304,7 @@ class cpc_sketch_test: public CppUnit::TestFixture {
 
     char* pp = new char[s.tellp()];
     s.read(pp, s.tellp());
-    CPPUNIT_ASSERT(std::memcmp(pp, data.first.get() + header_size_bytes, data.second - header_size_bytes) == 0);
+    CPPUNIT_ASSERT(std::memcmp(pp, static_cast<char*>(data.first.get()) + header_size_bytes, data.second - header_size_bytes) == 0);
   }
 
 };

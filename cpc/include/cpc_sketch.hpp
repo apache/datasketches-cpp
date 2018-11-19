@@ -159,7 +159,7 @@ class cpc_sketch {
           fm85alloc(size),
           [](void* ptr) { fm85free(ptr); }
       );
-      void* ptr = data_ptr.get() + header_size_bytes;
+      char* ptr = static_cast<char*>(data_ptr.get()) + header_size_bytes;
       ptr += copy_to_mem(ptr, &preamble_ints, sizeof(preamble_ints));
       const uint8_t serial_version(SERIAL_VERSION);
       ptr += copy_to_mem(ptr, &serial_version, sizeof(serial_version));
@@ -209,7 +209,7 @@ class cpc_sketch {
           ptr += copy_to_mem(ptr, compressed->compressedSurprisingValues, compressed->csvLength * sizeof(uint32_t));
         }
       }
-      assert(ptr == data_ptr.get() + size);
+      assert(ptr == static_cast<char*>(data_ptr.get()) + size);
       fm85Free(compressed);
       return std::make_pair(std::move(data_ptr), size);
     }
@@ -313,7 +313,7 @@ class cpc_sketch {
     static cpc_sketch_unique_ptr
     deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free) {
       fm85InitAD(alloc, dealloc);
-      const void* ptr = bytes;
+      const char* ptr = static_cast<const char*>(bytes);
       uint8_t preamble_ints;
       ptr += copy_from_mem(ptr, &preamble_ints, sizeof(preamble_ints));
       uint8_t serial_version;
@@ -378,7 +378,7 @@ class cpc_sketch {
         }
         if (!has_window) compressed.numCompressedSurprisingValues = compressed.numCoupons;
       }
-      assert(ptr == bytes + size);
+      assert(ptr == static_cast<const char*>(bytes) + size);
       compressed.windowOffset = determineCorrectOffset(compressed.lgK, compressed.numCoupons);
 
       uint8_t expected_preamble_ints(get_preamble_ints(&compressed));
@@ -471,13 +471,13 @@ class cpc_sketch {
 
     static inline size_t copy_hip_to_mem(const FM85* state, void* dst) {
       memcpy(dst, &state->kxp, sizeof(FM85::kxp));
-      memcpy(dst + sizeof(FM85::kxp), &state->hipEstAccum, sizeof(FM85::hipEstAccum));
+      memcpy(static_cast<char*>(dst) + sizeof(FM85::kxp), &state->hipEstAccum, sizeof(FM85::hipEstAccum));
       return sizeof(FM85::kxp) + sizeof(FM85::hipEstAccum);
     }
 
     static inline size_t copy_hip_from_mem(FM85* state, const void* src) {
       memcpy(&state->kxp, src, sizeof(FM85::kxp));
-      memcpy(&state->hipEstAccum, src + sizeof(FM85::kxp), sizeof(FM85::hipEstAccum));
+      memcpy(&state->hipEstAccum, static_cast<const char*>(src) + sizeof(FM85::kxp), sizeof(FM85::hipEstAccum));
       return sizeof(FM85::kxp) + sizeof(FM85::hipEstAccum);
     }
 
