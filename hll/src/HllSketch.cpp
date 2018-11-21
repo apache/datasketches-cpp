@@ -20,11 +20,11 @@ typedef union {
   double doubleBytes;
 } longDoubleUnion;
 
-HllSketch* HllSketch::newInstance(const int lgConfigK, const TgtHllType tgtHllType) {
-  return new HllSketchPvt(lgConfigK, tgtHllType);
+hll_sketch HllSketch::newInstance(const int lgConfigK, const TgtHllType tgtHllType) {
+  return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(lgConfigK, tgtHllType));
 }
 
-HllSketch* HllSketch::deserialize(std::istream& is) {
+hll_sketch HllSketch::deserialize(std::istream& is) {
   return HllSketchPvt::deserialize(is);
 }
 
@@ -34,9 +34,9 @@ HllSketchPvt::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
   hllSketchImpl = new CouponList(HllUtil::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
 }
 
-HllSketchPvt* HllSketchPvt::deserialize(std::istream& is) {
+hll_sketch HllSketchPvt::deserialize(std::istream& is) {
   HllSketchImpl* impl = HllSketchImpl::deserialize(is);
-  return new HllSketchPvt(impl);
+  return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(impl));
 }
 
 HllSketchPvt::~HllSketchPvt() {
@@ -47,20 +47,24 @@ std::ostream& operator<<(std::ostream& os, HllSketch& sketch) {
   return sketch.to_string(os, true, true, false, false);
 }
 
-HllSketchPvt::HllSketchPvt(const HllSketch& that) {
-  hllSketchImpl = static_cast<HllSketchPvt>(that).hllSketchImpl->copy();
+std::ostream& operator<<(std::ostream& os, hll_sketch sketch) {
+  return sketch->to_string(os, true, true, false, false);
 }
 
-HllSketchPvt::HllSketchPvt(HllSketchImpl* that) {
-  hllSketchImpl = that;
+HllSketchPvt::HllSketchPvt(const HllSketch& that) :
+  hllSketchImpl(static_cast<HllSketchPvt>(that).hllSketchImpl->copy())
+{}
+
+HllSketchPvt::HllSketchPvt(HllSketchImpl* that) :
+  hllSketchImpl(that)
+{}
+
+hll_sketch HllSketchPvt::copy() const {
+  return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(this->hllSketchImpl->copy()));
 }
 
-HllSketch* HllSketchPvt::copy() const {
-  return new HllSketchPvt(this->hllSketchImpl->copy());
-}
-
-HllSketch* HllSketchPvt::copyAs(const TgtHllType tgtHllType) const {
-  return new HllSketchPvt(hllSketchImpl->copyAs(tgtHllType));
+hll_sketch HllSketchPvt::copyAs(const TgtHllType tgtHllType) const {
+  return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(hllSketchImpl->copyAs(tgtHllType)));
 }
 
 void HllSketchPvt::reset() {

@@ -22,7 +22,7 @@ class HllSketchImpl;
 class HllSketchPvt : public HllSketch {
   public:
     explicit HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType = HLL_4);
-    static HllSketchPvt* deserialize(std::istream& is);
+    static hll_sketch deserialize(std::istream& is);
 
     virtual ~HllSketchPvt();
 
@@ -30,8 +30,8 @@ class HllSketchPvt : public HllSketch {
     HllSketchPvt(const HllSketch& that);
     HllSketchPvt(HllSketchImpl* that);
 
-    HllSketch* copy() const;
-    HllSketch* copyAs(const TgtHllType tgtHllType) const;
+    hll_sketch copy() const;
+    hll_sketch copyAs(const TgtHllType tgtHllType) const;
 
     virtual void reset();
 

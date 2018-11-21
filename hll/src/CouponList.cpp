@@ -55,7 +55,7 @@ CouponList::CouponList(const CouponList& that, const TgtHllType tgtHllType)
 }
 
 CouponList::~CouponList() {
-  delete couponIntArr;
+  delete [] couponIntArr;
 }
 
 CouponList* CouponList::copy() const {

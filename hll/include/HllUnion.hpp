@@ -39,8 +39,8 @@ namespace datasketches {
 class HllUnionPvt : public HllUnion {
   public:
     explicit HllUnionPvt(const int lgMaxK);
-    explicit HllUnionPvt(HllSketch& sketch);
-    static HllUnionPvt* deserialize(std::istream& is);
+    explicit HllUnionPvt(hll_sketch sketch);
+    static hll_union deserialize(std::istream& is);
 
     virtual ~HllUnionPvt();
 
@@ -59,8 +59,8 @@ class HllUnionPvt : public HllUnion {
 
     virtual void reset();
 
-    virtual HllSketch* getResult() const;
-    virtual HllSketch* getResult(TgtHllType tgtHllType) const;
+    virtual hll_sketch getResult() const;
+    virtual hll_sketch getResult(TgtHllType tgtHllType) const;
 
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
@@ -72,7 +72,6 @@ class HllUnionPvt : public HllUnion {
                                     const bool all = false) const;
 
     virtual void update(const HllSketch& sketch);
-    virtual void update(const HllSketch* sketch);
     virtual void update(const std::string datum);
     virtual void update(const uint64_t datum);
     virtual void update(const uint32_t datum);

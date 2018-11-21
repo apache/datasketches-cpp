@@ -30,9 +30,9 @@ class CouponListTest : public CppUnit::TestFixture {
 
   void checkIterator() {
     int lgConfigK = 8;
-    HllSketch* sk = HllSketch::newInstance(lgConfigK);
+    hll_sketch sk = HllSketch::newInstance(lgConfigK);
     for (int i = 0; i < 7; ++i) { sk->update(i); }
-    std::unique_ptr<PairIterator> itr = static_cast<HllSketchPvt*>(sk)->getIterator();
+    std::unique_ptr<PairIterator> itr = static_cast<HllSketchPvt*>(sk.get())->getIterator();
     println_string(itr->getHeader());
     while (itr->nextAll()) {
       int key = itr->getKey();
@@ -44,14 +44,12 @@ class CouponListTest : public CppUnit::TestFixture {
           << ", Slot: " << slot;
       println_string(oss.str());
     }
-
-    delete sk;
   }
 
   void checkDuplicatesAndMisc() {
     int lgConfigK = 8;
-    HllSketch* skContainer = HllSketch::newInstance(lgConfigK);
-    HllSketchPvt* sk = static_cast<HllSketchPvt*>(skContainer);
+    hll_sketch skContainer = HllSketch::newInstance(lgConfigK);
+    HllSketchPvt* sk = static_cast<HllSketchPvt*>(skContainer.get());
 
     for (int i = 1; i <= 7; ++i) {
       sk->update(i);
@@ -74,8 +72,6 @@ class CouponListTest : public CppUnit::TestFixture {
 
     double relErr = sk->getRelErr(true, true, 4, 1);
     CPPUNIT_ASSERT(relErr < 0.0);
-
-    delete sk;
   }
 
   std::string dumpAsHex(const char* data, int len) {
@@ -91,7 +87,7 @@ class CouponListTest : public CppUnit::TestFixture {
   }
 
   void serializeDeserialize(const int lgK) {
-    HllSketch* sk1 = HllSketch::newInstance(lgK);
+    hll_sketch sk1 = HllSketch::newInstance(lgK);
 
     int u = (lgK < 8) ? 7 : (((1 << (lgK - 3))/ 4) * 3);
     for (int i = 0; i < u; ++i) {
@@ -102,10 +98,9 @@ class CouponListTest : public CppUnit::TestFixture {
 
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
     sk1->serializeCompact(ss);
-    HllSketch* sk2 = HllSketch::deserialize(ss);
+    hll_sketch sk2 = HllSketch::deserialize(ss);
     double est2 = sk2->getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
-    delete sk2;
 
     ss.str(std::string());
     ss.clear();
@@ -114,9 +109,6 @@ class CouponListTest : public CppUnit::TestFixture {
     sk2 = HllSketch::deserialize(ss);
     est2 = sk2->getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
-
-    delete sk1;
-    delete sk2;
   }
   
   void checkSerializeDeserialize() {

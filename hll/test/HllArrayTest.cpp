@@ -19,20 +19,16 @@ class HllArrayTest : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
   void testComposite(const int lgK, const TgtHllType tgtHllType, const int n) {
-    HllUnion* u = HllUnion::newInstance(lgK);
-    HllSketch* sk = HllSketch::newInstance(lgK, tgtHllType);
+    hll_union u = HllUnion::newInstance(lgK);
+    hll_sketch sk = HllSketch::newInstance(lgK, tgtHllType);
     for (int i = 0; i < n; ++i) {
       u->update(i);
       sk->update(i);
     }
-    u->update(sk); // merge
-    HllSketch* res = u->getResult(TgtHllType::HLL_8);
+    u->update(*sk); // merge
+    hll_sketch res = u->getResult(TgtHllType::HLL_8);
     double est = res->getCompositeEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est, sk->getCompositeEstimate(), 0.0);
-
-    delete res;
-    delete u;
-    delete sk;
   }
 
   void checkCompositeEstimate() {
@@ -63,12 +59,13 @@ class HllArrayTest : public CppUnit::TestFixture {
   }
 
   void serializeDeserialize(const int lgK, TgtHllType tgtHllType, const int n) {
-    HllSketch* sk1 = HllSketch::newInstance(lgK, tgtHllType);
+    hll_sketch sk1 = HllSketch::newInstance(lgK, tgtHllType);
 
     for (int i = 0; i < n; ++i) {
       sk1->update(i);
     }
-    CPPUNIT_ASSERT(((HllSketchPvt*)sk1)->getCurrentMode() == CurMode::HLL);
+    //CPPUNIT_ASSERT(((HllSketchPvt*)sk1)->getCurrentMode() == CurMode::HLL);
+    CPPUNIT_ASSERT(static_cast<HllSketchPvt*>(sk1.get())->getCurrentMode() == CurMode::HLL);
 
     double est1 = sk1->getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(n, est1, n * 0.03);
@@ -76,29 +73,24 @@ class HllArrayTest : public CppUnit::TestFixture {
     // serialize as compact and updatable, deserialize, compare estimates are exact
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
     sk1->serializeCompact(ss);
-    HllSketch* sk2 = HllSketch::deserialize(ss);
+    hll_sketch sk2 = HllSketch::deserialize(ss);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk2->getEstimate(), sk1->getEstimate(), 0.0);
-    delete sk2;
 
     ss.clear();
     sk1->serializeUpdatable(ss);
     sk2 = HllSketch::deserialize(ss);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk2->getEstimate(), sk1->getEstimate(), 0.0);
-    delete sk2;
 
     sk1->reset();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, sk1->getEstimate(), 0.0);
-    
-    delete sk1;
   }
 
   void checkIsCompact() {
-    HllSketch* sk = HllSketch::newInstance(4);
+    hll_sketch sk = HllSketch::newInstance(4);
     for (int i = 0; i < 8; ++i) {
       sk->update(i);
     }
     CPPUNIT_ASSERT(!sk->isCompact());
-    delete sk;
   }
 
 };
