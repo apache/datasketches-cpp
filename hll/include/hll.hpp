@@ -43,7 +43,6 @@ class HllSketch {
                                     const bool detail = false,
                                     const bool auxDetail = false,
                                     const bool all = false) const = 0;
-    void to_string() { to_string(std::cout, true, true, true, true); }
 
     virtual void update(const std::string datum) = 0;
     virtual void update(const uint64_t datum) = 0;
@@ -121,7 +120,6 @@ class HllUnion {
                                     const bool detail = false,
                                     const bool auxDetail = false,
                                     const bool all = false) const = 0;
-    void to_string() { to_string(std::cout, true, true, true, true); }
 
     virtual void update(const HllSketch& sketch) = 0;
     virtual void update(const std::string datum) = 0;
