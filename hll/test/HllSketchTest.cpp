@@ -35,16 +35,16 @@ class hllSketchTest : public CppUnit::TestFixture {
   }
 
   void runCheckCopy(int lgConfigK, TgtHllType tgtHllType) {
-    HllSketch* skContainer = HllSketch::newInstance(lgConfigK, tgtHllType);
-    HllSketchPvt* sk = static_cast<HllSketchPvt*>(skContainer);
+    hll_sketch skContainer = HllSketch::newInstance(lgConfigK, tgtHllType);
+    HllSketchPvt* sk = static_cast<HllSketchPvt*>(skContainer.get());
 
     for (int i = 0; i < 7; ++i) {
       sk->update(i);
     }
     CPPUNIT_ASSERT_EQUAL(sk->getCurrentMode(), CurMode::LIST);
 
-    HllSketch* skCopy = sk->copy();
-    HllSketchPvt* skCopyPvt = static_cast<HllSketchPvt*>(skCopy);
+    hll_sketch skCopy = sk->copy();
+    HllSketchPvt* skCopyPvt = static_cast<HllSketchPvt*>(skCopy.get());
     CPPUNIT_ASSERT_EQUAL(skCopyPvt->getCurrentMode(), CurMode::LIST);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(skCopy->getEstimate(), sk->getEstimate(), 0.0);
 
@@ -57,9 +57,8 @@ class hllSketchTest : public CppUnit::TestFixture {
     CPPUNIT_ASSERT(sk->getCurrentMode() != skCopyPvt->getCurrentMode());
     CPPUNIT_ASSERT_GREATER(16.0, sk->getEstimate() - skCopy->getEstimate());
 
-    delete skCopy;
     skCopy = sk->copy();
-    skCopyPvt = static_cast<HllSketchPvt*>(skCopy);
+    skCopyPvt = static_cast<HllSketchPvt*>(skCopy.get());
     CPPUNIT_ASSERT_EQUAL(skCopyPvt->getCurrentMode(), CurMode::SET);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(skCopy->getEstimate(), sk->getEstimate(), 0.0);
 
@@ -71,16 +70,12 @@ class hllSketchTest : public CppUnit::TestFixture {
     CPPUNIT_ASSERT(sk->getCurrentMode() != skCopyPvt->getCurrentMode());
     CPPUNIT_ASSERT(sk->getEstimate() != skCopy->getEstimate()); // either 1 or 100k difference
 
-    delete skCopy;
     skCopy = sk->copy();
-    skCopyPvt = static_cast<HllSketchPvt*>(skCopy);
+    skCopyPvt = static_cast<HllSketchPvt*>(skCopy.get());
     CPPUNIT_ASSERT_EQUAL(skCopyPvt->getCurrentMode(), CurMode::HLL);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(skCopy->getEstimate(), sk->getEstimate(), 0.0);
 
     CPPUNIT_ASSERT(sk->hllSketchImpl != skCopyPvt->hllSketchImpl);
-
-    delete sk;
-    delete skCopy;
   }
 
   void checkCopyAs() {
@@ -102,52 +97,48 @@ class hllSketchTest : public CppUnit::TestFixture {
     int n3 = 1000;
     int base = 0;
 
-    HllSketch* src = HllSketch::newInstance(lgK, srcType);
+    hll_sketch src = HllSketch::newInstance(lgK, srcType);
     for (int i = 0; i < n1; ++i) {
       src->update(i + base);
     }
-    HllSketch* dst = src->copyAs(dstType);
+    hll_sketch dst = src->copyAs(dstType);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(dst->getEstimate(), src->getEstimate(), 0.0);
-    delete dst;
 
     for (int i = n1; i < n2; ++i) {
       src->update(i + base);
     }
     dst = src->copyAs(dstType);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(dst->getEstimate(), src->getEstimate(), 0.0);
-    delete dst;
 
     for (int i = n2; i < n3; ++i) {
       src->update(i + base);
     }
     dst = src->copyAs(dstType);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(dst->getEstimate(), src->getEstimate(), 0.0);
-    delete dst;
-
-    delete src;
   }
 
   void checkMisc1() {
     int lgConfigK = 8;
     TgtHllType srcType = TgtHllType::HLL_8;
-    HllSketch* sk = HllSketch::newInstance(lgConfigK, srcType);
+    hll_sketch sk = HllSketch::newInstance(lgConfigK, srcType);
+    HllSketchPvt* s = static_cast<HllSketchPvt*>(sk.get());
 
     for (int i = 0; i < 7; ++i) { sk->update(i); } // LIST
-    CouponList* cl = (CouponList*) ((HllSketchPvt*)sk)->hllSketchImpl;
+    CouponList* cl = (CouponList*) s->hllSketchImpl;
     CPPUNIT_ASSERT_EQUAL(7, cl->getCouponCount());
-    HllSketchImpl* impl = ((HllSketchPvt*)sk)->hllSketchImpl;
+    HllSketchImpl* impl = s->hllSketchImpl;
     CPPUNIT_ASSERT_EQUAL(36, impl->getCompactSerializationBytes());
     CPPUNIT_ASSERT_EQUAL(40, impl->getUpdatableSerializationBytes());
 
     for (int i = 7; i < 24; ++i) { sk->update(i); } // SET
-    CouponHashSet* chs = (CouponHashSet*) ((HllSketchPvt*)sk)->hllSketchImpl;
+    CouponHashSet* chs = (CouponHashSet*) s->hllSketchImpl;
     CPPUNIT_ASSERT_EQUAL(24, chs->getCouponCount());
-    impl = ((HllSketchPvt*)sk)->hllSketchImpl;
+    impl = s->hllSketchImpl;
     CPPUNIT_ASSERT_EQUAL(108, impl->getCompactSerializationBytes());
     CPPUNIT_ASSERT_EQUAL(140, impl->getUpdatableSerializationBytes());
 
     sk->update(24); // HLL
-    HllArray* arr = (HllArray*) ((HllSketchPvt*)sk)->hllSketchImpl;
+    HllArray* arr = (HllArray*) s->hllSketchImpl;
     CPPUNIT_ASSERT(arr->getAuxIterator() == nullptr);
     CPPUNIT_ASSERT_EQUAL(0, arr->getCurMin());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(25.0, arr->getHipAccum(), 25.0 * 0.02);
@@ -158,8 +149,6 @@ class hllSketchTest : public CppUnit::TestFixture {
     const int hllBytes = HllUtil::HLL_BYTE_ARR_START + (1 << lgConfigK);
     CPPUNIT_ASSERT_EQUAL(hllBytes, sk->getCompactSerializationBytes());
     CPPUNIT_ASSERT_EQUAL(hllBytes, HllSketch::getMaxUpdatableSerializationBytes(lgConfigK, HLL_8));
-
-    delete sk;
   }
 
   void checkNumStdDev() {
@@ -178,7 +167,7 @@ class hllSketchTest : public CppUnit::TestFixture {
   }
 
   void checkSerializationSizes(const int lgConfigK, TgtHllType tgtHllType) {
-    HllSketch* sk = HllSketch::newInstance(lgConfigK, tgtHllType);
+    hll_sketch sk = HllSketch::newInstance(lgConfigK, tgtHllType);
     int i;
 
     // LIST
@@ -197,8 +186,9 @@ class hllSketchTest : public CppUnit::TestFixture {
 
     // HLL
     sk->update(i);
-    CPPUNIT_ASSERT_EQUAL(CurMode::HLL, ((HllSketchPvt*) sk)->getCurrentMode());
-    HllArray* hllArr = (HllArray*) ((HllSketchPvt*) sk)->hllSketchImpl;
+    HllSketchPvt* s = static_cast<HllSketchPvt*>(sk.get());
+    CPPUNIT_ASSERT_EQUAL(CurMode::HLL, s->getCurrentMode());
+    HllArray* hllArr = (HllArray*) s->hllSketchImpl;
 
     int auxCountBytes = 0;
     int auxArrBytes = 0;
@@ -221,8 +211,6 @@ class hllSketchTest : public CppUnit::TestFixture {
     expected = HllUtil::HLL_BYTE_ARR_START + hllArrBytes + fullAuxArrBytes;
     CPPUNIT_ASSERT_EQUAL(expected,
                          HllSketch::getMaxUpdatableSerializationBytes(lgConfigK, tgtHllType));
-
-    delete sk;
   }
 
   void checkConfigKLimits() {
@@ -242,29 +230,26 @@ class hllSketchTest : public CppUnit::TestFixture {
   }
 
   void exerciseToString() {
-    HllSketch* sk = HllSketch::newInstance(15, HLL_4);
+    hll_sketch sk = HllSketch::newInstance(15, HLL_4);
     for (int i = 0; i < 25; ++i) { sk->update(i); }
     std::ostringstream oss(std::ios::binary);
     sk->to_string(oss, false, true, true, true);
     for (int i = 25; i < (1 << 20); ++i) { sk->update(i); }
     sk->to_string(oss, false, true, true, true);
     sk->to_string(oss, false, true, true, false);
-    delete sk;
 
     sk = HllSketch::newInstance(8, HLL_8);
     for (int i = 0; i < 25; ++i) { sk->update(i); }
     sk->to_string(oss, false, true, true, true);
-    delete sk;
   }
   
   void checkEmptyCoupon() {
     int lgK = 8;
     TgtHllType type = HLL_8;
-    HllSketch* sk = HllSketch::newInstance(lgK, type);
+    hll_sketch sk = HllSketch::newInstance(lgK, type);
     for (int i = 0; i < 20; ++i) { sk->update(i); } // SET mode
-    ((HllSketchPvt*) sk)->couponUpdate(0);
+    static_cast<HllSketchPvt*>(sk.get())->couponUpdate(0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(20, sk->getEstimate(), 0.001);
-    delete sk;
   }
 
   void checkCompactFlag() {
@@ -298,7 +283,7 @@ class hllSketchTest : public CppUnit::TestFixture {
   // Creates and serializes then deserializes sketch.
   // Returns true if deserialized sketch is compact.
   bool checkCompact(const int lgK, const int n, const TgtHllType type, bool compact) {
-    HllSketch* sk = HllSketch::newInstance(lgK, type);
+    hll_sketch sk = HllSketch::newInstance(lgK, type);
     for (int i = 0; i < n; ++i) { sk->update(i); }
     
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
@@ -310,12 +295,9 @@ class hllSketchTest : public CppUnit::TestFixture {
       CPPUNIT_ASSERT_EQUAL(sk->getUpdatableSerializationBytes(), (int) ss.tellp());
     }
     
-    HllSketch* sk2 = HllSketch::deserialize(ss);
+    hll_sketch sk2 = HllSketch::deserialize(ss);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sk2->getEstimate(), 0.01);
     bool isCompact = sk2->isCompact();
-
-    delete sk;
-    delete sk2;
 
     return isCompact;
   }

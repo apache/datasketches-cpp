@@ -11,11 +11,11 @@
 
 namespace datasketches {
 
-HllUnion* HllUnion::newInstance(const int lgMaxK) {
-  return new HllUnionPvt(lgMaxK);
+hll_union HllUnion::newInstance(const int lgMaxK) {
+  return std::unique_ptr<HllUnion>(new HllUnionPvt(lgMaxK));
 }
 
-HllUnion* HllUnion::deserialize(std::istream& is) {
+hll_union HllUnion::deserialize(std::istream& is) {
   return HllUnionPvt::deserialize(is);
 }
 
@@ -23,50 +23,41 @@ HllUnion::~HllUnion() {}
 
 HllUnionPvt::HllUnionPvt(const int lgMaxK)
   : lgMaxK(HllUtil::checkLgK(lgMaxK)) {
-  gadget = new HllSketchPvt(lgMaxK, TgtHllType::HLL_8);
+  gadget = std::unique_ptr<HllSketchPvt>(new HllSketchPvt(lgMaxK, TgtHllType::HLL_8));
 }
 
-HllUnionPvt::HllUnionPvt(HllSketch& sketch)
-  : lgMaxK(sketch.getLgConfigK()) {
-  TgtHllType tgtHllType = sketch.getTgtHllType();
+HllUnionPvt::HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch)
+  : lgMaxK(sketch->getLgConfigK()) {
+  TgtHllType tgtHllType = sketch->getTgtHllType();
   if (tgtHllType != TgtHllType::HLL_8) {
     throw std::invalid_argument("HllUnion can only wrap HLL_8 sketches");
   }
-  gadget = static_cast<HllSketchPvt*>(&sketch);
+  std::swap(sketch, gadget);
 }
 
-HllUnionPvt::~HllUnionPvt() {
-  if (gadget != nullptr) {
-    delete gadget;
-  }
-}
+HllUnionPvt::~HllUnionPvt() {}
 
-HllUnionPvt* HllUnionPvt::deserialize(std::istream& is) {
-  HllSketch* sk = HllSketch::deserialize(is);
+hll_union HllUnionPvt::deserialize(std::istream& is) {
+  std::unique_ptr<HllSketchPvt> sk = HllSketchPvt::deserialize(is);
   if (sk == nullptr) { return nullptr; }
   // we're using the sketch's lgConfigK to initialize the union so
   // we can initialize the Union with it as long as it's HLL_8.
   HllUnionPvt* hllUnion;
   if (sk->getTgtHllType() == HLL_8) {
-    hllUnion = new HllUnionPvt(*sk);
+    hllUnion = new HllUnionPvt(std::move(sk));
   } else {
     hllUnion = new HllUnionPvt(sk->getLgConfigK());
-    hllUnion->update(sk);
-    delete sk;
+    hllUnion->update(*sk);
   }
-  return hllUnion;
+  return std::unique_ptr<HllUnion>(hllUnion);
 }
 
-HllSketch* HllUnionPvt::getResult() const {
+hll_sketch HllUnionPvt::getResult() const {
   return gadget->copyAs(TgtHllType::HLL_4);
 }
 
-HllSketch* HllUnionPvt::getResult(TgtHllType tgtHllType) const {
+hll_sketch HllUnionPvt::getResult(TgtHllType tgtHllType) const {
   return gadget->copyAs(tgtHllType);
-}
-
-void HllUnionPvt::update(const HllSketch* sketch) {
-  unionImpl(static_cast<const HllSketchPvt*>(sketch)->hllSketchImpl, lgMaxK);
 }
 
 void HllUnionPvt::update(const HllSketch& sketch) {

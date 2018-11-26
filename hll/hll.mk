@@ -32,12 +32,12 @@ $(HLL_TSTBUILD)/%.o: $(HLL_TSTDIR)/%.cpp
 	@$(CC) $(CPPFLAGS) $(INC) $(HLL_INCLIST) -c -o $@ $<
 
 .PHONY: hll_test hll_clean
-hll_test: $(COM_TSTOBJS) $(HLL_OBJECTS) $(HLL_TSTOBJS)
+hll_test: $(COM_TSTOBJS) $(HLL_TSTOBJS)
 	@echo "Linking $(HLL_TARGET)..."
 	@$(CC) $^ -o $(HLL_TARGET) $(LIB)
 
 hll_exec: hll_test
-	cd hll; ./$(HLL_TEST_BIN)
+	cd hll; DYLD_LIBRARY_PATH=../$(TARGETDIR) ./$(HLL_TEST_BIN)
 
 hll_clean:
 	@echo "Cleaning hll...";

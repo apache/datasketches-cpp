@@ -47,12 +47,12 @@ HllArray::HllArray(const HllArray& that)
 }
 
 HllArray::~HllArray() {
-  delete hllByteArr;
+  delete [] hllByteArr;
 }
 
 HllArray* HllArray::copyAs(const TgtHllType tgtHllType) const {
   if (tgtHllType == getTgtHllType()) {
-    return (HllArray*) copy();
+    return static_cast<HllArray*>(copy());
   }
   if (tgtHllType == TgtHllType::HLL_4) {
     return Conversions::convertToHll4(*this);

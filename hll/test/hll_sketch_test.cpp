@@ -36,8 +36,8 @@ class hll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
   void simple_union() {
-    HllSketch* s1 = HllSketch::newInstance(8, TgtHllType::HLL_8);
-    HllSketch* s2 = HllSketch::newInstance(8, TgtHllType::HLL_8);
+    hll_sketch s1 = HllSketch::newInstance(8, TgtHllType::HLL_8);
+    hll_sketch s2 = HllSketch::newInstance(8, TgtHllType::HLL_8);
 
     int n = 10000;
     for (int i = 0; i < n; ++i) {
@@ -45,23 +45,17 @@ class hll_sketch_test: public CppUnit::TestFixture {
       s2->update((uint64_t) i + (n / 2));
     }
 
-    HllUnion* hllUnion = HllUnion::newInstance(8);
-    hllUnion->update(s1);
-    hllUnion->update(s2);
+    hll_union hllUnion = HllUnion::newInstance(8);
+    hllUnion->update(*s1);
+    hllUnion->update(*s2);
 
     std::ostringstream oss;
     hllUnion->to_string(oss, true, true, false, true);
-
-    delete s1;
-    delete s2;
-    delete hllUnion;
   }
 
   void k_limits() {
-    HllSketch* sketch1 = HllSketch::newInstance(HllUtil::MIN_LOG_K, TgtHllType::HLL_8);
-    HllSketch* sketch2 = HllSketch::newInstance(HllUtil::MAX_LOG_K, TgtHllType::HLL_4);
-    delete sketch1;
-    delete sketch2;
+    hll_sketch sketch1 = HllSketch::newInstance(HllUtil::MIN_LOG_K, TgtHllType::HLL_8);
+    hll_sketch sketch2 = HllSketch::newInstance(HllUtil::MAX_LOG_K, TgtHllType::HLL_4);
     CPPUNIT_ASSERT_THROW(HllSketch::newInstance(HllUtil::MIN_LOG_K - 1, TgtHllType::HLL_4), std::invalid_argument);
     CPPUNIT_ASSERT_THROW(HllSketch::newInstance(HllUtil::MAX_LOG_K + 1, TgtHllType::HLL_8), std::invalid_argument);
   }

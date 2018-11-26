@@ -17,15 +17,21 @@ enum TgtHllType {
     HLL_8
 };
 
+class HllSketch;
+typedef std::unique_ptr<HllSketch> hll_sketch;
+
+class HllUnion;
+typedef std::unique_ptr<HllUnion> hll_union;
+
 class HllSketch {
   public:
-    static HllSketch* newInstance(const int lgConfigK, const TgtHllType tgtHllType = HLL_4);
-    static HllSketch* deserialize(std::istream& is);
+    static hll_sketch newInstance(const int lgConfigK, const TgtHllType tgtHllType = HLL_4);
+    static hll_sketch deserialize(std::istream& is);
 
     virtual ~HllSketch();
 
-    virtual HllSketch* copy() const = 0;
-    virtual HllSketch* copyAs(const TgtHllType tgtHllType) const = 0;
+    virtual hll_sketch copy() const = 0;
+    virtual hll_sketch copyAs(const TgtHllType tgtHllType) const = 0;
 
     virtual void reset() = 0;
     
@@ -83,8 +89,8 @@ class HllSketch {
 
 class HllUnion {
   public:
-    static HllUnion* newInstance(const int lgMaxK);
-    static HllUnion* deserialize(std::istream& is);
+    static hll_union newInstance(const int lgMaxK);
+    static hll_union deserialize(std::istream& is);
 
     virtual ~HllUnion();
 
@@ -103,8 +109,8 @@ class HllUnion {
 
     virtual void reset() = 0;
 
-    virtual HllSketch* getResult() const = 0;
-    virtual HllSketch* getResult(TgtHllType tgtHllType) const = 0;
+    virtual hll_sketch getResult() const = 0;
+    virtual hll_sketch getResult(TgtHllType tgtHllType) const = 0;
 
     virtual void serializeCompact(std::ostream& os) const = 0;
     virtual void serializeUpdatable(std::ostream& os) const = 0;
@@ -116,7 +122,6 @@ class HllUnion {
                                     const bool all = false) const = 0;
 
     virtual void update(const HllSketch& sketch) = 0;
-    virtual void update(const HllSketch* sketch) = 0;
     virtual void update(const std::string datum) = 0;
     virtual void update(const uint64_t datum) = 0;
     virtual void update(const uint32_t datum) = 0;
@@ -137,6 +142,7 @@ class HllUnion {
 };
 
 std::ostream& operator<<(std::ostream& os, HllSketch& sketch);
+std::ostream& operator<<(std::ostream& os, hll_sketch sketch);
 
 } // namespace datasketches
 

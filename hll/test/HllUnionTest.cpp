@@ -136,10 +136,10 @@ class HllUnionTest : public CppUnit::TestFixture {
     uint64_t v = 0;
     //int tot = n1 + n2;
 
-    HllSketch* h1 = HllSketch::newInstance(lgk1, type1);
-    HllSketch* h2 = HllSketch::newInstance(lgk2, type2);
+    hll_sketch h1 = HllSketch::newInstance(lgk1, type1);
+    hll_sketch h2 = HllSketch::newInstance(lgk2, type2);
     int lgControlK = min(min(lgk1, lgk2), lgMaxK);
-    HllSketch* control = HllSketch::newInstance(lgControlK, resultType);
+    hll_sketch control = HllSketch::newInstance(lgControlK, resultType);
 
     for (uint64_t i = 0; i < n1; ++i) {
       h1->update(v + i);
@@ -152,11 +152,11 @@ class HllUnionTest : public CppUnit::TestFixture {
     }
     v += n2;
 
-    HllUnion* u = HllUnion::newInstance(lgMaxK);
-    u->update(h1);
-    u->update(h2);
+    hll_union u = HllUnion::newInstance(lgMaxK);
+    u->update(*h1);
+    u->update(*h2);
 
-    HllSketch* result = u->getResult(resultType);
+    hll_sketch result = u->getResult(resultType);
     //int lgkr = result->getLgConfigK();
 
     // force non-HIP estimates to avoid issues with in- vs out-of-order
@@ -175,12 +175,6 @@ class HllUnionTest : public CppUnit::TestFixture {
     CPPUNIT_ASSERT((uEst - uLb) >= 0.0);
 
     CPPUNIT_ASSERT_DOUBLES_EQUAL(controlEst, uEst, 0.0);
-
-    delete h1;
-    delete h2;
-    delete control;
-    delete u;
-    delete result;
   }
 
   void checkToFrom() {
@@ -198,12 +192,12 @@ class HllUnionTest : public CppUnit::TestFixture {
   }
 
   void toFrom(const int lgK, const TgtHllType type, const int n, const bool compact) {
-    HllUnion* srcU = HllUnion::newInstance(lgK);
-    HllSketch* srcSk = HllSketch::newInstance(lgK, type);
+    hll_union srcU = HllUnion::newInstance(lgK);
+    hll_sketch srcSk = HllSketch::newInstance(lgK, type);
     for (int i = 0; i < n; ++i) {
       srcSk->update(i);
     }
-    srcU->update(srcSk);
+    srcU->update(*srcSk);
 
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
     if (compact) {
@@ -211,24 +205,18 @@ class HllUnionTest : public CppUnit::TestFixture {
     } else {
       srcU->serializeUpdatable(ss);
     }
-    HllUnion* dstU = HllUnion::deserialize(ss);
+    hll_union dstU = HllUnion::deserialize(ss);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(srcU->getEstimate(), dstU->getEstimate(), 0.0);
-    
-    delete srcU;
-    delete dstU;
-    delete srcSk;
   }
 
   void checkCompositeEstimate() {
-    HllUnion* u = HllUnion::newInstance(12);
+    hll_union u = HllUnion::newInstance(12);
     CPPUNIT_ASSERT(u->isEmpty());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, u->getCompositeEstimate(), 0.03);
     for (int i = 1; i <= 15; ++i) { u->update(i); }
     CPPUNIT_ASSERT_DOUBLES_EQUAL(15.0, u->getCompositeEstimate(), 15 * 0.03);
     for (int i = 16; i <= 1000; ++i) { u->update(i); }
     CPPUNIT_ASSERT_DOUBLES_EQUAL(1000.0, u->getCompositeEstimate(), 1000 * 0.03);
-    
-    delete u;
   }
 
   void checkConfigKLimits() {
@@ -296,16 +284,16 @@ class HllUnionTest : public CppUnit::TestFixture {
 
   void checkConversions() {
     int lgK = 4;
-    HllSketch* sk1 = HllSketch::newInstance(lgK, HLL_8);
-    HllSketch* sk2 = HllSketch::newInstance(lgK, HLL_8);
+    hll_sketch sk1 = HllSketch::newInstance(lgK, HLL_8);
+    hll_sketch sk2 = HllSketch::newInstance(lgK, HLL_8);
     int n = 1 << 20;
     for (int i = 0; i < n; ++i) {
       sk1->update(i);
       sk2->update(i + n);
     }
-    HllUnion* hllUnion = HllUnion::newInstance(lgK);
-    hllUnion->update(sk1);
-    hllUnion->update(sk2);
+    hll_union hllUnion = HllUnion::newInstance(lgK);
+    hllUnion->update(*sk1);
+    hllUnion->update(*sk2);
 
     std::unique_ptr<HllSketch> rsk1 = std::unique_ptr<HllSketch>(hllUnion->getResult(HLL_8));
     std::unique_ptr<HllSketch> rsk2 = std::unique_ptr<HllSketch>(hllUnion->getResult(HLL_8));
@@ -315,15 +303,11 @@ class HllUnionTest : public CppUnit::TestFixture {
     double est3 = rsk3->getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est1, est2, 0.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est1, est3, 0.0);
-
-    delete sk1;
-    delete sk2;
-    delete hllUnion;
   }
 
   // moved from UnionCaseTest in java
   void checkMisc() {
-    HllUnion* u = HllUnion::newInstance(12);
+    hll_union u = HllUnion::newInstance(12);
     int bytes = u->getCompactSerializationBytes();
     CPPUNIT_ASSERT_EQUAL(8, bytes);
     bytes = HllUnion::getMaxSerializationBytes(7);
@@ -340,7 +324,6 @@ class HllUnionTest : public CppUnit::TestFixture {
     std::ostringstream oss(std::ios::binary);
     u->serializeCompact(oss);
     CPPUNIT_ASSERT_EQUAL(8, static_cast<int>(oss.tellp()));
-    delete u;
   }
 
 };

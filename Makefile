@@ -3,11 +3,12 @@ include config.mk
 BUILDDIR := build
 TARGETDIR := lib
 
-LIBRARY := libdatasketches.$(LIB_SUFFIX)
+LIB_BASE_NAME := datasketches
+LIBRARY := lib$(LIB_BASE_NAME).$(LIB_SUFFIX)
 TARGET := $(TARGETDIR)/$(LIBRARY)
 
 INC := -I /usr/local/include
-LIB := -L /usr/local/lib -lcppunit
+LIB := -L /usr/local/lib -lcppunit -L lib -l$(LIB_BASE_NAME)
 
 MODULES := hll cpc kll
 
@@ -40,7 +41,7 @@ $(LIBRARY): $(OBJECTS)
 
 .PHONY: test clean
 
-test: $(TEST_MODULES) $(EXEC_MODULES)
+test: $(LIBRARY) $(TEST_MODULES) $(EXEC_MODULES)
 
 clean: $(CLEAN_MODULES)
 	@echo "Cleaning $(TARGET)..."

@@ -272,10 +272,8 @@ void Hll4Array::shiftToBiggerCurMin() {
 
   if (newAuxMap != nullptr) {
     if (newAuxMap->getAuxCount() != numAuxTokens) {
-      std::ostringstream oss;
-      oss << "auxCount: " << newAuxMap->getAuxCount()
-          << ", HLL tokens: " << numAuxTokens;
-      throw std::runtime_error(oss.str());
+      throw std::runtime_error("Inconsistent counts: auxCount: " + std::to_string(newAuxMap->getAuxCount())
+                               + ", HLL tokesn: " + std::to_string(numAuxTokens));
     }
   }
 
