@@ -23,27 +23,22 @@ HllUnion::~HllUnion() {}
 
 HllUnionPvt::HllUnionPvt(const int lgMaxK)
   : lgMaxK(HllUtil::checkLgK(lgMaxK)) {
-  gadget = new HllSketchPvt(lgMaxK, TgtHllType::HLL_8);
+  gadget = std::unique_ptr<HllSketchPvt>(new HllSketchPvt(lgMaxK, TgtHllType::HLL_8));
 }
 
-HllUnionPvt::HllUnionPvt(hll_sketch sketch)
+HllUnionPvt::HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch)
   : lgMaxK(sketch->getLgConfigK()) {
   TgtHllType tgtHllType = sketch->getTgtHllType();
   if (tgtHllType != TgtHllType::HLL_8) {
     throw std::invalid_argument("HllUnion can only wrap HLL_8 sketches");
   }
-  // TODO: Should also grab deconstructor pointer
-  gadget = static_cast<HllSketchPvt*>(sketch.release());
+  std::swap(sketch, gadget);
 }
 
-HllUnionPvt::~HllUnionPvt() {
-  if (gadget != nullptr) {
-    delete gadget;
-  }
-}
+HllUnionPvt::~HllUnionPvt() {}
 
 hll_union HllUnionPvt::deserialize(std::istream& is) {
-  hll_sketch sk = HllSketch::deserialize(is);
+  std::unique_ptr<HllSketchPvt> sk = HllSketchPvt::deserialize(is);
   if (sk == nullptr) { return nullptr; }
   // we're using the sketch's lgConfigK to initialize the union so
   // we can initialize the Union with it as long as it's HLL_8.

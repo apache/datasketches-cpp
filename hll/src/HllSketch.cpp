@@ -34,7 +34,7 @@ HllSketchPvt::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
   hllSketchImpl = new CouponList(HllUtil::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
 }
 
-hll_sketch HllSketchPvt::deserialize(std::istream& is) {
+std::unique_ptr<HllSketchPvt> HllSketchPvt::deserialize(std::istream& is) {
   HllSketchImpl* impl = HllSketchImpl::deserialize(is);
   return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(impl));
 }

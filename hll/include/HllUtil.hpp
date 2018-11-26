@@ -8,11 +8,9 @@
 #include "MurmurHash3.h"
 #include "RelativeErrorTables.hpp"
 
-#include <cassert>
 #include <cmath>
 #include <exception>
 #include <string>
-#include <sstream>
 
 namespace datasketches {
 
@@ -113,17 +111,16 @@ inline double HllUtil::getRelErr(const bool upperBound, const bool unioned,
 }
 
 inline int HllUtil::checkLgK(const int lgK) {
-  if ((lgK >= HllUtil::MIN_LOG_K) && (lgK <= HllUtil::MAX_LOG_K)) { return lgK; }
-  std::stringstream ss;
-  ss << "Invalid value of k: " << lgK;
-  throw std::invalid_argument(ss.str());
+  if ((lgK >= HllUtil::MIN_LOG_K) && (lgK <= HllUtil::MAX_LOG_K)) {
+    return lgK;
+  } else {
+    throw std::invalid_argument("Invalid value of k: " + std::to_string(lgK));
+  }
 }
 
 inline void HllUtil::checkMemSize(const uint64_t minBytes, const uint64_t capBytes) {
   if (capBytes < minBytes) {
-    std::stringstream ss;
-    ss << "Given destination array is not large enough: " << capBytes;
-    throw std::invalid_argument(ss.str());
+    throw std::invalid_argument("Given destination array is not large enough: " + std::to_string(capBytes));
   }
 }
 
@@ -167,8 +164,10 @@ inline unsigned int HllUtil::ceilingPowerOf2(unsigned int n) {
 }
 
 inline unsigned int HllUtil::simpleIntLog2(unsigned int n) {
+  if (n == 0) {
+    throw std::logic_error("cannot take log of 0");
+  }
   const unsigned int e = numberOfTrailingZeros(n);
-  assert(n == (1U << e));
   return e;
 }
 

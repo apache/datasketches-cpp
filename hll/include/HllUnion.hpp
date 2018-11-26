@@ -39,7 +39,7 @@ namespace datasketches {
 class HllUnionPvt : public HllUnion {
   public:
     explicit HllUnionPvt(const int lgMaxK);
-    explicit HllUnionPvt(hll_sketch sketch);
+    explicit HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch);
     static hll_union deserialize(std::istream& is);
 
     virtual ~HllUnionPvt();
@@ -114,7 +114,7 @@ class HllUnionPvt : public HllUnion {
     static HllSketchImpl* leakFreeCouponUpdate(HllSketchImpl* impl, const int coupon);
 
     const int lgMaxK;
-    HllSketchPvt* gadget;
+    std::unique_ptr<HllSketchPvt> gadget;
 };
 
 }

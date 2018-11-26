@@ -22,7 +22,7 @@ class HllSketchImpl;
 class HllSketchPvt : public HllSketch {
   public:
     explicit HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType = HLL_4);
-    static hll_sketch deserialize(std::istream& is);
+    static std::unique_ptr<HllSketchPvt> deserialize(std::istream& is);
 
     virtual ~HllSketchPvt();
 

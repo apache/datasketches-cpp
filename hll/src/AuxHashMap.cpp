@@ -7,7 +7,6 @@
 #include "AuxHashMap.hpp"
 
 #include <cstring>
-#include <sstream>
 #include <memory>
 
 namespace datasketches {
@@ -97,11 +96,8 @@ void AuxHashMap::mustAdd(const int slotNo, const int value) {
   const int index = find(auxIntArr, lgAuxArrInts, lgConfigK, slotNo);
   const int entry_pair = HllUtil::pair(slotNo, value);
   if (index >= 0) {
-    std::ostringstream oss;
-    oss << "Found a slotNo that should not be there: "
-        << "SlotNo: " << slotNo
-        << ", Value: " << value;
-    throw std::invalid_argument(oss.str());
+    throw std::invalid_argument("Found a slotNo that should not be there: SlotNo: "
+                                + std::to_string(slotNo) + ", Value: " + std::to_string(value));
   }
 
   // found empty entry
@@ -116,9 +112,7 @@ int AuxHashMap::mustFindValueFor(const int slotNo) {
     return HllUtil::getValue(auxIntArr[index]);
   }
 
-  std::ostringstream oss;
-  oss << "slotNo not found: " << slotNo;
-  throw std::invalid_argument(oss.str());
+  throw std::invalid_argument("slotNo not found: " + std::to_string(slotNo));
 }
 
 void AuxHashMap::mustReplace(const int slotNo, const int value) {
@@ -127,11 +121,9 @@ void AuxHashMap::mustReplace(const int slotNo, const int value) {
     auxIntArr[idx] = HllUtil::pair(slotNo, value);
     return;
   }
-  std::ostringstream oss;
-  oss << "Pair not found: "
-      << "SlotNo: " << slotNo
-      << ", Value: " << value;
-  throw std::invalid_argument(oss.str());
+
+  throw std::invalid_argument("Pair not found: SlotNo: " + std::to_string(slotNo)
+                              + ", Value: " + std::to_string(value));
 }
 
 void AuxHashMap::checkGrow() {
