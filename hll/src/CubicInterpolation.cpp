@@ -5,7 +5,8 @@
 
 #include "CubicInterpolation.hpp"
 
-#include <exception>
+#include <string>
+#include <stdexcept>
 
 namespace datasketches {
 
@@ -116,7 +117,6 @@ static inline double cubicInterpolate(const double x0, const double y0,
 /* returns j such that xArr[j] <= x and x < xArr[j+1] */
 static int findStraddle(const double xArr[], const int len, const double x)
 {
-  //assert(len >= 2 && x >= xArr[0] && x <= xArr[len-1]);
   if ((len < 2) || (x < xArr[0]) || (x > xArr[len-1])) {
     throw std::logic_error("invariant violated during interpolation");
   }
@@ -128,8 +128,6 @@ static int findStraddle(const double xArr[], const int len, const double x)
 static int recursiveFindStraddle(const double xArr[], const int l, const int r, const double x)
 {
   int m;
-  //assert(l < r);
-  //assert(xArr[l] <= x && x < xArr[r]); /* the invariant */
   if (l >= r) {
     throw std::logic_error("lower bound not less than upper bound in search");
   }
@@ -161,7 +159,6 @@ double CubicInterpolation::usingXArrAndYStride(const double xArr[], const int xA
                                                const double yStride, const double x) {
   const int xArrLenM1 = xArrLen - 1;
 
-  //assert ((xArrLen >= 4) && (x >= xArr[0]) && (x <= xArr[xArrLenM1]));
   if ((xArrLen < 4) || (x < xArr[0]) || (x > xArr[xArrLenM1])) {
     throw std::logic_error("impossible values during interpolaiton");
   }
@@ -172,9 +169,8 @@ double CubicInterpolation::usingXArrAndYStride(const double xArr[], const int xA
 
   const int offset = findStraddle(xArr, xArrLen, x); //uses recursion
   const int xArrLenM2 = xArrLen - 2;
-  //assert ((offset >= 0) && (offset <= (xArrLenM2)));
   if ((offset < 0) || (offset > xArrLenM2)) {
-    throw std::logic_error("invalid offset during interpolation")
+    throw std::logic_error("invalid offset during interpolation");
   }
 
   if (offset == 0) { /* corner case */

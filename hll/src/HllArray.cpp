@@ -17,6 +17,8 @@
 
 #include <cstring>
 #include <cmath>
+#include <stdexcept>
+#include <string>
 
 namespace datasketches {
 
@@ -191,7 +193,9 @@ HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 and H
   const int configKmask = (1 << getLgConfigK()) - 1;
   const int slotNo = HllUtil::getLow26(coupon) & configKmask;
   const int newVal = HllUtil::getValue(coupon);
-  assert(newVal > 0);
+  if (newVal <= 0) {
+    throw std::logic_error("newVal must be a positive integer: " + std::to_string(newVal));
+  }
 
   const int curVal = getSlot(slotNo);
   if (newVal > curVal) {
@@ -199,7 +203,9 @@ HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 and H
     hipAndKxQIncrementalUpdate(*this, curVal, newVal);
     if (curVal == 0) {
       decNumAtCurMin(); // interpret numAtCurMin as num zeros
-      assert(getNumAtCurMin() >= 0);
+      if (getNumAtCurMin() < 0) { 
+        throw std::logic_error("getNumAtCurMin() must return a nonnegatiev integer: " + std::to_string(getNumAtCurMin()));
+      }
     }
   }
   return this;
@@ -441,7 +447,10 @@ AuxHashMap* HllArray::getAuxHashMap() const {
 }
 
 void HllArray::hipAndKxQIncrementalUpdate(HllArray& host, const int oldValue, const int newValue) {
-  assert(newValue > oldValue);
+  if (newValue <= oldValue) {
+    throw std::invalid_argument("newValue must be greater than oldValue: " + std::to_string(newValue)
+                                + " vs " + std::to_string(oldValue));
+  }
 
   const int configK = 1 << host.getLgConfigK();
   // update hipAccum BEFORE updating kxq0 and kxq1
