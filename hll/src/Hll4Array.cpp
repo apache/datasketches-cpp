@@ -7,6 +7,8 @@
 
 #include <cstring>
 #include <memory>
+#include <stdexcept>
+#include <string>
 
 namespace datasketches {
 
@@ -103,7 +105,9 @@ int Hll4Array::getSlot(const int slotNo) const {
 
 HllSketchImpl* Hll4Array::couponUpdate(const int coupon) {
   const int newValue = HllUtil::getValue(coupon);
-  assert(newValue > 0);
+  if (newValue <= 0) {
+    throw std::logic_error("newValue must be a posittive integer. Found: " + std::to_string(newValue));
+  }
 
   if (newValue <= curMin) {
     return this; // quick rejection, but only works for large N
@@ -129,8 +133,12 @@ void Hll4Array::putSlot(const int slotNo, const int newValue) {
 
 //In C: two-registers.c Line 836 in "hhb_abstract_set_slot_if_new_value_bigger" non-sparse
 void Hll4Array::internalHll4Update(const int slotNo, const int newVal) {
-  assert((0 <= slotNo) && (slotNo < (1 << lgConfigK)));
-  assert(newVal > 0);
+  if ((slotNo < 0) || (slotNo >= (1 << lgConfigK))) {
+    throw std::logic_error("slotNo must be between 0 and 1<<lgConfigK. Found: " + std::to_string(slotNo));
+  }
+  if (newVal <= 0) {
+    throw std::logic_error("newVal must be a posittive integer. Found: " + std::to_string(newVal));
+  }
 
   const int rawStoredOldValue = getSlot(slotNo); // could be a 0
   // this is provably a LB:
@@ -146,12 +154,16 @@ void Hll4Array::internalHll4Update(const int slotNo, const int newVal) {
       // we know that hte array will change, but we haven't actually updated yet
       hipAndKxQIncrementalUpdate(*this, actualOldValue, newVal);
 
-      assert(newVal >= curMin);
+      if (newVal < curMin) {
+        throw std::logic_error("newVal cannot be less than curMin at this point");
+      }
 
       // newVal >= curMin
 
       const int shiftedNewValue = newVal - curMin; // 874
-      assert(shiftedNewValue >= 0);
+      // redundant since we know newVal >= curMin,
+      // and lgConfigK bounds do not allow overflowing an int
+      //assert(shiftedNewValue >= 0);
 
       if (rawStoredOldValue == HllUtil::AUX_TOKEN) { // 879
         // Given that we have an AUX_TOKEN, tehre are 4 cases for how to
@@ -189,7 +201,9 @@ void Hll4Array::internalHll4Update(const int slotNo, const int newVal) {
 
       // we just increased a pair value, so it might be time to change curMin
       if (actualOldValue == curMin) { // 908
-        assert(numAtCurMin >= 1);
+        if (numAtCurMin < 1) {
+          throw std::logic_error("Invalid state with < 1 entry at curMin");
+        }
         decNumAtCurMin();
         while (numAtCurMin == 0) {
           shiftToBiggerCurMin(); // increases curMin by 1, builds a new aux table
@@ -229,7 +243,9 @@ void Hll4Array::shiftToBiggerCurMin() {
       if (oldStoredValue == 0) { numAtNewCurMin++; }
     } else { //oldStoredValue == AUX_TOKEN
       numAuxTokens++;
-      assert(auxHashMap != nullptr); // auxHashMap cannot be null at this point
+      if (auxHashMap == nullptr) {
+        throw std::logic_error("auxHashMap cannot be null at this point");
+      }
     }
   }
 
@@ -246,12 +262,18 @@ void Hll4Array::shiftToBiggerCurMin() {
       slotNum = itr->getKey() & configKmask;
       oldActualVal = itr->getValue();
       newShiftedVal = oldActualVal - newCurMin;
-      assert(newShiftedVal >= 0);
+      if (newShiftedVal < 0) {
+        throw std::logic_error("oldActaulVal < newCurMin when incrementing curMin");
+      }
 
-      assert(getSlot(slotNum) == HllUtil::AUX_TOKEN);
-        // Array slot != AUX_TOKEN at getSlot(slotNum);
+      if (getSlot(slotNum) != HllUtil::AUX_TOKEN) {
+        throw std::logic_error("getSlot(slotNum) != AUX_TOKEN for item in auxiliary hash map");
+      }
+      // Array slot != AUX_TOKEN at getSlot(slotNum);
       if (newShiftedVal < HllUtil::AUX_TOKEN) { // 756
-        assert(newShiftedVal == 14);
+        if (newShiftedVal != 14) {
+          throw std::logic_error("newShiftedVal != 14 for item in old auxHashMap despite curMin increment");
+        }
         // The former exception value isn't one anymore, so it stays out of new AuxHashMap.
         // Correct the AUX_TOKEN value in the HLL array to the newShiftedVal (14).
         putSlot(slotNum, newShiftedVal);
@@ -267,7 +289,9 @@ void Hll4Array::shiftToBiggerCurMin() {
     } //end scan of oldAuxMap
   } //end if (auxHashMap != null)
   else { // oldAuxMap == null
-    assert(numAuxTokens == 0);
+    if (numAuxTokens != 0) {
+      throw std::logic_error("No auxiliary hash map, but numAuxTokens != 0");
+    }
   }
 
   if (newAuxMap != nullptr) {

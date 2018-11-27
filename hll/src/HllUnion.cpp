@@ -9,6 +9,9 @@
 #include "HllArray.hpp"
 #include "HllUtil.hpp"
 
+#include <stdexcept>
+#include <string>
+
 namespace datasketches {
 
 hll_union HllUnion::newInstance(const int lgMaxK) {
@@ -204,7 +207,9 @@ double HllUnion::getRelErr(const bool upperBound, const bool unioned,
 }
 
 HllSketchImpl* HllUnionPvt::copyOrDownsampleHll(HllSketchImpl* srcImpl, const int tgtLgK) {
-  assert(srcImpl->getCurMode() == CurMode::HLL);
+  if (srcImpl->getCurMode() != CurMode::HLL) {
+    throw std::logic_error("Attempt to downsample non-HLL sketch");
+  }
   HllArray* src = (HllArray*) srcImpl;
   const int srcLgK = src->getLgConfigK();
   if ((srcLgK <= tgtLgK) && (src->getTgtHllType() == TgtHllType::HLL_8)) {
@@ -232,7 +237,9 @@ inline HllSketchImpl* HllUnionPvt::leakFreeCouponUpdate(HllSketchImpl* impl, con
 }
 
 void HllUnionPvt::unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK) {
-  assert(gadget->hllSketchImpl->getTgtHllType() == TgtHllType::HLL_8);
+  if (gadget->hllSketchImpl->getTgtHllType() != TgtHllType::HLL_8) {
+    throw std::logic_error("Must call unionImpl() with HLL_8 input");
+  }
   HllSketchImpl* srcImpl = incomingImpl; //default
   HllSketchImpl* dstImpl = gadget->hllSketchImpl; //default
   if ((incomingImpl == nullptr) || incomingImpl->isEmpty()) {
@@ -304,7 +311,9 @@ void HllUnionPvt::unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK) {
       srcImpl = gadget->hllSketchImpl;
       dstImpl = copyOrDownsampleHll(incomingImpl, lgMaxK);
       std::unique_ptr<PairIterator> srcItr = srcImpl->getIterator(); //LIST
-      assert(dstImpl->getCurMode() == HLL);
+      if (dstImpl->getCurMode() != HLL) {
+        throw std::logic_error("dstImpl must be in HLL mode");
+      }
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -314,7 +323,9 @@ void HllUnionPvt::unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK) {
       break;
     }
     case 8: { //src: LIST, gadget: HLL
-      assert(dstImpl->getCurMode() == HLL);
+      if (dstImpl->getCurMode() != HLL) {
+        throw std::logic_error("dstImpl must be in HLL mode");
+      }
       std::unique_ptr<PairIterator> srcItr = srcImpl->getIterator(); //LIST
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
@@ -322,18 +333,26 @@ void HllUnionPvt::unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK) {
       //whichever is True wins:
       dstImpl->putOutOfOrderFlag(dstImpl->isOutOfOrderFlag() | srcImpl->isOutOfOrderFlag());
       // gadget: should remain unchanged
-      assert(dstImpl == gadget->hllSketchImpl); // should not have changed from HLL
+      if (dstImpl != gadget->hllSketchImpl) {
+        // should not have changed from HLL
+        throw std::logic_error("dstImpl unepxectedly changed from gadget");
+      } 
       break;
     }
     case 9: { //src: SET, gadget: HLL
-      assert(dstImpl->getCurMode() == HLL);
+      if (dstImpl->getCurMode() != HLL) {
+        throw std::logic_error("dstImpl must be in HLL mode");
+      }
       std::unique_ptr<PairIterator> srcItr = srcImpl->getIterator(); //SET
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
       dstImpl->putOutOfOrderFlag(true); //merging SET into existing HLL -> true
       // gadget: should remain unchanged
-      assert(dstImpl == gadget->hllSketchImpl); // should not have changed from HLL
+      if (dstImpl != gadget->hllSketchImpl) {
+        // should not have changed from HLL
+        throw std::logic_error("dstImpl unepxectedly changed from gadget");
+      } 
       break;
     }
     case 10: { //src: HLL, gadget: HLL

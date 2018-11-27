@@ -5,7 +5,8 @@
 
 #include "CouponHashSet.hpp"
 
-#include <cassert>
+#include <string>
+#include <exception>
 
 namespace datasketches {
 
@@ -14,7 +15,11 @@ static int find(const int* array, const int lgArrInts, const int coupon);
 CouponHashSet::CouponHashSet(const int lgConfigK, const TgtHllType tgtHllType)
   : CouponList(lgConfigK, tgtHllType, CurMode::SET)
 {
-  assert(lgConfigK > 7);
+  if (lgConfigK <= 7) {
+    throw std::invalid_argument("CouponHashSet must be initialized iwth lgConfigK > 7. Found: "
+                                + std::to_string(lgConfigK));
+  }
+    
 }
 
 CouponHashSet::CouponHashSet(const CouponHashSet& that)

@@ -7,6 +7,7 @@
 #include "AuxHashMap.hpp"
 
 #include <cstring>
+#include <sstream>
 #include <memory>
 
 namespace datasketches {
@@ -158,7 +159,6 @@ void AuxHashMap::growAuxSpace() {
 //If the probe comes back to original index, throws an exception.
 int AuxHashMap::find(const int* auxArr, const int lgAuxArrInts, const int lgConfigK,
                      const int slotNo) {
-  //assert lgAuxArrInts < lgConfigK;
   const int auxArrMask = (1 << lgAuxArrInts) - 1;
   const int configKmask = (1 << lgConfigK) - 1;
   int probe = slotNo & auxArrMask;
