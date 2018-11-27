@@ -6,6 +6,7 @@
 #ifndef _HLL_H_
 #define _HLL_H_
 
+#include <memory>
 #include <iostream>
 
 namespace datasketches {

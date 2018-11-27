@@ -9,7 +9,7 @@
 #include "RelativeErrorTables.hpp"
 
 #include <cmath>
-#include <exception>
+#include <stdexcept>
 #include <string>
 
 namespace datasketches {
