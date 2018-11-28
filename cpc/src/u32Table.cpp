@@ -10,6 +10,7 @@
 #include "fm85Util.h"
 
 #include <stdexcept>
+#include <new>
 
 extern void* (*fm85alloc)(size_t);
 extern void (*fm85free)(void*);

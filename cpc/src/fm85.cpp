@@ -12,6 +12,7 @@
 #include "u32Table.h"
 
 #include <stdexcept>
+#include <new>
 
 /*******************************************************/
 

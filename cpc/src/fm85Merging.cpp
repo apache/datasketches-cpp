@@ -8,6 +8,7 @@
 #include "fm85Merging.h"
 
 #include <stdexcept>
+#include <new>
 
 UG85 * ug85Make (Short lgK) {
   if (lgK < 4) throw std::invalid_argument("lgK < 4");

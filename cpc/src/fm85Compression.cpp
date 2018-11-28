@@ -9,6 +9,7 @@
 #include "fm85Util.h"
 
 #include <stdexcept>
+#include <new>
 
 /*********************************/
 // The following material is in a separate file because it is so big.
