@@ -6,12 +6,7 @@
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 
-extern "C" {
-
 #include "fm85Compression.h"
-
-}
-
 #include "MurmurHash3.h"
 
 namespace datasketches {
@@ -65,7 +60,7 @@ public:
 
       lowLevelUncompressPairs(pairArray2, (Long) numPairs, numBaseBits, compressedWords, numWordsWritten);
       for (int i = 0; i < numPairs; i++) {
-        assert (pairArray[i] == pairArray2[i]);
+        CPPUNIT_ASSERT(pairArray[i] == pairArray2[i]);
       }
     }
   }

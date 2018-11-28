@@ -7,14 +7,16 @@
 
 #include "fm85Util.h"
 
+#include <stdexcept>
+
 extern void* (*fm85alloc)(size_t);
 
 /******************************************/
 
 void * shallowCopy (void * oldObject, size_t numBytes) {
-  if (oldObject == NULL || numBytes == 0) { FATAL_ERROR ("shallowCopyObject: bad arguments"); }
+  if (oldObject == NULL || numBytes == 0) throw std::invalid_argument("shallowCopyObject: bad argument");
   void * newObject = fm85alloc (numBytes);
-  if (newObject == NULL) { FATAL_ERROR ("shallowCopyObject: allocation failed"); }
+  if (newObject == NULL) throw std::bad_alloc();
   memcpy (newObject, oldObject, numBytes);
   return (newObject);
 }
@@ -147,14 +149,14 @@ void fillKxpByteLookup (void) // must call fillInvPow2Tab() first
 /******************************************/
 
 Long divideLongsRoundingUp (Long x, Long y) {
-  assert (x >= 0 && y > 0);
+  if (x < 0 || y <= 0) throw std::invalid_argument("divideLongsRoundingUp: bad argument");
   Long quotient = x / y;
   if (quotient * y == x) return (quotient);
   else return (quotient + 1);
 }
 
 Long longFloorLog2OfLong (Long x) {
-  assert (x >= 1L); // throw an exception
+  if (x < 1L) throw std::invalid_argument("longFloorLog2OfLong: bad argument");
   Long p = 0;
   Long y = 1;
  log2Loop:
@@ -170,18 +172,9 @@ Long longFloorLog2OfLong (Long x) {
 // returns an integer that is between 
 // zero and ceiling(log_2(k))-1, inclusive
 
-// Long oldGolombChooseNumberOfBaseBits (Long k, Long raw_count) {
-//   assert (k >= 1L);
-//   assert (raw_count >= 0L);
-//   Long count = (raw_count == 0L) ? 1L : raw_count;
-//   Long quotient = (k - count) / count; // integer division
-//   if (quotient == 0) return (0);
-//   else return (longFloorLog2OfLong(quotient));
-// }
-
 Long golombChooseNumberOfBaseBits (Long k, Long count) {
-  assert (k >= 1L);
-  assert (count >= 1L);
+  if (k < 1L) throw std::invalid_argument("golombChooseNumberOfBaseBits: k < 1");
+  if (count < 1L) throw std::invalid_argument("golombChooseNumberOfBaseBits: count < 1");
   Long quotient = (k - count) / count; // integer division
   if (quotient == 0) return (0);
   else return (longFloorLog2OfLong(quotient));
@@ -233,14 +226,9 @@ static inline Long warrenBitCount(U64 i) {
 Long warrenCountBitsSetInMatrix (U64 * array, Long length) {
   Long i = 0;
   Long count = 0;
-  //  clock_t t0, t1;
-  //  t0 = clock();
   for (i = 0; i < length; i++) {
     count += warrenBitCount(array[i]);
   }
-  //  t1 = clock();
-  //  printf ("(Warren CountBitsTime %.1f)\n", ((double) (t1 - t0)) / 1000.0);
-  //  fflush (stdout);
   return count;
 }
 
@@ -250,9 +238,7 @@ Long warrenCountBitsSetInMatrix (U64 * array, Long length) {
 #define CSA(h,l,a,b,c) {U64 u = a^b; U64 v = c; h = (a&b) | (u&v); l = u^v;}
 
 Long countBitsSetInMatrix (U64 * A, Long length) {
-  assert ((length & 0x7) == 0); // the length of the array must be a multiple of 8.
-  //  clock_t t0, t1;
-  //  t0 = clock();
+  if ((length & 0x7) != 0) throw std::invalid_argument("the length of the array must be a multiple of 8");
   Long tot, i;
   U64 ones, twos, twosA, twosB, fours, foursA, foursB, eights;
   tot = 0;
@@ -273,12 +259,8 @@ Long countBitsSetInMatrix (U64 * A, Long length) {
   }
   tot = 8*tot + 4*warrenBitCount(fours) + 2*warrenBitCount(twos) + warrenBitCount(ones);
 
-  //  t1 = clock();
-  //  printf ("(CSA CountBitsTime %.1f)\n", ((double) (t1 - t0)) / 1000.0);
-  //  fflush (stdout);
-
-  // Because I still don't fully trust this fancy version.
-  assert(tot == wegnerCountBitsSetInMatrix(A, length));
+  // Because I still don't fully trust this fancy version
+  // assert(tot == wegnerCountBitsSetInMatrix(A, length));
 
   return (tot);
 }
@@ -290,4 +272,3 @@ Long countBitsSetInMatrix (U64 * A, Long length) {
 // Wegner CountBitsTime 29.3
 // Warren CountBitsTime  5.3
 // CSA    CountBitsTime  4.3
-
