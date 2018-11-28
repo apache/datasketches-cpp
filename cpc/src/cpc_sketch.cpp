@@ -9,6 +9,15 @@
 
 namespace datasketches {
 
+void cpc_init(void* (*alloc)(size_t), void (*dealloc)(void*)) {
+  fm85InitAD(alloc, dealloc);
+}
+
+// optional deallocation of globally allocated compression tables
+void cpc_cleanup() {
+  fm85Clean();
+}
+
 std::ostream& operator<<(std::ostream& os, cpc_sketch const& sketch) {
   os << "### CPC sketch summary:" << std::endl;
   os << "   lgK            : " << sketch.state->lgK << std::endl;

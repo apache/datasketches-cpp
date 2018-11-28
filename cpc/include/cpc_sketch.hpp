@@ -39,14 +39,10 @@ typedef std::unique_ptr<cpc_sketch, void(*)(cpc_sketch*)> cpc_sketch_unique_ptr;
 // otherwise initialization happens during instantiation of the first cpc_sketch or cpc_union
 // it is safe to call more than once assuming no race conditions
 // this is not thread safe! neither is the rest of the library
-void cpc_init(void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free) {
-  fm85InitAD(alloc, dealloc);
-}
+void cpc_init(void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free);
 
 // optional deallocation of globally allocated compression tables
-void cpc_cleanup() {
-  fm85Clean();
-}
+void cpc_cleanup();
 
 class cpc_sketch {
   public:
@@ -314,7 +310,7 @@ class cpc_sketch {
       delete [] compressed.compressedSurprisingValues;
       delete [] compressed.compressedWindow;
       cpc_sketch_unique_ptr sketch_ptr(
-          new (alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
+          new (fm85alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
           [](cpc_sketch* s) { s->~cpc_sketch(); fm85free(s); }
       );
       return std::move(sketch_ptr);
