@@ -8,7 +8,6 @@
 #ifndef GOT_FM85_H
 
 #include "common.h"
-
 #include "u32Table.h"
 
 // Note: except for brief transitional moments, these sketches always obey

@@ -7,11 +7,12 @@
 
 #include "fm85Merging.h"
 
+#include <stdexcept>
 
 UG85 * ug85Make (Short lgK) {
-  assert (lgK >= 4);
+  if (lgK < 4) throw std::invalid_argument("lgK < 4");
   UG85 * self = (UG85 *) fm85alloc (sizeof(UG85));
-  assert (self != NULL);
+  if (self == NULL) throw std::bad_alloc();
   self->lgK = lgK;
   // We begin with the accumulator holding an EMPTY sketch object.
   // As an optimization the accumulator could start as NULL, but that would require changes elsewhere.
@@ -35,12 +36,12 @@ void ug85Free (UG85 * self) {
 // This is used for testing purposes only.
 U64 * bitMatrixOfUG85 (UG85 * self, Boolean * needToFreePtr) {
   if (self->bitMatrix != NULL) { // return the matrix
-    assert (self->accumulator == NULL);
+    if (self->accumulator != NULL) throw std::logic_error("accumulator is not null");
     *needToFreePtr = 0;  // or we could make a copy of the bitmatrix
     return (self->bitMatrix);
   }
   else { // construct a matrix
-    assert (self->accumulator != NULL);    
+    if (self->accumulator == NULL) throw std::logic_error("accumulator is null");
     *needToFreePtr = 1;
     return (bitMatrixOfSketch (self->accumulator));
   }
@@ -52,15 +53,15 @@ U64 * bitMatrixOfUG85 (UG85 * self, Boolean * needToFreePtr) {
 void walkTableUpdatingSketch (FM85 * dest, u32Table * table) {
   U32 * slots = table->slots;
   Long numSlots = (1LL << table->lgSize); 
-  assert (dest->lgK <= 26);
+  if (dest->lgK > 26) throw std::logic_error("dest->lgK > 26");
   U32 destMask = (((1 << dest->lgK) - 1) << 6) | 63;  // downsamples when destlgK < srcLgK
 
   // Using a golden ratio stride fixes the snowplow effect.
   double golden = 0.6180339887498949025;
   Long stride = (Long) (golden * ((double) numSlots));
-  assert (stride >= 2);
+  if (stride < 2) throw std::logic_error("stride < 2");
   if (stride == ((stride >> 1) << 1)) { stride += 1; }; // force the stride to be odd
-  assert (stride >= 3 && stride < numSlots);
+  if (stride < 3 || stride >= numSlots) throw std::out_of_range("stride out of range");
 
   Long i,j;
   for (i = 0, j = 0; i < numSlots; i++, j += stride) {
@@ -92,7 +93,7 @@ void orTableIntoMatrix (U64 * bitMatrix, Short destLgK, u32Table * table) {
 /*******************************************************************************************/
 
 void orWindowIntoMatrix (U64 * destMatrix, Short destLgK, U8 * srcWindow, Short srcOffset, Short srcLgK) {
-  assert (destLgK <= srcLgK);
+  if (destLgK > srcLgK) throw std::logic_error("destLgK > srcLgK");
   Long destMask = (1LL << destLgK) - 1LL;  // downsamples when destlgK < srcLgK
   Long srcK = (1LL << srcLgK);
   Long srcRow = 0;
@@ -104,7 +105,7 @@ void orWindowIntoMatrix (U64 * destMatrix, Short destLgK, U8 * srcWindow, Short 
 /*******************************************************************************************/
 
 void orMatrixIntoMatrix (U64 * destMatrix, Short destLgK, U64 * srcMatrix, Short srcLgK) {
-  assert (destLgK <= srcLgK);
+  if (destLgK > srcLgK) throw std::logic_error("destLgK > srcLgK");
   Long destMask = (1LL << destLgK) - 1LL; // downsamples when destlgK < srcLgK
   Long srcK = (1LL << srcLgK);
   Long srcRow = 0;
@@ -116,14 +117,14 @@ void orMatrixIntoMatrix (U64 * destMatrix, Short destLgK, U64 * srcMatrix, Short
 /*******************************************************************************************/
 
 void ug85ReduceK (UG85 * unioner, Short newLgK) {
-  assert (newLgK < unioner->lgK);
-  assert (unioner->accumulator != NULL || unioner->bitMatrix != NULL);  
+  if (newLgK >= unioner->lgK) throw std::logic_error("newLgK >= unioner->lgK");
+  if (unioner->accumulator == NULL && unioner->bitMatrix == NULL) throw std::logic_error("both accumulator and bitMatrix are null");
 
   if (unioner->bitMatrix != NULL) { // downsample the unioner's bit matrix
-    assert (unioner->accumulator == NULL);
+    if (unioner->accumulator != NULL) throw std::logic_error("accumulator is not null");
     Long newK = (1LL << newLgK);
     U64 * newMatrix = (U64 *) fm85alloc ((size_t) (newK * sizeof(U64)));
-    assert (newMatrix != NULL);
+    if (newMatrix == NULL) throw std::bad_alloc();
     Long i = 0;
     for (i = 0; i < newK; i++) { newMatrix[i] = 0LL; } // clear the bit matrix
     orMatrixIntoMatrix (newMatrix, newLgK, unioner->bitMatrix, unioner->lgK);
@@ -134,22 +135,22 @@ void ug85ReduceK (UG85 * unioner, Short newLgK) {
   }
 
   if (unioner->accumulator != NULL) { // downsample the unioner's sketch
-    assert (unioner->bitMatrix == NULL);
+    if (unioner->bitMatrix != NULL) throw std::logic_error("bitMatrix is not null");
     FM85 * oldSketch = unioner->accumulator;
 
     if (oldSketch->numCoupons == 0) { // if the accumulator is EMPTY, simply change its K.
-      assert (oldSketch->surprisingValueTable == NULL);
+      if (oldSketch->surprisingValueTable != NULL) throw std::logic_error("oldSketch->surprisingValueTable is not null");
       oldSketch->lgK = newLgK;
       unioner->lgK = newLgK;
       return;
     }
 
     FM85 * newSketch = fm85Make (newLgK);
-    assert (oldSketch->slidingWindow == NULL && oldSketch->surprisingValueTable != NULL);
+    if (oldSketch->slidingWindow != NULL || oldSketch->surprisingValueTable == NULL) throw std::logic_error("invalid state");
     walkTableUpdatingSketch (newSketch, oldSketch->surprisingValueTable);
 
     enum flavorType finalNewFlavor = determineSketchFlavor(newSketch);
-    assert (finalNewFlavor != EMPTY);
+    if (finalNewFlavor == EMPTY) throw std::logic_error("finalNewFlavor == EMPTY");
     if (finalNewFlavor == SPARSE) {
       unioner->accumulator = newSketch;
       unioner->lgK = newLgK;
@@ -166,13 +167,13 @@ void ug85ReduceK (UG85 * unioner, Short newLgK) {
     }
   }
 
-  assert (1 == 0); // in other words, fail if this point is reached.
+  throw std::logic_error("invalid state");
 }
 
 /*******************************************************************************************/
 
 void ug85MergeInto (UG85 * unioner, FM85 * source) {
-  if (NULL == unioner) { FATAL_ERROR ("unionerMergeInto(NULL)"); }
+  if (NULL == unioner) throw std::invalid_argument("unioner is null");
   if (NULL == source) return;
   
   enum flavorType sourceFlavor = determineSketchFlavor(source);
@@ -180,14 +181,14 @@ void ug85MergeInto (UG85 * unioner, FM85 * source) {
 
   if (source->lgK < unioner->lgK) { ug85ReduceK (unioner, source->lgK); }
 
-  assert (source->lgK >= unioner->lgK);
+  if (source->lgK < unioner->lgK) throw std::logic_error("source->lgK < unioner->lgK");
 
-  assert (unioner->accumulator != NULL || unioner->bitMatrix != NULL);
+  if (unioner->accumulator == NULL && unioner->bitMatrix == NULL) throw std::logic_error("both accumulator and bitMatrix are null");
 
   if (SPARSE == sourceFlavor && unioner->accumulator != NULL)  { // Case A
-    assert (unioner->bitMatrix == NULL);
+    if (unioner->bitMatrix != NULL) throw std::logic_error("unioner->bitMatrix != NULL");
     enum flavorType initialDestFlavor = determineSketchFlavor (unioner->accumulator);
-    assert (EMPTY == initialDestFlavor || SPARSE == initialDestFlavor);
+    if (EMPTY != initialDestFlavor && SPARSE != initialDestFlavor) throw std::logic_error("wrong flavor");
 
     // The following partially fixes the snowplow problem provided that the K's are equal.
     // A complete fix is coming soon.
@@ -208,23 +209,23 @@ void ug85MergeInto (UG85 * unioner, FM85 * source) {
   }
 
   if (SPARSE == sourceFlavor && unioner->bitMatrix != NULL)  { // Case B
-    assert (unioner->accumulator == NULL);
+    if (unioner->accumulator != NULL) throw std::logic_error("unioner->accumulator != NULL");
     orTableIntoMatrix (unioner->bitMatrix, unioner->lgK, source->surprisingValueTable);
     return;
   }
 
-  assert (HYBRID == sourceFlavor || PINNED == sourceFlavor || SLIDING == sourceFlavor);
+  if (HYBRID != sourceFlavor && PINNED != sourceFlavor && SLIDING != sourceFlavor) throw std::logic_error("wrong flavor");
 
  // source is past SPARSE mode, so make sure that dest is a bitMatrix.
   if (unioner->accumulator != NULL) {
-    assert (unioner->bitMatrix == NULL);
+    if (unioner->bitMatrix != NULL) throw std::logic_error("unioner->bitMatrix != NULL");
     enum flavorType destFlavor = determineSketchFlavor (unioner->accumulator);
-    assert (EMPTY == destFlavor || SPARSE == destFlavor);
+    if (EMPTY != destFlavor && SPARSE != destFlavor) throw std::logic_error("wrong flavor");
     unioner->bitMatrix = bitMatrixOfSketch (unioner->accumulator);
     fm85Free (unioner->accumulator);
     unioner->accumulator = NULL;
   }
-  assert (unioner->bitMatrix != NULL);
+  if (unioner->bitMatrix == NULL) throw std::logic_error("unioner->bitMatrix == NULL");
 
   if (HYBRID == sourceFlavor || PINNED == sourceFlavor) { // Case C
     orWindowIntoMatrix (unioner->bitMatrix, unioner->lgK, source->slidingWindow, source->windowOffset, source->lgK);
@@ -234,7 +235,7 @@ void ug85MergeInto (UG85 * unioner, FM85 * source) {
   
   // SLIDING mode involves inverted logic, so we can't just walk the source sketch.
   // Instead, we convert it to a bitMatrix that can be OR'ed into the destination.
-  assert (SLIDING == sourceFlavor); // Case D
+  if (SLIDING != sourceFlavor) throw std::logic_error("wrong flavor"); // Case D
   U64 * sourceMatrix = bitMatrixOfSketch (source);
   orMatrixIntoMatrix (unioner->bitMatrix, unioner->lgK, sourceMatrix, source->lgK);
   fm85free (sourceMatrix);
@@ -245,26 +246,26 @@ void ug85MergeInto (UG85 * unioner, FM85 * source) {
 /*******************************************************************************************/
 
 FM85 * ug85GetResult (UG85 * unioner) {
-  assert (unioner != NULL);
-  assert (unioner->accumulator != NULL || unioner->bitMatrix != NULL);
+  if (unioner == NULL) throw std::invalid_argument("unioner == NULL");
+  if (unioner->accumulator == NULL && unioner->bitMatrix == NULL) throw std::logic_error("both accumulator and bitMatrix are null");
 
   if (unioner->accumulator != NULL) { // start of case where unioner contains a sketch
-    assert (unioner->bitMatrix == NULL);
-    assert (unioner->lgK == unioner->accumulator->lgK);
+    if (unioner->bitMatrix != NULL) throw std::logic_error("unioner->bitMatrix != NULL");
+    if (unioner->lgK != unioner->accumulator->lgK) throw std::logic_error("unioner->lgK != unioner->accumulator->lgK");
     if (unioner->accumulator->numCoupons == 0) {
       FM85 * result = fm85Make (unioner->lgK);
       result->mergeFlag = 1;
       return (result);
     }
-    assert (SPARSE == determineSketchFlavor(unioner->accumulator));
+    if (SPARSE != determineSketchFlavor(unioner->accumulator)) throw std::logic_error("wrong flavor");
     FM85 * result = fm85Copy (unioner->accumulator);
     result->mergeFlag = 1;
     return (result);
   } // end of case where unioner contains a sketch
 
   // start of case where unioner contains a bitMatrix
-  assert (unioner->bitMatrix != NULL);
-  assert (unioner->accumulator == NULL);
+  if (unioner->bitMatrix == NULL) throw std::logic_error("unioner->bitMatrix == NULL");
+  if (unioner->accumulator != NULL) throw std::logic_error("unioner->accumulator != NULL");
   U64 * matrix = unioner->bitMatrix;
   Short lgK = unioner->lgK;
   FM85 * result = fm85Make (unioner->lgK); 
@@ -274,23 +275,22 @@ FM85 * ug85GetResult (UG85 * unioner) {
   result->numCoupons = numCoupons;
 
   enum flavorType flavor = determineFlavor (lgK, numCoupons);
-  assert (flavor == HYBRID || flavor == PINNED || flavor == SLIDING);
+  if (flavor != HYBRID && flavor != PINNED && flavor != SLIDING) throw std::logic_error("wrong flavor");
 
   Short offset = determineCorrectOffset (lgK, numCoupons);
   result->windowOffset = offset;
 
   U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
-  assert (window != NULL);
-  //  bzero ((void *) window, (size_t) k); // don't need to zero the window's memory
-  assert (result->slidingWindow == NULL);
+  if (window == NULL) throw std::bad_alloc();
+  // don't need to zero the window's memory
+  if (result->slidingWindow != NULL) throw std::logic_error("result->slidingWindow != NULL");
   result->slidingWindow = window;
 
   //  u32Table * table = u32TableMake (2, 6 + lgK); // dynamically growing caused snowplow effect
   Short newTableSize = lgK - 4; //   K/16; in some cases this will end up being oversized
   if (newTableSize < 2) newTableSize = 2;
   u32Table * table = u32TableMake (newTableSize, 6 + lgK); 
-  assert (table != NULL);
-  assert (result->surprisingValueTable == NULL);
+  if (result->surprisingValueTable != NULL) throw std::logic_error("result->surprisingValueTable != NULL");
   result->surprisingValueTable = table;
 
   // I believe that the following works even when the offset is zero.
@@ -312,11 +312,11 @@ FM85 * ug85GetResult (UG85 * unioner) {
       pattern = pattern ^ (1ULL << col); // erase the 1.
       U32 rowCol = (i << 6) | col;
       Boolean isNovel = u32TableMaybeInsert (table, rowCol);
-      assert (isNovel == 1);
+      if (isNovel != 1) throw std::logic_error("isNovel != 1");
     }
   }
 
-  // At this point we could shrink an oversize hash table, but the relative waste isn't very big.
+  // At this point we could shrink an oversized hash table, but the relative waste isn't very big.
 
   result->firstInterestingColumn = countTrailingZerosInUnsignedLong (allSurprisesORed);
   if (result->firstInterestingColumn > offset) result->firstInterestingColumn = offset; // corner case
@@ -326,5 +326,4 @@ FM85 * ug85GetResult (UG85 * unioner) {
   result->mergeFlag = 1;
   return result;
   // end of case where unioner contains a bitMatrix
-
 }

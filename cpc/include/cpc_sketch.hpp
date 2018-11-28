@@ -9,19 +9,14 @@
 #include <iostream>
 #include <memory>
 #include <functional>
-
-extern "C" {
+#include <stdexcept>
 
 #include "fm85.h"
 #include "fm85Compression.h"
 #include "iconEstimator.h"
 #include "fm85Confidence.h"
 #include "fm85Util.h"
-
-}
-
 #include "MurmurHash3.h"
-
 #include "cpc_common.hpp"
 
 namespace datasketches {
@@ -209,7 +204,7 @@ class cpc_sketch {
           ptr += copy_to_mem(ptr, compressed->compressedSurprisingValues, compressed->csvLength * sizeof(uint32_t));
         }
       }
-      assert(ptr == static_cast<char*>(data_ptr.get()) + size);
+      if (ptr != static_cast<char*>(data_ptr.get()) + size) throw std::logic_error("serialized size mismatch");
       fm85Free(compressed);
       return std::make_pair(std::move(data_ptr), size);
     }
@@ -378,7 +373,7 @@ class cpc_sketch {
         }
         if (!has_window) compressed.numCompressedSurprisingValues = compressed.numCoupons;
       }
-      assert(ptr == static_cast<const char*>(bytes) + size);
+      if (ptr != static_cast<const char*>(bytes) + size) throw std::logic_error("deserialized size mismatch");
       compressed.windowOffset = determineCorrectOffset(compressed.lgK, compressed.numCoupons);
 
       uint8_t expected_preamble_ints(get_preamble_ints(&compressed));

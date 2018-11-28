@@ -7,10 +7,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 #include <math.h>
+
 #include "common.h"
 #include "iconEstimator.h"
+
+#include <stdexcept>
 
 /******************************************************************************************/
 
@@ -36,8 +38,6 @@
 #define iconMinLogK 4
 
 #define iconMaxLogK 26
-
-// #define iconMaxLogK 32
 
 #define iconPolynomialDegree 19
 
@@ -248,8 +248,7 @@ double iconExponentialApproximation (double k, double c) {
 /******************************************************************************************/
 
 double getIconEstimate (Short lgK, Long c) {
-  assert (lgK >= iconMinLogK); 
-  assert (lgK <= iconMaxLogK); 
+  if (lgK < iconMinLogK || lgK > iconMaxLogK) throw std::out_of_range("lgK out of range");
   if (c < 2L) return ((c == 0L) ? 0.0 : 1.0);
   Long k = 1L << lgK;  
   double doubleK = (double) k;
@@ -301,16 +300,16 @@ double exactIconEstimatorBinarySearch (double kf, double targetC, double nLoIn, 
   double nLo = nLoIn;
   double nHi = nHiIn;
  tailRecurse: // manual tail recursion optimization
-  if (depth > 100) {fprintf (stderr, "excessive recursion in binary search\n"); fflush (stderr); exit(EXIT_FAILURE);}
-  assert (nHi > nLo);
+  if (depth > 100) { throw std::logic_errir("excessive recursion in binary search"); }
+  if (nHi <= nLo) throw std::logic_error("binary search error");
   double nMid = nLo + 0.5 * (nHi - nLo);
-  assert (nMid > nLo && nMid < nHi);
+  if (nMid <= nLo || nMid >= nHi) throw std::logic_error("binary search error");
   if (((nHi - nLo) / nMid) < iconInversionTolerance) return (nMid);
   double midC = exactCofN (kf, nMid);
   if (midC == targetC) return (nMid);
   if (midC  < targetC) {nLo = nMid; depth++; goto tailRecurse;}
   if (midC  > targetC) {nHi = nMid; depth++; goto tailRecurse;}
-  {fprintf (stderr, "bad value in binary search\n"); fflush (stderr); exit(EXIT_FAILURE);}
+  throw std::logic_error("bad value in binary search");
 }
 
 double exactIconEstimatorBracketHi (double kf, double targetC, double nLo) {
@@ -318,12 +317,12 @@ double exactIconEstimatorBracketHi (double kf, double targetC, double nLo) {
   double curN = 2.0 * nLo;
   double curC = exactCofN(kf, curN);
   while (curC <= targetC) {
-    if (depth > 100) {fprintf (stderr, "excessive looping in exactIconEstimatorBracketHi\n"); fflush (stderr); exit(EXIT_FAILURE);}    
+    if (depth > 100) throw std::logic_error("excessive looping in exactIconEstimatorBracketHi");
     depth++;
     curN *= 2.0;
     curC = exactCofN(kf, curN);
   }
-  assert (curC > targetC);
+  if (curC <= targetC) throw std::logic_error("error in exactIconEstimatorBracketHi");
   return (curN);
 }
 
@@ -331,7 +330,7 @@ double exactIconEstimator (int lgK, long c) {
   double targetC = (double) c;
   if (c == 0L || c == 1L) return (targetC);
   double kf = (double) (1L << lgK);
-  double nLo = targetC; assert (exactCofN(kf, nLo) < targetC); // bracket lo
+  double nLo = targetC; if (exactCofN(kf, nLo) >= targetC) throw std::logic_error("bracket lo error"); // bracket lo
   double nHi = exactIconEstimatorBracketHi (kf, targetC, nLo); // bracket hi
   return (exactIconEstimatorBinarySearch (kf, targetC, nLo, nHi));
 }

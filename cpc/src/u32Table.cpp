@@ -5,9 +5,11 @@
 
 // author Kevin Lang, Oath Research
 
-#include "common.h"
 #include "u32Table.h"
+#include "common.h"
 #include "fm85Util.h"
+
+#include <stdexcept>
 
 extern void* (*fm85alloc)(size_t);
 extern void (*fm85free)(void*);
@@ -15,15 +17,15 @@ extern void (*fm85free)(void*);
 /*******************************************************/
 
 u32Table * u32TableMake (Short lgSize, Short numValidBits) {
-  assert (lgSize >= 2);
+  if (lgSize < 2) throw std::invalid_argument("lgSize must be >= 2");
   Long numSlots = (1LL << lgSize);
   u32Table * self = (u32Table *) fm85alloc (sizeof(u32Table));
+  if (self == NULL) throw std::bad_alloc();
   U32 * arr = (U32 *) fm85alloc ((size_t) (numSlots * sizeof(U32)));
-  assert (self != NULL);
-  assert (arr != NULL);
+  if (arr == NULL) throw std::bad_alloc();
   Long i = 0;
   for (i = 0; i < numSlots; i++) { arr[i] = ALL32BITS; }
-  assert (numValidBits > 0 && numValidBits <= 32);
+  if (numValidBits < 1 || numValidBits > 32) throw std::invalid_argument("numValidBits must be between 1 and 32");
   self->validBits = numValidBits;
   self->lgSize = lgSize;
   self->numItems = 0;
@@ -34,7 +36,8 @@ u32Table * u32TableMake (Short lgSize, Short numValidBits) {
 /*******************************************************/
 
 u32Table * u32TableCopy (u32Table * self) {
-  assert (self != NULL && self->slots != NULL);
+  if (self == NULL) throw std::invalid_argument("self is null");
+  if (self->slots == NULL) throw std::invalid_argument("no slots");
   Long numSlots = (1LL << self->lgSize);
   u32Table * newObj = (u32Table *) shallowCopy ((void *) self, sizeof(u32Table));
   newObj->slots = (U32 *) shallowCopy ((void *) self->slots, ((size_t) numSlots) * sizeof(U32));
@@ -97,7 +100,7 @@ void printU32Array (U32 * array, Long arrayLength) {
   Long mask = tableSize - 1LL; \
   Short shift = self->validBits - self->lgSize; \
   Long probe = ((Long) item) >> shift; \
-  assert (probe >= 0 && probe <= mask); \
+  if (probe < 0 || probe > mask) throw std::out_of_range("probe out of range"); \
   U32 * arr = self->slots; \
   U32 fetched = arr[probe]; \
   while (fetched != item && fetched != ALL32BITS) { \
@@ -109,9 +112,9 @@ void printU32Array (U32 * array, Long arrayLength) {
 
 void u32TableMustInsert (u32Table * self, U32 item) {
   U32_TABLE_LOOKUP_SHARED_CODE_SECTION;
-  if (fetched == item) { FATAL_ERROR("u32TableMustInsert"); }
+  if (fetched == item) { throw std::logic_error("item exists"); }
   else {
-    assert (fetched == ALL32BITS);
+    if (fetched != ALL32BITS) throw std::logic_error("could not insert");
     arr[probe] = item;
     // counts and resizing must be handled by the caller.
   }
@@ -138,14 +141,14 @@ u32Table * makeU32TableFromPairsArray (U32 * pairs, Long numPairs, Short sketchL
 /*******************************************************/
 
 void privateU32TableRebuild (u32Table * self, Short newLgSize) {
-  assert (newLgSize >= 2);
+  if (newLgSize < 2) throw std::logic_error("newLgSize < 2");
   Long newSize = (1LL << newLgSize);
   Long oldSize = (1LL << self->lgSize);
   //  printf ("rebuilding: %lld -> %lld; %lld items in table\n", oldSize, newSize, self->numItems); fflush (stdout);
-  assert (newSize > self->numItems); // TODO
+  if (newSize <= self->numItems) throw std::logic_error("newSize <= numItems");
   U32 * oldSlots = self->slots;
   U32 * newSlots = (U32 *) fm85alloc ((size_t) (newSize * sizeof(U32)));
-  assert (newSlots != NULL);
+  if (newSlots == NULL) throw std::bad_alloc();
   Long i;
   for (i = 0; i < newSize; i++) { 
     newSlots[i] = ALL32BITS;
@@ -170,7 +173,7 @@ Boolean u32TableMaybeInsert (u32Table * self, U32 item) {
   U32_TABLE_LOOKUP_SHARED_CODE_SECTION;
   if (fetched == item) { return 0; }
   else {
-    assert (fetched == ALL32BITS);
+    if (fetched != ALL32BITS) throw std::logic_error("could not insert");
     arr[probe] = item;
     self->numItems += 1;
     while (u32TableUpsizeDenom * self->numItems > u32TableUpsizeNumer * (1LL << self->lgSize)) {
@@ -188,10 +191,11 @@ Boolean u32TableMaybeDelete (u32Table * self, U32 item) {
   U32_TABLE_LOOKUP_SHARED_CODE_SECTION;
   if (fetched == ALL32BITS) { return 0; }
   else {
-    assert (fetched == item);
+    if (fetched != item) throw std::logic_error("item does not exist");
     // delete the item
     arr[probe] = ALL32BITS;
-    self->numItems -= 1; assert (self->numItems >= 0);
+    self->numItems -= 1;
+    if (self->numItems < 0) throw std::logic_error("delete error");
 
     // re-insert all items between the freed slot and the next empty slot
     probe = (probe + 1) & mask; fetched = arr[probe];
@@ -223,7 +227,7 @@ U32 * u32TableUnwrappingGetItems (u32Table * self, Long * returnNumItems) {
   U32 * slots = self->slots;
   Long tableSize = (1LL << self->lgSize);
   U32 * result = (U32 *) fm85alloc ((size_t) (self->numItems * sizeof(U32)));
-  assert (result != NULL);
+  if (result == NULL) throw std::bad_alloc();
   Long i = 0;
   Long l = 0;
   Long r = self->numItems - 1;
@@ -241,7 +245,7 @@ U32 * u32TableUnwrappingGetItems (u32Table * self, Long * returnNumItems) {
     U32 look = slots[i++];
     if (look != ALL32BITS) { result[l++] = look; }
   }
-  assert (l == r + 1);
+  if (l != r + 1) throw std::logic_error("unwrapping error");
   return (result);
 }
 
@@ -264,7 +268,7 @@ void u32KnuthShellSort3(U32 a[], Long l, Long r)
   for (i = l; i < r-1; i++) {
     if (a[i] > a[i+1]) bad++;
   };
-  assert (bad == 0);
+  if (bad != 0) throw std::logic_error("sorting error");
 }
 
 /*******************************************************/
@@ -327,8 +331,7 @@ void u32Merge (U32 * arrA, Long startA, Long lengthA, // input
     else if (arrA[a] < arrB[b]) { arrC[c] = arrA[a++]; }
     else                        { arrC[c] = arrB[b++]; }
   }
-  assert (a == limA);
-  assert (b == limB);
+  if (a != limA || b != limB) throw std::logic_error("merging error");
 }
 
 

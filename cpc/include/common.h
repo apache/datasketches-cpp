@@ -9,7 +9,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -32,17 +31,6 @@ typedef int64_t Long;  // signed
 // Do not use either of these with a shift of 0 or 64.
 #define ROTATE_RIGHT_MACRO(val,shift) (((val) >> (shift)) | ((val) << (64 - (shift))))
 #define ROTATE_LEFT_MACRO(val,shift)  (((val) << (shift)) | ((val) >> (64 - (shift))))
-
-/* some C syntax magic */
-#define FATAL_ERROR(msg) \
-  do { \
-    fprintf (stderr, "Program failed because %s.\n", (msg)); \
-    fflush (stderr); \
-    exit(-1); \
-  } while (0)
-
-
-// enum animal {Horse, Pig, Cow};
 
 #define GOT_COMMON_H
 #endif

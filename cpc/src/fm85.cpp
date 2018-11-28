@@ -6,15 +6,17 @@
 // author Kevin Lang, Oath Research
 
 #include "common.h"
-#include "u32Table.h"
 #include "fm85.h"
-#include "fm85Util.h"
 #include "fm85Compression.h"
+#include "fm85Util.h"
+#include "u32Table.h"
+
+#include <stdexcept>
 
 /*******************************************************/
 
 U32 rowColFromTwoHashes (U64 hash0, U64 hash1, Short lgK) {
-  assert (lgK <= 26);
+  if (lgK > 26) throw std::logic_error("lgK > 26");
   Long k = (1LL << lgK);
   Short col = countLeadingZerosInUnsignedLong (hash1); // 0 <= col <= 64
   if (col > 63) col = 63;                    // clip so that 0 <= col <= 63
@@ -93,9 +95,9 @@ Short determineCorrectOffset (Short lgK, Long c) {
 /*******************************************************/
 
 FM85 * fm85Make (Short lgK) {
-  assert (lgK >= 4 && lgK <= 26);
+  if (lgK < 4 || lgK > 26) throw std::invalid_argument("lgK must be between 4 and 26");
   FM85 * self = (FM85 *) fm85alloc (sizeof(FM85));
-  assert (self != NULL);
+  if (self == NULL) throw std::bad_alloc();
   self->lgK = lgK;
   self->isCompressed = 0;
   self->mergeFlag = 0;
@@ -126,7 +128,7 @@ FM85 * fm85Make (Short lgK) {
 /*******************************************************/
 
 FM85 * fm85Copy (FM85 * self) {
-  assert (self != NULL);
+  if (self == NULL) throw std::invalid_argument("self is null");
   FM85 * newObj = (FM85 *) shallowCopy ((void *) self, sizeof(FM85));
 
   if (self->surprisingValueTable != NULL) {
@@ -173,13 +175,13 @@ void fm85Free (FM85 * self) {
 // This produces a full-size k-by-64 bit matrix from any Live sketch.
 
 U64 * bitMatrixOfSketch (FM85 * self) {
-  assert (self->isCompressed == 0);
+  if (self->isCompressed != 0) throw std::logic_error("isCompressed != 0");
   Long k = (1LL << self->lgK);
   Short offset = self->windowOffset;
-  assert (offset >= 0 && offset <= 56);
+  if (offset < 0 || offset > 56) throw std::logic_error("offset < 0 || offset > 56");
   Long i = 0;
   U64 * matrix = (U64 *) fm85alloc ((size_t) (k * sizeof(U64)));
-  assert (matrix != NULL);
+  if (matrix == NULL) throw std::bad_alloc();
 
 // Fill the matrix with default rows in which the "early zone" is filled with ones.
 // This is essential for the routine's O(k) time cost (as opposed to O(C)).
@@ -198,7 +200,7 @@ U64 * bitMatrixOfSketch (FM85 * self) {
   }
 
   u32Table * table = self->surprisingValueTable;
-  assert (table != NULL);
+  if (table == NULL) throw std::logic_error("table == NULL");
   U32 * slots = table->slots;
   Long numSlots = (1LL << table->lgSize); 
   for (i = 0; i < numSlots; i++) { 
@@ -219,8 +221,8 @@ U64 * bitMatrixOfSketch (FM85 * self) {
 /*******************************************************/
 
 void promoteEmptyToSparse (FM85 * self) {
-  assert (self->numCoupons == 0);
-  assert (self->surprisingValueTable == NULL);
+  if (self->numCoupons != 0) throw std::logic_error("numCoupons != 0");
+  if (self->surprisingValueTable != NULL) throw std::logic_error("surprisingValueTable != NULL");
   self->surprisingValueTable = u32TableMake (2, 6 + self->lgK);
 }
 
@@ -230,11 +232,11 @@ void promoteEmptyToSparse (FM85 * self) {
 void promoteSparseToWindowed (FM85 * self) {
   Long k = (1LL << self->lgK);
   Long c32 = self->numCoupons << 5;
-  assert (c32 == 3 * k || (self->lgK == 4 && c32 > 3 * k));
+  if (!(c32 == 3 * k || (self->lgK == 4 && c32 > 3 * k))) throw std::logic_error("wrong c32");
   Long i;
 
   U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
-  assert (window != NULL);
+  if (window == NULL) throw std::bad_alloc();
   bzero ((void *) window, (size_t) k); // zero the memory (because we will be OR'ing into it)
 
   u32Table * newTable = u32TableMake (2, 6 + self->lgK);
@@ -243,26 +245,26 @@ void promoteSparseToWindowed (FM85 * self) {
   U32 * oldSlots = oldTable->slots;
   Long oldNumSlots = (1LL << oldTable->lgSize); 
 
-  assert (self->windowOffset == 0);
+  if (self->windowOffset != 0) throw std::logic_error("windowOffset != 0");
 
   for (i = 0; i < oldNumSlots; i++) { 
     U32 rowCol = oldSlots[i];
     if (rowCol != ALL32BITS) {
       Short col = (Short) (rowCol & 63);
       if (col < 8) {
-	Long  row = (Long) (rowCol >> 6);
-	window[row] |= (1 << col);
+        Long row = (Long) (rowCol >> 6);
+        window[row] |= (1 << col);
       }
       else {
-	// cannot use u32TableMustInsert(), because it doesn't provide for growth
-	Boolean isNovel = u32TableMaybeInsert (newTable, rowCol);
-	assert (isNovel == 1);
+        // cannot use u32TableMustInsert(), because it doesn't provide for growth
+        Boolean isNovel = u32TableMaybeInsert (newTable, rowCol);
+        if (isNovel != 1) throw std::logic_error("isNovel != 1");
       }
     }
   }
   //  fprintf (stderr, "Number of surprising values dropped from %lld to %lld\n", oldTable->numItems, newTable->numItems);
 
-  assert (self->slidingWindow == NULL);
+  if (self->slidingWindow != NULL) throw std::logic_error("slidingWindow != NULL");
   self->slidingWindow = window;
   
   self->surprisingValueTable = newTable;
@@ -314,17 +316,17 @@ void refreshKXP (FM85 * self, U64 * bitMatrix) {
 // this moves the sliding window
 
 void modifyOffset (FM85 * self, Short newOffset) {
-  assert (newOffset >= 0 && newOffset <= 56);
-  assert (newOffset == self->windowOffset + 1);
-  assert (newOffset == determineCorrectOffset (self->lgK, self->numCoupons));
+  if (newOffset < 0 || newOffset > 56) throw std::logic_error("newOffset < 0 || newOffset > 56");
+  if (newOffset != self->windowOffset + 1) throw std::logic_error("newOffset != windowOffset + 1");
+  if (newOffset != determineCorrectOffset (self->lgK, self->numCoupons)) throw std::logic_error("newOffset is wrong");
 
-  assert (self->slidingWindow != NULL);
-  assert (self->surprisingValueTable != NULL);
+  if (self->slidingWindow == NULL) throw std::logic_error("slidingWindow == NULL");
+  if (self->surprisingValueTable == NULL) throw std::logic_error("surprisingValueTable == NULL");
   Long k = (1LL << self->lgK);
 
   // Construct the full-sized bit matrix that corresponds to the sketch
   U64 * bitMatrix = bitMatrixOfSketch (self);
-  assert (bitMatrix != NULL);
+  if (bitMatrix == NULL) throw std::logic_error("bitMatrix == NULL");
 
   // refresh the KXP register on every 8th window shift.
   if ((newOffset & 0x7) == 0) { refreshKXP (self, bitMatrix); }
@@ -351,7 +353,7 @@ void modifyOffset (FM85 * self, Short newOffset) {
       pattern = pattern ^ (1ULL << col); // erase the 1.
       U32 rowCol = (i << 6) | col;
       Boolean isNovel = u32TableMaybeInsert (table, rowCol);
-      assert (isNovel == 1);
+      if (isNovel != 1) throw std::logic_error("isNovel != 1");
     }
   }
 
@@ -360,7 +362,6 @@ void modifyOffset (FM85 * self, Short newOffset) {
 
   self->firstInterestingColumn = countTrailingZerosInUnsignedLong (allSurprisesORed);
   if (self->firstInterestingColumn > newOffset) self->firstInterestingColumn = newOffset; // corner case
-
 }
 
 
@@ -385,7 +386,7 @@ void updateHIP (FM85 * self, Short rowCol) {
 /*******************************************************/
 
 double getHIPEstimate (FM85 * self) {
-  if (self->mergeFlag != 0) { FATAL_ERROR ("tried to get HIP estimate of merged sketch"); }
+  if (self->mergeFlag != 0) throw std::logic_error("tried to get HIP estimate of merged sketch");
   return (self->hipEstAccum);
 }
 
@@ -394,8 +395,8 @@ double getHIPEstimate (FM85 * self) {
 void updateSparse (FM85 * self, U32 rowCol) {
   Long k = (1LL << self->lgK);
   Long c32pre = self->numCoupons << 5;
-  assert (c32pre < 3*k); // C < 3K/32, in other words flavor == SPARSE
-  assert (self->surprisingValueTable != NULL);
+  if (c32pre >= 3*k) throw std::logic_error("c32pre >= 3*k"); // C < 3K/32, in other words flavor == SPARSE
+  if (self->surprisingValueTable == NULL) throw std::logic_error("surprisingValueTable == NULL");
   Boolean isNovel = u32TableMaybeInsert (self->surprisingValueTable, rowCol);
   if (isNovel) {
     self->numCoupons += 1;
@@ -409,13 +410,13 @@ void updateSparse (FM85 * self, U32 rowCol) {
 
 // the flavor is HYBRID, PINNED, or SLIDING.
 void updateWindowed (FM85 * self, U32 rowCol) {
-  assert (self->windowOffset >= 0 && self->windowOffset <= 56);
+  if (self->windowOffset < 0 || self->windowOffset > 56) throw std::logic_error("windowOffset < 0 || windowOffset > 56");
   Long k = (1LL << self->lgK);
   Long c32pre = self->numCoupons << 5;
-  assert (c32pre >= 3*k); // C < 3K/32, in other words flavor >= HYBRID
+  if (c32pre < 3*k) throw std::logic_error("c32pre < 3*k"); // C < 3K/32, in other words flavor >= HYBRID
   Long c8pre = self->numCoupons << 3;
   Long w8pre = ((Long) self->windowOffset) << 3;
-  assert (c8pre < (27 + w8pre) * k); // C < (K * 27/8) + (K * windowOffset)
+  if (c8pre >= (27 + w8pre) * k) throw std::logic_error("c8pre is wrong"); // C < (K * 27/8) + (K * windowOffset)
 
   Boolean isNovel = 0;
   Short col = (Short) (rowCol & 63);
@@ -424,7 +425,7 @@ void updateWindowed (FM85 * self, U32 rowCol) {
     isNovel = u32TableMaybeDelete (self->surprisingValueTable, rowCol); // inverted logic
   }
   else if (col < self->windowOffset + 8) { // track the 8 bits inside the window
-    assert (col >= self->windowOffset);
+    if (col < self->windowOffset) throw std::logic_error("col < windowOffset");
     Long row = (Long) (rowCol >> 6);
     U8 oldBits = self->slidingWindow[row];
     U8 newBits = oldBits | (1 << (col - self->windowOffset));
@@ -434,7 +435,7 @@ void updateWindowed (FM85 * self, U32 rowCol) {
     }
   }
   else { // track the surprising 1's "after" the window
-    assert (col >= self->windowOffset + 8); 
+    if (col < self->windowOffset + 8) throw std::logic_error("col < windowOffset + 8");
     isNovel = u32TableMaybeInsert (self->surprisingValueTable, rowCol); // normal logic
   }
 
@@ -444,9 +445,9 @@ void updateWindowed (FM85 * self, U32 rowCol) {
     Long c8post = self->numCoupons << 3;
     if (c8post >= (27 + w8pre) * k) { 
       modifyOffset (self, self->windowOffset + 1);
-      assert (self->windowOffset >= 1 && self->windowOffset <= 56);
+      if (self->windowOffset < 1 || self->windowOffset > 56) throw std::logic_error("windowOffset < 1 || windowOffset > 56");
       Long w8post = ((Long) self->windowOffset) << 3;
-      assert (c8post < (27 + w8post) * k); // C < (K * 27/8) + (K * windowOffset)
+      if (c8post >= (27 + w8post) * k) throw std::logic_error("c8pre is wrong"); // C < (K * 27/8) + (K * windowOffset)
     }
   }
 }
@@ -456,7 +457,7 @@ void updateWindowed (FM85 * self, U32 rowCol) {
 void fm85RowColUpdate (FM85 * self, U32 rowCol) {
   Short col = (Short) (rowCol & 63);
   if (col < self->firstInterestingColumn) { return; } // important speed optimization
-  if (self->isCompressed) { FATAL_ERROR ("Cannot update a compressed sketch."); }
+  if (self->isCompressed) std::logic_error("Cannot update a compressed sketch");
   Long c = self->numCoupons;
   if (c == 0) { promoteEmptyToSparse (self); }
   Long k = (1LL << self->lgK);

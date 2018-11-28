@@ -6,12 +6,7 @@
 #ifndef CPC_UNION_HPP_
 #define CPC_UNION_HPP_
 
-extern "C" {
-
 #include "fm85Merging.h"
-
-}
-
 #include "cpc_sketch.hpp"
 
 namespace datasketches {

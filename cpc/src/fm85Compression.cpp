@@ -8,6 +8,8 @@
 #include "fm85Compression.h"
 #include "fm85Util.h"
 
+#include <stdexcept>
+
 /*********************************/
 // The following material is in a separate file because it is so big.
 
@@ -19,13 +21,13 @@
 // since it is for global initialization, not for allocating instances.
 U8 * makeInversePermutation (U8 * permu, int length) {
   U8 * inverse = (U8 *) malloc (((size_t) length) * sizeof(U8));
-  assert (inverse != NULL);
+  if (inverse == NULL) throw std::bad_alloc();
   int i;
   for (i = 0; i < length; i++) {
     inverse[permu[i]] = i;
   }
   for (i = 0; i < length; i++) {
-    assert (permu[inverse[i]] == i);
+    if (permu[inverse[i]] != i) throw std::logic_error("inverse permutation error");
   }
   return inverse;
 }
@@ -42,7 +44,7 @@ U8 * makeInversePermutation (U8 * permu, int length) {
 U16 * makeDecodingTable (U16 * encodingTable, int numByteValues) { 
   int byteValue;
   U16 * decodingTable = (U16 *) malloc (((size_t) 4096) * sizeof(U16));
-  assert (decodingTable != NULL);
+  if (decodingTable == NULL) throw std::bad_alloc();
   for (byteValue=0; byteValue < numByteValues; byteValue++) {
     int encodingEntry = encodingTable [byteValue];
     int codeValue = encodingEntry & 0xfff;
@@ -78,8 +80,8 @@ void validateDecodingTable (U16 * decodingTable, U16 * encodingTable) {
     // encodedBitpattern++; // uncomment this line to test the test
     // encodedLength++;     // uncomment this line to test the test
 
-    assert (decodedLength == encodedLength);
-    assert (encodedBitpattern == (decodeThis & ((1 << decodedLength) - 1)));
+    if (decodedLength != encodedLength) throw std::logic_error("decoded length error");
+    if (encodedBitpattern != (decodeThis & ((1 << decodedLength) - 1))) throw std::logic_error("bit pattern error");
   }
   
 }
@@ -126,16 +128,16 @@ static inline void writeUnary (U32 * compressedWords,
 {
   //  printf("%ld writing\n", the_value);
 
-  assert (compressedWords != NULL);
-  assert (nextWordIndexPtr != NULL);
-  assert (bitbufPtr != NULL);
-  assert (bufbitsPtr != NULL);
+  if (compressedWords == NULL) throw std::logic_error("compressedWords == NULL");
+  if (nextWordIndexPtr == NULL) throw std::logic_error("nextWordIndexPtr == NULL");
+  if (bitbufPtr == NULL) throw std::logic_error("bitbufPtr == NULL");
+  if (bufbitsPtr == NULL) throw std::logic_error("bufbitsPtr == NULL");
 
   Long nextWordIndex = *nextWordIndexPtr;
   U64  bitbuf  = *bitbufPtr;
   int  bufbits = *bufbitsPtr;
   
-  assert (bufbits >= 0 && bufbits <= 31);
+  if (bufbits < 0 || bufbits > 31) throw std::out_of_range("bufbits out of range");
 
   Long remaining = the_value;
 
@@ -147,7 +149,7 @@ static inline void writeUnary (U32 * compressedWords,
     MAYBE_FLUSH_BITBUF(compressedWords,nextWordIndex);
   }
 
-  assert (remaining >= 0 && remaining <= 15);
+  if (remaining < 0 || remaining > 15) throw std::out_of_range("remaining out of range");
 
   U64 theUnaryCode = 1ULL << remaining;
   bitbuf |= theUnaryCode << bufbits;
@@ -168,10 +170,10 @@ static inline Long readUnary (U32 * compressedWords,
 			      U64 * bitbufPtr, 
 			      int * bufbitsPtr)
 {
-  assert (compressedWords != NULL);
-  assert (nextWordIndexPtr != NULL);
-  assert (bitbufPtr != NULL);
-  assert (bufbitsPtr != NULL);
+  if (compressedWords == NULL) throw std::logic_error("compressedWords == NULL");
+  if (nextWordIndexPtr == NULL) throw std::logic_error("nextWordIndexPtr == NULL");
+  if (bitbufPtr == NULL) throw std::logic_error("bitbufPtr == NULL");
+  if (bufbitsPtr == NULL) throw std::logic_error("bufbitsPtr == NULL");
 
   Long nextWordIndex = *nextWordIndexPtr;
   U64  bitbuf  = *bitbufPtr;
@@ -190,7 +192,7 @@ static inline Long readUnary (U32 * compressedWords,
   int peek8 = bitbuf & 0xffULL; // These 8 bits include either all or part of the Unary codeword.
   int trailingZeros = byteTrailingZerosTable[peek8];
 
-  assert (trailingZeros >= 0 && trailingZeros <= 8);
+  if (trailingZeros < 0 || trailingZeros > 8) throw std::out_of_range("trailingZeros out of range");
 
   if (trailingZeros == 8) { // The codeword was partial, so read some more.
     subTotal += 8;
@@ -241,7 +243,7 @@ Long lowLevelCompressBytes (U8 * byteArray,          // input
   MAYBE_FLUSH_BITBUF(compressedWords,nextWordIndex);
 
   if (bufbits > 0) { // We are done encoding now, so we flush the bit buffer.
-    assert (bufbits < 32);
+    if (bufbits >= 32) throw std::logic_error("bufbits >= 32");
     compressedWords[nextWordIndex++] = (U32) (bitbuf & 0xffffffff); 
     bitbuf = 0; bufbits = 0; // not really necessary
   }
@@ -264,9 +266,9 @@ void lowLevelUncompressBytes (U8 * byteArray,          // output
 
   //  printf ("Y\n"); fflush (stdout);
 
-  assert (byteArray != NULL);
-  assert (decodingTable != NULL);
-  assert (compressedWords != NULL);
+  if (byteArray == NULL) throw std::logic_error("byteArray == NULL");
+  if (decodingTable == NULL) throw std::logic_error("decodingTable == NULL");
+  if (compressedWords == NULL) throw std::logic_error("compressedWords == NULL");
 
   for (byteIndex = 0; byteIndex < numBytesToDecode; byteIndex++) {
 
@@ -287,7 +289,7 @@ void lowLevelUncompressBytes (U8 * byteArray,          // output
   }
   // Buffer over-run should be impossible unless there is a bug.
   // However, we might as well check here.
-  assert (wordIndex <= numCompressedWords);
+  if (wordIndex > numCompressedWords) throw std::logic_error("wordIndex > numCompressedWords");
 
   //  printf ("X\n"); fflush (stdout);
 
@@ -322,8 +324,8 @@ Long lowLevelCompressPairs (U32 * pairArray,       // input
     
     if (rowIndex != predictedRowIndex) { predictedColIndex = 0; }
 
-    assert (rowIndex >= predictedRowIndex);
-    assert (colIndex >= predictedColIndex);
+    if (rowIndex < predictedRowIndex) throw std::logic_error("rowIndex < predictedRowIndex");
+    if (colIndex < predictedColIndex) throw std::logic_error("colIndex < predictedColIndex");
 
     Long  yDelta = rowIndex - predictedRowIndex;
     Short xDelta = colIndex - predictedColIndex;
@@ -355,7 +357,7 @@ Long lowLevelCompressPairs (U32 * pairArray,       // input
   MAYBE_FLUSH_BITBUF(compressedWords,nextWordIndex);
 
   if (bufbits > 0) { // We are done encoding now, so we flush the bit buffer.
-    assert (bufbits < 32);
+    if (bufbits >= 32) throw std::logic_error("bufbits >= 32");
     compressedWords[nextWordIndex++] = (U32) (bitbuf & 0xffffffff); 
     bitbuf = 0; bufbits = 0; // not really necessary
   }
@@ -414,8 +416,7 @@ void lowLevelUncompressPairs (U32 * pairArray,         // output
     predictedColIndex = colIndex + 1;
 
   }
-  assert (wordIndex <= numCompressedWords); // check for buffer over-run
-
+  if (wordIndex > numCompressedWords) throw std::logic_error("wordIndex > numCompressedWords"); // check for buffer over-run
 }
 
 
@@ -423,7 +424,7 @@ void lowLevelUncompressPairs (U32 * pairArray,         // output
 /***************************************************************/
 
 Long safeLengthForCompressedPairBuf (Long k, Long numPairs, Long numBaseBits) {
-  assert (numPairs > 0);
+  if (numPairs <= 0) throw std::invalid_argument("numPairs <= 0");
   // Long ybits = k + numPairs; // simpler and safer UB
   // The following tighter UB on ybits is based on page 198 
   // of the textbook "Managing Gigabytes" by Witten, Moffat, and Bell.
@@ -468,10 +469,10 @@ Short determinePseudoPhase (Short lgK, Long c) {
   } 
   else { // This steady-state logic produces true phases. They are used to select
          // encoding tables, and also column permutations for the "Sliding" flavor.
-    assert (lgK >= 4);
+    if (lgK < 4) throw std::logic_error("lgK < 4");
     Long tmp = c >> (lgK - 4);
     Long phase = tmp & 15;
-    assert (phase >= 0 && phase < 16);
+    if (phase < 0 || phase >= 16) throw std::out_of_range("wrong phase");
     return ((Short) phase);
   }
 }
@@ -483,7 +484,7 @@ void compressTheWindow (FM85 * target, FM85 * source) {
   Long k = (1LL << source->lgK);  
   Long windowBufLen = safeLengthForCompressedWindowBuf (k);
   U32 * windowBuf = (U32 *) fm85alloc ((size_t) (windowBufLen * sizeof(U32)));
-  assert (windowBuf != NULL);
+  if (windowBuf == NULL) throw std::logic_error("windowBuf == NULL");
   Short pseudoPhase = determinePseudoPhase (source->lgK, source->numCoupons);
   target->cwLength = lowLevelCompressBytes (source->slidingWindow, k,
 					    encodingTablesForHighEntropyByte[pseudoPhase],
@@ -493,7 +494,7 @@ void compressTheWindow (FM85 * target, FM85 * source) {
   // Note: realloc caused strange timing spikes for lgK = 11 and 12.
 
   U32 * shorterBuf = (U32 *) fm85alloc (((size_t) target->cwLength) * sizeof(U32));
-  if (shorterBuf == NULL) { FATAL_ERROR ("Out of Memory"); }
+  if (shorterBuf == NULL) throw std::bad_alloc();
   memcpy ((void *) shorterBuf, (void *) windowBuf, ((size_t) target->cwLength) * sizeof(U32));
   fm85free (windowBuf);
   target->compressedWindow = shorterBuf;
@@ -507,12 +508,12 @@ void compressTheWindow (FM85 * target, FM85 * source) {
 void uncompressTheWindow (FM85 * target, FM85 * source) {
   Long k = (1LL << source->lgK);  
   U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
-  assert (window != NULL);
-  // bzero ((void *) window, (size_t) k); // zeroing not needed here (unlike the Hybrid Flavor)
-  assert (target->slidingWindow == NULL);
+  if (window == NULL) throw std::bad_alloc();
+  // zeroing not needed here (unlike the Hybrid Flavor)
+  if (target->slidingWindow != NULL) throw std::logic_error("target->slidingWindow != NULL");
   target->slidingWindow = window;
   Short pseudoPhase = determinePseudoPhase (source->lgK, source->numCoupons);
-  assert (source->compressedWindow != NULL);
+  if (source->compressedWindow == NULL) throw std::logic_error("source->compressedWindow == NULL");
   lowLevelUncompressBytes (target->slidingWindow, k,
 			   decodingTablesForHighEntropyByte[pseudoPhase],
 			   source->compressedWindow,
@@ -524,13 +525,13 @@ void uncompressTheWindow (FM85 * target, FM85 * source) {
 /***************************************************************/
 
 void compressTheSurprisingValues (FM85 * target, FM85 * source, U32 * pairs, Long numPairs) {
-  assert (numPairs > 0);
+  if (numPairs <= 0) throw std::invalid_argument("numPairs <= 0");
   target->numCompressedSurprisingValues = numPairs;  
   Long k = (1LL << source->lgK);
   Long numBaseBits = golombChooseNumberOfBaseBits (k + numPairs, numPairs);
   Long pairBufLen = safeLengthForCompressedPairBuf (k, numPairs, numBaseBits);
   U32 * pairBuf = (U32 *) fm85alloc ((size_t) (pairBufLen * sizeof(U32)));
-  assert (pairBuf != NULL);
+  if (pairBuf == NULL) throw std::bad_alloc();
 
   target->csvLength = lowLevelCompressPairs (pairs, numPairs, numBaseBits, pairBuf);
 
@@ -538,7 +539,7 @@ void compressTheSurprisingValues (FM85 * target, FM85 * source, U32 * pairs, Lon
   // Note: realloc caused strange timing spikes for lgK = 11 and 12.
 
   U32 * shorterBuf = (U32 *) fm85alloc (((size_t) target->csvLength) * sizeof(U32));
-  if (shorterBuf == NULL) { FATAL_ERROR ("Out of Memory"); }
+  if (shorterBuf == NULL) throw std::bad_alloc();
   memcpy ((void *) shorterBuf, (void *) pairBuf, ((size_t) target->csvLength) * sizeof(U32));
   fm85free (pairBuf);
   target->compressedSurprisingValues = shorterBuf;
@@ -550,12 +551,12 @@ void compressTheSurprisingValues (FM85 * target, FM85 * source, U32 * pairs, Lon
 // the length of this array is known to the source sketch.
 
 U32 * uncompressTheSurprisingValues (FM85 * source) {
-  assert (source->isCompressed == 1);
+  if (source->isCompressed != 1) throw std::logic_error("not compressed");
   Long k = (1LL << source->lgK);  
   Long numPairs = source->numCompressedSurprisingValues;
-  assert (numPairs > 0);
+  if (numPairs <= 0) throw std::logic_error("numPairs <= 0");
   U32 * pairs = (U32 *) fm85alloc ((size_t) numPairs * sizeof(U32));
-  assert (pairs != NULL);
+  if (pairs == NULL) throw std::bad_alloc();
   Long numBaseBits = golombChooseNumberOfBaseBits (k + numPairs, numPairs);
   lowLevelUncompressPairs(pairs, numPairs, numBaseBits, 
 			  source->compressedSurprisingValues, source->csvLength);
@@ -579,7 +580,7 @@ void uncompressEmptyFlavor (FM85 * target, FM85 * source) {
 /***************************************************************/
 
 void compressSparseFlavor (FM85 * target, FM85 * source) {
-  assert (source->slidingWindow == NULL); // there is no window to compress
+  if (source->slidingWindow != NULL) throw std::logic_error("source->slidingWindow != NULL"); // there is no window to compress
   Long numPairs = 0;
   U32 * pairs = u32TableUnwrappingGetItems (source->surprisingValueTable, &numPairs);
   introspectiveInsertionSort(pairs, 0, numPairs-1);
@@ -591,8 +592,8 @@ void compressSparseFlavor (FM85 * target, FM85 * source) {
 /***************************************************************/
 
 void uncompressSparseFlavor (FM85 * target, FM85 * source) {
-  assert (source->compressedWindow == NULL);
-  assert (source->compressedSurprisingValues != NULL);
+  if (source->compressedWindow != NULL) throw std::logic_error("source->compressedWindow != NULL");
+  if (source->compressedSurprisingValues == NULL) throw std::logic_error("source->compressedSurprisingValues == NULL");
   U32 * pairs = uncompressTheSurprisingValues (source);
   Long numPairs = source->numCompressedSurprisingValues;
   u32Table * table = makeU32TableFromPairsArray (pairs, numPairs, source->lgK);
@@ -609,7 +610,7 @@ void uncompressSparseFlavor (FM85 * target, FM85 * source) {
 U32 * trickyGetPairsFromWindow (U8 * window, Long k, Long numPairsToGet, Long emptySpace) {
   Long outputLength = emptySpace + numPairsToGet;
   U32 * pairs = (U32 *) fm85alloc ((size_t) (outputLength * sizeof(U32)));
-  assert (pairs != NULL);
+  if (pairs == NULL) throw std::bad_alloc();
   Long rowIndex = 0;
   Long pairIndex = emptySpace;
   for (rowIndex = 0; rowIndex < k; rowIndex++) {
@@ -621,7 +622,7 @@ U32 * trickyGetPairsFromWindow (U8 * window, Long k, Long numPairsToGet, Long em
       pairs[pairIndex++] = (U32) ((rowIndex << 6) | colIndex);
     }
   }
-  assert (pairIndex == outputLength);
+  if (pairIndex != outputLength) throw std::logic_error("pairIndex != outputLength");
   return (pairs);
 }
 
@@ -635,8 +636,8 @@ void compressHybridFlavor (FM85 * target, FM85 * source) {
   Long numPairsFromTable = 0; 
   U32 * pairsFromTable = u32TableUnwrappingGetItems (source->surprisingValueTable, &numPairsFromTable);
   introspectiveInsertionSort(pairsFromTable, 0, numPairsFromTable-1);
-  assert (source->slidingWindow != NULL);
-  assert (source->windowOffset == 0);
+  if (source->slidingWindow == NULL) throw std::logic_error("source->slidingWindow == NULL");
+  if (source->windowOffset != 0) throw std::logic_error("source->windowOffset != 0");
   Long numPairsFromArray = source->numCoupons - numPairsFromTable; // because the window offset is zero
 
   U32 * allPairs = trickyGetPairsFromWindow (source->slidingWindow, k, numPairsFromArray, numPairsFromTable);
@@ -656,8 +657,8 @@ void compressHybridFlavor (FM85 * target, FM85 * source) {
 /***************************************************************/
 
 void uncompressHybridFlavor (FM85 * target, FM85 * source) {
-  assert (source->compressedWindow == NULL);
-  assert (source->compressedSurprisingValues != NULL);
+  if (source->compressedWindow != NULL) throw std::logic_error("source->compressedWindow != NULL");
+  if (source->compressedSurprisingValues == NULL) throw std::logic_error("source->compressedSurprisingValues == NULL");
   U32 * pairs = uncompressTheSurprisingValues (source);
   Long numPairs = source->numCompressedSurprisingValues;
   // In the hybrid flavor, some of these pairs actually
@@ -667,7 +668,7 @@ void uncompressHybridFlavor (FM85 * target, FM85 * source) {
   Long k = (1LL << source->lgK);
 
   U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
-  assert (window != NULL);
+  if (window == NULL) throw std::bad_alloc();
   bzero ((void *) window, (size_t) k); // important: zero the memory
   
   Long nextTruePair = 0;
@@ -675,7 +676,7 @@ void uncompressHybridFlavor (FM85 * target, FM85 * source) {
 
   for (i = 0; i < numPairs; i++) {
     U32 rowCol = pairs[i];
-    assert (rowCol != ALL32BITS);
+    if (rowCol == ALL32BITS) throw std::logic_error("rowCol == ALL32BITS");
     Short col = (Short) (rowCol & 63);
     if (col < 8) {
       Long  row = (Long) (rowCol >> 6);
@@ -686,7 +687,7 @@ void uncompressHybridFlavor (FM85 * target, FM85 * source) {
     }
   }
 
-  assert (source->windowOffset == 0);
+  if (source->windowOffset != 0) throw std::logic_error("source->windowOffset != 0");
   target->windowOffset = 0;
 
   u32Table * table = makeU32TableFromPairsArray (pairs, 
@@ -708,13 +709,10 @@ void compressPinnedFlavor (FM85 * target, FM85 * source) {
   compressTheWindow (target, source);
 
   Long numPairs = source->surprisingValueTable->numItems;
-  //  if (numPairs == 0) {
-  //    fprintf (stderr,"A"); fflush (stderr);
-  //  }
   if (numPairs > 0) {
     Long chkNumPairs;
     U32 * pairs = u32TableUnwrappingGetItems (source->surprisingValueTable, &chkNumPairs);
-    assert (chkNumPairs == numPairs);
+    if (chkNumPairs != numPairs) throw std::logic_error("chkNumPairs != numPairs");
 
     // Here we subtract 8 from the column indices.  Because they are stored in the low 6 bits 
     // of each rowCol pair, and because no column index is less than 8 for a "Pinned" sketch,
@@ -722,7 +720,7 @@ void compressPinnedFlavor (FM85 * target, FM85 * source) {
 
     Long i; // shift the columns over by 8 positions before compressing (because of the window)
     for (i = 0; i < numPairs; i++) { 
-      assert ((pairs[i] & 63) >= 8);
+      if ((pairs[i] & 63) < 8) throw std::logic_error("(pairs[i] & 63) < 8");
       pairs[i] -= 8; 
     }
 
@@ -736,20 +734,19 @@ void compressPinnedFlavor (FM85 * target, FM85 * source) {
 /***************************************************************/
 
 void uncompressPinnedFlavor (FM85 * target, FM85 * source) {
-  assert (source->compressedWindow != NULL);
+  if (source->compressedWindow == NULL) throw std::logic_error("source->compressedWindow == NULL");
   uncompressTheWindow (target, source);
   Long numPairs = source->numCompressedSurprisingValues;
   if (numPairs == 0) {
     target->surprisingValueTable = u32TableMake (2, 6 + source->lgK);
-    //    fprintf (stderr,"B"); fflush (stderr);
   }
   else {
-    assert (numPairs > 0);
-    assert (source->compressedSurprisingValues != NULL);
+    if (numPairs <= 0) throw std::logic_error("numPairs <= 0");
+    if (source->compressedSurprisingValues == NULL) throw std::logic_error("source->compressedSurprisingValues == NULL");
     U32 * pairs = uncompressTheSurprisingValues (source);
     Long i; // undo the compressor's 8-column shift
     for (i = 0; i < numPairs; i++) { 
-      assert ((pairs[i] & 63) < 56);
+      if ((pairs[i] & 63) >= 56) throw std::logic_error("(pairs[i] & 63) >= 56");
       pairs[i] += 8; 
     }
     u32Table * table = makeU32TableFromPairsArray (pairs, numPairs, source->lgK);
@@ -768,24 +765,21 @@ void compressSlidingFlavor (FM85 * target, FM85 * source) {
   compressTheWindow (target, source);
 
   Long numPairs = source->surprisingValueTable->numItems;
-  //  if (numPairs == 0) {
-  //    fprintf (stderr,"C"); fflush (stderr);
-  //  }
 
   if (numPairs > 0) {
     Long chkNumPairs;
     U32 * pairs = u32TableUnwrappingGetItems (source->surprisingValueTable, &chkNumPairs);
-    assert (chkNumPairs == numPairs);
+    if (chkNumPairs != numPairs) throw std::logic_error("chkNumPairs != numPairs");
 
     // Here we apply a complicated transformation to the column indices, which
     // changes the implied ordering of the pairs, so we must do it before sorting.
 
     Short pseudoPhase = determinePseudoPhase (source->lgK, source->numCoupons); // NB
-    assert (pseudoPhase < 16);
+    if (pseudoPhase >= 16) throw std::logic_error("pseudoPhase >= 16");
     U8 * permutation = columnPermutationsForEncoding[pseudoPhase];
 
     Short offset = source->windowOffset;
-    assert (offset > 0 && offset <= 56);
+    if (offset <= 0 || offset > 56) throw std::out_of_range("offset out of range");
 
     Long i; 
     for (i = 0; i < numPairs; i++) { 
@@ -794,7 +788,7 @@ void compressSlidingFlavor (FM85 * target, FM85 * source) {
       Short col = (Short) (rowCol & 63);
       // first rotate the columns into a canonical configuration: new = ((old - (offset+8)) + 64) mod 64
       col = (col + 56 - offset) & 63;
-      assert (col >= 0 && col < 56);
+      if (col < 0 || col >= 56) throw std::out_of_range("col out of range");
       // then apply the permutation
       col = permutation[col];
       pairs[i] = (U32) ((row << 6) | col);
@@ -810,25 +804,24 @@ void compressSlidingFlavor (FM85 * target, FM85 * source) {
 /***************************************************************/
 
 void uncompressSlidingFlavor (FM85 * target, FM85 * source) {
-  assert (source->compressedWindow != NULL);
+  if (source->compressedWindow == NULL) throw std::logic_error("source->compressedWindow == NULL");
   uncompressTheWindow (target, source);
 
   Long numPairs = source->numCompressedSurprisingValues;
   if (numPairs == 0) {
     target->surprisingValueTable = u32TableMake (2, 6 + source->lgK);
-    //    fprintf (stderr,"D"); fflush (stderr);
   }
   else {
-    assert (numPairs > 0);
-    assert (source->compressedSurprisingValues != NULL);
+    if (numPairs <= 0) throw std::logic_error("numPairs <= 0");
+    if (source->compressedSurprisingValues == NULL) throw std::logic_error("source->compressedSurprisingValues == NULL");
     U32 * pairs = uncompressTheSurprisingValues (source);
 
     Short pseudoPhase = determinePseudoPhase (source->lgK, source->numCoupons); // NB
-    assert (pseudoPhase < 16);
+    if (pseudoPhase >= 16) throw std::logic_error("pseudoPhase >= 16");
     U8 * permutation = columnPermutationsForDecoding[pseudoPhase];
 
     Short offset = source->windowOffset;
-    assert (offset > 0 && offset <= 56);
+    if (offset <= 0 || offset > 56) throw std::out_of_range("offset out of range");
 
     Long i; 
     for (i = 0; i < numPairs; i++) { 
@@ -856,10 +849,10 @@ void uncompressSlidingFlavor (FM85 * target, FM85 * source) {
 // Note: in the final system, compressed and uncompressed sketches will have different types
 
 FM85 * fm85Compress (FM85 * source) {
-  assert (source->isCompressed == 0);
+  if (source->isCompressed != 0) throw std::invalid_argument("already compressed");
 
   FM85 * target = (FM85 *) fm85alloc (sizeof(FM85));
-  assert (target != NULL);
+  if (target == NULL) throw std::bad_alloc();
 
   target->lgK = source->lgK;
   target->numCoupons = source->numCoupons;
@@ -888,25 +881,25 @@ FM85 * fm85Compress (FM85 * source) {
   case EMPTY: compressEmptyFlavor  (target, source); break;
   case SPARSE:
     compressSparseFlavor (target, source); 
-    assert (target->compressedWindow == NULL);
-    assert (target->compressedSurprisingValues != NULL);
+    if (target->compressedWindow != NULL) throw std::logic_error("target->compressedWindow != NULL");
+    if (target->compressedSurprisingValues == NULL) throw std::logic_error("target->compressedSurprisingValues == NULL");
     break;
   case HYBRID:  
     compressHybridFlavor (target, source); 
-    assert (target->compressedWindow == NULL);
-    assert (target->compressedSurprisingValues != NULL);
+    if (target->compressedWindow != NULL) throw std::logic_error("target->compressedWindow != NULL");
+    if (target->compressedSurprisingValues == NULL) throw std::logic_error("target->compressedSurprisingValues == NULL");
     break;
   case PINNED:  
     compressPinnedFlavor (target, source); 
-    assert (target->compressedWindow != NULL);
+    if (target->compressedWindow == NULL) throw std::logic_error("target->compressedWindow != NULL");
     //    assert (target->compressedSurprisingValues != NULL);
     break;
   case SLIDING: 
     compressSlidingFlavor(target, source); 
-    assert (target->compressedWindow != NULL);
+    if (target->compressedWindow == NULL) throw std::logic_error("target->compressedWindow == NULL");
     //    assert (target->compressedSurprisingValues != NULL);
     break;
-  default: FATAL_ERROR ("Unknown sketch flavor");
+  default: throw std::logic_error("Unknown sketch flavor");
   }
 
   return target;
@@ -917,10 +910,10 @@ FM85 * fm85Compress (FM85 * source) {
 // Note: in the final system, compressed and uncompressed sketches will have different types
 
 FM85 * fm85Uncompress (FM85 * source) {
-  assert (source->isCompressed == 1);
+  if (source->isCompressed != 1) throw std::invalid_argument("not compressed");
 
   FM85 * target = (FM85 *) fm85alloc (sizeof(FM85));
-  assert (target != NULL);
+  if (target == NULL) throw std::bad_alloc();
 
   target->lgK = source->lgK;
   target->numCoupons = source->numCoupons;
@@ -948,18 +941,18 @@ FM85 * fm85Uncompress (FM85 * source) {
   switch (flavor) {
   case EMPTY: uncompressEmptyFlavor  (target, source); break;
   case SPARSE:  
-    assert (source->compressedWindow == NULL);
+    if (source->compressedWindow != NULL) throw std::logic_error("source->compressedWindow != NULL");
     uncompressSparseFlavor (target, source); 
     break;
   case HYBRID:  
     uncompressHybridFlavor (target, source); 
     break;
   case PINNED:
-    assert (source->compressedWindow != NULL);
+    if (source->compressedWindow == NULL) throw std::logic_error("source->compressedWindow == NULL");
     uncompressPinnedFlavor (target, source);
     break;
   case SLIDING: uncompressSlidingFlavor(target, source); break;
-  default: FATAL_ERROR ("Unknown sketch flavor");
+  default: std::logic_error("Unknown sketch flavor");
   }
 
   return target;

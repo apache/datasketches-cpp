@@ -6,11 +6,12 @@
 // author Kevin Lang, Oath Research
 
 #ifndef GOT_FM85_MERGING_H
+
 #include "common.h"
-#include "u32Table.h"
 #include "fm85.h"
-#include "fm85Util.h"
 #include "fm85Compression.h"
+#include "fm85Util.h"
+#include "u32Table.h"
 
 /****************************************/
 

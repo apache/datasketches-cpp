@@ -11,6 +11,8 @@
 #include "fm85.h"
 #include "iconEstimator.h"
 
+#include <stdexcept>
+
 /*******************************************************/
 // ln 2.0
 double iconErrorConstant = 0.693147180559945286;
@@ -85,8 +87,8 @@ double getIconConfidenceLB (FM85 * sketch, int kappa) {
   if (sketch->numCoupons == 0) return 0.0;
   int lgK = sketch->lgK;
   long k = (1LL << lgK);
-  assert (lgK >= 4);
-  assert (kappa >= 1 && kappa <= 3);
+  if (lgK < 4) throw std::logic_error("lgk < 4");
+  if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
   double x = iconErrorConstant;
   if (lgK <= 14) x = ((double) iconHighSideData[3*(lgK-4) + (kappa-1)]) / 10000.0;
   double rel = x / (sqrt((double) k));
@@ -102,8 +104,8 @@ double getIconConfidenceUB (FM85 * sketch, int kappa) {
   if (sketch->numCoupons == 0) return 0.0;
   int lgK = sketch->lgK;
   long k = (1LL << lgK);
-  assert (lgK >= 4);
-  assert (kappa >= 1 && kappa <= 3);
+  if (lgK < 4) throw std::logic_error("lgk < 4");
+  if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
   double x = iconErrorConstant;
   if (lgK <= 14) x = ((double) iconLowSideData[3*(lgK-4) + (kappa-1)]) / 10000.0;
   double rel = x / (sqrt((double) k));
@@ -119,8 +121,8 @@ double getHIPConfidenceLB (FM85 * sketch, int kappa) {
   if (sketch->numCoupons == 0) return 0.0;
   int lgK = sketch->lgK;
   long k = (1LL << lgK);
-  assert (lgK >= 4);
-  assert (kappa >= 1 && kappa <= 3);
+  if (lgK < 4) throw std::logic_error("lgk < 4");
+  if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
   double x = hipErrorConstant;
   if (lgK <= 14) x = ((double) hipHighSideData[3*(lgK-4) + (kappa-1)]) / 10000.0;
   double rel = x / (sqrt((double) k));
@@ -136,8 +138,8 @@ double getHIPConfidenceUB (FM85 * sketch, int kappa) {
   if (sketch->numCoupons == 0) return 0.0;
   int lgK = sketch->lgK;
   long k = (1LL << lgK);
-  assert (lgK >= 4);
-  assert (kappa >= 1 && kappa <= 3);
+  if (lgK < 4) throw std::logic_error("lgk < 4");
+  if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
   double x = hipErrorConstant;
   if (lgK <= 14) x = ((double) hipLowSideData[3*(lgK-4) + (kappa-1)]) / 10000.0;
   double rel = x / (sqrt((double) k));
