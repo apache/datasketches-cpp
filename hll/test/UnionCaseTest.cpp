@@ -7,16 +7,17 @@
 #include "HllUnion.hpp"
 #include "HllUtil.hpp"
 
+#include <cmath>
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 
 namespace datasketches {
 
-class HllUnionTest : public CppUnit::TestFixture {
+class UnionCaseTest : public CppUnit::TestFixture {
 
   static uint64_t v;
 
-  CPPUNIT_TEST_SUITE(HllUnionTest);
+  CPPUNIT_TEST_SUITE(UnionCaseTest);
   CPPUNIT_TEST(checkCase0);
   CPPUNIT_TEST(checkCase1);
   CPPUNIT_TEST(checkCase2);
@@ -68,7 +69,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u->update(*h3);
     CPPUNIT_ASSERT_EQUAL(CurMode::SET, uPvt->getCurrentMode());
     CPPUNIT_ASSERT_EQUAL(12, u->getLgConfigK());
-    CPPUNIT_ASSERT_EQUAL(false, uPvt->isOutOfOrderFlag());
+    CPPUNIT_ASSERT_EQUAL(true, uPvt->isOutOfOrderFlag());
     double err = sum * errorFactor(uPvt->getLgConfigK(), uPvt->isOutOfOrderFlag(), 2.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sum, u->getEstimate(), err);
   }
@@ -125,7 +126,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u->update(*h3);
     CPPUNIT_ASSERT_EQUAL(CurMode::SET, uPvt->getCurrentMode());
     CPPUNIT_ASSERT_EQUAL(12, u->getLgConfigK());
-    CPPUNIT_ASSERT_EQUAL(false, uPvt->isOutOfOrderFlag());
+    CPPUNIT_ASSERT_EQUAL(true, uPvt->isOutOfOrderFlag());
     double err = sum * errorFactor(uPvt->getLgConfigK(), uPvt->isOutOfOrderFlag(), 2.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sum, u->getEstimate(), err);
   }
@@ -144,7 +145,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u->update(*h3);
     CPPUNIT_ASSERT_EQUAL(CurMode::SET, uPvt->getCurrentMode());
     CPPUNIT_ASSERT_EQUAL(12, u->getLgConfigK());
-    CPPUNIT_ASSERT_EQUAL(false, uPvt->isOutOfOrderFlag());
+    CPPUNIT_ASSERT_EQUAL(true, uPvt->isOutOfOrderFlag());
     double err = sum * errorFactor(uPvt->getLgConfigK(), uPvt->isOutOfOrderFlag(), 2.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sum, u->getEstimate(), err);
   }
@@ -163,7 +164,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u->update(*h3);
     CPPUNIT_ASSERT_EQUAL(CurMode::HLL, uPvt->getCurrentMode());
     CPPUNIT_ASSERT_EQUAL(10, u->getLgConfigK());
-    CPPUNIT_ASSERT_EQUAL(false, uPvt->isOutOfOrderFlag());
+    CPPUNIT_ASSERT_EQUAL(true, uPvt->isOutOfOrderFlag());
     double err = sum * errorFactor(uPvt->getLgConfigK(), uPvt->isOutOfOrderFlag(), 2.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sum, u->getEstimate(), err);
   }
@@ -182,7 +183,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u->update(*h3);
     CPPUNIT_ASSERT_EQUAL(CurMode::HLL, uPvt->getCurrentMode());
     CPPUNIT_ASSERT_EQUAL(12, u->getLgConfigK());
-    CPPUNIT_ASSERT_EQUAL(false, uPvt->isOutOfOrderFlag());
+    CPPUNIT_ASSERT_EQUAL(true, uPvt->isOutOfOrderFlag());
     double err = sum * errorFactor(uPvt->getLgConfigK(), uPvt->isOutOfOrderFlag(), 2.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sum, u->getEstimate(), err);
   }
@@ -220,7 +221,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u->update(*h3);
     CPPUNIT_ASSERT_EQUAL(CurMode::HLL, uPvt->getCurrentMode());
     CPPUNIT_ASSERT_EQUAL(11, u->getLgConfigK());
-    CPPUNIT_ASSERT_EQUAL(false, uPvt->isOutOfOrderFlag());
+    CPPUNIT_ASSERT_EQUAL(true, uPvt->isOutOfOrderFlag());
     double err = sum * errorFactor(uPvt->getLgConfigK(), uPvt->isOutOfOrderFlag(), 2.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sum, u->getEstimate(), err);
   }
@@ -239,7 +240,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u->update(*h3);
     CPPUNIT_ASSERT_EQUAL(CurMode::HLL, uPvt->getCurrentMode());
     CPPUNIT_ASSERT_EQUAL(10, u->getLgConfigK());
-    CPPUNIT_ASSERT_EQUAL(false, uPvt->isOutOfOrderFlag());
+    CPPUNIT_ASSERT_EQUAL(true, uPvt->isOutOfOrderFlag());
     double err = sum * errorFactor(uPvt->getLgConfigK(), uPvt->isOutOfOrderFlag(), 2.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sum, u->getEstimate(), err);
   }
@@ -258,7 +259,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u->update(*h3);
     CPPUNIT_ASSERT_EQUAL(CurMode::HLL, uPvt->getCurrentMode());
     CPPUNIT_ASSERT_EQUAL(11, u->getLgConfigK());
-    CPPUNIT_ASSERT_EQUAL(false, uPvt->isOutOfOrderFlag());
+    CPPUNIT_ASSERT_EQUAL(true, uPvt->isOutOfOrderFlag());
     double err = sum * errorFactor(uPvt->getLgConfigK(), uPvt->isOutOfOrderFlag(), 2.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sum, u->getEstimate(), err);
   }
@@ -296,7 +297,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u->update(*h3);
     CPPUNIT_ASSERT_EQUAL(CurMode::SET, uPvt->getCurrentMode());
     CPPUNIT_ASSERT_EQUAL(12, u->getLgConfigK());
-    CPPUNIT_ASSERT_EQUAL(false, uPvt->isOutOfOrderFlag());
+    CPPUNIT_ASSERT_EQUAL(true, uPvt->isOutOfOrderFlag());
     double err = sum * errorFactor(uPvt->getLgConfigK(), uPvt->isOutOfOrderFlag(), 2.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sum, u->getEstimate(), err);
   }
@@ -356,15 +357,15 @@ class HllUnionTest : public CppUnit::TestFixture {
 
   hll_sketch buildSketch(int lgK, TgtHllType type, int n) {
     hll_sketch sk = HllSketch::newInstance(lgK);
-    for (int i = 0; i < n; ++i) { sk->update(i); }
+    for (int i = 0; i < n; ++i) { sk->update(i + v); }
     v += n;
     return sk;
   }
 
 };
 
-uint64_t HllUnionTest::v = 0;
+uint64_t UnionCaseTest::v = 0;
 
-CPPUNIT_TEST_SUITE_REGISTRATION(HllUnionTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(UnionCaseTest);
 
 } /* namespace datasketches */
