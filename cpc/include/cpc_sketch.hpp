@@ -92,10 +92,78 @@ class cpc_sketch {
       return getIconConfidenceUB(state, kappa);
     }
 
+    void update(const std::string& value) {
+      if (value.empty()) return;
+      update(value.c_str(), value.length());
+    }
+
     void update(uint64_t value) {
       update(&value, sizeof(value));
     }
 
+    void update(int64_t value) {
+      update(&value, sizeof(value));
+    }
+
+    // for compatibility with Java implementation
+    void update(uint32_t value) {
+      update(static_cast<uint64_t>(value));
+    }
+
+    // for compatibility with Java implementation
+    void update(int32_t value) {
+      update(static_cast<int64_t>(value));
+    }
+
+    // for compatibility with Java implementation
+    void update(uint16_t value) {
+      update(static_cast<uint64_t>(value));
+    }
+
+    // for compatibility with Java implementation
+    void update(int16_t value) {
+      update(static_cast<int64_t>(value));
+    }
+
+    // for compatibility with Java implementation
+    void update(uint8_t value) {
+      update(static_cast<uint64_t>(value));
+    }
+
+    // for compatibility with Java implementation
+    void update(int8_t value) {
+      update(static_cast<int64_t>(value));
+    }
+
+    typedef union {
+      int64_t long_value;
+      double double_value;
+    } long_double_union;
+
+    // for compatibility with Java implementation
+    void update(double value) {
+      long_double_union ldu;
+      if (value == 0.0) {
+        ldu.double_value = 0.0; // canonicalize -0.0 to 0.0
+      } else if (std::isnan(value)) {
+        ldu.long_value = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
+      } else {
+        ldu.double_value = value;
+      }
+      update(&ldu, sizeof(ldu));
+    }
+
+    // for compatibility with Java implementation
+    void update(float value) {
+      update(static_cast<double>(value));
+    }
+
+    // Be very careful to hash input values consistently using the same approach
+    // either over time or on different platforms
+    // or while passing sketches from Java environment or to Java environment
+    // Otherwise two sketches that should represent overlapping sets will be disjoint
+    // For instance, for signed 32-bit values call update(int32_t) method above,
+    // which does widening conversion to int64_t, if compatibility with Java is expected
     void update(const void* value, int size) {
       HashState hashes;
       MurmurHash3_x64_128(value, size, seed, hashes);

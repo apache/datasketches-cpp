@@ -36,6 +36,9 @@ class cpc_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(kappa_range);
   CPPUNIT_TEST(validate_fail);
   CPPUNIT_TEST(serialize_both_ways);
+  CPPUNIT_TEST(update_int_equivalence);
+  CPPUNIT_TEST(update_float_equivalience);
+  CPPUNIT_TEST(update_string_equivalence);
   CPPUNIT_TEST_SUITE_END();
 
   void lg_k_limits() {
@@ -305,6 +308,34 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     char* pp = new char[s.tellp()];
     s.read(pp, s.tellp());
     CPPUNIT_ASSERT(std::memcmp(pp, static_cast<char*>(data.first.get()) + header_size_bytes, data.second - header_size_bytes) == 0);
+  }
+
+  void update_int_equivalence() {
+    cpc_sketch sketch(11);
+    sketch.update((uint64_t) 1);
+    sketch.update((int64_t) 1);
+    sketch.update((uint32_t) 1);
+    sketch.update((int32_t) 1);
+    sketch.update((uint16_t) 1);
+    sketch.update((int16_t) 1);
+    sketch.update((uint8_t) 1);
+    sketch.update((int8_t) 1);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1, sketch.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void update_float_equivalience() {
+    cpc_sketch sketch(11);
+    sketch.update((float) 1);
+    sketch.update((double) 1);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1, sketch.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void update_string_equivalence() {
+    cpc_sketch sketch(11);
+    const std::string a("a");
+    sketch.update(a);
+    sketch.update(a.c_str(), a.length());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1, sketch.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
   }
 
 };
