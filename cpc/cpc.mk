@@ -38,12 +38,12 @@ $(CPC_TSTBUILD)/%.o: $(CPC_TSTDIR)/%.cpp
 	@$(CC) $(CPPFLAGS) $(INC) $(CPC_INCLIST) -c -o $@ $<
 
 .PHONY: cpc_test cpc_clean
-cpc_test: $(COM_TSTOBJS) $(CPC_OBJECTS) $(CPC_TSTOBJS)
+cpc_exec: $(COM_TSTOBJS) $(CPC_OBJECTS) $(CPC_TSTOBJS)
 	@echo "Linking $(CPC_TARGET)..."
-	@$(CC) $^ -o $(CPC_TARGET) $(LIB)
+	@$(CC) $^ -o $(CPC_TARGET) $(TSTLNKFLAGS) $(LIB)
 
-cpc_exec: cpc_test
-	cd cpc; DYLD_LIBRARY_PATH=../$(TARGETDIR) ./$(CPC_TEST_BIN)
+cpc_test: $(LIBRARY) cpc_exec
+	@cd cpc; DYLD_LIBRARY_PATH=../$(TARGETDIR) ./$(CPC_TEST_BIN)
 
 cpc_clean:
 	@echo "Cleaning cpc...";
