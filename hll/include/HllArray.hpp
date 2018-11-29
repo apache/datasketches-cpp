@@ -3,7 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _HLLARRAY_HPP_
+#define _HLLARRAY_HPP_
 
 #include "HllSketchImpl.hpp"
 #include "HllUtil.hpp"
@@ -13,25 +14,25 @@ namespace datasketches {
 
 class HllArray : public HllSketchImpl {
   public:
-    explicit HllArray(const int lgConfigK, const TgtHllType tgtHllType);
+    explicit HllArray(int lgConfigK, TgtHllType tgtHllType);
     explicit HllArray(const HllArray& that);
 
-    static HllArray* newHll(const int lgConfigK, const TgtHllType tgtHllType);
+    static HllArray* newHll(int lgConfigK, TgtHllType tgtHllType);
     static HllArray* newHll(std::istream& is);
 
-    virtual void serialize(std::ostream& os, const bool compact) const;
+    virtual void serialize(std::ostream& os, bool compact) const;
 
     virtual ~HllArray();
 
     virtual HllArray* copy() const = 0;
-    virtual HllArray* copyAs(const TgtHllType tgtHllType) const;
+    virtual HllArray* copyAs(TgtHllType tgtHllType) const;
 
-    virtual HllSketchImpl* couponUpdate(const int coupon);
+    virtual HllSketchImpl* couponUpdate(int coupon);
 
     virtual double getEstimate() const;
     virtual double getCompositeEstimate() const;
-    virtual double getLowerBound(const int numStdDev) const;
-    virtual double getUpperBound(const int numStdDev) const;
+    virtual double getLowerBound(int numStdDev) const;
+    virtual double getUpperBound(int numStdDev) const;
 
     virtual HllSketchImpl* reset();
 
@@ -57,7 +58,7 @@ class HllArray : public HllSketchImpl {
     virtual bool isEmpty() const;
     virtual bool isCompact() const;
 
-    virtual void putOutOfOrderFlag(const bool flag);
+    virtual void putOutOfOrderFlag(bool flag);
 
     double getKxQ0() const;
     double getKxQ1() const;
@@ -66,25 +67,25 @@ class HllArray : public HllSketchImpl {
     virtual int getPreInts() const;
 
     virtual int getSlot(int slotNo) const = 0;
-    virtual void putSlot(const int slotNo, const int value) = 0;
+    virtual void putSlot(int slotNo, int value) = 0;
 
-    void putCurMin(const int curMin);
-    void putHipAccum(const double hipAccum);
-    void putKxQ0(const double kxq0);
-    void putKxQ1(const double kxq1);
-    void putNumAtCurMin(const int numAtCurMin);
+    void putCurMin(int curMin);
+    void putHipAccum(double hipAccum);
+    void putKxQ0(double kxq0);
+    void putKxQ1(double kxq1);
+    void putNumAtCurMin(int numAtCurMin);
 
-    static int hll4ArrBytes(const int lgConfigK);
-    static int hll6ArrBytes(const int lgConfigK);
-    static int hll8ArrBytes(const int lgConfigK);
+    static int hll4ArrBytes(int lgConfigK);
+    static int hll6ArrBytes(int lgConfigK);
+    static int hll8ArrBytes(int lgConfigK);
 
     virtual AuxHashMap* getAuxHashMap() const;
 
   protected:
     // TODO: does this need to be static?
-    static void hipAndKxQIncrementalUpdate(HllArray& host, const int oldValue, const int newValue);
-    double getHllBitMapEstimate(const int lgConfigK, const int curMin, const int numAtCurMin) const;
-    double getHllRawEstimate(const int lgConfigK, const double kxqSum) const;
+    static void hipAndKxQIncrementalUpdate(HllArray& host, int oldValue, int newValue);
+    double getHllBitMapEstimate(int lgConfigK, int curMin, int numAtCurMin) const;
+    double getHllRawEstimate(int lgConfigK, double kxqSum) const;
 
     double hipAccum;
     double kxq0;
@@ -97,5 +98,6 @@ class HllArray : public HllSketchImpl {
     friend class Conversions;
 };
 
-
 }
+
+#endif /* _HLLARRAY_HPP_ */

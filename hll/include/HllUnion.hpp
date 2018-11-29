@@ -38,7 +38,7 @@ namespace datasketches {
  */
 class HllUnionPvt : public HllUnion {
   public:
-    explicit HllUnionPvt(const int lgMaxK);
+    explicit HllUnionPvt(int lgMaxK);
     explicit HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch);
     static hll_union deserialize(std::istream& is);
 
@@ -46,8 +46,8 @@ class HllUnionPvt : public HllUnion {
 
     virtual double getEstimate() const;
     virtual double getCompositeEstimate() const;
-    virtual double getLowerBound(const int numStdDev) const;
-    virtual double getUpperBound(const int numStdDev) const;
+    virtual double getLowerBound(int numStdDev) const;
+    virtual double getUpperBound(int numStdDev) const;
 
     virtual int getCompactSerializationBytes() const;
     virtual int getUpdatableSerializationBytes() const;
@@ -66,26 +66,26 @@ class HllUnionPvt : public HllUnion {
     virtual void serializeUpdatable(std::ostream& os) const;
 
     virtual std::ostream& to_string(std::ostream& os,
-                                    const bool summary = true,
-                                    const bool detail = false,
-                                    const bool auxDetail = false,
-                                    const bool all = false) const;
+                                    bool summary = true,
+                                    bool detail = false,
+                                    bool auxDetail = false,
+                                    bool all = false) const;
 
     virtual void update(const HllSketch& sketch);
-    virtual void update(const std::string datum);
-    virtual void update(const uint64_t datum);
-    virtual void update(const uint32_t datum);
-    virtual void update(const uint16_t datum);
-    virtual void update(const uint8_t datum);
-    virtual void update(const int64_t datum);
-    virtual void update(const int32_t datum);
-    virtual void update(const int16_t datum);
-    virtual void update(const int8_t datum);
-    virtual void update(const double datum);
-    virtual void update(const float datum);
-    virtual void update(const void* data, const size_t lengthBytes);
+    virtual void update(const std::string& datum);
+    virtual void update(uint64_t datum);
+    virtual void update(uint32_t datum);
+    virtual void update(uint16_t datum);
+    virtual void update(uint8_t datum);
+    virtual void update(int64_t datum);
+    virtual void update(int32_t datum);
+    virtual void update(int16_t datum);
+    virtual void update(int8_t datum);
+    virtual void update(double datum);
+    virtual void update(float datum);
+    virtual void update(const void* data, size_t lengthBytes);
 
-    void couponUpdate(const int coupon);
+    void couponUpdate(int coupon);
 
     CurMode getCurrentMode() const;
     int getSerializationVersion() const;
@@ -106,12 +106,12 @@ class HllUnionPvt : public HllUnion {
     * //@return the union of the two sketches in the form of the internal HllSketchImpl, which for
     * //the union is always in HLL_8 form.
     */
-    void unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK);
+    void unionImpl(HllSketchImpl* incomingImpl, int lgMaxK);
 
-    static HllSketchImpl* copyOrDownsampleHll(HllSketchImpl* srcImpl, const int tgtLgK);
+    static HllSketchImpl* copyOrDownsampleHll(HllSketchImpl* srcImpl, int tgtLgK);
 
     // calls couponUpdate on sketch, freeing the old sketch upon changes in CurMode
-    static HllSketchImpl* leakFreeCouponUpdate(HllSketchImpl* impl, const int coupon);
+    static HllSketchImpl* leakFreeCouponUpdate(HllSketchImpl* impl, int coupon);
 
     const int lgMaxK;
     std::unique_ptr<HllSketchPvt> gadget;

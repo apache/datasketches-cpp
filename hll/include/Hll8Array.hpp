@@ -3,7 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _HLL8ARRAY_HPP_
+#define _HLL8ARRAY_HPP_
 
 #include "HllArray.hpp"
 #include "HllPairIterator.hpp"
@@ -12,7 +13,7 @@ namespace datasketches {
 
 class Hll8Array : public HllArray {
   public:
-    explicit Hll8Array(const int lgConfigK);
+    explicit Hll8Array(int lgConfigK);
     explicit Hll8Array(const Hll8Array& that);
 
     virtual ~Hll8Array();
@@ -21,8 +22,8 @@ class Hll8Array : public HllArray {
 
     virtual std::unique_ptr<PairIterator> getIterator() const;
 
-    virtual int getSlot(const int slotNo) const;
-    virtual void putSlot(const int slotNo, const int value);
+    virtual int getSlot(int slotNo) const;
+    virtual void putSlot(int slotNo, int value);
 
     virtual int getHllByteArrBytes() const;
 
@@ -32,7 +33,7 @@ class Hll8Array : public HllArray {
 
 class Hll8Iterator : public HllPairIterator {
   public:
-    Hll8Iterator(const Hll8Array& array, const int lengthPairs);
+    Hll8Iterator(const Hll8Array& array, int lengthPairs);
     virtual int value();
 
     virtual ~Hll8Iterator();
@@ -42,3 +43,5 @@ class Hll8Iterator : public HllPairIterator {
 };
 
 }
+
+#endif /* _HLL8ARRAY_HPP_ */

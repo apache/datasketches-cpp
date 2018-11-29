@@ -3,7 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _INTARRAYPAIRITERATOR_HPP_
+#define _INTARRAYPAIRITERATOR_HPP_
 
 #include "PairIterator.hpp"
 
@@ -11,7 +12,7 @@ namespace datasketches {
 
 class IntArrayPairIterator : public PairIterator {
   public:
-    explicit IntArrayPairIterator(const int* array, const int len, const int lgConfigK);
+    explicit IntArrayPairIterator(const int* array, int len, int lgConfigK);
 
     virtual ~IntArrayPairIterator();
 
@@ -37,3 +38,5 @@ class IntArrayPairIterator : public PairIterator {
 };
 
 }
+
+#endif /* _INTARRAYPAIRITERATOR_HPP_ */

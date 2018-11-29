@@ -73,7 +73,7 @@ void HllSketchPvt::reset() {
   hllSketchImpl = newImpl;
 }
 
-void HllSketchPvt::update(const std::string datum) {
+void HllSketchPvt::update(const std::string& datum) {
   if (datum.empty()) { return; }
   HashState hashResult;
   HllUtil::hash(datum.c_str(), datum.length(), HllUtil::DEFAULT_UPDATE_SEED, hashResult);

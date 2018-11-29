@@ -3,7 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _HLLUTIL_HPP_
+#define _HLLUTIL_HPP_
 
 #include "MurmurHash3.h"
 #include "RelativeErrorTables.hpp"
@@ -70,21 +71,21 @@ public:
 
   static int coupon(const uint64_t hash[]);
   static int coupon(const HashState& hashState);
-  static void hash(const void* key, const int keyLen, const uint64_t seed, HashState& result);
+  static void hash(const void* key, int keyLen, uint64_t seed, HashState& result);
 
-  static int checkLgK(const int lgK);
-  static void checkMemSize(const uint64_t minBytes, const uint64_t capBytes);
-  static inline void checkNumStdDev(const int numStdDev);
-  static int pair(const int slotNo, const int value);
-  static int getLow26(const unsigned int coupon);
-  static int getValue(const unsigned int coupon);
-  static double invPow2(const int e);
+  static int checkLgK(int lgK);
+  static void checkMemSize(uint64_t minBytes, uint64_t capBytes);
+  static inline void checkNumStdDev(int numStdDev);
+  static int pair(int slotNo, int value);
+  static int getLow26(unsigned int coupon);
+  static int getValue(unsigned int coupon);
+  static double invPow2(int e);
   static unsigned int ceilingPowerOf2(unsigned int n);
   static unsigned int simpleIntLog2(unsigned int n); // n must be power of 2
   static unsigned int getNumberOfLeadingZeros(uint64_t x);
   static unsigned int numberOfTrailingZeros(unsigned int n);
-  static double getRelErr(const bool upperBound, const bool unioned,
-                          const int lgConfigK, const int numStdDev);
+  static double getRelErr(bool upperBound, bool unioned,
+                          int lgConfigK, int numStdDev);
 };
 
 inline int HllUtil::coupon(const uint64_t hash[]) {
@@ -219,3 +220,5 @@ inline unsigned int HllUtil::getNumberOfLeadingZeros(const uint64_t x) {
 }
 
 }
+
+#endif /* _HLLUTIL_HPP_ */

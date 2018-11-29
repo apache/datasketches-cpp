@@ -67,7 +67,7 @@ void HllUnionPvt::update(const HllSketch& sketch) {
   unionImpl(static_cast<const HllSketchPvt&>(sketch).hllSketchImpl, lgMaxK);
 }
 
-void HllUnionPvt::update(const std::string datum) {
+void HllUnionPvt::update(const std::string& datum) {
   gadget->update(datum);
 }
 

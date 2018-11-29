@@ -3,8 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#ifndef _HLL_H_
-#define _HLL_H_
+#ifndef _HLL_HPP_
+#define _HLL_HPP_
 
 #include <memory>
 #include <iostream>
@@ -26,13 +26,13 @@ typedef std::unique_ptr<HllUnion> hll_union;
 
 class HllSketch {
   public:
-    static hll_sketch newInstance(const int lgConfigK, const TgtHllType tgtHllType = HLL_4);
+    static hll_sketch newInstance(int lgConfigK, TgtHllType tgtHllType = HLL_4);
     static hll_sketch deserialize(std::istream& is);
 
     virtual ~HllSketch();
 
     virtual hll_sketch copy() const = 0;
-    virtual hll_sketch copyAs(const TgtHllType tgtHllType) const = 0;
+    virtual hll_sketch copyAs(TgtHllType tgtHllType) const = 0;
 
     virtual void reset() = 0;
     
@@ -40,23 +40,23 @@ class HllSketch {
     virtual void serializeUpdatable(std::ostream& os) const = 0;
 
     virtual std::ostream& to_string(std::ostream& os,
-                                    const bool summary = true,
-                                    const bool detail = false,
-                                    const bool auxDetail = false,
-                                    const bool all = false) const = 0;
+                                    bool summary = true,
+                                    bool detail = false,
+                                    bool auxDetail = false,
+                                    bool all = false) const = 0;
 
-    virtual void update(const std::string datum) = 0;
-    virtual void update(const uint64_t datum) = 0;
-    virtual void update(const uint32_t datum) = 0;
-    virtual void update(const uint16_t datum) = 0;
-    virtual void update(const uint8_t datum) = 0;
-    virtual void update(const int64_t datum) = 0;
-    virtual void update(const int32_t datum) = 0;
-    virtual void update(const int16_t datum) = 0;
-    virtual void update(const int8_t datum) = 0;
-    virtual void update(const double datum) = 0;
-    virtual void update(const float datum) = 0;
-    virtual void update(const void* data, const size_t lengthBytes) = 0;
+    virtual void update(const std::string& datum) = 0;
+    virtual void update(uint64_t datum) = 0;
+    virtual void update(uint32_t datum) = 0;
+    virtual void update(uint16_t datum) = 0;
+    virtual void update(uint8_t datum) = 0;
+    virtual void update(int64_t datum) = 0;
+    virtual void update(int32_t datum) = 0;
+    virtual void update(int16_t datum) = 0;
+    virtual void update(int8_t datum) = 0;
+    virtual void update(double datum) = 0;
+    virtual void update(float datum) = 0;
+    virtual void update(const void* data, size_t lengthBytes) = 0;
 
     virtual double getEstimate() const = 0;
     virtual double getCompositeEstimate() const = 0;
@@ -82,23 +82,23 @@ class HllSketch {
      * @param tgtHllType the desired Hll type
      * @return the maximum size in bytes that this sketch can grow to.
      */
-    static int getMaxUpdatableSerializationBytes(const int lgK, TgtHllType tgtHllType);
-    static double getRelErr(const bool upperBound, const bool unioned,
-                            const int lgConfigK, const int numStdDev);
+    static int getMaxUpdatableSerializationBytes(int lgK, TgtHllType tgtHllType);
+    static double getRelErr(bool upperBound, bool unioned,
+                            int lgConfigK, int numStdDev);
 
 };
 
 class HllUnion {
   public:
-    static hll_union newInstance(const int lgMaxK);
+    static hll_union newInstance(int lgMaxK);
     static hll_union deserialize(std::istream& is);
 
     virtual ~HllUnion();
 
     virtual double getEstimate() const = 0;
     virtual double getCompositeEstimate() const = 0;
-    virtual double getLowerBound(const int numStdDev) const = 0;
-    virtual double getUpperBound(const int numStdDev) const = 0;
+    virtual double getLowerBound(int numStdDev) const = 0;
+    virtual double getUpperBound(int numStdDev) const = 0;
 
     virtual int getCompactSerializationBytes() const = 0;
     virtual int getUpdatableSerializationBytes() const = 0;
@@ -117,34 +117,33 @@ class HllUnion {
     virtual void serializeUpdatable(std::ostream& os) const = 0;
 
     virtual std::ostream& to_string(std::ostream& os,
-                                    const bool summary = true,
-                                    const bool detail = false,
-                                    const bool auxDetail = false,
-                                    const bool all = false) const = 0;
+                                    bool summary = true,
+                                    bool detail = false,
+                                    bool auxDetail = false,
+                                    bool all = false) const = 0;
 
     virtual void update(const HllSketch& sketch) = 0;
-    virtual void update(const std::string datum) = 0;
-    virtual void update(const uint64_t datum) = 0;
-    virtual void update(const uint32_t datum) = 0;
-    virtual void update(const uint16_t datum) = 0;
-    virtual void update(const uint8_t datum) = 0;
-    virtual void update(const int64_t datum) = 0;
-    virtual void update(const int32_t datum) = 0;
-    virtual void update(const int16_t datum) = 0;
-    virtual void update(const int8_t datum) = 0;
-    virtual void update(const double datum) = 0;
-    virtual void update(const float datum) = 0;
-    virtual void update(const void* data, const size_t lengthBytes) = 0;
+    virtual void update(const std::string& datum) = 0;
+    virtual void update(uint64_t datum) = 0;
+    virtual void update(uint32_t datum) = 0;
+    virtual void update(uint16_t datum) = 0;
+    virtual void update(uint8_t datum) = 0;
+    virtual void update(int64_t datum) = 0;
+    virtual void update(int32_t datum) = 0;
+    virtual void update(int16_t datum) = 0;
+    virtual void update(int8_t datum) = 0;
+    virtual void update(double datum) = 0;
+    virtual void update(float datum) = 0;
+    virtual void update(const void* data, size_t lengthBytes) = 0;
 
-    static int getMaxSerializationBytes(const int lgK);
-    static double getRelErr(const bool upperBound, const bool unioned,
-                            const int lgConfigK, const int numStdDev);
-
+    static int getMaxSerializationBytes(int lgK);
+    static double getRelErr(bool upperBound, bool unioned,
+                            int lgConfigK, int numStdDev);
 };
 
-std::ostream& operator<<(std::ostream& os, HllSketch& sketch);
+std::ostream& operator<<(std::ostream& os, const HllSketch& sketch);
 std::ostream& operator<<(std::ostream& os, hll_sketch sketch);
 
 } // namespace datasketches
 
-#endif // _HLL_H_
+#endif // _HLL_HPP_

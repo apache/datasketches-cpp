@@ -3,7 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _COUPONHASHSET_HPP_
+#define _COUPONHASHSET_HPP_
 
 #include "CouponList.hpp"
 
@@ -14,14 +15,14 @@ class CouponHashSet : public CouponList {
     static CouponHashSet* newSet(std::istream& is);
 
   protected:
-    explicit CouponHashSet(const int lgConfigK, const TgtHllType tgtHllType);
+    explicit CouponHashSet(int lgConfigK, TgtHllType tgtHllType);
     explicit CouponHashSet(const CouponHashSet& that);
-    explicit CouponHashSet(const CouponHashSet& that, const TgtHllType tgtHllType);
+    explicit CouponHashSet(const CouponHashSet& that, TgtHllType tgtHllType);
     
     virtual ~CouponHashSet();
 
     virtual CouponHashSet* copy() const;
-    virtual CouponHashSet* copyAs(const TgtHllType tgtHllType) const;
+    virtual CouponHashSet* copyAs(TgtHllType tgtHllType) const;
 
     virtual HllSketchImpl* couponUpdate(int coupon);
 
@@ -32,7 +33,9 @@ class CouponHashSet : public CouponList {
 
   private:
     bool checkGrowOrPromote();
-    void growHashSet(const int srcLgCoupArrSize, const int tgtLgCoupArrSize);
+    void growHashSet(int srcLgCoupArrSize, int tgtLgCoupArrSize);
 };
 
 }
+
+#endif /* _COUPONHASHSET_HPP_ */

@@ -29,11 +29,52 @@ namespace datasketches {
 class hll_sketch_test: public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(hll_sketch_test);
+  CPPUNIT_TEST(checkInputTypes);
   //CPPUNIT_TEST(checkIterator);
   CPPUNIT_TEST(simple_union);
   CPPUNIT_TEST(k_limits);
   //CPPUNIT_TEST(empty);
   CPPUNIT_TEST_SUITE_END();
+
+  void checkInputTypes() {
+    hll_sketch sk = HllSketch::newInstance(8, TgtHllType::HLL_8);
+
+    // inserting the same value as a variety of input types
+    sk->update((uint8_t) 102);
+    sk->update((uint16_t) 102);
+    sk->update((uint32_t) 102);
+    sk->update((uint64_t) 102);
+    sk->update((int8_t) 102);
+    sk->update((int16_t) 102);
+    sk->update((int32_t) 102);
+    sk->update((int64_t) 102);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, sk->getEstimate(), 0.01);
+
+    sk->update((float) -2.0);
+    sk->update((double) -2.0);
+
+    std::string str = "input string";
+    sk->update(str);
+    sk->update(str.c_str(), str.length());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(3.0, sk->getEstimate(), 0.01);
+
+    sk = HllSketch::newInstance(8, TgtHllType::HLL_6);
+    sk->update((float) 0.0);
+    sk->update((float) -0.0);
+    sk->update((double) 0.0);
+    sk->update((double) -0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, sk->getEstimate(), 0.01);
+
+    sk = HllSketch::newInstance(8, TgtHllType::HLL_4);
+    sk->update(std::nanf("3"));
+    sk->update(std::nan((char*)nullptr));
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, sk->getEstimate(), 0.01);
+
+    sk = HllSketch::newInstance(8, TgtHllType::HLL_4);
+    sk->update(nullptr, 0);
+    sk->update("");
+    CPPUNIT_ASSERT(sk->isEmpty());
+  }
 
   void simple_union() {
     hll_sketch s1 = HllSketch::newInstance(8, TgtHllType::HLL_8);

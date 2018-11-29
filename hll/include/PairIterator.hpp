@@ -3,7 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _PAIRITERATOR_HPP_
+#define _PAIRITERATOR_HPP_
 
 #include <string>
 
@@ -28,3 +29,5 @@ class PairIterator {
 };
 
 }
+
+#endif /* _PAIRITERATOR_HPP_ */

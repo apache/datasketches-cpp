@@ -21,7 +21,7 @@ class HllSketchImpl;
 // Contains the non-public API for HllSketch
 class HllSketchPvt : public HllSketch {
   public:
-    explicit HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType = HLL_4);
+    explicit HllSketchPvt(int lgConfigK, TgtHllType tgtHllType = HLL_4);
     static std::unique_ptr<HllSketchPvt> deserialize(std::istream& is);
 
     virtual ~HllSketchPvt();
@@ -31,31 +31,31 @@ class HllSketchPvt : public HllSketch {
     HllSketchPvt(HllSketchImpl* that);
 
     hll_sketch copy() const;
-    hll_sketch copyAs(const TgtHllType tgtHllType) const;
+    hll_sketch copyAs(TgtHllType tgtHllType) const;
 
     virtual void reset();
 
-    virtual void update(const std::string datum);
-    virtual void update(const uint64_t datum);
-    virtual void update(const uint32_t datum);
-    virtual void update(const uint16_t datum);
-    virtual void update(const uint8_t datum);
-    virtual void update(const int64_t datum);
-    virtual void update(const int32_t datum);
-    virtual void update(const int16_t datum);
-    virtual void update(const int8_t datum);
-    virtual void update(const double datum);
-    virtual void update(const float datum);
-    virtual void update(const void* data, const size_t lengthBytes);
+    virtual void update(const std::string& datum);
+    virtual void update(uint64_t datum);
+    virtual void update(uint32_t datum);
+    virtual void update(uint16_t datum);
+    virtual void update(uint8_t datum);
+    virtual void update(int64_t datum);
+    virtual void update(int32_t datum);
+    virtual void update(int16_t datum);
+    virtual void update(int8_t datum);
+    virtual void update(double datum);
+    virtual void update(float datum);
+    virtual void update(const void* data, size_t lengthBytes);
     
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
 
     virtual std::ostream& to_string(std::ostream& os,
-                                    const bool summary = true,
-                                    const bool detail = false,
-                                    const bool auxDetail = false,
-                                    const bool all = false) const;
+                                    bool summary = true,
+                                    bool detail = false,
+                                    bool auxDetail = false,
+                                    bool all = false) const;
 
     virtual double getEstimate() const;
     virtual double getCompositeEstimate() const;
