@@ -33,11 +33,22 @@ typedef std::unique_ptr<void, void(*)(void*)> ptr_with_deleter;
 class cpc_sketch;
 typedef std::unique_ptr<cpc_sketch, void(*)(cpc_sketch*)> cpc_sketch_unique_ptr;
 
+// allocation and initialization of global compression tables
+// call this before anything else if you want to control the initialization time
+// or you want to use a custom memory allocation and deallocation mechanism
+// otherwise initialization happens during instantiation of the first cpc_sketch or cpc_union
+// it is safe to call more than once assuming no race conditions
+// this is not thread safe! neither is the rest of the library
+void cpc_init(void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free);
+
+// optional deallocation of globally allocated compression tables
+void cpc_cleanup();
+
 class cpc_sketch {
   public:
 
-    explicit cpc_sketch(uint8_t lg_k, uint64_t seed = DEFAULT_SEED, void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free) : seed(seed) {
-      fm85InitAD(alloc, dealloc);
+    explicit cpc_sketch(uint8_t lg_k, uint64_t seed = DEFAULT_SEED) : seed(seed) {
+      fm85Init();
       if (lg_k < CPC_MIN_LG_K or lg_k > CPC_MAX_LG_K) {
         throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
       }
@@ -210,8 +221,8 @@ class cpc_sketch {
     }
 
     static cpc_sketch_unique_ptr
-    deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free) {
-      fm85InitAD(alloc, dealloc);
+    deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED) {
+      fm85Init();
       uint8_t preamble_ints;
       is.read((char*)&preamble_ints, sizeof(preamble_ints));
       uint8_t serial_version;
@@ -299,15 +310,15 @@ class cpc_sketch {
       delete [] compressed.compressedSurprisingValues;
       delete [] compressed.compressedWindow;
       cpc_sketch_unique_ptr sketch_ptr(
-          new (alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
+          new (fm85alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
           [](cpc_sketch* s) { s->~cpc_sketch(); fm85free(s); }
       );
       return std::move(sketch_ptr);
     }
 
     static cpc_sketch_unique_ptr
-    deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free) {
-      fm85InitAD(alloc, dealloc);
+    deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED) {
+      fm85Init();
       const char* ptr = static_cast<const char*>(bytes);
       uint8_t preamble_ints;
       ptr += copy_from_mem(ptr, &preamble_ints, sizeof(preamble_ints));
@@ -397,7 +408,7 @@ class cpc_sketch {
       delete [] compressed.compressedSurprisingValues;
       delete [] compressed.compressedWindow;
       cpc_sketch_unique_ptr sketch_ptr(
-          new (alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
+          new (fm85alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
           [](cpc_sketch* s) { s->~cpc_sketch(); fm85free(s); }
       );
       return std::move(sketch_ptr);
@@ -486,9 +497,6 @@ class cpc_sketch {
       return size;
     }
 };
-
-// optional deallocation of globally allocated compression tables
-void cpc_cleanup();
 
 } /* namespace datasketches */
 
