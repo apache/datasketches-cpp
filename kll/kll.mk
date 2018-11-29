@@ -18,12 +18,12 @@ $(KLL_TSTBUILD)/%.o: $(KLL_TSTDIR)/%.cpp
 	@$(CC) $(CPPFLAGS) $(INC) $(KLL_INCLIST) -c -o $@ $<
 
 .PHONY: kll_test kll_clean
-kll_test: $(COM_TSTOBJS) $(KLL_TSTOBJS)
+kll_exec: $(COM_TSTOBJS) $(KLL_TSTOBJS)
 	@echo "Linking $(KLL_TARGET)..."
-	@$(CC) $^ -o $(KLL_TARGET) $(LIB)
+	@$(CC) $^ -o $(KLL_TARGET) $(TSTLNKFLAGS) $(LIB)
 
-kll_exec: kll_test
-	cd kll; DYLD_LIBRARY_PATH=../$(TARGETDIR) ./$(KLL_TEST_BIN)
+kll_test: kll_exec
+	@cd kll; DYLD_LIBRARY_PATH=../$(TARGETDIR) ./$(KLL_TEST_BIN)
 
 .PHONY: kll_clean
 kll_clean:

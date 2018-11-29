@@ -21,8 +21,24 @@ ifeq ($(UNAME_S),Linux)
     #LIB += -L /usr/pgsql-$(PG_VER)/lib
 else
   CFLAGS += -x c $(COMMON_FLAGS)
-  CPPFLAGS += -std=c++17 -stdlib=libc++ $(COMMON_FLAGS)
-  #CPPFLAGS += -std=c++17 $(COMMON_FLAGS)
-  LINKFLAGS := -dynamiclib
-  #LINKFLAGS := -shared
+  CPPFLAGS += -std=c++17 $(COMMON_FLAGS)
+
+  ifeq (clang,$(findstring clang,$(CC)))
+    LINKFLAGS := -dynamiclib
+    CPPFLAGS += -stdlib=libc++
+  else
+    LINKFLAGS := -shared
+  endif
+endif
+
+ifeq ($(COVERAGE),1)
+  #ifeq (clang,$(findstring clang,$(CC)))
+    CFLAGS += --coverage
+    CPPFLAGS += --coverage
+    LINKFLAGS += --coverage
+    TSTLNKFLAGS := --coverage
+  #else
+  #  CFLAGS += --coverage -ftest-covearge -fprofile-arcs
+  #  CPPFLAGS += --coverage -ftest-covearge -fprofile-arcs
+  #endif
 endif
