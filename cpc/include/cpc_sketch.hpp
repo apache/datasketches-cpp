@@ -28,7 +28,7 @@ namespace datasketches {
  * author Alexander Saydakov
  */
 
-typedef std::unique_ptr<void, void(*)(void*)> ptr_with_deleter;
+typedef std::unique_ptr<void, std::function<void(void*)>> ptr_with_deleter;
 
 class cpc_sketch;
 typedef std::unique_ptr<cpc_sketch, void(*)(cpc_sketch*)> cpc_sketch_unique_ptr;
