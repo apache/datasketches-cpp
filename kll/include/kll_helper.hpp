@@ -9,7 +9,6 @@
 #include <random>
 #include <stdexcept>
 #include <algorithm>
-#include <assert.h>
 
 namespace datasketches {
 
@@ -60,14 +59,13 @@ class kll_helper {
     }
 
     static uint32_t level_capacity(uint16_t k, uint8_t numLevels, uint8_t height, uint8_t min_wid) {
-      assert (height < numLevels);
+      if (height >= numLevels) throw std::invalid_argument("height >= numLevels");
       const uint8_t depth(numLevels - height - 1);
       return std::max((uint32_t) min_wid, int_cap_aux(k, depth));
     }
 
     static uint32_t int_cap_aux(uint16_t k, uint8_t depth) {
-      assert (k <= (1 << 30));
-      assert (depth <= 60);
+      if (depth > 60) throw std::invalid_argument("depth > 60");
       if (depth <= 30) return int_cap_aux_aux(k, depth);
       const uint8_t half(depth / 2);
       const uint8_t rest(depth - half);
@@ -76,12 +74,11 @@ class kll_helper {
     }
 
     static uint32_t int_cap_aux_aux(uint16_t k, uint8_t depth) {
-      assert (k <= (1 << 30));
-      assert (depth <= 30);
+      if (depth > 30) throw std::invalid_argument("depth > 30");
       const uint64_t twok(k << 1); // for rounding, we pre-multiply by 2
       const uint64_t tmp((uint64_t) (((uint64_t) twok << depth) / powers_of_three[depth]));
       const uint64_t result((tmp + 1) >> 1); // then here we add 1 and divide by 2
-      assert (result <= k);
+      if (result > k) throw std::logic_error("result > k");
       return result;
     }
 
@@ -115,7 +112,7 @@ class kll_helper {
 
     template <typename T>
     static void randomly_halve_down(T* buf, uint32_t start, uint32_t length) {
-      assert (is_even(length));
+      if (!is_even(length)) throw std::invalid_argument("length must be even");
       const uint32_t half_length(length / 2);
     #ifdef KLL_VALIDATION
       const uint32_t offset(deterministic_offset());
@@ -131,7 +128,7 @@ class kll_helper {
 
     template <typename T>
     static void randomly_halve_up(T* buf, uint32_t start, uint32_t length) {
-      assert (is_even(length));
+      if (!is_even(length)) throw std::invalid_argument("length must be even");
       const uint32_t half_length(length / 2);
     #ifdef KLL_VALIDATION
       const uint32_t offset(deterministic_offset());
@@ -170,8 +167,7 @@ class kll_helper {
           b++;
         }
       }
-      assert (a == lim_a);
-      assert (b == lim_b);
+      if (a != lim_a || b != lim_b) throw std::logic_error("inconsistent state");
     }
 
     struct compress_result {
@@ -207,7 +203,7 @@ class kll_helper {
     static compress_result general_compress(uint16_t k, uint8_t m, uint8_t num_levels_in, T* in_buf,
             uint32_t* in_levels, T* out_buf, uint32_t* out_levels, bool is_level_zero_sorted)
     {
-      assert (num_levels_in > 0); // things are too weird if zero levels are allowed
+      if (num_levels_in == 0) throw std::invalid_argument("num_levels_in == 0"); // things are too weird if zero levels are allowed
       uint8_t num_levels(num_levels_in);
       uint32_t current_item_count(in_levels[num_levels] - in_levels[0]); // decreases with each compaction
       uint32_t target_item_count = compute_total_capacity(k, m, num_levels); // increases if we add levels
@@ -229,7 +225,7 @@ class kll_helper {
         if ((current_item_count < target_item_count) or (raw_pop < level_capacity(k, num_levels, cur_level, m))) {
           // move level over as is
           // because in_buf and out_buf could be the same, make sure we are not moving data upwards!
-          assert (raw_beg >= out_levels[cur_level]);
+          if (raw_beg < out_levels[cur_level]) throw std::logic_error("wrong move");
           std::move(&in_buf[raw_beg], &in_buf[raw_lim], &out_buf[out_levels[cur_level]]);
           out_levels[cur_level + 1] = out_levels[cur_level] + raw_pop;
         } else {
@@ -282,7 +278,7 @@ class kll_helper {
         cur_level++;
       } // end of loop over levels
 
-      assert ((out_levels[num_levels] - out_levels[0]) == current_item_count);
+      if ((out_levels[num_levels] - out_levels[0]) != current_item_count) throw std::logic_error("inconsistent state");
 
       compress_result result;
       result.final_num_levels = num_levels;
