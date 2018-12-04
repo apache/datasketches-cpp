@@ -11,6 +11,7 @@
 #include <iostream>
 #include <iomanip>
 #include <functional>
+#include <string.h>
 
 #include "kll_quantile_calculator.hpp"
 #include "kll_helper.hpp"
@@ -140,6 +141,22 @@ template <typename T>
 void deserialize_items(std::istream& is, T* items, unsigned num) {
   is.read((char*)items, sizeof(T) * num);
 }
+
+// this should work for fixed size types, but needs to be specialized for other types
+template <typename T>
+size_t serialize_items(char* ptr, const T* items, unsigned num) {
+  memcpy(ptr, items, sizeof(T) * num);
+  return sizeof(T) * num;
+}
+
+ // this should work for fixed size types, but needs to be specialized for other types
+template <typename T>
+size_t deserialize_items(const char* ptr, T* items, unsigned num) {
+  memcpy(items, ptr, sizeof(T) * num);
+  return sizeof(T) * num;
+}
+
+typedef std::unique_ptr<void, std::function<void(void*)>> ptr_with_deleter;
 
 template <typename T, typename A = std::allocator<void>>
 class kll_sketch {
@@ -413,6 +430,48 @@ class kll_sketch {
       serialize_items<T>(os, &items_[levels_[0]], get_num_retained());
     }
 
+    std::pair<ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const {
+      const bool is_single_item = n_ == 1;
+      const size_t size = header_size_bytes + get_serialized_size_bytes();
+      typedef typename A::template rebind<char>::other AllocChar;
+      AllocChar allocator;
+      ptr_with_deleter data_ptr(
+        static_cast<void*>(allocator.allocate(size)),
+        [size](void* ptr) { AllocChar allocator; allocator.deallocate(static_cast<char*>(ptr), size); }
+      );
+      char* ptr = static_cast<char*>(data_ptr.get()) + header_size_bytes;
+      const uint8_t preamble_ints(is_empty() or is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
+      ptr += copy_to_mem(ptr, &preamble_ints, sizeof(preamble_ints));
+      const uint8_t serial_version(is_single_item ? SERIAL_VERSION_2 : SERIAL_VERSION_1);
+      ptr += copy_to_mem(ptr, &serial_version, sizeof(serial_version));
+      const uint8_t family(FAMILY);
+      ptr += copy_to_mem(ptr, &family, sizeof(family));
+      const uint8_t flags_byte(
+          (is_empty() ? 1 << flags::IS_EMPTY : 0)
+        | (is_level_zero_sorted_ ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
+        | (is_single_item ? 1 << flags::IS_SINGLE_ITEM : 0)
+      );
+      ptr += copy_to_mem(ptr, &flags_byte, sizeof(flags_byte));
+      ptr += copy_to_mem(ptr, &k_, sizeof(k_));
+      ptr += copy_to_mem(ptr, &m_, sizeof(m_));
+      const uint8_t unused(0);
+      ptr += copy_to_mem(ptr, &unused, sizeof(unused));
+      if (!is_empty()) {
+        if (!is_single_item) {
+          ptr += copy_to_mem(ptr, &n_, sizeof(n_));
+          ptr += copy_to_mem(ptr, &min_k_, sizeof(min_k_));
+          ptr += copy_to_mem(ptr, &num_levels_, sizeof(num_levels_));
+          ptr += copy_to_mem(ptr, &unused, sizeof(unused));
+          ptr += copy_to_mem(ptr, levels_, sizeof(levels_[0]) * num_levels_);
+          ptr += serialize_items<T>(ptr, &min_value_, 1);
+          ptr += serialize_items<T>(ptr, &max_value_, 1);
+        }
+        ptr += serialize_items<T>(ptr, &items_[levels_[0]], get_num_retained());
+      }
+      if (ptr != static_cast<char*>(data_ptr.get()) + size) throw std::logic_error("serialized size mismatch");
+      return std::make_pair(std::move(data_ptr), size);
+    }
+
     static std::unique_ptr<kll_sketch<T, A>, std::function<void(kll_sketch<T, A>*)>> deserialize(std::istream& is) {
       uint8_t preamble_ints;
       is.read((char*)&preamble_ints, sizeof(preamble_ints));
@@ -429,38 +488,47 @@ class kll_sketch {
       uint8_t unused;
       is.read((char*)&unused, sizeof(unused));
 
-      if (m != DEFAULT_M) {
-        throw std::invalid_argument("Possible corruption: M must be " + std::to_string(DEFAULT_M)
-            + ": " + std::to_string(m));
-      }
-      const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
-      const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM));
-      if (is_empty or is_single_item) {
-        if (preamble_ints != PREAMBLE_INTS_SHORT) {
-          throw std::invalid_argument("Possible corruption: preamble ints must be "
-              + std::to_string(PREAMBLE_INTS_SHORT) + " for an empty or single item sketch: " + std::to_string(preamble_ints));
-        }
-      } else {
-        if (preamble_ints != PREAMBLE_INTS_FULL) {
-          throw std::invalid_argument("Possible corruption: preamble ints must be "
-              + std::to_string(PREAMBLE_INTS_FULL) + " for a sketch with more than one item: " + std::to_string(preamble_ints));
-        }
-      }
-      if (serial_version != SERIAL_VERSION_1 and serial_version != SERIAL_VERSION_2) {
-        throw std::invalid_argument("Possible corruption: serial version mismatch: expected "
-            + std::to_string(SERIAL_VERSION_1) + " or " + std::to_string(SERIAL_VERSION_2)
-            + ", got " + std::to_string(serial_version));
-      }
-      if (family_id != FAMILY) {
-        throw std::invalid_argument("Possible corruption: family mismatch: expected "
-            + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
-      }
+      check_m(m);
+      check_preamble_ints(preamble_ints, flags_byte);
+      check_serial_version(serial_version);
+      check_family_id(family_id);
 
       typedef typename A::template rebind<kll_sketch<T, A>>::other AA;
-      AA a;
+      AA allocator;
+      const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
       std::unique_ptr<kll_sketch<T, A>, std::function<void(kll_sketch<T, A>*)>> sketch_ptr(
-          is_empty ? new (a.allocate(1)) kll_sketch<T, A>(k) : new (a.allocate(1)) kll_sketch<T, A>(k, flags_byte, is),
+          is_empty ? new (allocator.allocate(1)) kll_sketch<T, A>(k) : new (allocator.allocate(1)) kll_sketch<T, A>(k, flags_byte, is),
           [](kll_sketch<T, A>* s) { AA a; a.deallocate(s, 1); }
+      );
+      return std::move(sketch_ptr);
+    }
+
+    static std::unique_ptr<kll_sketch<T, A>, std::function<void(kll_sketch<T, A>*)>> deserialize(const void* bytes, size_t size) {
+      const char* ptr = static_cast<const char*>(bytes);
+      uint8_t preamble_ints;
+      ptr += copy_from_mem(ptr, &preamble_ints, sizeof(preamble_ints));
+      uint8_t serial_version;
+      ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+      uint8_t family_id;
+      ptr += copy_from_mem(ptr, &family_id, sizeof(family_id));
+      uint8_t flags_byte;
+      ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
+      uint16_t k;
+      ptr += copy_from_mem(ptr, &k, sizeof(k));
+      uint8_t m;
+      ptr += copy_from_mem(ptr, &m, sizeof(m));
+
+      check_m(m);
+      check_preamble_ints(preamble_ints, flags_byte);
+      check_serial_version(serial_version);
+      check_family_id(family_id);
+
+      typedef typename A::template rebind<kll_sketch<T, A>>::other AA;
+      AA allocator;
+      const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
+      std::unique_ptr<kll_sketch<T, A>, void(*)(kll_sketch<T, A>*)> sketch_ptr(
+          is_empty ? new (allocator.allocate(1)) kll_sketch<T, A>(k) : new (allocator.allocate(1)) kll_sketch<T, A>(k, flags_byte, bytes, size),
+          [](kll_sketch<T, A>* s) { AA allocator; allocator.deallocate(s, 1); }
       );
       return std::move(sketch_ptr);
     }
@@ -495,7 +563,7 @@ class kll_sketch {
      *      ||   15    |   14  |   13   |   12   |   11   |   10    |    9   |      8       |
      *  1   ||-----------------------------------N------------------------------------------|
      *      ||   23    |   22  |   21   |   20   |   19   |    18   |   17   |      16      |
-     *  2   ||---------------data----------------|--------|numLevels|-------min K-----------|
+     *  2   ||---------------data----------------|-unused-|numLevels|-------min K-----------|
      */
 
     static const size_t EMPTY_SIZE_BYTES = 8;
@@ -568,6 +636,50 @@ class kll_sketch {
         max_value_ = items_[levels_[0]];
       }
       is_level_zero_sorted_ = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
+    }
+
+    // for deserialization
+    // the common part of the preamble was read and compatibility checks were done
+    kll_sketch(uint16_t k, uint8_t flags_byte, const void* bytes, size_t size) : alloc_t(AllocT()), alloc_u32(AllocU32()) {
+      k_ = k;
+      m_ = DEFAULT_M;
+      const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
+      const char* ptr = static_cast<const char*>(bytes) + DATA_START_SINGLE_ITEM;
+      if (is_single_item) {
+        n_ = 1;
+        min_k_ = k_;
+        num_levels_ = 1;
+      } else {
+        ptr += copy_from_mem(ptr, &n_, sizeof(n_));
+        ptr += copy_from_mem(ptr, &min_k_, sizeof(min_k_));
+        ptr += copy_from_mem(ptr, &num_levels_, sizeof(num_levels_));
+        ptr++; // skip unused byte
+      }
+      levels_ = alloc_u32.allocate(num_levels_ + 1);
+      levels_size_ = num_levels_ + 1;
+      const uint32_t capacity(kll_helper::compute_total_capacity(k_, m_, num_levels_));
+      if (is_single_item) {
+        levels_[0] = capacity - 1;
+      } else {
+        // the last integer in levels_ is not serialized because it can be derived
+        ptr += copy_from_mem(ptr, levels_, sizeof(levels_[0]) * num_levels_);
+      }
+      levels_[num_levels_] = capacity;
+      if (!is_single_item) {
+        ptr += deserialize_items<T>(ptr, &min_value_, 1);
+        ptr += deserialize_items<T>(ptr, &max_value_, 1);
+      }
+      items_ = alloc_t.allocate(capacity);
+      items_size_ = capacity;
+      for (unsigned i = 0; i < items_size_; i++) alloc_t.construct(&items_[i], T());
+      const auto num_items(levels_[num_levels_] - levels_[0]);
+      ptr += deserialize_items<T>(ptr, &items_[levels_[0]], num_items);
+      if (is_single_item) {
+        min_value_ = items_[levels_[0]];
+        max_value_ = items_[levels_[0]];
+      }
+      is_level_zero_sorted_ = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
+      if (ptr != static_cast<const char*>(bytes) + size) throw std::logic_error("deserialized size mismatch");
     }
 
     // The following code is only valid in the special case of exactly reaching capacity while updating.
@@ -849,6 +961,54 @@ class kll_sketch {
       // the last integer in the levels_ array is not serialized because it can be derived
       // +2 items for min and max
       return DATA_START + (num_levels * sizeof(uint32_t)) + ((num_items + 2) * sizeof_item);
+    }
+
+    static void check_m(uint8_t m) {
+      if (m != DEFAULT_M) {
+        throw std::invalid_argument("Possible corruption: M must be " + std::to_string(DEFAULT_M)
+            + ": " + std::to_string(m));
+      }
+    }
+
+    static void check_preamble_ints(uint8_t preamble_ints, uint8_t flags_byte) {
+      const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
+      const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM));
+      if (is_empty or is_single_item) {
+        if (preamble_ints != PREAMBLE_INTS_SHORT) {
+          throw std::invalid_argument("Possible corruption: preamble ints must be "
+              + std::to_string(PREAMBLE_INTS_SHORT) + " for an empty or single item sketch: " + std::to_string(preamble_ints));
+        }
+      } else {
+        if (preamble_ints != PREAMBLE_INTS_FULL) {
+          throw std::invalid_argument("Possible corruption: preamble ints must be "
+              + std::to_string(PREAMBLE_INTS_FULL) + " for a sketch with more than one item: " + std::to_string(preamble_ints));
+        }
+      }
+    }
+
+    static void check_serial_version(uint8_t serial_version) {
+      if (serial_version != SERIAL_VERSION_1 and serial_version != SERIAL_VERSION_2) {
+        throw std::invalid_argument("Possible corruption: serial version mismatch: expected "
+            + std::to_string(SERIAL_VERSION_1) + " or " + std::to_string(SERIAL_VERSION_2)
+            + ", got " + std::to_string(serial_version));
+      }
+    }
+
+    static void check_family_id(uint8_t family_id) {
+      if (family_id != FAMILY) {
+        throw std::invalid_argument("Possible corruption: family mismatch: expected "
+            + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
+      }
+    }
+
+    static inline size_t copy_from_mem(const void* src, void* dst, size_t size) {
+      memcpy(dst, src, size);
+      return size;
+    }
+
+    static inline size_t copy_to_mem(void* dst, const void* src, size_t size) {
+      memcpy(dst, src, size);
+      return size;
     }
 
 };
