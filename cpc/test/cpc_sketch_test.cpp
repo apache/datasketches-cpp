@@ -312,15 +312,17 @@ class cpc_sketch_test: public CppUnit::TestFixture {
 
   void update_int_equivalence() {
     cpc_sketch sketch(11);
-    sketch.update((uint64_t) 1);
-    sketch.update((int64_t) 1);
-    sketch.update((uint32_t) 1);
-    sketch.update((int32_t) 1);
-    sketch.update((uint16_t) 1);
-    sketch.update((int16_t) 1);
-    sketch.update((uint8_t) 1);
-    sketch.update((int8_t) 1);
+    sketch.update((uint64_t) -1);
+    sketch.update((int64_t) -1);
+    sketch.update((uint32_t) -1);
+    sketch.update((int32_t) -1);
+    sketch.update((uint16_t) -1);
+    sketch.update((int16_t) -1);
+    sketch.update((uint8_t) -1);
+    sketch.update((int8_t) -1);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(1, sketch.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    std::ofstream os("cpc-negative-one.bin"); // to compare with Java
+    sketch.serialize(os);
   }
 
   void update_float_equivalience() {

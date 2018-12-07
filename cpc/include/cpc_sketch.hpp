@@ -107,7 +107,7 @@ class cpc_sketch {
 
     // for compatibility with Java implementation
     void update(uint32_t value) {
-      update(static_cast<uint64_t>(value));
+      update(static_cast<int32_t>(value));
     }
 
     // for compatibility with Java implementation
@@ -117,7 +117,7 @@ class cpc_sketch {
 
     // for compatibility with Java implementation
     void update(uint16_t value) {
-      update(static_cast<uint64_t>(value));
+      update(static_cast<int16_t>(value));
     }
 
     // for compatibility with Java implementation
@@ -127,7 +127,7 @@ class cpc_sketch {
 
     // for compatibility with Java implementation
     void update(uint8_t value) {
-      update(static_cast<uint64_t>(value));
+      update(static_cast<int8_t>(value));
     }
 
     // for compatibility with Java implementation
