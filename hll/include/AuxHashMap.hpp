@@ -16,6 +16,10 @@ class AuxHashMap {
   public:
     explicit AuxHashMap(int lgAuxArrInts, int lgConfigK);
     explicit AuxHashMap(AuxHashMap& that);
+    static AuxHashMap* deserialize(const void* bytes, size_t len,
+                                   int lgConfigK,
+                                   int auxCount, int lgAuxArrInts,
+                                   bool srcCompact);
     static AuxHashMap* deserialize(std::istream& is, int lgConfigK,
                                    int auxCount, int lgAuxArrInts,
                                    bool srcCompact);

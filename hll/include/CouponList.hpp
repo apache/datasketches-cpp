@@ -16,7 +16,9 @@ class CouponList : public HllSketchImpl {
     explicit CouponList(const CouponList& that);
     explicit CouponList(const CouponList& that, TgtHllType tgtHllType);
 
+    static CouponList* newList(const void* bytes, size_t len);
     static CouponList* newList(std::istream& is);
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serialize(bool compact) const;
     virtual void serialize(std::ostream& os, bool compact) const;
 
     virtual ~CouponList();

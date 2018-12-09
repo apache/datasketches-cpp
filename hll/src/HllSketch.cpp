@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <string>
 #include <iostream>
+#include <sstream>
 
 namespace datasketches {
 
@@ -28,6 +29,10 @@ hll_sketch HllSketch::deserialize(std::istream& is) {
   return HllSketchPvt::deserialize(is);
 }
 
+hll_sketch HllSketch::deserialize(const void* bytes, size_t len) {
+  return HllSketchPvt::deserialize(bytes, len);
+}
+
 HllSketch::~HllSketch() {}
 
 HllSketchPvt::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
@@ -36,6 +41,11 @@ HllSketchPvt::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
 
 std::unique_ptr<HllSketchPvt> HllSketchPvt::deserialize(std::istream& is) {
   HllSketchImpl* impl = HllSketchImpl::deserialize(is);
+  return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(impl));
+}
+
+std::unique_ptr<HllSketchPvt> HllSketchPvt::deserialize(const void* bytes, size_t len) {
+  HllSketchImpl* impl = HllSketchImpl::deserialize(bytes, len);
   return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(impl));
 }
 
@@ -182,6 +192,25 @@ void HllSketchPvt::serializeCompact(std::ostream& os) const {
 
 void HllSketchPvt::serializeUpdatable(std::ostream& os) const {
   return hllSketchImpl->serialize(os, false);
+}
+
+std::pair<std::unique_ptr<uint8_t>, const size_t>
+HllSketchPvt::serializeCompact() const {
+  return hllSketchImpl->serialize(true);
+}
+
+std::pair<std::unique_ptr<uint8_t>, const size_t>
+HllSketchPvt::serializeUpdatable() const {
+  return hllSketchImpl->serialize(false);
+}
+
+std::string HllSketchPvt::to_string(const bool summary,
+                                    const bool detail,
+                                    const bool auxDetail,
+                                    const bool all) const {
+  std::ostringstream oss;
+  to_string(oss, summary, detail, auxDetail, all);
+  return oss.str();
 }
 
 std::ostream& HllSketchPvt::to_string(std::ostream& os,

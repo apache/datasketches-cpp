@@ -23,6 +23,7 @@ class HllSketchPvt : public HllSketch {
   public:
     explicit HllSketchPvt(int lgConfigK, TgtHllType tgtHllType = HLL_4);
     static std::unique_ptr<HllSketchPvt> deserialize(std::istream& is);
+    static std::unique_ptr<HllSketchPvt> deserialize(const void* bytes, size_t len);
 
     virtual ~HllSketchPvt();
 
@@ -48,6 +49,8 @@ class HllSketchPvt : public HllSketch {
     virtual void update(float datum);
     virtual void update(const void* data, size_t lengthBytes);
     
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const;
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const;
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
 
@@ -56,6 +59,10 @@ class HllSketchPvt : public HllSketch {
                                     bool detail = false,
                                     bool auxDetail = false,
                                     bool all = false) const;
+    virtual std::string to_string(bool summary = true,
+                                  bool detail = false,
+                                  bool auxDetail = false,
+                                  bool all = false) const;
 
     virtual double getEstimate() const;
     virtual double getCompositeEstimate() const;

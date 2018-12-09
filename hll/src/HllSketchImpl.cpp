@@ -41,9 +41,24 @@ HllSketchImpl* HllSketchImpl::deserialize(std::istream& is) {
   } else if (preInts == HllUtil::LIST_PREINTS) {
     return CouponList::newList(is);
   } else {
-    throw std::invalid_argument("Attempt to deserialize Unknown object type");
+    throw std::invalid_argument("Attempt to deserialize unknown object type");
   }
 }
+
+HllSketchImpl* HllSketchImpl::deserialize(const void* bytes, size_t len) {
+  // read current mode directly
+  const int preInts = static_cast<const uint8_t*>(bytes)[0];
+  if (preInts == HllUtil::HLL_PREINTS) {
+    return HllArray::newHll(bytes, len);
+  } else if (preInts == HllUtil::HASH_SET_PREINTS) {
+    return CouponHashSet::newSet(bytes, len);
+  } else if (preInts == HllUtil::LIST_PREINTS) {
+    return CouponList::newList(bytes, len);
+  } else {
+    throw std::invalid_argument("Attempt to deserialize unknown object type");
+  }
+}
+
 
 TgtHllType HllSketchImpl::extractTgtHllType(const uint8_t modeByte) {
   switch ((modeByte >> 2) & 0x3) {

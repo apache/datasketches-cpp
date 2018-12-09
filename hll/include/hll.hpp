@@ -19,15 +19,16 @@ enum TgtHllType {
 };
 
 class HllSketch;
-typedef std::unique_ptr<HllSketch> hll_sketch;
-
 class HllUnion;
+
+typedef std::unique_ptr<HllSketch> hll_sketch;
 typedef std::unique_ptr<HllUnion> hll_union;
 
 class HllSketch {
   public:
     static hll_sketch newInstance(int lgConfigK, TgtHllType tgtHllType = HLL_4);
     static hll_sketch deserialize(std::istream& is);
+    static hll_sketch deserialize(const void* bytes, size_t len);
 
     virtual ~HllSketch();
 
@@ -36,14 +37,20 @@ class HllSketch {
 
     virtual void reset() = 0;
     
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const = 0;
     virtual void serializeCompact(std::ostream& os) const = 0;
     virtual void serializeUpdatable(std::ostream& os) const = 0;
-
+    
     virtual std::ostream& to_string(std::ostream& os,
                                     bool summary = true,
                                     bool detail = false,
                                     bool auxDetail = false,
                                     bool all = false) const = 0;
+    virtual std::string to_string(bool summary = true,
+                                  bool detail = false,
+                                  bool auxDetail = false,
+                                  bool all = false) const = 0;                                    
 
     virtual void update(const std::string& datum) = 0;
     virtual void update(uint64_t datum) = 0;

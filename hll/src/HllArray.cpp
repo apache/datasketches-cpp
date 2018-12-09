@@ -78,31 +78,89 @@ HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
   }
 }
 
+HllArray* HllArray::newHll(const void* bytes, size_t len) {
+  if (len < HllUtil::HLL_BYTE_ARR_START) {
+    throw std::invalid_argument("Input data length insufficient to hold HLL array");
+  }
+
+  const uint8_t* data = static_cast<const uint8_t*>(bytes);
+  if (data[HllUtil::PREAMBLE_INTS_BYTE] != HllUtil::HLL_PREINTS) {
+    throw std::invalid_argument("Incorrect number of preInts in input stream");
+  }
+  if (data[HllUtil::SER_VER_BYTE] != HllUtil::SER_VER) {
+    throw std::invalid_argument("Wrong ser ver in input stream");
+  }
+  if (data[HllUtil::FAMILY_BYTE] != HllUtil::FAMILY_ID) {
+    throw std::invalid_argument("Input stream is not an HLL sketch");
+  }
+
+  CurMode curMode = extractCurMode(data[HllUtil::MODE_BYTE]);
+  if (curMode != HLL) {
+    throw std::invalid_argument("Calling HLL array construtor with non-HLL mode data");
+  }
+
+  TgtHllType tgtHllType = extractTgtHllType(data[HllUtil::MODE_BYTE]);
+  bool oooFlag = ((data[HllUtil::FLAGS_BYTE] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  bool comapctFlag = ((data[HllUtil::FLAGS_BYTE] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
+
+  const int lgK = (int) data[HllUtil::LG_K_BYTE];
+  const int curMin = (int) data[HllUtil::HLL_CUR_MIN_BYTE];
+
+  HllArray* sketch = newHll(lgK, tgtHllType);
+  sketch->putCurMin(curMin);
+  sketch->putOutOfOrderFlag(oooFlag);
+
+  double hip, kxq0, kxq1;
+  std::memcpy(&hip, data + HllUtil::HIP_ACCUM_DOUBLE, sizeof(double));
+  std::memcpy(&kxq0, data + HllUtil::KXQ0_DOUBLE, sizeof(double));
+  std::memcpy(&kxq1, data + HllUtil::KXQ1_DOUBLE, sizeof(double));
+  sketch->putHipAccum(hip);
+  sketch->putKxQ0(kxq0);
+  sketch->putKxQ1(kxq1);
+
+  int numAtCurMin, auxCount;
+  std::memcpy(&numAtCurMin, data + HllUtil::CUR_MIN_COUNT_INT, sizeof(int));
+  std::memcpy(&auxCount, data + HllUtil::AUX_COUNT_INT, sizeof(int));
+  sketch->putNumAtCurMin(numAtCurMin);
+
+  std::memcpy(sketch->hllByteArr, data + HllUtil::HLL_BYTE_ARR_START, sketch->getHllByteArrBytes());
+
+  if (auxCount > 0) { // necessarily TgtHllType == HLL_4
+    int auxLgIntArrSize = (int) data[4];
+    const size_t offset = HllUtil::HLL_BYTE_ARR_START + sketch->getHllByteArrBytes();
+    const uint8_t* auxDataStart = data + offset;
+    AuxHashMap* auxHashMap = AuxHashMap::deserialize(auxDataStart, len - offset, lgK, auxCount, auxLgIntArrSize, comapctFlag);
+    ((Hll4Array*)sketch)->putAuxHashMap(auxHashMap);
+  }
+
+  return sketch;
+}
+
 HllArray* HllArray::newHll(std::istream& is) {
   uint8_t listHeader[8];
   is.read((char*)listHeader, 8 * sizeof(uint8_t));
 
-  if (listHeader[0] != HllUtil::HLL_PREINTS) {
+  if (listHeader[HllUtil::PREAMBLE_INTS_BYTE] != HllUtil::HLL_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
-  if (listHeader[1] != HllUtil::SER_VER) {
+  if (listHeader[HllUtil::SER_VER_BYTE] != HllUtil::SER_VER) {
     throw std::invalid_argument("Wrong ser ver in input stream");
   }
-  if (listHeader[2] != HllUtil::FAMILY_ID) {
+  if (listHeader[HllUtil::FAMILY_BYTE] != HllUtil::FAMILY_ID) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(listHeader[7]);
+  CurMode curMode = extractCurMode(listHeader[HllUtil::MODE_BYTE]);
   if (curMode != HLL) {
     throw std::invalid_argument("Calling HLL construtor with non-HLL mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(listHeader[7]);
-  bool oooFlag = ((listHeader[5] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  bool comapctFlag = ((listHeader[5] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
+  TgtHllType tgtHllType = extractTgtHllType(listHeader[HllUtil::MODE_BYTE]);
+  bool oooFlag = ((listHeader[HllUtil::FLAGS_BYTE] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  bool comapctFlag = ((listHeader[HllUtil::FLAGS_BYTE] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
 
-  const int lgK = (int) listHeader[3];
-  const int curMin = (int) listHeader[6];
+  const int lgK = (int) listHeader[HllUtil::LG_K_BYTE];
+  const int curMin = (int) listHeader[HllUtil::HLL_CUR_MIN_BYTE];
 
   HllArray* sketch = newHll(lgK, tgtHllType);
   sketch->putCurMin(curMin);
@@ -130,6 +188,10 @@ HllArray* HllArray::newHll(std::istream& is) {
   }
 
   return sketch;
+}
+
+std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray::serialize(bool compact) const {
+  return std::make_pair(std::unique_ptr<uint8_t>(new uint8_t[24]), 24);
 }
 
 void HllArray::serialize(std::ostream& os, const bool compact) const {

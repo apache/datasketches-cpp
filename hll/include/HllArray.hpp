@@ -18,8 +18,10 @@ class HllArray : public HllSketchImpl {
     explicit HllArray(const HllArray& that);
 
     static HllArray* newHll(int lgConfigK, TgtHllType tgtHllType);
+    static HllArray* newHll(const void* bytes, size_t len);
     static HllArray* newHll(std::istream& is);
 
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serialize(bool compact) const;
     virtual void serialize(std::ostream& os, bool compact) const;
 
     virtual ~HllArray();
