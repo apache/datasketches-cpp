@@ -53,7 +53,7 @@ CouponHashSet* CouponHashSet::newSet(const void* bytes, size_t len) {
   TgtHllType tgtHllType = extractTgtHllType(data[HllUtil::MODE_BYTE]);
 
   const int lgK = (int) data[HllUtil::LG_K_BYTE];
-  const int lgArrInts = (int) data[HllUtil::LG_ARR_BYTE];
+  int lgArrInts = (int) data[HllUtil::LG_ARR_BYTE];
   bool compactFlag = ((data[HllUtil::FLAGS_BYTE] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
 
   CouponHashSet* sketch = new CouponHashSet(lgK, tgtHllType);
@@ -61,6 +61,9 @@ CouponHashSet* CouponHashSet::newSet(const void* bytes, size_t len) {
 
   int couponCount;
   std::memcpy(&couponCount, data + HllUtil::HASH_SET_COUNT_INT, sizeof(couponCount));
+  if (lgArrInts < HllUtil::LG_INIT_SET_SIZE) { 
+    lgArrInts = HllUtil::computeLgArrInts(SET, couponCount, lgK);
+  }
   // Don't set couponCount in sketch here;
   // we'll set later if updatable, and increment with updates if compact
 
@@ -108,7 +111,7 @@ CouponHashSet* CouponHashSet::newSet(std::istream& is) {
   TgtHllType tgtHllType = extractTgtHllType(listHeader[HllUtil::MODE_BYTE]);
 
   const int lgK = (int) listHeader[HllUtil::LG_K_BYTE];
-  const int lgArrInts = (int) listHeader[HllUtil::LG_ARR_BYTE];
+  int lgArrInts = (int) listHeader[HllUtil::LG_ARR_BYTE];
   bool compactFlag = ((listHeader[HllUtil::FLAGS_BYTE] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
   //bool oooFlag = ((listHeader[HllUtil::FLAGS_BYTE] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   //bool emptyFlag = ((listHeader[HllUtil::FLAGS_BYTE] & HllUtil::EMPTY_FLAG_MASK) ? true : false);
@@ -118,6 +121,9 @@ CouponHashSet* CouponHashSet::newSet(std::istream& is) {
 
   int couponCount;
   is.read((char*)&couponCount, sizeof(couponCount));
+  if (lgArrInts < HllUtil::LG_INIT_SET_SIZE) { 
+    lgArrInts = HllUtil::computeLgArrInts(SET, couponCount, lgK);
+  }
   // Don't set couponCount here;
   // we'll set later if updatable, and increment with updates if compact
 

@@ -173,13 +173,13 @@ inline double HllUtil::invPow2(const int e) {
 // compute the next highest power of 2 of 32-bit n
 // taken from https://graphics.stanford.edu/~seander/bithacks.html
 inline unsigned int HllUtil::ceilingPowerOf2(unsigned int n) {
-  n--;
+  --n;
   n |= n >> 1;
   n |= n >> 2;
   n |= n >> 4;
   n |= n >> 8;
   n |= n >> 16;
-  return n++;
+  return ++n;
 }
 
 inline unsigned int HllUtil::simpleIntLog2(unsigned int n) {
