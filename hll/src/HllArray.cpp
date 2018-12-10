@@ -191,7 +191,53 @@ HllArray* HllArray::newHll(std::istream& is) {
 }
 
 std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray::serialize(bool compact) const {
-  return std::make_pair(std::unique_ptr<uint8_t>(new uint8_t[24]), 24);
+  const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
+  std::unique_ptr<uint8_t> byteArr(new uint8_t[sketchSizeBytes]);
+
+  uint8_t* bytes = static_cast<uint8_t*>(byteArr.get());
+  AuxHashMap* auxHashMap = getAuxHashMap();
+
+  bytes[HllUtil::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
+  bytes[HllUtil::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil::SER_VER);
+  bytes[HllUtil::FAMILY_BYTE] = static_cast<uint8_t>(HllUtil::FAMILY_ID);
+  bytes[HllUtil::LG_K_BYTE] = static_cast<uint8_t>(lgConfigK);
+  bytes[HllUtil::LG_ARR_BYTE] = static_cast<uint8_t>(auxHashMap == nullptr ? 0 : auxHashMap->getLgAuxArrInts());
+  bytes[HllUtil::FLAGS_BYTE] = makeFlagsByte(compact);
+  bytes[HllUtil::HLL_CUR_MIN_BYTE] = static_cast<uint8_t>(curMin);
+  bytes[HllUtil::MODE_BYTE] = makeModeByte();
+
+  std::memcpy(bytes + HllUtil::HIP_ACCUM_DOUBLE, &hipAccum, sizeof(double));
+  std::memcpy(bytes + HllUtil::KXQ0_DOUBLE, &kxq0, sizeof(double));
+  std::memcpy(bytes + HllUtil::KXQ1_DOUBLE, &kxq1, sizeof(double));
+  std::memcpy(bytes + HllUtil::CUR_MIN_COUNT_INT, &numAtCurMin, sizeof(int));
+  const int auxCount = (auxHashMap == nullptr ? 0 : auxHashMap->getAuxCount());
+  std::memcpy(bytes + HllUtil::AUX_COUNT_INT, &auxCount, sizeof(int));
+
+  const int hllByteArrBytes = getHllByteArrBytes();
+  std::memcpy(bytes + HllUtil::HLL_BYTE_ARR_START, &hllByteArr, hllByteArrBytes);
+
+  // aux map if HLL_4
+  if (tgtHllType == HLL_4) {
+    bytes += HllUtil::HLL_BYTE_ARR_START + hllByteArrBytes; // start of auxHashMap
+    if (auxHashMap != nullptr) {
+      if (compact) {
+        std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
+        while (itr->nextValid()) {
+          const int pairValue = itr->getPair();
+          std::memcpy(bytes, &pairValue, sizeof(pairValue));
+          bytes += sizeof(pairValue);
+        }
+      } else {
+        std::memcpy(bytes, auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
+      }
+    } else if (!compact) {
+      // if updatable, we write even if currently unused so the binary can be wrapped
+      int auxBytes = 4 << HllUtil::LG_AUX_ARR_INTS[lgConfigK];
+      std::fill_n(bytes, auxBytes, 0);
+    }
+  }
+
+  return std::make_pair(std::move(byteArr), sketchSizeBytes);
 }
 
 void HllArray::serialize(std::ostream& os, const bool compact) const {
