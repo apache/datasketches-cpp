@@ -72,7 +72,7 @@ CouponList* CouponList::newList(const void* bytes, size_t len) {
   }
 
   const uint8_t* data = static_cast<const uint8_t*>(bytes);
-  if (data[HllUtil::PREAMBLE_INTS_BYTE] != HllUtil::HASH_SET_PREINTS) {
+  if (data[HllUtil::PREAMBLE_INTS_BYTE] != HllUtil::LIST_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
   if (data[HllUtil::SER_VER_BYTE] != HllUtil::SER_VER) {
@@ -181,7 +181,7 @@ std::pair<std::unique_ptr<uint8_t>, const size_t> CouponList::serialize(bool com
   const int sw = (isCompact() ? 2 : 0) | (compact ? 1 : 0);
   switch (sw) {
     case 0: { // src updatable, dst updatable
-      std::memcpy(bytes + getMemDataStart(), couponIntArr, (1 << lgCouponArrInts) * sizeof(int));
+      std::memcpy(bytes + getMemDataStart(), getCouponIntArr(), (1 << lgCouponArrInts) * sizeof(int));
       break;
     }
     case 1: { // src updatable, dst compact
@@ -238,7 +238,7 @@ void CouponList::serialize(std::ostream& os, const bool compact) const {
   const int sw = (isCompact() ? 2 : 0) | (compact ? 1 : 0);
   switch (sw) {
     case 0: { // src updatable, dst updatable
-      os.write((char*)couponIntArr, (1 << lgCouponArrInts) * sizeof(int));
+      os.write((char*)getCouponIntArr(), (1 << lgCouponArrInts) * sizeof(int));
       break;
     }
     case 1: { // src updatable, dst compact
@@ -343,7 +343,7 @@ int CouponList::getLgCouponArrInts() const {
   return lgCouponArrInts;
 }
 
-int* CouponList::getCouponIntArr() {
+int* CouponList::getCouponIntArr() const {
   return couponIntArr;
 }
 

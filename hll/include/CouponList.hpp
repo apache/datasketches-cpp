@@ -50,7 +50,7 @@ class CouponList : public HllSketchImpl {
     virtual void putOutOfOrderFlag(bool oooFlag);
 
     virtual int getLgCouponArrInts() const;
-    virtual int* getCouponIntArr();
+    virtual int* getCouponIntArr() const;
 
     virtual CouponList* reset();
 

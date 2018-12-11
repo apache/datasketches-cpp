@@ -214,11 +214,11 @@ std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray::serialize(bool compa
   std::memcpy(bytes + HllUtil::AUX_COUNT_INT, &auxCount, sizeof(int));
 
   const int hllByteArrBytes = getHllByteArrBytes();
-  std::memcpy(bytes + HllUtil::HLL_BYTE_ARR_START, &hllByteArr, hllByteArrBytes);
+  std::memcpy(bytes + getMemDataStart(), &hllByteArr, hllByteArrBytes);
 
   // aux map if HLL_4
   if (tgtHllType == HLL_4) {
-    bytes += HllUtil::HLL_BYTE_ARR_START + hllByteArrBytes; // start of auxHashMap
+    bytes += getMemDataStart() + hllByteArrBytes; // start of auxHashMap
     if (auxHashMap != nullptr) {
       if (compact) {
         std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
@@ -312,7 +312,7 @@ HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 and H
     if (curVal == 0) {
       decNumAtCurMin(); // interpret numAtCurMin as num zeros
       if (getNumAtCurMin() < 0) { 
-        throw std::logic_error("getNumAtCurMin() must return a nonnegatiev integer: " + std::to_string(getNumAtCurMin()));
+        throw std::logic_error("getNumAtCurMin() must return a nonnegative integer: " + std::to_string(getNumAtCurMin()));
       }
     }
   }
