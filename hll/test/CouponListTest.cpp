@@ -4,6 +4,7 @@
  */
 
 #include "hll.hpp"
+#include "CouponList.hpp"
 #include "HllSketch.hpp"
 #include "HllUnion.hpp"
 #include "HllUtil.hpp"
@@ -13,6 +14,7 @@
 #include <ostream>
 #include <cmath>
 #include <string>
+#include <exception>
 
 namespace datasketches {
 
@@ -22,6 +24,8 @@ class CouponListTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkIterator);
   CPPUNIT_TEST(checkDuplicatesAndMisc);
   CPPUNIT_TEST(checkSerializeDeserialize);
+  CPPUNIT_TEST(checkCorruptBytearrayData);
+  CPPUNIT_TEST(checkCorruptStreamData);
   CPPUNIT_TEST_SUITE_END();
 
   void println_string(std::string str) {
@@ -114,6 +118,140 @@ class CouponListTest : public CppUnit::TestFixture {
   void checkSerializeDeserialize() {
     serializeDeserialize(7);
     serializeDeserialize(21);
+  }
+
+  void checkCorruptBytearrayData() {
+    int lgK = 6;
+    hll_sketch sk1 = HllSketch::newInstance(lgK);
+    sk1->update(1);
+    sk1->update(2);
+    std::pair<std::unique_ptr<uint8_t>, size_t> sketchBytes = sk1->serializeCompact();
+    uint8_t* bytes = sketchBytes.first.get();
+
+    bytes[HllUtil::PREAMBLE_INTS_BYTE] = 0;
+    try {
+      // fail in HllSketchImpl
+      HllSketch::deserialize(bytes, sketchBytes.second);
+      CPPUNIT_FAIL("Failed to detect error in preInts byte");
+    } catch (std::exception e) {
+      // expected
+    }
+
+    try {
+      // fail in CouponList
+      CouponList::newList(bytes, sketchBytes.second);
+      CPPUNIT_FAIL("Failed to detect error in preInts byte");
+    } catch (std::exception e) {
+      // expected
+    }
+    bytes[HllUtil::PREAMBLE_INTS_BYTE] = HllUtil::LIST_PREINTS;
+
+    bytes[HllUtil::SER_VER_BYTE] = 0;
+    try {
+      HllSketch::deserialize(bytes, sketchBytes.second);
+      CPPUNIT_FAIL("Failed to detect error in serialization version byte");
+    } catch (std::exception e) {
+      // expected
+    }
+    bytes[HllUtil::SER_VER_BYTE] = HllUtil::SER_VER;
+
+    bytes[HllUtil::FAMILY_BYTE] = 0;
+    try {
+      HllSketch::deserialize(bytes, sketchBytes.second);
+      CPPUNIT_FAIL("Failed to detect error in family id byte");
+    } catch (std::exception e) {
+      // expected
+    }
+    bytes[HllUtil::FAMILY_BYTE] = HllUtil::FAMILY_ID;
+
+    uint8_t tmp = bytes[HllUtil::MODE_BYTE];
+    bytes[HllUtil::MODE_BYTE] = 0x01; // HLL_r, SET
+    try {
+      HllSketch::deserialize(bytes, sketchBytes.second);
+      CPPUNIT_FAIL("Failed to detect error in mode byte");
+    } catch (std::exception e) {
+      // expected
+    }
+    bytes[HllUtil::MODE_BYTE] = tmp;
+
+    try {
+      HllSketch::deserialize(bytes, sketchBytes.second - 1);
+      CPPUNIT_FAIL("Failed to detect error in serialized length");
+    } catch (std::exception e) {
+      // expected
+    }
+
+    try {
+      HllSketch::deserialize(bytes, 3);
+      CPPUNIT_FAIL("Failed to detect error in serialized length");
+    } catch (std::exception e) {
+      // expected
+    }
+  }
+
+  void checkCorruptStreamData() {
+    int lgK = 6;
+    hll_sketch sk1 = HllSketch::newInstance(lgK);
+    sk1->update(1);
+    sk1->update(2);
+    std::stringstream ss;
+    sk1->serializeCompact(ss);
+
+    ss.seekp(HllUtil::PREAMBLE_INTS_BYTE);
+    ss.put(0);
+    ss.seekg(0);
+    try {
+      // fail in HllSketchImpl
+      HllSketch::deserialize(ss);
+      CPPUNIT_FAIL("Failed to detect error in preInts byte");
+    } catch (std::exception e) {
+      // expected
+    }
+
+    try {
+      // fail in CouponList
+      CouponList::newList(ss);
+      CPPUNIT_FAIL("Failed to detect error in preInts byte");
+    } catch (std::exception e) {
+      // expected
+    }
+    ss.seekp(HllUtil::PREAMBLE_INTS_BYTE);
+    ss.put(HllUtil::LIST_PREINTS);
+
+    ss.seekp(HllUtil::SER_VER_BYTE);
+    ss.put(0);
+    ss.seekg(0);
+    try {
+      HllSketch::deserialize(ss);
+      CPPUNIT_FAIL("Failed to detect error in serialization version byte");
+    } catch (std::exception e) {
+      // expected
+    }
+    ss.seekp(HllUtil::SER_VER_BYTE);
+    ss.put(HllUtil::SER_VER);
+
+    ss.seekp(HllUtil::FAMILY_BYTE);
+    ss.put(0);
+    ss.seekg(0);
+    try {
+      HllSketch::deserialize(ss);
+      CPPUNIT_FAIL("Failed to detect error in family id byte");
+    } catch (std::exception e) {
+      // expected
+    }
+    ss.seekp(HllUtil::FAMILY_BYTE);
+    ss.put(HllUtil::FAMILY_ID);
+
+    ss.seekp(HllUtil::MODE_BYTE);
+    ss.put(0x01);
+    ss.seekg(0);
+    try {
+      HllSketch::deserialize(ss);
+      CPPUNIT_FAIL("Failed to detect error in mode byte");
+    } catch (std::exception e) {
+      // expected
+    }
+    // end of test so not undoing change
   }
 
 };
