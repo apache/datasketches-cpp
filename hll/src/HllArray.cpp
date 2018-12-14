@@ -73,8 +73,6 @@ HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
       return (HllArray*) new Hll6Array(lgConfigK);
     case HLL_4:
       return (HllArray*) new Hll4Array(lgConfigK);
-    default:
-      throw std::invalid_argument("Impossible HLL type");
   }
 }
 

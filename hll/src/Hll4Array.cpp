@@ -263,7 +263,7 @@ void Hll4Array::shiftToBiggerCurMin() {
       oldActualVal = itr->getValue();
       newShiftedVal = oldActualVal - newCurMin;
       if (newShiftedVal < 0) {
-        throw std::logic_error("oldActaulVal < newCurMin when incrementing curMin");
+        throw std::logic_error("oldActualVal < newCurMin when incrementing curMin");
       }
 
       if (getSlot(slotNum) != HllUtil::AUX_TOKEN) {

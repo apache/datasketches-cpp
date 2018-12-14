@@ -23,9 +23,9 @@ class CouponHashSetTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkCorruptBytearray);
   CPPUNIT_TEST(checkCorruptStream);
   CPPUNIT_TEST_SUITE_END();
+
   void checkCorruptBytearray() {
     int lgK = 8;
-
     hll_sketch sk1 = HllSketch::newInstance(lgK);
     for (int i = 0; i < 24; ++i) {
       sk1->update(i);
@@ -166,7 +166,7 @@ class CouponHashSetTest : public CppUnit::TestFixture {
     ss.seekg(HllUtil::MODE_BYTE);
     uint8_t tmp = ss.get();
     ss.seekp(HllUtil::MODE_BYTE);
-    ss.put(0x12); // HLL_4, HLL
+    ss.put(0x22); // HLL_8, HLL
     ss.seekg(0);
     try {
       HllSketch::deserialize(ss);
@@ -187,8 +187,6 @@ class CouponHashSetTest : public CppUnit::TestFixture {
     ss.seekp(HllUtil::LG_ARR_BYTE);
     ss.put(tmp);
   }
-
-
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(CouponHashSetTest);

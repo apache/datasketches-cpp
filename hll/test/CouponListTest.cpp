@@ -165,7 +165,7 @@ class CouponListTest : public CppUnit::TestFixture {
     bytes[HllUtil::FAMILY_BYTE] = HllUtil::FAMILY_ID;
 
     uint8_t tmp = bytes[HllUtil::MODE_BYTE];
-    bytes[HllUtil::MODE_BYTE] = 0x01; // HLL_r, SET
+    bytes[HllUtil::MODE_BYTE] = 0x01; // HLL_4, SET
     try {
       HllSketch::deserialize(bytes, sketchBytes.second);
       CPPUNIT_FAIL("Failed to detect error in mode byte");
@@ -243,7 +243,7 @@ class CouponListTest : public CppUnit::TestFixture {
     ss.put(HllUtil::FAMILY_ID);
 
     ss.seekp(HllUtil::MODE_BYTE);
-    ss.put(0x01);
+    ss.put(0x22); // HLL_8, HLL
     ss.seekg(0);
     try {
       HllSketch::deserialize(ss);
