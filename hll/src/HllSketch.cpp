@@ -91,30 +91,22 @@ void HllSketchPvt::update(const std::string& datum) {
 }
 
 void HllSketchPvt::update(const uint64_t datum) {
+  // no sign extension with 64 bits so no need to cast to signed value
   HashState hashResult;
   HllUtil::hash(&datum, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
   couponUpdate(HllUtil::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const uint32_t datum) {
-  uint64_t val = static_cast<uint64_t>(datum);
-  HashState hashResult;
-  HllUtil::hash(&val, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  update(static_cast<int32_t>(datum));
 }
 
 void HllSketchPvt::update(const uint16_t datum) {
-  uint64_t val = static_cast<uint64_t>(datum);
-  HashState hashResult;
-  HllUtil::hash(&val, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  update(static_cast<int16_t>(datum));
 }
 
 void HllSketchPvt::update(const uint8_t datum) {
-  uint64_t val = static_cast<uint64_t>(datum);
-  HashState hashResult;
-  HllUtil::hash(&val, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  update(static_cast<int8_t>(datum));
 }
 
 void HllSketchPvt::update(const int64_t datum) {

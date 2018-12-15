@@ -26,6 +26,8 @@ class hllSketchTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(exerciseToString);
   CPPUNIT_TEST(checkEmptyCoupon);
   CPPUNIT_TEST(checkCompactFlag);
+  CPPUNIT_TEST(checkKLimits);
+  CPPUNIT_TEST(checkInputTypes);
   CPPUNIT_TEST_SUITE_END();
 
   void checkCopies() {
@@ -300,6 +302,58 @@ class hllSketchTest : public CppUnit::TestFixture {
     bool isCompact = sk2->isCompact();
 
     return isCompact;
+  }
+
+  void checkKLimits() {
+    hll_sketch sketch1 = HllSketch::newInstance(HllUtil::MIN_LOG_K, TgtHllType::HLL_8);
+    hll_sketch sketch2 = HllSketch::newInstance(HllUtil::MAX_LOG_K, TgtHllType::HLL_4);
+    CPPUNIT_ASSERT_THROW(HllSketch::newInstance(HllUtil::MIN_LOG_K - 1, TgtHllType::HLL_4), std::invalid_argument);
+    CPPUNIT_ASSERT_THROW(HllSketch::newInstance(HllUtil::MAX_LOG_K + 1, TgtHllType::HLL_8), std::invalid_argument);
+  }
+
+    void checkInputTypes() {
+    hll_sketch sk = HllSketch::newInstance(8, TgtHllType::HLL_8);
+
+    // inserting the same value as a variety of input types
+    sk->update((uint8_t) 102);
+    sk->update((uint16_t) 102);
+    sk->update((uint32_t) 102);
+    sk->update((uint64_t) 102);
+    sk->update((int8_t) 102);
+    sk->update((int16_t) 102);
+    sk->update((int32_t) 102);
+    sk->update((int64_t) 102);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, sk->getEstimate(), 0.01);
+
+    // identical binary representations
+    // no unsigned in Java, but need to sign-extend both as Java would do 
+    sk->update((uint8_t) 255);
+    sk->update((int8_t) -1);
+
+    sk->update((float) -2.0);
+    sk->update((double) -2.0);
+
+    std::string str = "input string";
+    sk->update(str);
+    sk->update(str.c_str(), str.length());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(4.0, sk->getEstimate(), 0.01);
+
+    sk = HllSketch::newInstance(8, TgtHllType::HLL_6);
+    sk->update((float) 0.0);
+    sk->update((float) -0.0);
+    sk->update((double) 0.0);
+    sk->update((double) -0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, sk->getEstimate(), 0.01);
+
+    sk = HllSketch::newInstance(8, TgtHllType::HLL_4);
+    sk->update(std::nanf("3"));
+    sk->update(std::nan((char*)nullptr));
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, sk->getEstimate(), 0.01);
+
+    sk = HllSketch::newInstance(8, TgtHllType::HLL_4);
+    sk->update(nullptr, 0);
+    sk->update("");
+    CPPUNIT_ASSERT(sk->isEmpty());
   }
 
 };

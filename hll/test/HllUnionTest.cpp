@@ -26,6 +26,7 @@ class HllUnionTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkEmptyCoupon);
   CPPUNIT_TEST(checkConversions);
   CPPUNIT_TEST(checkMisc);
+  CPPUNIT_TEST(checkInputTypes);
   CPPUNIT_TEST_SUITE_END();
 
   int min(int a, int b) {
@@ -326,6 +327,51 @@ class HllUnionTest : public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(8, static_cast<int>(oss.tellp()));
   }
 
+  void checkInputTypes() {
+    hll_union u = HllUnion::newInstance(8);
+
+    // inserting the same value as a variety of input types
+    u->update((uint8_t) 102);
+    u->update((uint16_t) 102);
+    u->update((uint32_t) 102);
+    u->update((uint64_t) 102);
+    u->update((int8_t) 102);
+    u->update((int16_t) 102);
+    u->update((int32_t) 102);
+    u->update((int64_t) 102);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u->getEstimate(), 0.01);
+
+    // identical binary representations
+    // no unsigned in Java, but need to sign-extend both as Java would do 
+    u->update((uint8_t) 255);
+    u->update((int8_t) -1);
+
+    u->update((float) -2.0);
+    u->update((double) -2.0);
+
+    std::string str = "input string";
+    u->update(str);
+    u->update(str.c_str(), str.length());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(4.0, u->getEstimate(), 0.01);
+
+    u = HllUnion::newInstance(8);
+    u->update((float) 0.0);
+    u->update((float) -0.0);
+    u->update((double) 0.0);
+    u->update((double) -0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u->getEstimate(), 0.01);
+
+    u = HllUnion::newInstance(8);
+    u->update(std::nanf("3"));
+    u->update(std::nan((char*)nullptr));
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u->getEstimate(), 0.01);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(u->getResult()->getEstimate(), u->getEstimate(), 0.01);
+
+    u = HllUnion::newInstance(8);
+    u->update(nullptr, 0);
+    u->update("");
+    CPPUNIT_ASSERT(u->isEmpty());
+  }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(HllUnionTest);
