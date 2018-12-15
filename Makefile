@@ -36,7 +36,7 @@ EXEC_MODULES := $(addsuffix _exec, $(MODULES))
 $(LIBRARY): $(OBJECTS) 
 	@mkdir -p $(TARGETDIR)
 	@echo "Linking $(LIBRARY)"
-	$(CC) $^ $(LINKFLAGS) $(CPPFLAGS) -o $@
+	@$(CC) $^ $(LINKFLAGS) $(CPPFLAGS) -o $@
 	@mv $(LIBRARY) $(TARGETDIR)
 
 .PHONY: test clean
@@ -45,11 +45,12 @@ test: $(LIBRARY) $(TEST_MODULES) $(EXEC_MODULES)
 
 clean: $(CLEAN_MODULES)
 	@echo "Cleaning $(TARGET)..."
-	@$(RM) -r $(BUILDDIR) $(TARGET)
+	@$(RM) -r $(BUILDDIR) $(TARGET) coverage.info
 
 ifeq ($(COVERAGE),1)
 coverage: test
 	lcov --o coverage.info -c -d . --no-external
+	genhtml --legend coverage.info --output-directory coverage_report
 endif
 
 # TODO: also copy headers to /usr/local/include

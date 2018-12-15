@@ -3,7 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _HLLUTIL_HPP_
+#define _HLLUTIL_HPP_
 
 #include "MurmurHash3.h"
 #include "RelativeErrorTables.hpp"
@@ -26,6 +27,16 @@ public:
   static const int COMPACT_FLAG_MASK        = 8;
   static const int OUT_OF_ORDER_FLAG_MASK   = 16;
 
+  static const int PREAMBLE_INTS_BYTE = 0;
+  static const int SER_VER_BYTE       = 1;
+  static const int FAMILY_BYTE        = 2;
+  static const int LG_K_BYTE          = 3;
+  static const int LG_ARR_BYTE        = 4;
+  static const int FLAGS_BYTE         = 5;
+  static const int LIST_COUNT_BYTE    = 6;
+  static const int HLL_CUR_MIN_BYTE   = 6;
+  static const int MODE_BYTE          = 7; // lo2bits = curMode, next 2 bits = tgtHllMode
+
   // Coupon List
   static const int LIST_INT_ARR_START = 8;
   static const int LIST_PREINTS = 2;
@@ -36,6 +47,13 @@ public:
   // HLL
   static const int HLL_PREINTS = 10;
   static const int HLL_BYTE_ARR_START = 40;
+  static const int HIP_ACCUM_DOUBLE = 8;
+  static const int KXQ0_DOUBLE = 16;
+  static const int KXQ1_DOUBLE = 24;
+  static const int CUR_MIN_COUNT_INT = 32;
+  static const int AUX_COUNT_INT = 36;
+  
+  static const int EMPTY_SKETCH_SIZE_BYTES = 8;
 
   // other HllUtil stuff
   static const int KEY_BITS_26 = 26;
@@ -70,21 +88,22 @@ public:
 
   static int coupon(const uint64_t hash[]);
   static int coupon(const HashState& hashState);
-  static void hash(const void* key, const int keyLen, const uint64_t seed, HashState& result);
+  static void hash(const void* key, int keyLen, uint64_t seed, HashState& result);
 
-  static int checkLgK(const int lgK);
-  static void checkMemSize(const uint64_t minBytes, const uint64_t capBytes);
-  static inline void checkNumStdDev(const int numStdDev);
-  static int pair(const int slotNo, const int value);
-  static int getLow26(const unsigned int coupon);
-  static int getValue(const unsigned int coupon);
-  static double invPow2(const int e);
+  static int checkLgK(int lgK);
+  static void checkMemSize(uint64_t minBytes, uint64_t capBytes);
+  static inline void checkNumStdDev(int numStdDev);
+  static int pair(int slotNo, int value);
+  static int getLow26(unsigned int coupon);
+  static int getValue(unsigned int coupon);
+  static double invPow2(int e);
   static unsigned int ceilingPowerOf2(unsigned int n);
   static unsigned int simpleIntLog2(unsigned int n); // n must be power of 2
   static unsigned int getNumberOfLeadingZeros(uint64_t x);
   static unsigned int numberOfTrailingZeros(unsigned int n);
-  static double getRelErr(const bool upperBound, const bool unioned,
-                          const int lgConfigK, const int numStdDev);
+  static int computeLgArrInts(CurMode mode, int count, int lgConfigK);
+  static double getRelErr(bool upperBound, bool unioned,
+                          int lgConfigK, int numStdDev);
 };
 
 inline int HllUtil::coupon(const uint64_t hash[]) {
@@ -154,13 +173,13 @@ inline double HllUtil::invPow2(const int e) {
 // compute the next highest power of 2 of 32-bit n
 // taken from https://graphics.stanford.edu/~seander/bithacks.html
 inline unsigned int HllUtil::ceilingPowerOf2(unsigned int n) {
-  n--;
+  --n;
   n |= n >> 1;
   n |= n >> 2;
   n |= n >> 4;
   n |= n >> 8;
   n |= n >> 16;
-  return n++;
+  return ++n;
 }
 
 inline unsigned int HllUtil::simpleIntLog2(unsigned int n) {
@@ -218,4 +237,18 @@ inline unsigned int HllUtil::getNumberOfLeadingZeros(const uint64_t x) {
   return n;
 }
 
+inline int HllUtil::computeLgArrInts(CurMode mode, int count, int lgConfigK) {
+  // assume value missing and recompute
+  if (mode == LIST) { return HllUtil::LG_INIT_LIST_SIZE; }
+  int ceilPwr2 = HllUtil::ceilingPowerOf2(count);
+  if ((HllUtil::RESIZE_DENOM * count) > (HllUtil::RESIZE_NUMER * ceilPwr2)) { ceilPwr2 <<= 1;}
+  if (mode == SET) {
+    return fmax(HllUtil::LG_INIT_SET_SIZE, HllUtil::simpleIntLog2(ceilPwr2));
+  }
+  //only used for HLL4
+  return fmax(HllUtil::LG_AUX_ARR_INTS[lgConfigK], HllUtil::simpleIntLog2(ceilPwr2));
 }
+
+}
+
+#endif /* _HLLUTIL_HPP_ */

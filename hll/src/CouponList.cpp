@@ -66,35 +66,84 @@ CouponList* CouponList::copyAs(const TgtHllType tgtHllType) const {
   return new CouponList(*this, tgtHllType);
 }
 
+CouponList* CouponList::newList(const void* bytes, size_t len) {
+  if (len < HllUtil::LIST_INT_ARR_START) {
+    throw std::invalid_argument("Input data length insufficient to hold CouponHashSet");
+  }
+
+  const uint8_t* data = static_cast<const uint8_t*>(bytes);
+  if (data[HllUtil::PREAMBLE_INTS_BYTE] != HllUtil::LIST_PREINTS) {
+    throw std::invalid_argument("Incorrect number of preInts in input stream");
+  }
+  if (data[HllUtil::SER_VER_BYTE] != HllUtil::SER_VER) {
+    throw std::invalid_argument("Wrong ser ver in input stream");
+  }
+  if (data[HllUtil::FAMILY_BYTE] != HllUtil::FAMILY_ID) {
+    throw std::invalid_argument("Input stream is not an HLL sketch");
+  }
+
+  CurMode curMode = extractCurMode(data[HllUtil::MODE_BYTE]);
+  if (curMode != LIST) {
+    throw std::invalid_argument("Calling set construtor with non-list mode data");
+  }
+
+  TgtHllType tgtHllType = extractTgtHllType(data[HllUtil::MODE_BYTE]);
+
+  const int lgK = (int) data[HllUtil::LG_K_BYTE];
+  //const int lgArrInts = (int) data[HllUtil::LG_ARR_BYTE];
+  bool compact = ((data[HllUtil::FLAGS_BYTE] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
+  bool oooFlag = ((data[HllUtil::FLAGS_BYTE] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  bool emptyFlag = ((data[HllUtil::FLAGS_BYTE] & HllUtil::EMPTY_FLAG_MASK) ? true : false);
+
+  CouponList* sketch = new CouponList(lgK, tgtHllType, curMode);
+  const int couponCount = (int) data[HllUtil::LIST_COUNT_BYTE];
+  sketch->couponCount = couponCount;
+  sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
+
+  if (!emptyFlag) {
+    int couponsInArray = (compact ? couponCount : (1 << sketch->getLgCouponArrInts()));
+    int expectedLength = HllUtil::LIST_INT_ARR_START + (couponsInArray * sizeof(int));
+    if (len < expectedLength) {
+      throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
+                                  + ", found: " + std::to_string(len));
+    }
+
+    // only need to read valid coupons, unlike in stream case
+    std::memcpy(sketch->couponIntArr, data + HllUtil::LIST_INT_ARR_START, couponCount * sizeof(int));
+  }
+  
+  return sketch;
+}
+
 CouponList* CouponList::newList(std::istream& is) {
   uint8_t listHeader[8];
   is.read((char*)listHeader, 8 * sizeof(uint8_t));
 
-  if (listHeader[0] != HllUtil::LIST_PREINTS) {
+  if (listHeader[HllUtil::PREAMBLE_INTS_BYTE] != HllUtil::LIST_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
-  if (listHeader[1] != HllUtil::SER_VER) {
+  if (listHeader[HllUtil::SER_VER_BYTE] != HllUtil::SER_VER) {
     throw std::invalid_argument("Wrong ser ver in input stream");
   }
-  if (listHeader[2] != HllUtil::FAMILY_ID) {
+  if (listHeader[HllUtil::FAMILY_BYTE] != HllUtil::FAMILY_ID) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(listHeader[7]);
+  CurMode curMode = extractCurMode(listHeader[HllUtil::MODE_BYTE]);
   if (curMode != LIST) {
     throw std::invalid_argument("Calling list construtor with non-list mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(listHeader[7]);
+  TgtHllType tgtHllType = extractTgtHllType(listHeader[HllUtil::MODE_BYTE]);
 
-  const int lgK = (int) listHeader[3];
-  //const int lgArrInts = (int) listHeader[4];
-  bool compact = ((listHeader[5] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
-  bool oooFlag = ((listHeader[5] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  bool emptyFlag = ((listHeader[5] & HllUtil::EMPTY_FLAG_MASK) ? true : false);
+  const int lgK = (int) listHeader[HllUtil::LG_K_BYTE];
+  //const int lgArrInts = (int) listHeader[HllUtil::LG_ARR_BYTE];
+  bool compact = ((listHeader[HllUtil::FLAGS_BYTE] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
+  bool oooFlag = ((listHeader[HllUtil::FLAGS_BYTE] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  bool emptyFlag = ((listHeader[HllUtil::FLAGS_BYTE] & HllUtil::EMPTY_FLAG_MASK) ? true : false);
 
   CouponList* sketch = new CouponList(lgK, tgtHllType, curMode);
-  const int couponCount = (int) listHeader[6];
+  const int couponCount = (int) listHeader[HllUtil::LIST_COUNT_BYTE];
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
@@ -107,6 +156,51 @@ CouponList* CouponList::newList(std::istream& is) {
   }
   
   return sketch;
+}
+
+std::pair<std::unique_ptr<uint8_t>, const size_t> CouponList::serialize(bool compact) const {
+  size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
+  std::unique_ptr<uint8_t> byteArr(new uint8_t[sketchSizeBytes]);
+
+  uint8_t* bytes = static_cast<uint8_t*>(byteArr.get());
+
+  bytes[HllUtil::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
+  bytes[HllUtil::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil::SER_VER);
+  bytes[HllUtil::FAMILY_BYTE] = static_cast<uint8_t>(HllUtil::FAMILY_ID);
+  bytes[HllUtil::LG_K_BYTE] = static_cast<uint8_t>(lgConfigK);
+  bytes[HllUtil::LG_ARR_BYTE] = static_cast<uint8_t>(lgCouponArrInts);
+  bytes[HllUtil::FLAGS_BYTE] = makeFlagsByte(compact);
+  bytes[HllUtil::LIST_COUNT_BYTE] = static_cast<uint8_t>(curMode == LIST ? couponCount : 0);
+  bytes[HllUtil::MODE_BYTE] = makeModeByte();
+
+  if (curMode == SET) {
+    std::memcpy(bytes + HllUtil::HASH_SET_COUNT_INT, &couponCount, sizeof(couponCount));
+  }
+
+  // coupons
+  // isCompact() is always false for now
+  const int sw = (isCompact() ? 2 : 0) | (compact ? 1 : 0);
+  switch (sw) {
+    case 0: { // src updatable, dst updatable
+      std::memcpy(bytes + getMemDataStart(), getCouponIntArr(), (1 << lgCouponArrInts) * sizeof(int));
+      break;
+    }
+    case 1: { // src updatable, dst compact
+      std::unique_ptr<PairIterator> itr = getIterator();
+      bytes += getMemDataStart(); // reusing ponter for incremental writes
+      while (itr->nextValid()) {
+        const int pairValue = itr->getPair();
+        std::memcpy(bytes, &pairValue, sizeof(pairValue));
+        bytes += sizeof(pairValue);
+      }
+      break;
+    }
+
+    default:
+      throw std::runtime_error("Impossible condition when serializing");
+  }
+
+  return std::make_pair(std::move(byteArr), sketchSizeBytes);
 }
 
 void CouponList::serialize(std::ostream& os, const bool compact) const {
@@ -145,7 +239,7 @@ void CouponList::serialize(std::ostream& os, const bool compact) const {
   const int sw = (isCompact() ? 2 : 0) | (compact ? 1 : 0);
   switch (sw) {
     case 0: { // src updatable, dst updatable
-      os.write((char*)couponIntArr, (1 << lgCouponArrInts) * sizeof(int));
+      os.write((char*)getCouponIntArr(), (1 << lgCouponArrInts) * sizeof(int));
       break;
     }
     case 1: { // src updatable, dst compact
@@ -250,7 +344,7 @@ int CouponList::getLgCouponArrInts() const {
   return lgCouponArrInts;
 }
 
-int* CouponList::getCouponIntArr() {
+int* CouponList::getCouponIntArr() const {
   return couponIntArr;
 }
 

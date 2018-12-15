@@ -41,7 +41,7 @@ HllUnionPvt::HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch)
 HllUnionPvt::~HllUnionPvt() {}
 
 hll_union HllUnionPvt::deserialize(std::istream& is) {
-  std::unique_ptr<HllSketchPvt> sk = HllSketchPvt::deserialize(is);
+  std::unique_ptr<HllSketchPvt> sk(HllSketchPvt::deserialize(is));
   if (sk == nullptr) { return nullptr; }
   // we're using the sketch's lgConfigK to initialize the union so
   // we can initialize the Union with it as long as it's HLL_8.
@@ -67,7 +67,7 @@ void HllUnionPvt::update(const HllSketch& sketch) {
   unionImpl(static_cast<const HllSketchPvt&>(sketch).hllSketchImpl, lgMaxK);
 }
 
-void HllUnionPvt::update(const std::string datum) {
+void HllUnionPvt::update(const std::string& datum) {
   gadget->update(datum);
 }
 

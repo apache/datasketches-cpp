@@ -3,7 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _COUPONLIST_HPP_
+#define _COUPONLIST_HPP_
 
 #include "HllSketchImpl.hpp"
 
@@ -11,24 +12,26 @@ namespace datasketches {
 
 class CouponList : public HllSketchImpl {
   public:
-    explicit CouponList(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode);
+    explicit CouponList(int lgConfigK, TgtHllType tgtHllType, CurMode curMode);
     explicit CouponList(const CouponList& that);
-    explicit CouponList(const CouponList& that, const TgtHllType tgtHllType);
+    explicit CouponList(const CouponList& that, TgtHllType tgtHllType);
 
+    static CouponList* newList(const void* bytes, size_t len);
     static CouponList* newList(std::istream& is);
-    virtual void serialize(std::ostream& os, const bool compact) const;
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serialize(bool compact) const;
+    virtual void serialize(std::ostream& os, bool compact) const;
 
     virtual ~CouponList();
 
     virtual CouponList* copy() const;
-    virtual CouponList* copyAs(const TgtHllType tgtHllType) const;
+    virtual CouponList* copyAs(TgtHllType tgtHllType) const;
 
     virtual HllSketchImpl* couponUpdate(int coupon);
 
     virtual double getEstimate() const;
     virtual double getCompositeEstimate() const;
-    virtual double getUpperBound(const int numStdDev) const;
-    virtual double getLowerBound(const int numStdDev) const;
+    virtual double getUpperBound(int numStdDev) const;
+    virtual double getLowerBound(int numStdDev) const;
 
     virtual bool isEmpty() const;
     virtual int getCouponCount() const;
@@ -47,7 +50,7 @@ class CouponList : public HllSketchImpl {
     virtual void putOutOfOrderFlag(bool oooFlag);
 
     virtual int getLgCouponArrInts() const;
-    virtual int* getCouponIntArr();
+    virtual int* getCouponIntArr() const;
 
     virtual CouponList* reset();
 
@@ -58,3 +61,5 @@ class CouponList : public HllSketchImpl {
 };
 
 }
+
+#endif /* _COUPONLIST_HPP_ */

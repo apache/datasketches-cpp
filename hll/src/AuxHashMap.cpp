@@ -30,18 +30,46 @@ AuxHashMap::AuxHashMap(AuxHashMap& that)
   std::copy(that.auxIntArr, that.auxIntArr + numItems, auxIntArr);
 }
 
+AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
+                                    int lgConfigK,
+                                    int auxCount, int lgAuxArrInts,
+                                    bool srcCompact) {
+  int lgArrInts = lgAuxArrInts;
+  if (srcCompact) { // early compact versions didn't use LgArr byte field so ignore input
+    lgArrInts = HllUtil::computeLgArrInts(HLL, auxCount, lgConfigK);
+  } else { // updatable
+    lgArrInts = lgAuxArrInts;
+  }
+
+  AuxHashMap* auxHashMap = new AuxHashMap(lgArrInts, lgConfigK);
+  int configKmask = (1 << lgConfigK) - 1;
+
+  int itemsToRead = (srcCompact ? auxCount : (1 << lgAuxArrInts));
+  if (len < itemsToRead * sizeof(int)) {
+    throw std::invalid_argument("Input array too small to hold AuxHashMap image");
+  }
+  const uint8_t* ptr = static_cast<const uint8_t*>(bytes);
+  for (int i = 0; i < itemsToRead; ++i) {
+    int pair;
+    std::memcpy(&pair, ptr, sizeof(pair));
+    int slotNo = HllUtil::getLow26(pair) & configKmask;
+    int value = HllUtil::getValue(pair);
+    auxHashMap->mustAdd(slotNo, value);
+    ptr += sizeof(pair);
+  }
+
+  return auxHashMap;                                    
+}
+
+
 AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
                                     const int auxCount, const int lgAuxArrInts,
                                     const bool srcCompact) {
   int lgArrInts = lgAuxArrInts;
   if (srcCompact) { // early compact versions didn't use LgArr byte field so ignore input
-    int ceilInts = HllUtil::ceilingPowerOf2(auxCount);
-    if ((HllUtil::RESIZE_DENOM * auxCount) > (HllUtil::RESIZE_NUMER * ceilInts)) {
-      ceilInts <<= 1;
-    }
-    int maxVal = (ceilInts > (1 << HllUtil::LG_AUX_ARR_INTS[lgConfigK])
-                  ? ceilInts : (1 << HllUtil::LG_AUX_ARR_INTS[lgConfigK]));
-    lgArrInts = HllUtil::simpleIntLog2(maxVal);
+    lgArrInts = HllUtil::computeLgArrInts(HLL, auxCount, lgConfigK);
+  } else { // updatable
+    lgArrInts = lgAuxArrInts;
   }
   
   AuxHashMap* auxHashMap = new AuxHashMap(lgArrInts, lgConfigK);

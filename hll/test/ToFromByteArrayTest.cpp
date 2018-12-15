@@ -13,12 +13,12 @@
 
 namespace datasketches {
 
-class ToFromByteArray : public CppUnit::TestFixture {
+class ToFromByteArrayTest : public CppUnit::TestFixture {
 
   // list of values defined at bottom of file
   static const int nArr[]; // = {1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000};
 
-  CPPUNIT_TEST_SUITE(ToFromByteArray);
+  CPPUNIT_TEST_SUITE(ToFromByteArrayTest);
   CPPUNIT_TEST(deserializeFromJava);
   CPPUNIT_TEST(toFromSketch);
   CPPUNIT_TEST_SUITE_END();
@@ -136,12 +136,49 @@ class ToFromByteArray : public CppUnit::TestFixture {
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
     src->serializeCompact(ss);
     hll_sketch dst = HllSketch::deserialize(ss);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(src->getEstimate(), dst->getEstimate(), 0.0);
+    checkSketchEquality(src, dst);
+
+    std::pair<std::unique_ptr<uint8_t>, const size_t> bytes1 = src->serializeCompact();
+    dst = HllSketch::deserialize(bytes1.first.get(), bytes1.second);
+    checkSketchEquality(src, dst);
 
     ss.clear();
     src->serializeUpdatable(ss);
     dst = HllSketch::deserialize(ss);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(src->getEstimate(), dst->getEstimate(), 0.0);
+    checkSketchEquality(src, dst);
+
+    std::pair<std::unique_ptr<uint8_t>, const size_t> bytes2 = src->serializeUpdatable();
+    dst = HllSketch::deserialize(bytes2.first.get(), bytes2.second);
+    checkSketchEquality(src, dst);
+  }
+
+  void checkSketchEquality(hll_sketch& s1, hll_sketch& s2) {
+    HllSketchPvt* sk1 = static_cast<HllSketchPvt*>(s1.get());
+    HllSketchPvt* sk2 = static_cast<HllSketchPvt*>(s2.get());
+
+    CPPUNIT_ASSERT_EQUAL(sk1->getLgConfigK(), sk2->getLgConfigK());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1->getLowerBound(1), sk2->getLowerBound(1), 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1->getEstimate(), sk2->getEstimate(), 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1->getUpperBound(1), sk2->getUpperBound(1), 0.0);
+    CPPUNIT_ASSERT_EQUAL(sk1->getCurrentMode(), sk2->getCurrentMode());
+    CPPUNIT_ASSERT_EQUAL(sk1->getTgtHllType(), sk2->getTgtHllType());
+
+    if (sk1->getCurrentMode() == LIST) {
+      CouponList* cl1 = static_cast<CouponList*>(sk1->hllSketchImpl);
+      CouponList* cl2 = static_cast<CouponList*>(sk2->hllSketchImpl);
+      CPPUNIT_ASSERT_EQUAL(cl1->getCouponCount(), cl2->getCouponCount());
+    } else if (sk1->getCurrentMode() == SET) {
+      CouponHashSet* chs1 = static_cast<CouponHashSet*>(sk1->hllSketchImpl);
+      CouponHashSet* chs2 = static_cast<CouponHashSet*>(sk2->hllSketchImpl);
+      CPPUNIT_ASSERT_EQUAL(chs1->getCouponCount(), chs2->getCouponCount());
+    } else { // sk1->getCurrentMode() == HLL      
+      HllArray* ha1 = static_cast<HllArray*>(sk1->hllSketchImpl);
+      HllArray* ha2 = static_cast<HllArray*>(sk2->hllSketchImpl);
+      CPPUNIT_ASSERT_EQUAL(ha1->getCurMin(), ha2->getCurMin());
+      CPPUNIT_ASSERT_EQUAL(ha1->getNumAtCurMin(), ha2->getNumAtCurMin());
+      CPPUNIT_ASSERT_DOUBLES_EQUAL(ha1->getKxQ0(), ha2->getKxQ0(), 0);
+      CPPUNIT_ASSERT_DOUBLES_EQUAL(ha1->getKxQ1(), ha2->getKxQ1(), 0);
+    }
   }
 
   void toFromSketch() {
@@ -156,8 +193,8 @@ class ToFromByteArray : public CppUnit::TestFixture {
   }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(ToFromByteArray);
-
-const int ToFromByteArray::nArr[] = {1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000};
+CPPUNIT_TEST_SUITE_REGISTRATION(ToFromByteArrayTest);
+  
+const int ToFromByteArrayTest::nArr[] = {1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000};
 
 } /* namespace datasketches */

@@ -39,12 +39,8 @@ class AuxHashMapTest : public CppUnit::TestFixture {
     val = map->mustFindValueFor(100);
     CPPUNIT_ASSERT_EQUAL(val, 10);
 
-    try {
-      map->mustReplace(101, 5);
-      CPPUNIT_FAIL("map->mustReplace() should fail");
-    } catch (std::exception& e) {
-      // expected
-    }
+    CPPUNIT_ASSERT_THROW_MESSAGE("map->mustReplace() should fail",
+                                 map->mustReplace(101, 5), std::invalid_argument);
 
     delete map;
   }
@@ -72,25 +68,17 @@ class AuxHashMapTest : public CppUnit::TestFixture {
 
   void checkExceptionMustFindValueFor() {
     AuxHashMap* map = new AuxHashMap(3, 7);
-    try {
-      map->mustAdd(100, 5);
-      map->mustFindValueFor(101);
-      CPPUNIT_FAIL("map->mustFindValueFor() should fail");
-    } catch (std::exception& e) {
-      // expected
-    }
+    map->mustAdd(100, 5);
+    CPPUNIT_ASSERT_THROW_MESSAGE("map->mustFindValueFor() should fail",
+                                 map->mustFindValueFor(101), std::invalid_argument);
     delete map;
   }
 
   void checkExceptionMustAdd() {
     AuxHashMap* map = new AuxHashMap(3, 7);
-    try {
-      map->mustAdd(100, 5);
-      map->mustAdd(100, 6);
-      CPPUNIT_FAIL("map->mustAdd() should fail");
-    } catch (std::exception& e) {
-      // expected
-    }
+    map->mustAdd(100, 5);
+    CPPUNIT_ASSERT_THROW_MESSAGE("map->mustAdd() should fail",
+                                 map->mustAdd(100, 6), std::invalid_argument);
     delete map;
   }
 

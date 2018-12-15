@@ -3,7 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#pragma once
+#ifndef _HARMONICNUMBERS_HPP_
+#define _HARMONICNUMBERS_HPP_
 
 #include <cstdint>
 
@@ -18,10 +19,12 @@ class HarmonicNumbers {
      * bitVectorLength.
      * @return the estimate.
      */
-    static double getBitMapEstimate(const int bitVectorLength, const int numBitsSet);
+    static double getBitMapEstimate(int bitVectorLength, int numBitsSet);
 
   private:
-    static double harmonicNumber(const uint64_t x_i);
+    static double harmonicNumber(uint64_t x_i);
 };
 
 }
+
+#endif /* _HARMONICNUMBERS_HPP_ */
