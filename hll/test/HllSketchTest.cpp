@@ -154,12 +154,8 @@ class hllSketchTest : public CppUnit::TestFixture {
   }
 
   void checkNumStdDev() {
-    try {
-      HllUtil::checkNumStdDev(0);
-      CPPUNIT_FAIL("Must throw: invalid number of std deviations");
-    } catch (std::exception& e) {
-      // expected
-    }
+    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw on invalid number of std deviations",
+                                 HllUtil::checkNumStdDev(0), std::invalid_argument);
   }
 
   void checkSerSizes() {
@@ -216,19 +212,13 @@ class hllSketchTest : public CppUnit::TestFixture {
   }
 
   void checkConfigKLimits() {
-    try {
-      HllSketch::newInstance(HllUtil::MIN_LOG_K - 1);
-      CPPUNIT_FAIL("Must fail: lgK too small");
-    } catch (std::exception& e) {
-      // expected
-    }
+    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with lgK too small",
+                                 HllSketch::newInstance(HllUtil::MIN_LOG_K - 1),
+                                 std::invalid_argument);
 
-    try {
-      HllSketch::newInstance(HllUtil::MAX_LOG_K + 1);
-      CPPUNIT_FAIL("Must fail: lgK too large");
-    } catch (std::exception& e) {
-      // expected
-    }
+    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with lgK too large",
+                                 HllSketch::newInstance(HllUtil::MAX_LOG_K + 1),
+                                 std::invalid_argument);
   }
 
   void exerciseToString() {

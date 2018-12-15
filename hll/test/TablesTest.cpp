@@ -18,19 +18,13 @@ class TablesTest : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
   void interpolationException() {
-    try {
-      CubicInterpolation::usingXAndYTables(-1.0);
-      CPPUNIT_FAIL("usingXAndYTables must throw with x = -1.0");
-    } catch (std::exception& e) {
-      // expected
-    }
+    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with x = -1.0",
+                                 CubicInterpolation::usingXAndYTables(-1.0),
+                                 std::invalid_argument);
 
-    try {
-      CubicInterpolation::usingXAndYTables(1e12);
-      CPPUNIT_FAIL("usingXAndYTables must throw with x = 1e12");
-    } catch (std::exception& e) {
-      // expected
-    }
+    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with x = 1e12",
+                                 CubicInterpolation::usingXAndYTables(1e12),
+                                 std::invalid_argument);
   }
 
   void checkCornerCase() {

@@ -67,6 +67,13 @@ CouponHashSet* CouponHashSet::newSet(const void* bytes, size_t len) {
   // Don't set couponCount in sketch here;
   // we'll set later if updatable, and increment with updates if compact
 
+  int couponsInArray = (compactFlag ? couponCount : (1 << sketch->getLgCouponArrInts()));
+  int expectedLength = HllUtil::HASH_SET_INT_ARR_START + (couponsInArray * sizeof(int));
+  if (len < expectedLength) {
+    throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
+                                + ", found: " + std::to_string(len));
+  }
+
   if (compactFlag) {
     const uint8_t* curPos = data + HllUtil::HASH_SET_INT_ARR_START;
     int coupon;

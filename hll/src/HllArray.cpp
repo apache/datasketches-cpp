@@ -89,7 +89,7 @@ HllArray* HllArray::newHll(const void* bytes, size_t len) {
     throw std::invalid_argument("Wrong ser ver in input stream");
   }
   if (data[HllUtil::FAMILY_BYTE] != HllUtil::FAMILY_ID) {
-    throw std::invalid_argument("Input stream is not an HLL sketch");
+    throw std::invalid_argument("Input array is not an HLL sketch");
   }
 
   CurMode curMode = extractCurMode(data[HllUtil::MODE_BYTE]);
@@ -107,6 +107,11 @@ HllArray* HllArray::newHll(const void* bytes, size_t len) {
   HllArray* sketch = newHll(lgK, tgtHllType);
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
+
+  int arrayBytes = sketch->getHllByteArrBytes();
+  if (len < HllUtil::HLL_BYTE_ARR_START + arrayBytes) {
+    throw std::invalid_argument("Input array too small to hold sketch image");
+  }
 
   double hip, kxq0, kxq1;
   std::memcpy(&hip, data + HllUtil::HIP_ACCUM_DOUBLE, sizeof(double));

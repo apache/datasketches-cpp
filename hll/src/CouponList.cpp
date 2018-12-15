@@ -91,7 +91,7 @@ CouponList* CouponList::newList(const void* bytes, size_t len) {
 
   const int lgK = (int) data[HllUtil::LG_K_BYTE];
   //const int lgArrInts = (int) data[HllUtil::LG_ARR_BYTE];
-  //bool compact = ((data[HllUtil::FLAGS_BYTE] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
+  bool compact = ((data[HllUtil::FLAGS_BYTE] & HllUtil::COMPACT_FLAG_MASK) ? true : false);
   bool oooFlag = ((data[HllUtil::FLAGS_BYTE] & HllUtil::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   bool emptyFlag = ((data[HllUtil::FLAGS_BYTE] & HllUtil::EMPTY_FLAG_MASK) ? true : false);
 
@@ -101,7 +101,8 @@ CouponList* CouponList::newList(const void* bytes, size_t len) {
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
   if (!emptyFlag) {
-    int expectedLength = HllUtil::LIST_INT_ARR_START + (couponCount * sizeof(int));
+    int couponsInArray = (compact ? couponCount : (1 << sketch->getLgCouponArrInts()));
+    int expectedLength = HllUtil::LIST_INT_ARR_START + (couponsInArray * sizeof(int));
     if (len < expectedLength) {
       throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
                                   + ", found: " + std::to_string(len));

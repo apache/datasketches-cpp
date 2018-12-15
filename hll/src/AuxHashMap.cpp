@@ -45,6 +45,9 @@ AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
   int configKmask = (1 << lgConfigK) - 1;
 
   int itemsToRead = (srcCompact ? auxCount : (1 << lgAuxArrInts));
+  if (len < itemsToRead * sizeof(int)) {
+    throw std::invalid_argument("Input array too small to hold AuxHashMap image");
+  }
   const uint8_t* ptr = static_cast<const uint8_t*>(bytes);
   for (int i = 0; i < itemsToRead; ++i) {
     int pair;

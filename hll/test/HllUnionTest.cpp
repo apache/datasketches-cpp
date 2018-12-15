@@ -221,19 +221,13 @@ class HllUnionTest : public CppUnit::TestFixture {
   }
 
   void checkConfigKLimits() {
-    try {
-      HllUnion::newInstance(HllUtil::MIN_LOG_K - 1);
-      CPPUNIT_FAIL("Must fail: lgK too small");
-    } catch (std::exception& e) {
-      // expected
-    }
+    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect lgK too small",
+                                 HllUnion::newInstance(HllUtil::MIN_LOG_K - 1),
+                                 std::invalid_argument);
 
-    try {
-      HllUnion::newInstance(HllUtil::MAX_LOG_K + 1);
-      CPPUNIT_FAIL("Must fail: lgK too large");
-    } catch (std::exception& e) {
-      // expected
-    }
+    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect lgK too large",
+                                 HllUnion::newInstance(HllUtil::MAX_LOG_K + 1),
+                                 std::invalid_argument);
   }
 
   double getBound(int lgK, bool ub, bool oooFlag, int numStdDev, double est) {
