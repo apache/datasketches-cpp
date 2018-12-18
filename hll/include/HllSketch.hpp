@@ -27,12 +27,13 @@ class HllSketchPvt : public HllSketch {
 
     virtual ~HllSketchPvt();
 
-    // copy constructors
     HllSketchPvt(const HllSketch& that);
     HllSketchPvt(HllSketchImpl* that);
+    
+    HllSketchPvt& operator=(HllSketchPvt other);
 
-    hll_sketch copy() const;
-    hll_sketch copyAs(TgtHllType tgtHllType) const;
+    virtual std::unique_ptr<HllSketchPvt> copy() const;
+    virtual std::unique_ptr<HllSketchPvt> copyAs(TgtHllType tgtHllType) const;
 
     virtual void reset();
 

@@ -41,6 +41,9 @@ class HllUnionPvt : public HllUnion {
     explicit HllUnionPvt(int lgMaxK);
     explicit HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch);
 
+    HllUnionPvt(const HllUnion& other);
+    HllUnionPvt& operator=(HllUnionPvt& other);
+
     static std::unique_ptr<HllUnionPvt> deserialize(std::istream& is);
     static std::unique_ptr<HllUnionPvt> deserialize(const void* bytes, size_t len);
 
@@ -117,7 +120,7 @@ class HllUnionPvt : public HllUnion {
     // calls couponUpdate on sketch, freeing the old sketch upon changes in CurMode
     static HllSketchImpl* leakFreeCouponUpdate(HllSketchImpl* impl, int coupon);
 
-    const int lgMaxK;
+    int lgMaxK;
     std::unique_ptr<HllSketchPvt> gadget;
 };
 

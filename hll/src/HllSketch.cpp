@@ -33,6 +33,14 @@ hll_sketch HllSketch::deserialize(const void* bytes, size_t len) {
   return HllSketchPvt::deserialize(bytes, len);
 }
 
+hll_sketch HllSketch::copy() const {
+  return static_cast<const HllSketchPvt*>(this)->copy();
+}
+
+hll_sketch HllSketch::copyAs(TgtHllType tgtHllType) const {
+  return static_cast<const HllSketchPvt*>(this)->copyAs(tgtHllType);
+}
+
 HllSketch::~HllSketch() {}
 
 HllSketchPvt::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
@@ -69,11 +77,16 @@ HllSketchPvt::HllSketchPvt(HllSketchImpl* that) :
   hllSketchImpl(that)
 {}
 
-hll_sketch HllSketchPvt::copy() const {
+HllSketchPvt& HllSketchPvt::operator=(HllSketchPvt other) {
+  std::swap(hllSketchImpl, other.hllSketchImpl);
+  return *this;
+}
+
+std::unique_ptr<HllSketchPvt> HllSketchPvt::copy() const {
   return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(this->hllSketchImpl->copy()));
 }
 
-hll_sketch HllSketchPvt::copyAs(const TgtHllType tgtHllType) const {
+std::unique_ptr<HllSketchPvt> HllSketchPvt::copyAs(const TgtHllType tgtHllType) const {
   return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(hllSketchImpl->copyAs(tgtHllType)));
 }
 
