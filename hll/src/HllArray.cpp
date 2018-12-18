@@ -74,6 +74,7 @@ HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
     case HLL_4:
       return (HllArray*) new Hll4Array(lgConfigK);
   }
+  throw std::logic_error("Invalid TgtHllType");
 }
 
 HllArray* HllArray::newHll(const void* bytes, size_t len) {

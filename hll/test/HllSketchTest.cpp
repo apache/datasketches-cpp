@@ -337,7 +337,7 @@ class hllSketchTest : public CppUnit::TestFixture {
 
     sk = HllSketch::newInstance(8, TgtHllType::HLL_4);
     sk->update(std::nanf("3"));
-    sk->update(std::nan((char*)nullptr));
+    sk->update(std::nan("9"));
     CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, sk->getEstimate(), 0.01);
 
     sk = HllSketch::newInstance(8, TgtHllType::HLL_4);

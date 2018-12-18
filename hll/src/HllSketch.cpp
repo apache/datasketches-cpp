@@ -57,7 +57,7 @@ std::ostream& operator<<(std::ostream& os, HllSketch& sketch) {
   return sketch.to_string(os, true, true, false, false);
 }
 
-std::ostream& operator<<(std::ostream& os, hll_sketch sketch) {
+std::ostream& operator<<(std::ostream& os, hll_sketch& sketch) {
   return sketch->to_string(os, true, true, false, false);
 }
 

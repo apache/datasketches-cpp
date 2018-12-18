@@ -10,6 +10,7 @@
 #include <memory>
 #include <functional>
 #include <stdexcept>
+#include <cmath>
 
 #include "fm85.h"
 #include "fm85Compression.h"

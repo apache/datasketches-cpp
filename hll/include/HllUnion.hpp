@@ -40,7 +40,9 @@ class HllUnionPvt : public HllUnion {
   public:
     explicit HllUnionPvt(int lgMaxK);
     explicit HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch);
-    static hll_union deserialize(std::istream& is);
+
+    static std::unique_ptr<HllUnionPvt> deserialize(std::istream& is);
+    static std::unique_ptr<HllUnionPvt> deserialize(const void* bytes, size_t len);
 
     virtual ~HllUnionPvt();
 
@@ -62,6 +64,8 @@ class HllUnionPvt : public HllUnion {
     virtual hll_sketch getResult() const;
     virtual hll_sketch getResult(TgtHllType tgtHllType) const;
 
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const;
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const;
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
 

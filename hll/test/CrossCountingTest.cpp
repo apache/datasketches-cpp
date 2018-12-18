@@ -34,7 +34,7 @@ class CrossCountingTest : public CppUnit::TestFixture {
     const HllSketchPvt* sk = static_cast<const HllSketchPvt*>(sketch);
     std::unique_ptr<PairIterator> itr = sk->getIterator();
     int checksum = 0;
-    int key = 0;
+    int key;
     while(itr->nextAll()) {
       checksum += itr->getPair();
       key = itr->getKey(); // dummy
