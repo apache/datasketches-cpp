@@ -50,6 +50,17 @@ HllUnionPvt::HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch)
   std::swap(sketch, gadget);
 }
 
+HllUnionPvt::HllUnionPvt(const HllUnion& other) :
+  lgMaxK(static_cast<const HllUnionPvt>(other).lgMaxK),
+  gadget(static_cast<const HllUnionPvt>(other).gadget.get()->copy())
+{}
+
+HllUnionPvt& HllUnionPvt::operator=(HllUnionPvt& other) {
+  lgMaxK = other.lgMaxK;
+  std::swap(gadget, other.gadget);
+  return *this;
+}
+
 HllUnionPvt::~HllUnionPvt() {}
 
 std::unique_ptr<HllUnionPvt> HllUnionPvt::deserialize(const void* bytes, size_t len) {

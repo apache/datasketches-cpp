@@ -32,8 +32,8 @@ class HllSketch {
 
     virtual ~HllSketch();
 
-    virtual hll_sketch copy() const = 0;
-    virtual hll_sketch copyAs(TgtHllType tgtHllType) const = 0;
+    hll_sketch copy() const;
+    hll_sketch copyAs(TgtHllType tgtHllType) const;
 
     virtual void reset() = 0;
     
