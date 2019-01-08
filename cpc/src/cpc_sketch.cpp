@@ -21,6 +21,7 @@ void cpc_cleanup() {
 std::ostream& operator<<(std::ostream& os, cpc_sketch const& sketch) {
   os << "### CPC sketch summary:" << std::endl;
   os << "   lgK            : " << sketch.state->lgK << std::endl;
+  os << "   seed hash      : " << std::hex << compute_seed_hash(sketch.seed) << std::dec << std::endl;
   os << "   C              : " << sketch.state->numCoupons << std::endl;
   os << "   flavor         : " << determineFlavor(sketch.state->lgK, sketch.state->numCoupons) << std::endl;
   os << "   merged         : " << (sketch.state->mergeFlag ? "true" : "false") << std::endl;
