@@ -5,13 +5,13 @@ namespace bpy = boost::python;
 namespace ds = datasketches;
 
 // wrappers for methods returning std::unique_ptr
-ds::HllSketch* hll_sketch_new_instance(int lgConfigK,
+ds::HllSketch* HllSketch_newInstance(int lgConfigK,
                                        ds::TgtHllType tgtHllType = ds::HLL_4) {
   ds::hll_sketch sk = ds::HllSketch::newInstance(lgConfigK, tgtHllType);
   return sk.release();
 }
 
-ds::HllSketch* hll_sketch_deserialize(bpy::object obj) {
+ds::HllSketch* HllSketch_deserialize(bpy::object obj) {
   PyObject* mv = obj.ptr();
   if (!PyMemoryView_Check(mv)) {
     // TODO: return error
@@ -23,34 +23,34 @@ ds::HllSketch* hll_sketch_deserialize(bpy::object obj) {
   return sk.release();
 }
 
-PyObject* serializeCompact(const ds::HllSketch& sk) {
+PyObject* HllSketch_serializeCompact(const ds::HllSketch& sk) {
   std::pair<std::unique_ptr<uint8_t>, const size_t> bytes = sk.serializeCompact();
   char* ptr = (char*)(bytes.first.release());
   PyObject* mv = PyMemoryView_FromMemory(ptr, bytes.second, PyBUF_READ);
   return mv;
 }
 
-PyObject* serializeUpdatable(const ds::HllSketch& sk) {
+PyObject* HllSketch_serializeUpdatable(const ds::HllSketch& sk) {
   std::pair<std::unique_ptr<uint8_t>, const size_t> bytes = sk.serializeUpdatable();
   char* ptr = (char*)(bytes.first.release());
   PyObject* mv = PyMemoryView_FromMemory(ptr, bytes.second, PyBUF_READ);
   return mv;
 }
 
-std::string sketch_print_wrap(const ds::HllSketch& sk,
-                              bool summary = true,
-                              bool detail = false,
-                              bool auxDetail = false,
-                              bool all = false) {
+std::string HllSketch_toString(const ds::HllSketch& sk,
+                               bool summary = true,
+                               bool detail = false,
+                               bool auxDetail = false,
+                               bool all = false) {
   return sk.to_string(summary, detail, auxDetail, all);
 }
 
-std::string sketch_print_simple_wrap(const ds::HllSketch& sk) {
-  return sketch_print_wrap(sk);
+std::string HllSketch_toStringDefault(const ds::HllSketch& sk) {
+  return HllSketch_toString(sk);
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(HllSketchNewInstanceOverloads, hll_sketch_new_instance, 1, 2);
-BOOST_PYTHON_FUNCTION_OVERLOADS(HllSketchToStringOverloads, sketch_print_wrap, 1, 5);
+BOOST_PYTHON_FUNCTION_OVERLOADS(HllSketchNewInstanceOverloads, HllSketch_newInstance, 1, 2);
+BOOST_PYTHON_FUNCTION_OVERLOADS(HllSketchToStringOverloads, HllSketch_toString, 1, 5);
 
 BOOST_PYTHON_MODULE(pyhll)
 {
@@ -63,16 +63,16 @@ BOOST_PYTHON_MODULE(pyhll)
     ;
 
   bpy::class_<HllSketch, boost::noncopyable>("HllSketch", bpy::no_init)
-    .def("newInstance", &hll_sketch_new_instance, HllSketchNewInstanceOverloads()[bpy::return_value_policy<bpy::manage_new_object>()])
+    .def("newInstance", &HllSketch_newInstance, HllSketchNewInstanceOverloads()[bpy::return_value_policy<bpy::manage_new_object>()])
     .staticmethod("newInstance")
-    .def("deserialize", &hll_sketch_deserialize, bpy::return_value_policy<bpy::manage_new_object>())
+    .def("deserialize", &HllSketch_deserialize, bpy::return_value_policy<bpy::manage_new_object>())
     .staticmethod("deserialize")
-    .def("serializeCompact", &serializeCompact)
-    .def("serializeUpdatable", &serializeUpdatable)
-    .def("__str__", &sketch_print_simple_wrap)
+    .def("serializeCompact", &HllSketch_serializeCompact)
+    .def("serializeUpdatable", &HllSketch_serializeUpdatable)
+    .def("__str__", &HllSketch_toStringDefault)
     .add_property("lgConfigK", &HllSketch::getLgConfigK)
     .add_property("tgtHllType", &HllSketch::getTgtHllType)
-    .def("to_string", &sketch_print_wrap, HllSketchToStringOverloads())
+    .def("to_string", &HllSketch_toString, HllSketchToStringOverloads())
     .def("getEstimate", &HllSketch::getEstimate)
     .def("getCompositeEstimate", &HllSketch::getCompositeEstimate)
     .def("getLowerBound", &HllSketch::getLowerBound)
