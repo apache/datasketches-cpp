@@ -77,6 +77,10 @@ class HllUnionPvt : public HllUnion {
                                     bool detail = false,
                                     bool auxDetail = false,
                                     bool all = false) const;
+    virtual std::string to_string(bool summary = true,
+                                  bool detail = false,
+                                  bool auxDetail = false,
+                                  bool all = false) const;                                    
 
     virtual void update(const HllSketch& sketch);
     virtual void update(const std::string& datum);

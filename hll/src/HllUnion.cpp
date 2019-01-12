@@ -183,6 +183,11 @@ std::ostream& HllUnionPvt::to_string(std::ostream& os, const bool summary,
   return gadget->to_string(os, summary, detail, auxDetail, all);
 }
 
+std::string HllUnionPvt::to_string(const bool summary, const bool detail,
+                                   const bool auxDetail, const bool all) const {
+  return gadget->to_string(summary, detail, auxDetail, all);
+}
+
 double HllUnionPvt::getEstimate() const {
   return gadget->getEstimate();
 }
