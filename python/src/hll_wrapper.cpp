@@ -15,7 +15,8 @@ HllSketch* HllSketch_newInstance(int lgConfigK,
 HllSketch* HllSketch_deserialize(bpy::object obj) {
   PyObject* mv = obj.ptr();
   if (!PyMemoryView_Check(mv)) {
-    // TODO: return error
+    // TODO: return error?
+    return nullptr;
   }
   
   Py_buffer* buffer = PyMemoryView_GET_BUFFER(mv);
@@ -58,7 +59,8 @@ HllUnion* HllUnion_newInstance(int lgMaxK) {
 HllUnion* HllUnion_deserialize(bpy::object obj) {
   PyObject* mv = obj.ptr();
     if (!PyMemoryView_Check(mv)) {
-    // TODO: return error
+    // TODO: return error?
+    return nullptr;
   }
   
   Py_buffer* buffer = PyMemoryView_GET_BUFFER(mv);
@@ -93,12 +95,8 @@ std::string HllUnion_toStringDefault(const HllUnion& u) {
   return HllUnion_toString(u);
 }
 
-HllSketch* HllUnion_getResult(const HllUnion& u) {
-  return u.getResult().release();
-}
-
-HllSketch* HllUnion_getResultAsType(const HllUnion& u,
-                                    TgtHllType tgtHllType) {
+HllSketch* HllUnion_getResult(const HllUnion& u,
+                                    TgtHllType tgtHllType = HLL_4) {
   return u.getResult(tgtHllType).release();
 }
 
@@ -111,9 +109,8 @@ BOOST_PYTHON_FUNCTION_OVERLOADS(HllSketchNewInstanceOverloads, dspy::HllSketch_n
 BOOST_PYTHON_FUNCTION_OVERLOADS(HllSketchToStringOverloads, dspy::HllSketch_toString, 1, 5);
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(HllUnionToStringOverloads, dspy::HllUnion_toString, 1, 5);
-//BOOST_PYTHON_FUNCTION_OVERLOADS(HllUnionGetResultOverloads, dspy::HllUnion_getResult, 0, 1);
+BOOST_PYTHON_FUNCTION_OVERLOADS(HllUnionGetResultOverloads, dspy::HllUnion_getResult, 1, 2);
 
-//BOOST_PYTHON_MODULE(pyhll)
 void export_hll()
 {
   using namespace datasketches;
@@ -175,8 +172,7 @@ void export_hll()
     .def("getUpdtableSerialiationBytes", &HllUnion::getUpdatableSerializationBytes)
     .def("getCompactSerialiationBytes", &HllUnion::getCompactSerializationBytes)
     .def("reset", &HllUnion::reset)
-    .def("getResult", &dspy::HllUnion_getResult, bpy::return_value_policy<bpy::manage_new_object>())
-    .def("getResultAsType", &dspy::HllUnion_getResultAsType, bpy::return_value_policy<bpy::manage_new_object>())
+    .def("getResult", &dspy::HllUnion_getResult, HllUnionGetResultOverloads()[bpy::return_value_policy<bpy::manage_new_object>()])
     .def<void (HllUnion::*)(const HllSketch&)>("update", &HllUnion::update)
     .def<void (HllUnion::*)(uint64_t)>("update", &HllUnion::update)
     .def<void (HllUnion::*)(int64_t)>("update", &HllUnion::update)

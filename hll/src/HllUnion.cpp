@@ -93,10 +93,6 @@ std::unique_ptr<HllUnionPvt> HllUnionPvt::deserialize(std::istream& is) {
   return std::unique_ptr<HllUnionPvt>(hllUnion);
 }
 
-hll_sketch HllUnionPvt::getResult() const {
-  return gadget->copyAs(TgtHllType::HLL_4);
-}
-
 hll_sketch HllUnionPvt::getResult(TgtHllType tgtHllType) const {
   return gadget->copyAs(tgtHllType);
 }

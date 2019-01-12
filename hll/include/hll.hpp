@@ -118,8 +118,7 @@ class HllUnion {
 
     virtual void reset() = 0;
 
-    virtual hll_sketch getResult() const = 0;
-    virtual hll_sketch getResult(TgtHllType tgtHllType) const = 0;
+    virtual hll_sketch getResult(TgtHllType tgtHllType = HLL_4) const = 0;
 
     virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const = 0;
     virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const = 0;
