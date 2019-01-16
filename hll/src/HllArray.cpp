@@ -198,7 +198,7 @@ std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray::serialize(bool compa
   const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
   std::unique_ptr<uint8_t> byteArr(new uint8_t[sketchSizeBytes]);
 
-  uint8_t* bytes = static_cast<uint8_t*>(byteArr.get());
+  uint8_t* bytes = byteArr.get();
   AuxHashMap* auxHashMap = getAuxHashMap();
 
   bytes[HllUtil::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
@@ -218,7 +218,7 @@ std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray::serialize(bool compa
   std::memcpy(bytes + HllUtil::AUX_COUNT_INT, &auxCount, sizeof(int));
 
   const int hllByteArrBytes = getHllByteArrBytes();
-  std::memcpy(bytes + getMemDataStart(), &hllByteArr, hllByteArrBytes);
+  std::memcpy(bytes + getMemDataStart(), hllByteArr, hllByteArrBytes);
 
   // aux map if HLL_4
   if (tgtHllType == HLL_4) {
