@@ -44,18 +44,33 @@ AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
   AuxHashMap* auxHashMap = new AuxHashMap(lgArrInts, lgConfigK);
   int configKmask = (1 << lgConfigK) - 1;
 
-  int itemsToRead = (srcCompact ? auxCount : (1 << lgAuxArrInts));
-  if (len < itemsToRead * sizeof(int)) {
-    throw std::invalid_argument("Input array too small to hold AuxHashMap image");
+  const int* auxPtr = static_cast<const int*>(bytes);
+  if (srcCompact) {
+    if (len < auxCount * sizeof(int)) {
+      throw std::invalid_argument("Input array too small to hold AuxHashMap image");
+    }
+    for (int i = 0; i < auxCount; ++i) {
+      int pair = auxPtr[i];
+      int slotNo = HllUtil::getLow26(pair) & configKmask;
+      int value = HllUtil::getValue(pair);
+      auxHashMap->mustAdd(slotNo, value);
+    }
+  } else { // updatable
+    int itemsToRead = 1 << lgAuxArrInts;
+    if (len < itemsToRead * sizeof(int)) {
+      throw std::invalid_argument("Input array too small to hold AuxHashMap image");
+    }
+    for (int i = 0; i < itemsToRead; ++i) {
+      int pair = auxPtr[i];
+      if (pair == HllUtil::EMPTY) { continue; }
+      int slotNo = HllUtil::getLow26(pair) & configKmask;
+      int value = HllUtil::getValue(pair);
+      auxHashMap->mustAdd(slotNo, value);
+    }
   }
-  const uint8_t* ptr = static_cast<const uint8_t*>(bytes);
-  for (int i = 0; i < itemsToRead; ++i) {
-    int pair;
-    std::memcpy(&pair, ptr, sizeof(pair));
-    int slotNo = HllUtil::getLow26(pair) & configKmask;
-    int value = HllUtil::getValue(pair);
-    auxHashMap->mustAdd(slotNo, value);
-    ptr += sizeof(pair);
+
+  if (auxHashMap->getAuxCount() != auxCount) {
+    throw std::invalid_argument("Deserialized AuxHashMap has wrong number of entries");
   }
 
   return auxHashMap;                                    
@@ -75,13 +90,28 @@ AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
   AuxHashMap* auxHashMap = new AuxHashMap(lgArrInts, lgConfigK);
   int configKmask = (1 << lgConfigK) - 1;
 
-  int itemsToRead = (srcCompact ? auxCount : (1 << lgAuxArrInts));
-  for (int i = 0; i < itemsToRead; ++i) {
+  if (srcCompact) {
     int pair;
-    is.read((char*)&pair, sizeof(pair));
-    int slotNo = HllUtil::getLow26(pair) & configKmask;
-    int value = HllUtil::getValue(pair);
-    auxHashMap->mustAdd(slotNo, value);
+    for (int i = 0; i < auxCount; ++i) {
+      is.read((char*)&pair, sizeof(pair));
+      int slotNo = HllUtil::getLow26(pair) & configKmask;
+      int value = HllUtil::getValue(pair);
+      auxHashMap->mustAdd(slotNo, value);
+    }
+  } else { // updatable
+    int itemsToRead = 1 << lgAuxArrInts;
+    int pair;
+    for (int i = 0; i < itemsToRead; ++i) {
+      is.read((char*)&pair, sizeof(pair));
+      if (pair == HllUtil::EMPTY) { continue; }
+      int slotNo = HllUtil::getLow26(pair) & configKmask;
+      int value = HllUtil::getValue(pair);
+      auxHashMap->mustAdd(slotNo, value);
+    }
+  }
+
+  if (auxHashMap->getAuxCount() != auxCount) {
+    throw std::invalid_argument("Deserialized AuxHashMap has wrong number of entries");
   }
 
   return auxHashMap;
