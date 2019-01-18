@@ -199,12 +199,12 @@ void HllSketchPvt::serializeUpdatable(std::ostream& os) const {
   return hllSketchImpl->serialize(os, false);
 }
 
-std::pair<std::unique_ptr<uint8_t>, const size_t>
+std::pair<std::unique_ptr<uint8_t[]>, const size_t>
 HllSketchPvt::serializeCompact() const {
   return hllSketchImpl->serialize(true);
 }
 
-std::pair<std::unique_ptr<uint8_t>, const size_t>
+std::pair<std::unique_ptr<uint8_t[]>, const size_t>
 HllSketchPvt::serializeUpdatable() const {
   return hllSketchImpl->serialize(false);
 }

@@ -158,11 +158,11 @@ void HllUnionPvt::couponUpdate(const int coupon) {
   }
 }
 
-std::pair<std::unique_ptr<uint8_t>, const size_t> HllUnionPvt::serializeCompact() const {
+std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllUnionPvt::serializeCompact() const {
   return gadget->serializeCompact();
 }
 
-std::pair<std::unique_ptr<uint8_t>, const size_t> HllUnionPvt::serializeUpdatable() const {
+std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllUnionPvt::serializeUpdatable() const {
   return gadget->serializeUpdatable();
 }
 

@@ -37,8 +37,8 @@ class HllSketch {
 
     virtual void reset() = 0;
     
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const = 0;
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const = 0;
     virtual void serializeCompact(std::ostream& os) const = 0;
     virtual void serializeUpdatable(std::ostream& os) const = 0;
     
@@ -120,8 +120,8 @@ class HllUnion {
 
     virtual hll_sketch getResult(TgtHllType tgtHllType = HLL_4) const = 0;
 
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const = 0;
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const = 0;
     virtual void serializeCompact(std::ostream& os) const = 0;
     virtual void serializeUpdatable(std::ostream& os) const = 0;
 

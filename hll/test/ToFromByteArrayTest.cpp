@@ -21,7 +21,59 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(ToFromByteArrayTest);
   CPPUNIT_TEST(deserializeFromJava);
   CPPUNIT_TEST(toFromSketch);
+  //CPPUNIT_TEST(doubleSerialize);
   CPPUNIT_TEST_SUITE_END();
+
+  void doubleSerialize() {
+    hll_sketch sk = HllSketch::newInstance(9, HLL_8);
+    for (int i = 0; i < 1024; ++i) {
+      sk->update(i);
+    }
+    
+    std::stringstream ss1;
+    sk->serializeUpdatable(ss1);
+    std::pair<std::unique_ptr<uint8_t[]>, size_t> ser1 = sk->serializeUpdatable();
+
+    std::stringstream ss;
+    sk->serializeUpdatable(ss);
+    std::string str = ss.str();
+
+
+    hll_sketch sk2 = HllSketch::deserialize(ser1.first.get(), ser1.second);
+    //hll_sketch sk2 = HllSketch::deserialize(ss1);
+    
+    //std::stringstream ss2;
+    //sk2->serializeUpdatable(ss2);
+    std::pair<std::unique_ptr<uint8_t[]>, size_t> ser2 = sk->serializeUpdatable();
+
+    // std::string b1 = ss1.str();
+    // std::string b2 = ss2.str();
+    // CPPUNIT_ASSERT_EQUAL(b1.length(), b2.length());
+    // int len = b1.length();
+
+    CPPUNIT_ASSERT_EQUAL(ser1.second, ser2.second);
+    int len = ser1.second;
+    uint8_t* b1 = ser1.first.get();
+    uint8_t* b2 = ser2.first.get();
+
+    for (int i = 0; i < len; ++i) {
+      if (b1[i] != b2[i]) {
+        hll_sketch from_ss = HllSketch::deserialize(ss1);
+        std::cout << "ser3:\n";
+        std::pair<std::unique_ptr<uint8_t[]>, size_t> ser3 = from_ss->serializeUpdatable();
+        uint8_t* b3 = ser3.first.get();
+        
+        std::cerr << "Mismatch at byte " << i << "\n";
+        std::cerr << "b1: " << b1[i] << "\n";
+        std::cerr << "b2: " << b2[i] << "\n";
+        std::cerr << "b3: " << b3[i] << "\n";
+        //std::cerr << sk->to_string(true, true, true, true) << "\n";
+        //std::cerr << sk2->to_string(true, true, true, true) << "\n";
+        //std::cerr << from_ss->to_string(true, true, true, true) << "\n";
+        CPPUNIT_ASSERT_EQUAL(b1[i], b2[i]);
+      }
+    }
+  }
 
   void deserializeFromJava() {
     std::ifstream ifs;
@@ -138,7 +190,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     hll_sketch dst = HllSketch::deserialize(ss);
     checkSketchEquality(src, dst);
 
-    std::pair<std::unique_ptr<uint8_t>, const size_t> bytes1 = src->serializeCompact();
+    std::pair<std::unique_ptr<uint8_t[]>, const size_t> bytes1 = src->serializeCompact();
     dst = HllSketch::deserialize(bytes1.first.get(), bytes1.second);
     checkSketchEquality(src, dst);
 
@@ -147,7 +199,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     dst = HllSketch::deserialize(ss);
     checkSketchEquality(src, dst);
 
-    std::pair<std::unique_ptr<uint8_t>, const size_t> bytes2 = src->serializeUpdatable();
+    std::pair<std::unique_ptr<uint8_t[]>, const size_t> bytes2 = src->serializeUpdatable();
     dst = HllSketch::deserialize(bytes2.first.get(), bytes2.second);
     checkSketchEquality(src, dst);
   }

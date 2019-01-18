@@ -104,7 +104,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     for (int i = 0; i < 50; ++i) {
       sk1->update(i);
     }
-    std::pair<std::unique_ptr<uint8_t>, size_t> sketchBytes = sk1->serializeCompact();
+    std::pair<std::unique_ptr<uint8_t[]>, size_t> sketchBytes = sk1->serializeCompact();
     uint8_t* bytes = sketchBytes.first.get();
 
     bytes[HllUtil::PREAMBLE_INTS_BYTE] = 0;

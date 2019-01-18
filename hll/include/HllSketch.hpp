@@ -50,8 +50,8 @@ class HllSketchPvt : public HllSketch {
     virtual void update(float datum);
     virtual void update(const void* data, size_t lengthBytes);
     
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const;
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const;
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
 

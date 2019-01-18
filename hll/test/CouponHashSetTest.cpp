@@ -30,7 +30,7 @@ class CouponHashSetTest : public CppUnit::TestFixture {
     for (int i = 0; i < 24; ++i) {
       sk1->update(i);
     }
-    std::pair<std::unique_ptr<uint8_t>, size_t> sketchBytes = sk1->serializeUpdatable();
+    std::pair<std::unique_ptr<uint8_t[]>, size_t> sketchBytes = sk1->serializeUpdatable();
     uint8_t* bytes = sketchBytes.first.get();
 
     bytes[HllUtil::PREAMBLE_INTS_BYTE] = 0;

@@ -18,30 +18,29 @@ HllSketch* HllSketch_newInstance(int lgConfigK,
 }
 
 HllSketch* HllSketch_deserialize(bpy::object obj) {
-  PyObject* mv = obj.ptr();
-  if (!PyMemoryView_Check(mv)) {
+  PyObject* skBytes = obj.ptr();
+  if (!PyBytes_Check(skBytes)) {
     // TODO: return error?
     return nullptr;
   }
   
-  Py_buffer* buffer = PyMemoryView_GET_BUFFER(mv);
-  hll_sketch sk = HllSketch::deserialize(buffer->buf, buffer->len);
-  PyBuffer_Release(buffer);
+  size_t len = PyBytes_GET_SIZE(skBytes);
+  char* sketchImg = PyBytes_AS_STRING(skBytes);
+  hll_sketch sk = HllSketch::deserialize(sketchImg, len);
   return sk.release();
 }
 
-PyObject* HllSketch_serializeCompact(const HllSketch& sk) {
-  std::pair<std::unique_ptr<uint8_t>, const size_t> bytes = sk.serializeCompact();
-  char* ptr = (char*)(bytes.first.release());
-  PyObject* mv = PyMemoryView_FromMemory(ptr, bytes.second, PyBUF_READ);
-  return mv;
+bpy::object HllSketch_serializeCompact(const HllSketch& sk) {
+  std::pair<std::unique_ptr<uint8_t[]>, const size_t> serResult = sk.serializeCompact();
+  PyObject* sketchBytes = PyBytes_FromStringAndSize((char*)serResult.first.get(), serResult.second);
+  return bpy::object{bpy::handle<>(sketchBytes)};
 }
 
-PyObject* HllSketch_serializeUpdatable(const HllSketch& sk) {
-  std::pair<std::unique_ptr<uint8_t>, const size_t> bytes = sk.serializeUpdatable();
-  char* ptr = (char*)(bytes.first.release());
-  PyObject* mv = PyMemoryView_FromMemory(ptr, bytes.second, PyBUF_READ);
-  return mv;
+
+bpy::object HllSketch_serializeUpdatable(const HllSketch& sk) {
+  std::pair<std::unique_ptr<uint8_t[]>, const size_t> serResult = sk.serializeUpdatable();
+  PyObject* sketchBytes = PyBytes_FromStringAndSize((char*)serResult.first.get(), serResult.second);
+  return bpy::object{bpy::handle<>(sketchBytes)};
 }
 
 std::string HllSketch_toString(const HllSketch& sk,
@@ -62,30 +61,28 @@ HllUnion* HllUnion_newInstance(int lgMaxK) {
 }
 
 HllUnion* HllUnion_deserialize(bpy::object obj) {
-  PyObject* mv = obj.ptr();
-    if (!PyMemoryView_Check(mv)) {
+  PyObject* skBytes = obj.ptr();
+  if (!PyBytes_Check(skBytes)) {
     // TODO: return error?
     return nullptr;
   }
   
-  Py_buffer* buffer = PyMemoryView_GET_BUFFER(mv);
-  hll_union u = HllUnion::deserialize(buffer->buf, buffer->len);
-  PyBuffer_Release(buffer);
+  size_t len = PyBytes_GET_SIZE(skBytes);
+  char* sketchImg = PyBytes_AS_STRING(skBytes);
+  hll_union u = HllUnion::deserialize(sketchImg, len);
   return u.release();
 }
 
-PyObject* HllUnion_serializeCompact(const HllUnion& u) {
-  std::pair<std::unique_ptr<uint8_t>, const size_t> bytes = u.serializeCompact();
-  char* ptr = (char*)(bytes.first.release());
-  PyObject* mv = PyMemoryView_FromMemory(ptr, bytes.second, PyBUF_READ);
-  return mv;
+bpy::object HllUnion_serializeCompact(const HllUnion& u) {
+  std::pair<std::unique_ptr<uint8_t[]>, const size_t> serResult = u.serializeCompact();
+  PyObject* unionBytes = PyBytes_FromStringAndSize((char*)serResult.first.get(), serResult.second);
+  return bpy::object{bpy::handle<>(unionBytes)};
 }
 
-PyObject* HllUnion_serializeUpdatable(const HllUnion& u) {
-  std::pair<std::unique_ptr<uint8_t>, const size_t> bytes = u.serializeUpdatable();
-  char* ptr = (char*)(bytes.first.release());
-  PyObject* mv = PyMemoryView_FromMemory(ptr, bytes.second, PyBUF_READ);
-  return mv;
+bpy::object HllUnion_serializeUpdatable(const HllUnion& u) {
+  std::pair<std::unique_ptr<uint8_t[]>, const size_t> serResult = u.serializeUpdatable();
+  PyObject* unionBytes = PyBytes_FromStringAndSize((char*)serResult.first.get(), serResult.second);
+  return bpy::object{bpy::handle<>(unionBytes)};
 }
 
 std::string HllUnion_toString(const HllUnion& u,

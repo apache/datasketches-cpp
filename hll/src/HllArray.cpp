@@ -194,9 +194,9 @@ HllArray* HllArray::newHll(std::istream& is) {
   return sketch;
 }
 
-std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray::serialize(bool compact) const {
+std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllArray::serialize(bool compact) const {
   const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
-  std::unique_ptr<uint8_t> byteArr(new uint8_t[sketchSizeBytes]);
+  std::unique_ptr<uint8_t[]> byteArr(new uint8_t[sketchSizeBytes]);
 
   uint8_t* bytes = byteArr.get();
   AuxHashMap* auxHashMap = getAuxHashMap();
