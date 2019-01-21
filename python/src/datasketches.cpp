@@ -6,7 +6,9 @@
 #include <boost/python.hpp>
 
 void export_hll();
+void export_kll();
 
 BOOST_PYTHON_MODULE(datasketches) {
   export_hll();
+  export_kll();
 }
