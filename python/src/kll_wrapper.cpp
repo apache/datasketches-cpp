@@ -108,6 +108,13 @@ uint32_t KllSketch_getSerializedSizeBytes(const kll_sketch<T>& sk) {
   return sk.get_serialized_size_bytes();
 }
 
+template<typename T>
+std::string KllSketch_toString(const kll_sketch<T>& sk) {
+  std::ostringstream ss;
+  ss << sk;
+  return ss.str();
+}
+
 }
 }
 
@@ -122,6 +129,7 @@ void bind_kll_sketch(const char* name)
     .def(bpy::init<const kll_sketch<T>&>())
     .def("update", &kll_sketch<T>::update)
     .def("merge", &kll_sketch<T>::merge)
+    .def("__str__", &dspy::KllSketch_toString<T>)
     .def("isEmpty", &kll_sketch<T>::is_empty)
     .def("getN", &kll_sketch<T>::get_n)
     .def("getNumRetained", &kll_sketch<T>::get_num_retained)
