@@ -20,7 +20,8 @@ HllSketch* HllSketch_newInstance(int lgConfigK,
 HllSketch* HllSketch_deserialize(bpy::object obj) {
   PyObject* skBytes = obj.ptr();
   if (!PyBytes_Check(skBytes)) {
-    // TODO: return error?
+    PyErr_SetString(PyExc_TypeError, "Attmpted to deserialize non-bytes object");
+    bpy::throw_error_already_set();
     return nullptr;
   }
   
@@ -63,7 +64,8 @@ HllUnion* HllUnion_newInstance(int lgMaxK) {
 HllUnion* HllUnion_deserialize(bpy::object obj) {
   PyObject* skBytes = obj.ptr();
   if (!PyBytes_Check(skBytes)) {
-    // TODO: return error?
+    PyErr_SetString(PyExc_TypeError, "Attmpted to deserialize non-bytes object");
+    bpy::throw_error_already_set();
     return nullptr;
   }
   
