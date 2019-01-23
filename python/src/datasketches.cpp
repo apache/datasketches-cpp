@@ -7,8 +7,10 @@
 
 void export_hll();
 void export_kll();
+void export_cpc();
 
 BOOST_PYTHON_MODULE(datasketches) {
   export_hll();
   export_kll();
+  export_cpc();
 }

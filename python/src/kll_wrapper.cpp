@@ -126,7 +126,7 @@ void bind_kll_sketch(const char* name)
 {
   using namespace datasketches;
 
-  bpy::class_<kll_sketch<T>>(name, bpy::init<uint16_t>())
+  bpy::class_<kll_sketch<T>, boost::noncopyable>(name, bpy::init<uint16_t>())
     .def(bpy::init<const kll_sketch<T>&>())
     .def("update", &kll_sketch<T>::update)
     .def("merge", &kll_sketch<T>::merge)
