@@ -4,6 +4,7 @@
  */
 
 #include "cpc/include/cpc_sketch.hpp"
+#include "cpc/include/cpc_union.hpp"
 #include "cpc/include/cpc_common.hpp"
 #include <boost/python.hpp>
 
@@ -38,6 +39,11 @@ std::string CpcSketch_toString(const cpc_sketch& sk) {
   return ss.str();
 }
 
+cpc_sketch* CpcUnion_getResult(const cpc_union& u) {
+  auto sk = u.get_result();
+  return sk.release();
+}
+
 }
 }
 
@@ -65,4 +71,10 @@ void export_cpc()
     .def("getEstimate", &cpc_sketch::get_estimate)
     ;
 
+  bpy::class_<cpc_union, boost::noncopyable>("CpcUnion", bpy::init<const cpc_union&>())
+    .def(bpy::init<uint8_t>())
+    .def(bpy::init<uint8_t, uint64_t>())
+    .def("update", &cpc_union::update)
+    .def("getResult", &dspy::CpcUnion_getResult, bpy::return_value_policy<bpy::manage_new_object>())
+    ;
 }
