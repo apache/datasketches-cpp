@@ -47,7 +47,7 @@ void cpc_cleanup();
 class cpc_sketch {
   public:
 
-    explicit cpc_sketch(uint8_t lg_k, uint64_t seed = DEFAULT_SEED) : seed(seed) {
+    explicit cpc_sketch(uint8_t lg_k = CPC_DEFAULT_LG_K, uint64_t seed = DEFAULT_SEED) : seed(seed) {
       fm85Init();
       if (lg_k < CPC_MIN_LG_K or lg_k > CPC_MAX_LG_K) {
         throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
