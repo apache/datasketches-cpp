@@ -33,6 +33,14 @@ hll_sketch HllSketch::deserialize(const void* bytes, size_t len) {
   return HllSketchPvt::deserialize(bytes, len);
 }
 
+hll_sketch HllSketch::copy() const {
+  return static_cast<const HllSketchPvt*>(this)->copy();
+}
+
+hll_sketch HllSketch::copyAs(TgtHllType tgtHllType) const {
+  return static_cast<const HllSketchPvt*>(this)->copyAs(tgtHllType);
+}
+
 HllSketch::~HllSketch() {}
 
 HllSketchPvt::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
@@ -57,7 +65,7 @@ std::ostream& operator<<(std::ostream& os, HllSketch& sketch) {
   return sketch.to_string(os, true, true, false, false);
 }
 
-std::ostream& operator<<(std::ostream& os, hll_sketch sketch) {
+std::ostream& operator<<(std::ostream& os, hll_sketch& sketch) {
   return sketch->to_string(os, true, true, false, false);
 }
 
@@ -69,11 +77,16 @@ HllSketchPvt::HllSketchPvt(HllSketchImpl* that) :
   hllSketchImpl(that)
 {}
 
-hll_sketch HllSketchPvt::copy() const {
+HllSketchPvt& HllSketchPvt::operator=(HllSketchPvt other) {
+  std::swap(hllSketchImpl, other.hllSketchImpl);
+  return *this;
+}
+
+std::unique_ptr<HllSketchPvt> HllSketchPvt::copy() const {
   return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(this->hllSketchImpl->copy()));
 }
 
-hll_sketch HllSketchPvt::copyAs(const TgtHllType tgtHllType) const {
+std::unique_ptr<HllSketchPvt> HllSketchPvt::copyAs(const TgtHllType tgtHllType) const {
   return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(hllSketchImpl->copyAs(tgtHllType)));
 }
 
@@ -186,12 +199,12 @@ void HllSketchPvt::serializeUpdatable(std::ostream& os) const {
   return hllSketchImpl->serialize(os, false);
 }
 
-std::pair<std::unique_ptr<uint8_t>, const size_t>
+std::pair<std::unique_ptr<uint8_t[]>, const size_t>
 HllSketchPvt::serializeCompact() const {
   return hllSketchImpl->serialize(true);
 }
 
-std::pair<std::unique_ptr<uint8_t>, const size_t>
+std::pair<std::unique_ptr<uint8_t[]>, const size_t>
 HllSketchPvt::serializeUpdatable() const {
   return hllSketchImpl->serialize(false);
 }

@@ -40,7 +40,12 @@ class HllUnionPvt : public HllUnion {
   public:
     explicit HllUnionPvt(int lgMaxK);
     explicit HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch);
-    static hll_union deserialize(std::istream& is);
+
+    HllUnionPvt(const HllUnion& other);
+    HllUnionPvt& operator=(HllUnionPvt& other);
+
+    static std::unique_ptr<HllUnionPvt> deserialize(std::istream& is);
+    static std::unique_ptr<HllUnionPvt> deserialize(const void* bytes, size_t len);
 
     virtual ~HllUnionPvt();
 
@@ -59,9 +64,10 @@ class HllUnionPvt : public HllUnion {
 
     virtual void reset();
 
-    virtual hll_sketch getResult() const;
-    virtual hll_sketch getResult(TgtHllType tgtHllType) const;
+    virtual hll_sketch getResult(TgtHllType tgtHllType = HLL_4) const;
 
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const;
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
 
@@ -70,6 +76,10 @@ class HllUnionPvt : public HllUnion {
                                     bool detail = false,
                                     bool auxDetail = false,
                                     bool all = false) const;
+    virtual std::string to_string(bool summary = true,
+                                  bool detail = false,
+                                  bool auxDetail = false,
+                                  bool all = false) const;                                    
 
     virtual void update(const HllSketch& sketch);
     virtual void update(const std::string& datum);
@@ -113,7 +123,7 @@ class HllUnionPvt : public HllUnion {
     // calls couponUpdate on sketch, freeing the old sketch upon changes in CurMode
     static HllSketchImpl* leakFreeCouponUpdate(HllSketchImpl* impl, int coupon);
 
-    const int lgMaxK;
+    int lgMaxK;
     std::unique_ptr<HllSketchPvt> gadget;
 };
 

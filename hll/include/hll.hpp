@@ -32,13 +32,13 @@ class HllSketch {
 
     virtual ~HllSketch();
 
-    virtual hll_sketch copy() const = 0;
-    virtual hll_sketch copyAs(TgtHllType tgtHllType) const = 0;
+    hll_sketch copy() const;
+    hll_sketch copyAs(TgtHllType tgtHllType) const;
 
     virtual void reset() = 0;
     
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const = 0;
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const = 0;
     virtual void serializeCompact(std::ostream& os) const = 0;
     virtual void serializeUpdatable(std::ostream& os) const = 0;
     
@@ -99,6 +99,7 @@ class HllUnion {
   public:
     static hll_union newInstance(int lgMaxK);
     static hll_union deserialize(std::istream& is);
+    static hll_union deserialize(const void* bytes, size_t len);
 
     virtual ~HllUnion();
 
@@ -117,9 +118,10 @@ class HllUnion {
 
     virtual void reset() = 0;
 
-    virtual hll_sketch getResult() const = 0;
-    virtual hll_sketch getResult(TgtHllType tgtHllType) const = 0;
+    virtual hll_sketch getResult(TgtHllType tgtHllType = HLL_4) const = 0;
 
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const = 0;
     virtual void serializeCompact(std::ostream& os) const = 0;
     virtual void serializeUpdatable(std::ostream& os) const = 0;
 
@@ -128,6 +130,10 @@ class HllUnion {
                                     bool detail = false,
                                     bool auxDetail = false,
                                     bool all = false) const = 0;
+    virtual std::string to_string(bool summary = true,
+                                  bool detail = false,
+                                  bool auxDetail = false,
+                                  bool all = false) const = 0;                                    
 
     virtual void update(const HllSketch& sketch) = 0;
     virtual void update(const std::string& datum) = 0;
@@ -149,7 +155,9 @@ class HllUnion {
 };
 
 std::ostream& operator<<(std::ostream& os, const HllSketch& sketch);
-std::ostream& operator<<(std::ostream& os, hll_sketch sketch);
+std::ostream& operator<<(std::ostream& os, hll_sketch& sketch);
+std::ostream& operator<<(std::ostream& os, const HllUnion& hllUnion);
+std::ostream& operator<<(std::ostream& os, hll_union& hllUnion);
 
 } // namespace datasketches
 

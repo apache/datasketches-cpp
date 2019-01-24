@@ -22,7 +22,19 @@ hll_union HllUnion::deserialize(std::istream& is) {
   return HllUnionPvt::deserialize(is);
 }
 
+hll_union HllUnion::deserialize(const void* bytes, size_t len) {
+  return HllUnionPvt::deserialize(bytes, len);
+}
+
 HllUnion::~HllUnion() {}
+
+std::ostream& operator<<(std::ostream& os, HllUnion& hllUnion) {
+  return hllUnion.to_string(os, true, true, false, false);
+}
+
+std::ostream& operator<<(std::ostream& os, hll_union& hllUnion) {
+  return hllUnion->to_string(os, true, true, false, false);
+}
 
 HllUnionPvt::HllUnionPvt(const int lgMaxK)
   : lgMaxK(HllUtil::checkLgK(lgMaxK)) {
@@ -38,9 +50,35 @@ HllUnionPvt::HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch)
   std::swap(sketch, gadget);
 }
 
+HllUnionPvt::HllUnionPvt(const HllUnion& other) :
+  lgMaxK(static_cast<const HllUnionPvt>(other).lgMaxK),
+  gadget(static_cast<const HllUnionPvt>(other).gadget.get()->copy())
+{}
+
+HllUnionPvt& HllUnionPvt::operator=(HllUnionPvt& other) {
+  lgMaxK = other.lgMaxK;
+  std::swap(gadget, other.gadget);
+  return *this;
+}
+
 HllUnionPvt::~HllUnionPvt() {}
 
-hll_union HllUnionPvt::deserialize(std::istream& is) {
+std::unique_ptr<HllUnionPvt> HllUnionPvt::deserialize(const void* bytes, size_t len) {
+  std::unique_ptr<HllSketchPvt> sk(HllSketchPvt::deserialize(bytes, len));
+  if (sk == nullptr) { return nullptr; }
+  // we're using the sketch's lgConfigK to initialize the union so
+  // we can initialize the Union with it as long as it's HLL_8.
+  HllUnionPvt* hllUnion;
+  if (sk->getTgtHllType() == HLL_8) {
+    hllUnion = new HllUnionPvt(std::move(sk));
+  } else {
+    hllUnion = new HllUnionPvt(sk->getLgConfigK());
+    hllUnion->update(*sk);
+  }
+  return std::unique_ptr<HllUnionPvt>(hllUnion);
+}
+
+std::unique_ptr<HllUnionPvt> HllUnionPvt::deserialize(std::istream& is) {
   std::unique_ptr<HllSketchPvt> sk(HllSketchPvt::deserialize(is));
   if (sk == nullptr) { return nullptr; }
   // we're using the sketch's lgConfigK to initialize the union so
@@ -52,11 +90,7 @@ hll_union HllUnionPvt::deserialize(std::istream& is) {
     hllUnion = new HllUnionPvt(sk->getLgConfigK());
     hllUnion->update(*sk);
   }
-  return std::unique_ptr<HllUnion>(hllUnion);
-}
-
-hll_sketch HllUnionPvt::getResult() const {
-  return gadget->copyAs(TgtHllType::HLL_4);
+  return std::unique_ptr<HllUnionPvt>(hllUnion);
 }
 
 hll_sketch HllUnionPvt::getResult(TgtHllType tgtHllType) const {
@@ -124,6 +158,14 @@ void HllUnionPvt::couponUpdate(const int coupon) {
   }
 }
 
+std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllUnionPvt::serializeCompact() const {
+  return gadget->serializeCompact();
+}
+
+std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllUnionPvt::serializeUpdatable() const {
+  return gadget->serializeUpdatable();
+}
+
 void HllUnionPvt::serializeCompact(std::ostream& os) const {
   return gadget->serializeCompact(os);
 }
@@ -135,6 +177,11 @@ void HllUnionPvt::serializeUpdatable(std::ostream& os) const {
 std::ostream& HllUnionPvt::to_string(std::ostream& os, const bool summary,
                                   const bool detail, const bool auxDetail, const bool all) const {
   return gadget->to_string(os, summary, detail, auxDetail, all);
+}
+
+std::string HllUnionPvt::to_string(const bool summary, const bool detail,
+                                   const bool auxDetail, const bool all) const {
+  return gadget->to_string(summary, detail, auxDetail, all);
 }
 
 double HllUnionPvt::getEstimate() const {

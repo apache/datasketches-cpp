@@ -158,11 +158,11 @@ CouponList* CouponList::newList(std::istream& is) {
   return sketch;
 }
 
-std::pair<std::unique_ptr<uint8_t>, const size_t> CouponList::serialize(bool compact) const {
+std::pair<std::unique_ptr<uint8_t[]>, const size_t> CouponList::serialize(bool compact) const {
   size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
-  std::unique_ptr<uint8_t> byteArr(new uint8_t[sketchSizeBytes]);
+  std::unique_ptr<uint8_t[]> byteArr(new uint8_t[sketchSizeBytes]);
 
-  uint8_t* bytes = static_cast<uint8_t*>(byteArr.get());
+  uint8_t* bytes = byteArr.get();
 
   bytes[HllUtil::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
   bytes[HllUtil::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil::SER_VER);

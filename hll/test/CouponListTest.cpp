@@ -125,7 +125,7 @@ class CouponListTest : public CppUnit::TestFixture {
     hll_sketch sk1 = HllSketch::newInstance(lgK);
     sk1->update(1);
     sk1->update(2);
-    std::pair<std::unique_ptr<uint8_t>, size_t> sketchBytes = sk1->serializeCompact();
+    std::pair<std::unique_ptr<uint8_t[]>, size_t> sketchBytes = sk1->serializeCompact();
     uint8_t* bytes = sketchBytes.first.get();
 
     bytes[HllUtil::PREAMBLE_INTS_BYTE] = 0;

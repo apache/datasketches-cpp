@@ -74,6 +74,7 @@ HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
     case HLL_4:
       return (HllArray*) new Hll4Array(lgConfigK);
   }
+  throw std::logic_error("Invalid TgtHllType");
 }
 
 HllArray* HllArray::newHll(const void* bytes, size_t len) {
@@ -193,11 +194,11 @@ HllArray* HllArray::newHll(std::istream& is) {
   return sketch;
 }
 
-std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray::serialize(bool compact) const {
+std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllArray::serialize(bool compact) const {
   const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
-  std::unique_ptr<uint8_t> byteArr(new uint8_t[sketchSizeBytes]);
+  std::unique_ptr<uint8_t[]> byteArr(new uint8_t[sketchSizeBytes]);
 
-  uint8_t* bytes = static_cast<uint8_t*>(byteArr.get());
+  uint8_t* bytes = byteArr.get();
   AuxHashMap* auxHashMap = getAuxHashMap();
 
   bytes[HllUtil::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
@@ -217,7 +218,7 @@ std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray::serialize(bool compa
   std::memcpy(bytes + HllUtil::AUX_COUNT_INT, &auxCount, sizeof(int));
 
   const int hllByteArrBytes = getHllByteArrBytes();
-  std::memcpy(bytes + getMemDataStart(), &hllByteArr, hllByteArrBytes);
+  std::memcpy(bytes + getMemDataStart(), hllByteArr, hllByteArrBytes);
 
   // aux map if HLL_4
   if (tgtHllType == HLL_4) {

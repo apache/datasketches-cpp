@@ -6,6 +6,9 @@
 #include "hll.hpp"
 #include "HllUnion.hpp"
 #include "HllUtil.hpp"
+#include "CouponList.hpp"
+#include "CouponHashSet.hpp"
+#include "HllArray.hpp"
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
@@ -182,32 +185,67 @@ class HllUnionTest : public CppUnit::TestFixture {
     for (int i = 0; i < 10; ++i) {
       int n = nArr[i];
       for (int lgK = 4; lgK <= 13; ++lgK) {
-        toFrom(lgK, HLL_4, n, true);
-        toFrom(lgK, HLL_6, n, true);
-        toFrom(lgK, HLL_8, n, true);
-        toFrom(lgK, HLL_4, n, false);
-        toFrom(lgK, HLL_6, n, false);
-        toFrom(lgK, HLL_8, n, false);
+        toFrom(lgK, HLL_4, n);
+        toFrom(lgK, HLL_6, n);
+        toFrom(lgK, HLL_8, n);
       }
     }
   }
 
-  void toFrom(const int lgK, const TgtHllType type, const int n, const bool compact) {
-    hll_union srcU = HllUnion::newInstance(lgK);
-    hll_sketch srcSk = HllSketch::newInstance(lgK, type);
+  void checkUnionEquality(hll_union& u1, hll_union& u2) {
+    HllSketchPvt* sk1 = static_cast<HllSketchPvt*>(static_cast<HllUnionPvt*>(u1.get())->gadget.get());
+    HllSketchPvt* sk2 = static_cast<HllSketchPvt*>(static_cast<HllUnionPvt*>(u2.get())->gadget.get());
+
+    CPPUNIT_ASSERT_EQUAL(sk1->getLgConfigK(), sk2->getLgConfigK());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1->getLowerBound(1), sk2->getLowerBound(1), 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1->getEstimate(), sk2->getEstimate(), 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1->getUpperBound(1), sk2->getUpperBound(1), 0.0);
+    CPPUNIT_ASSERT_EQUAL(sk1->getCurrentMode(), sk2->getCurrentMode());
+    CPPUNIT_ASSERT_EQUAL(sk1->getTgtHllType(), sk2->getTgtHllType());
+
+    if (sk1->getCurrentMode() == LIST) {
+      CouponList* cl1 = static_cast<CouponList*>(sk1->hllSketchImpl);
+      CouponList* cl2 = static_cast<CouponList*>(sk2->hllSketchImpl);
+      CPPUNIT_ASSERT_EQUAL(cl1->getCouponCount(), cl2->getCouponCount());
+    } else if (sk1->getCurrentMode() == SET) {
+      CouponHashSet* chs1 = static_cast<CouponHashSet*>(sk1->hllSketchImpl);
+      CouponHashSet* chs2 = static_cast<CouponHashSet*>(sk2->hllSketchImpl);
+      CPPUNIT_ASSERT_EQUAL(chs1->getCouponCount(), chs2->getCouponCount());
+    } else { // sk1->getCurrentMode() == HLL      
+      HllArray* ha1 = static_cast<HllArray*>(sk1->hllSketchImpl);
+      HllArray* ha2 = static_cast<HllArray*>(sk2->hllSketchImpl);
+      CPPUNIT_ASSERT_EQUAL(ha1->getCurMin(), ha2->getCurMin());
+      CPPUNIT_ASSERT_EQUAL(ha1->getNumAtCurMin(), ha2->getNumAtCurMin());
+      CPPUNIT_ASSERT_DOUBLES_EQUAL(ha1->getKxQ0(), ha2->getKxQ0(), 0);
+      CPPUNIT_ASSERT_DOUBLES_EQUAL(ha1->getKxQ1(), ha2->getKxQ1(), 0);
+    }
+  }
+
+  void toFrom(const int lgConfigK, const TgtHllType tgtHllType, const int n) {
+    hll_union srcU = HllUnion::newInstance(lgConfigK);
+    hll_sketch srcSk = HllSketch::newInstance(lgConfigK, tgtHllType);
     for (int i = 0; i < n; ++i) {
       srcSk->update(i);
     }
     srcU->update(*srcSk);
 
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
-    if (compact) {
-      srcU->serializeCompact(ss);
-    } else {
-      srcU->serializeUpdatable(ss);
-    }
+    srcU->serializeCompact(ss);
     hll_union dstU = HllUnion::deserialize(ss);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(srcU->getEstimate(), dstU->getEstimate(), 0.0);
+    checkUnionEquality(srcU, dstU);
+
+    std::pair<std::unique_ptr<uint8_t[]>, const size_t> bytes1 = srcU->serializeCompact();
+    dstU = HllUnion::deserialize(bytes1.first.get(), bytes1.second);
+    checkUnionEquality(srcU, dstU);
+
+    ss.clear();
+    srcU->serializeUpdatable(ss);
+    dstU = HllUnion::deserialize(ss);
+    checkUnionEquality(srcU, dstU);
+
+    std::pair<std::unique_ptr<uint8_t[]>, const size_t> bytes2 = srcU->serializeUpdatable();
+    dstU = HllUnion::deserialize(bytes2.first.get(), bytes2.second);
+    checkUnionEquality(srcU, dstU);
   }
 
   void checkCompositeEstimate() {
@@ -357,7 +395,7 @@ class HllUnionTest : public CppUnit::TestFixture {
 
     u = HllUnion::newInstance(8);
     u->update(std::nanf("3"));
-    u->update(std::nan((char*)nullptr));
+    u->update(std::nan("12"));
     CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u->getEstimate(), 0.01);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(u->getResult()->getEstimate(), u->getEstimate(), 0.01);
 

@@ -27,12 +27,13 @@ class HllSketchPvt : public HllSketch {
 
     virtual ~HllSketchPvt();
 
-    // copy constructors
     HllSketchPvt(const HllSketch& that);
     HllSketchPvt(HllSketchImpl* that);
+    
+    HllSketchPvt& operator=(HllSketchPvt other);
 
-    hll_sketch copy() const;
-    hll_sketch copyAs(TgtHllType tgtHllType) const;
+    virtual std::unique_ptr<HllSketchPvt> copy() const;
+    virtual std::unique_ptr<HllSketchPvt> copyAs(TgtHllType tgtHllType) const;
 
     virtual void reset();
 
@@ -49,8 +50,8 @@ class HllSketchPvt : public HllSketch {
     virtual void update(float datum);
     virtual void update(const void* data, size_t lengthBytes);
     
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const;
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const;
+    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const;
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
 
