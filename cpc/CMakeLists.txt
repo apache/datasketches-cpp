@@ -5,13 +5,13 @@ target_include_directories(cpc
   PUBLIC
     include
   PRIVATE 
-    ../common/include
+    ${COMMON_INCLUDE_DIR}
 )
 
 target_include_directories(cpc_test
   PRIVATE 
     include
-    ../common/include
+    ${COMMON_INCLUDE_DIR}
     ${CPPUNIT_INCLUDE_DIR}
 )
 
