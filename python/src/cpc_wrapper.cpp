@@ -3,9 +3,9 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include "cpc/include/cpc_sketch.hpp"
-#include "cpc/include/cpc_union.hpp"
-#include "cpc/include/cpc_common.hpp"
+#include "cpc_sketch.hpp"
+#include "cpc_union.hpp"
+#include "cpc_common.hpp"
 #include <boost/python.hpp>
 
 namespace bpy = boost::python;

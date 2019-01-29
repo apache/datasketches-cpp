@@ -3,7 +3,7 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include "kll/include/kll_sketch.hpp"
+#include "kll_sketch.hpp"
 #include <boost/python.hpp>
 
 namespace bpy = boost::python;
