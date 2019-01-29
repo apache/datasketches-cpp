@@ -7,9 +7,8 @@ if(EXISTS "${LOC_PATH}")
     message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-include(cmake/datasketches-util.cmake)
-include(cmake/FindCppUnit.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/datasketches-util.cmake)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 find_package(CppUnit REQUIRED)
 
