@@ -325,6 +325,9 @@ class kll_sketch {
       std::unique_ptr<T[]> quantiles(new T[size]);
       for (uint32_t i = 0; i < size; i++) {
         const double fraction = fractions[i];
+        if ((fraction < 0.0) or (fraction > 1.0)) {
+          throw std::invalid_argument("Fraction cannot be less than zero or greater than 1.0");
+        }
         if      (fraction == 0.0) quantiles[i] = min_value_;
         else if (fraction == 1.0) quantiles[i] = max_value_;
         else {
