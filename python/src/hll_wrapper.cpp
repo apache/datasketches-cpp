@@ -3,7 +3,7 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include "hll/include/hll.hpp"
+#include "hll.hpp"
 #include <boost/python.hpp>
 
 namespace bpy = boost::python;

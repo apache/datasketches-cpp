@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(datasketches VERSION 0.1.0 LANGUAGES CXX)
+project(datasketches-core VERSION 0.1.0 LANGUAGES CXX)
 
 ### Require out-of-source builds
 file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
@@ -13,17 +13,17 @@ include(cmake/FindCppUnit.cmake)
 
 find_package(CppUnit REQUIRED)
 
-add_library(datasketches SHARED "")
+add_library(datasketches-core SHARED "")
 
 add_subdirectory(common)
 add_subdirectory(hll)
 add_subdirectory(cpc)
 add_subdirectory(kll)
-#add_subdirectory(python)
+add_subdirectory(python)
 
-target_link_libraries(datasketches hll cpc kll)
+target_link_libraries(datasketches-core hll cpc kll)
 
-set_target_properties(datasketches PROPERTIES
+set_target_properties(datasketches-core PROPERTIES
   LINKER_LANGUAGE CXX
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES

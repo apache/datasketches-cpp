@@ -9,6 +9,8 @@ target_include_directories(kll_test
     ${CPPUNIT_INCLUDE_DIR}
 )
 
+set(KLL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 target_link_libraries(kll_test kll common_test)
 
 set_target_properties(kll_test PROPERTIES
@@ -17,9 +19,8 @@ set_target_properties(kll_test PROPERTIES
   CXX_EXTENSIONS NO   # on Mac, sues -std=c++11 rather than -std=gnu++11
 )
 
-
-target_sources_local(datasketches
-  PUBLIC
+target_sources(kll
+  INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/kll_helper.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/kll_sketch.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/kll_quantile_calculator.hpp

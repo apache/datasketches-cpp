@@ -15,6 +15,8 @@ target_include_directories(hll_test
     ${CPPUNIT_INCLUDE_DIR}
 )
 
+set(HLL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 target_link_libraries(hll_test hll common_test)
 
 set_target_properties(hll PROPERTIES

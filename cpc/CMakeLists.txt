@@ -15,6 +15,8 @@ target_include_directories(cpc_test
     ${CPPUNIT_INCLUDE_DIR}
 )
 
+set(CPC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 target_link_libraries(cpc_test cpc common_test)
 
 set_target_properties(cpc PROPERTIES
