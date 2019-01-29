@@ -1,8 +1,38 @@
-target_include_directories(datasketches PUBLIC include)
+add_library(hll OBJECT "")
+add_executable(hll_test)
 
-target_sources_local(datasketches
+target_include_directories(hll
   PUBLIC
-    include/hll.hpp
+    include
+  PRIVATE 
+    ../common/include
+)
+
+target_include_directories(hll_test
+  PRIVATE
+    include
+    ../common/include
+    ${CPPUNIT_INCLUDE_DIR}
+)
+
+target_link_libraries(hll_test hll common_test)
+
+set_target_properties(hll PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO   # on Mac, sues -std=c++11 rather than -std=gnu++11
+)
+
+set_target_properties(hll_test PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO   # on Mac, sues -std=c++11 rather than -std=gnu++11
+)
+
+
+target_sources_local(hll
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/hll.hpp
   PRIVATE
     src/AuxHashMap.cpp
     src/CompositeInterpolationXTable.cpp
@@ -42,4 +72,18 @@ target_sources_local(datasketches
     include/IntArrayPairIterator.hpp
     include/PairIterator.hpp
     include/RelativeErrorTables.hpp
+)
+
+target_sources_local(hll_test
+  PRIVATE
+    test/AuxHashMapTest.cpp
+    test/CouponHashSetTest.cpp
+    test/CouponListTest.cpp
+    test/CrossCountingTest.cpp
+    test/HllArrayTest.cpp
+    test/HllSketchTest.cpp
+    test/HllUnionTest.cpp
+    test/TablesTest.cpp
+    test/ToFromByteArrayTest.cpp
+    test/UnionCaseTest.cpp
 )

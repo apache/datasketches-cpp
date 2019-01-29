@@ -1,10 +1,40 @@
-target_include_directories(datasketches PUBLIC include)
+add_library(cpc OBJECT "")
+add_executable(cpc_test)
 
-target_sources_local(datasketches
+target_include_directories(cpc
   PUBLIC
-    include/cpc_sketch.hpp
-    include/cpc_union.hpp
-    include/cpc_common.hpp
+    include
+  PRIVATE 
+    ../common/include
+)
+
+target_include_directories(cpc_test
+  PRIVATE 
+    include
+    ../common/include
+    ${CPPUNIT_INCLUDE_DIR}
+)
+
+target_link_libraries(cpc_test cpc common_test)
+
+set_target_properties(cpc PROPERTIES
+  CXX_STANDARD 17
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO   # on Mac, sues -std=c++11 rather than -std=gnu++11
+)
+
+set_target_properties(cpc_test PROPERTIES
+  #LINKER_LANGUAGE CXX
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
+  CXX_EXTENSIONS NO   # on Mac, sues -std=c++11 rather than -std=gnu++11
+)
+
+target_sources_local(cpc
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_sketch.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_union.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_common.hpp
   PRIVATE
     src/compressionData.data
     src/cpc_sketch.cpp
@@ -23,4 +53,11 @@ target_sources_local(datasketches
     include/fm85Util.h
     include/iconEstimator.h
     include/u32Table.h
+)
+
+target_sources_local(cpc_test
+  PRIVATE
+    test/cpc_sketch_test.cpp
+    test/cpc_union_test.cpp
+    test/compression_test.cpp
 )
