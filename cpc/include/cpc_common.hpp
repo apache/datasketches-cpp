@@ -13,6 +13,7 @@ namespace datasketches {
 
 static const uint8_t CPC_MIN_LG_K = 4;
 static const uint8_t CPC_MAX_LG_K = 26;
+static const uint8_t CPC_DEFAULT_LG_K = 11;
 static const uint64_t DEFAULT_SEED = 9001;
 
 static uint16_t compute_seed_hash(uint64_t seed) {
