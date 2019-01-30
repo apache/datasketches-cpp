@@ -26,7 +26,7 @@ set_target_properties(datasketches-core PROPERTIES
   LINKER_LANGUAGE CXX
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS NO   # on Mac, sues -std=c++11 rather than -std=gnu++11
+  CXX_EXTENSIONS NO   # on Mac, uses -std=c++11 rather than -std=gnu++11
 )
 
 enable_testing()
