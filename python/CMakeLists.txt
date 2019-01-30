@@ -13,19 +13,13 @@ if(NOT(${Boost_FOUND} AND ${PythonLibs_FOUND}))
   return()
 endif()
 
-add_library(datasketches SHARED EXCLUDE_FROM_ALL)
+add_library(python SHARED EXCLUDE_FROM_ALL)
 
-# ensure we make a .so on Mac rather than .dylib
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set_target_properties(datasketches PROPERTIES SUFFIX ".so")
-endif()
 # create a more intuitive python target
-add_custom_target(python)
-add_dependencies(python datasketches)
+#add_custom_target(python)
+#add_dependencies(python datasketches)
 
-
-
-target_link_libraries(datasketches
+target_link_libraries(python
   common
   hll
   kll
@@ -34,7 +28,7 @@ target_link_libraries(datasketches
   ${Boost_LIBRARIES}
 )
 
-target_include_directories(datasketches
+target_include_directories(python
   PRIVATE
     ${HLL_INCLUDE_DIR}
     ${KLL_INCLUDE_DIR}
@@ -44,15 +38,21 @@ target_include_directories(datasketches
     ${Boost_INCLUDE_DIRS}
 )
 
-set_target_properties(datasketches PROPERTIES
+set_target_properties(python PROPERTIES
   PREFIX ""  # python doesn't allow libdatasketches
+  OUTPUT_NAME datasketches
   LINKER_LANGUAGE CXX
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES
   CXX_EXTENSIONS NO   # on Mac, uses -std=c++11 rather than -std=gnu++11
 )
 
-target_sources_local(datasketches
+# ensure we make a .so on Mac rather than .dylib
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set_target_properties(python PROPERTIES SUFFIX ".so")
+endif()
+
+target_sources_local(python
   PRIVATE
     src/datasketches.cpp
     src/hll_wrapper.cpp
