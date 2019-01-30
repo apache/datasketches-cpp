@@ -15,21 +15,21 @@ target_include_directories(cpc_test
     ${CPPUNIT_INCLUDE_DIR}
 )
 
-set(CPC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(CPC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
 
 target_link_libraries(cpc_test cpc common_test)
 
 set_target_properties(cpc PROPERTIES
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS NO   # on Mac, sues -std=c++11 rather than -std=gnu++11
+  CXX_EXTENSIONS NO   # on Mac, uses -std=c++11 rather than -std=gnu++11
 )
 
 set_target_properties(cpc_test PROPERTIES
   #LINKER_LANGUAGE CXX
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS NO   # on Mac, sues -std=c++11 rather than -std=gnu++11
+  CXX_EXTENSIONS NO   # on Mac, uses -std=c++11 rather than -std=gnu++11
 )
 
 target_sources_local(cpc
