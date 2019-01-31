@@ -22,15 +22,18 @@ target_link_libraries(cpc_test cpc common_test)
 set_target_properties(cpc PROPERTIES
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS NO   # on Mac, uses -std=c++11 rather than -std=gnu++11
 )
 
 set_target_properties(cpc_test PROPERTIES
-  #LINKER_LANGUAGE CXX
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS NO   # on Mac, uses -std=c++11 rather than -std=gnu++11
 )
+
+#file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/test/" CPC_TEST_BINARY_PATH)
+#target_compile_definitions(cpc_test
+#  PRIVATE
+#    TEST_BINARY_INPUT_PATH="${CPC_TEST_BINARY_PATH}"
+#)
 
 target_sources_local(cpc
   PUBLIC

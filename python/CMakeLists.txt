@@ -44,7 +44,6 @@ set_target_properties(python PROPERTIES
   LINKER_LANGUAGE CXX
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS NO   # on Mac, uses -std=c++11 rather than -std=gnu++11
 )
 
 # ensure we make a .so on Mac rather than .dylib
