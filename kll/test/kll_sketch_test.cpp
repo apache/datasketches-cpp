@@ -23,6 +23,12 @@ namespace datasketches {
 static const double RANK_EPS_FOR_K_200 = 0.0133;
 static const double NUMERIC_NOISE_TOLERANCE = 1E-6;
 
+#ifdef TEST_BINARY_INPUT_PATH
+static std::string testBinaryInputPath = TEST_BINARY_INPUT_PATH;
+#else
+static std::string testBinaryInputPath = "";
+#endif
+
 // --- simple example of kll_sketch<std::string>
 template <>
 void serialize_items<std::string>(std::ostream& os, const std::string* items, unsigned num) {
@@ -233,7 +239,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   void deserialize_from_java() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/kll_sketch_from_java.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "kll_sketch_from_java.bin", std::ios::binary);
     auto sketch_ptr(kll_sketch<float>::deserialize(is));
     CPPUNIT_ASSERT(!sketch_ptr->is_empty());
     CPPUNIT_ASSERT(sketch_ptr->is_estimation_mode());
@@ -283,7 +289,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   void deserialize_one_item_v1() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/kll_sketch_float_one_item_v1.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.bin", std::ios::binary);
     auto sketch_ptr(kll_sketch<float>::deserialize(is));
     CPPUNIT_ASSERT(!sketch_ptr->is_empty());
     CPPUNIT_ASSERT(!sketch_ptr->is_estimation_mode());

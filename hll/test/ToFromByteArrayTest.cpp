@@ -76,8 +76,15 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
   }
 
   void deserializeFromJava() {
+    std::string inputPath;
+#ifdef TEST_BINARY_INPUT_PATH
+      inputPath = TEST_BINARY_INPUT_PATH;
+#else
+      inputPath = "";
+#endif
+
     std::ifstream ifs;
-    ifs.open("test/list_from_java.bin", std::ios::binary);
+    ifs.open(inputPath + "list_from_java.bin", std::ios::binary);
     hll_sketch sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -92,7 +99,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     ifs.close();
 
 
-    ifs.open("test/compact_set_from_java.bin", std::ios::binary);
+    ifs.open(inputPath + "compact_set_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -107,7 +114,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     ifs.close();
 
 
-    ifs.open("test/updatable_set_from_java.bin", std::ios::binary);
+    ifs.open(inputPath + "updatable_set_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -122,7 +129,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     ifs.close();
 
 
-    ifs.open("test/array6_from_java.bin", std::ios::binary);
+    ifs.open(inputPath + "array6_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -141,7 +148,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     ifs.close();
 
 
-    ifs.open("test/compact_array4_from_java.bin", std::ios::binary);
+    ifs.open(inputPath + "compact_array4_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);
@@ -160,7 +167,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     ifs.close();
 
 
-    ifs.open("test/updatable_array4_from_java.bin", std::ios::binary);
+    ifs.open(inputPath + "updatable_array4_from_java.bin", std::ios::binary);
     sk = HllSketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk->isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk->getLgConfigK(), 8);

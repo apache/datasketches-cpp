@@ -7,6 +7,27 @@ if(EXISTS "${LOC_PATH}")
     message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
 endif()
 
+# set default build type to debug
+set(default_build_type "Debug")
+
+# enable compiler warnings globally
+# derived from https://foonathan.net/blog/2018/10/17/cmake-warnings.html
+# and https://arne-mertz.de/2018/07/cmake-properties-options/
+# TODO: make work with generator expressions
+if (MSVC)
+  add_compile_options(/W4)
+else()
+  add_compile_options(-Wall -pedantic)
+endif()
+# add_compile_options(
+#   # Clang/GCC
+#   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
+#     -Wall -pedantic >
+#   # Microsoft Visual Studio
+#   $<$<CXX_COMPILER_ID:MSVC>:
+#     /W4 >
+# )
+
 include(${CMAKE_SOURCE_DIR}/cmake/datasketches-util.cmake)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
@@ -26,7 +47,6 @@ set_target_properties(datasketches-core PROPERTIES
   LINKER_LANGUAGE CXX
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES
-  CXX_EXTENSIONS NO   # on Mac, uses -std=c++11 rather than -std=gnu++11
 )
 
 enable_testing()
