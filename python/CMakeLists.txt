@@ -30,9 +30,9 @@ target_link_libraries(python
 
 target_include_directories(python
   PRIVATE
-    ${HLL_INCLUDE_DIR}
-    ${KLL_INCLUDE_DIR}
-    ${CPC_INCLUDE_DIR}
+    #${HLL_INCLUDE_DIR}
+    #${KLL_INCLUDE_DIR}
+    #${CPC_INCLUDE_DIR}
     ${COMMON_INCLUDE_DIR}
     ${PYTHON_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
@@ -51,7 +51,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set_target_properties(python PROPERTIES SUFFIX ".so")
 endif()
 
-target_sources_local(python
+target_sources(python
   PRIVATE
     src/datasketches.cpp
     src/hll_wrapper.cpp

@@ -8,7 +8,16 @@ if(EXISTS "${LOC_PATH}")
 endif()
 
 # set default build type to debug
+# Mostly from: https://blog.kitware.com/cmake-and-the-default-build-type/
 set(default_build_type "Debug")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
+      STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
 
 # enable compiler warnings globally
 # derived from https://foonathan.net/blog/2018/10/17/cmake-warnings.html
@@ -28,7 +37,6 @@ endif()
 #     /W4 >
 # )
 
-include(${CMAKE_SOURCE_DIR}/cmake/datasketches-util.cmake)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 find_package(CppUnit REQUIRED)
@@ -49,6 +57,7 @@ set_target_properties(datasketches-core PROPERTIES
   CXX_STANDARD_REQUIRED YES
 )
 
+# Testing
 enable_testing()
 add_test(
   NAME hll_test
@@ -62,6 +71,17 @@ add_test(
   NAME cpc_test
   COMMAND cpc_test
 )
+
+# # Installation
+# include(GNUInstallDirs)
+# install(TARGETS datasketches-core
+#   #EXPORT datasketches-core-export
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+#   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+# )
+# # KLL gets special handling as a header-only library until we have exports working
+# install(DIRECTORY ${KLL_INCLUDE_DIR}/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 #set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 #set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

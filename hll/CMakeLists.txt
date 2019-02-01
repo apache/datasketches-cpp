@@ -1,42 +1,27 @@
+add_subdirectory(test)
+
 add_library(hll OBJECT "")
-add_executable(hll_test)
 
 target_include_directories(hll
   PUBLIC
-    include
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE 
     ${COMMON_INCLUDE_DIR}
 )
 
-target_include_directories(hll_test
-  PRIVATE
-    include
-    ${COMMON_INCLUDE_DIR}
-    ${CPPUNIT_INCLUDE_DIR}
-)
+target_link_libraries(hll common)
 
 set(HLL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
 
-target_link_libraries(hll_test hll common_test)
-
 set_target_properties(hll PROPERTIES
+  PUBLIC_HEADER "${HLL_INCLUDE_DIR}/hll.hpp"
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 
-set_target_properties(hll_test PROPERTIES
-  CXX_STANDARD 11
-  CXX_STANDARD_REQUIRED YES
-)
-
-file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/test/" HLL_TEST_BINARY_PATH)
-target_compile_definitions(hll_test
-  PRIVATE
-    TEST_BINARY_INPUT_PATH="${HLL_TEST_BINARY_PATH}"
-)
-
-target_sources_local(hll
-  PUBLIC
+target_sources(hll
+  INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/hll.hpp
   PRIVATE
     src/AuxHashMap.cpp
@@ -77,18 +62,4 @@ target_sources_local(hll
     include/IntArrayPairIterator.hpp
     include/PairIterator.hpp
     include/RelativeErrorTables.hpp
-)
-
-target_sources_local(hll_test
-  PRIVATE
-    test/AuxHashMapTest.cpp
-    test/CouponHashSetTest.cpp
-    test/CouponListTest.cpp
-    test/CrossCountingTest.cpp
-    test/HllArrayTest.cpp
-    test/HllSketchTest.cpp
-    test/HllUnionTest.cpp
-    test/TablesTest.cpp
-    test/ToFromByteArrayTest.cpp
-    test/UnionCaseTest.cpp
 )

@@ -1,42 +1,30 @@
+add_subdirectory(test)
+
 add_library(cpc OBJECT "")
-add_executable(cpc_test)
 
 target_include_directories(cpc
   PUBLIC
-    include
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE 
     ${COMMON_INCLUDE_DIR}
 )
 
-target_include_directories(cpc_test
-  PRIVATE 
-    include
-    ${COMMON_INCLUDE_DIR}
-    ${CPPUNIT_INCLUDE_DIR}
-)
+target_link_libraries(cpc common)
 
 set(CPC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
 
-target_link_libraries(cpc_test cpc common_test)
+set_target_properties(cpc PROPERTIES
+  PUBLIC_HEADER "${CPC_INCLUDE_DIR}/cpc_sketch.hpp;${CPC_INCLUDE_DIR}/cpc_union.hpp;${CPC_INCLUDE_DIR}/cpc_common.hpp"
+)
 
 set_target_properties(cpc PROPERTIES
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES
 )
 
-set_target_properties(cpc_test PROPERTIES
-  CXX_STANDARD 11
-  CXX_STANDARD_REQUIRED YES
-)
-
-#file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/test/" CPC_TEST_BINARY_PATH)
-#target_compile_definitions(cpc_test
-#  PRIVATE
-#    TEST_BINARY_INPUT_PATH="${CPC_TEST_BINARY_PATH}"
-#)
-
-target_sources_local(cpc
-  PUBLIC
+target_sources(cpc
+  INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_sketch.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_union.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_common.hpp
@@ -58,11 +46,4 @@ target_sources_local(cpc
     include/fm85Util.h
     include/iconEstimator.h
     include/u32Table.h
-)
-
-target_sources_local(cpc_test
-  PRIVATE
-    test/cpc_sketch_test.cpp
-    test/cpc_union_test.cpp
-    test/compression_test.cpp
 )
