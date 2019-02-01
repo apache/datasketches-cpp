@@ -832,7 +832,7 @@ class kll_sketch {
           buckets[i] /= n_;
         }
       }
-      return std::move(buckets);
+      return buckets;
     }
 
     void increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,

@@ -15,10 +15,6 @@ endif()
 
 add_library(python SHARED EXCLUDE_FROM_ALL)
 
-# create a more intuitive python target
-#add_custom_target(python)
-#add_dependencies(python datasketches)
-
 target_link_libraries(python
   common
   hll
@@ -30,10 +26,6 @@ target_link_libraries(python
 
 target_include_directories(python
   PRIVATE
-    #${HLL_INCLUDE_DIR}
-    #${KLL_INCLUDE_DIR}
-    #${CPC_INCLUDE_DIR}
-    ${COMMON_INCLUDE_DIR}
     ${PYTHON_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
 )

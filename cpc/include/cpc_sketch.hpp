@@ -382,7 +382,7 @@ class cpc_sketch {
           new (fm85alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
           [](cpc_sketch* s) { s->~cpc_sketch(); fm85free(s); }
       );
-      return std::move(sketch_ptr);
+      return sketch_ptr;
     }
 
     static cpc_sketch_unique_ptr
@@ -480,7 +480,7 @@ class cpc_sketch {
           new (fm85alloc(sizeof(cpc_sketch))) cpc_sketch(uncompressed, seed),
           [](cpc_sketch* s) { s->~cpc_sketch(); fm85free(s); }
       );
-      return std::move(sketch_ptr);
+      return sketch_ptr;
     }
 
     // for debugging

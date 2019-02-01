@@ -1,6 +1,7 @@
+add_library(cpc OBJECT "")
+
 add_subdirectory(test)
 
-add_library(cpc OBJECT "")
 
 target_include_directories(cpc
   PUBLIC
@@ -12,13 +13,8 @@ target_include_directories(cpc
 
 target_link_libraries(cpc common)
 
-set(CPC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
-
 set_target_properties(cpc PROPERTIES
   PUBLIC_HEADER "${CPC_INCLUDE_DIR}/cpc_sketch.hpp;${CPC_INCLUDE_DIR}/cpc_union.hpp;${CPC_INCLUDE_DIR}/cpc_common.hpp"
-)
-
-set_target_properties(cpc PROPERTIES
   CXX_STANDARD 17
   CXX_STANDARD_REQUIRED YES
 )
