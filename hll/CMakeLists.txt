@@ -1,6 +1,6 @@
-add_subdirectory(test)
-
 add_library(hll OBJECT "")
+
+add_subdirectory(test)
 
 target_include_directories(hll
   PUBLIC
@@ -12,10 +12,8 @@ target_include_directories(hll
 
 target_link_libraries(hll common)
 
-set(HLL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
-
 set_target_properties(hll PROPERTIES
-  PUBLIC_HEADER "${HLL_INCLUDE_DIR}/hll.hpp"
+  #PUBLIC_HEADER "${HLL_INCLUDE_DIR}/hll.hpp"
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )

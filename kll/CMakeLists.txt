@@ -1,14 +1,12 @@
-add_subdirectory(test)
-
 add_library(kll INTERFACE)
+
+add_subdirectory(test)
 
 target_include_directories(kll
   INTERFACE
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-
-set(KLL_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include PARENT_SCOPE)
 
 target_sources(kll
   INTERFACE
