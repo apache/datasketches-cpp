@@ -78,7 +78,8 @@ class kll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(serialize_deserialize_stream);
   CPPUNIT_TEST(serialize_deserialize_bytes);
   CPPUNIT_TEST(floor_of_log2_of_fraction);
-  CPPUNIT_TEST(out_of_order_split_points);
+  CPPUNIT_TEST(out_of_order_split_points_float);
+  CPPUNIT_TEST(out_of_order_split_points_int);
   CPPUNIT_TEST(nan_split_point);
   CPPUNIT_TEST(merge);
   CPPUNIT_TEST(merge_lower_k);
@@ -348,10 +349,17 @@ class kll_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL((uint8_t) 2, kll_helper::floor_of_log2_of_fraction(8, 2));
   }
 
-  void out_of_order_split_points() {
+  void out_of_order_split_points_float() {
     kll_sketch<float> sketch;
     sketch.update(0); // has too be non-empty to reach the check
     float split_points[2] = {1, 0};
+    CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 2), std::invalid_argument);
+  }
+
+  void out_of_order_split_points_int() {
+    kll_sketch<int> sketch;
+    sketch.update(0); // has too be non-empty to reach the check
+    int split_points[2] = {1, 0};
     CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 2), std::invalid_argument);
   }
 
