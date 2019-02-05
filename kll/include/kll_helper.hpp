@@ -98,7 +98,7 @@ class kll_helper {
      * They must be unique, monotonically increasing and not NaN.
      */
     template <typename T>
-    static std::enable_if_t<std::is_floating_point<T>::value, void>
+    static typename std::enable_if<std::is_floating_point<T>::value, void>::type
     validate_values(const T* values, uint32_t size) {
       for (uint32_t i = 0; i < size ; i++) {
         if (std::isnan(values[i])) {
@@ -115,7 +115,7 @@ class kll_helper {
      * They must be unique and monotonically increasing.
      */
     template <typename T>
-    static std::enable_if_t<!std::is_floating_point<T>::value, void>
+    static typename std::enable_if<!std::is_floating_point<T>::value, void>::type
     validate_values(const T* values, uint32_t size) {
       for (uint32_t i = 0; i < size ; i++) {
         if ((i < (size - 1)) and !(values[i] < values[i + 1])) {
