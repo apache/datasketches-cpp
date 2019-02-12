@@ -32,7 +32,6 @@ target_include_directories(python
 )
 
 set_target_properties(python PROPERTIES
-<<<<<<< HEAD
   POSITION_INDEPENDENT_CODE ON
   OUTPUT_NAME datasketches
   LINKER_LANGUAGE CXX
