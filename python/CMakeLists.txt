@@ -32,8 +32,9 @@ target_include_directories(python
 )
 
 set_target_properties(python PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
+  PREFIX ""
   OUTPUT_NAME datasketches
+  POSITION_INDEPENDENT_CODE ON
   LINKER_LANGUAGE CXX
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
