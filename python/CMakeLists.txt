@@ -5,14 +5,15 @@ if(NOT DEFINED PYTHON_VERSION_SUFFIX)
   set(PYTHON_VERSION_SUFFIX "37")
 endif()
 
-find_package(PythonLibs 3.0)
-find_package(Boost 1.56 COMPONENTS python${PYTHON_VERSION_SUFFIX})
+#find_package(PythonLibs 3.0)
+find_package(Python COMPONENTS Development)
+find_package(Boost 1.53 COMPONENTS python${PYTHON_VERSION_SUFFIX})
 
-if(NOT(${Boost_FOUND} AND ${PythonLibs_FOUND}))
+if(NOT(${Boost_FOUND} AND ${Python_Development_FOUND}))
   message("If PythonLibs found but not Boost, check the Python version and set -DPYTHON_VERSION_SUFFIX accordingly.")
-  return()
+  #return()
 endif()
-
+message("Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")
 add_library(python SHARED EXCLUDE_FROM_ALL)
 
 target_link_libraries(python
@@ -20,21 +21,22 @@ target_link_libraries(python
   hll
   kll
   cpc
-  ${PYTHON_LIBRARIES}
-  ${Boost_LIBRARIES}
+  ${Python_LIBRARIES}
+  Boost::python${PYTHON_VERSION_SUFFIX}
 )
 
 target_include_directories(python
   PRIVATE
-    ${PYTHON_INCLUDE_DIRS}
+    ${Python_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
 )
 
 set_target_properties(python PROPERTIES
   PREFIX ""  # python doesn't allow libdatasketches
+  POSITION_INDEPENDENT_CODE ON
   OUTPUT_NAME datasketches
   LINKER_LANGUAGE CXX
-  CXX_STANDARD 17
+  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

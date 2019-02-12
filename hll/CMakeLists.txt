@@ -14,6 +14,7 @@ target_link_libraries(hll common)
 
 set_target_properties(hll PROPERTIES
   #PUBLIC_HEADER "${HLL_INCLUDE_DIR}/hll.hpp"
+  POSITION_INDEPENDENT_CODE ON
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )

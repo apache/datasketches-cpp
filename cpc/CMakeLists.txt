@@ -15,7 +15,8 @@ target_link_libraries(cpc common)
 
 set_target_properties(cpc PROPERTIES
   PUBLIC_HEADER "${CPC_INCLUDE_DIR}/cpc_sketch.hpp;${CPC_INCLUDE_DIR}/cpc_union.hpp;${CPC_INCLUDE_DIR}/cpc_common.hpp"
-  CXX_STANDARD 17
+  POSITION_INDEPENDENT_CODE ON
+  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

@@ -53,7 +53,7 @@ target_link_libraries(datasketches-core hll cpc kll)
 
 set_target_properties(datasketches-core PROPERTIES
   LINKER_LANGUAGE CXX
-  CXX_STANDARD 17
+  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 
