@@ -5,7 +5,6 @@ if(NOT DEFINED PYTHON_VERSION_SUFFIX)
   set(PYTHON_VERSION_SUFFIX "37")
 endif()
 
-#find_package(PythonLibs 3.0)
 find_package(Python COMPONENTS Development)
 find_package(Boost 1.53 COMPONENTS python${PYTHON_VERSION_SUFFIX})
 
@@ -14,6 +13,7 @@ if(NOT(${Boost_FOUND} AND ${Python_Development_FOUND}))
   #return()
 endif()
 message("Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")
+
 add_library(python SHARED EXCLUDE_FROM_ALL)
 
 target_link_libraries(python
@@ -32,7 +32,7 @@ target_include_directories(python
 )
 
 set_target_properties(python PROPERTIES
-  PREFIX ""  # python doesn't allow libdatasketches
+<<<<<<< HEAD
   POSITION_INDEPENDENT_CODE ON
   OUTPUT_NAME datasketches
   LINKER_LANGUAGE CXX
