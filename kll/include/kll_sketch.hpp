@@ -158,6 +158,10 @@ size_t deserialize_items(const char* ptr, T* items, unsigned num) {
 
 typedef std::unique_ptr<void, std::function<void(void*)>> ptr_with_deleter;
 
+// forward-declarations
+template <typename T, typename A> class kll_sketch;
+template <typename T, typename A> std::ostream& operator<<(std::ostream& os, kll_sketch<T, A> const& sketch);
+
 template <typename T, typename A = std::allocator<void>>
 class kll_sketch {
   typedef typename A::template rebind<T>::other AllocT;
@@ -549,8 +553,7 @@ class kll_sketch {
           : 2.296 / pow(k, 0.9723);
     }
 
-    template <typename TT, typename AA>
-    friend std::ostream& operator<<(std::ostream& os, kll_sketch<TT, AA> const& sketch);
+    friend std::ostream& operator<< <T, A>(std::ostream& os, kll_sketch<T, A> const& sketch);
 
 #ifdef KLL_VALIDATION
     uint8_t get_num_levels() { return num_levels_; }
