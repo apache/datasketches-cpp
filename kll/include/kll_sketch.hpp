@@ -500,12 +500,11 @@ class kll_sketch {
       check_serial_version(serial_version);
       check_family_id(family_id);
 
-      typedef typename A::template rebind<kll_sketch<T, A>>::other AA;
-      AA allocator;
+      typedef typename std::allocator_traits<A>::template rebind_alloc<kll_sketch<T, A>> AA;
       const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
       std::unique_ptr<kll_sketch<T, A>, std::function<void(kll_sketch<T, A>*)>> sketch_ptr(
-          is_empty ? new (allocator.allocate(1)) kll_sketch<T, A>(k) : new (allocator.allocate(1)) kll_sketch<T, A>(k, flags_byte, is),
-          [](kll_sketch<T, A>* s) { AA a; a.deallocate(s, 1); }
+          is_empty ? new (AA().allocate(1)) kll_sketch<T, A>(k) : new (AA().allocate(1)) kll_sketch<T, A>(k, flags_byte, is),
+          [](kll_sketch<T, A>* s) { s->~kll_sketch(); AA().deallocate(s, 1); }
       );
       return std::move(sketch_ptr);
     }
@@ -530,12 +529,11 @@ class kll_sketch {
       check_serial_version(serial_version);
       check_family_id(family_id);
 
-      typedef typename A::template rebind<kll_sketch<T, A>>::other AA;
-      AA allocator;
+      typedef typename std::allocator_traits<A>::template rebind_alloc<kll_sketch<T, A>> AA;
       const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
       std::unique_ptr<kll_sketch<T, A>, void(*)(kll_sketch<T, A>*)> sketch_ptr(
-          is_empty ? new (allocator.allocate(1)) kll_sketch<T, A>(k) : new (allocator.allocate(1)) kll_sketch<T, A>(k, flags_byte, bytes, size),
-          [](kll_sketch<T, A>* s) { AA allocator; allocator.deallocate(s, 1); }
+          is_empty ? new (AA().allocate(1)) kll_sketch<T, A>(k) : new (AA().allocate(1)) kll_sketch<T, A>(k, flags_byte, bytes, size),
+          [](kll_sketch<T, A>* s) { s->~kll_sketch(); AA().deallocate(s, 1); }
       );
       return std::move(sketch_ptr);
     }
