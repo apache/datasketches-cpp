@@ -27,7 +27,7 @@ class reverse_purge_hash_map {
 public:
   reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size);
   reverse_purge_hash_map(const reverse_purge_hash_map& other);
-  reverse_purge_hash_map(reverse_purge_hash_map&& other);
+  reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept ;
   ~reverse_purge_hash_map();
   reverse_purge_hash_map& operator=(reverse_purge_hash_map other);
   reverse_purge_hash_map& operator=(reverse_purge_hash_map&& other);
@@ -107,7 +107,7 @@ states(AllocU16().allocate(1 << lg_size))
 }
 
 template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map&& other):
+reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept:
 lg_size(other.lg_size),
 lg_max_size(other.lg_max_size),
 num_active(other.num_active),
