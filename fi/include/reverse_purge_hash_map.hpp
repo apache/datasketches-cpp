@@ -27,10 +27,9 @@ class reverse_purge_hash_map {
 public:
   reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size);
   ~reverse_purge_hash_map();
-  uint64_t adjust_or_put_value(const T& key, uint64_t value);
+  uint64_t adjust_or_insert(const T& key, uint64_t value);
+  uint64_t adjust_or_insert(T&& key, uint64_t value);
   uint64_t get(const T& key) const;
-  void resize(uint8_t new_lg_size);
-  uint64_t purge();
   uint8_t get_lg_size() const;
   uint32_t get_capacity() const;
   uint32_t get_num_active() const;
@@ -52,6 +51,10 @@ private:
   inline bool is_active(uint32_t probe) const;
   void subtract_and_keep_positive_only(uint64_t amount);
   void hash_delete(uint32_t probe);
+  uint32_t internal_adjust_or_insert(const T& key, uint64_t value);
+  uint64_t resize_or_purge_if_needed();
+  void resize(uint8_t new_lg_size);
+  uint64_t purge();
 };
 
 template<typename T, typename H, typename E, typename A>
@@ -94,40 +97,25 @@ reverse_purge_hash_map<T, H, E, A>::~reverse_purge_hash_map() {
 }
 
 template<typename T, typename H, typename E, typename A>
-uint64_t reverse_purge_hash_map<T, H, E, A>::adjust_or_put_value(const T& key, uint64_t value) {
-  const uint32_t mask = (1 << lg_size) - 1;
-  uint32_t probe = H()(key) & mask;
-  uint16_t drift = 1;
-  while (is_active(probe) and !E()(keys[probe], key)) {
-    probe = (probe + 1) & mask;
-    drift++;
-    // only used for theoretical analysis
-    if (drift >= DRIFT_LIMIT) throw std::logic_error("drift limit reached");
+uint64_t reverse_purge_hash_map<T, H, E, A>::adjust_or_insert(const T& key, uint64_t value) {
+  std::cerr << "adjust_or_put_value(const T& key, uint64_t value)" << std::endl;
+  const uint32_t num_active_before = num_active;
+  const uint32_t index = internal_adjust_or_insert(key, value);
+  if (num_active > num_active_before) {
+    new (&keys[index]) T(key);
+    return resize_or_purge_if_needed();
   }
-  if (is_active(probe)) {
-    // adjusting the value of an existing key
-    values[probe] += value;
-  } else {
-    // adding the key and value to the table
-    if (num_active > get_capacity()) {
-      throw std::logic_error("num_active " + std::to_string(num_active) + " > capacity " + std::to_string(get_capacity()));
-    }
-    new (&keys[probe]) T(key);
-    values[probe] = value;
-    states[probe] = drift;
-    num_active++;
+  return 0;
+}
 
-    if (num_active > get_capacity()) {
-      if (lg_size < lg_max_size) { // can grow
-        resize(lg_size + 1);
-      } else { // at target size, must purge
-        const uint64_t offset = purge();
-        if (num_active > get_capacity()) {
-          throw std::logic_error("purge did not reduce number of active items");
-        }
-        return offset;
-      }
-    }
+template<typename T, typename H, typename E, typename A>
+uint64_t reverse_purge_hash_map<T, H, E, A>::adjust_or_insert(T&& key, uint64_t value) {
+  std::cerr << "adjust_or_put_value(T&& key, uint64_t value)" << std::endl;
+  const uint32_t num_active_before = num_active;
+  const uint32_t index = internal_adjust_or_insert(key, value);
+  if (num_active > num_active_before) {
+    new (&keys[index]) T(std::move(key));
+    return resize_or_purge_if_needed();
   }
   return 0;
 }
@@ -136,55 +124,11 @@ template<typename T, typename H, typename E, typename A>
 uint64_t reverse_purge_hash_map<T, H, E, A>::get(const T& key) const {
   const uint32_t mask = (1 << lg_size) - 1;
   uint32_t probe = H()(key) & mask;
-  while (is_active(probe) and !E()(keys[probe], key)) {
+  while (is_active(probe)) {
+    if (E()(keys[probe], key)) return values[probe];
     probe = (probe + 1) & mask;
   }
-  if (states[probe] > 0) {
-    return values[probe];
-  }
   return 0;
-}
-
-template<typename T, typename H, typename E, typename A>
-void reverse_purge_hash_map<T, H, E, A>::resize(uint8_t new_lg_size) {
-  const uint32_t old_size = 1 << lg_size;
-  T* old_keys = keys;
-  uint64_t* old_values = values;
-  uint16_t* old_states = states;
-  const uint32_t new_size = 1 << new_lg_size;
-  keys = AllocT().allocate(new_size);
-  values = AllocU64().allocate(new_size);
-  states = AllocU16().allocate(new_size);
-  std::fill(states, &states[new_size], 0);
-  num_active = 0;
-  lg_size = new_lg_size;
-  for (uint32_t i = 0; i < old_size; i++) {
-    if (old_states[i] > 0) {
-      adjust_or_put_value(old_keys[i], old_values[i]);
-      old_keys[i].~T();
-    }
-  }
-  AllocT().deallocate(old_keys, old_size);
-  AllocU64().deallocate(old_values, old_size);
-  AllocU16().deallocate(old_states, old_size);
-}
-
-template<typename T, typename H, typename E, typename A>
-uint64_t reverse_purge_hash_map<T, H, E, A>::purge() {
-  const uint32_t limit = std::min(MAX_SAMPLE_SIZE, num_active);
-  uint32_t num_samples = 0;
-  uint32_t i = 0;
-  uint64_t* samples = AllocU64().allocate(limit);
-  while (num_samples < limit) {
-    if (is_active(i)) {
-      samples[num_samples++] = values[i];
-    }
-    i++;
-  }
-  std::nth_element(&samples[0], &samples[num_samples / 2], &samples[num_samples - 1]);
-  const uint64_t median = samples[num_samples / 2];
-  subtract_and_keep_positive_only(median);
-  return median;
 }
 
 template<typename T, typename H, typename E, typename A>
@@ -278,6 +222,91 @@ void reverse_purge_hash_map<T, H, E, A>::hash_delete(uint32_t delete_index) {
     // only used for theoretical analysis
     if (drift >= DRIFT_LIMIT) throw std::logic_error("drift: " + std::to_string(drift) + " >= DRIFT_LIMIT");
   }
+}
+
+template<typename T, typename H, typename E, typename A>
+uint32_t reverse_purge_hash_map<T, H, E, A>::internal_adjust_or_insert(const T& key, uint64_t value) {
+  const uint32_t mask = (1 << lg_size) - 1;
+  uint32_t index = H()(key) & mask;
+  uint16_t drift = 1;
+  while (is_active(index)) {
+    if (E()(keys[index], key)) {
+      // adjusting the value of an existing key
+      values[index] += value;
+      return index;
+    }
+    index = (index + 1) & mask;
+    drift++;
+    // only used for theoretical analysis
+    if (drift >= DRIFT_LIMIT) throw std::logic_error("drift limit reached");
+  }
+  // adding the key and value to the table
+  if (num_active > get_capacity()) {
+    throw std::logic_error("num_active " + std::to_string(num_active) + " > capacity " + std::to_string(get_capacity()));
+  }
+  values[index] = value;
+  states[index] = drift;
+  num_active++;
+  return index;
+}
+
+template<typename T, typename H, typename E, typename A>
+uint64_t reverse_purge_hash_map<T, H, E, A>::resize_or_purge_if_needed() {
+  if (num_active > get_capacity()) {
+    if (lg_size < lg_max_size) { // can grow
+      resize(lg_size + 1);
+    } else { // at target size, must purge
+      const uint64_t offset = purge();
+      if (num_active > get_capacity()) {
+        throw std::logic_error("purge did not reduce number of active items");
+      }
+      return offset;
+    }
+  }
+  return 0;
+}
+
+template<typename T, typename H, typename E, typename A>
+void reverse_purge_hash_map<T, H, E, A>::resize(uint8_t new_lg_size) {
+  std::cerr << "resizing from " << (int) lg_size << " to " << (int) new_lg_size << std::endl;
+  const uint32_t old_size = 1 << lg_size;
+  T* old_keys = keys;
+  uint64_t* old_values = values;
+  uint16_t* old_states = states;
+  const uint32_t new_size = 1 << new_lg_size;
+  keys = AllocT().allocate(new_size);
+  values = AllocU64().allocate(new_size);
+  states = AllocU16().allocate(new_size);
+  std::fill(states, &states[new_size], 0);
+  num_active = 0;
+  lg_size = new_lg_size;
+  for (uint32_t i = 0; i < old_size; i++) {
+    if (old_states[i] > 0) {
+      adjust_or_insert(std::move(old_keys[i]), old_values[i]);
+      old_keys[i].~T();
+    }
+  }
+  AllocT().deallocate(old_keys, old_size);
+  AllocU64().deallocate(old_values, old_size);
+  AllocU16().deallocate(old_states, old_size);
+}
+
+template<typename T, typename H, typename E, typename A>
+uint64_t reverse_purge_hash_map<T, H, E, A>::purge() {
+  const uint32_t limit = std::min(MAX_SAMPLE_SIZE, num_active);
+  uint32_t num_samples = 0;
+  uint32_t i = 0;
+  uint64_t* samples = AllocU64().allocate(limit);
+  while (num_samples < limit) {
+    if (is_active(i)) {
+      samples[num_samples++] = values[i];
+    }
+    i++;
+  }
+  std::nth_element(&samples[0], &samples[num_samples / 2], &samples[num_samples - 1]);
+  const uint64_t median = samples[num_samples / 2];
+  subtract_and_keep_positive_only(median);
+  return median;
 }
 
 } /* namespace datasketches */

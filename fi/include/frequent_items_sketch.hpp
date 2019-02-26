@@ -28,6 +28,7 @@ public:
   class row;
   typedef typename std::allocator_traits<A>::template rebind_alloc<row> AllocRow;
   void update(const T& item, uint64_t weight = 1);
+  void update(T&& item, uint64_t weight = 1);
   void merge(const frequent_items_sketch<T, H, E, A>& other);
   bool is_empty() const;
   uint64_t get_stream_length() const;
@@ -65,7 +66,14 @@ template<typename T, typename H, typename E, typename A>
 void frequent_items_sketch<T, H, E, A>::update(const T& item, uint64_t weight) {
   if (weight == 0) return;
   stream_length += weight;
-  offset += map.adjust_or_put_value(item, weight);
+  offset += map.adjust_or_insert(item, weight);
+}
+
+template<typename T, typename H, typename E, typename A>
+void frequent_items_sketch<T, H, E, A>::update(T&& item, uint64_t weight) {
+  if (weight == 0) return;
+  stream_length += weight;
+  offset += map.adjust_or_insert(std::move(item), weight);
 }
 
 template<typename T, typename H, typename E, typename A>
