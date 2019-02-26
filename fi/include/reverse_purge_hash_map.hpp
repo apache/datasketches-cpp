@@ -26,7 +26,11 @@ class reverse_purge_hash_map {
 
 public:
   reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size);
+  reverse_purge_hash_map(const reverse_purge_hash_map& other);
+  reverse_purge_hash_map(reverse_purge_hash_map&& other);
   ~reverse_purge_hash_map();
+  reverse_purge_hash_map& operator=(reverse_purge_hash_map other);
+  reverse_purge_hash_map& operator=(reverse_purge_hash_map&& other);
   uint64_t adjust_or_insert(const T& key, uint64_t value);
   uint64_t adjust_or_insert(T&& key, uint64_t value);
   uint64_t get(const T& key) const;
@@ -86,10 +90,45 @@ states(AllocU16().allocate(1 << lg_size))
 }
 
 template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>::~reverse_purge_hash_map() {
+reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(const reverse_purge_hash_map& other):
+lg_size(other.lg_size),
+lg_max_size(other.lg_max_size),
+num_active(other.num_active),
+keys(AllocT().allocate(1 << lg_size)),
+values(AllocU64().allocate(1 << lg_size)),
+states(AllocU16().allocate(1 << lg_size))
+{
   const uint32_t size = 1 << lg_size;
   for (uint32_t i = 0; i < size; i++) {
-    if (is_active(i)) keys[i].~T();
+    if (other.states[i] > 0) new (&keys[i]) T(other.keys[i]);
+  }
+  std::copy(&other.values[0], &other.values[size], values);
+  std::copy(&other.states[0], &other.states[size], states);
+}
+
+template<typename T, typename H, typename E, typename A>
+reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map&& other):
+lg_size(other.lg_size),
+lg_max_size(other.lg_max_size),
+num_active(other.num_active),
+keys(nullptr),
+values(nullptr),
+states(nullptr)
+{
+  std::swap(keys, other.keys);
+  std::swap(values, other.values);
+  std::swap(states, other.states);
+  other.num_active = 0;
+}
+
+template<typename T, typename H, typename E, typename A>
+reverse_purge_hash_map<T, H, E, A>::~reverse_purge_hash_map() {
+  const uint32_t size = 1 << lg_size;
+  if (num_active > 0) {
+    for (uint32_t i = 0; i < size; i++) {
+      if (is_active(i)) keys[i].~T();
+      if (--num_active == 0) break;
+    }
   }
   AllocT().deallocate(keys, size);
   AllocU64().deallocate(values, size);
@@ -97,8 +136,29 @@ reverse_purge_hash_map<T, H, E, A>::~reverse_purge_hash_map() {
 }
 
 template<typename T, typename H, typename E, typename A>
+reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map other) {
+  std::swap(lg_size, other.lg_size);
+  std::swap(lg_max_size, other.lg_max_size);
+  std::swap(num_active, other.num_active);
+  std::swap(keys, other.keys);
+  std::swap(values, other.values);
+  std::swap(states, other.states);
+  return *this;
+}
+
+template<typename T, typename H, typename E, typename A>
+reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map&& other) {
+  std::swap(lg_size, other.lg_size);
+  std::swap(lg_max_size, other.lg_max_size);
+  std::swap(num_active, other.num_active);
+  std::swap(keys, other.keys);
+  std::swap(values, other.values);
+  std::swap(states, other.states);
+  return *this;
+}
+
+template<typename T, typename H, typename E, typename A>
 uint64_t reverse_purge_hash_map<T, H, E, A>::adjust_or_insert(const T& key, uint64_t value) {
-  std::cerr << "adjust_or_put_value(const T& key, uint64_t value)" << std::endl;
   const uint32_t num_active_before = num_active;
   const uint32_t index = internal_adjust_or_insert(key, value);
   if (num_active > num_active_before) {
@@ -110,7 +170,6 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::adjust_or_insert(const T& key, uint
 
 template<typename T, typename H, typename E, typename A>
 uint64_t reverse_purge_hash_map<T, H, E, A>::adjust_or_insert(T&& key, uint64_t value) {
-  std::cerr << "adjust_or_put_value(T&& key, uint64_t value)" << std::endl;
   const uint32_t num_active_before = num_active;
   const uint32_t index = internal_adjust_or_insert(key, value);
   if (num_active > num_active_before) {
@@ -268,7 +327,6 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::resize_or_purge_if_needed() {
 
 template<typename T, typename H, typename E, typename A>
 void reverse_purge_hash_map<T, H, E, A>::resize(uint8_t new_lg_size) {
-  std::cerr << "resizing from " << (int) lg_size << " to " << (int) new_lg_size << std::endl;
   const uint32_t old_size = 1 << lg_size;
   T* old_keys = keys;
   uint64_t* old_values = values;

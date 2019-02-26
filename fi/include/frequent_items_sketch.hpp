@@ -24,7 +24,6 @@ class frequent_items_sketch {
 public:
   enum error_type { NO_FALSE_POSITIVES, NO_FALSE_NEGATIVES };
   explicit frequent_items_sketch(uint8_t lg_max_map_size);
-  ~frequent_items_sketch();
   class row;
   typedef typename std::allocator_traits<A>::template rebind_alloc<row> AllocRow;
   void update(const T& item, uint64_t weight = 1);
@@ -56,10 +55,6 @@ stream_length(0),
 offset(0),
 map(LG_MIN_MAP_SIZE, lg_max_map_size)
 {
-}
-
-template<typename T, typename H, typename E, typename A>
-frequent_items_sketch<T, H, E, A>::~frequent_items_sketch() {
 }
 
 template<typename T, typename H, typename E, typename A>
