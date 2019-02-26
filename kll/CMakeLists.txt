@@ -1,12 +1,25 @@
 add_library(kll INTERFACE)
 
-add_subdirectory(test)
+add_library(${PROJECT_NAME}::KLL ALIAS kll)
+
+if (BUILD_TESTS)
+  add_subdirectory(test)
+endif()
 
 target_include_directories(kll
   INTERFACE
-    $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
 )
+
+set(kll_HEADERS "include/kll_sketch.hpp;include/kll_helper.hpp;include/kll_quantile_calculator.hpp")
+
+install(TARGETS kll
+  EXPORT ${PROJCT_NAME}
+)
+
+install(FILES ${kll_HEADERS}
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
 
 target_sources(kll
   INTERFACE

@@ -1,11 +1,14 @@
 add_library(cpc OBJECT "")
 
-add_subdirectory(test)
+add_library(${PROJECT_NAME}::CPC ALIAS cpc)
 
+if (BUILD_TESTS)
+  add_subdirectory(test)
+endif()
 
 target_include_directories(cpc
   PUBLIC
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE 
     ${COMMON_INCLUDE_DIR}
@@ -14,10 +17,16 @@ target_include_directories(cpc
 target_link_libraries(cpc common)
 
 set_target_properties(cpc PROPERTIES
-  PUBLIC_HEADER "${CPC_INCLUDE_DIR}/cpc_sketch.hpp;${CPC_INCLUDE_DIR}/cpc_union.hpp;${CPC_INCLUDE_DIR}/cpc_common.hpp"
+  PUBLIC_HEADER "include/cpc_sketch.hpp;include/cpc_union.hpp;include/cpc_common.hpp"
   POSITION_INDEPENDENT_CODE ON
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
+)
+
+install(TARGETS cpc
+  EXPORT ${PROJCT_NAME}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
 )
 
 target_sources(cpc

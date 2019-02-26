@@ -1,11 +1,15 @@
 add_library(hll OBJECT "")
 
-add_subdirectory(test)
+add_library(${PROJECT_NAME}::HLL ALIAS hll)
+
+if (BUILD_TESTS)
+  add_subdirectory(test)
+endif()
 
 target_include_directories(hll
   PUBLIC
-    $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
   PRIVATE 
     ${COMMON_INCLUDE_DIR}
 )
@@ -13,10 +17,16 @@ target_include_directories(hll
 target_link_libraries(hll common)
 
 set_target_properties(hll PROPERTIES
-  #PUBLIC_HEADER "${HLL_INCLUDE_DIR}/hll.hpp"
+  PUBLIC_HEADER "include/hll.hpp"
   POSITION_INDEPENDENT_CODE ON
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
+)
+
+install(TARGETS hll
+  EXPORT ${PROJCT_NAME}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
 )
 
 target_sources(hll
