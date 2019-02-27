@@ -57,7 +57,7 @@ class hllSketchTest : public CppUnit::TestFixture {
     }
     CPPUNIT_ASSERT_EQUAL(sk->getCurrentMode(), CurMode::SET);
     CPPUNIT_ASSERT(sk->getCurrentMode() != skCopyPvt->getCurrentMode());
-    CPPUNIT_ASSERT_GREATER(16.0, sk->getEstimate() - skCopy->getEstimate());
+    CPPUNIT_ASSERT(16.0 < (sk->getEstimate() - skCopy->getEstimate()));
 
     skCopy = sk->copy();
     skCopyPvt = static_cast<HllSketchPvt*>(skCopy.get());
