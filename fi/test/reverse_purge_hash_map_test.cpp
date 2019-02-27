@@ -25,7 +25,7 @@ class reverse_purge_hash_map_test: public CppUnit::TestFixture {
 
   void one_item() {
     reverse_purge_hash_map<int> map(3, 3);
-    map.adjust_or_put_value(1, 1);
+    map.adjust_or_insert(1, 1);
     CPPUNIT_ASSERT_EQUAL(1U, map.get_num_active());
     CPPUNIT_ASSERT_EQUAL(1ULL, map.get(1));
   }

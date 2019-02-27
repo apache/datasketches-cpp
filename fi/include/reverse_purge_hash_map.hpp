@@ -72,9 +72,9 @@ public:
   bool operator!=(const const_iterator& rhs) const { return index != rhs.index; }
   const std::pair<const T&, const uint64_t> operator*() { return std::pair<const T&, const uint64_t>(map->keys[index], map->values[index]); }
 private:
-  const reverse_purge_hash_map<T>* map;
+  const reverse_purge_hash_map<T, H, E, A>* map;
   uint32_t index;
-  const_iterator(const reverse_purge_hash_map<T>* map, uint32_t index): map(map), index(index) {}
+  const_iterator(const reverse_purge_hash_map<T, H, E, A>* map, uint32_t index): map(map), index(index) {}
 };
 
 template<typename T, typename H, typename E, typename A>
@@ -90,7 +90,7 @@ states(AllocU16().allocate(1 << lg_size))
 }
 
 template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(const reverse_purge_hash_map& other):
+reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(const reverse_purge_hash_map<T, H, E, A>& other):
 lg_size(other.lg_size),
 lg_max_size(other.lg_max_size),
 num_active(other.num_active),
@@ -107,7 +107,7 @@ states(AllocU16().allocate(1 << lg_size))
 }
 
 template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept:
+reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map<T, H, E, A>&& other) noexcept:
 lg_size(other.lg_size),
 lg_max_size(other.lg_max_size),
 num_active(other.num_active),
@@ -136,7 +136,7 @@ reverse_purge_hash_map<T, H, E, A>::~reverse_purge_hash_map() {
 }
 
 template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map other) {
+reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map<T, H, E, A> other) {
   std::swap(lg_size, other.lg_size);
   std::swap(lg_max_size, other.lg_max_size);
   std::swap(num_active, other.num_active);
@@ -147,7 +147,7 @@ reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator
 }
 
 template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map&& other) {
+reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map<T, H, E, A>&& other) {
   std::swap(lg_size, other.lg_size);
   std::swap(lg_max_size, other.lg_max_size);
   std::swap(num_active, other.num_active);

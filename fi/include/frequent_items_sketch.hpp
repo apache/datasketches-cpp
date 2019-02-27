@@ -30,16 +30,14 @@ public:
   void update(T&& item, uint64_t weight = 1);
   void merge(const frequent_items_sketch<T, H, E, A>& other);
   bool is_empty() const;
-  uint64_t get_stream_length() const;
+  uint64_t get_total_weight() const;
   uint64_t get_estimate(const T& item) const;
   uint64_t get_lower_bound(const T& item) const;
   uint64_t get_upper_bound(const T& item) const;
   uint64_t get_maximum_error() const;
   uint32_t get_num_active_items() const;
-  uint32_t get_current_map_capacity() const;
   std::vector<row, AllocRow> get_frequent_items(error_type err_type) const;
   std::vector<row, AllocRow> get_frequent_items(uint64_t threshold, error_type err_type) const;
-  void reset();
 private:
   static constexpr uint8_t LG_MIN_MAP_SIZE = 3;
   uint8_t lg_max_map_size;
@@ -74,7 +72,7 @@ void frequent_items_sketch<T, H, E, A>::update(T&& item, uint64_t weight) {
 template<typename T, typename H, typename E, typename A>
 void frequent_items_sketch<T, H, E, A>::merge(const frequent_items_sketch<T, H, E, A>& other) {
   if (other.is_empty()) return;
-  const uint64_t total_stream_length = stream_length + other.get_stream_length(); // for correction at the end
+  const uint64_t total_stream_length = stream_length + other.get_total_weight(); // for correction at the end
   for (auto it: other.map) {
     update(it.first, it.second);
   }
@@ -88,7 +86,7 @@ bool frequent_items_sketch<T, H, E, A>::is_empty() const {
 }
 
 template<typename T, typename H, typename E, typename A>
-uint64_t frequent_items_sketch<T, H, E, A>::get_stream_length() const {
+uint64_t frequent_items_sketch<T, H, E, A>::get_total_weight() const {
   return stream_length;
 }
 

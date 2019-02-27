@@ -20,13 +20,14 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(estimation_mode);
   CPPUNIT_TEST(merge_exact_mode);
   CPPUNIT_TEST(merge_estimation_mode);
+  CPPUNIT_TEST(custom_type);
   CPPUNIT_TEST_SUITE_END();
 
   void empty() {
     frequent_items_sketch<int> sketch(3);
     CPPUNIT_ASSERT(sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(0U, sketch.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(0ULL, sketch.get_stream_length());
+    CPPUNIT_ASSERT_EQUAL(0ULL, sketch.get_total_weight());
   }
 
   void one_item() {
@@ -34,7 +35,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch.update("a");
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(1U, sketch.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_stream_length());
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("a"));
     CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_lower_bound("a"));
     CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_upper_bound("a"));
@@ -50,7 +51,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch.update("c");
     sketch.update("b");
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(7ULL, sketch.get_stream_length());
+    CPPUNIT_ASSERT_EQUAL(7ULL, sketch.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(4U, sketch.get_num_active_items());
     CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("a"));
     CPPUNIT_ASSERT_EQUAL(3ULL, sketch.get_estimate("b"));
@@ -76,7 +77,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch.update("k");
     sketch.update("l");
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(15ULL, sketch.get_stream_length());
+    CPPUNIT_ASSERT_EQUAL(15ULL, sketch.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(12U, sketch.get_num_active_items());
     CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("a"));
     CPPUNIT_ASSERT_EQUAL(3ULL, sketch.get_estimate("b"));
@@ -101,7 +102,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(sketch.get_maximum_error() > 0); // estimation mode
 
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(35ULL, sketch.get_stream_length());
+    CPPUNIT_ASSERT_EQUAL(35ULL, sketch.get_total_weight());
 
     auto items = sketch.get_frequent_items(frequent_items_sketch<int>::error_type::NO_FALSE_POSITIVES);
     CPPUNIT_ASSERT_EQUAL(2, (int) items.size()); // only 2 items (1 and 7) should have counts more than 1
@@ -129,7 +130,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
 
     sketch1.merge(sketch2);
     CPPUNIT_ASSERT(!sketch1.is_empty());
-    CPPUNIT_ASSERT_EQUAL(7ULL, sketch1.get_stream_length());
+    CPPUNIT_ASSERT_EQUAL(7ULL, sketch1.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(4U, sketch1.get_num_active_items());
     CPPUNIT_ASSERT_EQUAL(1ULL, sketch1.get_estimate(1));
     CPPUNIT_ASSERT_EQUAL(3ULL, sketch1.get_estimate(2));
@@ -174,7 +175,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
 
     sketch1.merge(sketch2);
     CPPUNIT_ASSERT(!sketch1.is_empty());
-    CPPUNIT_ASSERT_EQUAL(46ULL, sketch1.get_stream_length());
+    CPPUNIT_ASSERT_EQUAL(46ULL, sketch1.get_total_weight());
     CPPUNIT_ASSERT(2U <= sketch1.get_num_active_items());
 
     auto items = sketch1.get_frequent_items(2, frequent_items_sketch<int>::error_type::NO_FALSE_POSITIVES);
@@ -183,7 +184,67 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(11ULL <= items[0].get_estimate()); // always overestimated
     CPPUNIT_ASSERT_EQUAL(1, items[1].get_item());
     CPPUNIT_ASSERT(9ULL <= items[1].get_estimate()); // always overestimated
-}
+  }
+
+  void custom_type() {
+    class A {
+    public:
+      A(int value): value(value) {
+        std::cerr << "A constructor" << std::endl;
+      }
+      ~A() {
+        std::cerr << "A destructor" << std::endl;
+      }
+      A(const A& other): value(other.value) {
+        std::cerr << "A copy constructor" << std::endl;
+      }
+      // noexcept is important here so that std::vector can move this type
+      A(A&& other) noexcept : value(other.value) {
+        std::cerr << "A move constructor" << std::endl;
+      }
+      A& operator=(const A& other) {
+        std::cerr << "A copy assignment" << std::endl;
+        value = other.value;
+        return *this;
+      }
+      A& operator=(A&& other) {
+        std::cerr << "A move assignment" << std::endl;
+        value = other.value;
+        return *this;
+      }
+      int get_value() const { return value; }
+    private:
+      int value;
+    };
+
+    struct hashA {
+      std::size_t operator()(const A& a) const {
+        return std::hash<int>()(a.get_value());
+      }
+    };
+
+    struct equalA {
+      bool operator()(const A& a1, const A& a2) const {
+        return a1.get_value() == a2.get_value();
+      }
+    };
+
+    frequent_items_sketch<A, hashA, equalA> sketch(3);
+    sketch.update(1, 10); // should survive the purge
+    sketch.update(2);
+    sketch.update(3);
+    sketch.update(4);
+    sketch.update(5);
+    sketch.update(6);
+    sketch.update(7);
+    A a8(8);
+    sketch.update(a8);
+
+    auto items = sketch.get_frequent_items(frequent_items_sketch<A, hashA, equalA>::error_type::NO_FALSE_POSITIVES);
+    CPPUNIT_ASSERT_EQUAL(1, (int) items.size()); // only 1 item should be above threshold
+    CPPUNIT_ASSERT_EQUAL(1, items[0].get_item().get_value());
+    CPPUNIT_ASSERT_EQUAL(10ULL, items[0].get_estimate());
+  }
 
 };
 
