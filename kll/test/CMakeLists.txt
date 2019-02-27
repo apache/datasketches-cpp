@@ -19,6 +19,11 @@ target_compile_definitions(kll_test
     TEST_BINARY_INPUT_PATH="${KLL_TEST_BINARY_PATH}"
 )
 
+add_test(
+  NAME hll_test
+  COMMAND hll_test
+)
+
 target_sources(kll_test
   PRIVATE
     kll_sketch_test.cpp

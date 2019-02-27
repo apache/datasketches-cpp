@@ -19,6 +19,11 @@ set_target_properties(cpc_test PROPERTIES
 #    TEST_BINARY_INPUT_PATH="${CPC_TEST_BINARY_PATH}"
 #)
 
+add_test(
+  NAME hll_test
+  COMMAND hll_test
+)
+
 target_sources(cpc_test
   PRIVATE
     cpc_sketch_test.cpp

@@ -19,6 +19,11 @@ target_compile_definitions(hll_test
     TEST_BINARY_INPUT_PATH="${HLL_TEST_BINARY_PATH}"
 )
 
+add_test(
+  NAME hll_test
+  COMMAND hll_test
+)
+
 target_sources(hll_test
   PRIVATE
     AuxHashMapTest.cpp
