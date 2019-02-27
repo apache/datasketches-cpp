@@ -20,8 +20,8 @@ target_compile_definitions(kll_test
 )
 
 add_test(
-  NAME hll_test
-  COMMAND hll_test
+  NAME kll_test
+  COMMAND kll_test
 )
 
 target_sources(kll_test

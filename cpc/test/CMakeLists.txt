@@ -20,8 +20,8 @@ set_target_properties(cpc_test PROPERTIES
 #)
 
 add_test(
-  NAME hll_test
-  COMMAND hll_test
+  NAME cpc_test
+  COMMAND cpc_test
 )
 
 target_sources(cpc_test
