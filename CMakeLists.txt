@@ -29,21 +29,12 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 # enable compiler warnings globally
 # derived from https://foonathan.net/blog/2018/10/17/cmake-warnings.html
 # and https://arne-mertz.de/2018/07/cmake-properties-options/
-# TODO: make work with generator expressions
 if (MSVC)
   add_compile_options(/W4)
   set(CMAKE_DEBUG_POSTFIX "d")
 else()
   add_compile_options(-Wall -pedantic)
 endif()
-# add_compile_options(
-#   # Clang/GCC
-#   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:GNU>>:
-#     -Wall -pedantic >
-#   # Microsoft Visual Studio
-#   $<$<CXX_COMPILER_ID:MSVC>:
-#     /W4 >
-# )
 
 # Code generation options, to ensure shaerd libraries work and are portable
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
