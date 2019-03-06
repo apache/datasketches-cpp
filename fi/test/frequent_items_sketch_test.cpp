@@ -432,6 +432,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_num_active_items(), sketch2.get_num_active_items());
     CPPUNIT_ASSERT_EQUAL(sketch.get_maximum_error(), sketch2.get_maximum_error());
     std::cerr << "end" << std::endl;
+    std::cerr << sketch2;
   }
 
 };

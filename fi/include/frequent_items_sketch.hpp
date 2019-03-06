@@ -37,6 +37,12 @@ template<typename T> struct serde {
 // for serialization as raw bytes
 typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
 
+// for printing human-readable summary
+template<typename T, typename H, typename E, typename S, typename A>
+class frequent_items_sketch;
+template <typename T, typename H, typename E, typename S, typename A>
+std::ostream& operator<<(std::ostream& os, const frequent_items_sketch<T, H, E, S, A>& sketch);
+
 template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class frequent_items_sketch {
 public:
@@ -61,6 +67,7 @@ public:
   std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
   static frequent_items_sketch deserialize(std::istream& is);
   static frequent_items_sketch deserialize(const void* bytes, size_t size);
+  friend std::ostream& operator<< <T, H, E, S, A>(std::ostream& os, const frequent_items_sketch& sketch);
 private:
   static constexpr uint8_t LG_MIN_MAP_SIZE = 3;
   static const uint8_t SERIAL_VERSION = 1;
@@ -453,6 +460,18 @@ void frequent_items_sketch<T, H, E, S, A>::check_size(uint8_t lg_cur_size, uint8
   if (lg_cur_size < LG_MIN_MAP_SIZE) {
     throw std::invalid_argument("Possible corruption: lg_cur_size must not be less than " + std::to_string(LG_MIN_MAP_SIZE) + ": " + std::to_string(lg_cur_size));
   }
+}
+
+template <typename T, typename H, typename E, typename S, typename A>
+std::ostream& operator<<(std::ostream& os, const frequent_items_sketch<T, H, E, S, A>& sketch) {
+  os << "### Frequent items sketch summary:" << std::endl;
+  os << "   lg cur map size  : " << (int) sketch.map.get_lg_cur_size() << std::endl;
+  os << "   lg max map size  : " << (int) sketch.map.get_lg_max_size() << std::endl;
+  os << "   num active items : " << sketch.get_num_active_items() << std::endl;
+  os << "   total weight     : " << sketch.total_weight << std::endl;
+  os << "   max error        : " << sketch.offset << std::endl;
+  os << "### End sketch summary" << std::endl;
+  return os;
 }
 
 
