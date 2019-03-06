@@ -20,6 +20,14 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(estimation_mode);
   CPPUNIT_TEST(merge_exact_mode);
   CPPUNIT_TEST(merge_estimation_mode);
+  CPPUNIT_TEST(deserialize_from_java_long);
+  CPPUNIT_TEST(deserialize_from_java_string);
+  CPPUNIT_TEST(deserialize_from_java_string_utf8);
+  CPPUNIT_TEST(serialize_deserialize_long64_stream);
+  CPPUNIT_TEST(serialize_deserialize_long64_bytes);
+  CPPUNIT_TEST(serialize_deserialize_string_stream);
+  CPPUNIT_TEST(serialize_deserialize_string_bytes);
+  CPPUNIT_TEST(serialize_deserialize_string_utf8_stream);
   CPPUNIT_TEST(custom_type);
   CPPUNIT_TEST_SUITE_END();
 
@@ -186,6 +194,151 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(9ULL <= items[1].get_estimate()); // always overestimated
   }
 
+  void deserialize_from_java_long() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/longs_sketch_from_java.bin", std::ios::binary);
+    auto sketch = frequent_items_sketch<long long>::deserialize(is);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT_EQUAL(4ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(4U, sketch.get_num_active_items());
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate(2));
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate(3));
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate(4));
+  }
+
+  void deserialize_from_java_string() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/items_sketch_string_from_java.bin", std::ios::binary);
+    auto sketch = frequent_items_sketch<std::string>::deserialize(is);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT_EQUAL(4ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(4U, sketch.get_num_active_items());
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("bbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("ccccccccccccccccccccccccccccc"));
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("ddddddddddddddddddddddddddddd"));
+  }
+
+  void deserialize_from_java_string_utf8() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/items_sketch_string_utf8_from_java.bin", std::ios::binary);
+    auto sketch = frequent_items_sketch<std::string>::deserialize(is);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT_EQUAL(10ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(4U, sketch.get_num_active_items());
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("абвгд"));
+    CPPUNIT_ASSERT_EQUAL(2ULL, sketch.get_estimate("еёжзи"));
+    CPPUNIT_ASSERT_EQUAL(3ULL, sketch.get_estimate("йклмн"));
+    CPPUNIT_ASSERT_EQUAL(4ULL, sketch.get_estimate("опрст"));
+  }
+
+  void serialize_deserialize_long64_stream() {
+    frequent_items_sketch<long long> sketch1(3);
+    sketch1.update(1, 1);
+    sketch1.update(2, 2);
+    sketch1.update(3, 3);
+    sketch1.update(4, 4);
+    sketch1.update(5, 5);
+
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch1.serialize(s);
+    auto sketch2 = frequent_items_sketch<long long>::deserialize(s);
+    CPPUNIT_ASSERT(!sketch2.is_empty());
+    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate(2));
+    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate(3));
+    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate(4));
+    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate(5));
+  }
+
+  void serialize_deserialize_long64_bytes() {
+    frequent_items_sketch<long long> sketch1(3);
+    sketch1.update(1, 1);
+    sketch1.update(2, 2);
+    sketch1.update(3, 3);
+    sketch1.update(4, 4);
+    sketch1.update(5, 5);
+
+    auto p = sketch1.serialize();
+    auto sketch2 = frequent_items_sketch<long long>::deserialize(p.first.get(), p.second);
+    CPPUNIT_ASSERT(!sketch2.is_empty());
+    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate(2));
+    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate(3));
+    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate(4));
+    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate(5));
+  }
+
+  void serialize_deserialize_string_stream() {
+    frequent_items_sketch<std::string> sketch1(3);
+    sketch1.update("aaaaaaaaaaaaaaaa", 1);
+    sketch1.update("bbbbbbbbbbbbbbbb", 2);
+    sketch1.update("cccccccccccccccc", 3);
+    sketch1.update("dddddddddddddddd", 4);
+    sketch1.update("eeeeeeeeeeeeeeee", 5);
+
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch1.serialize(s);
+    auto sketch2 = frequent_items_sketch<std::string>::deserialize(s);
+    CPPUNIT_ASSERT(!sketch2.is_empty());
+    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate("aaaaaaaaaaaaaaaa"));
+    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate("bbbbbbbbbbbbbbbb"));
+    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate("cccccccccccccccc"));
+    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate("dddddddddddddddd"));
+    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate("eeeeeeeeeeeeeeee"));
+  }
+
+  void serialize_deserialize_string_bytes() {
+    frequent_items_sketch<std::string> sketch1(3);
+    sketch1.update("aaaaaaaaaaaaaaaa", 1);
+    sketch1.update("bbbbbbbbbbbbbbbb", 2);
+    sketch1.update("cccccccccccccccc", 3);
+    sketch1.update("dddddddddddddddd", 4);
+    sketch1.update("eeeeeeeeeeeeeeee", 5);
+
+    auto p = sketch1.serialize();
+    auto sketch2 = frequent_items_sketch<std::string>::deserialize(p.first.get(), p.second);
+    CPPUNIT_ASSERT(!sketch2.is_empty());
+    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate("aaaaaaaaaaaaaaaa"));
+    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate("bbbbbbbbbbbbbbbb"));
+    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate("cccccccccccccccc"));
+    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate("dddddddddddddddd"));
+    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate("eeeeeeeeeeeeeeee"));
+  }
+
+  void serialize_deserialize_string_utf8_stream() {
+    frequent_items_sketch<std::string> sketch1(3);
+    sketch1.update("абвгд", 1);
+    sketch1.update("еёжзи", 2);
+    sketch1.update("йклмн", 3);
+    sketch1.update("опрст", 4);
+    sketch1.update("уфхцч", 5);
+
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch1.serialize(s);
+    auto sketch2 = frequent_items_sketch<std::string>::deserialize(s);
+    CPPUNIT_ASSERT(!sketch2.is_empty());
+    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
+    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate("абвгд"));
+    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate("еёжзи"));
+    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate("йклмн"));
+    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate("опрст"));
+    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate("уфхцч"));
+  }
+
   void custom_type() {
     class A {
     public:
@@ -229,7 +382,25 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
       }
     };
 
-    frequent_items_sketch<A, hashA, equalA> sketch(3);
+    struct serdeA {
+      void serialize(std::ostream& os, const A* items, unsigned num) {
+        for (unsigned i = 0; i < num; i++) {
+          const int value = items[i].get_value();
+          os.write((char*)&value, sizeof(value));
+        }
+      }
+      void deserialize(std::istream& is, A* items, unsigned num) {
+        for (unsigned i = 0; i < num; i++) {
+          int value;
+          is.read((char*)&value, sizeof(value));
+          new (&items[i]) A(value);
+        }
+      }
+    };
+
+    typedef frequent_items_sketch<A, hashA, equalA, serdeA> frequent_A_sketch;
+
+    frequent_A_sketch sketch(3);
     sketch.update(1, 10); // should survive the purge
     sketch.update(2);
     sketch.update(3);
@@ -239,11 +410,28 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch.update(7);
     A a8(8);
     sketch.update(a8);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT_EQUAL(17ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(10ULL, sketch.get_estimate(1));
+    std::cerr << "num active: " << sketch.get_num_active_items() << std::endl;
 
-    auto items = sketch.get_frequent_items(frequent_items_sketch<A, hashA, equalA>::error_type::NO_FALSE_POSITIVES);
+    std::cerr << "get frequent items" << std::endl;
+    auto items = sketch.get_frequent_items(frequent_A_sketch::error_type::NO_FALSE_POSITIVES);
     CPPUNIT_ASSERT_EQUAL(1, (int) items.size()); // only 1 item should be above threshold
     CPPUNIT_ASSERT_EQUAL(1, items[0].get_item().get_value());
     CPPUNIT_ASSERT_EQUAL(10ULL, items[0].get_estimate());
+
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    std::cerr << "serialize" << std::endl;
+    sketch.serialize(s);
+    std::cerr << "deserialize" << std::endl;
+    auto sketch2 = frequent_A_sketch::deserialize(s);
+    CPPUNIT_ASSERT(!sketch2.is_empty());
+    CPPUNIT_ASSERT_EQUAL(17ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(10ULL, sketch2.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(sketch.get_num_active_items(), sketch2.get_num_active_items());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_maximum_error(), sketch2.get_maximum_error());
+    std::cerr << "end" << std::endl;
   }
 
 };

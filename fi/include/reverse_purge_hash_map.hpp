@@ -18,9 +18,8 @@ namespace datasketches {
  * author Alexander Saydakov
  */
 
-template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename A = std::allocator<void>>
+template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename A = std::allocator<T>>
 class reverse_purge_hash_map {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<T> AllocT;
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint16_t> AllocU16;
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
 
@@ -34,7 +33,8 @@ public:
   uint64_t adjust_or_insert(const T& key, uint64_t value);
   uint64_t adjust_or_insert(T&& key, uint64_t value);
   uint64_t get(const T& key) const;
-  uint8_t get_lg_size() const;
+  uint8_t get_lg_cur_size() const;
+  uint8_t get_lg_max_size() const;
   uint32_t get_capacity() const;
   uint32_t get_num_active() const;
   class const_iterator;
@@ -45,7 +45,7 @@ private:
   static constexpr uint16_t DRIFT_LIMIT = 1024; // used only for stress testing
   static constexpr uint32_t MAX_SAMPLE_SIZE = 1024; // number of samples to compute approximate median during purge
 
-  uint8_t lg_size;
+  uint8_t lg_cur_size;
   uint8_t lg_max_size;
   uint32_t num_active;
   T* keys;
@@ -66,7 +66,7 @@ class reverse_purge_hash_map<T, H, E, A>::const_iterator: public std::iterator<s
 public:
   friend class reverse_purge_hash_map<T, H, E, A>;
   const_iterator(const const_iterator& other) : map(other.map), index(other.index) {}
-  const_iterator& operator++() { while (++index < (1U << map->lg_size) and !map->is_active(index)); return *this; }
+  const_iterator& operator++() { while (++index < (1U << map->lg_cur_size) and !map->is_active(index)); return *this; }
   const_iterator operator++(int) { const_iterator tmp(*this); operator++(); return tmp; }
   bool operator==(const const_iterator& rhs) const { return index == rhs.index; }
   bool operator!=(const const_iterator& rhs) const { return index != rhs.index; }
@@ -78,27 +78,27 @@ private:
 };
 
 template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size):
-lg_size(lg_size),
+reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(uint8_t lg_cur_size, uint8_t lg_max_size):
+lg_cur_size(lg_cur_size),
 lg_max_size(lg_max_size),
 num_active(0),
-keys(AllocT().allocate(1 << lg_size)),
-values(AllocU64().allocate(1 << lg_size)),
-states(AllocU16().allocate(1 << lg_size))
+keys(A().allocate(1 << lg_cur_size)),
+values(AllocU64().allocate(1 << lg_cur_size)),
+states(AllocU16().allocate(1 << lg_cur_size))
 {
-  std::fill(states, &states[1 << lg_size], 0);
+  std::fill(states, &states[1 << lg_cur_size], 0);
 }
 
 template<typename T, typename H, typename E, typename A>
 reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(const reverse_purge_hash_map<T, H, E, A>& other):
-lg_size(other.lg_size),
+lg_cur_size(other.lg_cur_size),
 lg_max_size(other.lg_max_size),
 num_active(other.num_active),
-keys(AllocT().allocate(1 << lg_size)),
-values(AllocU64().allocate(1 << lg_size)),
-states(AllocU16().allocate(1 << lg_size))
+keys(A().allocate(1 << lg_cur_size)),
+values(AllocU64().allocate(1 << lg_cur_size)),
+states(AllocU16().allocate(1 << lg_cur_size))
 {
-  const uint32_t size = 1 << lg_size;
+  const uint32_t size = 1 << lg_cur_size;
   for (uint32_t i = 0; i < size; i++) {
     if (other.states[i] > 0) new (&keys[i]) T(other.keys[i]);
   }
@@ -108,7 +108,7 @@ states(AllocU16().allocate(1 << lg_size))
 
 template<typename T, typename H, typename E, typename A>
 reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map<T, H, E, A>&& other) noexcept:
-lg_size(other.lg_size),
+lg_cur_size(other.lg_cur_size),
 lg_max_size(other.lg_max_size),
 num_active(other.num_active),
 keys(nullptr),
@@ -123,21 +123,21 @@ states(nullptr)
 
 template<typename T, typename H, typename E, typename A>
 reverse_purge_hash_map<T, H, E, A>::~reverse_purge_hash_map() {
-  const uint32_t size = 1 << lg_size;
+  const uint32_t size = 1 << lg_cur_size;
   if (num_active > 0) {
     for (uint32_t i = 0; i < size; i++) {
       if (is_active(i)) keys[i].~T();
       if (--num_active == 0) break;
     }
   }
-  AllocT().deallocate(keys, size);
+  A().deallocate(keys, size);
   AllocU64().deallocate(values, size);
   AllocU16().deallocate(states, size);
 }
 
 template<typename T, typename H, typename E, typename A>
 reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map<T, H, E, A> other) {
-  std::swap(lg_size, other.lg_size);
+  std::swap(lg_cur_size, other.lg_cur_size);
   std::swap(lg_max_size, other.lg_max_size);
   std::swap(num_active, other.num_active);
   std::swap(keys, other.keys);
@@ -148,7 +148,7 @@ reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator
 
 template<typename T, typename H, typename E, typename A>
 reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map<T, H, E, A>&& other) {
-  std::swap(lg_size, other.lg_size);
+  std::swap(lg_cur_size, other.lg_cur_size);
   std::swap(lg_max_size, other.lg_max_size);
   std::swap(num_active, other.num_active);
   std::swap(keys, other.keys);
@@ -181,7 +181,7 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::adjust_or_insert(T&& key, uint64_t 
 
 template<typename T, typename H, typename E, typename A>
 uint64_t reverse_purge_hash_map<T, H, E, A>::get(const T& key) const {
-  const uint32_t mask = (1 << lg_size) - 1;
+  const uint32_t mask = (1 << lg_cur_size) - 1;
   uint32_t probe = H()(key) & mask;
   while (is_active(probe)) {
     if (E()(keys[probe], key)) return values[probe];
@@ -191,13 +191,18 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::get(const T& key) const {
 }
 
 template<typename T, typename H, typename E, typename A>
-uint8_t reverse_purge_hash_map<T, H, E, A>::get_lg_size() const {
-  return lg_size;
+uint8_t reverse_purge_hash_map<T, H, E, A>::get_lg_cur_size() const {
+  return lg_cur_size;
+}
+
+template<typename T, typename H, typename E, typename A>
+uint8_t reverse_purge_hash_map<T, H, E, A>::get_lg_max_size() const {
+  return lg_max_size;
 }
 
 template<typename T, typename H, typename E, typename A>
 uint32_t reverse_purge_hash_map<T, H, E, A>::get_capacity() const {
-  return (1 << lg_size) * LOAD_FACTOR;
+  return (1 << lg_cur_size) * LOAD_FACTOR;
 }
 
 template<typename T, typename H, typename E, typename A>
@@ -207,7 +212,7 @@ uint32_t reverse_purge_hash_map<T, H, E, A>::get_num_active() const {
 
 template<typename T, typename H, typename E, typename A>
 typename reverse_purge_hash_map<T, H, E, A>::const_iterator reverse_purge_hash_map<T, H, E, A>::begin() const {
-  const uint32_t size = 1 << lg_size;
+  const uint32_t size = 1 << lg_cur_size;
   uint32_t i = 0;
   while (i < size and !is_active(i)) i++;
   return reverse_purge_hash_map<T, H, E, A>::const_iterator(this, i);
@@ -215,7 +220,7 @@ typename reverse_purge_hash_map<T, H, E, A>::const_iterator reverse_purge_hash_m
 
 template<typename T, typename H, typename E, typename A>
 typename reverse_purge_hash_map<T, H, E, A>::const_iterator reverse_purge_hash_map<T, H, E, A>::end() const {
-  return reverse_purge_hash_map<T, H, E, A>::const_iterator(this, 1 << lg_size);
+  return reverse_purge_hash_map<T, H, E, A>::const_iterator(this, 1 << lg_cur_size);
 }
 
 template<typename T, typename H, typename E, typename A>
@@ -227,7 +232,7 @@ template<typename T, typename H, typename E, typename A>
 void reverse_purge_hash_map<T, H, E, A>::subtract_and_keep_positive_only(uint64_t amount) {
   // starting from the back, find the first empty cell,
   // which establishes the high end of a cluster.
-  uint32_t first_probe = (1 << lg_size) - 1;
+  uint32_t first_probe = (1 << lg_cur_size) - 1;
   while (is_active(first_probe)) first_probe--;
   // when we find the next non-empty cell, we know we are at the high end of a cluster
   // work towards the front, delete any non-positive entries.
@@ -242,7 +247,7 @@ void reverse_purge_hash_map<T, H, E, A>::subtract_and_keep_positive_only(uint64_
     }
   }
   // now work on the first cluster that was skipped
-  for (uint32_t probe = (1 << lg_size); probe-- > first_probe;) {
+  for (uint32_t probe = (1 << lg_cur_size); probe-- > first_probe;) {
     if (is_active(probe)) {
       if (values[probe] <= amount) {
         hash_delete(probe);
@@ -262,7 +267,7 @@ void reverse_purge_hash_map<T, H, E, A>::hash_delete(uint32_t delete_index) {
   states[delete_index] = 0; // mark as empty
   keys[delete_index].~T();
   uint32_t drift = 1;
-  const uint32_t mask = (1 << lg_size) - 1;
+  const uint32_t mask = (1 << lg_cur_size) - 1;
   uint32_t probe = (delete_index + drift) & mask; // map length must be a power of 2
   // advance until we find a free location replacing locations as needed
   while (is_active(probe)) {
@@ -285,7 +290,7 @@ void reverse_purge_hash_map<T, H, E, A>::hash_delete(uint32_t delete_index) {
 
 template<typename T, typename H, typename E, typename A>
 uint32_t reverse_purge_hash_map<T, H, E, A>::internal_adjust_or_insert(const T& key, uint64_t value) {
-  const uint32_t mask = (1 << lg_size) - 1;
+  const uint32_t mask = (1 << lg_cur_size) - 1;
   uint32_t index = H()(key) & mask;
   uint16_t drift = 1;
   while (is_active(index)) {
@@ -312,8 +317,8 @@ uint32_t reverse_purge_hash_map<T, H, E, A>::internal_adjust_or_insert(const T& 
 template<typename T, typename H, typename E, typename A>
 uint64_t reverse_purge_hash_map<T, H, E, A>::resize_or_purge_if_needed() {
   if (num_active > get_capacity()) {
-    if (lg_size < lg_max_size) { // can grow
-      resize(lg_size + 1);
+    if (lg_cur_size < lg_max_size) { // can grow
+      resize(lg_cur_size + 1);
     } else { // at target size, must purge
       const uint64_t offset = purge();
       if (num_active > get_capacity()) {
@@ -327,24 +332,24 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::resize_or_purge_if_needed() {
 
 template<typename T, typename H, typename E, typename A>
 void reverse_purge_hash_map<T, H, E, A>::resize(uint8_t new_lg_size) {
-  const uint32_t old_size = 1 << lg_size;
+  const uint32_t old_size = 1 << lg_cur_size;
   T* old_keys = keys;
   uint64_t* old_values = values;
   uint16_t* old_states = states;
   const uint32_t new_size = 1 << new_lg_size;
-  keys = AllocT().allocate(new_size);
+  keys = A().allocate(new_size);
   values = AllocU64().allocate(new_size);
   states = AllocU16().allocate(new_size);
   std::fill(states, &states[new_size], 0);
   num_active = 0;
-  lg_size = new_lg_size;
+  lg_cur_size = new_lg_size;
   for (uint32_t i = 0; i < old_size; i++) {
     if (old_states[i] > 0) {
       adjust_or_insert(std::move(old_keys[i]), old_values[i]);
       old_keys[i].~T();
     }
   }
-  AllocT().deallocate(old_keys, old_size);
+  A().deallocate(old_keys, old_size);
   AllocU64().deallocate(old_values, old_size);
   AllocU16().deallocate(old_states, old_size);
 }
