@@ -37,12 +37,6 @@ template<typename T> struct serde {
 // for serialization as raw bytes
 typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
 
-// for printing human-readable summary
-template<typename T, typename H, typename E, typename S, typename A>
-class frequent_items_sketch;
-template <typename T, typename H, typename E, typename S, typename A>
-std::ostream& operator<<(std::ostream& os, const frequent_items_sketch<T, H, E, S, A>& sketch);
-
 template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class frequent_items_sketch {
 public:
@@ -67,7 +61,7 @@ public:
   std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
   static frequent_items_sketch deserialize(std::istream& is);
   static frequent_items_sketch deserialize(const void* bytes, size_t size);
-  friend std::ostream& operator<< <T, H, E, S, A>(std::ostream& os, const frequent_items_sketch& sketch);
+  void to_stream(std::ostream& os, bool print_items = false) const;
 private:
   static constexpr uint8_t LG_MIN_MAP_SIZE = 3;
   static const uint8_t SERIAL_VERSION = 1;
@@ -119,7 +113,7 @@ template<typename T, typename H, typename E, typename S, typename A>
 void frequent_items_sketch<T, H, E, S, A>::merge(const frequent_items_sketch& other) {
   if (other.is_empty()) return;
   const uint64_t merged_total_weight = total_weight + other.get_total_weight(); // for correction at the end
-  for (auto it: other.map) {
+  for (auto &it: other.map) {
     update(it.first, it.second);
   }
   offset += other.offset;
@@ -190,7 +184,7 @@ template<typename T, typename H, typename E, typename S, typename A>
 std::vector<typename frequent_items_sketch<T, H, E, S, A>::row, typename frequent_items_sketch<T, H, E, S, A>::AllocRow>
 frequent_items_sketch<T, H, E, S, A>::get_frequent_items(uint64_t threshold, error_type err_type) const {
   std::vector<row, AllocRow> items;
-  for (auto it: map) {
+  for (auto &it: map) {
     const uint64_t est = it.second + offset;
     const uint64_t lb = it.second;
     const uint64_t ub = est;
@@ -234,7 +228,7 @@ void frequent_items_sketch<T, H, E, S, A>::serialize(std::ostream& os) const {
     uint64_t* weights = AllocU64().allocate(num_items);
     T* items = A().allocate(num_items);
     uint32_t i = 0;
-    for (auto it: map) {
+    for (auto &it: map) {
       new (&items[i]) T(it.first);
       weights[i++] = it.second;
     }
@@ -260,7 +254,7 @@ template<typename T, typename H, typename E, typename S, typename A>
 size_t frequent_items_sketch<T, H, E, S, A>::get_serialized_size_bytes() const {
   if (is_empty()) return PREAMBLE_LONGS_EMPTY * sizeof(uint64_t);
   size_t size = (PREAMBLE_LONGS_NONEMPTY + map.get_num_active()) * sizeof(uint64_t);
-  for (auto it: map) size += S().size_of_item(it.first);
+  for (auto &it: map) size += S().size_of_item(it.first);
   return size;
 }
 
@@ -303,7 +297,7 @@ std::pair<void_ptr_with_deleter, const size_t> frequent_items_sketch<T, H, E, S,
     uint64_t* weights = AllocU64().allocate(num_items);
     T* items = A().allocate(num_items);
     uint32_t i = 0;
-    for (auto it: map) {
+    for (auto &it: map) {
       new (&items[i]) T(it.first);
       weights[i++] = it.second;
     }
@@ -463,15 +457,32 @@ void frequent_items_sketch<T, H, E, S, A>::check_size(uint8_t lg_cur_size, uint8
 }
 
 template <typename T, typename H, typename E, typename S, typename A>
-std::ostream& operator<<(std::ostream& os, const frequent_items_sketch<T, H, E, S, A>& sketch) {
+void frequent_items_sketch<T, H, E, S, A>::to_stream(std::ostream& os, bool print_items) const {
   os << "### Frequent items sketch summary:" << std::endl;
-  os << "   lg cur map size  : " << (int) sketch.map.get_lg_cur_size() << std::endl;
-  os << "   lg max map size  : " << (int) sketch.map.get_lg_max_size() << std::endl;
-  os << "   num active items : " << sketch.get_num_active_items() << std::endl;
-  os << "   total weight     : " << sketch.total_weight << std::endl;
-  os << "   max error        : " << sketch.offset << std::endl;
+  os << "   lg cur map size  : " << (int) map.get_lg_cur_size() << std::endl;
+  os << "   lg max map size  : " << (int) map.get_lg_max_size() << std::endl;
+  os << "   num active items : " << get_num_active_items() << std::endl;
+  os << "   total weight     : " << get_total_weight() << std::endl;
+  os << "   max error        : " << get_maximum_error() << std::endl;
   os << "### End sketch summary" << std::endl;
-  return os;
+  if (print_items) {
+    std::vector<row, AllocRow> items;
+    for (auto &it: map) {
+      const uint64_t est = it.second + offset;
+      const uint64_t lb = it.second;
+      const uint64_t ub = est;
+      items.push_back(row(it.first, est, lb, ub));
+    }
+    // sort by estimate in descending order
+    std::sort(items.begin(), items.end(), [](row a, row b){ return a.get_estimate() > b.get_estimate(); });
+    os << "### Items in descending order by estimate" << std::endl;
+    os << "   item, estimate, lower bound, upper bound" << std::endl;
+    for (auto &it: items) {
+      os << "   " << it.get_item() << ", " << it.get_estimate() << ", "
+         << it.get_lower_bound() << ", " << it.get_upper_bound() << std::endl;
+    }
+    os << "### End items" << std::endl;
+  }
 }
 
 
