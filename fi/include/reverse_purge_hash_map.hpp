@@ -99,10 +99,14 @@ values(AllocU64().allocate(1 << lg_cur_size)),
 states(AllocU16().allocate(1 << lg_cur_size))
 {
   const uint32_t size = 1 << lg_cur_size;
-  for (uint32_t i = 0; i < size; i++) {
-    if (other.states[i] > 0) new (&keys[i]) T(other.keys[i]);
+  if (num_active > 0) {
+    for (uint32_t i = 0; i < size; i++) {
+      if (other.states[i] > 0) {
+        new (&keys[i]) T(other.keys[i]);
+        values[i] = other.values[i];
+      }
+    }
   }
-  std::copy(&other.values[0], &other.values[size], values);
   std::copy(&other.states[0], &other.states[size], states);
 }
 
@@ -368,6 +372,7 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::purge() {
   }
   std::nth_element(&samples[0], &samples[num_samples / 2], &samples[num_samples - 1]);
   const uint64_t median = samples[num_samples / 2];
+  AllocU64().deallocate(samples, limit);
   subtract_and_keep_positive_only(median);
   return median;
 }
