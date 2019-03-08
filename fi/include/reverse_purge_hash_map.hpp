@@ -100,11 +100,13 @@ states(AllocU16().allocate(1 << lg_cur_size))
 {
   const uint32_t size = 1 << lg_cur_size;
   if (num_active > 0) {
+    auto num = num_active;
     for (uint32_t i = 0; i < size; i++) {
       if (other.states[i] > 0) {
         new (&keys[i]) T(other.keys[i]);
         values[i] = other.values[i];
       }
+      if (--num == 0) break;
     }
   }
   std::copy(&other.states[0], &other.states[size], states);
