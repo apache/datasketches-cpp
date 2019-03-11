@@ -47,12 +47,15 @@ public:
   void update(T&& item, uint64_t weight = 1);
   void merge(const frequent_items_sketch& other);
   bool is_empty() const;
+  uint32_t get_num_active_items() const;
   uint64_t get_total_weight() const;
   uint64_t get_estimate(const T& item) const;
   uint64_t get_lower_bound(const T& item) const;
   uint64_t get_upper_bound(const T& item) const;
   uint64_t get_maximum_error() const;
-  uint32_t get_num_active_items() const;
+  double get_epsilon() const;
+  static double get_epsilon(uint8_t lg_max_map_size);
+  static double get_apriori_error(uint8_t lg_max_map_size, uint64_t estimated_total_weight);
   typedef typename std::allocator_traits<A>::template rebind_alloc<row> AllocRow;
   std::vector<row, AllocRow> get_frequent_items(error_type err_type) const;
   std::vector<row, AllocRow> get_frequent_items(uint64_t threshold, error_type err_type) const;
@@ -68,6 +71,7 @@ private:
   static const uint8_t FAMILY_ID = 10;
   static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
   static const uint8_t PREAMBLE_LONGS_NONEMPTY = 4;
+  static const double EPSILON_FACTOR = 3.5;
   enum flags { IS_EMPTY };
   uint64_t total_weight;
   uint64_t offset;
@@ -126,6 +130,11 @@ bool frequent_items_sketch<T, H, E, S, A>::is_empty() const {
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
+uint32_t frequent_items_sketch<T, H, E, S, A>::get_num_active_items() const {
+  return map.get_num_active();
+}
+
+template<typename T, typename H, typename E, typename S, typename A>
 uint64_t frequent_items_sketch<T, H, E, S, A>::get_total_weight() const {
   return total_weight;
 }
@@ -154,8 +163,18 @@ uint64_t frequent_items_sketch<T, H, E, S, A>::get_maximum_error() const {
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
-uint32_t frequent_items_sketch<T, H, E, S, A>::get_num_active_items() const {
-  return map.get_num_active();
+double frequent_items_sketch<T, H, E, S, A>::get_epsilon() const {
+  return EPSILON_FACTOR / map.get_lg_max_size();
+}
+
+template<typename T, typename H, typename E, typename S, typename A>
+double frequent_items_sketch<T, H, E, S, A>::get_epsilon(uint8_t lg_max_map_size) {
+  return EPSILON_FACTOR / lg_max_map_size;
+}
+
+template<typename T, typename H, typename E, typename S, typename A>
+double frequent_items_sketch<T, H, E, S, A>::get_apriori_error(uint8_t lg_max_map_size, uint64_t estimated_total_weight) {
+  get_epsilon(lg_max_map_size) * estimated_total_weight;
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
