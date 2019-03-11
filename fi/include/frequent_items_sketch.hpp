@@ -71,7 +71,7 @@ private:
   static const uint8_t FAMILY_ID = 10;
   static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
   static const uint8_t PREAMBLE_LONGS_NONEMPTY = 4;
-  static const double EPSILON_FACTOR = 3.5;
+  static constexpr double EPSILON_FACTOR = 3.5;
   enum flags { IS_EMPTY };
   uint64_t total_weight;
   uint64_t offset;
@@ -174,7 +174,7 @@ double frequent_items_sketch<T, H, E, S, A>::get_epsilon(uint8_t lg_max_map_size
 
 template<typename T, typename H, typename E, typename S, typename A>
 double frequent_items_sketch<T, H, E, S, A>::get_apriori_error(uint8_t lg_max_map_size, uint64_t estimated_total_weight) {
-  get_epsilon(lg_max_map_size) * estimated_total_weight;
+  return get_epsilon(lg_max_map_size) * estimated_total_weight;
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
