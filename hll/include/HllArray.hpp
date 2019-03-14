@@ -29,7 +29,7 @@ class HllArray : public HllSketchImpl {
     virtual HllArray* copy() const = 0;
     virtual HllArray* copyAs(TgtHllType tgtHllType) const;
 
-    virtual HllSketchImpl* couponUpdate(int coupon);
+    virtual HllSketchImpl* couponUpdate(int coupon) = 0;
 
     virtual double getEstimate() const;
     virtual double getCompositeEstimate() const;

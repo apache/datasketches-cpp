@@ -12,7 +12,7 @@
 
 namespace datasketches {
 
-class AuxHashMap {
+class AuxHashMap final {
   public:
     explicit AuxHashMap(int lgAuxArrInts, int lgConfigK);
     explicit AuxHashMap(AuxHashMap& that);

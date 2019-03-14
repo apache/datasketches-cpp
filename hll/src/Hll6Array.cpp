@@ -76,5 +76,28 @@ int Hll6Array::getHllByteArrBytes() const {
   return hll6ArrBytes(lgConfigK);
 }
 
+HllSketchImpl* Hll6Array::couponUpdate(const int coupon) {
+  const int configKmask = (1 << getLgConfigK()) - 1;
+  const int slotNo = HllUtil::getLow26(coupon) & configKmask;
+  const int newVal = HllUtil::getValue(coupon);
+  if (newVal <= 0) {
+    throw std::logic_error("newVal must be a positive integer: " + std::to_string(newVal));
+  }
+
+  const int curVal = getSlot(slotNo);
+  if (newVal > curVal) {
+    putSlot(slotNo, newVal);
+    hipAndKxQIncrementalUpdate(*this, curVal, newVal);
+    if (curVal == 0) {
+      decNumAtCurMin(); // interpret numAtCurMin as num zeros
+      if (getNumAtCurMin() < 0) { 
+        throw std::logic_error("getNumAtCurMin() must return a nonnegative integer: " + std::to_string(getNumAtCurMin()));
+      }
+    }
+  }
+  return this;
+}
+
+
 }
 

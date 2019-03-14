@@ -12,7 +12,7 @@
 
 namespace datasketches {
 
-class Hll4Array : public HllArray {
+class Hll4Array final : public HllArray {
   public:
     explicit Hll4Array(int lgConfigK);
     explicit Hll4Array(const Hll4Array& that);
@@ -24,13 +24,13 @@ class Hll4Array : public HllArray {
     virtual std::unique_ptr<PairIterator> getIterator() const;
     virtual std::unique_ptr<PairIterator> getAuxIterator() const;
 
-    virtual int getSlot(int slotNo) const;
-    virtual void putSlot(int slotNo, int value);
+    virtual int getSlot(int slotNo) const final;
+    virtual void putSlot(int slotNo, int value) final;
 
     virtual int getUpdatableSerializationBytes() const;
     virtual int getHllByteArrBytes() const;
 
-    virtual HllSketchImpl* couponUpdate(int coupon);
+    virtual HllSketchImpl* couponUpdate(int coupon) final;
 
     virtual AuxHashMap* getAuxHashMap() const;
     // does *not* delete old map if overwriting
