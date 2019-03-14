@@ -10,7 +10,7 @@ TARGET := $(TARGETDIR)/$(LIBRARY)
 INC := -I /usr/local/include
 LIB := -L /usr/local/lib -lcppunit -L lib -l$(LIB_BASE_NAME)
 
-MODULES := hll cpc kll
+MODULES := hll cpc kll fi
 
 .PHONY: all
 all: $(MODULES) $(LIBRARY)
