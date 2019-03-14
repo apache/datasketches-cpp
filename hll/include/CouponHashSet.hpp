@@ -10,7 +10,7 @@
 
 namespace datasketches {
 
-class CouponHashSet : public CouponList {
+class CouponHashSet final : public CouponList {
   public:
     static CouponHashSet* newSet(const void* bytes, size_t len);
     static CouponHashSet* newSet(std::istream& is);

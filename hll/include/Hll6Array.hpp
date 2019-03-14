@@ -11,7 +11,7 @@
 
 namespace datasketches {
 
-class Hll6Array : public HllArray {
+class Hll6Array final : public HllArray {
   public:
     explicit Hll6Array(int lgConfigK);
     explicit Hll6Array(const Hll6Array& that);
@@ -22,8 +22,10 @@ class Hll6Array : public HllArray {
 
     virtual std::unique_ptr<PairIterator> getIterator() const;
 
-    virtual int getSlot(int slotNo) const;
-    virtual void putSlot(int slotNo, int value);
+    virtual int getSlot(int slotNo) const final;
+    virtual void putSlot(int slotNo, int value) final;
+
+    virtual HllSketchImpl* couponUpdate(int coupon) final;
 
     virtual int getHllByteArrBytes() const;
 

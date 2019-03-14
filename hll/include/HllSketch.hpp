@@ -19,7 +19,7 @@ namespace datasketches {
 class HllSketchImpl;
 
 // Contains the non-public API for HllSketch
-class HllSketchPvt : public HllSketch {
+class HllSketchPvt final : public HllSketch {
   public:
     explicit HllSketchPvt(int lgConfigK, TgtHllType tgtHllType = HLL_4);
     static std::unique_ptr<HllSketchPvt> deserialize(std::istream& is);

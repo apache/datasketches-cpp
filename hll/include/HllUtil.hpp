@@ -8,6 +8,7 @@
 
 #include "MurmurHash3.h"
 #include "RelativeErrorTables.hpp"
+#include "CommonUtil.hpp"
 
 #include <cmath>
 #include <stdexcept>
@@ -17,7 +18,7 @@ namespace datasketches {
 
 enum CurMode { LIST = 0, SET, HLL };
 
-class HllUtil {
+class HllUtil final {
 public:
   // preamble stuff
   static const int SER_VER = 1;
@@ -100,7 +101,7 @@ public:
   static unsigned int ceilingPowerOf2(unsigned int n);
   static unsigned int simpleIntLog2(unsigned int n); // n must be power of 2
   static unsigned int getNumberOfLeadingZeros(uint64_t x);
-  static unsigned int numberOfTrailingZeros(unsigned int n);
+  static unsigned int numberOfTrailingZeros(uint32_t n);
   static int computeLgArrInts(CurMode mode, int count, int lgConfigK);
   static double getRelErr(bool upperBound, bool unioned,
                           int lgConfigK, int numStdDev);
@@ -108,14 +109,14 @@ public:
 
 inline int HllUtil::coupon(const uint64_t hash[]) {
   int addr26 = (int) (hash[0] & KEY_MASK_26);
-  int lz = getNumberOfLeadingZeros(hash[1]);
+  int lz = CommonUtil::getNumberOfLeadingZeros(hash[1]);
   int value = ((lz > 62 ? 62 : lz) + 1); 
   return (value << KEY_BITS_26) | addr26;
 }
 
 inline int HllUtil::coupon(const HashState& hashState) {
-  int addr26 = (int) (hashState.h1& KEY_MASK_26);
-  int lz = getNumberOfLeadingZeros(hashState.h2);
+  int addr26 = (int) (hashState.h1 & KEY_MASK_26);
+  int lz = CommonUtil::getNumberOfLeadingZeros(hashState.h2);  
   int value = ((lz > 62 ? 62 : lz) + 1); 
   return (value << KEY_BITS_26) | addr26;
 }
@@ -192,7 +193,7 @@ inline unsigned int HllUtil::simpleIntLog2(unsigned int n) {
 
 // taken from https://graphics.stanford.edu/~seander/bithacks.html
 // input is 32-bit word to count zero bits on right
-inline unsigned int HllUtil::numberOfTrailingZeros(unsigned int v) {
+inline unsigned int HllUtil::numberOfTrailingZeros(uint32_t v) {
   unsigned int c;     // c will be the number of zero bits on the right,
                       // so if v is 1101000 (base 2), then c will be 3
   // NOTE: if 0 == v, then c = 31.
@@ -220,21 +221,6 @@ inline unsigned int HllUtil::numberOfTrailingZeros(unsigned int v) {
     c -= v & 0x1;
   }
   return c;	
-}
-
-inline unsigned int HllUtil::getNumberOfLeadingZeros(const uint64_t x) {
-  if (x == 0)
-    return 64;
-
-  // we know at least some 1 bit, so iterate until it's in leftmost position
-  // -- making endian assumptions here
-  unsigned int n = 0;
-  uint64_t val = x;
-  while ((val & 0x8000000000000000L) == 0) {
-    ++n;
-    val <<= 1;
-  }
-  return n;
 }
 
 inline int HllUtil::computeLgArrInts(CurMode mode, int count, int lgConfigK) {

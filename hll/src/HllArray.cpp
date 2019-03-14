@@ -301,28 +301,6 @@ void HllArray::serialize(std::ostream& os, const bool compact) const {
   }
 }
 
-HllSketchImpl* HllArray::couponUpdate(const int coupon) { // used by HLL_8 and HLL_6
-  const int configKmask = (1 << getLgConfigK()) - 1;
-  const int slotNo = HllUtil::getLow26(coupon) & configKmask;
-  const int newVal = HllUtil::getValue(coupon);
-  if (newVal <= 0) {
-    throw std::logic_error("newVal must be a positive integer: " + std::to_string(newVal));
-  }
-
-  const int curVal = getSlot(slotNo);
-  if (newVal > curVal) {
-    putSlot(slotNo, newVal);
-    hipAndKxQIncrementalUpdate(*this, curVal, newVal);
-    if (curVal == 0) {
-      decNumAtCurMin(); // interpret numAtCurMin as num zeros
-      if (getNumAtCurMin() < 0) { 
-        throw std::logic_error("getNumAtCurMin() must return a nonnegative integer: " + std::to_string(getNumAtCurMin()));
-      }
-    }
-  }
-  return this;
-}
-
 HllSketchImpl* HllArray::reset() {
   return new CouponList(lgConfigK, tgtHllType, CurMode::LIST);
 }

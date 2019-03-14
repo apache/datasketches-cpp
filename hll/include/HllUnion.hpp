@@ -36,7 +36,7 @@ namespace datasketches {
  * @author Lee Rhodes
  * @author Kevin Lang
  */
-class HllUnionPvt : public HllUnion {
+class HllUnionPvt final : public HllUnion {
   public:
     explicit HllUnionPvt(int lgMaxK);
     explicit HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch);
