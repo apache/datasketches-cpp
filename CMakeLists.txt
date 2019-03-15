@@ -57,9 +57,10 @@ add_subdirectory(common)
 add_subdirectory(hll)
 add_subdirectory(cpc)
 add_subdirectory(kll)
+add_subdirectory(fi)
 add_subdirectory(python)
 
-target_link_libraries(datasketches PUBLIC hll cpc kll)
+target_link_libraries(datasketches PUBLIC hll cpc kll fi)
 
 set_target_properties(datasketches PROPERTIES
   LINKER_LANGUAGE CXX
