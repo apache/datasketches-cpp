@@ -99,7 +99,7 @@ class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
     std::cerr << "num active: " << sketch.get_num_active_items() << std::endl;
 
     std::cerr << "get frequent items" << std::endl;
-    auto items = sketch.get_frequent_items(frequent_A_sketch::error_type::NO_FALSE_POSITIVES);
+    auto items = sketch.get_frequent_items(frequent_items_error_type::NO_FALSE_POSITIVES);
     CPPUNIT_ASSERT_EQUAL(1, (int) items.size()); // only 1 item should be above threshold
     CPPUNIT_ASSERT_EQUAL(1, items[0].get_item().get_value());
     CPPUNIT_ASSERT_EQUAL(10ULL, items[0].get_estimate());

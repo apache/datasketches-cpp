@@ -21,6 +21,7 @@ target_link_libraries(python
   hll
   kll
   cpc
+  fi
   ${Python_LIBRARIES}
   Boost::python${PYTHON_VERSION_SUFFIX}
 )
@@ -51,4 +52,5 @@ target_sources(python
     src/hll_wrapper.cpp
     src/kll_wrapper.cpp
     src/cpc_wrapper.cpp
+    src/fi_wrapper.cpp
 )

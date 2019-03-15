@@ -1,11 +1,5 @@
 add_executable(kll_test)
 
-# target_include_directories(kll_test
-#   PRIVATE
-#     include
-#     ${CPPUNIT_INCLUDE_DIR}
-# )
-
 target_link_libraries(kll_test kll common_test)
 
 set_target_properties(kll_test PROPERTIES

@@ -34,13 +34,16 @@ template<typename T> struct serde {
   size_t deserialize(const char* ptr, T* items, unsigned num); // items are not initialized
 };
 
+enum frequent_items_error_type { NO_FALSE_POSITIVES, NO_FALSE_NEGATIVES };
+
 // for serialization as raw bytes
 typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
 
 template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class frequent_items_sketch {
 public:
-  enum error_type { NO_FALSE_POSITIVES, NO_FALSE_NEGATIVES };
+  static const uint64_t USE_MAX_ERROR = 0; // used in get_frequent_items
+
   explicit frequent_items_sketch(uint8_t lg_max_map_size);
   class row;
   void update(const T& item, uint64_t weight = 1);
@@ -57,8 +60,7 @@ public:
   static double get_epsilon(uint8_t lg_max_map_size);
   static double get_apriori_error(uint8_t lg_max_map_size, uint64_t estimated_total_weight);
   typedef typename std::allocator_traits<A>::template rebind_alloc<row> AllocRow;
-  std::vector<row, AllocRow> get_frequent_items(error_type err_type) const;
-  std::vector<row, AllocRow> get_frequent_items(uint64_t threshold, error_type err_type) const;
+  std::vector<row, AllocRow> get_frequent_items(frequent_items_error_type err_type, uint64_t threshold = USE_MAX_ERROR) const;
   size_t get_serialized_size_bytes() const;
   void serialize(std::ostream& os) const;
   std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
@@ -66,7 +68,7 @@ public:
   static frequent_items_sketch deserialize(const void* bytes, size_t size);
   void to_stream(std::ostream& os, bool print_items = false) const;
 private:
-  static constexpr uint8_t LG_MIN_MAP_SIZE = 3;
+  static const uint8_t LG_MIN_MAP_SIZE = 3;
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t FAMILY_ID = 10;
   static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
@@ -83,11 +85,15 @@ private:
   static void check_size(uint8_t lg_cur_size, uint8_t lg_max_size);
 };
 
+// clang++ seems to require this declaration for CMAKE_BUILD_TYPE='Debug"
+template<typename T, typename H, typename E, typename S, typename A>
+const uint8_t frequent_items_sketch<T,H,E,S,A>::LG_MIN_MAP_SIZE;
+
 template<typename T, typename H, typename E, typename S, typename A>
 frequent_items_sketch<T, H, E, S, A>::frequent_items_sketch(uint8_t lg_max_map_size):
 total_weight(0),
 offset(0),
-map(LG_MIN_MAP_SIZE, std::max(lg_max_map_size, LG_MIN_MAP_SIZE))
+map(frequent_items_sketch::LG_MIN_MAP_SIZE, std::max(lg_max_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE))
 {
 }
 
@@ -178,12 +184,6 @@ double frequent_items_sketch<T, H, E, S, A>::get_apriori_error(uint8_t lg_max_ma
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
-std::vector<typename frequent_items_sketch<T, H, E, S, A>::row, typename std::allocator_traits<A>::template rebind_alloc<typename frequent_items_sketch<T, H, E, S, A>::row>>
-frequent_items_sketch<T, H, E, S, A>::get_frequent_items(error_type err_type) const {
-  return get_frequent_items(get_maximum_error(), err_type);
-}
-
-template<typename T, typename H, typename E, typename S, typename A>
 class frequent_items_sketch<T, H, E, S, A>::row {
 public:
   row(const T& item, uint64_t estimate, uint64_t lower_bound, uint64_t upper_bound):
@@ -201,7 +201,11 @@ private:
 
 template<typename T, typename H, typename E, typename S, typename A>
 std::vector<typename frequent_items_sketch<T, H, E, S, A>::row, typename frequent_items_sketch<T, H, E, S, A>::AllocRow>
-frequent_items_sketch<T, H, E, S, A>::get_frequent_items(uint64_t threshold, error_type err_type) const {
+frequent_items_sketch<T, H, E, S, A>::get_frequent_items(frequent_items_error_type err_type, uint64_t threshold) const {
+  if (threshold == USE_MAX_ERROR) {
+    threshold = get_maximum_error();
+  }
+
   std::vector<row, AllocRow> items;
   for (auto &it: map) {
     const uint64_t est = it.second + offset;

@@ -8,6 +8,12 @@
 
 #include <frequent_items_sketch.hpp>
 
+#ifdef TEST_BINARY_INPUT_PATH
+static std::string testBinaryInputPath = TEST_BINARY_INPUT_PATH;
+#else
+static std::string testBinaryInputPath = "";
+#endif
+
 namespace datasketches {
 
 class frequent_items_sketch_test: public CppUnit::TestFixture {
@@ -111,14 +117,14 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(35ULL, sketch.get_total_weight());
 
-    auto items = sketch.get_frequent_items(frequent_items_sketch<int>::error_type::NO_FALSE_POSITIVES);
+    auto items = sketch.get_frequent_items(frequent_items_error_type::NO_FALSE_POSITIVES);
     CPPUNIT_ASSERT_EQUAL(2, (int) items.size()); // only 2 items (1 and 7) should have counts more than 1
     CPPUNIT_ASSERT_EQUAL(7, items[0].get_item());
     CPPUNIT_ASSERT_EQUAL(15ULL, items[0].get_estimate());
     CPPUNIT_ASSERT_EQUAL(1, items[1].get_item());
     CPPUNIT_ASSERT_EQUAL(10ULL, items[1].get_estimate());
 
-    items = sketch.get_frequent_items(frequent_items_sketch<int>::error_type::NO_FALSE_NEGATIVES);
+    items = sketch.get_frequent_items(frequent_items_error_type::NO_FALSE_NEGATIVES);
     CPPUNIT_ASSERT(2 <= (int) items.size()); // at least 2 items
     CPPUNIT_ASSERT(12 >= (int) items.size()); // but not more than 12 items
   }
@@ -185,7 +191,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(46ULL, sketch1.get_total_weight());
     CPPUNIT_ASSERT(2U <= sketch1.get_num_active_items());
 
-    auto items = sketch1.get_frequent_items(2, frequent_items_sketch<int>::error_type::NO_FALSE_POSITIVES);
+    auto items = sketch1.get_frequent_items(frequent_items_error_type::NO_FALSE_POSITIVES, 2);
     CPPUNIT_ASSERT_EQUAL(2, (int) items.size()); // only 2 items (1 and 21) should be above threshold
     CPPUNIT_ASSERT_EQUAL(21, items[0].get_item());
     CPPUNIT_ASSERT(11ULL <= items[0].get_estimate()); // always overestimated
@@ -196,7 +202,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
   void deserialize_from_java_long() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/longs_sketch_from_java.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "longs_sketch_from_java.bin", std::ios::binary);
     auto sketch = frequent_items_sketch<long long>::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(4ULL, sketch.get_total_weight());
@@ -210,7 +216,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
   void deserialize_from_java_string() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/items_sketch_string_from_java.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "items_sketch_string_from_java.bin", std::ios::binary);
     auto sketch = frequent_items_sketch<std::string>::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(4ULL, sketch.get_total_weight());
@@ -224,7 +230,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
   void deserialize_from_java_string_utf8() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/items_sketch_string_utf8_from_java.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "items_sketch_string_utf8_from_java.bin", std::ios::binary);
     auto sketch = frequent_items_sketch<std::string>::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(10ULL, sketch.get_total_weight());

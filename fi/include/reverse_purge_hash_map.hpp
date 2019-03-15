@@ -62,6 +62,10 @@ private:
   uint64_t purge();
 };
 
+// clang++ seems to require this declaration for CMAKE_BUILD_TYPE='Debug"
+template<typename T, typename H, typename E, typename A>
+constexpr uint32_t reverse_purge_hash_map<T, H, E, A>::MAX_SAMPLE_SIZE;
+
 // This iterator uses strides based on golden ratio to avoid clustering during merge
 template<typename T, typename H, typename E, typename A>
 class reverse_purge_hash_map<T, H, E, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
@@ -85,7 +89,7 @@ public:
     return std::pair<const T&, const uint64_t>(map->keys[index], map->values[index]);
   }
 private:
-  static constexpr double GOLDEN_RATIO_RECIPROCAL = (sqrt(5) - 1) / 2; //.618...
+  static constexpr double GOLDEN_RATIO_RECIPROCAL = 0.6180339887498949; // = (sqrt(5) - 1) / 2
   const reverse_purge_hash_map<T, H, E, A>* map;
   uint32_t index;
   uint32_t count;
