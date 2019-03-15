@@ -15,6 +15,7 @@ class reverse_purge_hash_map_test: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(reverse_purge_hash_map_test);
   CPPUNIT_TEST(empty);
   CPPUNIT_TEST(one_item);
+  CPPUNIT_TEST(iterator);
   CPPUNIT_TEST_SUITE_END();
 
   void empty() {
@@ -28,6 +29,14 @@ class reverse_purge_hash_map_test: public CppUnit::TestFixture {
     map.adjust_or_insert(1, 1);
     CPPUNIT_ASSERT_EQUAL(1U, map.get_num_active());
     CPPUNIT_ASSERT_EQUAL(1ULL, map.get(1));
+  }
+
+  void iterator() {
+    reverse_purge_hash_map<int> map(3, 4);
+    for (int i = 0; i < 11; i++) map.adjust_or_insert(i, 1); // this should fit with no purge
+    int sum = 0;
+    for (auto &it: map) sum += it.second;
+    CPPUNIT_ASSERT_EQUAL(11, sum);
   }
 
 };

@@ -9,6 +9,7 @@
 #include <memory>
 #include <algorithm>
 #include <iterator>
+#include <cmath>
 
 namespace datasketches {
 
@@ -61,20 +62,36 @@ private:
   uint64_t purge();
 };
 
+// This iterator uses strides based on golden ratio to avoid clustering during merge
 template<typename T, typename H, typename E, typename A>
 class reverse_purge_hash_map<T, H, E, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
 public:
   friend class reverse_purge_hash_map<T, H, E, A>;
-  const_iterator(const const_iterator& other) : map(other.map), index(other.index) {}
-  const_iterator& operator++() { while (++index < (1U << map->lg_cur_size) and !map->is_active(index)); return *this; }
+  const_iterator(const const_iterator& other) : map(other.map), index(other.index), count(other.count), stride(other.stride) {}
+  const_iterator& operator++() {
+    ++count;
+    if (count < map->num_active) {
+      const uint32_t mask = (1 << map->lg_cur_size) - 1;
+      do {
+        index = (index + stride) & mask;
+      } while (!map->is_active(index));
+    }
+    return *this;
+  }
   const_iterator operator++(int) { const_iterator tmp(*this); operator++(); return tmp; }
-  bool operator==(const const_iterator& rhs) const { return index == rhs.index; }
-  bool operator!=(const const_iterator& rhs) const { return index != rhs.index; }
-  const std::pair<const T&, const uint64_t> operator*() { return std::pair<const T&, const uint64_t>(map->keys[index], map->values[index]); }
+  bool operator==(const const_iterator& rhs) const { return count == rhs.count; }
+  bool operator!=(const const_iterator& rhs) const { return count != rhs.count; }
+  const std::pair<const T&, const uint64_t> operator*() {
+    return std::pair<const T&, const uint64_t>(map->keys[index], map->values[index]);
+  }
 private:
+  static constexpr double GOLDEN_RATIO_RECIPROCAL = (sqrt(5) - 1) / 2; //.618...
   const reverse_purge_hash_map<T, H, E, A>* map;
   uint32_t index;
-  const_iterator(const reverse_purge_hash_map<T, H, E, A>* map, uint32_t index): map(map), index(index) {}
+  uint32_t count;
+  uint32_t stride;
+  const_iterator(const reverse_purge_hash_map<T, H, E, A>* map, uint32_t index, uint32_t count):
+    map(map), index(index), count(count), stride(static_cast<uint32_t>((1 << map->lg_cur_size) * GOLDEN_RATIO_RECIPROCAL) | 1) {}
 };
 
 template<typename T, typename H, typename E, typename A>
@@ -221,12 +238,12 @@ typename reverse_purge_hash_map<T, H, E, A>::const_iterator reverse_purge_hash_m
   const uint32_t size = 1 << lg_cur_size;
   uint32_t i = 0;
   while (i < size and !is_active(i)) i++;
-  return reverse_purge_hash_map<T, H, E, A>::const_iterator(this, i);
+  return reverse_purge_hash_map<T, H, E, A>::const_iterator(this, i, 0);
 }
 
 template<typename T, typename H, typename E, typename A>
 typename reverse_purge_hash_map<T, H, E, A>::const_iterator reverse_purge_hash_map<T, H, E, A>::end() const {
-  return reverse_purge_hash_map<T, H, E, A>::const_iterator(this, 1 << lg_cur_size);
+  return reverse_purge_hash_map<T, H, E, A>::const_iterator(this, 1 << lg_cur_size, num_active);
 }
 
 template<typename T, typename H, typename E, typename A>
