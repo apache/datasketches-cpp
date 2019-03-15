@@ -80,7 +80,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
 #ifdef TEST_BINARY_INPUT_PATH
       inputPath = TEST_BINARY_INPUT_PATH;
 #else
-      inputPath = "";
+      inputPath = "test/";
 #endif
 
     std::ifstream ifs;

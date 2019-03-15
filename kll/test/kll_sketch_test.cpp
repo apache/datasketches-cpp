@@ -26,7 +26,7 @@ static const double NUMERIC_NOISE_TOLERANCE = 1E-6;
 #ifdef TEST_BINARY_INPUT_PATH
 static std::string testBinaryInputPath = TEST_BINARY_INPUT_PATH;
 #else
-static std::string testBinaryInputPath = "";
+static std::string testBinaryInputPath = "test/";
 #endif
 
 // --- simple example of kll_sketch<std::string>

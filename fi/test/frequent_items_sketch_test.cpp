@@ -11,7 +11,7 @@
 #ifdef TEST_BINARY_INPUT_PATH
 static std::string testBinaryInputPath = TEST_BINARY_INPUT_PATH;
 #else
-static std::string testBinaryInputPath = "";
+static std::string testBinaryInputPath = "test/";
 #endif
 
 namespace datasketches {
