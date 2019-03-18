@@ -93,6 +93,7 @@ void bind_fi_sketch(const char* name)
 
   bpy::class_<frequent_items_sketch<T>, boost::noncopyable>(name, bpy::init<uint8_t>())
     .def("__str__", &dspy::FISketch_toString<T>, FISketchToStringOverloads())
+    .def("to_string", &dspy::FISketch_toString<T>, FISketchToStringOverloads())
     .def("update", &dspy::FISketch_update<T>, FISketchUpdateOverloads())
     .def("get_frequent_items", &dspy::FISketch_getFrequentItems<T>, FISketchGetFrequentItemsOverloads())
     .def("merge", &frequent_items_sketch<T>::merge)
