@@ -170,12 +170,12 @@ uint64_t frequent_items_sketch<T, H, E, S, A>::get_maximum_error() const {
 
 template<typename T, typename H, typename E, typename S, typename A>
 double frequent_items_sketch<T, H, E, S, A>::get_epsilon() const {
-  return EPSILON_FACTOR / map.get_lg_max_size();
+  return EPSILON_FACTOR / (1 << map.get_lg_max_size());
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
 double frequent_items_sketch<T, H, E, S, A>::get_epsilon(uint8_t lg_max_map_size) {
-  return EPSILON_FACTOR / lg_max_map_size;
+  return EPSILON_FACTOR / (1 << lg_max_map_size);
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
