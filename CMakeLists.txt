@@ -13,7 +13,7 @@ endif()
 
 # set default build type to debug
 # Mostly from: https://blog.kitware.com/cmake-and-the-default-build-type/
-set(default_build_type "Debug")
+set(default_build_type "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
   set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
@@ -25,6 +25,9 @@ endif()
 
 # Ensure builds on Windows export all symbols
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_MACOSX_RPATH ON)
 
 # enable compiler warnings globally
 # derived from https://foonathan.net/blog/2018/10/17/cmake-warnings.html

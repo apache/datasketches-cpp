@@ -63,6 +63,8 @@ class CMakeBuild(build_ext):
                               cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.', '--target', 'python'] + build_args,
                               cwd=self.build_temp)
+        #subprocess.check_call(['cmake', '--build', '.', '--target', 'py_install'] + build_args,
+        #                      cwd=self.build_temp)
         print() # add an empty line to pretty print
 
 setup(
@@ -79,7 +81,8 @@ setup(
     package_dir={'':'python/src'},
     # add an extension module named 'python_cpp_example' to the package 
     # 'python_cpp_example'
-    ext_modules=[CMakeExtension('datasketches/datasketches')],
+    #ext_modules=[CMakeExtension('datasketches/datasketches')],
+    ext_modules=[CMakeExtension('datasketches')],
     # add custom build_ext command
     cmdclass=dict(build_ext=CMakeBuild)
     #zip_safe=False
