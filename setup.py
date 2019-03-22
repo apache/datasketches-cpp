@@ -74,6 +74,9 @@ setup(
     author_email='jon.malkin@yahoo.com',
     description='A wrapper for the C++ Datasketches library',
     long_description='',
+    install_requires=[
+        'cmake>=3.12'
+    ],
     # tell setuptools to look for any packages under 'src'
     packages=find_packages('python/src'),
     # tell setuptools that all packages will be under the 'src' directory
