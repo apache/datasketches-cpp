@@ -48,7 +48,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 ###### OPTIONS ######
 # Enable testing
-option(BUILD_TESTS "Create unit tests using CMake" ON)
+option(BUILD_TESTS "Create unit tests using CMake" OFF)
 if (BUILD_TESTS)
   find_package(CppUnit REQUIRED)
   enable_testing()
