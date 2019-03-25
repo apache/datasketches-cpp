@@ -1,6 +1,8 @@
 add_library(common INTERFACE)
 
-add_subdirectory(test)
+if (BUILD_TESTS)
+  add_subdirectory(test)
+endif()
 
 target_include_directories(common
   INTERFACE

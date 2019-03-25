@@ -4,6 +4,7 @@ project(DataSketches
         LANGUAGES CXX)
 
 include(GNUInstallDirs)
+include(CMakeDependentOption)
 
 ### Require out-of-source builds
 file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
@@ -48,9 +49,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 ###### OPTIONS ######
 # Enable testing
-option(BUILD_TESTS "Create unit tests using CMake" OFF)
-if (BUILD_TESTS)
-  find_package(CppUnit REQUIRED)
+find_package(CppUnit)
+message("CPPUNIT_FOUND: " ${CPPUNIT_FOUND})
+CMAKE_DEPENDENT_OPTION(BUILD_TESTS "Compile unit tests" ON "CPPUNIT_FOUND" OFF)
+message("BUILD_TESTS: " ${BUILD_TESTS})
+if (BUILD_TESTS)  
   enable_testing()
 endif()
 
