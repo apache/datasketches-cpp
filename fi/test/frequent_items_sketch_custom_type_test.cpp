@@ -94,15 +94,15 @@ class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
     A a8(8);
     sketch.update(a8);
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(17ULL, sketch.get_total_weight());
-    CPPUNIT_ASSERT_EQUAL(10ULL, sketch.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(17, (int) sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(10, (int) sketch.get_estimate(1));
     std::cerr << "num active: " << sketch.get_num_active_items() << std::endl;
 
     std::cerr << "get frequent items" << std::endl;
     auto items = sketch.get_frequent_items(frequent_items_error_type::NO_FALSE_POSITIVES);
     CPPUNIT_ASSERT_EQUAL(1, (int) items.size()); // only 1 item should be above threshold
     CPPUNIT_ASSERT_EQUAL(1, items[0].get_item().get_value());
-    CPPUNIT_ASSERT_EQUAL(10ULL, items[0].get_estimate());
+    CPPUNIT_ASSERT_EQUAL(10, (int) items[0].get_estimate());
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     std::cerr << "serialize" << std::endl;
@@ -110,8 +110,8 @@ class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
     std::cerr << "deserialize" << std::endl;
     auto sketch2 = frequent_A_sketch::deserialize(s);
     CPPUNIT_ASSERT(!sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(17ULL, sketch2.get_total_weight());
-    CPPUNIT_ASSERT_EQUAL(10ULL, sketch2.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(17, (int) sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(10, (int) sketch2.get_estimate(1));
     CPPUNIT_ASSERT_EQUAL(sketch.get_num_active_items(), sketch2.get_num_active_items());
     CPPUNIT_ASSERT_EQUAL(sketch.get_maximum_error(), sketch2.get_maximum_error());
     std::cerr << "end" << std::endl;
