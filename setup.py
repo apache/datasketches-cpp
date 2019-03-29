@@ -19,12 +19,12 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def run(self):
-        try:
-            out = subprocess.check_output(['cmake', '--version'])
-        except OSError:
-            raise RuntimeError(
-                "CMake must be installed to build the following extensions: " +
-                ", ".join(e.name for e in self.extensions))
+        # try:
+        #     out = subprocess.check_output(['cmake', '--version'])
+        # except OSError:
+        #     raise RuntimeError(
+        #         "CMake must be installed to build the following extensions: " +
+        #         ", ".join(e.name for e in self.extensions))
 
         # if platform.system() == "Windows":
         #     cmake_version = LooseVersion(re.search(r'version\s*([\d.]+)',
@@ -63,8 +63,6 @@ class CMakeBuild(build_ext):
                               cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.', '--target', 'python'] + build_args,
                               cwd=self.build_temp)
-        #subprocess.check_call(['cmake', '--build', '.', '--target', 'py_install'] + build_args,
-        #                      cwd=self.build_temp)
         print() # add an empty line to pretty print
 
 setup(
@@ -77,15 +75,13 @@ setup(
     install_requires=[
         'cmake>=3.12'
     ],
-    # tell setuptools to look for any packages under 'src'
+    # tell setuptools to look for any packages under 'python/src'
     packages=find_packages('python/src'),
-    # tell setuptools that all packages will be under the 'src' directory
+    # tell setuptools that all packages will be under the 'python/src' directory
     # and nowhere else
     package_dir={'':'python/src'},
-    # add an extension module named 'python_cpp_example' to the package 
-    # 'python_cpp_example'
-    #ext_modules=[CMakeExtension('datasketches/datasketches')],
-    ext_modules=[CMakeExtension('datasketches')],
+    # likely need to add all source paths for proper sdist packages
+    ext_modules=[CMakeExtension('datasketches' [])],
     # add custom build_ext command
     cmdclass=dict(build_ext=CMakeBuild)
     #zip_safe=False
