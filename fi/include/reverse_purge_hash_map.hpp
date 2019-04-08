@@ -27,7 +27,7 @@ class reverse_purge_hash_map {
 public:
   reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size);
   reverse_purge_hash_map(const reverse_purge_hash_map& other);
-  reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept ;
+  reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept;
   ~reverse_purge_hash_map();
   reverse_purge_hash_map& operator=(reverse_purge_hash_map other);
   reverse_purge_hash_map& operator=(reverse_purge_hash_map&& other);
@@ -58,7 +58,7 @@ private:
   void hash_delete(uint32_t probe);
   uint32_t internal_adjust_or_insert(const T& key, uint64_t value);
   uint64_t resize_or_purge_if_needed();
-  void resize(uint8_t new_lg_size);
+  void resize(uint8_t lg_new_size);
   uint64_t purge();
 };
 
@@ -358,18 +358,18 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::resize_or_purge_if_needed() {
 }
 
 template<typename T, typename H, typename E, typename A>
-void reverse_purge_hash_map<T, H, E, A>::resize(uint8_t new_lg_size) {
+void reverse_purge_hash_map<T, H, E, A>::resize(uint8_t lg_new_size) {
   const uint32_t old_size = 1 << lg_cur_size;
   T* old_keys = keys;
   uint64_t* old_values = values;
   uint16_t* old_states = states;
-  const uint32_t new_size = 1 << new_lg_size;
+  const uint32_t new_size = 1 << lg_new_size;
   keys = A().allocate(new_size);
   values = AllocU64().allocate(new_size);
   states = AllocU16().allocate(new_size);
   std::fill(states, &states[new_size], 0);
   num_active = 0;
-  lg_cur_size = new_lg_size;
+  lg_cur_size = lg_new_size;
   for (uint32_t i = 0; i < old_size; i++) {
     if (old_states[i] > 0) {
       adjust_or_insert(std::move(old_keys[i]), old_values[i]);

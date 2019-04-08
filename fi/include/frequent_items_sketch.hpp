@@ -78,7 +78,7 @@ private:
   uint64_t total_weight;
   uint64_t offset;
   reverse_purge_hash_map<T, H, E, A> map;
-  frequent_items_sketch(uint8_t lg_cur_map_size, uint8_t lg_max_map_size);
+  frequent_items_sketch(uint8_t lg_start_map_size, uint8_t lg_max_map_size);
   static void check_preamble_longs(uint8_t preamble_longs, bool is_empty);
   static void check_serial_version(uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
@@ -87,7 +87,7 @@ private:
 
 // clang++ seems to require this declaration for CMAKE_BUILD_TYPE='Debug"
 template<typename T, typename H, typename E, typename S, typename A>
-const uint8_t frequent_items_sketch<T,H,E,S,A>::LG_MIN_MAP_SIZE;
+const uint8_t frequent_items_sketch<T, H, E, S, A>::LG_MIN_MAP_SIZE;
 
 template<typename T, typename H, typename E, typename S, typename A>
 frequent_items_sketch<T, H, E, S, A>::frequent_items_sketch(uint8_t lg_max_map_size):
@@ -98,10 +98,10 @@ map(frequent_items_sketch::LG_MIN_MAP_SIZE, std::max(lg_max_map_size, frequent_i
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
-frequent_items_sketch<T, H, E, S, A>::frequent_items_sketch(uint8_t lg_cur_map_size, uint8_t lg_max_map_size):
+frequent_items_sketch<T, H, E, S, A>::frequent_items_sketch(uint8_t lg_start_map_size, uint8_t lg_max_map_size):
 total_weight(0),
 offset(0),
-map(lg_cur_map_size, lg_max_map_size)
+map(std::max(lg_start_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE), std::max(lg_max_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE))
 {
 }
 
@@ -186,17 +186,16 @@ double frequent_items_sketch<T, H, E, S, A>::get_apriori_error(uint8_t lg_max_ma
 template<typename T, typename H, typename E, typename S, typename A>
 class frequent_items_sketch<T, H, E, S, A>::row {
 public:
-  row(const T& item, uint64_t estimate, uint64_t lower_bound, uint64_t upper_bound):
-    item(item), estimate(estimate), lower_bound(lower_bound), upper_bound(upper_bound) {}
-  const T& get_item() const { return item; }
-  uint64_t get_estimate() const { return estimate; }
-  uint64_t get_lower_bound() const { return lower_bound; }
-  uint64_t get_upper_bound() const { return upper_bound; }
+  row(const T* item, uint64_t weight, uint64_t offset):
+    item(item), weight(weight), offset(offset) {}
+  const T& get_item() const { return *item; }
+  uint64_t get_estimate() const { return weight + offset; }
+  uint64_t get_lower_bound() const { return weight; }
+  uint64_t get_upper_bound() const { return weight + offset; }
 private:
-  T item;
-  uint64_t estimate;
-  uint64_t lower_bound;
-  uint64_t upper_bound;
+  const T* item;
+  uint64_t weight;
+  uint64_t offset;
 };
 
 template<typename T, typename H, typename E, typename S, typename A>
@@ -208,11 +207,10 @@ frequent_items_sketch<T, H, E, S, A>::get_frequent_items(frequent_items_error_ty
 
   std::vector<row, AllocRow> items;
   for (auto &it: map) {
-    const uint64_t est = it.second + offset;
     const uint64_t lb = it.second;
-    const uint64_t ub = est;
+    const uint64_t ub = it.second + offset;
     if ((err_type == NO_FALSE_NEGATIVES and ub > threshold) or (err_type == NO_FALSE_POSITIVES and lb > threshold)) {
-      items.push_back(row(it.first, est, lb, ub));
+      items.push_back(row(&it.first, it.second, offset));
     }
   }
   // sort by estimate in descending order
@@ -491,10 +489,7 @@ void frequent_items_sketch<T, H, E, S, A>::to_stream(std::ostream& os, bool prin
   if (print_items) {
     std::vector<row, AllocRow> items;
     for (auto &it: map) {
-      const uint64_t est = it.second + offset;
-      const uint64_t lb = it.second;
-      const uint64_t ub = est;
-      items.push_back(row(it.first, est, lb, ub));
+      items.push_back(row(&it.first, it.second, offset));
     }
     // sort by estimate in descending order
     std::sort(items.begin(), items.end(), [](row a, row b){ return a.get_estimate() > b.get_estimate(); });
