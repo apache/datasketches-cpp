@@ -85,7 +85,7 @@ public:
   const_iterator operator++(int) { const_iterator tmp(*this); operator++(); return tmp; }
   bool operator==(const const_iterator& rhs) const { return count == rhs.count; }
   bool operator!=(const const_iterator& rhs) const { return count != rhs.count; }
-  const std::pair<const T&, const uint64_t> operator*() {
+  const std::pair<const T&, const uint64_t> operator*() const {
     return std::pair<const T&, const uint64_t>(map->keys[index], map->values[index]);
   }
 private:
