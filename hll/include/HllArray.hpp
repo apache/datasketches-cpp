@@ -102,4 +102,6 @@ class HllArray : public HllSketchImpl {
 
 }
 
+#include "HllArray-internal.hpp"
+
 #endif /* _HLLARRAY_HPP_ */

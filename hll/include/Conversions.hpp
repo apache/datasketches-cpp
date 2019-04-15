@@ -24,4 +24,6 @@ private:
 
 }
 
+#include "Conversions-internal.hpp"
+
 #endif // _CONVERSIONS_HPP_

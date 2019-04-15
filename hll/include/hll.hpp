@@ -18,22 +18,26 @@ enum TgtHllType {
     HLL_8
 };
 
+template<typename A>
 class HllSketch;
+
+template<typename A>
 class HllUnion;
 
-typedef std::unique_ptr<HllSketch> hll_sketch;
-typedef std::unique_ptr<HllUnion> hll_union;
+//typedef std::unique_ptr<HllSketch> hll_sketch;
+//typedef std::unique_ptr<HllUnion> hll_union;
 
+template<typename A = std::allocator<char> >
 class HllSketch {
   public:
-    static hll_sketch newInstance(int lgConfigK, TgtHllType tgtHllType = HLL_4);
-    static hll_sketch deserialize(std::istream& is);
-    static hll_sketch deserialize(const void* bytes, size_t len);
+    static HllSketch<A> newInstance(int lgConfigK, TgtHllType tgtHllType = HLL_4);
+    static HllSketch<A> deserialize(std::istream& is);
+    static HllSketch<A> deserialize(const void* bytes, size_t len);
 
     virtual ~HllSketch();
 
-    hll_sketch copy() const;
-    hll_sketch copyAs(TgtHllType tgtHllType) const;
+    HllSketch<A> copy() const;
+    HllSketch<A> copyAs(TgtHllType tgtHllType) const;
 
     virtual void reset() = 0;
     
@@ -95,11 +99,12 @@ class HllSketch {
 
 };
 
+template<typename A = std::allocator<char> >
 class HllUnion {
   public:
-    static hll_union newInstance(int lgMaxK);
-    static hll_union deserialize(std::istream& is);
-    static hll_union deserialize(const void* bytes, size_t len);
+    static HllUnion<A> newInstance(int lgMaxK);
+    static HllUnion<A> deserialize(std::istream& is);
+    static HllUnion<A> deserialize(const void* bytes, size_t len);
 
     virtual ~HllUnion();
 
@@ -118,7 +123,7 @@ class HllUnion {
 
     virtual void reset() = 0;
 
-    virtual hll_sketch getResult(TgtHllType tgtHllType = HLL_4) const = 0;
+    virtual HllSketch<A> getResult(TgtHllType tgtHllType = HLL_4) const = 0;
 
     virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const = 0;
     virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const = 0;
@@ -135,7 +140,7 @@ class HllUnion {
                                   bool auxDetail = false,
                                   bool all = false) const = 0;                                    
 
-    virtual void update(const HllSketch& sketch) = 0;
+    virtual void update(const HllSketch<A>& sketch) = 0;
     virtual void update(const std::string& datum) = 0;
     virtual void update(uint64_t datum) = 0;
     virtual void update(uint32_t datum) = 0;
@@ -154,11 +159,17 @@ class HllUnion {
                             int lgConfigK, int numStdDev);
 };
 
-std::ostream& operator<<(std::ostream& os, const HllSketch& sketch);
-std::ostream& operator<<(std::ostream& os, hll_sketch& sketch);
-std::ostream& operator<<(std::ostream& os, const HllUnion& hllUnion);
-std::ostream& operator<<(std::ostream& os, hll_union& hllUnion);
+template<typename A>
+static std::ostream& operator<<(std::ostream& os, const HllSketch<A>& sketch);
+//static std::ostream& operator<<(std::ostream& os, HllSketch<A>& sketch);
+
+template<typename A>
+static std::ostream& operator<<(std::ostream& os, const HllUnion<A>& hllUnion);
+//static std::ostream& operator<<(std::ostream& os, hll_union& hllUnion);
 
 } // namespace datasketches
+
+#include "HllSketch.hpp"
+#include "HllUnion.hpp"
 
 #endif // _HLL_HPP_

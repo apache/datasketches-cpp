@@ -3,8 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#ifndef _HLLSKETCHIMPL_H_
-#define _HLLSKETCHIMPL_H_
+#ifndef _HLLSKETCHIMPL_HPP_
+#define _HLLSKETCHIMPL_HPP_
 
 #include "HllUtil.hpp"
 #include "HllSketch.hpp"
@@ -67,4 +67,6 @@ class HllSketchImpl {
 
 }
 
-#endif // _HLLSKETCHIMPL_H_
+#include "HllSketchImpl-internal.hpp"
+
+#endif // _HLLSKETCHIMPL_HPP_

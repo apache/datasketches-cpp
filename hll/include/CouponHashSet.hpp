@@ -39,4 +39,6 @@ class CouponHashSet final : public CouponList {
 
 }
 
+#include "CouponHashSet-internal.hpp"
+
 #endif /* _COUPONHASHSET_HPP_ */

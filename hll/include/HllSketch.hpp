@@ -3,8 +3,8 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#ifndef _HLLSKETCH_H_
-#define _HLLSKETCH_H_
+#ifndef _HLLSKETCH_HPP_
+#define _HLLSKETCH_HPP_
 
 #include "hll.hpp"
 #include "PairIterator.hpp"
@@ -19,21 +19,22 @@ namespace datasketches {
 class HllSketchImpl;
 
 // Contains the non-public API for HllSketch
-class HllSketchPvt final : public HllSketch {
+template<typename A = std::allocator<void>>
+class HllSketchPvt final : public HllSketch<A> {
   public:
     explicit HllSketchPvt(int lgConfigK, TgtHllType tgtHllType = HLL_4);
-    static std::unique_ptr<HllSketchPvt> deserialize(std::istream& is);
-    static std::unique_ptr<HllSketchPvt> deserialize(const void* bytes, size_t len);
+    static HllSketchPvt<A> deserialize(std::istream& is);
+    static HllSketchPvt<A> deserialize(const void* bytes, size_t len);
 
     virtual ~HllSketchPvt();
 
-    HllSketchPvt(const HllSketch& that);
+    HllSketchPvt(const HllSketchPvt& that);
     HllSketchPvt(HllSketchImpl* that);
     
     HllSketchPvt& operator=(HllSketchPvt other);
 
-    virtual std::unique_ptr<HllSketchPvt> copy() const;
-    virtual std::unique_ptr<HllSketchPvt> copyAs(TgtHllType tgtHllType) const;
+    virtual HllSketchPvt<A> copy() const;
+    virtual HllSketchPvt<A> copyAs(TgtHllType tgtHllType) const;
 
     virtual void reset();
 
@@ -91,9 +92,14 @@ class HllSketchPvt final : public HllSketch {
     bool isOutOfOrderFlag() const;
     bool isEstimationMode() const;
 
+  private:
+    typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketchPvt> AllocHllSketch;
+
     HllSketchImpl* hllSketchImpl;
 };
 
 }
 
-#endif // _HLLSKETCH_H_
+#include "HllSketch-internal.hpp"
+
+#endif // _HLLSKETCH_HPP_

@@ -33,25 +33,6 @@ target_sources(hll
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/hll.hpp
   PRIVATE
-    src/AuxHashMap.cpp
-    src/CompositeInterpolationXTable.cpp
-    src/Conversions.cpp
-    src/CouponHashSet.cpp
-    src/CouponList.cpp
-    src/CubicInterpolation.cpp
-    src/HarmonicNumbers.cpp
-    src/Hll4Array.cpp
-    src/Hll6Array.cpp
-    src/Hll8Array.cpp
-    src/HllArray.cpp
-    src/HllPairIterator.cpp
-    src/HllSketch.cpp
-    src/HllSketchImpl.cpp
-    src/HllUnion.cpp
-    src/HllUtil.cpp
-    src/IntArrayPairIterator.cpp
-    src/RelativeErrorTables.cpp
-    # headers
     include/AuxHashMap.hpp
     include/CompositeInterpolationXTable.hpp
     include/Conversions.hpp
@@ -71,4 +52,22 @@ target_sources(hll
     include/IntArrayPairIterator.hpp
     include/PairIterator.hpp
     include/RelativeErrorTables.hpp
+    include/AuxHashMap-internal.hpp
+    include/CompositeInterpolationXTable-internal.hpp
+    include/Conversions-internal.hpp
+    include/CouponHashSet-internal.hpp
+    include/CouponList-internal.hpp
+    include/CubicInterpolation-internal.hpp
+    include/HarmonicNumbers-internal.hpp
+    include/Hll4Array-internal.hpp
+    include/Hll6Array-internal.hpp
+    include/Hll8Array-internal.hpp
+    include/HllArray-internal.hpp
+    include/HllPairIterator-internal.hpp
+    include/HllSketch-internal.hpp
+    include/HllSketchImpl-internal.hpp
+    include/HllUnion-internal.hpp
+    include/IntArrayPairIterator-internal.hpp
+    include/RelativeErrorTables-internal.hpp
+
 )

@@ -62,4 +62,6 @@ class CouponList : public HllSketchImpl {
 
 }
 
+#include "CouponList-internal.hpp"
+
 #endif /* _COUPONLIST_HPP_ */

@@ -34,4 +34,6 @@ class HllPairIterator : public PairIterator {
 
 }
 
+#include "HllPairIterator-internal.hpp"
+
 #endif /* _HLLPAIRITERATOR_HPP_ */

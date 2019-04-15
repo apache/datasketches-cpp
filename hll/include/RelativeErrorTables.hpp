@@ -24,4 +24,6 @@ class RelativeErrorTables {
 
 }
 
+#include "RelativeErrorTables-internal.hpp"
+
 #endif /* _RELATIVEERRORTABLES_HPP_ */
