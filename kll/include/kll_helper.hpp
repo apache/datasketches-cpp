@@ -97,14 +97,14 @@ class kll_helper {
      * Checks the sequential validity of the given array of values.
      * They must be unique, monotonically increasing and not NaN.
      */
-    template <typename T>
+    template <typename T, typename C>
     static typename std::enable_if<std::is_floating_point<T>::value, void>::type
     validate_values(const T* values, uint32_t size) {
       for (uint32_t i = 0; i < size ; i++) {
         if (std::isnan(values[i])) {
           throw std::invalid_argument("Values must not be NaN");
         }
-        if ((i < (size - 1)) and !(values[i] < values[i + 1])) {
+        if ((i < (size - 1)) and !(C()(values[i], values[i + 1]))) {
           throw std::invalid_argument("Values must be unique and monotonically increasing");
         }
       }
@@ -114,11 +114,11 @@ class kll_helper {
      * Checks the sequential validity of the given array of values.
      * They must be unique and monotonically increasing.
      */
-    template <typename T>
+    template <typename T, typename C>
     static typename std::enable_if<!std::is_floating_point<T>::value, void>::type
     validate_values(const T* values, uint32_t size) {
       for (uint32_t i = 0; i < size ; i++) {
-        if ((i < (size - 1)) and !(values[i] < values[i + 1])) {
+        if ((i < (size - 1)) and !(C()(values[i], values[i + 1]))) {
           throw std::invalid_argument("Values must be unique and monotonically increasing");
         }
       }
@@ -156,7 +156,7 @@ class kll_helper {
       }
     }
 
-    template <typename T>
+    template <typename T, typename C>
     static void merge_sorted_arrays(const T* buf_a, uint32_t start_a, uint32_t len_a, const T* buf_b, uint32_t start_b, uint32_t len_b, T* buf_c, uint32_t start_c) {
       const uint32_t len_c(len_a + len_b);
       const uint32_t lim_a(start_a + len_a);
@@ -173,7 +173,7 @@ class kll_helper {
         } else if (b == lim_b) {
           buf_c[c] = std::move(buf_a[a]);
           a++;
-        } else if (buf_a[a] < buf_b[b]) {
+        } else if (C()(buf_a[a], buf_b[b])) {
           buf_c[c] = std::move(buf_a[a]);
           a++;
         } else {
@@ -213,7 +213,7 @@ class kll_helper {
      *
      * returns (finalNumLevels, finalCapacity, finalItemCount)
      */
-    template <typename T>
+    template <typename T, typename C>
     static compress_result general_compress(uint16_t k, uint8_t m, uint8_t num_levels_in, T* in_buf,
             uint32_t* in_levels, T* out_buf, uint32_t* out_levels, bool is_level_zero_sorted)
     {
@@ -268,7 +268,7 @@ class kll_helper {
             randomly_halve_up(in_buf, adj_beg, adj_pop);
           } else { // Level above is nonempty, so halve down, then merge up
             randomly_halve_down(in_buf, adj_beg, adj_pop);
-            merge_sorted_arrays(in_buf, adj_beg, half_adj_pop, in_buf, raw_lim, pop_above, in_buf, adj_beg + half_adj_pop);
+            merge_sorted_arrays<T, C>(in_buf, adj_beg, half_adj_pop, in_buf, raw_lim, pop_above, in_buf, adj_beg + half_adj_pop);
           }
 
           // track the fact that we just eliminated some data

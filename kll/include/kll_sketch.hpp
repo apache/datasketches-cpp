@@ -162,6 +162,7 @@ class kll_sketch {
     std::unique_ptr<double[]> get_CDF(const T* split_points, uint32_t size) const;
     double get_normalized_rank_error(bool pmf) const;
 
+    // implementation for fixed-size arithmetic types (integral and floating point)
     template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
     uint32_t get_serialized_size_bytes() const {
       if (is_empty()) { return EMPTY_SIZE_BYTES; }
@@ -172,6 +173,7 @@ class kll_sketch {
       return DATA_START + num_levels_ * sizeof(uint32_t) + (get_num_retained() + 2) * sizeof(TT);
     }
 
+    // implementation for all other types
     template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
     uint32_t get_serialized_size_bytes() const {
       if (is_empty()) { return EMPTY_SIZE_BYTES; }
@@ -179,7 +181,7 @@ class kll_sketch {
         return DATA_START_SINGLE_ITEM + S().size_of_item(items_[levels_[0]]);
       }
       // the last integer in the levels_ array is not serialized because it can be derived
-      uint32_t size = DATA_START + (num_levels_ * sizeof(uint32_t));
+      uint32_t size = DATA_START + num_levels_ * sizeof(uint32_t);
       size += S().size_of_item(min_value_);
       size += S().size_of_item(max_value_);
       for (auto& it: *this) size += S().size_of_item(it.first);
@@ -270,7 +272,7 @@ class kll_sketch {
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
     void sort_level_zero();
-    std::unique_ptr<kll_quantile_calculator<T>> get_quantile_calculator();
+    std::unique_ptr<kll_quantile_calculator<T, C>> get_quantile_calculator();
     std::unique_ptr<double[]> get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
     void increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
         const T* split_points, uint32_t size, double* buckets) const;
@@ -380,8 +382,8 @@ void kll_sketch<T, C, S, A>::update(const T& value) {
     min_value_ = value;
     max_value_ = value;
   } else {
-    if (value < min_value_) min_value_ = value;
-    if (max_value_ < value) max_value_ = value;
+    if (C()(value, min_value_)) min_value_ = value;
+    if (C()(max_value_, value)) max_value_ = value;
   }
   if (levels_[0] == 0) compress_while_updating();
   n_++;
@@ -408,8 +410,8 @@ void kll_sketch<T, C, S, A>::merge(const kll_sketch& other) {
   if (other.is_estimation_mode()) {
     min_k_ = std::min(min_k_, other.min_k_);
   }
-  if (is_empty() or other.min_value_ < min_value_) min_value_ = other.min_value_;
-  if (is_empty() or max_value_ < other.max_value_) max_value_ = other.max_value_;
+  if (is_empty() or C()(other.min_value_, min_value_)) min_value_ = other.min_value_;
+  if (is_empty() or C()(max_value_, other.max_value_)) max_value_ = other.max_value_;
   assert_correct_total_weight();
 }
 
@@ -476,7 +478,7 @@ T kll_sketch<T, C, S, A>::get_quantile(double fraction) const {
 template<typename T, typename C, typename S, typename A>
 std::unique_ptr<T[]> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions, uint32_t size) const {
   if (is_empty()) { return nullptr; }
-  std::unique_ptr<kll_quantile_calculator<T>> quantile_calculator;
+  std::unique_ptr<kll_quantile_calculator<T, C>> quantile_calculator;
   std::unique_ptr<T[]> quantiles(new T[size]);
   for (uint32_t i = 0; i < size; i++) {
     const double fraction = fractions[i];
@@ -506,7 +508,7 @@ double kll_sketch<T, C, S, A>::get_rank(const T& value) const {
     const auto from_index(levels_[level]);
     const auto to_index(levels_[level + 1]); // exclusive
     for (uint32_t i = from_index; i < to_index; i++) {
-      if (items_[i] < value) {
+      if (C()(items_[i], value)) {
         total += weight;
       } else if ((level > 0) or is_level_zero_sorted_) {
         break; // levels above 0 are sorted, no point comparing further
@@ -708,7 +710,7 @@ kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, std::istream&
   items_ = A().allocate(capacity);
   items_size_ = capacity;
   for (unsigned i = 0; i < items_size_; i++) A().construct(&items_[i], T());
-  const auto num_items(levels_[num_levels_] - levels_[0]);
+  const auto num_items = levels_[num_levels_] - levels_[0];
   S().deserialize(is, &items_[levels_[0]], num_items);
   if (is_single_item) {
     min_value_ = items_[levels_[0]];
@@ -787,13 +789,13 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
 
   // level zero might not be sorted, so we must sort it if we wish to compact it
   if (level == 0) {
-    std::sort(&items_[adj_beg], &items_[adj_beg + adj_pop]);
+    std::sort(&items_[adj_beg], &items_[adj_beg + adj_pop], C());
   }
   if (pop_above == 0) {
     kll_helper::randomly_halve_up(items_, adj_beg, adj_pop);
   } else {
     kll_helper::randomly_halve_down(items_, adj_beg, adj_pop);
-    kll_helper::merge_sorted_arrays(items_, adj_beg, half_adj_pop, items_, raw_lim, pop_above, items_, adj_beg + half_adj_pop);
+    kll_helper::merge_sorted_arrays<T, C>(items_, adj_beg, half_adj_pop, items_, raw_lim, pop_above, items_, adj_beg + half_adj_pop);
   }
   levels_[level + 1] -= half_adj_pop; // adjust boundaries of the level above
   if (odd_pop) {
@@ -875,22 +877,22 @@ void kll_sketch<T, C, S, A>::add_empty_top_level_to_completely_full_sketch() {
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::sort_level_zero() {
   if (!is_level_zero_sorted_) {
-    std::sort(&items_[levels_[0]], &items_[levels_[1]]);
+    std::sort(&items_[levels_[0]], &items_[levels_[1]], C());
     is_level_zero_sorted_ = true;
   }
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<kll_quantile_calculator<T>> kll_sketch<T, C, S, A>::get_quantile_calculator() {
+std::unique_ptr<kll_quantile_calculator<T, C>> kll_sketch<T, C, S, A>::get_quantile_calculator() {
   sort_level_zero();
-  std::unique_ptr<kll_quantile_calculator<T>> quantile_calculator(new kll_quantile_calculator<T>(items_, levels_, num_levels_, n_));
+  std::unique_ptr<kll_quantile_calculator<T, C>> quantile_calculator(new kll_quantile_calculator<T, C>(items_, levels_, num_levels_, n_));
   return std::move(quantile_calculator);
 }
 
 template<typename T, typename C, typename S, typename A>
 std::unique_ptr<double[]> kll_sketch<T, C, S, A>::get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const {
   if (is_empty()) return nullptr;
-  kll_helper::validate_values(split_points, size);
+  kll_helper::validate_values<T, C>(split_points, size);
   std::unique_ptr<double[]> buckets(new double[size + 1]);
   std::fill(&buckets.get()[0], &buckets.get()[size + 1], 0);
   uint8_t level(0);
@@ -928,7 +930,7 @@ void kll_sketch<T, C, S, A>::increment_buckets_unsorted_level(uint32_t from_inde
   for (uint32_t i = from_index; i < to_index; i++) {
     uint32_t j;
     for (j = 0; j < size; j++) {
-      if (items_[i] < split_points[j]) {
+      if (C()(items_[i], split_points[j])) {
         break;
       }
     }
@@ -943,7 +945,7 @@ void kll_sketch<T, C, S, A>::increment_buckets_sorted_level(uint32_t from_index,
   uint32_t i = from_index;
   uint32_t j = 0;
   while ((i <  to_index) and (j < size)) {
-    if (items_[i] < split_points[j]) {
+    if (C()(items_[i], split_points[j])) {
       buckets[j] += weight; // this sample goes into this bucket
       i++; // move on to next sample and see whether it also goes into this bucket
     } else {
@@ -971,7 +973,7 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(const kll_sketch& other, uint64
   populate_work_arrays(other, workbuf.get(), worklevels.get(), provisional_num_levels);
 
   // notice that workbuf is being used as both the input and output here
-  const kll_helper::compress_result result = kll_helper::general_compress(k_, m_, provisional_num_levels, workbuf.get(),
+  const kll_helper::compress_result result = kll_helper::general_compress<T, C>(k_, m_, provisional_num_levels, workbuf.get(),
       worklevels.get(), workbuf.get(), outlevels.get(), is_level_zero_sorted_);
   const uint8_t final_num_levels = result.final_num_levels;
   const uint32_t final_capacity = result.final_capacity;
@@ -1023,7 +1025,7 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
     } else if ((self_pop == 0) and (other_pop > 0)) {
       std::copy(&other.items_[other.levels_[lvl]], &other.items_[other.levels_[lvl] + other_pop], &workbuf[worklevels[lvl]]);
     } else if ((self_pop > 0) and (other_pop > 0)) {
-      kll_helper::merge_sorted_arrays(items_, levels_[lvl], self_pop, other.items_,
+      kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_,
           other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
     }
   }
