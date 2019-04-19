@@ -12,7 +12,7 @@
 
 namespace datasketches {
 
-template <typename T>
+template <typename T, typename C>
 class kll_quantile_calculator {
   public:
     // assumes that all levels are sorted including level 0
@@ -141,7 +141,7 @@ class kll_quantile_calculator {
       auto i_dst = from_index_1;
 
       while ((i_src_1 < to_index_1) and (i_src_2 < to_index_2)) {
-        if (items_src[i_src_1] < items_src[i_src_2]) {
+        if (C()(items_src[i_src_1], items_src[i_src_2])) {
           items_dst[i_dst] = items_src[i_src_1];
           weights_dst[i_dst] = weights_src[i_src_1];
           i_src_1++;
