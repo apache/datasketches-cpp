@@ -27,6 +27,6 @@ class HarmonicNumbers {
 
 }
 
-#include "HarmonicNumbers-internal.hpp"
+//#include "HarmonicNumbers-internal.hpp"
 
 #endif /* _HARMONICNUMBERS_HPP_ */

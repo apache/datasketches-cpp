@@ -3,14 +3,7 @@
  * Apache License 2.0. See LICENSE file at the project root for terms.
  */
 
-#include "hll.hpp"
-#include "CouponList.hpp"
-#include "CouponHashSet.hpp"
-#include "HllArray.hpp"
-
-#include "HllSketch.hpp"
-#include "HllUnion.hpp"
-#include "HllUtil.hpp"
+#include "AuxHashMap.hpp"
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>

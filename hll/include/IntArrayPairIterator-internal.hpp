@@ -52,7 +52,7 @@ int IntArrayPairIterator::getIndex() {
 }
 
 int IntArrayPairIterator::getKey() {
-  return HllUtil::getLow26(pair);
+  return HllUtil<>::getLow26(pair);
 }
 
 int IntArrayPairIterator::getPair() {
@@ -64,7 +64,7 @@ int IntArrayPairIterator::getSlot() {
 }
 
 int IntArrayPairIterator::getValue() {
-  return HllUtil::getValue(pair);
+  return HllUtil<>::getValue(pair);
 }
 
 bool IntArrayPairIterator::nextAll() {
@@ -78,7 +78,7 @@ bool IntArrayPairIterator::nextAll() {
 bool IntArrayPairIterator::nextValid() {
   while (++index < lengthPairs) {
     const int p = array[index];
-    if (p != HllUtil::EMPTY) {
+    if (p != HllUtil<>::EMPTY) {
       pair = p;
       return true;
     }

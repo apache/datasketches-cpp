@@ -39,6 +39,6 @@ class IntArrayPairIterator : public PairIterator {
 
 }
 
-#include "IntArrayPairIterator-internal.hpp"
+//#include "IntArrayPairIterator-internal.hpp"
 
 #endif /* _INTARRAYPAIRITERATOR_HPP_ */

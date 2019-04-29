@@ -304,7 +304,7 @@ std::pair<void_ptr_with_deleter, const size_t> frequent_items_sketch<T, H, E, S,
   const uint8_t flags_byte(
     (is_empty() ? 1 << flags::IS_EMPTY : 0)
   );
-  copy_to_mem(&flags_byte, &ptr, sizeof(uint8_t));
+  copy_to_mem(&flags_byte, &ptr, sizeof(uint8_t));                                                                                                         
   const uint16_t unused16 = 0;
   copy_to_mem(&unused16, &ptr, sizeof(uint16_t));
   if (!is_empty()) {

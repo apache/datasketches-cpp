@@ -8,16 +8,19 @@
 
 #include "HllSketchImpl.hpp"
 #include "HllUtil.hpp"
-#include "AuxHashMap.hpp"
+//#include "AuxHashMap.hpp"
 
 namespace datasketches {
+
+class HllSketchImplFactory;
+class AuxHashMap;
 
 class HllArray : public HllSketchImpl {
   public:
     explicit HllArray(int lgConfigK, TgtHllType tgtHllType);
     explicit HllArray(const HllArray& that);
 
-    static HllArray* newHll(int lgConfigK, TgtHllType tgtHllType);
+    //static HllArray* newHll(int lgConfigK, TgtHllType tgtHllType);
     static HllArray* newHll(const void* bytes, size_t len);
     static HllArray* newHll(std::istream& is);
 
@@ -36,7 +39,7 @@ class HllArray : public HllSketchImpl {
     virtual double getLowerBound(int numStdDev) const;
     virtual double getUpperBound(int numStdDev) const;
 
-    virtual HllSketchImpl* reset();
+    //virtual HllSketchImpl* reset();
 
     void addToHipAccum(double delta);
 
@@ -97,11 +100,12 @@ class HllArray : public HllSketchImpl {
     int numAtCurMin; //interpreted as num zeros when curMin == 0
     bool oooFlag; //Out-Of-Order Flag
 
-    friend class Conversions;
+    //friend class Conversions;
+    friend class HllSketchImplFactory;
 };
 
 }
 
-#include "HllArray-internal.hpp"
+//#include "HllArray-internal.hpp"
 
 #endif /* _HLLARRAY_HPP_ */

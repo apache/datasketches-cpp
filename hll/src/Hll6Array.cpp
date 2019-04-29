@@ -66,7 +66,7 @@ void Hll6Array::putSlot(const int slotNo, const int value) {
   const int byteIdx = startBit >> 3;
   const uint16_t valShifted = (value & 0x3F) << shift;
   uint16_t curMasked = (hllByteArr[byteIdx + 1] << 8) | hllByteArr[byteIdx];
-  curMasked &= (~(HllUtil::VAL_MASK_6 << shift));
+  curMasked &= (~(HllUtil<>::VAL_MASK_6 << shift));
   uint16_t insert = curMasked | valShifted;
   hllByteArr[byteIdx]     = insert & 0xFF;
   hllByteArr[byteIdx + 1] = (insert & 0xFF00) >> 8;
@@ -78,8 +78,8 @@ int Hll6Array::getHllByteArrBytes() const {
 
 HllSketchImpl* Hll6Array::couponUpdate(const int coupon) {
   const int configKmask = (1 << getLgConfigK()) - 1;
-  const int slotNo = HllUtil::getLow26(coupon) & configKmask;
-  const int newVal = HllUtil::getValue(coupon);
+  const int slotNo = HllUtil<>::getLow26(coupon) & configKmask;
+  const int newVal = HllUtil<>::getValue(coupon);
   if (newVal <= 0) {
     throw std::logic_error("newVal must be a positive integer: " + std::to_string(newVal));
   }

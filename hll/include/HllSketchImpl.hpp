@@ -7,7 +7,7 @@
 #define _HLLSKETCHIMPL_HPP_
 
 #include "HllUtil.hpp"
-#include "HllSketch.hpp"
+#include "hll.hpp" // for TgtHllType
 
 #include <memory>
 
@@ -20,12 +20,13 @@ class HllSketchImpl {
 
     virtual void serialize(std::ostream& os, bool compact) const = 0;
     virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serialize(bool compact) const = 0;
-    static HllSketchImpl* deserialize(std::istream& os);
-    static HllSketchImpl* deserialize(const void* bytes, size_t len);
+    //static HllSketchImpl* deserialize(std::istream& os);
+    //static HllSketchImpl* deserialize(const void* bytes, size_t len);
 
     virtual HllSketchImpl* copy() const = 0;
     virtual HllSketchImpl* copyAs(TgtHllType tgtHllType) const = 0;
-    virtual HllSketchImpl* reset() = 0;
+    //virtual HllSketchImpl* reset() = 0;
+    HllSketchImpl* reset();
 
     virtual HllSketchImpl* couponUpdate(int coupon) = 0;
 
@@ -67,6 +68,6 @@ class HllSketchImpl {
 
 }
 
-#include "HllSketchImpl-internal.hpp"
+//#include "HllSketchImpl-internal.hpp"
 
 #endif // _HLLSKETCHIMPL_HPP_

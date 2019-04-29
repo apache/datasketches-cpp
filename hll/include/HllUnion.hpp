@@ -10,7 +10,7 @@
 #include "HllUtil.hpp"
 #include "HllSketch.hpp"
 
-namespace datasketches {
+//namespace datasketches {
 
 /**
  * This performs union operations for HLL sketches. This union operator is configured with a
@@ -36,6 +36,7 @@ namespace datasketches {
  * @author Lee Rhodes
  * @author Kevin Lang
  */
+/*
 template<typename A = std::allocator<void>>
 class HllUnionPvt final : public HllUnion<A> {
   public:
@@ -105,7 +106,7 @@ class HllUnionPvt final : public HllUnion<A> {
 
   private:
     typedef typename std::allocator_traits<A>::template rebind_alloc<HllUnionPvt> AllocHllUnion;
-
+  */
    /**
     * Union the given source and destination sketches. This static method examines the state of
     * the current internal gadget and the incoming sketch and determines the optimum way to
@@ -119,6 +120,7 @@ class HllUnionPvt final : public HllUnion<A> {
     * //@return the union of the two sketches in the form of the internal HllSketchImpl, which for
     * //the union is always in HLL_8 form.
     */
+   /*
     void unionImpl(HllSketchImpl* incomingImpl, int lgMaxK);
 
     static HllSketchImpl* copyOrDownsampleHll(HllSketchImpl* srcImpl, int tgtLgK);
@@ -131,7 +133,8 @@ class HllUnionPvt final : public HllUnion<A> {
 };
 
 }
+*/
 
-#include "HllUnion-internal.hpp"
+//#include "HllUnion-internal.hpp"
 
 #endif // _HLLUNION_HPP_

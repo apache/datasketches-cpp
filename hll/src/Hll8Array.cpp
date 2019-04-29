@@ -17,7 +17,7 @@ Hll8Iterator::Hll8Iterator(const Hll8Array& hllArray, const int lengthPairs)
 Hll8Iterator::~Hll8Iterator() { }
 
 int Hll8Iterator::value() {
-  return hllArray.hllByteArr[index] & HllUtil::VAL_MASK_6;
+  return hllArray.hllByteArr[index] & HllUtil<>::VAL_MASK_6;
 }
 
 Hll8Array::Hll8Array(const int lgConfigK) :
@@ -47,11 +47,11 @@ std::unique_ptr<PairIterator> Hll8Array::getIterator() const {
 }
 
 int Hll8Array::getSlot(const int slotNo) const {
-  return (int) hllByteArr[slotNo] & HllUtil::VAL_MASK_6;
+  return (int) hllByteArr[slotNo] & HllUtil<>::VAL_MASK_6;
 }
 
 void Hll8Array::putSlot(const int slotNo, const int value) {
-  hllByteArr[slotNo] = value & HllUtil::VAL_MASK_6;
+  hllByteArr[slotNo] = value & HllUtil<>::VAL_MASK_6;
 }
 
 int Hll8Array::getHllByteArrBytes() const {
@@ -60,8 +60,8 @@ int Hll8Array::getHllByteArrBytes() const {
 
 HllSketchImpl* Hll8Array::couponUpdate(const int coupon) { // used by HLL_8 and HLL_6
   const int configKmask = (1 << getLgConfigK()) - 1;
-  const int slotNo = HllUtil::getLow26(coupon) & configKmask;
-  const int newVal = HllUtil::getValue(coupon);
+  const int slotNo = HllUtil<>::getLow26(coupon) & configKmask;
+  const int newVal = HllUtil<>::getValue(coupon);
   if (newVal <= 0) {
     throw std::logic_error("newVal must be a positive integer: " + std::to_string(newVal));
   }

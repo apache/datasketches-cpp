@@ -8,6 +8,7 @@
 
 #include "HllUtil.hpp"
 #include "AuxHashMap.hpp"
+#include "IntArrayPairIterator.hpp"
 
 #include <cstring>
 #include <sstream>
@@ -39,7 +40,7 @@ AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
                                     bool srcCompact) {
   int lgArrInts = lgAuxArrInts;
   if (srcCompact) { // early compact versions didn't use LgArr byte field so ignore input
-    lgArrInts = HllUtil::computeLgArrInts(HLL, auxCount, lgConfigK);
+    lgArrInts = HllUtil<>::computeLgArrInts(HLL, auxCount, lgConfigK);
   } else { // updatable
     lgArrInts = lgAuxArrInts;
   }
@@ -54,8 +55,8 @@ AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
     }
     for (int i = 0; i < auxCount; ++i) {
       int pair = auxPtr[i];
-      int slotNo = HllUtil::getLow26(pair) & configKmask;
-      int value = HllUtil::getValue(pair);
+      int slotNo = HllUtil<>::getLow26(pair) & configKmask;
+      int value = HllUtil<>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
     }
   } else { // updatable
@@ -65,9 +66,9 @@ AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
     }
     for (int i = 0; i < itemsToRead; ++i) {
       int pair = auxPtr[i];
-      if (pair == HllUtil::EMPTY) { continue; }
-      int slotNo = HllUtil::getLow26(pair) & configKmask;
-      int value = HllUtil::getValue(pair);
+      if (pair == HllUtil<>::EMPTY) { continue; }
+      int slotNo = HllUtil<>::getLow26(pair) & configKmask;
+      int value = HllUtil<>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
     }
   }
@@ -85,7 +86,7 @@ AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
                                     const bool srcCompact) {
   int lgArrInts = lgAuxArrInts;
   if (srcCompact) { // early compact versions didn't use LgArr byte field so ignore input
-    lgArrInts = HllUtil::computeLgArrInts(HLL, auxCount, lgConfigK);
+    lgArrInts = HllUtil<>::computeLgArrInts(HLL, auxCount, lgConfigK);
   } else { // updatable
     lgArrInts = lgAuxArrInts;
   }
@@ -97,8 +98,8 @@ AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
     int pair;
     for (int i = 0; i < auxCount; ++i) {
       is.read((char*)&pair, sizeof(pair));
-      int slotNo = HllUtil::getLow26(pair) & configKmask;
-      int value = HllUtil::getValue(pair);
+      int slotNo = HllUtil<>::getLow26(pair) & configKmask;
+      int value = HllUtil<>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
     }
   } else { // updatable
@@ -106,9 +107,9 @@ AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
     int pair;
     for (int i = 0; i < itemsToRead; ++i) {
       is.read((char*)&pair, sizeof(pair));
-      if (pair == HllUtil::EMPTY) { continue; }
-      int slotNo = HllUtil::getLow26(pair) & configKmask;
-      int value = HllUtil::getValue(pair);
+      if (pair == HllUtil<>::EMPTY) { continue; }
+      int slotNo = HllUtil<>::getLow26(pair) & configKmask;
+      int value = HllUtil<>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
     }
   }
@@ -156,7 +157,7 @@ std::unique_ptr<PairIterator> AuxHashMap::getIterator() {
 
 void AuxHashMap::mustAdd(const int slotNo, const int value) {
   const int index = find(auxIntArr, lgAuxArrInts, lgConfigK, slotNo);
-  const int entry_pair = HllUtil::pair(slotNo, value);
+  const int entry_pair = HllUtil<>::pair(slotNo, value);
   if (index >= 0) {
     throw std::invalid_argument("Found a slotNo that should not be there: SlotNo: "
                                 + std::to_string(slotNo) + ", Value: " + std::to_string(value));
@@ -171,7 +172,7 @@ void AuxHashMap::mustAdd(const int slotNo, const int value) {
 int AuxHashMap::mustFindValueFor(const int slotNo) {
   const int index = find(auxIntArr, lgAuxArrInts, lgConfigK, slotNo);
   if (index >= 0) {
-    return HllUtil::getValue(auxIntArr[index]);
+    return HllUtil<>::getValue(auxIntArr[index]);
   }
 
   throw std::invalid_argument("slotNo not found: " + std::to_string(slotNo));
@@ -180,7 +181,7 @@ int AuxHashMap::mustFindValueFor(const int slotNo) {
 void AuxHashMap::mustReplace(const int slotNo, const int value) {
   const int idx = find(auxIntArr, lgAuxArrInts, lgConfigK, slotNo);
   if (idx >= 0) {
-    auxIntArr[idx] = HllUtil::pair(slotNo, value);
+    auxIntArr[idx] = HllUtil<>::pair(slotNo, value);
     return;
   }
 
@@ -189,7 +190,7 @@ void AuxHashMap::mustReplace(const int slotNo, const int value) {
 }
 
 void AuxHashMap::checkGrow() {
-  if ((HllUtil::RESIZE_DENOM * auxCount) > (HllUtil::RESIZE_NUMER * (1 << lgAuxArrInts))) {
+  if ((HllUtil<>::RESIZE_DENOM * auxCount) > (HllUtil<>::RESIZE_NUMER * (1 << lgAuxArrInts))) {
     growAuxSpace();
   }
 }
@@ -203,7 +204,7 @@ void AuxHashMap::growAuxSpace() {
   std::fill(auxIntArr, auxIntArr + newArrLen, 0);
   for (int i = 0; i < oldArrLen; ++i) {
     const int fetched = oldArray[i];
-    if (fetched != HllUtil::EMPTY) {
+    if (fetched != HllUtil<>::EMPTY) {
       // find empty in new array
       const int idx = find(auxIntArr, lgAuxArrInts, lgConfigK, fetched & configKmask);
       auxIntArr[~idx] = fetched;
@@ -226,7 +227,7 @@ int AuxHashMap::find(const int* auxArr, const int lgAuxArrInts, const int lgConf
   const  int loopIndex = probe;
   do {
     const int arrVal = auxArr[probe];
-    if (arrVal == HllUtil::EMPTY) { //Compares on entire entry
+    if (arrVal == HllUtil<>::EMPTY) { //Compares on entire entry
       return ~probe; //empty
     }
     else if (slotNo == (arrVal & configKmask)) { //Compares only on slotNo

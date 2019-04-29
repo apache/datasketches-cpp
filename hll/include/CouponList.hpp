@@ -35,6 +35,7 @@ class CouponList : public HllSketchImpl {
 
     virtual bool isEmpty() const;
     virtual int getCouponCount() const;
+    virtual std::unique_ptr<PairIterator> getIterator() const;
 
   protected:
     HllSketchImpl* promoteHeapListToSet(CouponList& list);
@@ -42,7 +43,6 @@ class CouponList : public HllSketchImpl {
 
     virtual int getUpdatableSerializationBytes() const;
     virtual int getCompactSerializationBytes() const;
-    virtual std::unique_ptr<PairIterator> getIterator() const;
     virtual int getMemDataStart() const;
     virtual int getPreInts() const;
     virtual bool isCompact() const;
@@ -52,16 +52,18 @@ class CouponList : public HllSketchImpl {
     virtual int getLgCouponArrInts() const;
     virtual int* getCouponIntArr() const;
 
-    virtual CouponList* reset();
+    //virtual CouponList* reset();
 
     int lgCouponArrInts;
     int couponCount;
     bool oooFlag;
     int* couponIntArr;
+
+    friend class HllSketchImplFactory;
 };
 
 }
 
-#include "CouponList-internal.hpp"
+//#include "CouponList-internal.hpp"
 
 #endif /* _COUPONLIST_HPP_ */

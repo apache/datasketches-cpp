@@ -6,6 +6,8 @@
 #ifndef _HLLSKETCH_HPP_
 #define _HLLSKETCH_HPP_
 
+/*
+
 #include "hll.hpp"
 #include "PairIterator.hpp"
 #include "HllUtil.hpp"
@@ -99,7 +101,8 @@ class HllSketchPvt final : public HllSketch<A> {
 };
 
 }
+*/
 
-#include "HllSketch-internal.hpp"
+//#include "HllSketch-internal.hpp"
 
 #endif // _HLLSKETCH_HPP_

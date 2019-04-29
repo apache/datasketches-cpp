@@ -58,6 +58,6 @@ class Hll4Iterator : public HllPairIterator {
 
 }
 
-#include "Hll4Array-internal.hpp"
+//#include "Hll4Array-internal.hpp"
 
 #endif /* _HLL4ARRAY_HPP_ */

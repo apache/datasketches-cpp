@@ -18,6 +18,6 @@ class CompositeInterpolationXTable {
 
 }
 
-#include "CompositeInterpolationXTable-internal.hpp"
+//#include "CompositeInterpolationXTable-internal.hpp"
 
 #endif /* _COMPOSITEINTERPOLATIONXTABLE_HPP_ */

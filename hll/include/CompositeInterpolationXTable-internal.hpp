@@ -22,12 +22,12 @@ static const int yStrides[] =
   {1, 2, 3, 5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920};
 
 const int CompositeInterpolationXTable::get_y_stride(const int logK) {
-  if (logK < HllUtil::MIN_LOG_K || logK > HllUtil::MAX_LOG_K) {
-    throw std::invalid_argument("logK must be in range [" + std::to_string(HllUtil::MIN_LOG_K)
-                                + ", " + std::to_string(HllUtil::MAX_LOG_K) + "]. Found: "
+  if (logK < HllUtil<>::MIN_LOG_K || logK > HllUtil<>::MAX_LOG_K) {
+    throw std::invalid_argument("logK must be in range [" + std::to_string(HllUtil<>::MIN_LOG_K)
+                                + ", " + std::to_string(HllUtil<>::MAX_LOG_K) + "]. Found: "
                                 + std::to_string(logK));
   }
-  return yStrides[logK - HllUtil::MIN_LOG_K];
+  return yStrides[logK - HllUtil<>::MIN_LOG_K];
 }
 
 const int CompositeInterpolationXTable::get_x_arr_length(const int logK) {
@@ -781,12 +781,12 @@ static const double xArr[18][numXArrValues] = {
 };
 
 const double* const CompositeInterpolationXTable::get_x_arr(const int logK) {
-  if (logK < HllUtil::MIN_LOG_K || logK > HllUtil::MAX_LOG_K) {
-    throw std::invalid_argument("logK must be in range [" + std::to_string(HllUtil::MIN_LOG_K)
-                                + ", " + std::to_string(HllUtil::MAX_LOG_K) + "]. Found: "
+  if (logK < HllUtil<>::MIN_LOG_K || logK > HllUtil<>::MAX_LOG_K) {
+    throw std::invalid_argument("logK must be in range [" + std::to_string(HllUtil<>::MIN_LOG_K)
+                                + ", " + std::to_string(HllUtil<>::MAX_LOG_K) + "]. Found: "
                                 + std::to_string(logK));
   }
-  return xArr[logK - HllUtil::MIN_LOG_K];
+  return xArr[logK - HllUtil<>::MIN_LOG_K];
 }
 
 }

@@ -37,7 +37,7 @@ std::ostream& operator<<(std::ostream& os, hll_union& hllUnion) {
 }
 
 HllUnionPvt::HllUnionPvt(const int lgMaxK)
-  : lgMaxK(HllUtil::checkLgK(lgMaxK)) {
+  : lgMaxK(HllUtil<>::checkLgK(lgMaxK)) {
   gadget = std::unique_ptr<HllSketchPvt>(new HllSketchPvt(lgMaxK, TgtHllType::HLL_8));
 }
 
@@ -150,7 +150,7 @@ void HllUnionPvt::update(const void* data, const size_t lengthBytes) {
 }
 
 void HllUnionPvt::couponUpdate(const int coupon) {
-  if (coupon == HllUtil::EMPTY) { return; }
+  if (coupon == HllUtil<>::EMPTY) { return; }
   HllSketchImpl* result = gadget->hllSketchImpl->couponUpdate(coupon);
   if (result != gadget->hllSketchImpl) {
     if (gadget->hllSketchImpl != nullptr) { delete gadget->hllSketchImpl; }
@@ -237,7 +237,7 @@ bool HllUnionPvt::isEstimationMode() const {
 }
 
 int HllUnionPvt::getSerializationVersion() const {
-  return HllUtil::SER_VER;
+  return HllUtil<>::SER_VER;
 }
 
 TgtHllType HllUnionPvt::getTgtHllType() const {
@@ -250,7 +250,7 @@ int HllUnion::getMaxSerializationBytes(const int lgK) {
 
 double HllUnion::getRelErr(const bool upperBound, const bool unioned,
                            const int lgConfigK, const int numStdDev) {
-  return HllUtil::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
+  return HllUtil<>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
 }
 
 HllSketchImpl* HllUnionPvt::copyOrDownsampleHll(HllSketchImpl* srcImpl, const int tgtLgK) {

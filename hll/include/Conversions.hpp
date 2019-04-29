@@ -5,7 +5,8 @@
 
 #ifndef _CONVERSIONS_HPP_
 #define _CONVERSIONS_HPP_
-
+/*
+//#include "CouponMode.hpp"
 #include "Hll4Array.hpp"
 #include "Hll6Array.hpp"
 #include "Hll8Array.hpp"
@@ -23,7 +24,7 @@ private:
 };
 
 }
-
-#include "Conversions-internal.hpp"
+*/
+//#include "Conversions-internal.hpp"
 
 #endif // _CONVERSIONS_HPP_

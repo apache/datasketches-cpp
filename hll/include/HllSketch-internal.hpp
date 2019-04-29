@@ -6,8 +6,11 @@
 #ifndef _HLLSKETCH_INTERNAL_HPP_
 #define _HLLSKETCH_INTERNAL_HPP_
 
-#include "HllSketch.hpp"
+//#include "HllSketch.hpp"
+#include "hll.hpp"
 #include "HllUtil.hpp"
+#include "HllSketchImplFactory.hpp"
+//#include "CouponMode.hpp"
 #include "CouponList.hpp"
 #include "HllArray.hpp"
 
@@ -25,66 +28,31 @@ typedef union {
 } longDoubleUnion;
 
 template<typename A>
-HllSketch<A> HllSketch<A>::newInstance(const int lgConfigK, const TgtHllType tgtHllType) {
-  /*
-  std::unique_ptr<HllSketch<A>, std::function<void(HllSketch<A>*)>> sketch_ptr(
-      AllocHllSketch.allocate(1)
-      [](HllSketch<A>* s) { s->~HllSketch(); AllocHllSketch().deallocate(s, 1); }
-  AllocHllSketch.construct(sketch_ptr->get(), lgConfigK, tgtHllType);
-  return sketch_ptr;
-  */
-  HllSketch<A> sketch(lgConfigK, tgtHllType);
-  return sketch;
+HllSketch<A>::HllSketch(int lgConfigK, TgtHllType tgtHllType) {
+  // TODO: use allocator
+  hllSketchImpl = new CouponList(HllUtil<>::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
 }
 
 template<typename A>
 HllSketch<A> HllSketch<A>::deserialize(std::istream& is) {
-  return HllSketchPvt<A>::deserialize(is);
+  HllSketchImpl* impl = HllSketchImplFactory::deserialize(is);
+  HllSketch<A> sketch(impl);
+  return sketch;
 }
 
 template<typename A>
 HllSketch<A> HllSketch<A>::deserialize(const void* bytes, size_t len) {
-  return HllSketchPvt<A>::deserialize(bytes, len);
-}
-
-template<typename A>
-HllSketch<A> HllSketch<A>::copy() const {
-  return static_cast<const HllSketchPvt<A>>(this)->copy();
-}
-
-template<typename A>
-HllSketch<A> HllSketch<A>::copyAs(TgtHllType tgtHllType) const {
-  return static_cast<const HllSketchPvt<A>>(this)->copyAs(tgtHllType);
-}
-
-template<typename A>
-HllSketch<A>::~HllSketch() {}
-
-template<typename A>
-HllSketchPvt<A>::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
-  hllSketchImpl = new CouponList(HllUtil::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
-}
-
-template<typename A>
-HllSketchPvt<A> HllSketchPvt<A>::deserialize(std::istream& is) {
-  HllSketchImpl* impl = HllSketchImpl::deserialize(is);
-  HllSketchPvt<A> sketch = AllocHllSketch::allocate(1);
-  AllocHllSketch::construct(sketch, impl);
+  HllSketchImpl* impl = HllSketchImplFactory::deserialize(bytes, len);
+  HllSketch<A> sketch(impl);
   return sketch;
 }
 
 template<typename A>
-HllSketchPvt<A> HllSketchPvt<A>::deserialize(const void* bytes, size_t len) {
-  HllSketchImpl* impl = HllSketchImpl::deserialize(bytes, len);
-  HllSketchPvt<A> sketch = AllocHllSketch::allocate(1);
-  AllocHllSketch::construct(sketch, impl);
-  return sketch;
-}
-
-template<typename A>
-HllSketchPvt<A>::~HllSketchPvt() {
-  this->hllSketchImpl->~hllSketchImpl();
-  A::deallocate(hllSketchImpl, 1);
+HllSketch<A>::~HllSketch() {
+  this->hllSketchImpl->~HllSketchImpl();
+  typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketchImpl> AllocImpl;
+  // TODO: HllSketchImpl is abstract -- need a concrete instance when deallocating?
+  AllocImpl().deallocate(hllSketchImpl, 1);
 }
 
 template<typename A>
@@ -92,116 +60,129 @@ std::ostream& operator<<(std::ostream& os, HllSketch<A>& sketch) {
   return sketch.to_string(os, true, true, false, false);
 }
 
-/*
 template<typename A>
-std::ostream& operator<<(std::ostream& os, hll_sketch& sketch) {
-  return sketch->to_string(os, true, true, false, false);
-}
-*/
-
-template<typename A>
-HllSketchPvt<A>::HllSketchPvt(const HllSketchPvt& that) :
-  hllSketchImpl(static_cast<HllSketchPvt<A>>(that).hllSketchImpl->copy())
+HllSketch<A>::HllSketch(const HllSketch<A>& that) :
+  hllSketchImpl(that.hllSketchImpl->copy())
 {}
 
 template<typename A>
-HllSketchPvt<A>::HllSketchPvt(HllSketchImpl* that) :
+HllSketch<A>::HllSketch(HllSketchImpl* that) :
   hllSketchImpl(that)
 {}
 
 template<typename A>
-HllSketchPvt<A>& HllSketchPvt<A>::operator=(HllSketchPvt other) {
-  std::swap(hllSketchImpl, other.hllSketchImpl);
+HllSketch<A> HllSketch<A>::operator=(HllSketch<A>& other) {
+  this->hllSketchImpl->~HllSketchImpl();
+  typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketchImpl> AllocImpl;
+  // TODO: HllSketchImpl is abstract -- need a concrete instance when deallocating?
+  AllocImpl().deallocate(hllSketchImpl, 1);
+  hllSketchImpl = other.hllSketchImpl->copy();
   return *this;
 }
 
 template<typename A>
-HllSketchPvt<A> HllSketchPvt<A>::copy() const {
-  HllSketchPvt<A> sketch = AllocHllSketch::allocate(1);
-  AllocHllSketch::construct(sketch, this->hllSketchImpl->copy());
-  return sketch;
-  //return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(this->hllSketchImpl->copy()));
+HllSketch<A> HllSketch<A>::operator=(HllSketch<A>&& other) {
+  this->hllSketchImpl->~HllSketchImpl();
+  typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketchImpl> AllocImpl;
+  // TODO: HllSketchImpl is abstract -- need a concrete instance when deallocating?
+  AllocImpl().deallocate(hllSketchImpl, 1);
+  hllSketchImpl = std::move(other.hllSketchImpl);
+  return *this;
 }
 
 template<typename A>
-HllSketchPvt<A> HllSketchPvt<A>::copyAs(const TgtHllType tgtHllType) const {
-  HllSketchPvt<A> sketch = AllocHllSketch::allocate(1);
-  AllocHllSketch::construct(sketch, this->hllSketchImpl->copy());
-  return sketch;
-  //return std::unique_ptr<HllSketchPvt>(new HllSketchPvt(hllSketchImpl->copyAs(tgtHllType)));
+HllSketch<A> HllSketch<A>::copy() const {
+  HllSketch<A>* sketch = AllocHllSketch().allocate(1);
+  AllocHllSketch().construct(sketch, this->hllSketchImpl->copy());
+  return std::move(*sketch);
 }
 
 template<typename A>
-void HllSketchPvt<A>::reset() {
+HllSketch<A>* HllSketch<A>::copyPtr() const {
+  HllSketch<A>* sketch = AllocHllSketch().allocate(1);
+  AllocHllSketch().construct(sketch, this->hllSketchImpl->copy());
+  return sketch;
+}
+
+template<typename A>
+HllSketch<A> HllSketch<A>::copyAs(const TgtHllType tgtHllType) const {
+  HllSketch<A>* sketch = AllocHllSketch().allocate(1);
+  AllocHllSketch().construct(sketch, this->hllSketchImpl->copy());
+  return std::move(*sketch);
+}
+
+template<typename A>
+void HllSketch<A>::reset() {
+  // TODO: use allocator, probably by dispatching to factory?
   HllSketchImpl* newImpl = hllSketchImpl->reset();
   delete hllSketchImpl;
   hllSketchImpl = newImpl;
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const std::string& datum) {
+void HllSketch<A>::update(const std::string& datum) {
   if (datum.empty()) { return; }
   HashState hashResult;
-  HllUtil::hash(datum.c_str(), datum.length(), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(datum.c_str(), datum.length(), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const uint64_t datum) {
+void HllSketch<A>::update(const uint64_t datum) {
   // no sign extension with 64 bits so no need to cast to signed value
   HashState hashResult;
-  HllUtil::hash(&datum, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&datum, sizeof(uint64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const uint32_t datum) {
+void HllSketch<A>::update(const uint32_t datum) {
   update(static_cast<int32_t>(datum));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const uint16_t datum) {
+void HllSketch<A>::update(const uint16_t datum) {
   update(static_cast<int16_t>(datum));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const uint8_t datum) {
+void HllSketch<A>::update(const uint8_t datum) {
   update(static_cast<int8_t>(datum));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const int64_t datum) {
+void HllSketch<A>::update(const int64_t datum) {
   HashState hashResult;
-  HllUtil::hash(&datum, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&datum, sizeof(int64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const int32_t datum) {
+void HllSketch<A>::update(const int32_t datum) {
   int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
-  HllUtil::hash(&val, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&val, sizeof(int64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const int16_t datum) {
+void HllSketch<A>::update(const int16_t datum) {
   int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
-  HllUtil::hash(&val, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&val, sizeof(int64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const int8_t datum) {
+void HllSketch<A>::update(const int8_t datum) {
   int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
-  HllUtil::hash(&val, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&val, sizeof(int64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const double datum) {
+void HllSketch<A>::update(const double datum) {
   longDoubleUnion d;
   d.doubleBytes = static_cast<double>(datum);
   if (datum == 0.0) {
@@ -210,12 +191,12 @@ void HllSketchPvt<A>::update(const double datum) {
     d.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
   }
   HashState hashResult;
-  HllUtil::hash(&d, sizeof(double), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&d, sizeof(double), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const float datum) {
+void HllSketch<A>::update(const float datum) {
   longDoubleUnion d;
   d.doubleBytes = static_cast<double>(datum);
   if (datum == 0.0) {
@@ -224,21 +205,21 @@ void HllSketchPvt<A>::update(const float datum) {
     d.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
   }
   HashState hashResult;
-  HllUtil::hash(&d, sizeof(double), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&d, sizeof(double), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 template<typename A>
-void HllSketchPvt<A>::update(const void* data, const size_t lengthBytes) {
+void HllSketch<A>::update(const void* data, const size_t lengthBytes) {
   if (data == nullptr) { return; }
   HashState hashResult;
-  HllUtil::hash(data, lengthBytes, HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(data, lengthBytes, HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 template<typename A>
-void HllSketchPvt<A>::couponUpdate(int coupon) {
-  if (coupon == HllUtil::EMPTY) { return; }
+void HllSketch<A>::couponUpdate(int coupon) {
+  if (coupon == HllUtil<>::EMPTY) { return; }
   HllSketchImpl* result = this->hllSketchImpl->couponUpdate(coupon);
   if (result != this->hllSketchImpl) {
     delete this->hllSketchImpl;
@@ -247,29 +228,29 @@ void HllSketchPvt<A>::couponUpdate(int coupon) {
 }
 
 template<typename A>
-void HllSketchPvt<A>::serializeCompact(std::ostream& os) const {
+void HllSketch<A>::serializeCompact(std::ostream& os) const {
   return hllSketchImpl->serialize(os, true);
 }
 
 template<typename A>
-void HllSketchPvt<A>::serializeUpdatable(std::ostream& os) const {
+void HllSketch<A>::serializeUpdatable(std::ostream& os) const {
   return hllSketchImpl->serialize(os, false);
 }
 
 template<typename A>
 std::pair<std::unique_ptr<uint8_t[]>, const size_t>
-HllSketchPvt<A>::serializeCompact() const {
+HllSketch<A>::serializeCompact() const {
   return hllSketchImpl->serialize(true);
 }
 
 template<typename A>
 std::pair<std::unique_ptr<uint8_t[]>, const size_t>
-HllSketchPvt<A>::serializeUpdatable() const {
+HllSketch<A>::serializeUpdatable() const {
   return hllSketchImpl->serialize(false);
 }
 
 template<typename A>
-std::string HllSketchPvt<A>::to_string(const bool summary,
+std::string HllSketch<A>::to_string(const bool summary,
                                     const bool detail,
                                     const bool auxDetail,
                                     const bool all) const {
@@ -279,7 +260,7 @@ std::string HllSketchPvt<A>::to_string(const bool summary,
 }
 
 template<typename A>
-std::ostream& HllSketchPvt<A>::to_string(std::ostream& os,
+std::ostream& HllSketch<A>::to_string(std::ostream& os,
                                       const bool summary,
                                       const bool detail,
                                       const bool auxDetail,
@@ -344,77 +325,77 @@ std::ostream& HllSketchPvt<A>::to_string(std::ostream& os,
 }
 
 template<typename A>
-double HllSketchPvt<A>::getEstimate() const {
+double HllSketch<A>::getEstimate() const {
   return hllSketchImpl->getEstimate();
 }
 
 template<typename A>
-double HllSketchPvt<A>::getCompositeEstimate() const {
+double HllSketch<A>::getCompositeEstimate() const {
   return hllSketchImpl->getCompositeEstimate();
 }
 
 template<typename A>
-double HllSketchPvt<A>::getLowerBound(int numStdDev) const {
+double HllSketch<A>::getLowerBound(int numStdDev) const {
   return hllSketchImpl->getLowerBound(numStdDev);
 }
 
 template<typename A>
-double HllSketchPvt<A>::getUpperBound(int numStdDev) const {
+double HllSketch<A>::getUpperBound(int numStdDev) const {
   return hllSketchImpl->getUpperBound(numStdDev);
 }
 
 template<typename A>
-CurMode HllSketchPvt<A>::getCurrentMode() const {
+CurMode HllSketch<A>::getCurrentMode() const {
   return hllSketchImpl->getCurMode();
 }
 
 template<typename A>
-int HllSketchPvt<A>::getLgConfigK() const {
+int HllSketch<A>::getLgConfigK() const {
   return hllSketchImpl->getLgConfigK();
 }
 
 template<typename A>
-TgtHllType HllSketchPvt<A>::getTgtHllType() const {
+TgtHllType HllSketch<A>::getTgtHllType() const {
   return hllSketchImpl->getTgtHllType();
 }
 
 template<typename A>
-bool HllSketchPvt<A>::isOutOfOrderFlag() const {
+bool HllSketch<A>::isOutOfOrderFlag() const {
   return hllSketchImpl->isOutOfOrderFlag();
 }
 
 template<typename A>
-bool HllSketchPvt<A>::isEstimationMode() const {
+bool HllSketch<A>::isEstimationMode() const {
   return true;
 }
 
 template<typename A>
-int HllSketchPvt<A>::getUpdatableSerializationBytes() const {
+int HllSketch<A>::getUpdatableSerializationBytes() const {
   return hllSketchImpl->getUpdatableSerializationBytes();
 }
 
 template<typename A>
-int HllSketchPvt<A>::getCompactSerializationBytes() const {
+int HllSketch<A>::getCompactSerializationBytes() const {
   return hllSketchImpl->getCompactSerializationBytes();
 }
 
 template<typename A>
-bool HllSketchPvt<A>::isCompact() const {
+bool HllSketch<A>::isCompact() const {
   return hllSketchImpl->isCompact();
 }
 
 template<typename A>
-bool HllSketchPvt<A>::isEmpty() const {
+bool HllSketch<A>::isEmpty() const {
   return hllSketchImpl->isEmpty();
 }
 
 template<typename A>
-std::unique_ptr<PairIterator> HllSketchPvt<A>::getIterator() const {
+std::unique_ptr<PairIterator> HllSketch<A>::getIterator() const {
   return hllSketchImpl->getIterator();
 }
 
 template<typename A>
-std::string HllSketchPvt<A>::typeAsString() const {
+std::string HllSketch<A>::typeAsString() const {
   switch (hllSketchImpl->getTgtHllType()) {
     case TgtHllType::HLL_4:
       return std::string("HLL_4");
@@ -428,7 +409,7 @@ std::string HllSketchPvt<A>::typeAsString() const {
 }
 
 template<typename A>
-std::string HllSketchPvt<A>::modeAsString() const {
+std::string HllSketch<A>::modeAsString() const {
   switch (hllSketchImpl->getCurMode()) {
     case LIST:
       return std::string("LIST");
@@ -446,20 +427,20 @@ int HllSketch<A>::getMaxUpdatableSerializationBytes(const int lgConfigK,
     const TgtHllType tgtHllType) {
   int arrBytes;
   if (tgtHllType == TgtHllType::HLL_4) {
-    const int auxBytes = 4 << HllUtil::LG_AUX_ARR_INTS[lgConfigK];
+    const int auxBytes = 4 << HllUtil<>::LG_AUX_ARR_INTS[lgConfigK];
     arrBytes = HllArray::hll4ArrBytes(lgConfigK) + auxBytes;
   } else if (tgtHllType == TgtHllType::HLL_6) {
     arrBytes = HllArray::hll6ArrBytes(lgConfigK);
   } else { //HLL_8
     arrBytes = HllArray::hll8ArrBytes(lgConfigK);
   }
-  return HllUtil::HLL_BYTE_ARR_START + arrBytes;
+  return HllUtil<>::HLL_BYTE_ARR_START + arrBytes;
 }
 
 template<typename A>
 double HllSketch<A>::getRelErr(const bool upperBound, const bool unioned,
                            const int lgConfigK, const int numStdDev) {
-  return HllUtil::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
+  return HllUtil<>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
 }
 
 }

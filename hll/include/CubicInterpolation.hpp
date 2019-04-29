@@ -21,6 +21,6 @@ class CubicInterpolation {
 
 }
 
-#include "CubicInterpolation-internal.hpp"
+//#include "CubicInterpolation-internal.hpp"
 
 #endif /* _CUBICINTERPOLATION_HPP_ */

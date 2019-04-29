@@ -18,8 +18,8 @@ Hll4Array* Conversions::convertToHll4(const HllArray& srcHllArr) {
 
   // 1st pass: compute starting curMin and numAtCurMin
   int pairVals = curMinAndNum(srcHllArr);
-  int curMin = HllUtil::getValue(pairVals);
-  int numAtCurMin = HllUtil::getLow26(pairVals);
+  int curMin = HllUtil<>::getValue(pairVals);
+  int numAtCurMin = HllUtil<>::getLow26(pairVals);
 
   // 2nd pass: must know curMin.
   // Populate KxQ registers, build AuxHashMap if needed
@@ -32,9 +32,9 @@ Hll4Array* Conversions::convertToHll4(const HllArray& srcHllArr) {
     const int actualValue = itr->getValue();
     HllArray::hipAndKxQIncrementalUpdate(*hll4Array, 0, actualValue);
     if (actualValue >= (curMin + 15)) {
-      hll4Array->putSlot(slotNo, HllUtil::AUX_TOKEN);
+      hll4Array->putSlot(slotNo, HllUtil<>::AUX_TOKEN);
       if (auxHashMap == nullptr) {
-        auxHashMap = new AuxHashMap(HllUtil::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
+        auxHashMap = new AuxHashMap(HllUtil<>::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
         hll4Array->putAuxHashMap(auxHashMap);
       }
       auxHashMap->mustAdd(slotNo, actualValue);
@@ -64,7 +64,7 @@ int Conversions::curMinAndNum(const HllArray& hllArr) {
     }
   }
 
-  return HllUtil::pair(numAtCurMin, curMin);
+  return HllUtil<>::pair(numAtCurMin, curMin);
 }
 
 Hll6Array* Conversions::convertToHll6(const HllArray& srcHllArr) {
@@ -75,7 +75,7 @@ Hll6Array* Conversions::convertToHll6(const HllArray& srcHllArr) {
   int numZeros = 1 << lgConfigK;
   std::unique_ptr<PairIterator> itr = srcHllArr.getIterator();
   while (itr->nextAll()) {
-    if (itr->getValue() != HllUtil::EMPTY) {
+    if (itr->getValue() != HllUtil<>::EMPTY) {
       --numZeros;
       hll6Array->couponUpdate(itr->getPair());
     }
@@ -94,7 +94,7 @@ Hll8Array* Conversions::convertToHll8(const HllArray& srcHllArr) {
   int numZeros = 1 << lgConfigK;
   std::unique_ptr<PairIterator> itr = srcHllArr.getIterator();
   while (itr->nextAll()) {
-    if (itr->getValue() != HllUtil::EMPTY) {
+    if (itr->getValue() != HllUtil<>::EMPTY) {
       --numZeros;
       hll8Array->couponUpdate(itr->getPair());
     }

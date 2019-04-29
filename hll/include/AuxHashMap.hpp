@@ -6,7 +6,7 @@
 #ifndef _AUXHASHMAP_HPP_
 #define _AUXHASHMAP_HPP_
 
-#include "IntArrayPairIterator.hpp"
+#include "PairIterator.hpp"
 
 #include <memory>
 
@@ -53,6 +53,6 @@ class AuxHashMap final {
 
 }
 
-#include "AuxHashMap-internal.hpp"
+//#include "AuxHashMap-internal.hpp"
 
 #endif /* _AUXHASHMAP_HPP_ */
