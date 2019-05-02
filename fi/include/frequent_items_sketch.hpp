@@ -35,6 +35,7 @@ public:
   static const uint64_t USE_MAX_ERROR = 0; // used in get_frequent_items
 
   explicit frequent_items_sketch(uint8_t lg_max_map_size);
+  frequent_items_sketch(uint8_t lg_start_map_size, uint8_t lg_max_map_size);
   class row;
   void update(const T& item, uint64_t weight = 1);
   void update(T&& item, uint64_t weight = 1);
@@ -68,7 +69,6 @@ private:
   uint64_t total_weight;
   uint64_t offset;
   reverse_purge_hash_map<T, H, E, A> map;
-  frequent_items_sketch(uint8_t lg_start_map_size, uint8_t lg_max_map_size);
   static void check_preamble_longs(uint8_t preamble_longs, bool is_empty);
   static void check_serial_version(uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
