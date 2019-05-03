@@ -4,10 +4,8 @@
  */
 
 #include "hll.hpp"
-//#include "CouponList.hpp"
-//#include "HllSketch.hpp"
-//#include "HllUnion.hpp"
-//#include "HllUtil.hpp"
+#include "CouponList.hpp"
+#include "HllUtil.hpp"
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
@@ -34,7 +32,7 @@ class CouponListTest : public CppUnit::TestFixture {
 
   void checkIterator() {
     int lgConfigK = 8;
-    CouponList* sk = new CouponList(lgConfigK, HLL_4, LIST);
+    CouponList<>* sk = new CouponList<>(lgConfigK, HLL_4, LIST);
     for (int i = 0; i < 7; ++i) { sk->couponUpdate(i); } // not hashes but distinct values
     std::unique_ptr<PairIterator> itr = sk->getIterator();
     println_string(itr->getHeader());

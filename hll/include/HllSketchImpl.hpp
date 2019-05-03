@@ -13,31 +13,33 @@
 
 namespace datasketches {
 
+template<typename A = std::allocator<char>>
 class HllSketchImpl {
   public:
     HllSketchImpl(int lgConfigK, TgtHllType tgtHllType, CurMode curMode);
     virtual ~HllSketchImpl();
 
     virtual void serialize(std::ostream& os, bool compact) const = 0;
-    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serialize(bool compact) const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serialize(bool compact) const = 0;
     //static HllSketchImpl* deserialize(std::istream& os);
     //static HllSketchImpl* deserialize(const void* bytes, size_t len);
 
     virtual HllSketchImpl* copy() const = 0;
     virtual HllSketchImpl* copyAs(TgtHllType tgtHllType) const = 0;
-    //virtual HllSketchImpl* reset() = 0;
-    HllSketchImpl* reset();
+    HllSketchImpl<A>* reset();
+
+    virtual std::function<void(HllSketchImpl<A>*)> get_deleter() const = 0;
 
     virtual HllSketchImpl* couponUpdate(int coupon) = 0;
 
-    virtual CurMode getCurMode() const;
+    CurMode getCurMode() const;
 
     virtual double getEstimate() const = 0;
     virtual double getCompositeEstimate() const = 0;
     virtual double getUpperBound(int numStdDev) const = 0;
     virtual double getLowerBound(int numStdDev) const = 0;
 
-    virtual std::unique_ptr<PairIterator> getIterator() const = 0;
+    virtual std::unique_ptr<PairIterator<A>> getIterator() const = 0;
 
     int getLgConfigK() const;
 

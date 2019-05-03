@@ -6,7 +6,6 @@
 #ifndef _HLLUNION_INTERNAL_HPP_
 #define _HLLUNION_INTERNAL_HPP_
 
-//#include "HllUnion.hpp"
 #include "hll.hpp"
 
 #include "HllSketchImpl.hpp"
@@ -20,7 +19,7 @@ namespace datasketches {
 
 template<typename A>
 HllUnion<A>::HllUnion(const int lgMaxK)
-  : lgMaxK(HllUtil<>::checkLgK(lgMaxK)) {
+  : lgMaxK(HllUtil<A>::checkLgK(lgMaxK)) {
     typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch<A>> AllocHllSketch;
     AllocHllSketch().allocate(1);
     AllocHllSketch().construct(gadget, lgMaxK, TgtHllType::HLL_8);
@@ -201,21 +200,21 @@ void HllUnion<A>::update(const void* data, const size_t lengthBytes) {
 
 template<typename A>
 void HllUnion<A>::couponUpdate(const int coupon) {
-  if (coupon == HllUtil<>::EMPTY) { return; }
-  HllSketchImpl* result = gadget->hllSketchImpl->couponUpdate(coupon);
+  if (coupon == HllUtil<A>::EMPTY) { return; }
+  HllSketchImpl<A>* result = gadget->hllSketchImpl->couponUpdate(coupon);
   if (result != gadget->hllSketchImpl) {
-    if (gadget->hllSketchImpl != nullptr) { delete gadget->hllSketchImpl; }
+    if (gadget->hllSketchImpl != nullptr) { gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl); }
     gadget->hllSketchImpl = result;
   }
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllUnion<A>::serializeCompact() const {
+std::pair<std::unique_ptr<uint8_t>, const size_t> HllUnion<A>::serializeCompact() const {
   return gadget->serializeCompact();
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllUnion<A>::serializeUpdatable() const {
+std::pair<std::unique_ptr<uint8_t>, const size_t> HllUnion<A>::serializeUpdatable() const {
   return gadget->serializeUpdatable();
 }
 
@@ -308,7 +307,7 @@ bool HllUnion<A>::isEstimationMode() const {
 
 template<typename A>
 int HllUnion<A>::getSerializationVersion() const {
-  return HllUtil<>::SER_VER;
+  return HllUtil<A>::SER_VER;
 }
 
 template<typename A>
@@ -324,11 +323,11 @@ int HllUnion<A>::getMaxSerializationBytes(const int lgK) {
 template<typename A>
 double HllUnion<A>::getRelErr(const bool upperBound, const bool unioned,
                            const int lgConfigK, const int numStdDev) {
-  return HllUtil<>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
+  return HllUtil<A>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
 }
 
 template<typename A>
-HllSketchImpl* HllUnion<A>::copyOrDownsampleHll(HllSketchImpl* srcImpl, const int tgtLgK) {
+HllSketchImpl<A>* HllUnion<A>::copyOrDownsampleHll(HllSketchImpl<A>* srcImpl, const int tgtLgK) {
   if (srcImpl->getCurMode() != CurMode::HLL) {
     throw std::logic_error("Attempt to downsample non-HLL sketch");
   }
@@ -351,21 +350,21 @@ HllSketchImpl* HllUnion<A>::copyOrDownsampleHll(HllSketchImpl* srcImpl, const in
 }
 
 template<typename A>
-inline HllSketchImpl* HllUnion<A>::leakFreeCouponUpdate(HllSketchImpl* impl, const int coupon) {
-  HllSketchImpl* result = impl->couponUpdate(coupon);
+inline HllSketchImpl<A>* HllUnion<A>::leakFreeCouponUpdate(HllSketchImpl<A>* impl, const int coupon) {
+  HllSketchImpl<A>* result = impl->couponUpdate(coupon);
   if (result != impl) {
-    delete impl;
+    impl->get_deleter()(impl);
   }
   return result;
 }
 
 template<typename A>
-void HllUnion<A>::unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK) {
+void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
   if (gadget->hllSketchImpl->getTgtHllType() != TgtHllType::HLL_8) {
     throw std::logic_error("Must call unionImpl() with HLL_8 input");
   }
-  HllSketchImpl* srcImpl = incomingImpl; //default
-  HllSketchImpl* dstImpl = gadget->hllSketchImpl; //default
+  HllSketchImpl<A>* srcImpl = incomingImpl; //default
+  HllSketchImpl<A>* dstImpl = gadget->hllSketchImpl; //default
   if ((incomingImpl == nullptr) || incomingImpl->isEmpty()) {
     return; // gadget->hllSketchImpl;
   }
@@ -408,7 +407,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK) {
       //whichever is True wins:
       dstImpl->putOutOfOrderFlag(srcImpl->isOutOfOrderFlag() | dstImpl->isOutOfOrderFlag());
       // gadget: swapped, replacing with new impl
-      delete gadget->hllSketchImpl;
+      gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl);
       break;
     }
     case 4: { //src: LIST, gadget: SET
@@ -443,7 +442,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK) {
       }
       dstImpl->putOutOfOrderFlag(true); //merging SET into non-empty HLL -> true
       // gadget: swapped, replacing with new impl
-      delete gadget->hllSketchImpl;
+      gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl);
       break;
     }
     case 8: { //src: LIST, gadget: HLL
@@ -486,7 +485,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK) {
       if ((srcLgK < dstLgK) || (dstImpl->getTgtHllType() != HLL_8)) {
         dstImpl = copyOrDownsampleHll(dstImpl, minLgK);
         // always replaces gadget
-        delete gadget->hllSketchImpl;
+        gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl);
       }
       std::unique_ptr<PairIterator> srcItr = srcImpl->getIterator(); //HLL
       while (srcItr->nextValid()) {
@@ -518,7 +517,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl* incomingImpl, const int lgMaxK) {
       dstImpl = copyOrDownsampleHll(srcImpl, lgMaxK);
       dstImpl->putOutOfOrderFlag(srcImpl->isOutOfOrderFlag()); //whatever source is.
       // gadget: always replaced with copied/downsampled sketch
-      delete gadget->hllSketchImpl;
+      gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl);
       break;
     }
   }

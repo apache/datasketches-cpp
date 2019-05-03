@@ -12,12 +12,7 @@
 #include "CubicInterpolation.hpp"
 #include "CompositeInterpolationXTable.hpp"
 //#include "RelativeErrorTables.hpp"
-//#include "CouponMode.hpp"
 #include "CouponList.hpp"
-//#include "Hll8Array.hpp"
-//#include "Hll6Array.hpp"
-//#include "Hll4Array.hpp"
-//#include "Conversions.hpp"
 
 #include <cstring>
 #include <cmath>
@@ -26,8 +21,9 @@
 
 namespace datasketches {
 
-HllArray::HllArray(const int lgConfigK, const TgtHllType tgtHllType)
-  : HllSketchImpl(lgConfigK, tgtHllType, CurMode::HLL) {
+template<typename A>
+HllArray<A>::HllArray(const int lgConfigK, const TgtHllType tgtHllType)
+  : HllSketchImpl<A>(lgConfigK, tgtHllType, CurMode::HLL) {
   hipAccum = 0.0;
   kxq0 = 1 << lgConfigK;
   kxq1 = 0.0;
@@ -37,8 +33,9 @@ HllArray::HllArray(const int lgConfigK, const TgtHllType tgtHllType)
   hllByteArr = nullptr; // allocated in derived class
 }
 
-HllArray::HllArray(const HllArray& that)
-  : HllSketchImpl(that.lgConfigK, that.tgtHllType, CurMode::HLL) {
+template<typename A>
+HllArray<A>::HllArray(const HllArray<A>& that)
+  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, CurMode::HLL) {
   hipAccum = that.getHipAccum();
   kxq0 = that.getKxQ0();
   kxq1 = that.getKxQ1();
@@ -48,15 +45,20 @@ HllArray::HllArray(const HllArray& that)
 
   // can determine length, so allocate here
   int arrayLen = that.getHllByteArrBytes();
-  hllByteArr = new uint8_t[arrayLen];
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
+  hllByteArr = uint8Alloc().allocate(arrayLen);
   std::copy(that.hllByteArr, that.hllByteArr + arrayLen, hllByteArr);
 }
 
-HllArray::~HllArray() {
-  delete [] hllByteArr;
+template<typename A>
+HllArray<A>::~HllArray() {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
+  uint8Alloc().deallocate(hllByteArr, getHllByteArrBytes());
+  //delete [] hllByteArr;
 }
 
-HllArray* HllArray::copyAs(const TgtHllType tgtHllType) const {
+template<typename A>
+HllArray<A>* HllArray<A>::copyAs(const TgtHllType tgtHllType) const {
   if (tgtHllType == getTgtHllType()) {
     return static_cast<HllArray*>(copy());
   }
@@ -72,21 +74,8 @@ HllArray* HllArray::copyAs(const TgtHllType tgtHllType) const {
   }
 }
 
-/*
-HllArray* HllArray::newHll(const int lgConfigK, const TgtHllType tgtHllType) {
-  switch (tgtHllType) {
-    case HLL_8:
-      return (HllArray*) new Hll8Array(lgConfigK);
-    case HLL_6:
-      return (HllArray*) new Hll6Array(lgConfigK);
-    case HLL_4:
-      return (HllArray*) new Hll4Array(lgConfigK);
-  }
-  throw std::logic_error("Invalid TgtHllType");
-}
-*/
-
-HllArray* HllArray::newHll(const void* bytes, size_t len) {
+template<typename A>
+HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   if (len < HllUtil<>::HLL_BYTE_ARR_START) {
     throw std::invalid_argument("Input data length insufficient to hold HLL array");
   }
@@ -114,7 +103,7 @@ HllArray* HllArray::newHll(const void* bytes, size_t len) {
   const int lgK = (int) data[HllUtil<>::LG_K_BYTE];
   const int curMin = (int) data[HllUtil<>::HLL_CUR_MIN_BYTE];
 
-  HllArray* sketch = HllSketchImplFactory::newHll(lgK, tgtHllType);
+  HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType);
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
 
@@ -149,7 +138,8 @@ HllArray* HllArray::newHll(const void* bytes, size_t len) {
   return sketch;
 }
 
-HllArray* HllArray::newHll(std::istream& is) {
+template<typename A>
+HllArray<A>* HllArray<A>::newHll(std::istream& is) {
   uint8_t listHeader[8];
   is.read((char*)listHeader, 8 * sizeof(uint8_t));
 
@@ -175,7 +165,7 @@ HllArray* HllArray::newHll(std::istream& is) {
   const int lgK = (int) listHeader[HllUtil<>::LG_K_BYTE];
   const int curMin = (int) listHeader[HllUtil<>::HLL_CUR_MIN_BYTE];
 
-  HllArray* sketch = HllSketchImplFactory::newHll(lgK, tgtHllType);
+  HllArray* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType);
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
 
@@ -196,19 +186,24 @@ HllArray* HllArray::newHll(std::istream& is) {
   
   if (auxCount > 0) { // necessarily TgtHllType == HLL_4
     int auxLgIntArrSize = (int) listHeader[4];
-    AuxHashMap* auxHashMap = AuxHashMap::deserialize(is, lgK, auxCount, auxLgIntArrSize, comapctFlag);
+    AuxHashMap<A>* auxHashMap = AuxHashMap<A>::deserialize(is, lgK, auxCount, auxLgIntArrSize, comapctFlag);
     ((Hll4Array*)sketch)->putAuxHashMap(auxHashMap);
   }
 
   return sketch;
 }
 
-std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllArray::serialize(bool compact) const {
+template<typename A>
+std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray<A>::serialize(bool compact) const {
   const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
-  std::unique_ptr<uint8_t[]> byteArr(new uint8_t[sketchSizeBytes]);
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
+  std::unique_ptr<uint8_t> byteArr(
+    uint8Alloc().allocate(sketchSizeBytes),
+    [sketchSizeBytes](uint8_t p){ uint8Alloc().deallocate(p, sketchSizeBytes); }
+    );
 
   uint8_t* bytes = byteArr.get();
-  AuxHashMap* auxHashMap = getAuxHashMap();
+  AuxHashMap<A>* auxHashMap = getAuxHashMap();
 
   bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
   bytes[HllUtil<>::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil<>::SER_VER);
@@ -253,7 +248,8 @@ std::pair<std::unique_ptr<uint8_t[]>, const size_t> HllArray::serialize(bool com
   return std::make_pair(std::move(byteArr), sketchSizeBytes);
 }
 
-void HllArray::serialize(std::ostream& os, const bool compact) const {
+template<typename A>
+void HllArray<A>::serialize(std::ostream& os, const bool compact) const {
   // header
   const uint8_t preInts(getPreInts());
   os.write((char*)&preInts, sizeof(preInts));
@@ -264,7 +260,7 @@ void HllArray::serialize(std::ostream& os, const bool compact) const {
   const uint8_t lgKByte((uint8_t) lgConfigK);
   os.write((char*)&lgKByte, sizeof(lgKByte));
 
-  AuxHashMap* auxHashMap = getAuxHashMap();
+  AuxHashMap<A>* auxHashMap = getAuxHashMap();
   uint8_t lgArrByte(0);
   if (auxHashMap != nullptr) {
     lgArrByte = auxHashMap->getLgAuxArrInts();
@@ -310,13 +306,8 @@ void HllArray::serialize(std::ostream& os, const bool compact) const {
   }
 }
 
-/*
-HllSketchImpl* HllArray::reset() {
-  return new CouponList(lgConfigK, tgtHllType, CurMode::LIST);
-}
-*/
-
-double HllArray::getEstimate() const {
+template<typename A>
+double HllArray<A>::getEstimate() const {
   if (oooFlag) {
     return getCompositeEstimate();
   }
@@ -338,7 +329,8 @@ double HllArray::getEstimate() const {
  * HLL4 always maintains both curMin and numAtCurMin dynamically. Nonetheless, the rules for
  * the very small values <= k where curMin = 0 still apply.
  */
-double HllArray::getLowerBound(const int numStdDev) const {
+template<typename A>
+double HllArray<A>::getLowerBound(const int numStdDev) const {
   HllUtil<>::checkNumStdDev(numStdDev);
   const int configK = 1 << lgConfigK;
   const double numNonZeros = ((curMin == 0) ? (configK - numAtCurMin) : configK);
@@ -362,7 +354,8 @@ double HllArray::getLowerBound(const int numStdDev) const {
   return fmax(estimate / (1.0 + relErr), numNonZeros);
 }
 
-double HllArray::getUpperBound(const int numStdDev) const {
+template<typename A>
+double HllArray<A>::getUpperBound(const int numStdDev) const {
   HllUtil<>::checkNumStdDev(numStdDev);
   const int configK = 1 << lgConfigK;
 
@@ -392,7 +385,8 @@ double HllArray::getUpperBound(const int numStdDev) const {
  * @return the composite estimate
  */
 // Original C: again-two-registers.c hhb_get_composite_estimate L1489
-double HllArray::getCompositeEstimate() const {
+template<typename A>
+double HllArray<A>::getCompositeEstimate() const {
   const double rawEst = getHllRawEstimate(lgConfigK, kxq0 + kxq1);
 
   const double* xArr = CompositeInterpolationXTable::get_x_arr(lgConfigK);
@@ -439,115 +433,137 @@ double HllArray::getCompositeEstimate() const {
   return (avgEst > (crossOver * (1 << lgConfigK))) ? adjEst : linEst;
 }
 
-double HllArray::getKxQ0() const {
+template<typename A>
+double HllArray<A>::getKxQ0() const {
   return kxq0;
 }
 
-double HllArray::getKxQ1() const {
+template<typename A>
+double HllArray<A>::getKxQ1() const {
   return kxq1;
 }
 
-double HllArray::getHipAccum() const {
+template<typename A>
+double HllArray<A>::getHipAccum() const {
   return hipAccum;
 }
 
-int HllArray::getCurMin() const {
+template<typename A>
+int HllArray<A>::getCurMin() const {
   return curMin;
 }
 
-int HllArray::getNumAtCurMin() const {
+template<typename A>
+int HllArray<A>::getNumAtCurMin() const {
   return numAtCurMin;
 }
 
-CurMode HllArray::getCurMode() const {
-  return curMode;
-}
-
-void HllArray::putKxQ0(const double kxq0) {
+template<typename A>
+void HllArray<A>::putKxQ0(const double kxq0) {
   this->kxq0 = kxq0;
 }
 
-void HllArray::putKxQ1(const double kxq1) {
+template<typename A>
+void HllArray<A>::putKxQ1(const double kxq1) {
   this->kxq1 = kxq1;
 }
 
-void HllArray::putHipAccum(const double hipAccum) {
+template<typename A>
+void HllArray<A>::putHipAccum(const double hipAccum) {
   this->hipAccum = hipAccum;
 }
 
-void HllArray::putCurMin(const int curMin) {
+template<typename A>
+void HllArray<A>::putCurMin(const int curMin) {
   this->curMin = curMin;
 }
 
-void HllArray::putNumAtCurMin(const int numAtCurMin) {
+template<typename A>
+void HllArray<A>::putNumAtCurMin(const int numAtCurMin) {
   this->numAtCurMin = numAtCurMin;
 }
 
-void HllArray::decNumAtCurMin() {
+template<typename A>
+void HllArray<A>::decNumAtCurMin() {
   --numAtCurMin;
 }
 
-void HllArray::addToHipAccum(const double delta) {
+template<typename A>
+void HllArray<A>::addToHipAccum(const double delta) {
   hipAccum += delta;
 }
 
-bool HllArray::isCompact() const {
+template<typename A>
+bool HllArray<A>::isCompact() const {
   return false;
 }
 
-bool HllArray::isEmpty() const {
+template<typename A>
+bool HllArray<A>::isEmpty() const {
   const int configK = 1 << getLgConfigK();
   return (getCurMin() == 0) && (getNumAtCurMin() == configK);
 }
 
-void HllArray::putOutOfOrderFlag(bool flag) {
+template<typename A>
+void HllArray<A>::putOutOfOrderFlag(bool flag) {
   oooFlag = flag;
 }
 
-bool HllArray::isOutOfOrderFlag() const {
+template<typename A>
+bool HllArray<A>::isOutOfOrderFlag() const {
   return oooFlag;
 }
 
-int HllArray::hll4ArrBytes(const int lgConfigK) {
+template<typename A>
+int HllArray<A>::hll4ArrBytes(const int lgConfigK) {
   return 1 << (lgConfigK - 1);
 }
 
-int HllArray::hll6ArrBytes(const int lgConfigK) {
+template<typename A>
+int HllArray<A>::hll6ArrBytes(const int lgConfigK) {
   const int numSlots = 1 << lgConfigK;
   return ((numSlots * 3) >> 2) + 1;
 }
 
-int HllArray::hll8ArrBytes(const int lgConfigK) {
+template<typename A>
+int HllArray<A>::hll8ArrBytes(const int lgConfigK) {
   return 1 << lgConfigK;
 }
 
-int HllArray::getMemDataStart() const {
+template<typename A>
+int HllArray<A>::getMemDataStart() const {
   return HllUtil<>::HLL_BYTE_ARR_START;
 }
 
-int HllArray::getUpdatableSerializationBytes() const {
+template<typename A>
+int HllArray<A>::getUpdatableSerializationBytes() const {
   return HllUtil<>::HLL_BYTE_ARR_START + getHllByteArrBytes();
 }
 
-int HllArray::getCompactSerializationBytes() const {
+template<typename A>
+int HllArray<A>::getCompactSerializationBytes() const {
   AuxHashMap* auxHashMap = getAuxHashMap();
   const int auxCountBytes = ((auxHashMap == nullptr) ? 0 : auxHashMap->getCompactSizeBytes());
   return HllUtil<>::HLL_BYTE_ARR_START + getHllByteArrBytes() + auxCountBytes;
 }
 
-int HllArray::getPreInts() const {
+template<typename A>
+int HllArray<A>::getPreInts() const {
   return HllUtil<>::HLL_PREINTS;
 }
 
-std::unique_ptr<PairIterator> HllArray::getAuxIterator() const {
+template<typename A>
+std::unique_ptr<PairIterator> HllArray<A>::getAuxIterator() const {
   return nullptr;
 }
 
-AuxHashMap* HllArray::getAuxHashMap() const {
+template<typename A>
+AuxHashMap<A>* HllArray<A>::getAuxHashMap() const {
   return nullptr;
 }
 
-void HllArray::hipAndKxQIncrementalUpdate(HllArray& host, const int oldValue, const int newValue) {
+template<typename A>
+void HllArray<A>::hipAndKxQIncrementalUpdate(HllArray<A>& host, const int oldValue, const int newValue) {
   if (newValue <= oldValue) {
     throw std::invalid_argument("newValue must be greater than oldValue: " + std::to_string(newValue)
                                 + " vs " + std::to_string(oldValue));
@@ -571,7 +587,8 @@ void HllArray::hipAndKxQIncrementalUpdate(HllArray& host, const int oldValue, co
  * @return the very low range estimate
  */
 //In C: again-two-registers.c hhb_get_improved_linear_counting_estimate L1274
-double HllArray::getHllBitMapEstimate(const int lgConfigK, const int curMin, const int numAtCurMin) const {
+template<typename A>
+double HllArray<A>::getHllBitMapEstimate(const int lgConfigK, const int curMin, const int numAtCurMin) const {
   const  int configK = 1 << lgConfigK;
   const  int numUnhitBuckets =  ((curMin == 0) ? numAtCurMin : 0);
 
@@ -585,7 +602,8 @@ double HllArray::getHllBitMapEstimate(const int lgConfigK, const int curMin, con
 }
 
 //In C: again-two-registers.c hhb_get_raw_estimate L1167
-double HllArray::getHllRawEstimate(const int lgConfigK, const double kxqSum) const {
+template<typename A>
+double HllArray<A>::getHllRawEstimate(const int lgConfigK, const double kxqSum) const {
   const int configK = 1 << lgConfigK;
   double correctionFactor;
   if (lgConfigK == 4) { correctionFactor = 0.673; }

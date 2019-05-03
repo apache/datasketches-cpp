@@ -14,7 +14,8 @@
 
 namespace datasketches {
 
-IntArrayPairIterator::IntArrayPairIterator(const int* array, const int len, const int lgConfigK)
+template<typename A>
+IntArrayPairIterator<A>::IntArrayPairIterator(const int* array, const int len, const int lgConfigK)
   : array(array),
     slotMask((1 << lgConfigK) - 1),
     lengthPairs(len) {
@@ -22,11 +23,13 @@ IntArrayPairIterator::IntArrayPairIterator(const int* array, const int len, cons
   pair = -1;
 }
 
-IntArrayPairIterator::~IntArrayPairIterator() {
+template<typename A>
+IntArrayPairIterator<A>::~IntArrayPairIterator() {
   // we don't own array so nothing to do
 }
 
-std::string IntArrayPairIterator::getHeader() {
+template<typename A>
+std::string IntArrayPairIterator<A>::getHeader() {
   std::ostringstream ss;
   ss << std::left
      << std::setw(10) << "Index"
@@ -36,7 +39,8 @@ std::string IntArrayPairIterator::getHeader() {
   return ss.str();
 }
 
-std::string IntArrayPairIterator::getString() {
+template<typename A>
+std::string IntArrayPairIterator<A>::getString() {
   std::ostringstream ss;
   ss << std::left
      << std::setw(10) << getIndex()
@@ -46,28 +50,33 @@ std::string IntArrayPairIterator::getString() {
   return ss.str();
 }
 
-
-int IntArrayPairIterator::getIndex() {
+template<typename A>
+int IntArrayPairIterator<A>::getIndex() {
   return index;
 }
 
-int IntArrayPairIterator::getKey() {
+template<typename A>
+int IntArrayPairIterator<A>::getKey() {
   return HllUtil<>::getLow26(pair);
 }
 
-int IntArrayPairIterator::getPair() {
+template<typename A>
+int IntArrayPairIterator<A>::getPair() {
   return pair;
 }
 
-int IntArrayPairIterator::getSlot() {
+template<typename A>
+int IntArrayPairIterator<A>::getSlot() {
   return getKey() & slotMask;
 }
 
-int IntArrayPairIterator::getValue() {
+template<typename A>
+int IntArrayPairIterator<A>::getValue() {
   return HllUtil<>::getValue(pair);
 }
 
-bool IntArrayPairIterator::nextAll() {
+template<typename A>
+bool IntArrayPairIterator<A>::nextAll() {
   if (++index < lengthPairs) {
     pair = array[index];
     return true;
@@ -75,7 +84,8 @@ bool IntArrayPairIterator::nextAll() {
   return false;
 }
 
-bool IntArrayPairIterator::nextValid() {
+template<typename A>
+bool IntArrayPairIterator<A>::nextValid() {
   while (++index < lengthPairs) {
     const int p = array[index];
     if (p != HllUtil<>::EMPTY) {

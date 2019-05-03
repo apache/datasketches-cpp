@@ -15,16 +15,19 @@
 
 namespace datasketches {
 
-Hll4Iterator::Hll4Iterator(const Hll4Array& hllArray, const int lengthPairs)
-  : HllPairIterator(lengthPairs),
+template<typename A>
+Hll4Iterator<A>::Hll4Iterator(const Hll4Array<A>& hllArray, const int lengthPairs)
+  : HllPairIterator<A>(lengthPairs),
     hllArray(hllArray)
 {}
 
-Hll4Iterator::~Hll4Iterator() { }
+template<typename A>
+Hll4Iterator<A>::~Hll4Iterator() { }
 
-int Hll4Iterator::value() {
+template<typename A>
+int Hll4Iterator<A>::value() {
   const int nib = hllArray.getSlot(index);
-  if (nib == HllUtil<>::AUX_TOKEN) {
+  if (nib == HllUtil<A>::AUX_TOKEN) {
     // auxHashMap cannot be null here
     return hllArray.getAuxHashMap()->mustFindValueFor(index);
   } else {
@@ -32,15 +35,18 @@ int Hll4Iterator::value() {
   }
 }
 
-Hll4Array::Hll4Array(const int lgConfigK) :
+template<typename A>
+Hll4Array<A>::Hll4Array(const int lgConfigK) :
     HllArray(lgConfigK, TgtHllType::HLL_4) {
   const int numBytes = hll4ArrBytes(lgConfigK);
-  hllByteArr = new uint8_t[numBytes];
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
+  hllByteArr = uint8Alloc().allocate(numBytes);
   std::fill(hllByteArr, hllByteArr + numBytes, 0);
   auxHashMap = nullptr;
 }
 
-Hll4Array::Hll4Array(const Hll4Array& that) :
+template<typename A>
+Hll4Array<A>::Hll4Array(const Hll4Array<A>& that) :
   HllArray(that)
 {
   // can determine hllByteArr size in parent class, no need to allocate here
@@ -52,62 +58,88 @@ Hll4Array::Hll4Array(const Hll4Array& that) :
   }
 }
 
-Hll4Array::~Hll4Array() {
+template<typename A>
+Hll4Array<A>::~Hll4Array() {
   // hllByteArr deleted in parent
   if (auxHashMap != nullptr) {
-    delete auxHashMap;
+    AuxHashMap<A>::make_deleter()(auxHashMap);
   }
 }
 
-Hll4Array* Hll4Array::copy() const {
-  return new Hll4Array(*this);
+template<typename A>
+std::function<void(HllSketchImpl<A>*)> Hll4Array<A>::get_deleter() const {
+  return [](Hll4Array<A>* ptr) {
+    typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Array> hll4Alloc;
+    ptr->~Hll4Array();
+    hll4Alloc().deallocate(ptr, 1);
+  };
 }
 
-std::unique_ptr<PairIterator> Hll4Array::getIterator() const {
-  PairIterator* itr = new Hll4Iterator(*this, 1 << lgConfigK);
-  return std::unique_ptr<PairIterator>(itr);
+template<typename A>
+Hll4Array<A>* Hll4Array<A>::copy() const {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Array> hll4Alloc;
+  Hll4Array<A>* hll = hll4Alloc().allocate(1);
+  hll4Alloc().construct(hll, *this);  
 }
 
-std::unique_ptr<PairIterator> Hll4Array::getAuxIterator() const {
+template<typename A>
+std::unique_ptr<PairIterator<A>> Hll4Array<A>::getIterator() const {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Iterator> itrAlloc;
+  PairIterator<A>* itr = itrAlloc().allocate(1);
+  itrAlloc().construct(itr, *this, 1 << lgConfigK);
+  return std::unique_ptr<PairIterator<A>>(
+    itr,
+    [](Hll4Iterator* ptr) { ptr->~Hll4Iterator(); itrAlloc().deallocate(ptr, 1); }
+  );
+}
+
+template<typename A>
+std::unique_ptr<PairIterator<A>> Hll4Array<A>::getAuxIterator() const {
   if (auxHashMap != nullptr) {
     return auxHashMap->getIterator();
   }
   return nullptr;
 }
 
-int Hll4Array::getUpdatableSerializationBytes() const {
+template<typename A>
+int Hll4Array<A>::getUpdatableSerializationBytes() const {
   AuxHashMap* auxHashMap = getAuxHashMap();
   int auxBytes;
   if (auxHashMap == nullptr) {
-    auxBytes = 4 << HllUtil<>::LG_AUX_ARR_INTS[lgConfigK];
+    auxBytes = 4 << HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK];
   } else {
     auxBytes = 4 << auxHashMap->getLgAuxArrInts();
   }
-  return HllUtil<>::HLL_BYTE_ARR_START + getHllByteArrBytes() + auxBytes;
+  return HllUtil<A>::HLL_BYTE_ARR_START + getHllByteArrBytes() + auxBytes;
 }
 
-int Hll4Array::getHllByteArrBytes() const {
+template<typename A>
+int Hll4Array<A>::getHllByteArrBytes() const {
   return hll4ArrBytes(lgConfigK);
 }
 
-AuxHashMap* Hll4Array::getAuxHashMap() const {
+template<typename A>
+AuxHashMap<A>* Hll4Array<A>::getAuxHashMap() const {
   return auxHashMap;
 }
 
-void Hll4Array::putAuxHashMap(AuxHashMap* auxHashMap) {
+template<typename A>
+void Hll4Array<A>::putAuxHashMap(AuxHashMap<A>* auxHashMap) {
   this->auxHashMap = auxHashMap;
 }
 
-int Hll4Array::getSlot(const int slotNo) const {
+template<typename A>
+int Hll4Array<A>::getSlot(const int slotNo) const {
   int theByte = hllByteArr[slotNo >> 1];
   if ((slotNo & 1) > 0) { // odd?
     theByte >>= 4;
   }
-  return theByte & HllUtil<>::loNibbleMask;
+  return theByte & HllUtil<A>::loNibbleMask;
 }
 
-HllSketchImpl* Hll4Array::couponUpdate(const int coupon) {
-  const int newValue = HllUtil<>::getValue(coupon);
+template<typename A>
+HllSketchImpl<A>* Hll4Array<A>::couponUpdate(const int coupon) {
+  const int newValue = HllUtil<A>::getValue(coupon);
   if (newValue <= 0) {
     throw std::logic_error("newValue must be a posittive integer. Found: " + std::to_string(newValue));
   }
@@ -117,25 +149,27 @@ HllSketchImpl* Hll4Array::couponUpdate(const int coupon) {
   }
 
   const int configKmask = (1 << lgConfigK) - 1;
-  const int slotNo = HllUtil<>::getLow26(coupon) & configKmask;
+  const int slotNo = HllUtil<A>::getLow26(coupon) & configKmask;
   internalHll4Update(slotNo, newValue);
   return this;
 }
 
-void Hll4Array::putSlot(const int slotNo, const int newValue) {
+template<typename A>
+void Hll4Array<A>::putSlot(const int slotNo, const int newValue) {
   const int byteno = slotNo >> 1;
   const int oldValue = hllByteArr[byteno];
   if ((slotNo & 1) == 0) { // set low nibble
     hllByteArr[byteno]
-      = (uint8_t) ((oldValue & HllUtil<>::hiNibbleMask) | (newValue & HllUtil<>::loNibbleMask));
+      = (uint8_t) ((oldValue & HllUtil<A>::hiNibbleMask) | (newValue & HllUtil<A>::loNibbleMask));
   } else { // set high nibble
     hllByteArr[byteno]
-      = (uint8_t) ((oldValue & HllUtil<>::loNibbleMask) | ((newValue << 4) & HllUtil<>::hiNibbleMask));
+      = (uint8_t) ((oldValue & HllUtil<A>::loNibbleMask) | ((newValue << 4) & HllUtil<A>::hiNibbleMask));
   }
 }
 
 //In C: two-registers.c Line 836 in "hhb_abstract_set_slot_if_new_value_bigger" non-sparse
-void Hll4Array::internalHll4Update(const int slotNo, const int newVal) {
+template<typename A>
+void Hll4Array<A>::internalHll4Update(const int slotNo, const int newVal) {
   if ((slotNo < 0) || (slotNo >= (1 << lgConfigK))) {
     throw std::logic_error("slotNo must be between 0 and 1<<lgConfigK. Found: " + std::to_string(slotNo));
   }
@@ -150,7 +184,7 @@ void Hll4Array::internalHll4Update(const int slotNo, const int newVal) {
   if (newVal > lbOnOldValue) { // 842
     // Note: if an AUX_TOKEN exists, then auxHashMap must alraedy exist
     // 846: rawStoredOldValue == AUX_TOKEN
-    const int actualOldValue = (rawStoredOldValue < HllUtil<>::AUX_TOKEN)
+    const int actualOldValue = (rawStoredOldValue < HllUtil<A>::AUX_TOKEN)
        ? (lbOnOldValue) : (auxHashMap->mustFindValueFor(slotNo));
 
     if (newVal > actualOldValue) { // 848: actualOldValue could still be 0; newValue > 0
@@ -168,11 +202,11 @@ void Hll4Array::internalHll4Update(const int slotNo, const int newVal) {
       // and lgConfigK bounds do not allow overflowing an int
       //assert(shiftedNewValue >= 0);
 
-      if (rawStoredOldValue == HllUtil<>::AUX_TOKEN) { // 879
+      if (rawStoredOldValue == HllUtil<A>::AUX_TOKEN) { // 879
         // Given that we have an AUX_TOKEN, tehre are 4 cases for how to
         // actually modify the data structure
 
-        if (shiftedNewValue >= HllUtil<>::AUX_TOKEN) { // case 1: 881
+        if (shiftedNewValue >= HllUtil<A>::AUX_TOKEN) { // case 1: 881
           // the byte array already contains aux token
           // This is the case where old and new values are both exceptions.
           // The 4-bit array already is AUX_TOKEN, only need to update auxHashMap
@@ -185,13 +219,13 @@ void Hll4Array::internalHll4Update(const int slotNo, const int newVal) {
         }
       }
       else { // rawStoredOldValue != AUX_TOKEN
-        if (shiftedNewValue >= HllUtil<>::AUX_TOKEN) { // case 3: 892
+        if (shiftedNewValue >= HllUtil<A>::AUX_TOKEN) { // case 3: 892
           // This is the case where the old value is not an exception and the new value is.
           // The AUX_TOKEN must be stored in the 4-bit array and the new value
           // added to the exception table
-          putSlot(slotNo, HllUtil<>::AUX_TOKEN);
+          putSlot(slotNo, HllUtil<A>::AUX_TOKEN);
           if (auxHashMap == nullptr) {
-            auxHashMap = new AuxHashMap(HllUtil<>::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
+            auxHashMap = AuxHashMap<A>::newAuxHashMap(HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
           }
           auxHashMap->mustAdd(slotNo, newVal);
         }
@@ -223,7 +257,8 @@ void Hll4Array::internalHll4Update(const int slotNo, const int newVal) {
 // Entering this routine assumes that all slots have valid values > 0 and <= 15.
 // An AuxHashMap must exist if any values in the current hllByteArray are already 15.
 // In C: again-two-registers.c Lines 710 "hhb_shift_to_bigger_curmin"
-void Hll4Array::shiftToBiggerCurMin() {
+template<typename A>
+void Hll4Array<A>::shiftToBiggerCurMin() {
   const int newCurMin = curMin + 1;
   const int configK = 1 << lgConfigK;
   const int configKmask = configK - 1;
@@ -241,7 +276,7 @@ void Hll4Array::shiftToBiggerCurMin() {
     if (oldStoredValue == 0) {
       throw std::runtime_error("Array slots cannot be 0 at this point.");
     }
-    if (oldStoredValue < HllUtil<>::AUX_TOKEN) {
+    if (oldStoredValue < HllUtil<A>::AUX_TOKEN) {
       putSlot(i, --oldStoredValue);
       if (oldStoredValue == 0) { numAtNewCurMin++; }
     } else { //oldStoredValue == AUX_TOKEN
@@ -254,13 +289,13 @@ void Hll4Array::shiftToBiggerCurMin() {
 
   // If old AuxHashMap exists, walk through it updating some slots and build a new AuxHashMap
   // if needed.
-  AuxHashMap* newAuxMap = nullptr;
+  AuxHashMap<A>* newAuxMap = nullptr;
   if (auxHashMap != nullptr) {
     int slotNum;
     int oldActualVal;
     int newShiftedVal;
 
-    std::unique_ptr<PairIterator> itr = auxHashMap->getIterator();
+    std::unique_ptr<PairIterator<A>> itr = auxHashMap->getIterator();
     while (itr->nextValid()) {
       slotNum = itr->getKey() & configKmask;
       oldActualVal = itr->getValue();
@@ -269,11 +304,11 @@ void Hll4Array::shiftToBiggerCurMin() {
         throw std::logic_error("oldActualVal < newCurMin when incrementing curMin");
       }
 
-      if (getSlot(slotNum) != HllUtil<>::AUX_TOKEN) {
+      if (getSlot(slotNum) != HllUtil<A>::AUX_TOKEN) {
         throw std::logic_error("getSlot(slotNum) != AUX_TOKEN for item in auxiliary hash map");
       }
       // Array slot != AUX_TOKEN at getSlot(slotNum);
-      if (newShiftedVal < HllUtil<>::AUX_TOKEN) { // 756
+      if (newShiftedVal < HllUtil<A>::AUX_TOKEN) { // 756
         if (newShiftedVal != 14) {
           throw std::logic_error("newShiftedVal != 14 for item in old auxHashMap despite curMin increment");
         }
@@ -285,7 +320,7 @@ void Hll4Array::shiftToBiggerCurMin() {
       else { //newShiftedVal >= AUX_TOKEN
         // the former exception remains an exception, so must be added to the newAuxMap
         if (newAuxMap == nullptr) {
-          newAuxMap = new AuxHashMap(HllUtil<>::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
+          newAuxMap = AuxHashMap<A>::newAuxHashMap(HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
         }
         newAuxMap->mustAdd(slotNum, oldActualVal);
       }
@@ -305,7 +340,7 @@ void Hll4Array::shiftToBiggerCurMin() {
   }
 
   if (auxHashMap != nullptr) {
-    delete auxHashMap;
+    AuxHashMap<A>::make_deleter()(auxHashMap);
   }
   auxHashMap = newAuxMap;
 

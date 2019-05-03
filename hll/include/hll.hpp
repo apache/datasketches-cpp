@@ -20,7 +20,9 @@ enum TgtHllType {
     HLL_8
 };
 
+template<typename A>
 class HllSketchImpl;
+template<typename A>
 class PairIterator;
 
 template<typename A>
@@ -44,8 +46,8 @@ class HllSketch final {
 
     void reset();
     
-    std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const;
-    std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const;
+    std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const;
+    std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const;
     void serializeCompact(std::ostream& os) const;
     void serializeUpdatable(std::ostream& os) const;
     
@@ -100,10 +102,10 @@ class HllSketch final {
     static double getRelErr(bool upperBound, bool unioned,
                             int lgConfigK, int numStdDev);
 
-    std::unique_ptr<PairIterator> getIterator() const;
+    std::unique_ptr<PairIterator<A>> getIterator() const;
 
   private:
-    explicit HllSketch(HllSketchImpl* that);
+    explicit HllSketch(HllSketchImpl<A>* that);
 
     void couponUpdate(int coupon);
 
@@ -118,7 +120,7 @@ class HllSketch final {
     typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch> AllocHllSketch;
     friend AllocHllSketch;
 
-    HllSketchImpl* hllSketchImpl;
+    HllSketchImpl<A>* hllSketchImpl;
     friend HllUnion<A>;
 };
 
@@ -155,8 +157,8 @@ class HllUnion {
 
     virtual HllSketch<A> getResult(TgtHllType tgtHllType = HLL_4) const;
 
-    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const;
-    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const;
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const;
+    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const;
     virtual void serializeCompact(std::ostream& os) const;
     virtual void serializeUpdatable(std::ostream& os) const;
 
@@ -204,9 +206,9 @@ class HllUnion {
     * //@return the union of the two sketches in the form of the internal HllSketchImpl, which for
     * //the union is always in HLL_8 form.
     */
-    void unionImpl(HllSketchImpl* incomingImpl, int lgMaxK);
+    void unionImpl(HllSketchImpl<A>* incomingImpl, int lgMaxK);
 
-    static HllSketchImpl* copyOrDownsampleHll(HllSketchImpl* srcImpl, int tgtLgK);
+    static HllSketchImpl<A>* copyOrDownsampleHll(HllSketchImpl<A>* srcImpl, int tgtLgK);
 
     void couponUpdate(int coupon);
 
@@ -216,7 +218,7 @@ class HllUnion {
     bool isEstimationMode() const;
 
     // calls couponUpdate on sketch, freeing the old sketch upon changes in CurMode
-    static HllSketchImpl* leakFreeCouponUpdate(HllSketchImpl* impl, int coupon);
+    static HllSketchImpl<A>* leakFreeCouponUpdate(HllSketchImpl<A>* impl, int coupon);
 
     int lgMaxK;
     HllSketch<A>* gadget;

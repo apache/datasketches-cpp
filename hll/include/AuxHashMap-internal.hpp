@@ -8,6 +8,7 @@
 
 #include "HllUtil.hpp"
 #include "AuxHashMap.hpp"
+#include "PairIterator.hpp"
 #include "IntArrayPairIterator.hpp"
 
 #include <cstring>
@@ -16,36 +17,56 @@
 
 namespace datasketches {
 
-AuxHashMap::AuxHashMap(int lgAuxArrInts,int lgConfigK)
+template<typename A>
+AuxHashMap<A>::AuxHashMap(int lgAuxArrInts, int lgConfigK)
   : lgConfigK(lgConfigK),
     lgAuxArrInts(lgAuxArrInts),
     auxCount(0) {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
   const int numItems = 1 << lgAuxArrInts;
-  auxIntArr = new int[numItems];
+  auxIntArr = intAlloc().allocate(numItems);
   std::fill(auxIntArr, auxIntArr + numItems, 0);
 }
 
-AuxHashMap::AuxHashMap(AuxHashMap& that)
+template<typename A>
+AuxHashMap<A>* AuxHashMap<A>::newAuxHashMap(int lgAuxArrInts, int lgConfigK) {
+  AuxHashMap* map = ahmAlloc().allocate(1);
+  ahmAlloc().construct(map, lgAuxArrInts, lgConfigK);
+  return map;
+}
+
+template<typename A>
+AuxHashMap<A>::AuxHashMap(AuxHashMap& that)
   : lgConfigK(that.lgConfigK),
     lgAuxArrInts(that.lgAuxArrInts),
     auxCount(that.auxCount) {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
   const int numItems = 1 << lgAuxArrInts;
-  auxIntArr = new int[numItems];
+  auxIntArr = intAlloc().allocate(numItems);
   std::copy(that.auxIntArr, that.auxIntArr + numItems, auxIntArr);
 }
 
-AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
-                                    int lgConfigK,
-                                    int auxCount, int lgAuxArrInts,
-                                    bool srcCompact) {
+template<typename A>
+AuxHashMap<A>* AuxHashMap<A>::newAuxHashMap(AuxHashMap& that) {
+  AuxHashMap* map = ahmAlloc().allocate(1);
+  ahmAlloc().construct(map, that);
+  return map;
+}
+
+template<typename A>
+AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
+                                          int lgConfigK,
+                                          int auxCount, int lgAuxArrInts,
+                                          bool srcCompact) {
   int lgArrInts = lgAuxArrInts;
   if (srcCompact) { // early compact versions didn't use LgArr byte field so ignore input
-    lgArrInts = HllUtil<>::computeLgArrInts(HLL, auxCount, lgConfigK);
+    lgArrInts = HllUtil<A>::computeLgArrInts(HLL, auxCount, lgConfigK);
   } else { // updatable
     lgArrInts = lgAuxArrInts;
   }
 
-  AuxHashMap* auxHashMap = new AuxHashMap(lgArrInts, lgConfigK);
+  AuxHashMap* auxHashMap = ahmAlloc().allocate(1);
+  ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
   int configKmask = (1 << lgConfigK) - 1;
 
   const int* auxPtr = static_cast<const int*>(bytes);
@@ -55,8 +76,8 @@ AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
     }
     for (int i = 0; i < auxCount; ++i) {
       int pair = auxPtr[i];
-      int slotNo = HllUtil<>::getLow26(pair) & configKmask;
-      int value = HllUtil<>::getValue(pair);
+      int slotNo = HllUtil<A>::getLow26(pair) & configKmask;
+      int value = HllUtil<A>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
     }
   } else { // updatable
@@ -66,9 +87,9 @@ AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
     }
     for (int i = 0; i < itemsToRead; ++i) {
       int pair = auxPtr[i];
-      if (pair == HllUtil<>::EMPTY) { continue; }
-      int slotNo = HllUtil<>::getLow26(pair) & configKmask;
-      int value = HllUtil<>::getValue(pair);
+      if (pair == HllUtil<A>::EMPTY) { continue; }
+      int slotNo = HllUtil<A>::getLow26(pair) & configKmask;
+      int value = HllUtil<A>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
     }
   }
@@ -80,26 +101,27 @@ AuxHashMap* AuxHashMap::deserialize(const void* bytes, size_t len,
   return auxHashMap;                                    
 }
 
-
-AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
-                                    const int auxCount, const int lgAuxArrInts,
-                                    const bool srcCompact) {
+template<typename A>
+AuxHashMap<A>* AuxHashMap<A>::deserialize(std::istream& is, const int lgConfigK,
+                                          const int auxCount, const int lgAuxArrInts,
+                                          const bool srcCompact) {
   int lgArrInts = lgAuxArrInts;
   if (srcCompact) { // early compact versions didn't use LgArr byte field so ignore input
-    lgArrInts = HllUtil<>::computeLgArrInts(HLL, auxCount, lgConfigK);
+    lgArrInts = HllUtil<A>::computeLgArrInts(HLL, auxCount, lgConfigK);
   } else { // updatable
     lgArrInts = lgAuxArrInts;
   }
   
-  AuxHashMap* auxHashMap = new AuxHashMap(lgArrInts, lgConfigK);
+  AuxHashMap* auxHashMap = ahmAlloc().allocate(1);
+  ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
   int configKmask = (1 << lgConfigK) - 1;
 
   if (srcCompact) {
     int pair;
     for (int i = 0; i < auxCount; ++i) {
       is.read((char*)&pair, sizeof(pair));
-      int slotNo = HllUtil<>::getLow26(pair) & configKmask;
-      int value = HllUtil<>::getValue(pair);
+      int slotNo = HllUtil<A>::getLow26(pair) & configKmask;
+      int value = HllUtil<A>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
     }
   } else { // updatable
@@ -107,9 +129,9 @@ AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
     int pair;
     for (int i = 0; i < itemsToRead; ++i) {
       is.read((char*)&pair, sizeof(pair));
-      if (pair == HllUtil<>::EMPTY) { continue; }
-      int slotNo = HllUtil<>::getLow26(pair) & configKmask;
-      int value = HllUtil<>::getValue(pair);
+      if (pair == HllUtil<A>::EMPTY) { continue; }
+      int slotNo = HllUtil<A>::getLow26(pair) & configKmask;
+      int value = HllUtil<A>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
     }
   }
@@ -121,43 +143,72 @@ AuxHashMap* AuxHashMap::deserialize(std::istream& is, const int lgConfigK,
   return auxHashMap;
 }
 
-AuxHashMap::~AuxHashMap() {
+template<typename A>
+AuxHashMap<A>::~AuxHashMap<A>() {
   // should be no way to have an object without a valid array
-  delete auxIntArr;
+  typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
+  intAlloc().deallocate(auxIntArr, 1 << lgAuxArrInts);
 }
 
-AuxHashMap* AuxHashMap::copy() {
-  return new AuxHashMap(*this);
+template<typename A>
+std::function<void(AuxHashMap<A>*)> AuxHashMap<A>::make_deleter() {
+  return [](AuxHashMap<A>* ptr) {    
+    ptr->~AuxHashMap();
+    ahmAlloc().deallocate(ptr, 1);
+  };
 }
 
-int AuxHashMap::getAuxCount() {
+template<typename A>
+AuxHashMap<A>* AuxHashMap<A>::copy() const {
+  AuxHashMap<A>* ptr = ahmAlloc().allocate(1);
+  ahmAlloc().construct(ptr, *this);
+  return ptr;
+}
+
+template<typename A>
+int AuxHashMap<A>::getAuxCount() const {
   return auxCount;
 }
 
-int* AuxHashMap::getAuxIntArr() {
+template<typename A>
+int* AuxHashMap<A>::getAuxIntArr(){
   return auxIntArr;
 }
 
-int AuxHashMap::getLgAuxArrInts() {
+template<typename A>
+int AuxHashMap<A>::getLgAuxArrInts() const {
   return lgAuxArrInts;
 }
 
-int AuxHashMap::getCompactSizeBytes() {
+template<typename A>
+int AuxHashMap<A>::getCompactSizeBytes() const {
   return auxCount << 2;
 }
 
-int AuxHashMap::getUpdatableSizeBytes() {
+template<typename A>
+int AuxHashMap<A>::getUpdatableSizeBytes() const {
   return 4 << lgAuxArrInts;
 }
 
-std::unique_ptr<PairIterator> AuxHashMap::getIterator() {
-  PairIterator* itr = new IntArrayPairIterator(auxIntArr, 1 << lgAuxArrInts, lgConfigK);
-  return std::unique_ptr<PairIterator>(itr);
+template<typename A>
+std::unique_ptr<PairIterator<A>> AuxHashMap<A>::getIterator() const {
+  // TODO: use allocator
+  typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
+  PairIterator<A>* itr = iapiAlloc().allocate(1);
+  iapiAlloc().construct(itr, auxIntArr, 1 << lgAuxArrInts, lgConfigK);
+  return std::unique_ptr<PairIterator<A>>(
+    itr,
+    [](IntArrayPairIterator<A>* ptr) {
+      ptr->~IntArrayPairIterator();
+      iapiAlloc().deallocate(ptr, 1);
+    }
+    );
 }
 
-void AuxHashMap::mustAdd(const int slotNo, const int value) {
+template<typename A>
+void AuxHashMap<A>::mustAdd(const int slotNo, const int value) {
   const int index = find(auxIntArr, lgAuxArrInts, lgConfigK, slotNo);
-  const int entry_pair = HllUtil<>::pair(slotNo, value);
+  const int entry_pair = HllUtil<A>::pair(slotNo, value);
   if (index >= 0) {
     throw std::invalid_argument("Found a slotNo that should not be there: SlotNo: "
                                 + std::to_string(slotNo) + ", Value: " + std::to_string(value));
@@ -169,19 +220,21 @@ void AuxHashMap::mustAdd(const int slotNo, const int value) {
   checkGrow();
 }
 
-int AuxHashMap::mustFindValueFor(const int slotNo) {
+template<typename A>
+int AuxHashMap<A>::mustFindValueFor(const int slotNo) {
   const int index = find(auxIntArr, lgAuxArrInts, lgConfigK, slotNo);
   if (index >= 0) {
-    return HllUtil<>::getValue(auxIntArr[index]);
+    return HllUtil<A>::getValue(auxIntArr[index]);
   }
 
   throw std::invalid_argument("slotNo not found: " + std::to_string(slotNo));
 }
 
-void AuxHashMap::mustReplace(const int slotNo, const int value) {
+template<typename A>
+void AuxHashMap<A>::mustReplace(const int slotNo, const int value) {
   const int idx = find(auxIntArr, lgAuxArrInts, lgConfigK, slotNo);
   if (idx >= 0) {
-    auxIntArr[idx] = HllUtil<>::pair(slotNo, value);
+    auxIntArr[idx] = HllUtil<A>::pair(slotNo, value);
     return;
   }
 
@@ -189,29 +242,32 @@ void AuxHashMap::mustReplace(const int slotNo, const int value) {
                               + ", Value: " + std::to_string(value));
 }
 
-void AuxHashMap::checkGrow() {
-  if ((HllUtil<>::RESIZE_DENOM * auxCount) > (HllUtil<>::RESIZE_NUMER * (1 << lgAuxArrInts))) {
+template<typename A>
+void AuxHashMap<A>::checkGrow() {
+  if ((HllUtil<A>::RESIZE_DENOM * auxCount) > (HllUtil<A>::RESIZE_NUMER * (1 << lgAuxArrInts))) {
     growAuxSpace();
   }
 }
 
-void AuxHashMap::growAuxSpace() {
+template<typename A>
+void AuxHashMap<A>::growAuxSpace() {
   int* oldArray = auxIntArr;
   const int oldArrLen = 1 << lgAuxArrInts;
   const int configKmask = (1 << lgConfigK) - 1;
   const int newArrLen = 1 << ++lgAuxArrInts;
-  auxIntArr = new int[newArrLen];
+  typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
+  auxIntArr = intAlloc().allocate(newArrLen);
   std::fill(auxIntArr, auxIntArr + newArrLen, 0);
   for (int i = 0; i < oldArrLen; ++i) {
     const int fetched = oldArray[i];
-    if (fetched != HllUtil<>::EMPTY) {
+    if (fetched != HllUtil<A>::EMPTY) {
       // find empty in new array
       const int idx = find(auxIntArr, lgAuxArrInts, lgConfigK, fetched & configKmask);
       auxIntArr[~idx] = fetched;
     }
   }
 
-  delete oldArray;
+  intAlloc().deallocate(oldArray, oldArrLen);
 }
 
 //Searches the Aux arr hash table for an empty or a matching slotNo depending on the context.
@@ -219,15 +275,16 @@ void AuxHashMap::growAuxSpace() {
 //If entry contains given slotNo, returns its index = found slotNo.
 //Continues searching.
 //If the probe comes back to original index, throws an exception.
-int AuxHashMap::find(const int* auxArr, const int lgAuxArrInts, const int lgConfigK,
-                     const int slotNo) {
+template<typename A>
+int AuxHashMap<A>::find(const int* auxArr, const int lgAuxArrInts, const int lgConfigK,
+                        const int slotNo) {
   const int auxArrMask = (1 << lgAuxArrInts) - 1;
   const int configKmask = (1 << lgConfigK) - 1;
   int probe = slotNo & auxArrMask;
   const  int loopIndex = probe;
   do {
     const int arrVal = auxArr[probe];
-    if (arrVal == HllUtil<>::EMPTY) { //Compares on entire entry
+    if (arrVal == HllUtil<A>::EMPTY) { //Compares on entire entry
       return ~probe; //empty
     }
     else if (slotNo == (arrVal & configKmask)) { //Compares only on slotNo

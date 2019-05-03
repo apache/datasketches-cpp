@@ -4,8 +4,8 @@
  */
 
 #include "hll.hpp"
-//#include "CouponHashSet.hpp"
-//#include "HllUtil.hpp"
+#include "CouponHashSet.hpp"
+#include "HllUtil.hpp"
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>

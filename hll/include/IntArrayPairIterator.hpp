@@ -10,7 +10,8 @@
 
 namespace datasketches {
 
-class IntArrayPairIterator : public PairIterator {
+template<typename A>
+class IntArrayPairIterator : public PairIterator<A> {
   public:
     explicit IntArrayPairIterator(const int* array, int len, int lgConfigK);
 

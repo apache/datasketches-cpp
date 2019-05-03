@@ -10,6 +10,7 @@
 
 namespace datasketches {
 
+template<typename A = std::allocator<char>>
 class PairIterator {
   public:
     virtual std::string getHeader() = 0;

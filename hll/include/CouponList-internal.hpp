@@ -6,13 +6,10 @@
 #ifndef _COUPONLIST_INTERNAL_HPP_
 #define _COUPONLIST_INTERNAL_HPP_
 
-//#include "CouponMode.hpp"
 #include "CouponList.hpp"
-//#include "CouponHashSet.hpp"
 #include "CubicInterpolation.hpp"
 #include "HllUtil.hpp"
 #include "IntArrayPairIterator.hpp"
-//#include "HllArray.hpp"
 
 #include <iostream>
 #include <cstring>
@@ -21,133 +18,160 @@
 
 namespace datasketches {
 
-CouponList::CouponList(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode)
-  : HllSketchImpl(lgConfigK, tgtHllType, curMode) {
+template<typename A>
+CouponList<A>::CouponList(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode)
+  : HllSketchImpl<A>(lgConfigK, tgtHllType, curMode) {
     if (curMode == CurMode::LIST) {
-      lgCouponArrInts = HllUtil<>::LG_INIT_LIST_SIZE;
+      lgCouponArrInts = HllUtil<A>::LG_INIT_LIST_SIZE;
       oooFlag = false;
     } else { // curMode == SET
-      lgCouponArrInts = HllUtil<>::LG_INIT_SET_SIZE;
+      lgCouponArrInts = HllUtil<A>::LG_INIT_SET_SIZE;
       oooFlag = true;
     }
     const int arrayLen = 1 << lgCouponArrInts;
-    couponIntArr = new int[arrayLen];
+    typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
+    couponIntArr = intAlloc().allocate(arrayLen);
     std::fill(couponIntArr, couponIntArr + arrayLen, 0);
     couponCount = 0;
 }
 
-CouponList::CouponList(const CouponList& that)
-  : HllSketchImpl(that.lgConfigK, that.tgtHllType, that.curMode),
+template<typename A>
+CouponList<A>::CouponList(const CouponList& that)
+  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, that.curMode),
     lgCouponArrInts(that.lgCouponArrInts),
     couponCount(that.couponCount),
     oooFlag(that.oooFlag) {
 
   const int numItems = 1 << lgCouponArrInts;
-  couponIntArr = new int[numItems];
+  typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
+  couponIntArr = intAlloc().allocate(numItems);
   std::copy(that.couponIntArr, that.couponIntArr + numItems, couponIntArr);
 }
 
-CouponList::CouponList(const CouponList& that, const TgtHllType tgtHllType)
-  : HllSketchImpl(that.lgConfigK, tgtHllType, that.curMode),
+template<typename A>
+CouponList<A>::CouponList(const CouponList& that, const TgtHllType tgtHllType)
+  : HllSketchImpl<A>(that.lgConfigK, tgtHllType, that.curMode),
     lgCouponArrInts(that.lgCouponArrInts),
     couponCount(that.couponCount),
     oooFlag(that.oooFlag) {
 
   const int numItems = 1 << lgCouponArrInts;
-  couponIntArr = new int[numItems];
+  typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
+  couponIntArr = intAlloc().allocate(numItems);
   std::copy(that.couponIntArr, that.couponIntArr + numItems, couponIntArr);
 }
 
-CouponList::~CouponList() {
-  delete [] couponIntArr;
+template<typename A>
+CouponList<A>::~CouponList() {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
+  intAlloc().deallocate(couponIntArr, 1 << lgCouponArrInts);
 }
 
-CouponList* CouponList::copy() const {
-  return new CouponList(*this);
+template<typename A>
+std::function<void(HllSketchImpl<A>*)> CouponList<A>::get_deleter() const {
+  return [](CouponList<A>* ptr) {
+    //CouponList<A>* cl = static_cast<CouponList<A>*>(ptr);
+    ptr->~CouponList();
+    clAlloc().deallocate(ptr, 1);
+  };
 }
 
-CouponList* CouponList::copyAs(const TgtHllType tgtHllType) const {
-  return new CouponList(*this, tgtHllType);
+template<typename A>
+CouponList<A>* CouponList<A>::copy() const {
+  CouponList<A>* cl = clAlloc().allocate(1);
+  clAlloc().construct(cl, *this);
+  return cl;
 }
 
-CouponList* CouponList::newList(const void* bytes, size_t len) {
-  if (len < HllUtil<>::LIST_INT_ARR_START) {
+template<typename A>
+CouponList<A>* CouponList<A>::copyAs(const TgtHllType tgtHllType) const {
+  CouponList<A>* cl = clAlloc().allocate(1);
+  clAlloc().construct(cl, *this, tgtHllType);
+  return cl;
+}
+
+template<typename A>
+CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
+  if (len < HllUtil<A>::LIST_INT_ARR_START) {
     throw std::invalid_argument("Input data length insufficient to hold CouponHashSet");
   }
 
   const uint8_t* data = static_cast<const uint8_t*>(bytes);
-  if (data[HllUtil<>::PREAMBLE_INTS_BYTE] != HllUtil<>::LIST_PREINTS) {
+  if (data[HllUtil<A>::PREAMBLE_INTS_BYTE] != HllUtil<A>::LIST_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
-  if (data[HllUtil<>::SER_VER_BYTE] != HllUtil<>::SER_VER) {
+  if (data[HllUtil<A>::SER_VER_BYTE] != HllUtil<A>::SER_VER) {
     throw std::invalid_argument("Wrong ser ver in input stream");
   }
-  if (data[HllUtil<>::FAMILY_BYTE] != HllUtil<>::FAMILY_ID) {
+  if (data[HllUtil<A>::FAMILY_BYTE] != HllUtil<A>::FAMILY_ID) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(data[HllUtil<>::MODE_BYTE]);
+  CurMode curMode = extractCurMode(data[HllUtil<A>::MODE_BYTE]);
   if (curMode != LIST) {
     throw std::invalid_argument("Calling set construtor with non-list mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(data[HllUtil<>::MODE_BYTE]);
+  TgtHllType tgtHllType = extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
 
-  const int lgK = (int) data[HllUtil<>::LG_K_BYTE];
-  //const int lgArrInts = (int) data[HllUtil<>::LG_ARR_BYTE];
-  bool compact = ((data[HllUtil<>::FLAGS_BYTE] & HllUtil<>::COMPACT_FLAG_MASK) ? true : false);
-  bool oooFlag = ((data[HllUtil<>::FLAGS_BYTE] & HllUtil<>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  bool emptyFlag = ((data[HllUtil<>::FLAGS_BYTE] & HllUtil<>::EMPTY_FLAG_MASK) ? true : false);
+  const int lgK = (int) data[HllUtil<A>::LG_K_BYTE];
+  //const int lgArrInts = (int) data[HllUtil<A>::LG_ARR_BYTE];
+  bool compact = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
+  bool oooFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  bool emptyFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
 
-  CouponList* sketch = new CouponList(lgK, tgtHllType, curMode);
-  const int couponCount = (int) data[HllUtil<>::LIST_COUNT_BYTE];
+  CouponList<A>* sketch = clAlloc().allocate(1);
+  clAlloc().construct(sketch, lgK, tgtHllType, curMode);
+  const int couponCount = (int) data[HllUtil<A>::LIST_COUNT_BYTE];
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
   if (!emptyFlag) {
     int couponsInArray = (compact ? couponCount : (1 << sketch->getLgCouponArrInts()));
-    int expectedLength = HllUtil<>::LIST_INT_ARR_START + (couponsInArray * sizeof(int));
+    int expectedLength = HllUtil<A>::LIST_INT_ARR_START + (couponsInArray * sizeof(int));
     if (len < expectedLength) {
       throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
                                   + ", found: " + std::to_string(len));
     }
 
     // only need to read valid coupons, unlike in stream case
-    std::memcpy(sketch->couponIntArr, data + HllUtil<>::LIST_INT_ARR_START, couponCount * sizeof(int));
+    std::memcpy(sketch->couponIntArr, data + HllUtil<A>::LIST_INT_ARR_START, couponCount * sizeof(int));
   }
   
   return sketch;
 }
 
-CouponList* CouponList::newList(std::istream& is) {
+template<typename A>
+CouponList<A>* CouponList<A>::newList(std::istream& is) {
   uint8_t listHeader[8];
   is.read((char*)listHeader, 8 * sizeof(uint8_t));
 
-  if (listHeader[HllUtil<>::PREAMBLE_INTS_BYTE] != HllUtil<>::LIST_PREINTS) {
+  if (listHeader[HllUtil<A>::PREAMBLE_INTS_BYTE] != HllUtil<A>::LIST_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
-  if (listHeader[HllUtil<>::SER_VER_BYTE] != HllUtil<>::SER_VER) {
+  if (listHeader[HllUtil<A>::SER_VER_BYTE] != HllUtil<A>::SER_VER) {
     throw std::invalid_argument("Wrong ser ver in input stream");
   }
-  if (listHeader[HllUtil<>::FAMILY_BYTE] != HllUtil<>::FAMILY_ID) {
+  if (listHeader[HllUtil<A>::FAMILY_BYTE] != HllUtil<A>::FAMILY_ID) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(listHeader[HllUtil<>::MODE_BYTE]);
+  CurMode curMode = extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
   if (curMode != LIST) {
     throw std::invalid_argument("Calling list construtor with non-list mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(listHeader[HllUtil<>::MODE_BYTE]);
+  TgtHllType tgtHllType = extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
 
-  const int lgK = (int) listHeader[HllUtil<>::LG_K_BYTE];
-  //const int lgArrInts = (int) listHeader[HllUtil<>::LG_ARR_BYTE];
-  bool compact = ((listHeader[HllUtil<>::FLAGS_BYTE] & HllUtil<>::COMPACT_FLAG_MASK) ? true : false);
-  bool oooFlag = ((listHeader[HllUtil<>::FLAGS_BYTE] & HllUtil<>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  bool emptyFlag = ((listHeader[HllUtil<>::FLAGS_BYTE] & HllUtil<>::EMPTY_FLAG_MASK) ? true : false);
+  const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
+  //const int lgArrInts = (int) listHeader[HllUtil<A>::LG_ARR_BYTE];
+  bool compact = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
+  bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  bool emptyFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
 
-  CouponList* sketch = new CouponList(lgK, tgtHllType, curMode);
-  const int couponCount = (int) listHeader[HllUtil<>::LIST_COUNT_BYTE];
+  CouponList<A>* sketch = clAlloc().allocate(1);
+  clAlloc().construct(sketch, lgK, tgtHllType, curMode);
+  const int couponCount = (int) listHeader[HllUtil<A>::LIST_COUNT_BYTE];
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
@@ -162,23 +186,28 @@ CouponList* CouponList::newList(std::istream& is) {
   return sketch;
 }
 
-std::pair<std::unique_ptr<uint8_t[]>, const size_t> CouponList::serialize(bool compact) const {
+template<typename A>
+std::pair<std::unique_ptr<uint8_t>, const size_t> CouponList<A>::serialize(bool compact) const {
   size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
-  std::unique_ptr<uint8_t[]> byteArr(new uint8_t[sketchSizeBytes]);
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
+  std::unique_ptr<uint8_t> byteArr(
+    uint8Alloc().allocate(sketchSizeBytes),
+    [sketchSizeBytes](uint8_t p){ uint8Alloc().deallocate(p, sketchSizeBytes); }
+  );
 
   uint8_t* bytes = byteArr.get();
 
-  bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
-  bytes[HllUtil<>::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil<>::SER_VER);
-  bytes[HllUtil<>::FAMILY_BYTE] = static_cast<uint8_t>(HllUtil<>::FAMILY_ID);
-  bytes[HllUtil<>::LG_K_BYTE] = static_cast<uint8_t>(lgConfigK);
-  bytes[HllUtil<>::LG_ARR_BYTE] = static_cast<uint8_t>(lgCouponArrInts);
-  bytes[HllUtil<>::FLAGS_BYTE] = makeFlagsByte(compact);
-  bytes[HllUtil<>::LIST_COUNT_BYTE] = static_cast<uint8_t>(curMode == LIST ? couponCount : 0);
-  bytes[HllUtil<>::MODE_BYTE] = makeModeByte();
+  bytes[HllUtil<A>::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
+  bytes[HllUtil<A>::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil<A>::SER_VER);
+  bytes[HllUtil<A>::FAMILY_BYTE] = static_cast<uint8_t>(HllUtil<A>::FAMILY_ID);
+  bytes[HllUtil<A>::LG_K_BYTE] = static_cast<uint8_t>(lgConfigK);
+  bytes[HllUtil<A>::LG_ARR_BYTE] = static_cast<uint8_t>(lgCouponArrInts);
+  bytes[HllUtil<A>::FLAGS_BYTE] = makeFlagsByte(compact);
+  bytes[HllUtil<A>::LIST_COUNT_BYTE] = static_cast<uint8_t>(curMode == LIST ? couponCount : 0);
+  bytes[HllUtil<A>::MODE_BYTE] = makeModeByte();
 
   if (curMode == SET) {
-    std::memcpy(bytes + HllUtil<>::HASH_SET_COUNT_INT, &couponCount, sizeof(couponCount));
+    std::memcpy(bytes + HllUtil<A>::HASH_SET_COUNT_INT, &couponCount, sizeof(couponCount));
   }
 
   // coupons
@@ -190,7 +219,7 @@ std::pair<std::unique_ptr<uint8_t[]>, const size_t> CouponList::serialize(bool c
       break;
     }
     case 1: { // src updatable, dst compact
-      std::unique_ptr<PairIterator> itr = getIterator();
+      std::unique_ptr<PairIterator<A>> itr = getIterator();
       bytes += getMemDataStart(); // reusing ponter for incremental writes
       while (itr->nextValid()) {
         const int pairValue = itr->getPair();
@@ -207,13 +236,14 @@ std::pair<std::unique_ptr<uint8_t[]>, const size_t> CouponList::serialize(bool c
   return std::make_pair(std::move(byteArr), sketchSizeBytes);
 }
 
-void CouponList::serialize(std::ostream& os, const bool compact) const {
+template<typename A>
+void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
   // header
   const uint8_t preInts(getPreInts());
   os.write((char*)&preInts, sizeof(preInts));
-  const uint8_t serialVersion(HllUtil<>::SER_VER);
+  const uint8_t serialVersion(HllUtil<A>::SER_VER);
   os.write((char*)&serialVersion, sizeof(serialVersion));
-  const uint8_t familyId(HllUtil<>::FAMILY_ID);
+  const uint8_t familyId(HllUtil<A>::FAMILY_ID);
   os.write((char*)&familyId, sizeof(familyId));
   const uint8_t lgKByte((uint8_t) lgConfigK);
   os.write((char*)&lgKByte, sizeof(lgKByte));
@@ -247,7 +277,7 @@ void CouponList::serialize(std::ostream& os, const bool compact) const {
       break;
     }
     case 1: { // src updatable, dst compact
-      std::unique_ptr<PairIterator> itr = getIterator();
+      std::unique_ptr<PairIterator<A>> itr = getIterator();
       while (itr->nextValid()) {
         const int pairValue = itr->getPair();
         os.write((char*)&pairValue, sizeof(pairValue));
@@ -262,11 +292,12 @@ void CouponList::serialize(std::ostream& os, const bool compact) const {
   return;
 }
 
-HllSketchImpl* CouponList::couponUpdate(int coupon) {
+template<typename A>
+HllSketchImpl<A>* CouponList<A>::couponUpdate(int coupon) {
   const int len = 1 << lgCouponArrInts;
   for (int i = 0; i < len; ++i) { // search for empty slot
     const int couponAtIdx = couponIntArr[i];
-    if (couponAtIdx == HllUtil<>::EMPTY) {
+    if (couponAtIdx == HllUtil<A>::EMPTY) {
       couponIntArr[i] = coupon; // the actual update
       ++couponCount;
       if (couponCount >= len) { // array full
@@ -286,84 +317,101 @@ HllSketchImpl* CouponList::couponUpdate(int coupon) {
   throw std::runtime_error("Array invalid: no empties and no duplicates");
 }
 
-double CouponList::getCompositeEstimate() const { return getEstimate(); }
+template<typename A>
+double CouponList<A>::getCompositeEstimate() const { return getEstimate(); }
 
-double CouponList::getEstimate() const {
+template<typename A>
+double CouponList<A>::getEstimate() const {
   const int couponCount = getCouponCount();
   const double est = CubicInterpolation::usingXAndYTables(couponCount);
   return fmax(est, couponCount);
 }
 
-double CouponList::getLowerBound(const int numStdDev) const {
-  HllUtil<>::checkNumStdDev(numStdDev);
+template<typename A>
+double CouponList<A>::getLowerBound(const int numStdDev) const {
+  HllUtil<A>::checkNumStdDev(numStdDev);
   const int couponCount = getCouponCount();
   const double est = CubicInterpolation::usingXAndYTables(couponCount);
-  const double tmp = est / (1.0 + (numStdDev * HllUtil<>::COUPON_RSE));
+  const double tmp = est / (1.0 + (numStdDev * HllUtil<A>::COUPON_RSE));
   return fmax(tmp, couponCount);
 }
 
-double CouponList::getUpperBound(const int numStdDev) const {
-  HllUtil<>::checkNumStdDev(numStdDev);
+template<typename A>
+double CouponList<A>::getUpperBound(const int numStdDev) const {
+  HllUtil<A>::checkNumStdDev(numStdDev);
   const int couponCount = getCouponCount();
   const double est = CubicInterpolation::usingXAndYTables(couponCount);
-  const double tmp = est / (1.0 - (numStdDev * HllUtil<>::COUPON_RSE));
+  const double tmp = est / (1.0 - (numStdDev * HllUtil<A>::COUPON_RSE));
   return fmax(tmp, couponCount);
 }
 
-bool CouponList::isEmpty() const { return getCouponCount() == 0; }
+template<typename A>
+bool CouponList<A>::isEmpty() const { return getCouponCount() == 0; }
 
-int CouponList::getUpdatableSerializationBytes() const {
+template<typename A>
+int CouponList<A>::getUpdatableSerializationBytes() const {
   return getMemDataStart() + (4 << getLgCouponArrInts());
 }
 
-int CouponList::getCouponCount() const {
+template<typename A>
+int CouponList<A>::getCouponCount() const {
   return couponCount;
 }
 
-int CouponList::getCompactSerializationBytes() const {
+template<typename A>
+int CouponList<A>::getCompactSerializationBytes() const {
   return getMemDataStart() + (couponCount << 2);
 }
 
-int CouponList::getMemDataStart() const {
-  return HllUtil<>::LIST_INT_ARR_START;
+template<typename A>
+int CouponList<A>::getMemDataStart() const {
+  return HllUtil<A>::LIST_INT_ARR_START;
 }
 
-int CouponList::getPreInts() const {
-  return HllUtil<>::LIST_PREINTS;
+template<typename A>
+int CouponList<A>::getPreInts() const {
+  return HllUtil<A>::LIST_PREINTS;
 }
 
-bool CouponList::isCompact() const { return false; }
+template<typename A>
+bool CouponList<A>::isCompact() const { return false; }
 
-bool CouponList::isOutOfOrderFlag() const { return oooFlag; }
+template<typename A>
+bool CouponList<A>::isOutOfOrderFlag() const { return oooFlag; }
 
-void CouponList::putOutOfOrderFlag(bool oooFlag) {
+template<typename A>
+void CouponList<A>::putOutOfOrderFlag(bool oooFlag) {
   this->oooFlag = oooFlag;
 }
 
-/*
-CouponList* CouponList::reset() {
-  return new CouponList(lgConfigK, tgtHllType, CurMode::LIST);
-}
-*/
-
-int CouponList::getLgCouponArrInts() const {
+template<typename A>
+int CouponList<A>::getLgCouponArrInts() const {
   return lgCouponArrInts;
 }
 
-int* CouponList::getCouponIntArr() const {
+template<typename A>
+int* CouponList<A>::getCouponIntArr() const {
   return couponIntArr;
 }
 
-std::unique_ptr<PairIterator> CouponList::getIterator() const {
-  PairIterator* itr = new IntArrayPairIterator(couponIntArr, 1 << lgCouponArrInts, lgConfigK);
-  return std::unique_ptr<PairIterator>(itr);
+template<typename A>
+std::unique_ptr<PairIterator<A>> CouponList<A>::getIterator() const {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
+  PairIterator<A>* itr = iapiAlloc().allocate(1);
+  iapiAlloc().construct(itr, couponIntArr, 1 << lgCouponArrInts, lgConfigK);
+  return std::unique_ptr<PairIterator<A>>(
+    iapiAlloc().construct(itr, couponIntArr, 1 << lgCouponArrInts, lgConfigK);
+    [](IntArrayPairIterator* iapi){ iapi->~IntArrayPairIterator(); iapiAlloc().deallocate(iapi, 1); }
+  );
 }
 
-HllSketchImpl* CouponList::promoteHeapListToSet(CouponList& list) {
+template<typename A>
+HllSketchImpl<A>* CouponList<A>::promoteHeapListToSet(CouponList& list) {
   return HllSketchImplFactory::promoteListToSet(list);
 }
 
-HllSketchImpl* CouponList::promoteHeapListOrSetToHll(CouponList& src) {
+template<typename A>
+HllSketchImpl<A>* CouponList<A>::promoteHeapListOrSetToHll(CouponList& src) {
   return HllSketchImplFactory::promoteListOrSetToHll(src);
 }
 

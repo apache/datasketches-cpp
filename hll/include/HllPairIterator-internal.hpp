@@ -14,45 +14,54 @@
 
 namespace datasketches {
 
-HllPairIterator::HllPairIterator(const int lengthPairs)
+template<typename A>
+HllPairIterator<A>::HllPairIterator(const int lengthPairs)
   : lengthPairs(lengthPairs),
     index(-1),
     val(-1)
 { }
 
-std::string HllPairIterator::getHeader() {
+template<typename A>
+std::string HllPairIterator<A>::getHeader() {
   std::ostringstream ss;
   ss << std::setw(10) << "Slot" << std::setw(6) << "Value";
   return ss.str();
 }
 
-int HllPairIterator::getIndex() {
+template<typename A>
+int HllPairIterator<A>::getIndex() {
   return index;
 }
 
-int HllPairIterator::getKey() {
+template<typename A>
+int HllPairIterator<A>::getKey() {
   return index;
 }
 
-int HllPairIterator::getSlot() {
+template<typename A>
+int HllPairIterator<A>::getSlot() {
   return index;
 }
 
-int HllPairIterator::getPair() {
+template<typename A>
+int HllPairIterator<A>::getPair() {
   return HllUtil<>::pair(index, val);
 }
 
-int HllPairIterator::getValue() {
+template<typename A>
+int HllPairIterator<A>::getValue() {
   return val;
 }
 
-std::string HllPairIterator::getString() {
+template<typename A>
+std::string HllPairIterator<A>::getString() {
   std::ostringstream ss;
   ss << std::setw(10) << getSlot() << std::setw(6) << getValue();
   return ss.str();
 }
 
-bool HllPairIterator::nextAll() {
+template<typename A>
+bool HllPairIterator<A>::nextAll() {
   if (++index < lengthPairs) {
     val = value();
     return true;
@@ -60,7 +69,8 @@ bool HllPairIterator::nextAll() {
   return false;
 }
 
-bool HllPairIterator::nextValid() {
+template<typename A>
+bool HllPairIterator<A>::nextValid() {
   while (++index < lengthPairs) {
     val = value();
     if (val != HllUtil<>::EMPTY) {

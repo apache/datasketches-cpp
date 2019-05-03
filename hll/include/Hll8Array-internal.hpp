@@ -12,59 +12,89 @@
 
 namespace datasketches {
 
-Hll8Iterator::Hll8Iterator(const Hll8Array& hllArray, const int lengthPairs)
-  : HllPairIterator(lengthPairs),
+template<typename A>
+Hll8Iterator<A>::Hll8Iterator(const Hll8Array<A>& hllArray, const int lengthPairs)
+  : HllPairIterator<A>(lengthPairs),
     hllArray(hllArray)
 {}
 
-Hll8Iterator::~Hll8Iterator() { }
+template<typename A>
+Hll8Iterator<A>::~Hll8Iterator() { }
 
-int Hll8Iterator::value() {
-  return hllArray.hllByteArr[index] & HllUtil<>::VAL_MASK_6;
+template<typename A>
+int Hll8Iterator<A>::value() {
+  return hllArray.hllByteArr[index] & HllUtil<A>::VAL_MASK_6;
 }
 
-Hll8Array::Hll8Array(const int lgConfigK) :
+template<typename A>
+Hll8Array<A>::Hll8Array(const int lgConfigK) :
     HllArray(lgConfigK, TgtHllType::HLL_8) {
   const int numBytes = hll8ArrBytes(lgConfigK);
-  hllByteArr = new uint8_t[numBytes];
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
+  hllByteArr = uint8Alloc().allocate(numBytes);
   std::fill(hllByteArr, hllByteArr + numBytes, 0);
 }
 
-Hll8Array::Hll8Array(const Hll8Array& that) :
+template<typename A>
+Hll8Array<A>::Hll8Array(const Hll8Array<A>& that) :
   HllArray(that)
 {
   // can determine hllByteArr size in parent class, no need to allocate here
 }
 
-Hll8Array::~Hll8Array() {
+template<typename A>
+Hll8Array<A>::~Hll8Array() {
   // hllByteArr deleted in parent
 }
 
-Hll8Array* Hll8Array::copy() const {
-  return new Hll8Array(*this);
+template<typename A>
+std::function<void(HllSketchImpl<A>*)> Hll8Array<A>::get_deleter() const {
+  return [](Hll8Array<A>* ptr) {
+    typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array> hll8Alloc;
+    ptr->~Hll8Array();
+    hll8Alloc().deallocate(ptr, 1);
+  };
 }
 
-std::unique_ptr<PairIterator> Hll8Array::getIterator() const {
-  PairIterator* itr = new Hll8Iterator(*this, 1 << lgConfigK);
-  return std::unique_ptr<PairIterator>(itr);
+template<typename A>
+Hll8Array<A>* Hll8Array<A>::copy() const {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array> hll8Alloc;
+  Hll8Array<A>* hll = hll8Alloc().allocate(1);
+  hll8Alloc().construct(hll, *this);  
+  return hll;
 }
 
-int Hll8Array::getSlot(const int slotNo) const {
-  return (int) hllByteArr[slotNo] & HllUtil<>::VAL_MASK_6;
+template<typename A>
+std::unique_ptr<PairIterator<A>> Hll8Array<A>::getIterator() const {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Iterator> itrAlloc;
+  PairIterator<A>* itr = itrAlloc().allocate(1);
+  itrAlloc().construct(itr, *this, 1 << lgConfigK);
+  return std::unique_ptr<PairIterator<A>>(
+    itr,
+    [](Hll8Iterator* ptr) { ptr->~Hll8Iterator(); itrAlloc().deallocate(ptr, 1); }
+  );
 }
 
-void Hll8Array::putSlot(const int slotNo, const int value) {
-  hllByteArr[slotNo] = value & HllUtil<>::VAL_MASK_6;
+template<typename A>
+int Hll8Array<A>::getSlot(const int slotNo) const {
+  return (int) hllByteArr[slotNo] & HllUtil<A>::VAL_MASK_6;
 }
 
-int Hll8Array::getHllByteArrBytes() const {
+template<typename A>
+void Hll8Array<A>::putSlot(const int slotNo, const int value) {
+  hllByteArr[slotNo] = value & HllUtil<A>::VAL_MASK_6;
+}
+
+template<typename A>
+int Hll8Array<A>::getHllByteArrBytes() const {
   return hll8ArrBytes(lgConfigK);
 }
 
-HllSketchImpl* Hll8Array::couponUpdate(const int coupon) { // used by HLL_8 and HLL_6
+template<typename A>
+HllSketchImpl<A>* Hll8Array<A>::couponUpdate(const int coupon) { // used by HLL_8 and HLL_6
   const int configKmask = (1 << getLgConfigK()) - 1;
-  const int slotNo = HllUtil<>::getLow26(coupon) & configKmask;
-  const int newVal = HllUtil<>::getValue(coupon);
+  const int slotNo = HllUtil<A>::getLow26(coupon) & configKmask;
+  const int newVal = HllUtil<A>::getValue(coupon);
   if (newVal <= 0) {
     throw std::logic_error("newVal must be a positive integer: " + std::to_string(newVal));
   }

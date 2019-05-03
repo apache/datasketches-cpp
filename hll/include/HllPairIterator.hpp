@@ -10,8 +10,9 @@
 #include "HllArray.hpp"
 
 namespace datasketches {
-  
-class HllPairIterator : public PairIterator {
+
+template<typename A>
+class HllPairIterator : public PairIterator<A> {
   public:
     HllPairIterator(const int lengthPairs);
     virtual std::string getHeader();
