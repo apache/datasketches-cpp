@@ -30,29 +30,28 @@ typedef union {
 template<typename A>
 HllSketch<A>::HllSketch(int lgConfigK, TgtHllType tgtHllType) {
   // TODO: use allocator
-  hllSketchImpl = new CouponList(HllUtil<A>::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
+  typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
+  hllSketchImpl = clAlloc().allocate(1);
+  clAlloc().construct(hllSketchImpl, HllUtil<A>::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
 }
 
 template<typename A>
 HllSketch<A> HllSketch<A>::deserialize(std::istream& is) {
-  HllSketchImpl* impl = HllSketchImplFactory::deserialize(is);
+  HllSketchImpl<A>* impl = HllSketchImplFactory<A>::deserialize(is);
   HllSketch<A> sketch(impl);
   return sketch;
 }
 
 template<typename A>
 HllSketch<A> HllSketch<A>::deserialize(const void* bytes, size_t len) {
-  HllSketchImpl* impl = HllSketchImplFactory::deserialize(bytes, len);
+  HllSketchImpl<A>* impl = HllSketchImplFactory<A>::deserialize(bytes, len);
   HllSketch<A> sketch(impl);
   return sketch;
 }
 
 template<typename A>
 HllSketch<A>::~HllSketch() {
-  this->hllSketchImpl->~HllSketchImpl();
-  typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketchImpl> AllocImpl;
-  // TODO: HllSketchImpl is abstract -- need a concrete instance when deallocating?
-  AllocImpl().deallocate(hllSketchImpl, 1);
+  hllSketchImpl->get_deleter()(hllSketchImpl);
 }
 
 template<typename A>
@@ -66,26 +65,20 @@ HllSketch<A>::HllSketch(const HllSketch<A>& that) :
 {}
 
 template<typename A>
-HllSketch<A>::HllSketch(HllSketchImpl* that) :
+HllSketch<A>::HllSketch(HllSketchImpl<A>* that) :
   hllSketchImpl(that)
 {}
 
 template<typename A>
 HllSketch<A> HllSketch<A>::operator=(HllSketch<A>& other) {
-  this->hllSketchImpl->~HllSketchImpl();
-  typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketchImpl> AllocImpl;
-  // TODO: HllSketchImpl is abstract -- need a concrete instance when deallocating?
-  AllocImpl().deallocate(hllSketchImpl, 1);
+  hllSketchImpl->get_deleter()(hllSketchImpl);
   hllSketchImpl = other.hllSketchImpl->copy();
   return *this;
 }
 
 template<typename A>
 HllSketch<A> HllSketch<A>::operator=(HllSketch<A>&& other) {
-  this->hllSketchImpl->~HllSketchImpl();
-  typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketchImpl> AllocImpl;
-  // TODO: HllSketchImpl is abstract -- need a concrete instance when deallocating?
-  AllocImpl().deallocate(hllSketchImpl, 1);
+  hllSketchImpl->get_deleter()(hllSketchImpl);
   hllSketchImpl = std::move(other.hllSketchImpl);
   return *this;
 }
@@ -113,10 +106,9 @@ HllSketch<A> HllSketch<A>::copyAs(const TgtHllType tgtHllType) const {
 
 template<typename A>
 void HllSketch<A>::reset() {
-  // TODO: use allocator, probably by dispatching to factory?
-  HllSketchImpl* newImpl = hllSketchImpl->reset();
-  delete hllSketchImpl;
-  hllSketchImpl = newImpl;
+  // TODO: need to allow starting from a full-sized sketch
+  hllSketchImpl->get_deleter()(hllSketchImpl);
+  hllSketchImpl = HllSketchImplFactory<A>::reset();
 }
 
 template<typename A>
@@ -220,7 +212,7 @@ void HllSketch<A>::update(const void* data, const size_t lengthBytes) {
 template<typename A>
 void HllSketch<A>::couponUpdate(int coupon) {
   if (coupon == HllUtil<A>::EMPTY) { return; }
-  HllSketchImpl* result = this->hllSketchImpl->couponUpdate(coupon);
+  HllSketchImpl<A>* result = this->hllSketchImpl->couponUpdate(coupon);
   if (result != this->hllSketchImpl) {
     delete this->hllSketchImpl;
     this->hllSketchImpl = result;
@@ -275,7 +267,7 @@ std::ostream& HllSketch<A>::to_string(std::ostream& os,
        << "  UB             : " << getUpperBound(1) << std::endl
        << "  OutOfOrder flag: " << isOutOfOrderFlag() << std::endl;
     if (getCurrentMode() == HLL) {
-      HllArray* hllArray = (HllArray*) hllSketchImpl;
+      HllArray<A>* hllArray = (HllArray<A>*) hllSketchImpl;
       os << "  CurMin       : " << hllArray->getCurMin() << std::endl
          << "  NumAtCurMin  : " << hllArray->getNumAtCurMin() << std::endl
          << "  HipAccum     : " << hllArray->getHipAccum() << std::endl
@@ -283,13 +275,13 @@ std::ostream& HllSketch<A>::to_string(std::ostream& os,
          << "  KxQ1         : " << hllArray->getKxQ1() << std::endl;
     } else {
       os << "  Coupon count : "
-         << std::to_string(((CouponList*) hllSketchImpl)->getCouponCount()) << std::endl;
+         << std::to_string(((CouponList<A>*) hllSketchImpl)->getCouponCount()) << std::endl;
     }
   }
 
   if (detail) {
     os << "### HLL SKETCH DATA DETAIL: " << std::endl;
-    std::unique_ptr<PairIterator> pitr = getIterator();
+    std::unique_ptr<PairIterator<A>> pitr = getIterator();
     os << pitr->getHeader() << std::endl;
     if (all) {
       while (pitr->nextAll()) {
@@ -303,8 +295,8 @@ std::ostream& HllSketch<A>::to_string(std::ostream& os,
   }
   if (auxDetail) {
     if ((getCurrentMode() == HLL) && (getTgtHllType() == HLL_4)) {
-      HllArray* hllArray = (HllArray*) hllSketchImpl;
-      std::unique_ptr<PairIterator> auxItr = hllArray->getAuxIterator();
+      HllArray<A>* hllArray = (HllArray<A>*) hllSketchImpl;
+      std::unique_ptr<PairIterator<A>> auxItr = hllArray->getAuxIterator();
       if (auxItr != nullptr) {
         os << "### HLL SKETCH AUX DETAIL: " << std::endl
            << auxItr->getHeader() << std::endl;
@@ -428,11 +420,11 @@ int HllSketch<A>::getMaxUpdatableSerializationBytes(const int lgConfigK,
   int arrBytes;
   if (tgtHllType == TgtHllType::HLL_4) {
     const int auxBytes = 4 << HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK];
-    arrBytes = HllArray::hll4ArrBytes(lgConfigK) + auxBytes;
+    arrBytes = HllArray<A>::hll4ArrBytes(lgConfigK) + auxBytes;
   } else if (tgtHllType == TgtHllType::HLL_6) {
-    arrBytes = HllArray::hll6ArrBytes(lgConfigK);
+    arrBytes = HllArray<A>::hll6ArrBytes(lgConfigK);
   } else { //HLL_8
-    arrBytes = HllArray::hll8ArrBytes(lgConfigK);
+    arrBytes = HllArray<A>::hll8ArrBytes(lgConfigK);
   }
   return HllUtil<A>::HLL_BYTE_ARR_START + arrBytes;
 }

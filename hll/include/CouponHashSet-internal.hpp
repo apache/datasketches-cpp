@@ -219,12 +219,12 @@ int CouponHashSet<A>::getPreInts() const {
 
 template<typename A>
 bool CouponHashSet<A>::checkGrowOrPromote() {
-  if ((HllUtil<A>::RESIZE_DENOM * couponCount) > (HllUtil<A>::RESIZE_NUMER * (1 << lgCouponArrInts))) {
-    if (lgCouponArrInts == (lgConfigK - 3)) { // at max size
+  if ((HllUtil<A>::RESIZE_DENOM * this->couponCount) > (HllUtil<A>::RESIZE_NUMER * (1 << this->lgCouponArrInts))) {
+    if (this->lgCouponArrInts == (this->lgConfigK - 3)) { // at max size
       return true; // promote to HLL
     }
-    int tgtLgCoupArrSize = lgCouponArrInts + 1;
-    growHashSet(lgCouponArrInts, tgtLgCoupArrSize);
+    int tgtLgCoupArrSize = this->lgCouponArrInts + 1;
+    growHashSet(this->lgCouponArrInts, tgtLgCoupArrSize);
   }
   return false;
 }
@@ -238,7 +238,7 @@ void CouponHashSet<A>::growHashSet(const int srcLgCoupArrSize, const int tgtLgCo
 
   const int srcLen = 1 << srcLgCoupArrSize;
   for (int i = 0; i < srcLen; ++i) { // scan existing array for non-zero values
-    const int fetched = couponIntArr[i];
+    const int fetched = this->couponIntArr[i];
     if (fetched != HllUtil<A>::EMPTY) {
       const int idx = find<A>(tgtCouponIntArr, tgtLgCoupArrSize, fetched); // search TGT array
       if (idx < 0) { // found EMPTY
@@ -249,9 +249,9 @@ void CouponHashSet<A>::growHashSet(const int srcLgCoupArrSize, const int tgtLgCo
     }
   }
 
-  intAlloc().deallocate(couponIntArr, 1 << lgCouponArrInts);
-  couponIntArr = tgtCouponIntArr;
-  lgCouponArrInts = tgtLgCoupArrSize;
+  intAlloc().deallocate(this->couponIntArr, 1 << this->lgCouponArrInts);
+  this->couponIntArr = tgtCouponIntArr;
+  this->lgCouponArrInts = tgtLgCoupArrSize;
 }
 
 template<typename A>

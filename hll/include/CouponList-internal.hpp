@@ -200,13 +200,13 @@ std::pair<std::unique_ptr<uint8_t>, const size_t> CouponList<A>::serialize(bool 
   bytes[HllUtil<A>::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
   bytes[HllUtil<A>::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil<A>::SER_VER);
   bytes[HllUtil<A>::FAMILY_BYTE] = static_cast<uint8_t>(HllUtil<A>::FAMILY_ID);
-  bytes[HllUtil<A>::LG_K_BYTE] = static_cast<uint8_t>(lgConfigK);
+  bytes[HllUtil<A>::LG_K_BYTE] = static_cast<uint8_t>(this->lgConfigK);
   bytes[HllUtil<A>::LG_ARR_BYTE] = static_cast<uint8_t>(lgCouponArrInts);
-  bytes[HllUtil<A>::FLAGS_BYTE] = makeFlagsByte(compact);
-  bytes[HllUtil<A>::LIST_COUNT_BYTE] = static_cast<uint8_t>(curMode == LIST ? couponCount : 0);
-  bytes[HllUtil<A>::MODE_BYTE] = makeModeByte();
+  bytes[HllUtil<A>::FLAGS_BYTE] = this->makeFlagsByte(compact);
+  bytes[HllUtil<A>::LIST_COUNT_BYTE] = static_cast<uint8_t>(this->curMode == LIST ? couponCount : 0);
+  bytes[HllUtil<A>::MODE_BYTE] = this->makeModeByte();
 
-  if (curMode == SET) {
+  if (this->curMode == SET) {
     std::memcpy(bytes + HllUtil<A>::HASH_SET_COUNT_INT, &couponCount, sizeof(couponCount));
   }
 
@@ -245,14 +245,14 @@ void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
   os.write((char*)&serialVersion, sizeof(serialVersion));
   const uint8_t familyId(HllUtil<A>::FAMILY_ID);
   os.write((char*)&familyId, sizeof(familyId));
-  const uint8_t lgKByte((uint8_t) lgConfigK);
+  const uint8_t lgKByte((uint8_t) this->lgConfigK);
   os.write((char*)&lgKByte, sizeof(lgKByte));
   const uint8_t lgArrIntsByte((uint8_t) lgCouponArrInts);
   os.write((char*)&lgArrIntsByte, sizeof(lgArrIntsByte));
-  const uint8_t flagsByte(makeFlagsByte(compact));
+  const uint8_t flagsByte(this->makeFlagsByte(compact));
   os.write((char*)&flagsByte, sizeof(flagsByte));
 
-  if (curMode == LIST) {
+  if (this->curMode == LIST) {
     const uint8_t listCount((uint8_t) couponCount);
     os.write((char*)&listCount, sizeof(listCount));
   } else { // curMode == SET
@@ -260,10 +260,10 @@ void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
     os.write((char*)&unused, sizeof(unused));
   }
 
-  const uint8_t modeByte(makeModeByte());
+  const uint8_t modeByte(this->makeModeByte());
   os.write((char*)&modeByte, sizeof(modeByte));
 
-  if (curMode == SET) {
+  if (this->curMode == SET) {
     // writing as int, already stored as int
     os.write((char*)&couponCount, sizeof(couponCount));
   }
@@ -301,7 +301,7 @@ HllSketchImpl<A>* CouponList<A>::couponUpdate(int coupon) {
       couponIntArr[i] = coupon; // the actual update
       ++couponCount;
       if (couponCount >= len) { // array full
-        if (lgConfigK < 8) {
+        if (this->lgConfigK < 8) {
           return promoteHeapListOrSetToHll(*this); // oooFlag = false
         }
         return promoteHeapListToSet(*this); // oooFlag = true;
@@ -398,21 +398,24 @@ template<typename A>
 std::unique_ptr<PairIterator<A>> CouponList<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
   PairIterator<A>* itr = iapiAlloc().allocate(1);
-  iapiAlloc().construct(itr, couponIntArr, 1 << lgCouponArrInts, lgConfigK);
+  iapiAlloc().construct(itr, couponIntArr, 1 << lgCouponArrInts, this->lgConfigK);
   return std::unique_ptr<PairIterator<A>>(
-    iapiAlloc().construct(itr, couponIntArr, 1 << lgCouponArrInts, lgConfigK);
-    [](IntArrayPairIterator* iapi){ iapi->~IntArrayPairIterator(); iapiAlloc().deallocate(iapi, 1); }
+    iapiAlloc().construct(itr, couponIntArr, 1 << lgCouponArrInts, this->lgConfigK),
+    [](IntArrayPairIterator<A>* iapi) {
+      iapi->~IntArrayPairIterator();
+      iapiAlloc().deallocate(iapi, 1);
+    }
   );
 }
 
 template<typename A>
 HllSketchImpl<A>* CouponList<A>::promoteHeapListToSet(CouponList& list) {
-  return HllSketchImplFactory::promoteListToSet(list);
+  return HllSketchImplFactory<A>::promoteListToSet(list);
 }
 
 template<typename A>
 HllSketchImpl<A>* CouponList<A>::promoteHeapListOrSetToHll(CouponList& src) {
-  return HllSketchImplFactory::promoteListOrSetToHll(src);
+  return HllSketchImplFactory<A>::promoteListOrSetToHll(src);
 }
 
 }

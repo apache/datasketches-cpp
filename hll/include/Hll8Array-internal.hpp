@@ -28,16 +28,16 @@ int Hll8Iterator<A>::value() {
 
 template<typename A>
 Hll8Array<A>::Hll8Array(const int lgConfigK) :
-    HllArray(lgConfigK, TgtHllType::HLL_8) {
-  const int numBytes = hll8ArrBytes(lgConfigK);
+    HllArray<A>(lgConfigK, TgtHllType::HLL_8) {
+  const int numBytes = this->hll8ArrBytes(lgConfigK);
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
-  hllByteArr = uint8Alloc().allocate(numBytes);
-  std::fill(hllByteArr, hllByteArr + numBytes, 0);
+  this->hllByteArr = uint8Alloc().allocate(numBytes);
+  std::fill(this->hllByteArr, this->hllByteArr + numBytes, 0);
 }
 
 template<typename A>
 Hll8Array<A>::Hll8Array(const Hll8Array<A>& that) :
-  HllArray(that)
+  HllArray<A>(that)
 {
   // can determine hllByteArr size in parent class, no need to allocate here
 }
@@ -66,33 +66,33 @@ Hll8Array<A>* Hll8Array<A>::copy() const {
 
 template<typename A>
 std::unique_ptr<PairIterator<A>> Hll8Array<A>::getIterator() const {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Iterator> itrAlloc;
+  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Iterator<A>> itrAlloc;
   PairIterator<A>* itr = itrAlloc().allocate(1);
-  itrAlloc().construct(itr, *this, 1 << lgConfigK);
+  itrAlloc().construct(itr, *this, 1 << this->lgConfigK);
   return std::unique_ptr<PairIterator<A>>(
     itr,
-    [](Hll8Iterator* ptr) { ptr->~Hll8Iterator(); itrAlloc().deallocate(ptr, 1); }
+    [](Hll8Iterator<A>* ptr) { ptr->~Hll8Iterator(); itrAlloc().deallocate(ptr, 1); }
   );
 }
 
 template<typename A>
 int Hll8Array<A>::getSlot(const int slotNo) const {
-  return (int) hllByteArr[slotNo] & HllUtil<A>::VAL_MASK_6;
+  return (int) this->hllByteArr[slotNo] & HllUtil<A>::VAL_MASK_6;
 }
 
 template<typename A>
 void Hll8Array<A>::putSlot(const int slotNo, const int value) {
-  hllByteArr[slotNo] = value & HllUtil<A>::VAL_MASK_6;
+  this->hllByteArr[slotNo] = value & HllUtil<A>::VAL_MASK_6;
 }
 
 template<typename A>
 int Hll8Array<A>::getHllByteArrBytes() const {
-  return hll8ArrBytes(lgConfigK);
+  return this->hll8ArrBytes(this->lgConfigK);
 }
 
 template<typename A>
 HllSketchImpl<A>* Hll8Array<A>::couponUpdate(const int coupon) { // used by HLL_8 and HLL_6
-  const int configKmask = (1 << getLgConfigK()) - 1;
+  const int configKmask = (1 << this->lgConfigK) - 1;
   const int slotNo = HllUtil<A>::getLow26(coupon) & configKmask;
   const int newVal = HllUtil<A>::getValue(coupon);
   if (newVal <= 0) {
@@ -104,9 +104,9 @@ HllSketchImpl<A>* Hll8Array<A>::couponUpdate(const int coupon) { // used by HLL_
     putSlot(slotNo, newVal);
     hipAndKxQIncrementalUpdate(*this, curVal, newVal);
     if (curVal == 0) {
-      decNumAtCurMin(); // interpret numAtCurMin as num zeros
-      if (getNumAtCurMin() < 0) { 
-        throw std::logic_error("getNumAtCurMin() must return a nonnegative integer: " + std::to_string(getNumAtCurMin()));
+      this->decNumAtCurMin(); // interpret numAtCurMin as num zeros
+      if (this->getNumAtCurMin() < 0) { 
+        throw std::logic_error("getNumAtCurMin() must return a nonnegative integer: " + std::to_string(this->getNumAtCurMin()));
       }
     }
   }

@@ -37,17 +37,17 @@ int Hll4Iterator<A>::value() {
 
 template<typename A>
 Hll4Array<A>::Hll4Array(const int lgConfigK) :
-    HllArray(lgConfigK, TgtHllType::HLL_4) {
-  const int numBytes = hll4ArrBytes(lgConfigK);
+    HllArray<A>(lgConfigK, TgtHllType::HLL_4) {
+  const int numBytes = this->hll4ArrBytes(lgConfigK);
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
-  hllByteArr = uint8Alloc().allocate(numBytes);
-  std::fill(hllByteArr, hllByteArr + numBytes, 0);
+  this->hllByteArr = uint8Alloc().allocate(numBytes);
+  std::fill(this->hllByteArr, this->hllByteArr + numBytes, 0);
   auxHashMap = nullptr;
 }
 
 template<typename A>
 Hll4Array<A>::Hll4Array(const Hll4Array<A>& that) :
-  HllArray(that)
+  HllArray<A>(that)
 {
   // can determine hllByteArr size in parent class, no need to allocate here
   // but parent class doesn't handle the auxHashMap
@@ -86,10 +86,10 @@ template<typename A>
 std::unique_ptr<PairIterator<A>> Hll4Array<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Iterator> itrAlloc;
   PairIterator<A>* itr = itrAlloc().allocate(1);
-  itrAlloc().construct(itr, *this, 1 << lgConfigK);
+  itrAlloc().construct(itr, *this, 1 << this->lgConfigK);
   return std::unique_ptr<PairIterator<A>>(
     itr,
-    [](Hll4Iterator* ptr) { ptr->~Hll4Iterator(); itrAlloc().deallocate(ptr, 1); }
+    [](Hll4Iterator<A>* ptr) { ptr->~Hll4Iterator(); itrAlloc().deallocate(ptr, 1); }
   );
 }
 
@@ -103,10 +103,10 @@ std::unique_ptr<PairIterator<A>> Hll4Array<A>::getAuxIterator() const {
 
 template<typename A>
 int Hll4Array<A>::getUpdatableSerializationBytes() const {
-  AuxHashMap* auxHashMap = getAuxHashMap();
+  AuxHashMap<A>* auxHashMap = getAuxHashMap();
   int auxBytes;
   if (auxHashMap == nullptr) {
-    auxBytes = 4 << HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK];
+    auxBytes = 4 << HllUtil<A>::LG_AUX_ARR_INTS[this->lgConfigK];
   } else {
     auxBytes = 4 << auxHashMap->getLgAuxArrInts();
   }
@@ -115,7 +115,7 @@ int Hll4Array<A>::getUpdatableSerializationBytes() const {
 
 template<typename A>
 int Hll4Array<A>::getHllByteArrBytes() const {
-  return hll4ArrBytes(lgConfigK);
+  return this->hll4ArrBytes(this->lgConfigK);
 }
 
 template<typename A>
@@ -130,7 +130,7 @@ void Hll4Array<A>::putAuxHashMap(AuxHashMap<A>* auxHashMap) {
 
 template<typename A>
 int Hll4Array<A>::getSlot(const int slotNo) const {
-  int theByte = hllByteArr[slotNo >> 1];
+  int theByte = this->hllByteArr[slotNo >> 1];
   if ((slotNo & 1) > 0) { // odd?
     theByte >>= 4;
   }
@@ -144,11 +144,11 @@ HllSketchImpl<A>* Hll4Array<A>::couponUpdate(const int coupon) {
     throw std::logic_error("newValue must be a posittive integer. Found: " + std::to_string(newValue));
   }
 
-  if (newValue <= curMin) {
+  if (newValue <= this->curMin) {
     return this; // quick rejection, but only works for large N
   }
 
-  const int configKmask = (1 << lgConfigK) - 1;
+  const int configKmask = (1 << this->lgConfigK) - 1;
   const int slotNo = HllUtil<A>::getLow26(coupon) & configKmask;
   internalHll4Update(slotNo, newValue);
   return this;
@@ -157,12 +157,12 @@ HllSketchImpl<A>* Hll4Array<A>::couponUpdate(const int coupon) {
 template<typename A>
 void Hll4Array<A>::putSlot(const int slotNo, const int newValue) {
   const int byteno = slotNo >> 1;
-  const int oldValue = hllByteArr[byteno];
+  const int oldValue = this->hllByteArr[byteno];
   if ((slotNo & 1) == 0) { // set low nibble
-    hllByteArr[byteno]
+    this->hllByteArr[byteno]
       = (uint8_t) ((oldValue & HllUtil<A>::hiNibbleMask) | (newValue & HllUtil<A>::loNibbleMask));
   } else { // set high nibble
-    hllByteArr[byteno]
+    this->hllByteArr[byteno]
       = (uint8_t) ((oldValue & HllUtil<A>::loNibbleMask) | ((newValue << 4) & HllUtil<A>::hiNibbleMask));
   }
 }
@@ -170,7 +170,7 @@ void Hll4Array<A>::putSlot(const int slotNo, const int newValue) {
 //In C: two-registers.c Line 836 in "hhb_abstract_set_slot_if_new_value_bigger" non-sparse
 template<typename A>
 void Hll4Array<A>::internalHll4Update(const int slotNo, const int newVal) {
-  if ((slotNo < 0) || (slotNo >= (1 << lgConfigK))) {
+  if ((slotNo < 0) || (slotNo >= (1 << this->lgConfigK))) {
     throw std::logic_error("slotNo must be between 0 and 1<<lgConfigK. Found: " + std::to_string(slotNo));
   }
   if (newVal <= 0) {
@@ -179,7 +179,7 @@ void Hll4Array<A>::internalHll4Update(const int slotNo, const int newVal) {
 
   const int rawStoredOldValue = getSlot(slotNo); // could be a 0
   // this is provably a LB:
-  const int lbOnOldValue = rawStoredOldValue + curMin; // lower bound, could be 0
+  const int lbOnOldValue = rawStoredOldValue + this->curMin; // lower bound, could be 0
 
   if (newVal > lbOnOldValue) { // 842
     // Note: if an AUX_TOKEN exists, then auxHashMap must alraedy exist
@@ -191,13 +191,13 @@ void Hll4Array<A>::internalHll4Update(const int slotNo, const int newVal) {
       // we know that hte array will change, but we haven't actually updated yet
       hipAndKxQIncrementalUpdate(*this, actualOldValue, newVal);
 
-      if (newVal < curMin) {
+      if (newVal < this->curMin) {
         throw std::logic_error("newVal cannot be less than curMin at this point");
       }
 
       // newVal >= curMin
 
-      const int shiftedNewValue = newVal - curMin; // 874
+      const int shiftedNewValue = newVal - this->curMin; // 874
       // redundant since we know newVal >= curMin,
       // and lgConfigK bounds do not allow overflowing an int
       //assert(shiftedNewValue >= 0);
@@ -225,7 +225,7 @@ void Hll4Array<A>::internalHll4Update(const int slotNo, const int newVal) {
           // added to the exception table
           putSlot(slotNo, HllUtil<A>::AUX_TOKEN);
           if (auxHashMap == nullptr) {
-            auxHashMap = AuxHashMap<A>::newAuxHashMap(HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
+            auxHashMap = AuxHashMap<A>::newAuxHashMap(HllUtil<A>::LG_AUX_ARR_INTS[this->lgConfigK], this->lgConfigK);
           }
           auxHashMap->mustAdd(slotNo, newVal);
         }
@@ -237,12 +237,12 @@ void Hll4Array<A>::internalHll4Update(const int slotNo, const int newVal) {
       }
 
       // we just increased a pair value, so it might be time to change curMin
-      if (actualOldValue == curMin) { // 908
-        if (numAtCurMin < 1) {
+      if (actualOldValue == this->curMin) { // 908
+        if (this->numAtCurMin < 1) {
           throw std::logic_error("Invalid state with < 1 entry at curMin");
         }
-        decNumAtCurMin();
-        while (numAtCurMin == 0) {
+        this->decNumAtCurMin();
+        while (this->numAtCurMin == 0) {
           shiftToBiggerCurMin(); // increases curMin by 1, builds a new aux table
           // shifts values in 4-bit table and recounts curMin
         }
@@ -259,8 +259,8 @@ void Hll4Array<A>::internalHll4Update(const int slotNo, const int newVal) {
 // In C: again-two-registers.c Lines 710 "hhb_shift_to_bigger_curmin"
 template<typename A>
 void Hll4Array<A>::shiftToBiggerCurMin() {
-  const int newCurMin = curMin + 1;
-  const int configK = 1 << lgConfigK;
+  const int newCurMin = this->curMin + 1;
+  const int configK = 1 << this->lgConfigK;
   const int configKmask = configK - 1;
 
   int numAtNewCurMin = 0;
@@ -320,7 +320,7 @@ void Hll4Array<A>::shiftToBiggerCurMin() {
       else { //newShiftedVal >= AUX_TOKEN
         // the former exception remains an exception, so must be added to the newAuxMap
         if (newAuxMap == nullptr) {
-          newAuxMap = AuxHashMap<A>::newAuxHashMap(HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
+          newAuxMap = AuxHashMap<A>::newAuxHashMap(HllUtil<A>::LG_AUX_ARR_INTS[this->lgConfigK], this->lgConfigK);
         }
         newAuxMap->mustAdd(slotNum, oldActualVal);
       }
@@ -344,8 +344,8 @@ void Hll4Array<A>::shiftToBiggerCurMin() {
   }
   auxHashMap = newAuxMap;
 
-  curMin = newCurMin;
-  numAtCurMin = numAtNewCurMin;
+  this->curMin = newCurMin;
+  this->numAtCurMin = numAtNewCurMin;
 }
 
 }
