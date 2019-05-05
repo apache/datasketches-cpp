@@ -8,12 +8,10 @@
 
 #include "HllSketchImpl.hpp"
 #include "HllUtil.hpp"
-//#include "AuxHashMap.hpp"
+#include "PairIterator.hpp"
 
 namespace datasketches {
 
-template<typename A>
-class HllSketchImplFactory;
 template<typename A>
 class AuxHashMap;
 
@@ -27,7 +25,7 @@ class HllArray : public HllSketchImpl<A> {
     static HllArray* newHll(const void* bytes, size_t len);
     static HllArray* newHll(std::istream& is);
 
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serialize(bool compact) const;
+    virtual std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serialize(bool compact) const;
     virtual void serialize(std::ostream& os, bool compact) const;
 
     virtual ~HllArray();
@@ -53,8 +51,10 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual int getHllByteArrBytes() const = 0;
 
-    virtual std::unique_ptr<PairIterator<A>> getIterator() const = 0;
-    virtual std::unique_ptr<PairIterator<A>> getAuxIterator() const;
+    //virtual std::unique_ptr<PairIterator<A>> getIterator() const = 0;
+    //virtual std::unique_ptr<PairIterator<A>> getAuxIterator() const;
+    virtual PairIterator_with_deleter<A> getIterator() const = 0;
+    virtual PairIterator_with_deleter<A> getAuxIterator() const;
 
     virtual int getUpdatableSerializationBytes() const;
     virtual int getCompactSerializationBytes() const;
@@ -101,7 +101,7 @@ class HllArray : public HllSketchImpl<A> {
     bool oooFlag; //Out-Of-Order Flag
 
     //friend class Conversions;
-    //friend class HllSketchImplFactory<A>;
+    friend class HllSketchImplFactory<A>;
 };
 
 }

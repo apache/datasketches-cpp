@@ -29,6 +29,9 @@ class PairIterator {
     virtual ~PairIterator() {}
 };
 
+template<typename A>
+using PairIterator_with_deleter = std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>;
+
 }
 
 #endif /* _PAIRITERATOR_HPP_ */

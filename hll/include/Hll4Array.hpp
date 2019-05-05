@@ -26,8 +26,10 @@ class Hll4Array final : public HllArray<A> {
 
     virtual Hll4Array* copy() const;
 
-    virtual std::unique_ptr<PairIterator<A>> getIterator() const;
-    virtual std::unique_ptr<PairIterator<A>> getAuxIterator() const;
+    //virtual std::unique_ptr<PairIterator<A>> getIterator() const;
+    //virtual std::unique_ptr<PairIterator<A>> getAuxIterator() const;
+    virtual PairIterator_with_deleter<A> getIterator() const;
+    virtual PairIterator_with_deleter<A> getAuxIterator() const;
 
     virtual int getSlot(int slotNo) const final;
     virtual void putSlot(int slotNo, int value) final;

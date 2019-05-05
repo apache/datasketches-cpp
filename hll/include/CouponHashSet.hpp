@@ -15,14 +15,14 @@ class CouponHashSet : public CouponList<A> {
   public:
     static CouponHashSet* newSet(const void* bytes, size_t len);
     static CouponHashSet* newSet(std::istream& is);
+    explicit CouponHashSet(int lgConfigK, TgtHllType tgtHllType);
+    explicit CouponHashSet(const CouponHashSet& that, TgtHllType tgtHllType);
+    explicit CouponHashSet(const CouponHashSet& that);
 
     virtual ~CouponHashSet();
     virtual std::function<void(HllSketchImpl<A>*)> get_deleter() const;
 
   protected:
-    explicit CouponHashSet(int lgConfigK, TgtHllType tgtHllType);
-    explicit CouponHashSet(const CouponHashSet& that);
-    explicit CouponHashSet(const CouponHashSet& that, TgtHllType tgtHllType);
     
     virtual CouponHashSet* copy() const;
     virtual CouponHashSet* copyAs(TgtHllType tgtHllType) const;
@@ -32,8 +32,7 @@ class CouponHashSet : public CouponList<A> {
     virtual int getMemDataStart() const;
     virtual int getPreInts() const;
 
-    //friend class CouponList; // so it can access fields declared in CouponList
-    //friend class HllSketchImplFactory<A>;
+    friend class HllSketchImplFactory<A>;
 
   private:
     typedef typename std::allocator_traits<A>::template rebind_alloc<CouponHashSet<A>> chsAlloc;

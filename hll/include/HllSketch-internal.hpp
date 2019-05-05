@@ -29,10 +29,10 @@ typedef union {
 
 template<typename A>
 HllSketch<A>::HllSketch(int lgConfigK, TgtHllType tgtHllType) {
-  // TODO: use allocator
   typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
-  hllSketchImpl = clAlloc().allocate(1);
-  clAlloc().construct(hllSketchImpl, HllUtil<A>::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
+  CouponList<A>* cl = clAlloc().allocate(1);
+  clAlloc().construct(cl, HllUtil<A>::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
+  hllSketchImpl = cl;
 }
 
 template<typename A>
@@ -230,13 +230,13 @@ void HllSketch<A>::serializeUpdatable(std::ostream& os) const {
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t>, const size_t>
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t>
 HllSketch<A>::serializeCompact() const {
   return hllSketchImpl->serialize(true);
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t>, const size_t>
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t>
 HllSketch<A>::serializeUpdatable() const {
   return hllSketchImpl->serialize(false);
 }
@@ -281,7 +281,8 @@ std::ostream& HllSketch<A>::to_string(std::ostream& os,
 
   if (detail) {
     os << "### HLL SKETCH DATA DETAIL: " << std::endl;
-    std::unique_ptr<PairIterator<A>> pitr = getIterator();
+    //std::unique_ptr<PairIterator<A>> pitr = getIterator();
+    PairIterator_with_deleter<A> pitr = getIterator();
     os << pitr->getHeader() << std::endl;
     if (all) {
       while (pitr->nextAll()) {
@@ -296,7 +297,8 @@ std::ostream& HllSketch<A>::to_string(std::ostream& os,
   if (auxDetail) {
     if ((getCurrentMode() == HLL) && (getTgtHllType() == HLL_4)) {
       HllArray<A>* hllArray = (HllArray<A>*) hllSketchImpl;
-      std::unique_ptr<PairIterator<A>> auxItr = hllArray->getAuxIterator();
+      //std::unique_ptr<PairIterator<A>> auxItr = hllArray->getAuxIterator();
+      PairIterator_with_deleter<A> auxItr = hllArray->getAuxIterator();
       if (auxItr != nullptr) {
         os << "### HLL SKETCH AUX DETAIL: " << std::endl
            << auxItr->getHeader() << std::endl;
@@ -382,7 +384,7 @@ bool HllSketch<A>::isEmpty() const {
 }
 
 template<typename A>
-std::unique_ptr<PairIterator<A>> HllSketch<A>::getIterator() const {
+PairIterator_with_deleter<A> HllSketch<A>::getIterator() const {
   return hllSketchImpl->getIterator();
 }
 

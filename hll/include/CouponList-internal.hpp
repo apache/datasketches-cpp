@@ -69,10 +69,10 @@ CouponList<A>::~CouponList() {
 
 template<typename A>
 std::function<void(HllSketchImpl<A>*)> CouponList<A>::get_deleter() const {
-  return [](CouponList<A>* ptr) {
-    //CouponList<A>* cl = static_cast<CouponList<A>*>(ptr);
-    ptr->~CouponList();
-    clAlloc().deallocate(ptr, 1);
+  return [](HllSketchImpl<A>* ptr) {
+    CouponList<A>* cl = static_cast<CouponList<A>*>(ptr);
+    cl->~CouponList();
+    clAlloc().deallocate(cl, 1);
   };
 }
 
@@ -107,12 +107,12 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
   if (curMode != LIST) {
     throw std::invalid_argument("Calling set construtor with non-list mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
+  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = (int) data[HllUtil<A>::LG_K_BYTE];
   //const int lgArrInts = (int) data[HllUtil<A>::LG_ARR_BYTE];
@@ -156,12 +156,12 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
+  CurMode curMode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
   if (curMode != LIST) {
     throw std::invalid_argument("Calling list construtor with non-list mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
+  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
   //const int lgArrInts = (int) listHeader[HllUtil<A>::LG_ARR_BYTE];
@@ -187,12 +187,12 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t>, const size_t> CouponList<A>::serialize(bool compact) const {
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> CouponList<A>::serialize(bool compact) const {
   size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
-  std::unique_ptr<uint8_t> byteArr(
+  std::unique_ptr<uint8_t, std::function<void(uint8_t*)>> byteArr(
     uint8Alloc().allocate(sketchSizeBytes),
-    [sketchSizeBytes](uint8_t p){ uint8Alloc().deallocate(p, sketchSizeBytes); }
+    [sketchSizeBytes](uint8_t* p){ uint8Alloc().deallocate(p, sketchSizeBytes); }
   );
 
   uint8_t* bytes = byteArr.get();
@@ -219,7 +219,7 @@ std::pair<std::unique_ptr<uint8_t>, const size_t> CouponList<A>::serialize(bool 
       break;
     }
     case 1: { // src updatable, dst compact
-      std::unique_ptr<PairIterator<A>> itr = getIterator();
+      PairIterator_with_deleter<A> itr = getIterator();
       bytes += getMemDataStart(); // reusing ponter for incremental writes
       while (itr->nextValid()) {
         const int pairValue = itr->getPair();
@@ -277,7 +277,7 @@ void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
       break;
     }
     case 1: { // src updatable, dst compact
-      std::unique_ptr<PairIterator<A>> itr = getIterator();
+      PairIterator_with_deleter<A> itr = getIterator();
       while (itr->nextValid()) {
         const int pairValue = itr->getPair();
         os.write((char*)&pairValue, sizeof(pairValue));
@@ -395,13 +395,14 @@ int* CouponList<A>::getCouponIntArr() const {
 }
 
 template<typename A>
-std::unique_ptr<PairIterator<A>> CouponList<A>::getIterator() const {
+PairIterator_with_deleter<A> CouponList<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
-  PairIterator<A>* itr = iapiAlloc().allocate(1);
+  IntArrayPairIterator<A>* itr = iapiAlloc().allocate(1);
   iapiAlloc().construct(itr, couponIntArr, 1 << lgCouponArrInts, this->lgConfigK);
-  return std::unique_ptr<PairIterator<A>>(
-    iapiAlloc().construct(itr, couponIntArr, 1 << lgCouponArrInts, this->lgConfigK),
-    [](IntArrayPairIterator<A>* iapi) {
+  return PairIterator_with_deleter<A>(
+    itr,
+    [](PairIterator<A>* ptr) {
+      IntArrayPairIterator<A>* iapi = static_cast<IntArrayPairIterator<A>*>(ptr);
       iapi->~IntArrayPairIterator();
       iapiAlloc().deallocate(iapi, 1);
     }

@@ -209,12 +209,12 @@ void HllUnion<A>::couponUpdate(const int coupon) {
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t>, const size_t> HllUnion<A>::serializeCompact() const {
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> HllUnion<A>::serializeCompact() const {
   return gadget->serializeCompact();
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t>, const size_t> HllUnion<A>::serializeUpdatable() const {
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> HllUnion<A>::serializeUpdatable() const {
   return gadget->serializeUpdatable();
 }
 

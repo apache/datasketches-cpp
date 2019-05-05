@@ -16,9 +16,9 @@ template<typename A = std::allocator<char>>
 class AuxHashMap final {
   public:
     explicit AuxHashMap(int lgAuxArrInts, int lgConfigK);
-    explicit AuxHashMap(AuxHashMap<A>& that);
+    explicit AuxHashMap(const AuxHashMap<A>& that);
     static AuxHashMap* newAuxHashMap(int lgAuxArrInts, int lgConfigK);
-    static AuxHashMap* newAuxHashMap(AuxHashMap<A>& that);
+    static AuxHashMap* newAuxHashMap(const AuxHashMap<A>& that);
 
     static AuxHashMap* deserialize(const void* bytes, size_t len,
                                    int lgConfigK,
@@ -37,7 +37,7 @@ class AuxHashMap final {
     int getAuxCount() const;
     int* getAuxIntArr();
     int getLgAuxArrInts() const;
-    std::unique_ptr<PairIterator<A>> getIterator() const;
+    PairIterator_with_deleter<A> getIterator() const;
 
     void mustAdd(int slotNo, int value);
     int mustFindValueFor(int slotNo);

@@ -7,8 +7,12 @@
 #define _COUPONLIST_HPP_
 
 #include "HllSketchImpl.hpp"
+#include "PairIterator.hpp"
 
 namespace datasketches {
+
+template<typename A>
+class HllSketchImplFactory;
 
 template<typename A = std::allocator<char>>
 class CouponList : public HllSketchImpl<A> {
@@ -19,7 +23,7 @@ class CouponList : public HllSketchImpl<A> {
 
     static CouponList* newList(const void* bytes, size_t len);
     static CouponList* newList(std::istream& is);
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serialize(bool compact) const;
+    virtual std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serialize(bool compact) const;
     virtual void serialize(std::ostream& os, bool compact) const;
 
     virtual ~CouponList();
@@ -37,7 +41,8 @@ class CouponList : public HllSketchImpl<A> {
 
     virtual bool isEmpty() const;
     virtual int getCouponCount() const;
-    virtual std::unique_ptr<PairIterator<A>> getIterator() const;
+    //virtual std::unique_ptr<PairIterator<A>> getIterator() const;
+    virtual PairIterator_with_deleter<A> getIterator() const;
 
   protected:
     typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
@@ -63,7 +68,7 @@ class CouponList : public HllSketchImpl<A> {
     bool oooFlag;
     int* couponIntArr;
 
-    //friend class HllSketchImplFactory<A>;
+    friend class HllSketchImplFactory<A>;
 };
 
 }

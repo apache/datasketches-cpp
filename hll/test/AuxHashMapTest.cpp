@@ -49,7 +49,7 @@ class AuxHashMapTest : public CppUnit::TestFixture {
       map->mustAdd(i, i);
     }
     CPPUNIT_ASSERT_EQUAL(map->getLgAuxArrInts(), 4);
-    std::unique_ptr<PairIterator<>> itr = map->getIterator();
+    std::unique_ptr<PairIterator<>, std::function<void(PairIterator<>*)>> itr = map->getIterator();
     int count1 = 0;
     int count2 = 0;
     while (itr->nextAll()) {

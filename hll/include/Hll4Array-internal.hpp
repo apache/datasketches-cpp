@@ -26,10 +26,10 @@ Hll4Iterator<A>::~Hll4Iterator() { }
 
 template<typename A>
 int Hll4Iterator<A>::value() {
-  const int nib = hllArray.getSlot(index);
+  const int nib = hllArray.getSlot(this->index);
   if (nib == HllUtil<A>::AUX_TOKEN) {
     // auxHashMap cannot be null here
-    return hllArray.getAuxHashMap()->mustFindValueFor(index);
+    return hllArray.getAuxHashMap()->mustFindValueFor(this->index);
   } else {
     return nib + hllArray.getCurMin();
   }
@@ -68,33 +68,39 @@ Hll4Array<A>::~Hll4Array() {
 
 template<typename A>
 std::function<void(HllSketchImpl<A>*)> Hll4Array<A>::get_deleter() const {
-  return [](Hll4Array<A>* ptr) {
-    typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Array> hll4Alloc;
-    ptr->~Hll4Array();
-    hll4Alloc().deallocate(ptr, 1);
+  return [](HllSketchImpl<A>* ptr) {
+    typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Array<A>> hll4Alloc;
+    Hll4Array<A>* hll = static_cast<Hll4Array<A>*>(ptr);
+    hll->~Hll4Array();
+    hll4Alloc().deallocate(hll, 1);
   };
 }
 
 template<typename A>
 Hll4Array<A>* Hll4Array<A>::copy() const {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Array> hll4Alloc;
+  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Array<A>> hll4Alloc;
   Hll4Array<A>* hll = hll4Alloc().allocate(1);
-  hll4Alloc().construct(hll, *this);  
+  hll4Alloc().construct(hll, *this);
+  return hll;
 }
 
 template<typename A>
-std::unique_ptr<PairIterator<A>> Hll4Array<A>::getIterator() const {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Iterator> itrAlloc;
-  PairIterator<A>* itr = itrAlloc().allocate(1);
+PairIterator_with_deleter<A> Hll4Array<A>::getIterator() const {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Iterator<A>> itrAlloc;
+  Hll4Iterator<A>* itr = itrAlloc().allocate(1);
   itrAlloc().construct(itr, *this, 1 << this->lgConfigK);
-  return std::unique_ptr<PairIterator<A>>(
+  return PairIterator_with_deleter<A>(
     itr,
-    [](Hll4Iterator<A>* ptr) { ptr->~Hll4Iterator(); itrAlloc().deallocate(ptr, 1); }
+    [](PairIterator<A>* ptr) {
+      Hll4Iterator<A>* hll = static_cast<Hll4Iterator<A>*>(ptr);
+      hll->~Hll4Iterator();
+      itrAlloc().deallocate(hll, 1);
+    }
   );
 }
 
 template<typename A>
-std::unique_ptr<PairIterator<A>> Hll4Array<A>::getAuxIterator() const {
+PairIterator_with_deleter<A> Hll4Array<A>::getAuxIterator() const {
   if (auxHashMap != nullptr) {
     return auxHashMap->getIterator();
   }
@@ -189,7 +195,7 @@ void Hll4Array<A>::internalHll4Update(const int slotNo, const int newVal) {
 
     if (newVal > actualOldValue) { // 848: actualOldValue could still be 0; newValue > 0
       // we know that hte array will change, but we haven't actually updated yet
-      hipAndKxQIncrementalUpdate(*this, actualOldValue, newVal);
+      this->hipAndKxQIncrementalUpdate(*this, actualOldValue, newVal);
 
       if (newVal < this->curMin) {
         throw std::logic_error("newVal cannot be less than curMin at this point");
@@ -295,7 +301,7 @@ void Hll4Array<A>::shiftToBiggerCurMin() {
     int oldActualVal;
     int newShiftedVal;
 
-    std::unique_ptr<PairIterator<A>> itr = auxHashMap->getIterator();
+    PairIterator_with_deleter<A> itr = auxHashMap->getIterator();
     while (itr->nextValid()) {
       slotNum = itr->getKey() & configKmask;
       oldActualVal = itr->getValue();

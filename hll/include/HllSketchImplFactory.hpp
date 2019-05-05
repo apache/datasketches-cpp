@@ -39,7 +39,7 @@ private:
 
 template<typename A>
 CouponHashSet<A>* HllSketchImplFactory<A>::promoteListToSet(const CouponList<A>& list) {
-  std::unique_ptr<PairIterator<A>> iter = list.getIterator();
+  PairIterator_with_deleter<A> iter = list.getIterator();
   CouponHashSet<A>* chSet = new CouponHashSet<A>(list.getLgConfigK(), list.getTgtHllType());
   while (iter->nextValid()) {
     chSet->couponUpdate(iter->getPair());
@@ -52,7 +52,7 @@ CouponHashSet<A>* HllSketchImplFactory<A>::promoteListToSet(const CouponList<A>&
 template<typename A>
 HllArray<A>* HllSketchImplFactory<A>::promoteListOrSetToHll(const CouponList<A>& src) {
   HllArray<A>* tgtHllArr = HllSketchImplFactory<A>::newHll(src.getLgConfigK(), src.getTgtHllType());
-  std::unique_ptr<PairIterator<A>> srcItr = src.getIterator();
+  PairIterator_with_deleter<A> srcItr = src.getIterator();
   tgtHllArr->putKxQ0(1 << src.getLgConfigK());
   while (srcItr->nextValid()) {
     tgtHllArr->couponUpdate(srcItr->getPair());
@@ -125,7 +125,7 @@ Hll4Array<A>* HllSketchImplFactory<A>::convertToHll4(const HllArray<A>& srcHllAr
 
   // 2nd pass: must know curMin.
   // Populate KxQ registers, build AuxHashMap if needed
-  std::unique_ptr<PairIterator<A>> itr = srcHllArr.getIterator();
+  PairIterator_with_deleter<A> itr = srcHllArr.getIterator();
   // nothing allocated, may be null
   AuxHashMap<A>* auxHashMap = srcHllArr.getAuxHashMap();
 
@@ -156,7 +156,7 @@ template<typename A>
 int HllSketchImplFactory<A>::curMinAndNum(const HllArray<A>& hllArr) {
   int curMin = 64;
   int numAtCurMin = 0;
-  std::unique_ptr<PairIterator<A>> itr = hllArr.getIterator();
+  PairIterator_with_deleter<A> itr = hllArr.getIterator();
   while (itr->nextAll()) {
     int v = itr->getValue();
     if (v < curMin) {
@@ -177,7 +177,7 @@ Hll6Array<A>* HllSketchImplFactory<A>::convertToHll6(const HllArray<A>& srcHllAr
   hll6Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());
 
   int numZeros = 1 << lgConfigK;
-  std::unique_ptr<PairIterator<A>> itr = srcHllArr.getIterator();
+  PairIterator_with_deleter<A> itr = srcHllArr.getIterator();
   while (itr->nextAll()) {
     if (itr->getValue() != HllUtil<A>::EMPTY) {
       --numZeros;
@@ -197,7 +197,7 @@ Hll8Array<A>* HllSketchImplFactory<A>::convertToHll8(const HllArray<A>& srcHllAr
   hll8Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());
 
   int numZeros = 1 << lgConfigK;
-  std::unique_ptr<PairIterator<A>> itr = srcHllArr.getIterator();
+  PairIterator_with_deleter<A> itr = srcHllArr.getIterator();
   while (itr->nextAll()) {
     if (itr->getValue() != HllUtil<A>::EMPTY) {
       --numZeros;

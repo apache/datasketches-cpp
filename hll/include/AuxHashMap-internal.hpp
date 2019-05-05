@@ -30,13 +30,13 @@ AuxHashMap<A>::AuxHashMap(int lgAuxArrInts, int lgConfigK)
 
 template<typename A>
 AuxHashMap<A>* AuxHashMap<A>::newAuxHashMap(int lgAuxArrInts, int lgConfigK) {
-  AuxHashMap* map = ahmAlloc().allocate(1);
+  AuxHashMap<A>* map = ahmAlloc().allocate(1);
   ahmAlloc().construct(map, lgAuxArrInts, lgConfigK);
   return map;
 }
 
 template<typename A>
-AuxHashMap<A>::AuxHashMap(AuxHashMap& that)
+AuxHashMap<A>::AuxHashMap(const AuxHashMap& that)
   : lgConfigK(that.lgConfigK),
     lgAuxArrInts(that.lgAuxArrInts),
     auxCount(that.auxCount) {
@@ -47,8 +47,8 @@ AuxHashMap<A>::AuxHashMap(AuxHashMap& that)
 }
 
 template<typename A>
-AuxHashMap<A>* AuxHashMap<A>::newAuxHashMap(AuxHashMap& that) {
-  AuxHashMap* map = ahmAlloc().allocate(1);
+AuxHashMap<A>* AuxHashMap<A>::newAuxHashMap(const AuxHashMap& that) {
+  AuxHashMap<A>* map = ahmAlloc().allocate(1);
   ahmAlloc().construct(map, that);
   return map;
 }
@@ -65,7 +65,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
     lgArrInts = lgAuxArrInts;
   }
 
-  AuxHashMap* auxHashMap = ahmAlloc().allocate(1);
+  AuxHashMap<A>* auxHashMap = ahmAlloc().allocate(1);
   ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
   int configKmask = (1 << lgConfigK) - 1;
 
@@ -112,7 +112,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(std::istream& is, const int lgConfigK,
     lgArrInts = lgAuxArrInts;
   }
   
-  AuxHashMap* auxHashMap = ahmAlloc().allocate(1);
+  AuxHashMap<A>* auxHashMap = ahmAlloc().allocate(1);
   ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
   int configKmask = (1 << lgConfigK) - 1;
 
@@ -191,16 +191,16 @@ int AuxHashMap<A>::getUpdatableSizeBytes() const {
 }
 
 template<typename A>
-std::unique_ptr<PairIterator<A>> AuxHashMap<A>::getIterator() const {
-  // TODO: use allocator
+std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>> AuxHashMap<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
-  PairIterator<A>* itr = iapiAlloc().allocate(1);
+  IntArrayPairIterator<A>* itr = iapiAlloc().allocate(1);
   iapiAlloc().construct(itr, auxIntArr, 1 << lgAuxArrInts, lgConfigK);
-  return std::unique_ptr<PairIterator<A>>(
+  return std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>(
     itr,
-    [](IntArrayPairIterator<A>* ptr) {
-      ptr->~IntArrayPairIterator();
-      iapiAlloc().deallocate(ptr, 1);
+    [](PairIterator<A>* ptr) {
+      IntArrayPairIterator<A>* itr = static_cast<IntArrayPairIterator<A>*>(ptr);
+      itr->~IntArrayPairIterator();
+      iapiAlloc().deallocate(itr, 1);
     }
     );
 }

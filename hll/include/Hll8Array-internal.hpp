@@ -23,7 +23,7 @@ Hll8Iterator<A>::~Hll8Iterator() { }
 
 template<typename A>
 int Hll8Iterator<A>::value() {
-  return hllArray.hllByteArr[index] & HllUtil<A>::VAL_MASK_6;
+  return hllArray.hllByteArr[this->index] & HllUtil<A>::VAL_MASK_6;
 }
 
 template<typename A>
@@ -49,29 +49,34 @@ Hll8Array<A>::~Hll8Array() {
 
 template<typename A>
 std::function<void(HllSketchImpl<A>*)> Hll8Array<A>::get_deleter() const {
-  return [](Hll8Array<A>* ptr) {
-    typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array> hll8Alloc;
-    ptr->~Hll8Array();
-    hll8Alloc().deallocate(ptr, 1);
+  return [](HllSketchImpl<A>* ptr) {
+    typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>> hll8Alloc;
+    Hll8Array<A>* hll = static_cast<Hll8Array<A>*>(ptr);
+    hll->~Hll8Array();
+    hll8Alloc().deallocate(hll, 1);
   };
 }
 
 template<typename A>
 Hll8Array<A>* Hll8Array<A>::copy() const {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array> hll8Alloc;
+  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>> hll8Alloc;
   Hll8Array<A>* hll = hll8Alloc().allocate(1);
   hll8Alloc().construct(hll, *this);  
   return hll;
 }
 
 template<typename A>
-std::unique_ptr<PairIterator<A>> Hll8Array<A>::getIterator() const {
+PairIterator_with_deleter<A> Hll8Array<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Iterator<A>> itrAlloc;
-  PairIterator<A>* itr = itrAlloc().allocate(1);
+  Hll8Iterator<A>* itr = itrAlloc().allocate(1);
   itrAlloc().construct(itr, *this, 1 << this->lgConfigK);
-  return std::unique_ptr<PairIterator<A>>(
+  return PairIterator_with_deleter<A>(
     itr,
-    [](Hll8Iterator<A>* ptr) { ptr->~Hll8Iterator(); itrAlloc().deallocate(ptr, 1); }
+    [](PairIterator<A>* ptr) {
+      Hll8Iterator<A>* hll = static_cast<Hll8Iterator<A>*>(ptr);
+      hll->~Hll8Iterator();
+      itrAlloc().deallocate(hll, 1);
+    }
   );
 }
 
@@ -102,7 +107,7 @@ HllSketchImpl<A>* Hll8Array<A>::couponUpdate(const int coupon) { // used by HLL_
   const int curVal = getSlot(slotNo);
   if (newVal > curVal) {
     putSlot(slotNo, newVal);
-    hipAndKxQIncrementalUpdate(*this, curVal, newVal);
+    this->hipAndKxQIncrementalUpdate(*this, curVal, newVal);
     if (curVal == 0) {
       this->decNumAtCurMin(); // interpret numAtCurMin as num zeros
       if (this->getNumAtCurMin() < 0) { 

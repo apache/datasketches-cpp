@@ -8,6 +8,7 @@
 
 #include "HllUtil.hpp"
 #include "hll.hpp" // for TgtHllType
+#include "PairIterator.hpp"
 
 #include <memory>
 
@@ -20,7 +21,7 @@ class HllSketchImpl {
     virtual ~HllSketchImpl();
 
     virtual void serialize(std::ostream& os, bool compact) const = 0;
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serialize(bool compact) const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serialize(bool compact) const = 0;
     //static HllSketchImpl* deserialize(std::istream& os);
     //static HllSketchImpl* deserialize(const void* bytes, size_t len);
 
@@ -39,7 +40,8 @@ class HllSketchImpl {
     virtual double getUpperBound(int numStdDev) const = 0;
     virtual double getLowerBound(int numStdDev) const = 0;
 
-    virtual std::unique_ptr<PairIterator<A>> getIterator() const = 0;
+    //virtual std::unique_ptr<PairIterator<A>> getIterator() const = 0;
+    virtual PairIterator_with_deleter<A> getIterator() const = 0;
 
     int getLgConfigK() const;
 

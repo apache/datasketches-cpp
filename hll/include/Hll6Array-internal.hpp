@@ -55,10 +55,11 @@ Hll6Array<A>::~Hll6Array() {
 
 template<typename A>
 std::function<void(HllSketchImpl<A>*)> Hll6Array<A>::get_deleter() const {
-  return [](Hll6Array<A>* ptr) {
+  return [](HllSketchImpl<A>* ptr) {
     typedef typename std::allocator_traits<A>::template rebind_alloc<Hll6Array<A>> hll6Alloc;
-    ptr->~Hll6Array();
-    hll6Alloc().deallocate(ptr, 1);
+    Hll6Array<A>* hll = static_cast<Hll6Array<A>*>(ptr);
+    hll->~Hll6Array();
+    hll6Alloc().deallocate(hll, 1);
   };
 }
 
@@ -71,13 +72,17 @@ Hll6Array<A>* Hll6Array<A>::copy() const {
 }
 
 template<typename A>
-std::unique_ptr<PairIterator<A>> Hll6Array<A>::getIterator() const {
+PairIterator_with_deleter<A> Hll6Array<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll6Iterator<A>> itrAlloc;
-  PairIterator<A>* itr = itrAlloc().allocate(1);
+  Hll6Iterator<A>* itr = itrAlloc().allocate(1);
   itrAlloc().construct(itr, *this, 1 << this->lgConfigK);
-  return std::unique_ptr<PairIterator<A>>(
+  return PairIterator_with_deleter<A>(
     itr,
-    [](Hll6Iterator<A>* ptr) { ptr->~Hll6Iterator(); itrAlloc().deallocate(ptr, 1); }
+    [](PairIterator<A>* ptr) {
+      Hll6Iterator<A>* hll = static_cast<Hll6Iterator<A>*>(ptr);
+      hll->~Hll6Iterator();
+      itrAlloc().deallocate(hll, 1);
+    }
   );
 }
 
@@ -120,7 +125,7 @@ HllSketchImpl<A>* Hll6Array<A>::couponUpdate(const int coupon) {
   const int curVal = getSlot(slotNo);
   if (newVal > curVal) {
     putSlot(slotNo, newVal);
-    hipAndKxQIncrementalUpdate(*this, curVal, newVal);
+    this->hipAndKxQIncrementalUpdate(*this, curVal, newVal);
     if (curVal == 0) {
       this->decNumAtCurMin(); // interpret numAtCurMin as num zeros
       if (this->getNumAtCurMin() < 0) { 

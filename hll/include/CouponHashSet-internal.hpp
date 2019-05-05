@@ -41,10 +41,10 @@ CouponHashSet<A>::~CouponHashSet() {}
 
 template<typename A>
 std::function<void(HllSketchImpl<A>*)> CouponHashSet<A>::get_deleter() const {
-  return [](CouponHashSet<A>* ptr) {
-    //CouponHashSet<A>* chs = static_cast<CouponHashSet<A>*>(ptr);
-    ptr->~CouponHashSet();
-    chsAlloc().deallocate(ptr, 1);
+  return [](HllSketchImpl<A>* ptr) {
+    CouponHashSet<A>* chs = static_cast<CouponHashSet<A>*>(ptr);
+    chs->~CouponHashSet();
+    chsAlloc().deallocate(chs, 1);
   };
 }
 
@@ -65,12 +65,12 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
   if (curMode != SET) {
     throw std::invalid_argument("Calling set construtor with non-set mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
+  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = (int) data[HllUtil<A>::LG_K_BYTE];
   int lgArrInts = (int) data[HllUtil<A>::LG_ARR_BYTE];
@@ -133,12 +133,12 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
+  CurMode curMode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
   if (curMode != SET) {
     throw std::invalid_argument("Calling set construtor with non-set mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
+  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
   int lgArrInts = (int) listHeader[HllUtil<A>::LG_ARR_BYTE];
@@ -202,7 +202,7 @@ HllSketchImpl<A>* CouponHashSet<A>::couponUpdate(int coupon) {
   this->couponIntArr[~index] = coupon; // found empty
   ++this->couponCount;
   if (checkGrowOrPromote()) {
-    return promoteHeapListOrSetToHll(*this);
+    return this->promoteHeapListOrSetToHll(*this);
   }
   return this;
 }

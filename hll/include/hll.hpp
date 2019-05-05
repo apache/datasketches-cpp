@@ -7,6 +7,7 @@
 #define _HLL_HPP_
 
 #include "HllUtil.hpp"
+#include "PairIterator.hpp"
 
 #include <memory>
 #include <iostream>
@@ -22,8 +23,6 @@ enum TgtHllType {
 
 template<typename A>
 class HllSketchImpl;
-template<typename A>
-class PairIterator;
 
 template<typename A>
 class HllUnion;
@@ -46,8 +45,8 @@ class HllSketch final {
 
     void reset();
     
-    std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const;
-    std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const;
+    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serializeCompact() const;
+    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serializeUpdatable() const;
     void serializeCompact(std::ostream& os) const;
     void serializeUpdatable(std::ostream& os) const;
     
@@ -102,7 +101,8 @@ class HllSketch final {
     static double getRelErr(bool upperBound, bool unioned,
                             int lgConfigK, int numStdDev);
 
-    std::unique_ptr<PairIterator<A>> getIterator() const;
+    //std::unique_ptr<PairIterator<A>> getIterator() const;
+    PairIterator_with_deleter<A> getIterator() const;
 
   private:
     explicit HllSketch(HllSketchImpl<A>* that);
@@ -135,56 +135,56 @@ class HllUnion {
     static HllUnion deserialize(std::istream& is);
     static HllUnion deserialize(const void* bytes, size_t len);
 
-    virtual ~HllUnion();
+    ~HllUnion();
 
     HllUnion operator=(HllUnion<A>& other);
     HllUnion operator=(HllUnion<A>&& other);
 
-    virtual double getEstimate() const;
-    virtual double getCompositeEstimate() const;
-    virtual double getLowerBound(int numStdDev) const;
-    virtual double getUpperBound(int numStdDev) const;
+    double getEstimate() const;
+    double getCompositeEstimate() const;
+    double getLowerBound(int numStdDev) const;
+    double getUpperBound(int numStdDev) const;
 
-    virtual int getCompactSerializationBytes() const;
-    virtual int getUpdatableSerializationBytes() const;
-    virtual int getLgConfigK() const;
+    int getCompactSerializationBytes() const;
+    int getUpdatableSerializationBytes() const;
+    int getLgConfigK() const;
 
-    virtual TgtHllType getTgtHllType() const;
-    virtual bool isCompact() const;
-    virtual bool isEmpty() const;
+    TgtHllType getTgtHllType() const;
+    bool isCompact() const;
+    bool isEmpty() const;
 
-    virtual void reset();
+    void reset();
 
-    virtual HllSketch<A> getResult(TgtHllType tgtHllType = HLL_4) const;
+    HllSketch<A> getResult(TgtHllType tgtHllType = HLL_4) const;
 
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeCompact() const;
-    virtual std::pair<std::unique_ptr<uint8_t>, const size_t> serializeUpdatable() const;
-    virtual void serializeCompact(std::ostream& os) const;
-    virtual void serializeUpdatable(std::ostream& os) const;
+    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serializeCompact() const;
+    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serializeUpdatable() const;
+    void serializeCompact(std::ostream& os) const;
+    void serializeUpdatable(std::ostream& os) const;
 
-    virtual std::ostream& to_string(std::ostream& os,
-                                    bool summary = true,
-                                    bool detail = false,
-                                    bool auxDetail = false,
-                                    bool all = false) const;
-    virtual std::string to_string(bool summary = true,
-                                  bool detail = false,
-                                  bool auxDetail = false,
-                                  bool all = false) const;                                    
+    std::ostream& to_string(std::ostream& os,
+                            bool summary = true,
+                            bool detail = false,
+                            bool auxDetail = false,
+                            bool all = false) const;
+    std::string to_string(bool summary = true,
+                          bool detail = false,
+                          bool auxDetail = false,
+                          bool all = false) const;                                    
 
-    virtual void update(const HllSketch<A>& sketch);
-    virtual void update(const std::string& datum);
-    virtual void update(uint64_t datum);
-    virtual void update(uint32_t datum);
-    virtual void update(uint16_t datum);
-    virtual void update(uint8_t datum);
-    virtual void update(int64_t datum);
-    virtual void update(int32_t datum);
-    virtual void update(int16_t datum);
-    virtual void update(int8_t datum);
-    virtual void update(double datum);
-    virtual void update(float datum);
-    virtual void update(const void* data, size_t lengthBytes);
+    void update(const HllSketch<A>& sketch);
+    void update(const std::string& datum);
+    void update(uint64_t datum);
+    void update(uint32_t datum);
+    void update(uint16_t datum);
+    void update(uint8_t datum);
+    void update(int64_t datum);
+    void update(int32_t datum);
+    void update(int16_t datum);
+    void update(int8_t datum);
+    void update(double datum);
+    void update(float datum);
+    void update(const void* data, size_t lengthBytes);
 
     static int getMaxSerializationBytes(int lgK);
     static double getRelErr(bool upperBound, bool unioned,

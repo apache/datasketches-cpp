@@ -52,8 +52,18 @@ HllArray<A>::HllArray(const HllArray<A>& that)
 
 template<typename A>
 HllArray<A>::~HllArray() {
+  // need to determine number of bytes to deallocate
+  int hllArrBytes = 0;
+  if (this->tgtHllType == TgtHllType::HLL_4) {
+    hllArrBytes = hll4ArrBytes(this->lgConfigK);
+  } else if (this->tgtHllType == TgtHllType::HLL_6) {
+    hllArrBytes = hll6ArrBytes(this->lgConfigK);
+  } else { // tgtHllType == HLL_8
+    hllArrBytes = hll8ArrBytes(this->lgConfigK);
+  }
+
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
-  uint8Alloc().deallocate(hllByteArr, getHllByteArrBytes());
+  uint8Alloc().deallocate(hllByteArr, hllArrBytes);
   //delete [] hllByteArr;
 }
 
@@ -91,12 +101,12 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
     throw std::invalid_argument("Input array is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
   if (curMode != HLL) {
     throw std::invalid_argument("Calling HLL array construtor with non-HLL mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
+  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
   bool oooFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   bool comapctFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
 
@@ -153,12 +163,12 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
+  CurMode curMode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
   if (curMode != HLL) {
     throw std::invalid_argument("Calling HLL construtor with non-HLL mode data");
   }
 
-  TgtHllType tgtHllType = extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
+  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
   bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   bool comapctFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
 
@@ -194,12 +204,12 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray<A>::serialize(bool compact) const {
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> HllArray<A>::serialize(bool compact) const {
   const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
-  std::unique_ptr<uint8_t> byteArr(
+  std::unique_ptr<uint8_t, std::function<void(uint8_t*)>> byteArr(
     uint8Alloc().allocate(sketchSizeBytes),
-    [sketchSizeBytes](uint8_t p){ uint8Alloc().deallocate(p, sketchSizeBytes); }
+    [sketchSizeBytes](uint8_t* p){ uint8Alloc().deallocate(p, sketchSizeBytes); }
     );
 
   uint8_t* bytes = byteArr.get();
@@ -229,7 +239,8 @@ std::pair<std::unique_ptr<uint8_t>, const size_t> HllArray<A>::serialize(bool co
     bytes += getMemDataStart() + hllByteArrBytes; // start of auxHashMap
     if (auxHashMap != nullptr) {
       if (compact) {
-        std::unique_ptr<PairIterator<A>> itr = auxHashMap->getIterator();
+        //std::unique_ptr<PairIterator<A>> itr = auxHashMap->getIterator();
+        PairIterator_with_deleter<A> itr = auxHashMap->getIterator();
         while (itr->nextValid()) {
           const int pairValue = itr->getPair();
           std::memcpy(bytes, &pairValue, sizeof(pairValue));
@@ -290,7 +301,8 @@ void HllArray<A>::serialize(std::ostream& os, const bool compact) const {
   if (this->tgtHllType == HLL_4) {
     if (auxHashMap != nullptr) {
       if (compact) {
-        std::unique_ptr<PairIterator<A>> itr = auxHashMap->getIterator();
+        //std::unique_ptr<PairIterator<A>> itr = auxHashMap->getIterator();
+        PairIterator_with_deleter<A> itr = auxHashMap->getIterator();
         while (itr->nextValid()) {
           const int pairValue = itr->getPair();
           os.write((char*)&pairValue, sizeof(pairValue));
@@ -553,7 +565,7 @@ int HllArray<A>::getPreInts() const {
 }
 
 template<typename A>
-std::unique_ptr<PairIterator<A>> HllArray<A>::getAuxIterator() const {
+PairIterator_with_deleter<A> HllArray<A>::getAuxIterator() const {
   return nullptr;
 }
 
