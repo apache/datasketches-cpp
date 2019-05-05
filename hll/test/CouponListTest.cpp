@@ -34,7 +34,7 @@ class CouponListTest : public CppUnit::TestFixture {
     int lgConfigK = 8;
     CouponList<>* sk = new CouponList<>(lgConfigK, HLL_4, LIST);
     for (int i = 0; i < 7; ++i) { sk->couponUpdate(i); } // not hashes but distinct values
-    std::unique_ptr<PairIterator> itr = sk->getIterator();
+    PairIterator_with_deleter<> itr = sk->getIterator();
     println_string(itr->getHeader());
     while (itr->nextAll()) {
       int key = itr->getKey();
@@ -123,7 +123,7 @@ class CouponListTest : public CppUnit::TestFixture {
     HllSketch<> sk1(lgK);
     sk1.update(1);
     sk1.update(2);
-    std::pair<std::unique_ptr<uint8_t[]>, size_t> sketchBytes = sk1.serializeCompact();
+    std::pair<byte_ptr_with_deleter, const size_t> sketchBytes = sk1.serializeCompact();
     uint8_t* bytes = sketchBytes.first.get();
 
     bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
@@ -131,7 +131,7 @@ class CouponListTest : public CppUnit::TestFixture {
                                  HllSketch<>::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 CouponList::newList(bytes, sketchBytes.second),
+                                 CouponList<>::newList(bytes, sketchBytes.second),
                                  std::invalid_argument);
 
     bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = HllUtil<>::LIST_PREINTS;
@@ -179,7 +179,7 @@ class CouponListTest : public CppUnit::TestFixture {
                                  HllSketch<>::deserialize(ss),
                                  std::invalid_argument);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 CouponList::newList(ss),
+                                 CouponList<>::newList(ss),
                                  std::invalid_argument);
     ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
     ss.put(HllUtil<>::LIST_PREINTS);

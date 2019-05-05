@@ -27,6 +27,8 @@ class HllSketchImpl;
 template<typename A>
 class HllUnion;
 
+using byte_ptr_with_deleter = std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>;
+
 template<typename A = std::allocator<char> >
 class HllSketch final {
   public:
@@ -45,8 +47,8 @@ class HllSketch final {
 
     void reset();
     
-    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serializeCompact() const;
-    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serializeUpdatable() const;
+    std::pair<byte_ptr_with_deleter, const size_t> serializeCompact() const;
+    std::pair<bute_ptr_with_deleter, const size_t> serializeUpdatable() const;
     void serializeCompact(std::ostream& os) const;
     void serializeUpdatable(std::ostream& os) const;
     
@@ -157,8 +159,8 @@ class HllUnion {
 
     HllSketch<A> getResult(TgtHllType tgtHllType = HLL_4) const;
 
-    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serializeCompact() const;
-    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serializeUpdatable() const;
+    std::pair<byte_ptr_with_deleter, const size_t> serializeCompact() const;
+    std::pair<byte_ptr_with_deleter, const size_t> serializeUpdatable() const;
     void serializeCompact(std::ostream& os) const;
     void serializeUpdatable(std::ostream& os) const;
 
