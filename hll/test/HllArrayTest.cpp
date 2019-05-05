@@ -107,7 +107,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     for (int i = 0; i < 50; ++i) {
       sk1.update(i);
     }
-    std::pair<std::unique_ptr<uint8_t[]>, size_t> sketchBytes = sk1.serializeCompact();
+    std::pair<byte_ptr_with_deleter, size_t> sketchBytes = sk1.serializeCompact();
     uint8_t* bytes = sketchBytes.first.get();
 
     bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
@@ -115,7 +115,7 @@ class HllArrayTest : public CppUnit::TestFixture {
                                  HllSketch<>::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 HllArray::newHll(bytes, sketchBytes.second),
+                                 HllArray<>::newHll(bytes, sketchBytes.second),
                                  std::invalid_argument);
     bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = HllUtil<>::HLL_PREINTS;
 
@@ -168,7 +168,7 @@ class HllArrayTest : public CppUnit::TestFixture {
                                  HllSketch<>::deserialize(ss),
                                  std::invalid_argument);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 HllArray::newHll(ss),
+                                 HllArray<>::newHll(ss),
                                  std::invalid_argument);                                
     ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
     ss.put(HllUtil<>::HLL_PREINTS);

@@ -338,7 +338,7 @@ HllSketchImpl<A>* HllUnion<A>::copyOrDownsampleHll(HllSketchImpl<A>* srcImpl, co
   }
   const int minLgK = ((srcLgK < tgtLgK) ? srcLgK : tgtLgK);
   HllArray<A>* tgtHllArr = HllSketchImplFactory<A>::newHll(minLgK, TgtHllType::HLL_8);
-  std::unique_ptr<PairIterator<A>> srcItr = src->getIterator();
+  PairIterator_with_deleter<A> srcItr = src->getIterator();
   while (srcItr->nextValid()) {
     tgtHllArr->couponUpdate(srcItr->getPair());
   }
@@ -376,7 +376,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
   //System.out.println("SW: " + sw);
   switch (sw) {
     case 0: { //src: LIST, gadget: LIST
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //LIST
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -387,7 +387,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
     }
     case 1: { //src: SET, gadget: LIST
       //consider a swap here
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //SET
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //SET
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -400,7 +400,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       //use lgMaxK because LIST has effective K of 2^26
       srcImpl = gadget->hllSketchImpl;
       dstImpl = copyOrDownsampleHll(incomingImpl, lgMaxK);
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator();
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator();
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -411,7 +411,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       break;
     }
     case 4: { //src: LIST, gadget: SET
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //LIST
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -420,7 +420,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       break;
     }
     case 5: { //src: SET, gadget: SET
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //SET
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //SET
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -433,7 +433,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       //use lgMaxK because LIST has effective K of 2^26
       srcImpl = gadget->hllSketchImpl;
       dstImpl = copyOrDownsampleHll(incomingImpl, lgMaxK);
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //LIST
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
       if (dstImpl->getCurMode() != HLL) {
         throw std::logic_error("dstImpl must be in HLL mode");
       }
@@ -449,7 +449,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       if (dstImpl->getCurMode() != HLL) {
         throw std::logic_error("dstImpl must be in HLL mode");
       }
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //LIST
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -466,7 +466,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       if (dstImpl->getCurMode() != HLL) {
         throw std::logic_error("dstImpl must be in HLL mode");
       }
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //SET
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //SET
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -487,7 +487,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
         // always replaces gadget
         gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl);
       }
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //HLL
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //HLL
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -496,7 +496,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       break;
     }
     case 12: { //src: LIST, gadget: empty
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //LIST
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }
@@ -505,7 +505,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       break;
     }
     case 13: { //src: SET, gadget: empty
-      std::unique_ptr<PairIterator<A>> srcItr = srcImpl->getIterator(); //SET
+      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //SET
       while (srcItr->nextValid()) {
         dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
       }

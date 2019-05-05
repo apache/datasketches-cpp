@@ -33,7 +33,7 @@ class CrossCountingTest : public CppUnit::TestFixture {
   }
 
   int computeChecksum(const HllSketch<>& sketch) {
-    std::unique_ptr<PairIterator> itr = sketch.getIterator();
+    PairIterator_with_deleter<> itr = sketch.getIterator();
     int checksum = 0;
     int key;
     while(itr->nextAll()) {

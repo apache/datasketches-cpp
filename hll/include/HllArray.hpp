@@ -15,7 +15,7 @@ namespace datasketches {
 template<typename A>
 class AuxHashMap;
 
-template<typename A>
+template<typename A = std::allocator<char>>
 class HllArray : public HllSketchImpl<A> {
   public:
     explicit HllArray(int lgConfigK, TgtHllType tgtHllType);

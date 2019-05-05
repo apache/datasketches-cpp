@@ -27,7 +27,8 @@ public:
   static HllArray<A>* promoteListOrSetToHll(const CouponList<A>& list);
   static HllArray<A>* newHll(int lgConfigK, TgtHllType tgtHllType);
   
-  static HllSketchImpl<A>* reset(const HllSketchImpl<A>* impl);
+  // resets the input impl, deleting the input pointert and returning a new pointer
+  static HllSketchImpl<A>* reset(HllSketchImpl<A>* impl);
 
   static Hll4Array<A>* convertToHll4(const HllArray<A>& srcHllArr);
   static Hll6Array<A>* convertToHll6(const HllArray<A>& srcHllArr);
@@ -107,8 +108,13 @@ HllArray<A>* HllSketchImplFactory<A>::newHll(int lgConfigK, TgtHllType tgtHllTyp
 }
 
 template<typename A>
-HllSketchImpl<A>* HllSketchImplFactory<A>::reset(const HllSketchImpl<A>* impl) {
-  return new CouponList<A>(impl->getLgConfigK(), impl->getTgtHllType(), CurMode::LIST);
+HllSketchImpl<A>* HllSketchImplFactory<A>::reset(HllSketchImpl<A>* impl) {
+  // TODO: allow reset to HLL mode
+  typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
+  CouponList<A>* cl = clAlloc().allocate(1);
+  clAlloc().construct(cl, impl->getLgConfigK(), impl->getTgtHllType(), CurMode::LIST);
+  impl->get_deleter()(impl);
+  return cl;
 }
 
 

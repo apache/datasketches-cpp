@@ -29,7 +29,7 @@ class PairIterator {
     virtual ~PairIterator() {}
 };
 
-template<typename A>
+template<typename A = std::allocator<char>>
 using PairIterator_with_deleter = std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>;
 
 }

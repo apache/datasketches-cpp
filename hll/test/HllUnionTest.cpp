@@ -241,7 +241,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     hll_union dstU = HllUnion<>::deserialize(ss);
     checkUnionEquality(srcU, dstU);
 
-    std::pair<std::unique_ptr<uint8_t[]>, const size_t> bytes1 = srcU.serializeCompact();
+    std::pair<byte_ptr_with_deleter, const size_t> bytes1 = srcU.serializeCompact();
     dstU = HllUnion<>::deserialize(bytes1.first.get(), bytes1.second);
     checkUnionEquality(srcU, dstU);
 
@@ -250,7 +250,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     dstU = HllUnion<>::deserialize(ss);
     checkUnionEquality(srcU, dstU);
 
-    std::pair<std::unique_ptr<uint8_t[]>, const size_t> bytes2 = srcU.serializeUpdatable();
+    std::pair<byte_ptr_with_deleter, const size_t> bytes2 = srcU.serializeUpdatable();
     dstU = HllUnion<>::deserialize(bytes2.first.get(), bytes2.second);
     checkUnionEquality(srcU, dstU);
   }

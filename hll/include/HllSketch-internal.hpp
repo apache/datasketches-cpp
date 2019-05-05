@@ -107,8 +107,8 @@ HllSketch<A> HllSketch<A>::copyAs(const TgtHllType tgtHllType) const {
 template<typename A>
 void HllSketch<A>::reset() {
   // TODO: need to allow starting from a full-sized sketch
-  hllSketchImpl->get_deleter()(hllSketchImpl);
-  hllSketchImpl = HllSketchImplFactory<A>::reset();
+  //       (either here or in other implementation)
+  hllSketchImpl = hllSketchImpl->reset();
 }
 
 template<typename A>

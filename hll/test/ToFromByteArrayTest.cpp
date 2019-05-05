@@ -34,7 +34,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     
     std::stringstream ss1;
     sk.serializeUpdatable(ss1);
-    std::pair<std::unique_ptr<uint8_t[]>, size_t> ser1 = sk.serializeUpdatable();
+    std::pair<byte_ptr_with_deleter, size_t> ser1 = sk.serializeUpdatable();
 
     std::stringstream ss;
     sk.serializeUpdatable(ss);
@@ -46,7 +46,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     
     //std::stringstream ss2;
     //sk2->serializeUpdatable(ss2);
-    std::pair<std::unique_ptr<uint8_t[]>, size_t> ser2 = sk.serializeUpdatable();
+    std::pair<byte_ptr_with_deleter, size_t> ser2 = sk.serializeUpdatable();
 
     // std::string b1 = ss1.str();
     // std::string b2 = ss2.str();
@@ -62,7 +62,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
       if (b1[i] != b2[i]) {
         hll_sketch from_ss = HllSketch<>::deserialize(ss1);
         std::cout << "ser3:\n";
-        std::pair<std::unique_ptr<uint8_t[]>, size_t> ser3 = from_ss.serializeUpdatable();
+        std::pair<byte_ptr_with_deleter, size_t> ser3 = from_ss.serializeUpdatable();
         uint8_t* b3 = ser3.first.get();
         
         std::cerr << "Mismatch at byte " << i << "\n";
@@ -209,7 +209,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     hll_sketch dst = HllSketch<>::deserialize(ss);
     checkSketchEquality(src, dst);
 
-    std::pair<std::unique_ptr<uint8_t[]>, const size_t> bytes1 = src.serializeCompact();
+    std::pair<byte_ptr_with_deleter, const size_t> bytes1 = src.serializeCompact();
     dst = HllSketch<>::deserialize(bytes1.first.get(), bytes1.second);
     checkSketchEquality(src, dst);
 
@@ -218,7 +218,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     dst = HllSketch<>::deserialize(ss);
     checkSketchEquality(src, dst);
 
-    std::pair<std::unique_ptr<uint8_t[]>, const size_t> bytes2 = src.serializeUpdatable();
+    std::pair<byte_ptr_with_deleter, const size_t> bytes2 = src.serializeUpdatable();
     dst = HllSketch<>::deserialize(bytes2.first.get(), bytes2.second);
     checkSketchEquality(src, dst);
   }
