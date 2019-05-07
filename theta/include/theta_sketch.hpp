@@ -20,6 +20,7 @@ namespace datasketches {
 
 // forward-declarations
 template<typename A> class theta_sketch_alloc;
+template<typename A> class update_theta_sketch_alloc;
 template<typename A> class compact_theta_sketch_alloc;
 template<typename A> class theta_union_alloc;
 
@@ -55,8 +56,8 @@ public:
   //virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const = 0;
 
   typedef std::unique_ptr<theta_sketch_alloc<A>, std::function<void(theta_sketch_alloc<A>*)>> unique_ptr;
-  static unique_ptr deserialize(std::istream& is);
-  //static unique_ptr deserialize(const void* bytes, size_t size);
+  static unique_ptr deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  //static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
 
   class const_iterator;
   virtual const_iterator begin() const = 0;
@@ -121,6 +122,8 @@ public:
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;
 
+  static update_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = builder::DEFAULT_SEED);
+
 private:
   // resize threshold = 0.5 tuned for speed
   static constexpr double RESIZE_THRESHOLD = 0.5;
@@ -141,7 +144,11 @@ private:
 
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
 
+  // for builder
   update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);
+  // for deserialize
+  update_theta_sketch_alloc(bool is_empty, uint64_t theta, uint8_t lg_cur_size, uint8_t lg_nom_size, uint64_t* keys, uint32_t num_keys, resize_factor rf, float p, uint64_t seed);
+
   void resize();
   void rebuild();
 
@@ -151,6 +158,9 @@ private:
   static inline uint32_t get_capacity(uint8_t lg_cur_size, uint8_t lg_nom_size);
   static inline uint32_t get_stride(uint64_t hash, uint8_t lg_size);
   static bool hash_search_or_insert(uint64_t hash, uint64_t* table, uint8_t lg_size);
+
+  friend theta_sketch_alloc<A>;
+  static update_theta_sketch_alloc<A> internal_deserialize(std::istream& is, resize_factor rf, uint8_t lg_nom_size, uint8_t lg_cur_size, uint8_t flags_byte, uint64_t seed);
 };
 
 // compact sketch
@@ -177,6 +187,8 @@ public:
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;
 
+  static compact_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+
 private:
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
 
@@ -189,6 +201,7 @@ private:
   friend update_theta_sketch_alloc<A>;
   friend theta_union_alloc<A>;
   compact_theta_sketch_alloc(bool is_empty, uint64_t theta, uint64_t* keys, uint32_t num_keys, uint16_t seed_hash, bool is_ordered);
+  static compact_theta_sketch_alloc<A> internal_deserialize(std::istream& is, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash);
 };
 
 // builder

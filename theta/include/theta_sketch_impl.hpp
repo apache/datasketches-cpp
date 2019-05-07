@@ -24,29 +24,22 @@ namespace datasketches {
 template<typename A>
 theta_sketch_alloc<A>::theta_sketch_alloc(bool is_empty, uint64_t theta):
 is_empty_(is_empty), theta_(theta)
-{
-//  std::cerr << "sketch constructor" << std::endl;
-}
+{}
 
 template<typename A>
 theta_sketch_alloc<A>::theta_sketch_alloc(const theta_sketch_alloc<A>& other):
 is_empty_(other.is_empty_), theta_(other.theta_)
-{
-//  std::cerr << "sketch copy constructor" << std::endl;
-}
+{}
 
 template<typename A>
 theta_sketch_alloc<A>::theta_sketch_alloc(theta_sketch_alloc<A>&& other) noexcept:
 is_empty_(other.is_empty_), theta_(other.theta_)
-{
-//  std::cerr << "sketch move constructor" << std::endl;
-}
+{}
 
 template<typename A>
 theta_sketch_alloc<A>& theta_sketch_alloc<A>::operator=(const theta_sketch_alloc<A>& other) {
   is_empty_ = other.is_empty_;
   theta_ = other.theta_;
-//  std::cerr << "sketch copy assignment" << std::endl;
   return *this;
 }
 
@@ -54,13 +47,11 @@ template<typename A>
 theta_sketch_alloc<A>& theta_sketch_alloc<A>::operator=(theta_sketch_alloc<A>&& other) {
   std::swap(is_empty_, other.is_empty_);
   std::swap(theta_, other.theta_);
-  //std::cerr << "sketch move assignment" << std::endl;
   return *this;
 }
 
 template<typename A>
 theta_sketch_alloc<A>::~theta_sketch_alloc() {
-//  std::cerr << "sketch destructor" << std::endl;
 }
 
 template<typename A>
@@ -99,50 +90,45 @@ uint64_t theta_sketch_alloc<A>::get_theta64() const {
 }
 
 template<typename A>
-typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(std::istream& is) {
+typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed) {
   uint8_t preamble_longs;
   is.read((char*)&preamble_longs, sizeof(preamble_longs));
   uint8_t serial_version;
   is.read((char*)&serial_version, sizeof(serial_version));
-  uint8_t family_id;
-  is.read((char*)&family_id, sizeof(family_id));
-  uint16_t unused16;
-  is.read((char*)&unused16, sizeof(unused16));
+  uint8_t type;
+  is.read((char*)&type, sizeof(type));
+  uint8_t lg_nom_size;
+  is.read((char*)&lg_nom_size, sizeof(lg_nom_size));
+  uint8_t lg_cur_size;
+  is.read((char*)&lg_cur_size, sizeof(lg_cur_size));
   uint8_t flags_byte;
   is.read((char*)&flags_byte, sizeof(flags_byte));
   uint16_t seed_hash;
   is.read((char*)&seed_hash, sizeof(seed_hash));
 
-  uint64_t theta = MAX_THETA;
-  uint64_t* keys = nullptr;
-  uint32_t num_keys = 0;
+  // TODO: checks and redirects to the right subclass here
 
-  const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
-  if (!is_empty) {
-    if (preamble_longs == 1) {
-      num_keys = 1;
-    } else {
-      is.read((char*)&num_keys, sizeof(num_keys));
-      uint32_t unused32;
-      is.read((char*)&unused32, sizeof(unused32));
-      if (preamble_longs > 2) {
-        is.read((char*)&theta, sizeof(theta));
+  if (type == update_theta_sketch_alloc<A>::SKETCH_TYPE) {
+    typename update_theta_sketch_alloc<A>::resize_factor rf = static_cast<typename update_theta_sketch_alloc<A>::resize_factor>(preamble_longs >> 6);
+    typedef typename std::allocator_traits<A>::template rebind_alloc<update_theta_sketch_alloc<A>> AU;
+    return unique_ptr(
+      static_cast<theta_sketch_alloc<A>*>(new (AU().allocate(1)) update_theta_sketch_alloc<A>(update_theta_sketch_alloc<A>::internal_deserialize(is, rf, lg_nom_size, lg_cur_size, flags_byte, seed))),
+      [](theta_sketch_alloc<A>* ptr) {
+        ptr->~theta_sketch_alloc();
+        AU().deallocate(static_cast<update_theta_sketch_alloc<A>*>(ptr), 1);
       }
-    }
-    typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-    keys = AllocU64().allocate(num_keys);
-    is.read((char*)keys, sizeof(uint64_t) * num_keys);
+    );
+  } else if (type == compact_theta_sketch_alloc<A>::SKETCH_TYPE) {
+    typedef typename std::allocator_traits<A>::template rebind_alloc<compact_theta_sketch_alloc<A>> AC;
+    return unique_ptr(
+      static_cast<theta_sketch_alloc<A>*>(new (AC().allocate(1)) compact_theta_sketch_alloc<A>(compact_theta_sketch_alloc<A>::internal_deserialize(is, preamble_longs, flags_byte, seed_hash))),
+      [](theta_sketch_alloc<A>* ptr) {
+        ptr->~theta_sketch_alloc();
+        AC().deallocate(static_cast<compact_theta_sketch_alloc<A>*>(ptr), 1);
+      }
+    );
   }
-
-  const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  typedef typename std::allocator_traits<A>::template rebind_alloc<compact_theta_sketch_alloc<A>> AA;
-  return unique_ptr(
-    static_cast<theta_sketch_alloc<A>*>(new (AA().allocate(1)) compact_theta_sketch_alloc<A>(is_empty, theta, keys, num_keys, seed_hash, is_ordered)),
-    [](theta_sketch_alloc<A>* ptr) {
-      ptr->~theta_sketch_alloc();
-      AA().deallocate(static_cast<compact_theta_sketch_alloc<A>*>(ptr), 1);
-    }
-  );
+  throw std::invalid_argument("unsupported sketch type " + std::to_string((int) type));
 }
 
 template<typename A>
@@ -168,8 +154,20 @@ capacity_(get_capacity(lg_cur_size, lg_nom_size))
 {
   if (p < 1) this->theta_ *= p;
   std::fill(keys_, &keys_[1 << lg_cur_size_], 0);
-//  std::cerr << "update sketch constructor" << std::endl;
 }
+
+template<typename A>
+update_theta_sketch_alloc<A>::update_theta_sketch_alloc(bool is_empty, uint64_t theta, uint8_t lg_cur_size, uint8_t lg_nom_size, uint64_t* keys, uint32_t num_keys, resize_factor rf, float p, uint64_t seed):
+theta_sketch_alloc<A>(is_empty, theta),
+lg_cur_size_(lg_cur_size),
+lg_nom_size_(lg_nom_size),
+keys_(keys),
+num_keys_(num_keys),
+rf_(rf),
+p_(p),
+seed_(seed),
+capacity_(get_capacity(lg_cur_size, lg_nom_size))
+{}
 
 template<typename A>
 update_theta_sketch_alloc<A>::update_theta_sketch_alloc(const update_theta_sketch_alloc<A>& other):
@@ -184,7 +182,6 @@ seed_(other.seed_),
 capacity_(other.capacity_)
 {
   std::copy(other.keys_, &other.keys_[1 << lg_cur_size_], keys_);
-//  std::cerr << "update sketch copy constructor" << std::endl;
 }
 
 template<typename A>
@@ -200,13 +197,11 @@ seed_(other.seed_),
 capacity_(other.capacity_)
 {
   std::swap(keys_, other.keys_);
-//  std::cerr << "update sketch move constructor" << std::endl;
 }
 
 template<typename A>
 update_theta_sketch_alloc<A>::~update_theta_sketch_alloc() {
   AllocU64().deallocate(keys_, 1 << lg_cur_size_);
-//  std::cerr << "update sketch destructor" << std::endl;
 }
 
 template<typename A>
@@ -224,7 +219,6 @@ update_theta_sketch_alloc<A>& update_theta_sketch_alloc<A>::operator=(const upda
   p_ = other.p_;
   seed_ = other.seed_;
   capacity_ = other.capacity_;
-//  std::cerr << "update sketch copy assignment" << std::endl;
   return *this;
 }
 
@@ -239,7 +233,6 @@ update_theta_sketch_alloc<A>& update_theta_sketch_alloc<A>::operator=(update_the
   p_ = other.p_;
   seed_ = other.seed_;
   capacity_ = other.capacity_;
-//  std::cerr << "update sketch move assignment" << std::endl;
   return *this;
 }
 
@@ -302,6 +295,43 @@ void update_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
   os.write((char*)&p_, sizeof(p_));
   os.write((char*)&(this->theta_), sizeof(uint64_t));
   os.write((char*)keys_, sizeof(uint64_t) * (1 << lg_cur_size_));
+}
+
+template<typename A>
+update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed) {
+  uint8_t preamble_longs;
+  is.read((char*)&preamble_longs, sizeof(preamble_longs));
+  resize_factor rf = static_cast<resize_factor>(preamble_longs >> 6);
+  preamble_longs &= 0x3f; // remove resize factor
+  uint8_t serial_version;
+  is.read((char*)&serial_version, sizeof(serial_version));
+  uint8_t type;
+  is.read((char*)&type, sizeof(type));
+  uint8_t lg_nom_size;
+  is.read((char*)&lg_nom_size, sizeof(lg_nom_size));
+  uint8_t lg_cur_size;
+  is.read((char*)&lg_cur_size, sizeof(lg_cur_size));
+  uint8_t flags_byte;
+  is.read((char*)&flags_byte, sizeof(flags_byte));
+  uint16_t seed_hash;
+  is.read((char*)&seed_hash, sizeof(seed_hash));
+  // TODO: checks here
+  return internal_deserialize(is, rf, lg_nom_size, lg_cur_size, flags_byte, seed);
+}
+
+template<typename A>
+update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(std::istream& is, resize_factor rf, uint8_t lg_nom_size, uint8_t lg_cur_size, uint8_t flags_byte, uint64_t seed) {
+  uint32_t num_keys;
+  is.read((char*)&num_keys, sizeof(num_keys));
+  float p;
+  is.read((char*)&p, sizeof(p));
+  uint64_t theta;
+  is.read((char*)&theta, sizeof(theta));
+  //typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
+  uint64_t* keys = AllocU64().allocate(num_keys);
+  is.read((char*)keys, sizeof(uint64_t) * num_keys);
+  const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+  return update_theta_sketch_alloc<A>(is_empty, theta, lg_nom_size, lg_cur_size, keys, num_keys, rf, p, seed);
 }
 
 template<typename A>
@@ -453,7 +483,6 @@ uint32_t update_theta_sketch_alloc<A>::get_stride(uint64_t hash, uint8_t lg_size
 
 template<typename A>
 bool update_theta_sketch_alloc<A>::hash_search_or_insert(uint64_t hash, uint64_t* table, uint8_t lg_size) {
-  //std::cerr << "hash_search_or_insert: lg=" << (int)lg_size << ", hash=" << hash << std::endl;
   const uint32_t mask = (1 << lg_size) - 1;
   const uint32_t stride = get_stride(hash, lg_size);
   uint32_t cur_probe = static_cast<uint32_t>(hash) & mask;
@@ -462,7 +491,6 @@ bool update_theta_sketch_alloc<A>::hash_search_or_insert(uint64_t hash, uint64_t
   const uint32_t loop_index = cur_probe;
   do {
     const uint64_t value = table[cur_probe];
-    //std::cerr << "probe=" << cur_probe << std::endl;
     if (value == 0) {
       table[cur_probe] = hash; // insert value
       return true;
@@ -495,9 +523,7 @@ keys_(keys),
 num_keys_(num_keys),
 seed_hash_(seed_hash),
 is_ordered_(is_ordered)
-{
-  std::cerr << "compact sketch constructor" << std::endl;
-}
+{}
 
 template<typename A>
 compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(const compact_theta_sketch_alloc<A>& other):
@@ -525,7 +551,6 @@ template<typename A>
 compact_theta_sketch_alloc<A>::~compact_theta_sketch_alloc() {
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
   AllocU64().deallocate(keys_, num_keys_);
-  //std::cerr << "compact sketch destructor" << std::endl;
 }
 
 template<typename A>
@@ -590,7 +615,80 @@ void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items
 
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
+  const bool is_single_item = num_keys_ == 1 and !this->is_estimation_mode();
+  const uint8_t preamble_longs = this->is_empty() or is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
+  os.write((char*)&preamble_longs, sizeof(preamble_longs));
+  const uint8_t serial_version = SERIAL_VERSION;
+  os.write((char*)&serial_version, sizeof(serial_version));
+  const uint8_t type = SKETCH_TYPE;
+  os.write((char*)&type, sizeof(type));
+  const uint16_t unused16 = 0;
+  os.write((char*)&unused16, sizeof(unused16));
+  const uint8_t flags_byte(
+    (1 << theta_sketch_alloc<A>::flags::IS_COMPACT) |
+    (1 << theta_sketch_alloc<A>::flags::IS_READ_ONLY) |
+    (this->is_empty() ? 1 << theta_sketch_alloc<A>::flags::IS_EMPTY : 0) |
+    (this->is_ordered() ? 1 << theta_sketch_alloc<A>::flags::IS_ORDERED : 0)
+  );
+  os.write((char*)&flags_byte, sizeof(flags_byte));
+  const uint16_t seed_hash = get_seed_hash();
+  os.write((char*)&seed_hash, sizeof(seed_hash));
+  if (!this->is_empty()) {
+    if (!is_single_item) {
+      os.write((char*)&num_keys_, sizeof(num_keys_));
+      const uint32_t unused32 = 0;
+      os.write((char*)&unused32, sizeof(unused32));
+      if (this->is_estimation_mode()) {
+        os.write((char*)&(this->theta_), sizeof(uint64_t));
+      }
+    }
+    os.write((char*)keys_, sizeof(uint64_t) * num_keys_);
+  }
+}
 
+template<typename A>
+compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed) {
+  uint8_t preamble_longs;
+  is.read((char*)&preamble_longs, sizeof(preamble_longs));
+  uint8_t serial_version;
+  is.read((char*)&serial_version, sizeof(serial_version));
+  uint8_t family_id;
+  is.read((char*)&family_id, sizeof(family_id));
+  uint16_t unused16;
+  is.read((char*)&unused16, sizeof(unused16));
+  uint8_t flags_byte;
+  is.read((char*)&flags_byte, sizeof(flags_byte));
+  uint16_t seed_hash;
+  is.read((char*)&seed_hash, sizeof(seed_hash));
+  // TODO: checks here
+  return internal_deserialize(is, preamble_longs, flags_byte, seed_hash);
+}
+
+template<typename A>
+compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserialize(std::istream& is, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash) {
+  uint64_t theta = theta_sketch_alloc<A>::MAX_THETA;
+  uint64_t* keys = nullptr;
+  uint32_t num_keys = 0;
+
+  const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+  if (!is_empty) {
+    if (preamble_longs == 1) {
+      num_keys = 1;
+    } else {
+      is.read((char*)&num_keys, sizeof(num_keys));
+      uint32_t unused32;
+      is.read((char*)&unused32, sizeof(unused32));
+      if (preamble_longs > 2) {
+        is.read((char*)&theta, sizeof(theta));
+      }
+    }
+    typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
+    keys = AllocU64().allocate(num_keys);
+    is.read((char*)keys, sizeof(uint64_t) * num_keys);
+  }
+
+  const bool is_ordered = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_ORDERED);
+  return compact_theta_sketch_alloc<A>(is_empty, theta, keys, num_keys, seed_hash, is_ordered);
 }
 
 template<typename A>

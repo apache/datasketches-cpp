@@ -18,9 +18,16 @@ class theta_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(single_item);
   CPPUNIT_TEST(resize_exact);
   CPPUNIT_TEST(estimation);
-  CPPUNIT_TEST(deserialize_compact_empty_from_java);
-  CPPUNIT_TEST(deserialize_single_item_from_java);
-  CPPUNIT_TEST(deserialize_compact_estimation_from_java);
+  CPPUNIT_TEST(deserialize_update_empty_from_java_as_base);
+  CPPUNIT_TEST(deserialize_update_empty_from_java_as_subclass);
+  CPPUNIT_TEST(deserialize_update_estimation_from_java_as_base);
+  CPPUNIT_TEST(deserialize_update_estimation_from_java_as_subclass);
+  CPPUNIT_TEST(deserialize_compact_empty_from_java_as_base);
+  CPPUNIT_TEST(deserialize_compact_empty_from_java_as_subclass);
+  CPPUNIT_TEST(deserialize_single_item_from_java_as_base);
+  CPPUNIT_TEST(deserialize_single_item_from_java_as_subclass);
+  CPPUNIT_TEST(deserialize_compact_estimation_from_java_as_base);
+  CPPUNIT_TEST(deserialize_compact_estimation_from_java_as_subclass);
   CPPUNIT_TEST_SUITE_END();
 
   void test() {
@@ -68,9 +75,9 @@ class theta_sketch_test: public CppUnit::TestFixture {
     sketch3.to_stream(std::cerr, true);
 
     update_theta_sketch usk = update_theta_sketch::builder().build();
-    for (int i = 0; i < 10000; i++) usk.update(i);
-    std::ofstream ofs2("theta_update_estimation.bin");
-    usk.serialize(ofs2);
+    //for (int i = 0; i < 10000; i++) usk.update(i);
+    std::ofstream ofs2("theta_compact_empty.bin");
+    usk.compact().serialize(ofs2);
   }
 
   void empty() {
@@ -109,7 +116,53 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_DOUBLES_EQUAL((double) n, update_sketch.get_estimate(), n * 0.01);
   }
 
-  void deserialize_compact_empty_from_java() {
+  void deserialize_update_empty_from_java_as_base() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/theta_update_empty_from_java.bin", std::ios::binary);
+    auto sketchptr = theta_sketch::deserialize(is);
+    CPPUNIT_ASSERT(sketchptr->is_empty());
+    CPPUNIT_ASSERT(!sketchptr->is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(0U, sketchptr->get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(1.0, sketchptr->get_theta());
+    CPPUNIT_ASSERT_EQUAL(0.0, sketchptr->get_estimate());
+  }
+
+  void deserialize_update_empty_from_java_as_subclass() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/theta_update_empty_from_java.bin", std::ios::binary);
+    auto sketch = update_theta_sketch::deserialize(is);
+    CPPUNIT_ASSERT(sketch.is_empty());
+    CPPUNIT_ASSERT(!sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(0U, sketch.get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(1.0, sketch.get_theta());
+    CPPUNIT_ASSERT_EQUAL(0.0, sketch.get_estimate());
+  }
+
+  void deserialize_update_estimation_from_java_as_base() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/theta_update_estimation_from_java.bin", std::ios::binary);
+    auto sketchptr = theta_sketch::deserialize(is);
+    CPPUNIT_ASSERT(!sketchptr->is_empty());
+    CPPUNIT_ASSERT(sketchptr->is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(5324U, sketchptr->get_num_retained());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(10000.0, sketchptr->get_estimate(), 10000 * 0.01);
+  }
+
+  void deserialize_update_estimation_from_java_as_subclass() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/theta_update_estimation_from_java.bin", std::ios::binary);
+    auto sketch = update_theta_sketch::deserialize(is);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT(sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(5324U, sketch.get_num_retained());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(10000.0, sketch.get_estimate(), 10000 * 0.01);
+  }
+
+  void deserialize_compact_empty_from_java_as_base() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open("test/theta_compact_empty_from_java.bin", std::ios::binary);
@@ -121,7 +174,19 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(0.0, sketchptr->get_estimate());
   }
 
-  void deserialize_single_item_from_java() {
+  void deserialize_compact_empty_from_java_as_subclass() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/theta_compact_empty_from_java.bin", std::ios::binary);
+    auto sketch = compact_theta_sketch::deserialize(is);
+    CPPUNIT_ASSERT(sketch.is_empty());
+    CPPUNIT_ASSERT(!sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(0U, sketch.get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(1.0, sketch.get_theta());
+    CPPUNIT_ASSERT_EQUAL(0.0, sketch.get_estimate());
+  }
+
+  void deserialize_single_item_from_java_as_base() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open("test/theta_compact_single_item_from_java.bin", std::ios::binary);
@@ -133,7 +198,19 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(1.0, sketchptr->get_estimate());
   }
 
-  void deserialize_compact_estimation_from_java() {
+  void deserialize_single_item_from_java_as_subclass() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/theta_compact_single_item_from_java.bin", std::ios::binary);
+    auto sketch = compact_theta_sketch::deserialize(is);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT(!sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(1U, sketch.get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(1.0, sketch.get_theta());
+    CPPUNIT_ASSERT_EQUAL(1.0, sketch.get_estimate());
+  }
+
+  void deserialize_compact_estimation_from_java_as_base() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open("test/theta_compact_estimation_from_java.bin", std::ios::binary);
@@ -150,6 +227,25 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(update_sketch.get_num_retained(), sketchptr->get_num_retained());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(update_sketch.get_theta(), sketchptr->get_theta(), 1e-10);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(update_sketch.get_estimate(), sketchptr->get_estimate(), 1e-10);
+  }
+
+  void deserialize_compact_estimation_from_java_as_subclass() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open("test/theta_compact_estimation_from_java.bin", std::ios::binary);
+    auto sketch = compact_theta_sketch::deserialize(is);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT(sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(4342U, sketch.get_num_retained());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.531700444213199, sketch.get_theta(), 1e-10);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(8166.25234614053, sketch.get_estimate(), 1e-10);
+
+    update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+    const int n = 8192;
+    for (int i = 0; i < n; i++) update_sketch.update(i);
+    CPPUNIT_ASSERT_EQUAL(update_sketch.get_num_retained(), sketch.get_num_retained());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(update_sketch.get_theta(), sketch.get_theta(), 1e-10);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(update_sketch.get_estimate(), sketch.get_estimate(), 1e-10);
   }
 
 };
