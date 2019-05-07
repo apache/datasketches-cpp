@@ -26,12 +26,12 @@ void theta_union_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
   // check seed hash
   if (sketch.get_theta64() < theta_) theta_ = sketch.get_theta64();
   if (sketch.is_ordered()) {
-    for (auto value: sketch) {
-      if (value >= theta_) break; // early stop
-      state_.internal_update(value);
+    for (auto hash: sketch) {
+      if (hash >= theta_) break; // early stop
+      state_.internal_update(hash);
     }
   } else {
-    for (auto value: sketch) state_.internal_update(value);
+    for (auto hash: sketch) if (hash < theta_) state_.internal_update(hash);
   }
 }
 
