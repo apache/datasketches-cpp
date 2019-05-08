@@ -133,6 +133,51 @@ typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(st
 }
 
 template<typename A>
+typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
+  const char* ptr = static_cast<const char*>(bytes);
+  uint8_t preamble_longs;
+  copy_from_mem(&ptr, &preamble_longs, sizeof(preamble_longs));
+  uint8_t serial_version;
+  copy_from_mem(&ptr, &serial_version, sizeof(serial_version));
+  uint8_t type;
+  copy_from_mem(&ptr, &type, sizeof(type));
+  uint8_t lg_nom_size;
+  copy_from_mem(&ptr, &lg_nom_size, sizeof(lg_nom_size));
+  uint8_t lg_cur_size;
+  copy_from_mem(&ptr, &lg_cur_size, sizeof(lg_cur_size));
+  uint8_t flags_byte;
+  copy_from_mem(&ptr, &flags_byte, sizeof(flags_byte));
+  uint16_t seed_hash;
+  copy_from_mem(&ptr, &seed_hash, sizeof(seed_hash));
+
+  // TODO: checks here
+
+  if (type == update_theta_sketch_alloc<A>::SKETCH_TYPE) {
+    typename update_theta_sketch_alloc<A>::resize_factor rf = static_cast<typename update_theta_sketch_alloc<A>::resize_factor>(preamble_longs >> 6);
+    typedef typename std::allocator_traits<A>::template rebind_alloc<update_theta_sketch_alloc<A>> AU;
+    return unique_ptr(
+      static_cast<theta_sketch_alloc<A>*>(new (AU().allocate(1))
+          update_theta_sketch_alloc<A>(update_theta_sketch_alloc<A>::internal_deserialize(ptr, size - (ptr - static_cast<const char*>(bytes)), rf, lg_nom_size, lg_cur_size, flags_byte, seed))),
+      [](theta_sketch_alloc<A>* ptr) {
+        ptr->~theta_sketch_alloc();
+        AU().deallocate(static_cast<update_theta_sketch_alloc<A>*>(ptr), 1);
+      }
+    );
+  } else if (type == compact_theta_sketch_alloc<A>::SKETCH_TYPE) {
+    typedef typename std::allocator_traits<A>::template rebind_alloc<compact_theta_sketch_alloc<A>> AC;
+    return unique_ptr(
+      static_cast<theta_sketch_alloc<A>*>(new (AC().allocate(1))
+          compact_theta_sketch_alloc<A>(compact_theta_sketch_alloc<A>::internal_deserialize(ptr, size - (ptr - static_cast<const char*>(bytes)), preamble_longs, flags_byte, seed_hash))),
+      [](theta_sketch_alloc<A>* ptr) {
+        ptr->~theta_sketch_alloc();
+        AC().deallocate(static_cast<compact_theta_sketch_alloc<A>*>(ptr), 1);
+      }
+    );
+  }
+  throw std::invalid_argument("unsupported sketch type " + std::to_string((int) type));
+}
+
+template<typename A>
 uint16_t theta_sketch_alloc<A>::get_seed_hash(uint64_t seed) {
   HashState hashes;
   MurmurHash3_x64_128(&seed, sizeof(seed), 0, hashes);
