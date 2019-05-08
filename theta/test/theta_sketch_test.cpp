@@ -28,6 +28,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(deserialize_single_item_from_java_as_subclass);
   CPPUNIT_TEST(deserialize_compact_estimation_from_java_as_base);
   CPPUNIT_TEST(deserialize_compact_estimation_from_java_as_subclass);
+  CPPUNIT_TEST(serialize_deserialize_stream_and_bytes_equivalency);
   CPPUNIT_TEST_SUITE_END();
 
   void test() {
@@ -217,16 +218,25 @@ class theta_sketch_test: public CppUnit::TestFixture {
     auto sketchptr = theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(!sketchptr->is_empty());
     CPPUNIT_ASSERT(sketchptr->is_estimation_mode());
+    CPPUNIT_ASSERT(sketchptr->is_ordered());
     CPPUNIT_ASSERT_EQUAL(4342U, sketchptr->get_num_retained());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(0.531700444213199, sketchptr->get_theta(), 1e-10);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(8166.25234614053, sketchptr->get_estimate(), 1e-10);
 
+    // the same construction process in Java must have produced exactly the same sketch
     update_theta_sketch update_sketch = update_theta_sketch::builder().build();
     const int n = 8192;
     for (int i = 0; i < n; i++) update_sketch.update(i);
     CPPUNIT_ASSERT_EQUAL(update_sketch.get_num_retained(), sketchptr->get_num_retained());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(update_sketch.get_theta(), sketchptr->get_theta(), 1e-10);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(update_sketch.get_estimate(), sketchptr->get_estimate(), 1e-10);
+    compact_theta_sketch compact_sketch = update_sketch.compact();
+    // the sketches are ordered, so the iteration sequence must match exactly
+    auto iter = sketchptr->begin();
+    for (auto key: compact_sketch) {
+      CPPUNIT_ASSERT_EQUAL(key, *iter);
+      ++iter;
+    }
   }
 
   void deserialize_compact_estimation_from_java_as_subclass() {
@@ -246,6 +256,64 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(update_sketch.get_num_retained(), sketch.get_num_retained());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(update_sketch.get_theta(), sketch.get_theta(), 1e-10);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(update_sketch.get_estimate(), sketch.get_estimate(), 1e-10);
+  }
+
+  void serialize_deserialize_stream_and_bytes_equivalency() {
+    update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+    const int n = 8192;
+    for (int i = 0; i < n; i++) update_sketch.update(i);
+
+    // update sketch stream and bytes comparison
+    {
+      std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+      update_sketch.serialize(s);
+      auto data = update_sketch.serialize();
+      CPPUNIT_ASSERT_EQUAL((size_t) s.tellp(), data.second);
+      for (size_t i = 0; i < data.second; ++i) {
+        CPPUNIT_ASSERT_EQUAL((char)s.get(), ((char*)data.first.get())[i]);
+      }
+
+      s.seekg(0); // rewind
+      update_theta_sketch deserialized_update_sketch1 = update_theta_sketch::deserialize(s);
+      update_theta_sketch deserialized_update_sketch2 = update_theta_sketch::deserialize(data.first.get(), data.second);
+      CPPUNIT_ASSERT_EQUAL(deserialized_update_sketch1.is_empty(), deserialized_update_sketch2.is_empty());
+      CPPUNIT_ASSERT_EQUAL(deserialized_update_sketch1.is_ordered(), deserialized_update_sketch2.is_ordered());
+      CPPUNIT_ASSERT_EQUAL(deserialized_update_sketch1.get_num_retained(), deserialized_update_sketch2.get_num_retained());
+      CPPUNIT_ASSERT_EQUAL(deserialized_update_sketch1.get_theta(), deserialized_update_sketch2.get_theta());
+      CPPUNIT_ASSERT_EQUAL(deserialized_update_sketch1.get_estimate(), deserialized_update_sketch2.get_estimate());
+      // hash tables must be identical since they are restored from dumps, and iteration is deterministic
+      auto iter = deserialized_update_sketch1.begin();
+      for (auto key: deserialized_update_sketch2) {
+        CPPUNIT_ASSERT_EQUAL(key, *iter);
+        ++iter;
+      }
+    }
+
+    // compact sketch stream and bytes comparison
+    {
+      std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+      update_sketch.compact().serialize(s);
+      auto data = update_sketch.compact().serialize();
+      CPPUNIT_ASSERT_EQUAL((size_t) s.tellp(), data.second);
+      for (size_t i = 0; i < data.second; ++i) {
+        CPPUNIT_ASSERT_EQUAL((char)s.get(), ((char*)data.first.get())[i]);
+      }
+
+      s.seekg(0); // rewind
+      compact_theta_sketch deserialized_sketch1 = compact_theta_sketch::deserialize(s);
+      compact_theta_sketch deserialized_sketch2 = compact_theta_sketch::deserialize(data.first.get(), data.second);
+      CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.is_empty(), deserialized_sketch2.is_empty());
+      CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.is_ordered(), deserialized_sketch2.is_ordered());
+      CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.get_num_retained(), deserialized_sketch2.get_num_retained());
+      CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.get_theta(), deserialized_sketch2.get_theta());
+      CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.get_estimate(), deserialized_sketch2.get_estimate());
+      // the sketches are ordered, so the iteration sequence must match exactly
+      auto iter = deserialized_sketch1.begin();
+      for (auto key: deserialized_sketch2) {
+        CPPUNIT_ASSERT_EQUAL(key, *iter);
+        ++iter;
+      }
+    }
   }
 
 };

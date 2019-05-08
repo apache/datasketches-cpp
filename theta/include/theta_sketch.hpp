@@ -53,11 +53,11 @@ public:
   virtual bool is_ordered() const = 0;
   virtual void to_stream(std::ostream& os, bool print_items = false) const = 0;
   virtual void serialize(std::ostream& os) const = 0;
-  //virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const = 0;
+  virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const = 0;
 
   typedef std::unique_ptr<theta_sketch_alloc<A>, std::function<void(theta_sketch_alloc<A>*)>> unique_ptr;
   static unique_ptr deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
-  //static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
 
   class const_iterator;
   virtual const_iterator begin() const = 0;
@@ -83,7 +83,7 @@ public:
   static const uint8_t SERIAL_VERSION = 3;
 
   update_theta_sketch_alloc(const update_theta_sketch_alloc<A>& other);
-  update_theta_sketch_alloc(update_theta_sketch_alloc<A>&& other) noexcept ;
+  update_theta_sketch_alloc(update_theta_sketch_alloc<A>&& other) noexcept;
   virtual ~update_theta_sketch_alloc();
 
   update_theta_sketch_alloc<A>& operator=(const update_theta_sketch_alloc<A>& other);
@@ -94,6 +94,8 @@ public:
   virtual bool is_ordered() const;
   virtual void to_stream(std::ostream& os, bool print_items = false) const;
   virtual void serialize(std::ostream& os) const;
+  // header space is reserved, but not initialized
+  virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
 
   //void update(const std::string& value);
   void update(uint64_t value);
@@ -123,6 +125,7 @@ public:
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;
 
   static update_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = builder::DEFAULT_SEED);
+  static update_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
 
 private:
   // resize threshold = 0.5 tuned for speed
@@ -161,6 +164,7 @@ private:
 
   friend theta_sketch_alloc<A>;
   static update_theta_sketch_alloc<A> internal_deserialize(std::istream& is, resize_factor rf, uint8_t lg_nom_size, uint8_t lg_cur_size, uint8_t flags_byte, uint64_t seed);
+  static update_theta_sketch_alloc<A> internal_deserialize(const void* bytes, size_t size, resize_factor rf, uint8_t lg_nom_size, uint8_t lg_cur_size, uint8_t flags_byte, uint64_t seed);
 };
 
 // compact sketch
@@ -183,11 +187,14 @@ public:
   virtual bool is_ordered() const;
   virtual void to_stream(std::ostream& os, bool print_items = false) const;
   virtual void serialize(std::ostream& os) const;
+  // header space is reserved, but not initialized
+  virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
 
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;
 
   static compact_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static compact_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
 
 private:
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
@@ -202,6 +209,7 @@ private:
   friend theta_union_alloc<A>;
   compact_theta_sketch_alloc(bool is_empty, uint64_t theta, uint64_t* keys, uint32_t num_keys, uint16_t seed_hash, bool is_ordered);
   static compact_theta_sketch_alloc<A> internal_deserialize(std::istream& is, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash);
+  static compact_theta_sketch_alloc<A> internal_deserialize(const void* bytes, size_t size, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash);
 };
 
 // builder

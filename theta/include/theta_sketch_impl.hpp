@@ -12,6 +12,7 @@
 #include <functional>
 
 #include "MurmurHash3.h"
+#include "serde.hpp"
 
 namespace datasketches {
 
@@ -106,7 +107,7 @@ typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(st
   uint16_t seed_hash;
   is.read((char*)&seed_hash, sizeof(seed_hash));
 
-  // TODO: checks and redirects to the right subclass here
+  // TODO: checks here
 
   if (type == update_theta_sketch_alloc<A>::SKETCH_TYPE) {
     typename update_theta_sketch_alloc<A>::resize_factor rf = static_cast<typename update_theta_sketch_alloc<A>::resize_factor>(preamble_longs >> 6);
@@ -298,6 +299,39 @@ void update_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
 }
 
 template<typename A>
+std::pair<void_ptr_with_deleter, const size_t> update_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const {
+  const uint8_t preamble_longs = 3;
+  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + sizeof(uint64_t) * (1 << lg_cur_size_);
+  typedef typename std::allocator_traits<A>::template rebind_alloc<char> AllocChar;
+  void_ptr_with_deleter data_ptr(
+    static_cast<void*>(AllocChar().allocate(size)),
+    [size](void* ptr) { AllocChar().deallocate(static_cast<char*>(ptr), size); }
+  );
+  char* ptr = static_cast<char*>(data_ptr.get()) + header_size_bytes;
+
+  const uint8_t preamble_longs_and_rf = preamble_longs | (rf_ << 6);
+  copy_to_mem(&preamble_longs_and_rf, &ptr, sizeof(preamble_longs_and_rf));
+  const uint8_t serial_version = SERIAL_VERSION;
+  copy_to_mem(&serial_version, &ptr, sizeof(serial_version));
+  const uint8_t type = SKETCH_TYPE;
+  copy_to_mem(&type, &ptr, sizeof(type));
+  copy_to_mem(&lg_nom_size_, &ptr, sizeof(lg_nom_size_));
+  copy_to_mem(&lg_cur_size_, &ptr, sizeof(lg_cur_size_));
+  const uint8_t flags_byte(
+    (this->is_empty() ? 1 << theta_sketch_alloc<A>::flags::IS_EMPTY : 0)
+  );
+  copy_to_mem(&flags_byte, &ptr, sizeof(flags_byte));
+  const uint16_t seed_hash = get_seed_hash();
+  copy_to_mem(&seed_hash, &ptr, sizeof(seed_hash));
+  copy_to_mem(&num_keys_, &ptr, sizeof(num_keys_));
+  copy_to_mem(&p_, &ptr, sizeof(p_));
+  copy_to_mem(&(this->theta_), &ptr, sizeof(uint64_t));
+  copy_to_mem(keys_, &ptr, sizeof(uint64_t) * (1 << lg_cur_size_));
+
+  return std::make_pair(std::move(data_ptr), size);;
+}
+
+template<typename A>
 update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed) {
   uint8_t preamble_longs;
   is.read((char*)&preamble_longs, sizeof(preamble_longs));
@@ -327,9 +361,46 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(
   is.read((char*)&p, sizeof(p));
   uint64_t theta;
   is.read((char*)&theta, sizeof(theta));
-  //typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
   uint64_t* keys = AllocU64().allocate(num_keys);
   is.read((char*)keys, sizeof(uint64_t) * num_keys);
+  const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+  return update_theta_sketch_alloc<A>(is_empty, theta, lg_nom_size, lg_cur_size, keys, num_keys, rf, p, seed);
+}
+
+template<typename A>
+update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
+  const char* ptr = static_cast<const char*>(bytes);
+  uint8_t preamble_longs;
+  copy_from_mem(&ptr, &preamble_longs, sizeof(preamble_longs));
+  resize_factor rf = static_cast<resize_factor>(preamble_longs >> 6);
+  preamble_longs &= 0x3f; // remove resize factor
+  uint8_t serial_version;
+  copy_from_mem(&ptr, &serial_version, sizeof(serial_version));
+  uint8_t type;
+  copy_from_mem(&ptr, &type, sizeof(type));
+  uint8_t lg_nom_size;
+  copy_from_mem(&ptr, &lg_nom_size, sizeof(lg_nom_size));
+  uint8_t lg_cur_size;
+  copy_from_mem(&ptr, &lg_cur_size, sizeof(lg_cur_size));
+  uint8_t flags_byte;
+  copy_from_mem(&ptr, &flags_byte, sizeof(flags_byte));
+  uint16_t seed_hash;
+  copy_from_mem(&ptr, &seed_hash, sizeof(seed_hash));
+  // TODO: checks here
+  return internal_deserialize(ptr, size - (ptr - static_cast<const char*>(bytes)), rf, lg_nom_size, lg_cur_size, flags_byte, seed);
+}
+
+template<typename A>
+update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(const void* bytes, size_t size, resize_factor rf, uint8_t lg_nom_size, uint8_t lg_cur_size, uint8_t flags_byte, uint64_t seed) {
+  const char* ptr = static_cast<const char*>(bytes);
+  uint32_t num_keys;
+  copy_from_mem(&ptr, &num_keys, sizeof(num_keys));
+  float p;
+  copy_from_mem(&ptr, &p, sizeof(p));
+  uint64_t theta;
+  copy_from_mem(&ptr, &theta, sizeof(theta));
+  uint64_t* keys = AllocU64().allocate(num_keys);
+  copy_from_mem(&ptr, keys, sizeof(uint64_t) * num_keys);
   const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
   return update_theta_sketch_alloc<A>(is_empty, theta, lg_nom_size, lg_cur_size, keys, num_keys, rf, p, seed);
 }
@@ -647,6 +718,49 @@ void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
 }
 
 template<typename A>
+std::pair<void_ptr_with_deleter, const size_t> compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const {
+  const bool is_single_item = num_keys_ == 1 and !this->is_estimation_mode();
+  const uint8_t preamble_longs = this->is_empty() or is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
+  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + sizeof(uint64_t) * num_keys_;
+  typedef typename std::allocator_traits<A>::template rebind_alloc<char> AllocChar;
+  void_ptr_with_deleter data_ptr(
+    static_cast<void*>(AllocChar().allocate(size)),
+    [size](void* ptr) { AllocChar().deallocate(static_cast<char*>(ptr), size); }
+  );
+  char* ptr = static_cast<char*>(data_ptr.get()) + header_size_bytes;
+
+  copy_to_mem(&preamble_longs, &ptr, sizeof(preamble_longs));
+  const uint8_t serial_version = SERIAL_VERSION;
+  copy_to_mem(&serial_version, &ptr, sizeof(serial_version));
+  const uint8_t type = SKETCH_TYPE;
+  copy_to_mem(&type, &ptr, sizeof(type));
+  const uint16_t unused16 = 0;
+  copy_to_mem(&unused16, &ptr, sizeof(unused16));
+  const uint8_t flags_byte(
+    (1 << theta_sketch_alloc<A>::flags::IS_COMPACT) |
+    (1 << theta_sketch_alloc<A>::flags::IS_READ_ONLY) |
+    (this->is_empty() ? 1 << theta_sketch_alloc<A>::flags::IS_EMPTY : 0) |
+    (this->is_ordered() ? 1 << theta_sketch_alloc<A>::flags::IS_ORDERED : 0)
+  );
+  copy_to_mem(&flags_byte, &ptr, sizeof(flags_byte));
+  const uint16_t seed_hash = get_seed_hash();
+  copy_to_mem(&seed_hash, &ptr, sizeof(seed_hash));
+  if (!this->is_empty()) {
+    if (!is_single_item) {
+      copy_to_mem(&num_keys_, &ptr, sizeof(num_keys_));
+      const uint32_t unused32 = 0;
+      copy_to_mem(&unused32, &ptr, sizeof(unused32));
+      if (this->is_estimation_mode()) {
+        copy_to_mem(&(this->theta_), &ptr, sizeof(uint64_t));
+      }
+    }
+    copy_to_mem(keys_, &ptr, sizeof(uint64_t) * num_keys_);
+  }
+
+  return std::make_pair(std::move(data_ptr), size);;
+}
+
+template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed) {
   uint8_t preamble_longs;
   is.read((char*)&preamble_longs, sizeof(preamble_longs));
@@ -685,6 +799,54 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
     typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
     keys = AllocU64().allocate(num_keys);
     is.read((char*)keys, sizeof(uint64_t) * num_keys);
+  }
+
+  const bool is_ordered = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_ORDERED);
+  return compact_theta_sketch_alloc<A>(is_empty, theta, keys, num_keys, seed_hash, is_ordered);
+}
+
+template<typename A>
+compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
+  const char* ptr = static_cast<const char*>(bytes);
+  uint8_t preamble_longs;
+  copy_from_mem(&ptr, &preamble_longs, sizeof(preamble_longs));
+  uint8_t serial_version;
+  copy_from_mem(&ptr, &serial_version, sizeof(serial_version));
+  uint8_t family_id;
+  copy_from_mem(&ptr, &family_id, sizeof(family_id));
+  uint16_t unused16;
+  copy_from_mem(&ptr, &unused16, sizeof(unused16));
+  uint8_t flags_byte;
+  copy_from_mem(&ptr, &flags_byte, sizeof(flags_byte));
+  uint16_t seed_hash;
+  copy_from_mem(&ptr, &seed_hash, sizeof(seed_hash));
+  // TODO: checks here
+  return internal_deserialize(ptr, size - (ptr - static_cast<const char*>(bytes)), preamble_longs, flags_byte, seed_hash);
+}
+
+template<typename A>
+compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserialize(const void* bytes, size_t size, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash) {
+  const char* ptr = static_cast<const char*>(bytes);
+
+  uint64_t theta = theta_sketch_alloc<A>::MAX_THETA;
+  uint64_t* keys = nullptr;
+  uint32_t num_keys = 0;
+
+  const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+  if (!is_empty) {
+    if (preamble_longs == 1) {
+      num_keys = 1;
+    } else {
+      copy_from_mem(&ptr, &num_keys, sizeof(num_keys));
+      uint32_t unused32;
+      copy_from_mem(&ptr, &unused32, sizeof(unused32));
+      if (preamble_longs > 2) {
+        copy_from_mem(&ptr, &theta, sizeof(theta));
+      }
+    }
+    typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
+    keys = AllocU64().allocate(num_keys);
+    copy_from_mem(&ptr, keys, sizeof(uint64_t) * num_keys);
   }
 
   const bool is_ordered = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_ORDERED);
