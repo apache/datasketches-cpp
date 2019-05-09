@@ -13,11 +13,20 @@
 
 namespace datasketches {
 
+template<typename A>
 static double interpolateUsingXAndYTables(const double xArr[], const double yArr[], const int offset, const double x);
+
+template<typename A>
 static double cubicInterpolate(const double x0, const double y0, const double x1, const double y1,
                                const double x2, const double y2, const double x3, const double y3, const double x);
+
+template<typename A>
 static int findStraddle(const double xArr[], const int len, const double x);
+
+template<typename A>
 static int recursiveFindStraddle(const double xArr[], const int l, const int r, const double x);
+
+template<typename A>
 static double interpolateUsingXArrAndYStride(const double xArr[], const double yStride,
                                              const int offset, const double x);
 
@@ -51,11 +60,13 @@ const double yArrComputed[numEntries] =  {
     9520624.7036988288164139, 9835293.9703129194676876, 10150448.9097250290215015, 10466090.8000503256917000
 };
 
-double CubicInterpolation::usingXAndYTables(const double x) {
+template<typename A>
+double CubicInterpolation<A>::usingXAndYTables(const double x) {
   return usingXAndYTables(xArrComputed, yArrComputed, numEntries, x);
 }
 
-double CubicInterpolation::usingXAndYTables(const double xArr[], const double yArr[],
+template<typename A>
+double CubicInterpolation<A>::usingXAndYTables(const double xArr[], const double yArr[],
                                             const int len, const double x) {
   int offset;
   if (x < xArr[0] || x > xArr[len-1]) {
@@ -66,33 +77,35 @@ double CubicInterpolation::usingXAndYTables(const double xArr[], const double yA
     return (yArr[len-1]);
   }
 
-  offset = findStraddle (xArr, len, x);
+  offset = findStraddle<A>(xArr, len, x);
   if (offset < 0 && offset > len-2) {
     throw std::logic_error("offset must be >= 0 and <= " + std::to_string(len) + "-2");
   }
 
   if (offset == 0) { // corner case
-    return (interpolateUsingXAndYTables(xArr, yArr, (offset-0), x));
+    return (interpolateUsingXAndYTables<A>(xArr, yArr, (offset-0), x));
   }
   else if (offset == numEntries-2) { // corner case
-    return (interpolateUsingXAndYTables(xArr, yArr, (offset-2), x));
+    return (interpolateUsingXAndYTables<A>(xArr, yArr, (offset-2), x));
   }
   else { // main case
-    return (interpolateUsingXAndYTables(xArr, yArr, (offset-1), x));
+    return (interpolateUsingXAndYTables<A>(xArr, yArr, (offset-1), x));
   }
   throw std::logic_error("Exception should be unreachable");
 }
 
 // In C: again-two-registers cubic_interpolate_aux L1368
+template<typename A>
 static double interpolateUsingXAndYTables(const double xArr[], const double yArr[],
                                           const int offset, const double x) {
-    return (cubicInterpolate(xArr[offset+0], yArr[offset+0],
+    return (cubicInterpolate<A>(xArr[offset+0], yArr[offset+0],
                         xArr[offset+1], yArr[offset+1],
                         xArr[offset+2], yArr[offset+2],
                         xArr[offset+3], yArr[offset+3],
                         x) );
 }
 
+template<typename A>
 static inline double cubicInterpolate(const double x0, const double y0,
                                       const double x1, const double y1,
                                       const double x2, const double y2,
@@ -118,16 +131,18 @@ static inline double cubicInterpolate(const double x0, const double y0,
 }
 
 /* returns j such that xArr[j] <= x and x < xArr[j+1] */
+template<typename A>
 static int findStraddle(const double xArr[], const int len, const double x)
 {
   if ((len < 2) || (x < xArr[0]) || (x > xArr[len-1])) {
     throw std::logic_error("invariant violated during interpolation");
   }
-  return(recursiveFindStraddle(xArr, 0, len-1, x));
+  return(recursiveFindStraddle<A>(xArr, 0, len-1, x));
 }
 
 
 /* the invariant here is that xArr[l] <= x && x < xArr[r] */
+template<typename A>
 static int recursiveFindStraddle(const double xArr[], const int l, const int r, const double x)
 {
   int m;
@@ -140,8 +155,8 @@ static int recursiveFindStraddle(const double xArr[], const int l, const int r, 
 
   if (l+1 == r) return (l);
   m = l + ((r-l)/2);
-  if (xArr[m] <= x) return (recursiveFindStraddle(xArr, m, r, x));
-  else              return (recursiveFindStraddle(xArr, l, m, x));
+  if (xArr[m] <= x) return (recursiveFindStraddle<A>(xArr, m, r, x));
+  else              return (recursiveFindStraddle<A>(xArr, l, m, x));
 }
 
 
@@ -158,8 +173,9 @@ static int recursiveFindStraddle(const double xArr[], const int l, const int r, 
  */
 //In C: again-two-registers cubic_interpolate_with_x_arr_and_y_stride L1411
 // Used by HllEstimators
-double CubicInterpolation::usingXArrAndYStride(const double xArr[], const int xArrLen,
-                                               const double yStride, const double x) {
+template<typename A>
+double CubicInterpolation<A>::usingXArrAndYStride(const double xArr[], const int xArrLen,
+                                                  const double yStride, const double x) {
   const int xArrLenM1 = xArrLen - 1;
 
   if ((xArrLen < 4) || (x < xArr[0]) || (x > xArr[xArrLenM1])) {
@@ -170,26 +186,27 @@ double CubicInterpolation::usingXArrAndYStride(const double xArr[], const int xA
     return (yStride * (xArrLenM1));
   }
 
-  const int offset = findStraddle(xArr, xArrLen, x); //uses recursion
+  const int offset = findStraddle<A>(xArr, xArrLen, x); //uses recursion
   const int xArrLenM2 = xArrLen - 2;
   if ((offset < 0) || (offset > xArrLenM2)) {
     throw std::logic_error("invalid offset during interpolation");
   }
 
   if (offset == 0) { /* corner case */
-    return (interpolateUsingXArrAndYStride(xArr, yStride, (offset - 0), x));
+    return (interpolateUsingXArrAndYStride<A>(xArr, yStride, (offset - 0), x));
   }
   else if (offset == xArrLenM2) { /* corner case */
-    return (interpolateUsingXArrAndYStride(xArr, yStride, (offset - 2), x));
+    return (interpolateUsingXArrAndYStride<A>(xArr, yStride, (offset - 2), x));
   }
   /* main case */
-  return (interpolateUsingXArrAndYStride(xArr, yStride, (offset - 1), x));
+  return (interpolateUsingXArrAndYStride<A>(xArr, yStride, (offset - 1), x));
 }
 
 //In C: again-two-registers cubic_interpolate_with_x_arr_and_y_stride_aux L1402
+template<typename A>
 static double interpolateUsingXArrAndYStride(const double xArr[], const double yStride,
                                              const int offset, const double x) {
-  return cubicInterpolate(
+  return cubicInterpolate<A>(
       xArr[offset + 0], yStride * (offset + 0),
       xArr[offset + 1], yStride * (offset + 1),
       xArr[offset + 2], yStride * (offset + 2),

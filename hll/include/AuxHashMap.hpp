@@ -60,6 +60,6 @@ class AuxHashMap final {
 
 }
 
-//#include "AuxHashMap-internal.hpp"
+#include "AuxHashMap-internal.hpp"
 
 #endif /* _AUXHASHMAP_HPP_ */

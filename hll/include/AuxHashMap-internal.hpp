@@ -64,16 +64,17 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
   } else { // updatable
     lgArrInts = lgAuxArrInts;
   }
-
-  AuxHashMap<A>* auxHashMap = ahmAlloc().allocate(1);
-  ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
+  
   int configKmask = (1 << lgConfigK) - 1;
 
+  AuxHashMap<A>* auxHashMap;
   const int* auxPtr = static_cast<const int*>(bytes);
   if (srcCompact) {
     if (len < auxCount * sizeof(int)) {
       throw std::invalid_argument("Input array too small to hold AuxHashMap image");
     }
+    auxHashMap = ahmAlloc().allocate(1);
+    ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
     for (int i = 0; i < auxCount; ++i) {
       int pair = auxPtr[i];
       int slotNo = HllUtil<A>::getLow26(pair) & configKmask;
@@ -85,6 +86,8 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
     if (len < itemsToRead * sizeof(int)) {
       throw std::invalid_argument("Input array too small to hold AuxHashMap image");
     }
+    auxHashMap = ahmAlloc().allocate(1);
+    ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
     for (int i = 0; i < itemsToRead; ++i) {
       int pair = auxPtr[i];
       if (pair == HllUtil<A>::EMPTY) { continue; }
@@ -95,6 +98,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
   }
 
   if (auxHashMap->getAuxCount() != auxCount) {
+    make_deleter()(auxHashMap);
     throw std::invalid_argument("Deserialized AuxHashMap has wrong number of entries");
   }
 
@@ -111,7 +115,8 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(std::istream& is, const int lgConfigK,
   } else { // updatable
     lgArrInts = lgAuxArrInts;
   }
-  
+
+  // TODO: truncated stream will throw exception without freeing memory  
   AuxHashMap<A>* auxHashMap = ahmAlloc().allocate(1);
   ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
   int configKmask = (1 << lgConfigK) - 1;
@@ -137,6 +142,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(std::istream& is, const int lgConfigK,
   }
 
   if (auxHashMap->getAuxCount() != auxCount) {
+    make_deleter()(auxHashMap);
     throw std::invalid_argument("Deserialized AuxHashMap has wrong number of entries");
   }
 

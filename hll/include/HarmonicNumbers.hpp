@@ -7,9 +7,11 @@
 #define _HARMONICNUMBERS_HPP_
 
 #include <cstdint>
+#include <memory>
 
 namespace datasketches {
 
+template<typename A = std::allocator<char>>
 class HarmonicNumbers {
   public:
     /**
@@ -27,6 +29,6 @@ class HarmonicNumbers {
 
 }
 
-//#include "HarmonicNumbers-internal.hpp"
+#include "HarmonicNumbers-internal.hpp"
 
 #endif /* _HARMONICNUMBERS_HPP_ */

@@ -6,8 +6,11 @@
 #ifndef _CUBICINTERPOLATION_HPP_
 #define _CUBICINTERPOLATION_HPP_
 
+#include <memory>
+
 namespace datasketches {
 
+template<typename A = std::allocator<char>>
 class CubicInterpolation {
   public:
     static double usingXAndYTables(const double xArr[], const double yArr[],
@@ -21,6 +24,6 @@ class CubicInterpolation {
 
 }
 
-//#include "CubicInterpolation-internal.hpp"
+#include "CubicInterpolation-internal.hpp"
 
 #endif /* _CUBICINTERPOLATION_HPP_ */

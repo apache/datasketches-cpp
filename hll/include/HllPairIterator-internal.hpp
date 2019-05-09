@@ -45,7 +45,7 @@ int HllPairIterator<A>::getSlot() {
 
 template<typename A>
 int HllPairIterator<A>::getPair() {
-  return HllUtil<>::pair(index, val);
+  return HllUtil<A>::pair(index, val);
 }
 
 template<typename A>
@@ -73,7 +73,7 @@ template<typename A>
 bool HllPairIterator<A>::nextValid() {
   while (++index < lengthPairs) {
     val = value();
-    if (val != HllUtil<>::EMPTY) {
+    if (val != HllUtil<A>::EMPTY) {
       return true;
     }
   }

@@ -149,13 +149,13 @@ inline void HllUtil<A>::hash(const void* key, const int keyLen, const uint64_t s
 
 template<typename A>
 inline double HllUtil<A>::getRelErr(const bool upperBound, const bool unioned,
-                          const int lgConfigK, const int numStdDev) {
-  return RelativeErrorTables::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
+                                    const int lgConfigK, const int numStdDev) {
+  return RelativeErrorTables<A>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
 }
 
 template<typename A>
 inline int HllUtil<A>::checkLgK(const int lgK) {
-  if ((lgK >= HllUtil<A>::MIN_LOG_K) && (lgK <= HllUtil<>::MAX_LOG_K)) {
+  if ((lgK >= HllUtil<A>::MIN_LOG_K) && (lgK <= HllUtil<A>::MAX_LOG_K)) {
     return lgK;
   } else {
     throw std::invalid_argument("Invalid value of k: " + std::to_string(lgK));
@@ -178,17 +178,17 @@ inline void HllUtil<A>::checkNumStdDev(const int numStdDev) {
 
 template<typename A>
 inline int HllUtil<A>::pair(const int slotNo, const int value) {
-  return (value << HllUtil<>::KEY_BITS_26) | (slotNo & HllUtil<>::KEY_MASK_26);
+  return (value << HllUtil<A>::KEY_BITS_26) | (slotNo & HllUtil<A>::KEY_MASK_26);
 }
 
 template<typename A>
 inline int HllUtil<A>::getLow26(const unsigned int coupon) {
-  return coupon & HllUtil<>::KEY_MASK_26;
+  return coupon & HllUtil<A>::KEY_MASK_26;
 }
 
 template<typename A>
 inline int HllUtil<A>::getValue(const unsigned int coupon) {
-  return coupon >> HllUtil<>::KEY_BITS_26;
+  return coupon >> HllUtil<A>::KEY_BITS_26;
 }
 
 template<typename A>
@@ -259,14 +259,14 @@ inline unsigned int HllUtil<A>::numberOfTrailingZeros(uint32_t v) {
 template<typename A>
 inline int HllUtil<A>::computeLgArrInts(CurMode mode, int count, int lgConfigK) {
   // assume value missing and recompute
-  if (mode == LIST) { return HllUtil<>::LG_INIT_LIST_SIZE; }
-  int ceilPwr2 = HllUtil<>::ceilingPowerOf2(count);
-  if ((HllUtil<>::RESIZE_DENOM * count) > (HllUtil<>::RESIZE_NUMER * ceilPwr2)) { ceilPwr2 <<= 1;}
+  if (mode == LIST) { return HllUtil<A>::LG_INIT_LIST_SIZE; }
+  int ceilPwr2 = HllUtil<A>::ceilingPowerOf2(count);
+  if ((HllUtil<A>::RESIZE_DENOM * count) > (HllUtil<A>::RESIZE_NUMER * ceilPwr2)) { ceilPwr2 <<= 1;}
   if (mode == SET) {
-    return fmax(HllUtil<>::LG_INIT_SET_SIZE, HllUtil<>::simpleIntLog2(ceilPwr2));
+    return fmax(HllUtil<A>::LG_INIT_SET_SIZE, HllUtil<A>::simpleIntLog2(ceilPwr2));
   }
   //only used for HLL4
-  return fmax(HllUtil<>::LG_AUX_ARR_INTS[lgConfigK], HllUtil<>::simpleIntLog2(ceilPwr2));
+  return fmax(HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK], HllUtil<A>::simpleIntLog2(ceilPwr2));
 }
 
 }

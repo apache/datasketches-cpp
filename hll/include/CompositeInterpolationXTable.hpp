@@ -6,8 +6,11 @@
 #ifndef _COMPOSITEINTERPOLATIONXTABLE_HPP_
 #define _COMPOSITEINTERPOLATIONXTABLE_HPP_
 
+#include <memory>
+
 namespace datasketches {
 
+template<typename A = std::allocator<char>>
 class CompositeInterpolationXTable {
   public:
     static const int get_y_stride(int logK);
@@ -18,6 +21,6 @@ class CompositeInterpolationXTable {
 
 }
 
-//#include "CompositeInterpolationXTable-internal.hpp"
+#include "CompositeInterpolationXTable-internal.hpp"
 
 #endif /* _COMPOSITEINTERPOLATIONXTABLE_HPP_ */

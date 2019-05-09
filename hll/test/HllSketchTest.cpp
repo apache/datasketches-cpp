@@ -22,7 +22,6 @@ class hllSketchTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkMisc1);
   CPPUNIT_TEST(checkNumStdDev);
   CPPUNIT_TEST(checkSerSizes);
-  CPPUNIT_TEST(checkConfigKLimits);
   CPPUNIT_TEST(exerciseToString);
   //CPPUNIT_TEST(checkEmptyCoupon);
   CPPUNIT_TEST(checkCompactFlag);
@@ -209,16 +208,6 @@ class hllSketchTest : public CppUnit::TestFixture {
   */
   }
 
-  void checkConfigKLimits() {
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with lgK too small",
-                                 HllSketch<>(HllUtil<>::MIN_LOG_K - 1),
-                                 std::invalid_argument);
-
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with lgK too large",
-                                 HllSketch<>(HllUtil<>::MAX_LOG_K + 1),
-                                 std::invalid_argument);
-  }
-
   void exerciseToString() {
     hll_sketch sk(15, HLL_4);
     for (int i = 0; i < 25; ++i) { sk.update(i); }
@@ -299,8 +288,13 @@ class hllSketchTest : public CppUnit::TestFixture {
   void checkKLimits() {
     hll_sketch sketch1(HllUtil<>::MIN_LOG_K, TgtHllType::HLL_8);
     hll_sketch sketch2(HllUtil<>::MAX_LOG_K, TgtHllType::HLL_4);
-    CPPUNIT_ASSERT_THROW(HllSketch<>(HllUtil<>::MAX_LOG_K + 1, TgtHllType::HLL_8), std::invalid_argument);
-    CPPUNIT_ASSERT_THROW(HllSketch<>(HllUtil<>::MIN_LOG_K - 1, TgtHllType::HLL_4), std::invalid_argument);
+    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with lgK too small",
+                                 HllSketch<>(HllUtil<>::MIN_LOG_K - 1),
+                                 std::invalid_argument);
+
+    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with lgK too large",
+                                 HllSketch<>(HllUtil<>::MAX_LOG_K + 1),
+                                 std::invalid_argument);
   }
 
     void checkInputTypes() {

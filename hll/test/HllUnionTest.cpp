@@ -276,7 +276,7 @@ class HllUnionTest : public CppUnit::TestFixture {
   }
 
   double getBound(int lgK, bool ub, bool oooFlag, int numStdDev, double est) {
-    double re = RelativeErrorTables::getRelErr(ub, oooFlag, lgK, numStdDev);
+    double re = RelativeErrorTables<>::getRelErr(ub, oooFlag, lgK, numStdDev);
     return est / (1.0 + re);
   }
 

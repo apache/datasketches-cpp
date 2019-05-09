@@ -131,7 +131,8 @@ class HllUnion {
   public:
     //static HllUnion newInstance(int lgMaxK);
     explicit HllUnion(int lgMaxK);
-    explicit HllUnion(HllSketch<A>& sketch);
+    //explicit HllUnion(HllSketch<A>& sketch);
+    //explicit HllUnion(HllSketch<A>&& sketch);
     HllUnion(const HllUnion<A>& that);
 
     static HllUnion deserialize(std::istream& is);

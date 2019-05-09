@@ -66,8 +66,9 @@ static double NON_HIP_UB[] = //sd 1, 2, 3
     -0.016186662, -0.031827816, -0.046973459  //12
   };
 
-double RelativeErrorTables::getRelErr(const bool upperBound, const bool oooFlag,
-                                      const int lgK, const int stdDev) {
+template<typename A>
+double RelativeErrorTables<A>::getRelErr(const bool upperBound, const bool oooFlag,
+                                         const int lgK, const int stdDev) {
   const int idx = ((lgK - 4) * 3) + (stdDev - 1);
   const int sw = (oooFlag ? 2 : 0) | (upperBound ? 1 : 0);
   double f = 0;

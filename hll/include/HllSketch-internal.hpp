@@ -29,9 +29,10 @@ typedef union {
 
 template<typename A>
 HllSketch<A>::HllSketch(int lgConfigK, TgtHllType tgtHllType) {
+  HllUtil<A>::checkLgK(lgConfigK);
   typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
   CouponList<A>* cl = clAlloc().allocate(1);
-  clAlloc().construct(cl, HllUtil<A>::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
+  clAlloc().construct(cl, lgConfigK, tgtHllType, CurMode::LIST); 
   hllSketchImpl = cl;
 }
 
@@ -51,7 +52,9 @@ HllSketch<A> HllSketch<A>::deserialize(const void* bytes, size_t len) {
 
 template<typename A>
 HllSketch<A>::~HllSketch() {
-  hllSketchImpl->get_deleter()(hllSketchImpl);
+  if (hllSketchImpl != nullptr) {
+    hllSketchImpl->get_deleter()(hllSketchImpl);
+  }
 }
 
 template<typename A>
@@ -72,7 +75,7 @@ HllSketch<A>::HllSketch(HllSketchImpl<A>* that) :
 template<typename A>
 HllSketch<A> HllSketch<A>::operator=(HllSketch<A>& other) {
   hllSketchImpl->get_deleter()(hllSketchImpl);
-  hllSketchImpl = other.hllSketchImpl->copy();
+  hllSketchImpl = other.hllSketchImpl->copyPtr();
   return *this;
 }
 
@@ -80,14 +83,14 @@ template<typename A>
 HllSketch<A> HllSketch<A>::operator=(HllSketch<A>&& other) {
   hllSketchImpl->get_deleter()(hllSketchImpl);
   hllSketchImpl = std::move(other.hllSketchImpl);
+  other.hllSketchImpl = nullptr;
   return *this;
 }
 
 template<typename A>
 HllSketch<A> HllSketch<A>::copy() const {
-  HllSketch<A>* sketch = AllocHllSketch().allocate(1);
-  AllocHllSketch().construct(sketch, this->hllSketchImpl->copy());
-  return std::move(*sketch);
+  HllSketch<A> sketch(hllSketchImpl->copy());
+  return sketch; // no move so copy elision can work
 }
 
 template<typename A>
@@ -99,9 +102,8 @@ HllSketch<A>* HllSketch<A>::copyPtr() const {
 
 template<typename A>
 HllSketch<A> HllSketch<A>::copyAs(const TgtHllType tgtHllType) const {
-  HllSketch<A>* sketch = AllocHllSketch().allocate(1);
-  AllocHllSketch().construct(sketch, this->hllSketchImpl->copy());
-  return std::move(*sketch);
+  HllSketch<A> sketch(hllSketchImpl->copyAs(tgtHllType));
+  return sketch; // no move so copy elision can work
 }
 
 template<typename A>

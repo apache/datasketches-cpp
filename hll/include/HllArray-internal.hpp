@@ -113,11 +113,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   const int lgK = (int) data[HllUtil<A>::LG_K_BYTE];
   const int curMin = (int) data[HllUtil<A>::HLL_CUR_MIN_BYTE];
 
-  HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType);
-  sketch->putCurMin(curMin);
-  sketch->putOutOfOrderFlag(oooFlag);
-
-  int arrayBytes = sketch->getHllByteArrBytes();
+  int arrayBytes = hllArrBytes(tgtHllType, lgK);
   if (len < HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes) {
     throw std::invalid_argument("Input array too small to hold sketch image");
   }
@@ -126,24 +122,31 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   std::memcpy(&hip, data + HllUtil<A>::HIP_ACCUM_DOUBLE, sizeof(double));
   std::memcpy(&kxq0, data + HllUtil<A>::KXQ0_DOUBLE, sizeof(double));
   std::memcpy(&kxq1, data + HllUtil<A>::KXQ1_DOUBLE, sizeof(double));
-  sketch->putHipAccum(hip);
-  sketch->putKxQ0(kxq0);
-  sketch->putKxQ1(kxq1);
 
   int numAtCurMin, auxCount;
   std::memcpy(&numAtCurMin, data + HllUtil<A>::CUR_MIN_COUNT_INT, sizeof(int));
   std::memcpy(&auxCount, data + HllUtil<A>::AUX_COUNT_INT, sizeof(int));
-  sketch->putNumAtCurMin(numAtCurMin);
 
-  std::memcpy(sketch->hllByteArr, data + HllUtil<A>::HLL_BYTE_ARR_START, sketch->getHllByteArrBytes());
-
+  AuxHashMap<A>* auxHashMap = nullptr;
   if (auxCount > 0) { // necessarily TgtHllType == HLL_4
     int auxLgIntArrSize = (int) data[4];
-    const size_t offset = HllUtil<A>::HLL_BYTE_ARR_START + sketch->getHllByteArrBytes();
+    const size_t offset = HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes;
     const uint8_t* auxDataStart = data + offset;
-    AuxHashMap<A>* auxHashMap = AuxHashMap<A>::deserialize(auxDataStart, len - offset, lgK, auxCount, auxLgIntArrSize, comapctFlag);
-    ((Hll4Array<A>*)sketch)->putAuxHashMap(auxHashMap);
+    auxHashMap = AuxHashMap<A>::deserialize(auxDataStart, len - offset, lgK, auxCount, auxLgIntArrSize, comapctFlag);
   }
+
+  HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType);
+  sketch->putCurMin(curMin);
+  sketch->putOutOfOrderFlag(oooFlag);
+  sketch->putHipAccum(hip);
+  sketch->putKxQ0(kxq0);
+  sketch->putKxQ1(kxq1);
+  sketch->putNumAtCurMin(numAtCurMin);
+
+  std::memcpy(sketch->hllByteArr, data + HllUtil<A>::HLL_BYTE_ARR_START, arrayBytes);
+
+  if (auxHashMap != nullptr)
+    ((Hll4Array<A>*)sketch)->putAuxHashMap(auxHashMap);
 
   return sketch;
 }
@@ -175,6 +178,7 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
   const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
   const int curMin = (int) listHeader[HllUtil<A>::HLL_CUR_MIN_BYTE];
 
+  // TODO: truncated stream will throw exception without freeing memory
   HllArray* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType);
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
@@ -401,9 +405,9 @@ template<typename A>
 double HllArray<A>::getCompositeEstimate() const {
   const double rawEst = getHllRawEstimate(this->lgConfigK, kxq0 + kxq1);
 
-  const double* xArr = CompositeInterpolationXTable::get_x_arr(this->lgConfigK);
-  const int xArrLen = CompositeInterpolationXTable::get_x_arr_length(this->lgConfigK);
-  const double yStride = CompositeInterpolationXTable::get_y_stride(this->lgConfigK);
+  const double* xArr = CompositeInterpolationXTable<A>::get_x_arr(this->lgConfigK);
+  const int xArrLen = CompositeInterpolationXTable<A>::get_x_arr_length(this->lgConfigK);
+  const double yStride = CompositeInterpolationXTable<A>::get_y_stride(this->lgConfigK);
 
   if (rawEst < xArr[0]) {
     return 0;
@@ -417,7 +421,7 @@ double HllArray<A>::getCompositeEstimate() const {
     return rawEst * factor;
   }
 
-  double adjEst = CubicInterpolation::usingXArrAndYStride(xArr, xArrLen, yStride, rawEst);
+  double adjEst = CubicInterpolation<A>::usingXArrAndYStride(xArr, xArrLen, yStride, rawEst);
 
   // We need to completely avoid the linear_counting estimator if it might have a crazy value.
   // Empirical evidence suggests that the threshold 3*k will keep us safe if 2^4 <= k <= 2^21.
@@ -527,6 +531,18 @@ bool HllArray<A>::isOutOfOrderFlag() const {
 }
 
 template<typename A>
+int HllArray<A>::hllArrBytes(TgtHllType tgtHllType, int lgConfigK) {
+  switch (tgtHllType) {
+  case HLL_4:
+    return hll4ArrBytes(lgConfigK);
+  case HLL_6:
+    return hll6ArrBytes(lgConfigK);
+  case HLL_8:
+    return hll8ArrBytes(lgConfigK);
+  }
+}
+
+template<typename A>
 int HllArray<A>::hll4ArrBytes(const int lgConfigK) {
   return 1 << (lgConfigK - 1);
 }
@@ -610,7 +626,7 @@ double HllArray<A>::getHllBitMapEstimate(const int lgConfigK, const int curMin, 
   }
 
   const int numHitBuckets = configK - numUnhitBuckets;
-  return HarmonicNumbers::getBitMapEstimate(configK, numHitBuckets);
+  return HarmonicNumbers<A>::getBitMapEstimate(configK, numHitBuckets);
 }
 
 //In C: again-two-registers.c hhb_get_raw_estimate L1167

@@ -12,7 +12,8 @@
 
 namespace datasketches {
 
-double HarmonicNumbers::getBitMapEstimate(const int bitVectorLength, const int numBitsSet) {
+template<typename A>
+double HarmonicNumbers<A>::getBitMapEstimate(const int bitVectorLength, const int numBitsSet) {
   return (bitVectorLength * (harmonicNumber(bitVectorLength) - harmonicNumber(bitVectorLength - numBitsSet)));
 }
 
@@ -48,7 +49,8 @@ static double tableOfExactHarmonicNumbers[] = {
 
 static const double EULER_MASCHERONI_CONSTANT = 0.577215664901532860606512090082;
 
-double HarmonicNumbers::harmonicNumber(const uint64_t x_i) {
+template<typename A>
+double HarmonicNumbers<A>::harmonicNumber(const uint64_t x_i) {
   if (x_i < NUM_EXACT_HARMONIC_NUMBERS) {
     return tableOfExactHarmonicNumbers[x_i];
   } else {

@@ -120,20 +120,20 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
   bool oooFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   bool emptyFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
 
+  const int couponCount = (int) data[HllUtil<A>::LIST_COUNT_BYTE];
+  int couponsInArray = (compact ? couponCount : (1 << HllUtil<A>::computeLgArrInts(LIST, couponCount, lgK)));
+  int expectedLength = HllUtil<A>::LIST_INT_ARR_START + (couponsInArray * sizeof(int));
+  if (len < expectedLength) {
+    throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
+                                + ", found: " + std::to_string(len));
+  }
+
   CouponList<A>* sketch = clAlloc().allocate(1);
   clAlloc().construct(sketch, lgK, tgtHllType, curMode);
-  const int couponCount = (int) data[HllUtil<A>::LIST_COUNT_BYTE];
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
   if (!emptyFlag) {
-    int couponsInArray = (compact ? couponCount : (1 << sketch->getLgCouponArrInts()));
-    int expectedLength = HllUtil<A>::LIST_INT_ARR_START + (couponsInArray * sizeof(int));
-    if (len < expectedLength) {
-      throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
-                                  + ", found: " + std::to_string(len));
-    }
-
     // only need to read valid coupons, unlike in stream case
     std::memcpy(sketch->couponIntArr, data + HllUtil<A>::LIST_INT_ARR_START, couponCount * sizeof(int));
   }
@@ -323,7 +323,7 @@ double CouponList<A>::getCompositeEstimate() const { return getEstimate(); }
 template<typename A>
 double CouponList<A>::getEstimate() const {
   const int couponCount = getCouponCount();
-  const double est = CubicInterpolation::usingXAndYTables(couponCount);
+  const double est = CubicInterpolation<A>::usingXAndYTables(couponCount);
   return fmax(est, couponCount);
 }
 
@@ -331,7 +331,7 @@ template<typename A>
 double CouponList<A>::getLowerBound(const int numStdDev) const {
   HllUtil<A>::checkNumStdDev(numStdDev);
   const int couponCount = getCouponCount();
-  const double est = CubicInterpolation::usingXAndYTables(couponCount);
+  const double est = CubicInterpolation<A>::usingXAndYTables(couponCount);
   const double tmp = est / (1.0 + (numStdDev * HllUtil<A>::COUPON_RSE));
   return fmax(tmp, couponCount);
 }
@@ -340,7 +340,7 @@ template<typename A>
 double CouponList<A>::getUpperBound(const int numStdDev) const {
   HllUtil<A>::checkNumStdDev(numStdDev);
   const int couponCount = getCouponCount();
-  const double est = CubicInterpolation::usingXAndYTables(couponCount);
+  const double est = CubicInterpolation<A>::usingXAndYTables(couponCount);
   const double tmp = est / (1.0 - (numStdDev * HllUtil<A>::COUPON_RSE));
   return fmax(tmp, couponCount);
 }

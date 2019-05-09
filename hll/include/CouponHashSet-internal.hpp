@@ -73,12 +73,12 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
   TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = (int) data[HllUtil<A>::LG_K_BYTE];
+  if (lgK <= 7) {
+    throw std::invalid_argument("Attempt to deserialize invalid CouponHashSet with lgConfigK <= 7. Found: "
+                                + std::to_string(lgK));
+  }   
   int lgArrInts = (int) data[HllUtil<A>::LG_ARR_BYTE];
   bool compactFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
-
-  CouponHashSet<A>* sketch = chsAlloc().allocate(1);
-  chsAlloc().construct(sketch, lgK, tgtHllType);
-  sketch->putOutOfOrderFlag(true);
 
   int couponCount;
   std::memcpy(&couponCount, data + HllUtil<A>::HASH_SET_COUNT_INT, sizeof(couponCount));
@@ -87,13 +87,17 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
   }
   // Don't set couponCount in sketch here;
   // we'll set later if updatable, and increment with updates if compact
-
-  int couponsInArray = (compactFlag ? couponCount : (1 << sketch->getLgCouponArrInts()));
+  //int couponsInArray = (compactFlag ? couponCount : (1 << sketch->getLgCouponArrInts()));
+  int couponsInArray = (compactFlag ? couponCount : (1 << lgArrInts));
   int expectedLength = HllUtil<A>::HASH_SET_INT_ARR_START + (couponsInArray * sizeof(int));
   if (len < expectedLength) {
     throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
                                 + ", found: " + std::to_string(len));
   }
+
+  CouponHashSet<A>* sketch = chsAlloc().allocate(1);
+  chsAlloc().construct(sketch, lgK, tgtHllType);
+  sketch->putOutOfOrderFlag(true);
 
   if (compactFlag) {
     const uint8_t* curPos = data + HllUtil<A>::HASH_SET_INT_ARR_START;
@@ -141,23 +145,27 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
   TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
+  if (lgK <= 7) {
+    throw std::invalid_argument("Attempt to deserialize invalid CouponHashSet with lgConfigK <= 7. Found: "
+                                + std::to_string(lgK));
+  }
   int lgArrInts = (int) listHeader[HllUtil<A>::LG_ARR_BYTE];
   bool compactFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
   //bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   //bool emptyFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
-
-  CouponHashSet<A>* sketch = chsAlloc().allocate(1);
-  chsAlloc().construct(sketch, lgK, tgtHllType);
-  sketch->putOutOfOrderFlag(true);
 
   int couponCount;
   is.read((char*)&couponCount, sizeof(couponCount));
   if (lgArrInts < HllUtil<A>::LG_INIT_SET_SIZE) { 
     lgArrInts = HllUtil<A>::computeLgArrInts(SET, couponCount, lgK);
   }
+
+  CouponHashSet<A>* sketch = chsAlloc().allocate(1);
+  chsAlloc().construct(sketch, lgK, tgtHllType);
+  sketch->putOutOfOrderFlag(true);
+
   // Don't set couponCount here;
   // we'll set later if updatable, and increment with updates if compact
-
   if (compactFlag) {
     for (int i = 0; i < couponCount; ++i) {
       int coupon;

@@ -80,6 +80,7 @@ class HllArray : public HllSketchImpl<A> {
     void putKxQ1(double kxq1);
     void putNumAtCurMin(int numAtCurMin);
 
+    static int hllArrBytes(TgtHllType tgtHllType, int lgConfigK);
     static int hll4ArrBytes(int lgConfigK);
     static int hll6ArrBytes(int lgConfigK);
     static int hll8ArrBytes(int lgConfigK);

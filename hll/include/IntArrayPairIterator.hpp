@@ -40,6 +40,6 @@ class IntArrayPairIterator : public PairIterator<A> {
 
 }
 
-//#include "IntArrayPairIterator-internal.hpp"
+#include "IntArrayPairIterator-internal.hpp"
 
 #endif /* _INTARRAYPAIRITERATOR_HPP_ */

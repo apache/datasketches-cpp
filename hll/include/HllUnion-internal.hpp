@@ -21,47 +21,36 @@ template<typename A>
 HllUnion<A>::HllUnion(const int lgMaxK)
   : lgMaxK(HllUtil<A>::checkLgK(lgMaxK)) {
     typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch<A>> AllocHllSketch;
-    AllocHllSketch().allocate(1);
+    gadget = AllocHllSketch().allocate(1);
     AllocHllSketch().construct(gadget, lgMaxK, TgtHllType::HLL_8);
 }
 
 template<typename A>
 HllUnion<A> HllUnion<A>::deserialize(const void* bytes, size_t len) {
   HllSketch<A> sk(HllSketch<A>::deserialize(bytes, len));
-  //if (sk == nullptr) { return nullptr; }
   // we're using the sketch's lgConfigK to initialize the union so
   // we can initialize the Union with it as long as it's HLL_8.
-  HllUnion* hllUnion = AllocHllUnion().allocate(1);
+  HllUnion<A> hllUnion(sk.getLgConfigK());
   if (sk.getTgtHllType() == HLL_8) {
-    //hllUnion = new HllUnion(std::move(sk));
-    //AllocHllUnion().construct(hllUnion, std::move(sk));
-    AllocHllUnion().construct(hllUnion, sk);
+    std::swap(hllUnion.gadget->hllSketchImpl, sk.hllSketchImpl);
   } else {
-    //hllUnion = new HllUnion(sk->getLgConfigK());
-    AllocHllUnion().construct(hllUnion, sk.getLgConfigK());
-    hllUnion->update(sk);
+    hllUnion.update(sk);
   }
-  //return std::unique_ptr<HllUnion>(hllUnion);
-  return std::move(*hllUnion);
+  return hllUnion;
 }
 
 template<typename A>
 HllUnion<A> HllUnion<A>::deserialize(std::istream& is) {
   HllSketch<A> sk(HllSketch<A>::deserialize(is));
-  //if (sk == nullptr) { return nullptr; }
   // we're using the sketch's lgConfigK to initialize the union so
   // we can initialize the Union with it as long as it's HLL_8.
-  HllUnion* hllUnion = AllocHllUnion().allocate(1);
-  if (sk.getTgtHllType() == HLL_8) {
-    //hllUnion = new HllUnion(std::move(sk));
-    AllocHllUnion().construct(hllUnion, sk);
+  HllUnion<A> hllUnion(sk.getLgConfigK());
+  if (sk.getTgtHllType() == HLL_8) {    
+    std::swap(hllUnion.gadget->hllSketchImpl, sk.hllSketchImpl);
   } else {
-    //hllUnion = new HllUnion(sk->getLgConfigK());
-    AllocHllUnion().construct(hllUnion, sk.getLgConfigK());
-    hllUnion->update(sk);
+    hllUnion.update(sk);
   }
-  //return std::unique_ptr<HllUnion>(hllUnion);
-  return std::move(*hllUnion);
+  return hllUnion;
 }
 
 template<typename A>
@@ -83,21 +72,6 @@ static std::ostream& operator<<(std::ostream& os, hll_union& hllUnion) {
   return hllUnion->to_string(os, true, true, false, false);
 }
 */
-
-template<typename A>
-HllUnion<A>::HllUnion(HllSketch<A>& sketch)
-  : lgMaxK(sketch.getLgConfigK()) {
-  TgtHllType tgtHllType = sketch.getTgtHllType();
-  if (tgtHllType != TgtHllType::HLL_8) {
-    throw std::invalid_argument("HllUnion can only wrap HLL_8 sketches");
-  }
-  if (gadget != nullptr) {
-    typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch<A>> AllocHllSketch;
-    gadget->~HllSketch();
-    AllocHllSketch().deallocate(gadget, 1);
-  }
-  gadget = &sketch;
-}
 
 template<typename A>
 HllUnion<A>::HllUnion(const HllUnion<A>& other) :
@@ -130,7 +104,7 @@ HllUnion<A> HllUnion<A>::operator=(HllUnion<A>&& other) {
 
 template<typename A>
 HllSketch<A> HllUnion<A>::getResult(TgtHllType tgtHllType) const {
-  return gadget->copyAs(tgtHllType);
+  return std::move(gadget->copyAs(tgtHllType));
 }
 
 template<typename A>

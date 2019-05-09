@@ -57,7 +57,7 @@ int IntArrayPairIterator<A>::getIndex() {
 
 template<typename A>
 int IntArrayPairIterator<A>::getKey() {
-  return HllUtil<>::getLow26(pair);
+  return HllUtil<A>::getLow26(pair);
 }
 
 template<typename A>
@@ -72,7 +72,7 @@ int IntArrayPairIterator<A>::getSlot() {
 
 template<typename A>
 int IntArrayPairIterator<A>::getValue() {
-  return HllUtil<>::getValue(pair);
+  return HllUtil<A>::getValue(pair);
 }
 
 template<typename A>
@@ -88,7 +88,7 @@ template<typename A>
 bool IntArrayPairIterator<A>::nextValid() {
   while (++index < lengthPairs) {
     const int p = array[index];
-    if (p != HllUtil<>::EMPTY) {
+    if (p != HllUtil<A>::EMPTY) {
       pair = p;
       return true;
     }
