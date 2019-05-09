@@ -278,6 +278,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
         s.seekg(0); // rewind
         auto deserialized_sketch_ptr1 = theta_sketch::deserialize(s);
         auto deserialized_sketch_ptr2 = theta_sketch::deserialize(data.first.get(), data.second);
+        CPPUNIT_ASSERT_EQUAL(data.second, (size_t) s.tellg());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch_ptr1->is_empty(), deserialized_sketch_ptr2->is_empty());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch_ptr1->is_ordered(), deserialized_sketch_ptr2->is_ordered());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch_ptr1->get_num_retained(), deserialized_sketch_ptr2->get_num_retained());
@@ -296,6 +297,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
         s.seekg(0); // rewind
         update_theta_sketch deserialized_sketch1 = update_theta_sketch::deserialize(s);
         update_theta_sketch deserialized_sketch2 = update_theta_sketch::deserialize(data.first.get(), data.second);
+        CPPUNIT_ASSERT_EQUAL(data.second, (size_t) s.tellg());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.is_empty(), deserialized_sketch2.is_empty());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.is_ordered(), deserialized_sketch2.is_ordered());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.get_num_retained(), deserialized_sketch2.get_num_retained());
@@ -325,6 +327,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
         s.seekg(0); // rewind
         auto deserialized_sketch_ptr1 = theta_sketch::deserialize(s);
         auto deserialized_sketch_ptr2 = theta_sketch::deserialize(data.first.get(), data.second);
+        CPPUNIT_ASSERT_EQUAL(data.second, (size_t) s.tellg());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch_ptr1->is_empty(), deserialized_sketch_ptr2->is_empty());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch_ptr1->is_ordered(), deserialized_sketch_ptr2->is_ordered());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch_ptr1->get_num_retained(), deserialized_sketch_ptr2->get_num_retained());
@@ -343,6 +346,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
         s.seekg(0); // rewind
         compact_theta_sketch deserialized_sketch1 = compact_theta_sketch::deserialize(s);
         compact_theta_sketch deserialized_sketch2 = compact_theta_sketch::deserialize(data.first.get(), data.second);
+        CPPUNIT_ASSERT_EQUAL(data.second, (size_t) s.tellg());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.is_empty(), deserialized_sketch2.is_empty());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.is_ordered(), deserialized_sketch2.is_ordered());
         CPPUNIT_ASSERT_EQUAL(deserialized_sketch1.get_num_retained(), deserialized_sketch2.get_num_retained());

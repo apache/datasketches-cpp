@@ -31,6 +31,7 @@ template<typename A>
 class theta_sketch_alloc {
 public:
   static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
+  static const uint8_t SERIAL_VERSION = 3;
 
   theta_sketch_alloc(bool is_empty, uint64_t theta);
   theta_sketch_alloc(const theta_sketch_alloc<A>& other);
@@ -70,6 +71,11 @@ protected:
   uint64_t theta_;
 
   static uint16_t get_seed_hash(uint64_t seed);
+
+  static void check_sketch_type(uint8_t actual, uint8_t expected);
+  static void check_serial_version(uint8_t actual, uint8_t expected);
+  static void check_seed_hash(uint16_t actual, uint16_t expected);
+  static void check_size(size_t actual, size_t expected);
 };
 
 // update sketch
@@ -80,7 +86,6 @@ public:
   class builder;
   enum resize_factor { X1, X2, X4, X8 };
   static const uint8_t SKETCH_TYPE = 2;
-  static const uint8_t SERIAL_VERSION = 3;
 
   update_theta_sketch_alloc(const update_theta_sketch_alloc<A>& other);
   update_theta_sketch_alloc(update_theta_sketch_alloc<A>&& other) noexcept;
@@ -173,7 +178,6 @@ template<typename A>
 class compact_theta_sketch_alloc: public theta_sketch_alloc<A> {
 public:
   static const uint8_t SKETCH_TYPE = 3;
-  static const uint8_t SERIAL_VERSION = 3;
 
   compact_theta_sketch_alloc(const compact_theta_sketch_alloc<A>& other);
   compact_theta_sketch_alloc(compact_theta_sketch_alloc<A>&& other) noexcept;
