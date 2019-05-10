@@ -21,7 +21,7 @@ theta_(theta), state_(std::move(state)) {}
 template<typename A>
 void theta_union_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
   if (sketch.is_empty()) return;
-  // check seed hash
+  if (sketch.get_seed_hash() != state_.get_seed_hash()) throw std::invalid_argument("seed hash mismatch");
   if (sketch.get_theta64() < theta_) theta_ = sketch.get_theta64();
   if (sketch.is_ordered()) {
     for (auto hash: sketch) {

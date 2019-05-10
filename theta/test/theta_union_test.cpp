@@ -16,6 +16,7 @@ class theta_union_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(empty);
   CPPUNIT_TEST(exact_mode_half_overlap);
   CPPUNIT_TEST(estimation_mode_half_overlap);
+  CPPUNIT_TEST(seed_mismatch);
   CPPUNIT_TEST_SUITE_END();
 
   void empty() {
@@ -61,6 +62,13 @@ class theta_union_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(sketch3.is_estimation_mode());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(15000, sketch3.get_estimate(), 15000 * 0.01);
     //sketch3.to_stream(std::cerr, true);
+  }
+
+  void seed_mismatch() {
+    update_theta_sketch sketch = update_theta_sketch::builder().build();
+    sketch.update(1); // non-empty should not be ignored
+    theta_union u = theta_union::builder().set_seed(123).build();
+    CPPUNIT_ASSERT_THROW(u.update(sketch), std::invalid_argument);
   }
 
 };
