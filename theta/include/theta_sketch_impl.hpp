@@ -212,7 +212,6 @@ void theta_sketch_alloc<A>::check_seed_hash(uint16_t actual, uint16_t expected) 
 
 template<typename A>
 void theta_sketch_alloc<A>::check_size(size_t actual, size_t expected) {
-  std::cerr << "check size: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int) actual) << std::endl;
   if (actual < expected) {
     throw std::invalid_argument("Given memory is smaller than expected: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int) actual));
   }
