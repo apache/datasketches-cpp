@@ -28,7 +28,7 @@ public:
   compact_theta_sketch_alloc<A> get_result(bool ordered = true) const;
 
 private:
-
+  bool is_empty_;
   uint64_t theta_;
   update_theta_sketch_alloc<A> state_;
 

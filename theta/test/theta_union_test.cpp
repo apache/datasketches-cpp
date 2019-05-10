@@ -14,6 +14,7 @@ class theta_union_test: public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(theta_union_test);
   CPPUNIT_TEST(empty);
+  CPPUNIT_TEST(non_empty_no_retained_keys);
   CPPUNIT_TEST(exact_mode_half_overlap);
   CPPUNIT_TEST(estimation_mode_half_overlap);
   CPPUNIT_TEST(seed_mismatch);
@@ -22,9 +23,28 @@ class theta_union_test: public CppUnit::TestFixture {
   void empty() {
     update_theta_sketch sketch1 = update_theta_sketch::builder().build();
     theta_union u = theta_union::builder().build();
-    u.update(sketch1);
     compact_theta_sketch sketch2 = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(0U, sketch2.get_num_retained());
     CPPUNIT_ASSERT(sketch2.is_empty());
+    CPPUNIT_ASSERT(!sketch2.is_estimation_mode());
+
+    u.update(sketch1);
+    sketch2 = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(0U, sketch2.get_num_retained());
+    CPPUNIT_ASSERT(sketch2.is_empty());
+    CPPUNIT_ASSERT(!sketch2.is_estimation_mode());
+  }
+
+  void non_empty_no_retained_keys() {
+    update_theta_sketch update_sketch = update_theta_sketch::builder().set_p(0.001).build();
+    update_sketch.update(1);
+    theta_union u = theta_union::builder().build();
+    u.update(update_sketch);
+    compact_theta_sketch sketch = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(0U, sketch.get_num_retained());
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT(sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.001, sketch.get_theta(), 1e-10);
   }
 
   void exact_mode_half_overlap() {

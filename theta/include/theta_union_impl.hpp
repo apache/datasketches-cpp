@@ -16,12 +16,13 @@ namespace datasketches {
 
 template<typename A>
 theta_union_alloc<A>::theta_union_alloc(uint64_t theta, update_theta_sketch_alloc<A>&& state):
-theta_(theta), state_(std::move(state)) {}
+is_empty_(true), theta_(theta), state_(std::move(state)) {}
 
 template<typename A>
 void theta_union_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
   if (sketch.is_empty()) return;
   if (sketch.get_seed_hash() != state_.get_seed_hash()) throw std::invalid_argument("seed hash mismatch");
+  is_empty_ = false;
   if (sketch.get_theta64() < theta_) theta_ = sketch.get_theta64();
   if (sketch.is_ordered()) {
     for (auto hash: sketch) {
@@ -36,7 +37,7 @@ void theta_union_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
 
 template<typename A>
 compact_theta_sketch_alloc<A> theta_union_alloc<A>::get_result(bool ordered) const {
-  if (state_.is_empty()) return state_.compact(ordered);
+  if (is_empty_) return state_.compact(ordered);
   const uint32_t nom_num_keys = 1 << state_.lg_nom_size_;
   if (theta_ >= state_.theta_ and state_.get_num_retained() <= nom_num_keys) return state_.compact(ordered);
   uint64_t theta = std::min(theta_, state_.get_theta64());
@@ -46,7 +47,7 @@ compact_theta_sketch_alloc<A> theta_union_alloc<A>::get_result(bool ordered) con
   for (auto key: state_) {
     if (key < theta) keys[num_keys++] = key;
   }
-  if (num_keys == 0) return compact_theta_sketch_alloc<A>(true, theta_sketch_alloc<A>::MAX_THETA, nullptr, 0, state_.get_seed_hash(), true);
+  if (num_keys == 0) return compact_theta_sketch_alloc<A>(is_empty_, theta, nullptr, 0, state_.get_seed_hash(), ordered);
   if (num_keys > nom_num_keys) {
     std::nth_element(keys, &keys[nom_num_keys], &keys[num_keys]);
     theta = keys[nom_num_keys];
