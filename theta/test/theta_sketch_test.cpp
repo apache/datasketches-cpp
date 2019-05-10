@@ -37,6 +37,12 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(!update_sketch.is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL(1.0, update_sketch.get_theta());
     CPPUNIT_ASSERT_EQUAL(0.0, update_sketch.get_estimate());
+
+    compact_theta_sketch compact_sketch = update_sketch.compact();
+    CPPUNIT_ASSERT(compact_sketch.is_empty());
+    CPPUNIT_ASSERT(!compact_sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(1.0, compact_sketch.get_theta());
+    CPPUNIT_ASSERT_EQUAL(0.0, compact_sketch.get_estimate());
   }
 
   void non_empty_no_retained_keys() {
@@ -46,7 +52,13 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(!update_sketch.is_empty());
     CPPUNIT_ASSERT(update_sketch.is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL(0.0, update_sketch.get_estimate());
-  }
+
+    compact_theta_sketch compact_sketch = update_sketch.compact();
+    CPPUNIT_ASSERT_EQUAL(0U, compact_sketch.get_num_retained());
+    CPPUNIT_ASSERT(!compact_sketch.is_empty());
+    CPPUNIT_ASSERT(compact_sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(0.0, compact_sketch.get_estimate());
+}
 
   void single_item() {
     update_theta_sketch update_sketch = update_theta_sketch::builder().build();
@@ -55,6 +67,12 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(!update_sketch.is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL(1.0, update_sketch.get_theta());
     CPPUNIT_ASSERT_EQUAL(1.0, update_sketch.get_estimate());
+
+    compact_theta_sketch compact_sketch = update_sketch.compact();
+    CPPUNIT_ASSERT(!compact_sketch.is_empty());
+    CPPUNIT_ASSERT(!compact_sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(1.0, compact_sketch.get_theta());
+    CPPUNIT_ASSERT_EQUAL(1.0, compact_sketch.get_estimate());
   }
 
   void resize_exact() {
@@ -64,7 +82,13 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(!update_sketch.is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL(1.0, update_sketch.get_theta());
     CPPUNIT_ASSERT_EQUAL(2000.0, update_sketch.get_estimate());
-  }
+
+    compact_theta_sketch compact_sketch = update_sketch.compact();
+    CPPUNIT_ASSERT(!compact_sketch.is_empty());
+    CPPUNIT_ASSERT(!compact_sketch.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(1.0, compact_sketch.get_theta());
+    CPPUNIT_ASSERT_EQUAL(2000.0, compact_sketch.get_estimate());
+}
 
   void estimation() {
     update_theta_sketch update_sketch = update_theta_sketch::builder().set_resize_factor(update_theta_sketch::resize_factor::X1).build();
@@ -74,7 +98,13 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(update_sketch.is_estimation_mode());
     CPPUNIT_ASSERT(update_sketch.get_theta() < 1.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL((double) n, update_sketch.get_estimate(), n * 0.01);
-  }
+
+    compact_theta_sketch compact_sketch = update_sketch.compact();
+    CPPUNIT_ASSERT(!compact_sketch.is_empty());
+    CPPUNIT_ASSERT(compact_sketch.is_estimation_mode());
+    CPPUNIT_ASSERT(compact_sketch.get_theta() < 1.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL((double) n, compact_sketch.get_estimate(), n * 0.01);
+}
 
   void deserialize_update_empty_from_java_as_base() {
     std::ifstream is;
