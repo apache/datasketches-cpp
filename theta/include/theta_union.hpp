@@ -24,7 +24,6 @@ template<typename A>
 class theta_union_alloc {
 public:
   class builder;
-  bool is_empty() const;
   void update(const theta_sketch_alloc<A>& sketch);
   compact_theta_sketch_alloc<A> get_result(bool ordered = true) const;
 
