@@ -562,7 +562,7 @@ void update_theta_sketch_alloc<A>::update(const void* data, unsigned length) {
 
 template<typename A>
 compact_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::compact(bool ordered) const {
-  if (this->is_empty()) return compact_theta_sketch_alloc<A>(true, theta_sketch_alloc<A>::MAX_THETA, nullptr, 0, get_seed_hash(), true);
+  if (this->get_num_retained() == 0) return compact_theta_sketch_alloc<A>(this->is_empty_, this->theta_, nullptr, 0, get_seed_hash(), ordered);
   uint64_t* keys = AllocU64().allocate(num_keys_);
   uint32_t i = 0;
   for (auto value: *this) keys[i++] = value;
