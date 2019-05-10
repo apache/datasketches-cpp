@@ -15,10 +15,8 @@ namespace datasketches {
  */
 
 template<typename A>
-theta_union_alloc<A>::theta_union_alloc(uint8_t lg_k):
-theta_(MAX_THETA), state_(typename update_theta_sketch_alloc<A>::builder().set_lg_k(lg_k).build())
-{
-}
+theta_union_alloc<A>::theta_union_alloc(uint64_t theta, update_theta_sketch_alloc<A>&& state):
+theta_(theta), state_(std::move(state)) {}
 
 template<typename A>
 void theta_union_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
@@ -61,6 +59,38 @@ compact_theta_sketch_alloc<A> theta_union_alloc<A>::get_result(bool ordered) con
   }
   if (ordered) std::sort(keys, &keys[num_keys]);
   return compact_theta_sketch_alloc<A>(false, theta, keys, num_keys, state_.get_seed_hash(), ordered);
+}
+
+// builder
+
+template<typename A>
+typename theta_union_alloc<A>::builder& theta_union_alloc<A>::builder::set_lg_k(uint8_t lg_k) {
+  sketch_builder.set_lg_k(lg_k);
+  return *this;
+}
+
+template<typename A>
+typename theta_union_alloc<A>::builder& theta_union_alloc<A>::builder::set_resize_factor(resize_factor rf) {
+  sketch_builder.set_resize_factor(rf);
+  return *this;
+}
+
+template<typename A>
+typename theta_union_alloc<A>::builder& theta_union_alloc<A>::builder::set_p(float p) {
+  sketch_builder.set_p(p);
+  return *this;
+}
+
+template<typename A>
+typename theta_union_alloc<A>::builder& theta_union_alloc<A>::builder::set_seed(uint64_t seed) {
+  sketch_builder.set_seed(seed);
+  return *this;
+}
+
+template<typename A>
+theta_union_alloc<A> theta_union_alloc<A>::builder::build() const {
+  update_theta_sketch_alloc<A> sketch = sketch_builder.build();
+  return theta_union_alloc(sketch.get_theta64(), std::move(sketch));
 }
 
 } /* namespace datasketches */

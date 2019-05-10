@@ -20,7 +20,7 @@ class theta_union_test: public CppUnit::TestFixture {
 
   void empty() {
     update_theta_sketch sketch1 = update_theta_sketch::builder().build();
-    theta_union u(12);
+    theta_union u = theta_union::builder().build();
     u.update(sketch1);
     compact_theta_sketch sketch2 = u.get_result();
     CPPUNIT_ASSERT(sketch2.is_empty());
@@ -35,7 +35,7 @@ class theta_union_test: public CppUnit::TestFixture {
     value = 500;
     for (int i = 0; i < 1000; i++) sketch2.update(value++);
 
-    theta_union u(12);
+    theta_union u = theta_union::builder().build();
     u.update(sketch1);
     u.update(sketch2);
     compact_theta_sketch sketch3 = u.get_result();
@@ -53,7 +53,7 @@ class theta_union_test: public CppUnit::TestFixture {
     value = 5000;
     for (int i = 0; i < 10000; i++) sketch2.update(value++);
 
-    theta_union u(12);
+    theta_union u = theta_union::builder().build();
     u.update(sketch1);
     u.update(sketch2);
     compact_theta_sketch sketch3 = u.get_result();

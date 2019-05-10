@@ -23,19 +23,33 @@ namespace datasketches {
 template<typename A>
 class theta_union_alloc {
 public:
-  static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
-
-  theta_union_alloc(uint8_t lg_k);
-
+  class builder;
   bool is_empty() const;
   void update(const theta_sketch_alloc<A>& sketch);
   compact_theta_sketch_alloc<A> get_result(bool ordered = true) const;
-  //void to_stream(std::ostream& os, bool print_items = false) const;
 
 private:
 
   uint64_t theta_;
   update_theta_sketch_alloc<A> state_;
+
+  // for builder
+  theta_union_alloc(uint64_t theta, update_theta_sketch_alloc<A>&& state);
+};
+
+// builder
+
+template<typename A>
+class theta_union_alloc<A>::builder {
+public:
+  typedef typename update_theta_sketch_alloc<A>::resize_factor resize_factor;
+  builder& set_lg_k(uint8_t lg_k);
+  builder& set_resize_factor(resize_factor rf);
+  builder& set_p(float p);
+  builder& set_seed(uint64_t seed);
+  theta_union_alloc<A> build() const;
+private:
+  typename update_theta_sketch_alloc<A>::builder sketch_builder;
 };
 
 // alias with default allocator for convenience
