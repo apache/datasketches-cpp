@@ -31,6 +31,7 @@ void theta_union_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
   } else {
     for (auto hash: sketch) if (hash < theta_) state_.internal_update(hash);
   }
+  if (state_.get_theta64() < theta_) theta_ = state_.get_theta64();
 }
 
 template<typename A>
