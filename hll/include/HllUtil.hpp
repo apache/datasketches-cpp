@@ -30,6 +30,7 @@ public:
   static const int EMPTY_FLAG_MASK          = 4;
   static const int COMPACT_FLAG_MASK        = 8;
   static const int OUT_OF_ORDER_FLAG_MASK   = 16;
+  static const int FULL_SIZE_FLAG_MASK      = 32;
 
   static const int PREAMBLE_INTS_BYTE = 0;
   static const int SER_VER_BYTE       = 1;

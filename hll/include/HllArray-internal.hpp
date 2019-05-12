@@ -22,8 +22,8 @@
 namespace datasketches {
 
 template<typename A>
-HllArray<A>::HllArray(const int lgConfigK, const TgtHllType tgtHllType)
-  : HllSketchImpl<A>(lgConfigK, tgtHllType, CurMode::HLL) {
+HllArray<A>::HllArray(const int lgConfigK, const TgtHllType tgtHllType, bool startFullSize)
+  : HllSketchImpl<A>(lgConfigK, tgtHllType, CurMode::HLL, startFullSize) {
   hipAccum = 0.0;
   kxq0 = 1 << lgConfigK;
   kxq1 = 0.0;
@@ -35,7 +35,7 @@ HllArray<A>::HllArray(const int lgConfigK, const TgtHllType tgtHllType)
 
 template<typename A>
 HllArray<A>::HllArray(const HllArray<A>& that)
-  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, CurMode::HLL) {
+  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, CurMode::HLL, that.startFullSize) {
   hipAccum = that.getHipAccum();
   kxq0 = that.getKxQ0();
   kxq1 = that.getKxQ1();
@@ -109,6 +109,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
   bool oooFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   bool comapctFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
+  bool startFullSizeFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
 
   const int lgK = (int) data[HllUtil<A>::LG_K_BYTE];
   const int curMin = (int) data[HllUtil<A>::HLL_CUR_MIN_BYTE];
@@ -135,7 +136,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
     auxHashMap = AuxHashMap<A>::deserialize(auxDataStart, len - offset, lgK, auxCount, auxLgIntArrSize, comapctFlag);
   }
 
-  HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType);
+  HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, startFullSizeFlag);
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
   sketch->putHipAccum(hip);
@@ -174,12 +175,13 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
   TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
   bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   bool comapctFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
+  bool startFullSizeFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
 
   const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
   const int curMin = (int) listHeader[HllUtil<A>::HLL_CUR_MIN_BYTE];
 
   // TODO: truncated stream will throw exception without freeing memory
-  HllArray* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType);
+  HllArray* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, startFullSizeFlag);
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
 

@@ -33,8 +33,8 @@ int Hll6Iterator<A>::value() {
 }
 
 template<typename A>
-Hll6Array<A>::Hll6Array(const int lgConfigK) :
-    HllArray<A>(lgConfigK, TgtHllType::HLL_6) {
+Hll6Array<A>::Hll6Array(const int lgConfigK, const bool startFullSize) :
+    HllArray<A>(lgConfigK, TgtHllType::HLL_6, startFullSize) {
   const int numBytes = this->hll6ArrBytes(lgConfigK);
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   this->hllByteArr = uint8Alloc().allocate(numBytes);

@@ -20,7 +20,7 @@ namespace datasketches {
 
 template<typename A>
 CouponList<A>::CouponList(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode)
-  : HllSketchImpl<A>(lgConfigK, tgtHllType, curMode) {
+  : HllSketchImpl<A>(lgConfigK, tgtHllType, curMode, false) {
     if (curMode == CurMode::LIST) {
       lgCouponArrInts = HllUtil<A>::LG_INIT_LIST_SIZE;
       oooFlag = false;
@@ -37,7 +37,7 @@ CouponList<A>::CouponList(const int lgConfigK, const TgtHllType tgtHllType, cons
 
 template<typename A>
 CouponList<A>::CouponList(const CouponList& that)
-  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, that.curMode),
+  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, that.curMode, false),
     lgCouponArrInts(that.lgCouponArrInts),
     couponCount(that.couponCount),
     oooFlag(that.oooFlag) {
@@ -50,7 +50,7 @@ CouponList<A>::CouponList(const CouponList& that)
 
 template<typename A>
 CouponList<A>::CouponList(const CouponList& that, const TgtHllType tgtHllType)
-  : HllSketchImpl<A>(that.lgConfigK, tgtHllType, that.curMode),
+  : HllSketchImpl<A>(that.lgConfigK, tgtHllType, that.curMode, false),
     lgCouponArrInts(that.lgCouponArrInts),
     couponCount(that.couponCount),
     oooFlag(that.oooFlag) {

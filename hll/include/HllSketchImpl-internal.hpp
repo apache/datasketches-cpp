@@ -8,9 +8,6 @@
 
 #include "HllSketchImpl.hpp"
 #include "HllSketchImplFactory.hpp"
-//#include "CouponList.hpp"
-//#include "CouponHashSet.hpp"
-//#include "HllArray.hpp"
 
 namespace datasketches {
 
@@ -19,10 +16,12 @@ static int numImpls = 0;
 #endif
 
 template<typename A>
-HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode)
+HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType,
+                                const CurMode curMode, const bool startFullSize)
   : lgConfigK(lgConfigK),
     tgtHllType(tgtHllType),
-    curMode(curMode)
+    curMode(curMode),
+    startFullSize(startFullSize)
 {
 #ifdef DEBUG
   std::cerr << "Num impls: " << ++numImpls << "\n";
@@ -35,39 +34,6 @@ HllSketchImpl<A>::~HllSketchImpl() {
   std::cerr << "Num impls: " << --numImpls << "\n";
 #endif
 }
-
-/*
-template<typename A>
-HllSketchImpl* HllSketchImpl<A>::deserialize(std::istream& is) {
-  // we'll hand off the sketch based on PreInts so we don't need
-  // to move the stream pointer back and forth -- perhaps somewhat fragile?
-  const int preInts = is.peek();
-  if (preInts == HllUtil<A>::HLL_PREINTS) {
-    return HllArray::newHll(is);
-  } else if (preInts == HllUtil<A>::HASH_SET_PREINTS) {
-    return CouponHashSet::newSet(is);
-  } else if (preInts == HllUtil<A>::LIST_PREINTS) {
-    return CouponList::newList(is);
-  } else {
-    throw std::invalid_argument("Attempt to deserialize unknown object type");
-  }
-}
-
-template<typename A>
-HllSketchImpl* HllSketchImpl<A>::deserialize(const void* bytes, size_t len) {
-  // read current mode directly
-  const int preInts = static_cast<const uint8_t*>(bytes)[0];
-  if (preInts == HllUtil<A>::HLL_PREINTS) {
-    return HllArray::newHll(bytes, len);
-  } else if (preInts == HllUtil<A>::HASH_SET_PREINTS) {
-    return CouponHashSet::newSet(bytes, len);
-  } else if (preInts == HllUtil<A>::LIST_PREINTS) {
-    return CouponList::newList(bytes, len);
-  } else {
-    throw std::invalid_argument("Attempt to deserialize unknown object type");
-  }
-}
-*/
 
 template<typename A>
 TgtHllType HllSketchImpl<A>::extractTgtHllType(const uint8_t modeByte) {
@@ -103,6 +69,7 @@ uint8_t HllSketchImpl<A>::makeFlagsByte(const bool compact) const {
   flags |= (isEmpty() ? HllUtil<A>::EMPTY_FLAG_MASK : 0);
   flags |= (compact ? HllUtil<A>::COMPACT_FLAG_MASK : 0);
   flags |= (isOutOfOrderFlag() ? HllUtil<A>::OUT_OF_ORDER_FLAG_MASK : 0);
+  flags |= (startFullSize ? HllUtil<A>::FULL_SIZE_FLAG_MASK : 0);
   return flags;
 }
 
@@ -150,7 +117,7 @@ uint8_t HllSketchImpl<A>::makeModeByte() const {
 
 template<typename A>
 HllSketchImpl<A>* HllSketchImpl<A>::reset() {
-  return HllSketchImplFactory<A>::reset(this);
+  return HllSketchImplFactory<A>::reset(this, startFullSize);
 }
 
 template<typename A>
@@ -166,6 +133,11 @@ int HllSketchImpl<A>::getLgConfigK() const {
 template<typename A>
 CurMode HllSketchImpl<A>::getCurMode() const {
   return curMode;
+}
+
+template<typename A>
+bool HllSketchImpl<A>::isStartFullSize() const {
+  return startFullSize;
 }
 
 }

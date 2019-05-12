@@ -17,7 +17,7 @@ class Hll8Iterator;
 template<typename A>
 class Hll8Array final : public HllArray<A> {
   public:
-    explicit Hll8Array(int lgConfigK);
+    explicit Hll8Array(int lgConfigK, bool startFullSize);
     explicit Hll8Array(const Hll8Array& that);
 
     virtual ~Hll8Array();

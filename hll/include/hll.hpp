@@ -32,7 +32,7 @@ using byte_ptr_with_deleter = std::unique_ptr<uint8_t, std::function<void(uint8_
 template<typename A = std::allocator<char> >
 class HllSketch final {
   public:
-    explicit HllSketch(int lgConfigK, TgtHllType tgtHllType = HLL_4);
+    explicit HllSketch(int lgConfigK, TgtHllType tgtHllType = HLL_4, bool startFullSize = false);
     static HllSketch deserialize(std::istream& is);
     static HllSketch deserialize(const void* bytes, size_t len);
     HllSketch(const HllSketch<A>& that);

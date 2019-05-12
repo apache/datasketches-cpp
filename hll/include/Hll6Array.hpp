@@ -17,7 +17,7 @@ class Hll6Iterator;
 template<typename A>
 class Hll6Array final : public HllArray<A> {
   public:
-    explicit Hll6Array(int lgConfigK);
+    explicit Hll6Array(int lgConfigK, bool startFullSize);
     explicit Hll6Array(const Hll6Array<A>& that);
 
     virtual ~Hll6Array();

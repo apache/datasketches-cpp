@@ -18,7 +18,7 @@ class AuxHashMap;
 template<typename A = std::allocator<char>>
 class HllArray : public HllSketchImpl<A> {
   public:
-    explicit HllArray(int lgConfigK, TgtHllType tgtHllType);
+    explicit HllArray(int lgConfigK, TgtHllType tgtHllType, bool startFullSize);
     explicit HllArray(const HllArray<A>& that);
 
     //static HllArray* newHll(int lgConfigK, TgtHllType tgtHllType);

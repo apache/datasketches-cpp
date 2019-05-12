@@ -17,7 +17,7 @@ namespace datasketches {
 template<typename A = std::allocator<char>>
 class HllSketchImpl {
   public:
-    HllSketchImpl(int lgConfigK, TgtHllType tgtHllType, CurMode curMode);
+    HllSketchImpl(int lgConfigK, TgtHllType tgtHllType, CurMode curMode, bool startFullSize);
     virtual ~HllSketchImpl();
 
     virtual void serialize(std::ostream& os, bool compact) const = 0;
@@ -58,6 +58,7 @@ class HllSketchImpl {
     virtual bool isEmpty() const = 0;
     virtual bool isOutOfOrderFlag() const = 0;
     virtual void putOutOfOrderFlag(bool oooFlag) = 0;
+    bool isStartFullSize() const;
 
   protected:
     static TgtHllType extractTgtHllType(uint8_t modeByte);
@@ -68,6 +69,7 @@ class HllSketchImpl {
     const int lgConfigK;
     const TgtHllType tgtHllType;
     const CurMode curMode;
+    const bool startFullSize;
 };
 
 }

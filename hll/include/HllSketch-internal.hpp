@@ -28,12 +28,16 @@ typedef union {
 } longDoubleUnion;
 
 template<typename A>
-HllSketch<A>::HllSketch(int lgConfigK, TgtHllType tgtHllType) {
+HllSketch<A>::HllSketch(int lgConfigK, TgtHllType tgtHllType, bool startFullSize) {
   HllUtil<A>::checkLgK(lgConfigK);
-  typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
-  CouponList<A>* cl = clAlloc().allocate(1);
-  clAlloc().construct(cl, lgConfigK, tgtHllType, CurMode::LIST); 
-  hllSketchImpl = cl;
+  if (startFullSize) {
+    hllSketchImpl = HllSketchImplFactory<A>::newHll(lgConfigK, tgtHllType, startFullSize);
+  } else {
+    typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
+    CouponList<A>* cl = clAlloc().allocate(1);
+    clAlloc().construct(cl, lgConfigK, tgtHllType, CurMode::LIST); 
+    hllSketchImpl = cl;
+  }
 }
 
 template<typename A>
