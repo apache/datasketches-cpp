@@ -21,12 +21,9 @@
 #include "RelativeErrorTables.hpp"
 
 #include "AuxHashMap-internal.hpp"
-//#include "CompositeInterpolationXTable-internal.hpp"
 //#include "Conversions-internal.hpp"
 #include "CouponHashSet-internal.hpp"
 #include "CouponList-internal.hpp"
-//#include "CubicInterpolation-internal.hpp"
-#include "HarmonicNumbers-internal.hpp"
 #include "Hll4Array-internal.hpp"
 #include "Hll6Array-internal.hpp"
 #include "Hll8Array-internal.hpp"
@@ -36,6 +33,5 @@
 #include "HllSketchImpl-internal.hpp"
 #include "HllUnion-internal.hpp"
 #include "IntArrayPairIterator-internal.hpp"
-//#include "RelativeErrorTables-internal.hpp"
 
 #endif // _HLL_PRIVATE_HPP_
