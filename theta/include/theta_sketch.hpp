@@ -24,6 +24,7 @@ template<typename A> class update_theta_sketch_alloc;
 template<typename A> class compact_theta_sketch_alloc;
 template<typename A> class theta_union_alloc;
 template<typename A> class theta_intersection_alloc;
+template<typename A> class theta_a_not_b_alloc;
 
 // for serialization as raw bytes
 typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
@@ -165,9 +166,11 @@ private:
   void internal_update(uint64_t hash);
 
   friend theta_intersection_alloc<A>;
+  friend theta_a_not_b_alloc<A>;
   static inline uint32_t get_capacity(uint8_t lg_cur_size, uint8_t lg_nom_size);
   static inline uint32_t get_stride(uint64_t hash, uint8_t lg_size);
   static bool hash_search_or_insert(uint64_t hash, uint64_t* table, uint8_t lg_size);
+  static bool hash_search(uint64_t hash, const uint64_t* table, uint8_t lg_size);
 
   friend theta_sketch_alloc<A>;
   static update_theta_sketch_alloc<A> internal_deserialize(std::istream& is, resize_factor rf, uint8_t lg_nom_size, uint8_t lg_cur_size, uint8_t flags_byte, uint64_t seed);
@@ -182,6 +185,7 @@ public:
   static const uint8_t SKETCH_TYPE = 3;
 
   compact_theta_sketch_alloc(const compact_theta_sketch_alloc<A>& other);
+  compact_theta_sketch_alloc(const theta_sketch_alloc<A>& other, bool ordered);
   compact_theta_sketch_alloc(compact_theta_sketch_alloc<A>&& other) noexcept;
   virtual ~compact_theta_sketch_alloc();
 
@@ -214,6 +218,7 @@ private:
   friend update_theta_sketch_alloc<A>;
   friend theta_union_alloc<A>;
   friend theta_intersection_alloc<A>;
+  friend theta_a_not_b_alloc<A>;
   compact_theta_sketch_alloc(bool is_empty, uint64_t theta, uint64_t* keys, uint32_t num_keys, uint16_t seed_hash, bool is_ordered);
   static compact_theta_sketch_alloc<A> internal_deserialize(std::istream& is, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash);
   static compact_theta_sketch_alloc<A> internal_deserialize(const void* bytes, size_t size, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash);

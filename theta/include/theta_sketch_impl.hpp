@@ -562,12 +562,7 @@ void update_theta_sketch_alloc<A>::update(const void* data, unsigned length) {
 
 template<typename A>
 compact_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::compact(bool ordered) const {
-  if (this->get_num_retained() == 0) return compact_theta_sketch_alloc<A>(this->is_empty_, this->theta_, nullptr, 0, get_seed_hash(), ordered);
-  uint64_t* keys = AllocU64().allocate(num_keys_);
-  uint32_t i = 0;
-  for (auto value: *this) keys[i++] = value;
-  if (ordered) std::sort(keys, &keys[num_keys_]);
-  return compact_theta_sketch_alloc<A>(false, this->theta_, keys, num_keys_, get_seed_hash(), ordered);
+  return compact_theta_sketch_alloc<A>(*this, ordered);
 }
 
 template<typename A>
@@ -661,6 +656,26 @@ bool update_theta_sketch_alloc<A>::hash_search_or_insert(uint64_t hash, uint64_t
 }
 
 template<typename A>
+bool update_theta_sketch_alloc<A>::hash_search(uint64_t hash, const uint64_t* table, uint8_t lg_size) {
+  const uint32_t mask = (1 << lg_size) - 1;
+  const uint32_t stride = update_theta_sketch_alloc<A>::get_stride(hash, lg_size);
+  uint32_t cur_probe = static_cast<uint32_t>(hash) & mask;
+  const uint32_t loop_index = cur_probe;
+  do {
+    const uint64_t value = table[cur_probe];
+    if (value == 0) {
+      return false;
+    } else if (value == hash) {
+      return true;
+    }
+    cur_probe = (cur_probe + stride) & mask;
+  } while (cur_probe != loop_index);
+  std::cerr << "hash_search: lg=" << (int)lg_size << ", hash=" << hash << std::endl;
+  std::cerr << "cur_probe=" << cur_probe << ", stride=" << stride << std::endl;
+  throw std::logic_error("key not found and search wrapped");
+}
+
+template<typename A>
 typename theta_sketch_alloc<A>::const_iterator update_theta_sketch_alloc<A>::begin() const {
   return typename theta_sketch_alloc<A>::const_iterator(keys_, 1 << lg_cur_size_, 0);
 }
@@ -693,6 +708,18 @@ is_ordered_(other.is_ordered_)
 }
 
 template<typename A>
+compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(const theta_sketch_alloc<A>& other, bool ordered):
+theta_sketch_alloc<A>(other),
+keys_(AllocU64().allocate(other.get_num_retained())),
+num_keys_(other.get_num_retained()),
+seed_hash_(other.get_seed_hash()),
+is_ordered_(other.is_ordered() or ordered)
+{
+  std::copy(other.begin(), other.end(), keys_);
+  if (ordered and !other.is_ordered()) std::sort(keys_, &keys_[num_keys_]);
+}
+
+template<typename A>
 compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(compact_theta_sketch_alloc<A>&& other) noexcept:
 theta_sketch_alloc<A>(std::move(other)),
 keys_(nullptr),
@@ -717,7 +744,6 @@ compact_theta_sketch_alloc<A>& compact_theta_sketch_alloc<A>::operator=(const co
     num_keys_ = other.num_keys_;
     keys_ = AllocU64().allocate(num_keys_);
   }
-  keys_(AllocU64().allocate(other.num_keys_)),
   seed_hash_ = other.seed_hash_;
   is_ordered_ = other.is_ordered_;
   std::copy(other.keys_, &other.keys_[num_keys_], keys_);
