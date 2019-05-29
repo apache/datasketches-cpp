@@ -45,8 +45,8 @@ public:
 
   bool is_empty() const;
   double get_estimate() const;
-  double get_lower_bound(uint8_t num_std_dev) const;
-  double get_upper_bound(uint8_t num_std_dev) const;
+  double get_lower_bound(uint8_t num_std_devs) const;
+  double get_upper_bound(uint8_t num_std_devs) const;
   bool is_estimation_mode() const;
   double get_theta() const;
   uint64_t get_theta64() const;

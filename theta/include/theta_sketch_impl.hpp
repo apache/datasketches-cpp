@@ -13,6 +13,7 @@
 
 #include "MurmurHash3.h"
 #include "serde.hpp"
+#include "binomial_bounds.hpp"
 
 namespace datasketches {
 
@@ -66,13 +67,15 @@ double theta_sketch_alloc<A>::get_estimate() const {
 }
 
 template<typename A>
-double theta_sketch_alloc<A>::get_lower_bound(uint8_t num_std_dev) const {
-  return 0;
+double theta_sketch_alloc<A>::get_lower_bound(uint8_t num_std_devs) const {
+  if (!is_estimation_mode()) return get_num_retained();
+  return binomial_bounds::get_lower_bound(get_num_retained(), get_theta(), num_std_devs);
 }
 
 template<typename A>
-double theta_sketch_alloc<A>::get_upper_bound(uint8_t num_std_dev) const {
-  return 0;
+double theta_sketch_alloc<A>::get_upper_bound(uint8_t num_std_devs) const {
+  if (!is_estimation_mode()) return get_num_retained();
+  return binomial_bounds::get_upper_bound(get_num_retained(), get_theta(), num_std_devs);
 }
 
 template<typename A>
