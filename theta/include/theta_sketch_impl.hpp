@@ -653,8 +653,8 @@ bool update_theta_sketch_alloc<A>::hash_search_or_insert(uint64_t hash, uint64_t
     }
     cur_probe = (cur_probe + stride) & mask;
   } while (cur_probe != loop_index);
-  std::cerr << "hash_search_or_insert: lg=" << (int)lg_size << ", hash=" << hash << std::endl;
-  std::cerr << "cur_probe=" << cur_probe << ", stride=" << stride << std::endl;
+  //std::cerr << "hash_search_or_insert: lg=" << (int)lg_size << ", hash=" << hash << std::endl;
+  //std::cerr << "cur_probe=" << cur_probe << ", stride=" << stride << std::endl;
   throw std::logic_error("key not found and no empty slots!");
 }
 
@@ -673,8 +673,8 @@ bool update_theta_sketch_alloc<A>::hash_search(uint64_t hash, const uint64_t* ta
     }
     cur_probe = (cur_probe + stride) & mask;
   } while (cur_probe != loop_index);
-  std::cerr << "hash_search: lg=" << (int)lg_size << ", hash=" << hash << std::endl;
-  std::cerr << "cur_probe=" << cur_probe << ", stride=" << stride << std::endl;
+  //std::cerr << "hash_search: lg=" << (int)lg_size << ", hash=" << hash << std::endl;
+  //std::cerr << "cur_probe=" << cur_probe << ", stride=" << stride << std::endl;
   throw std::logic_error("key not found and search wrapped");
 }
 
