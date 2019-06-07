@@ -89,26 +89,6 @@ theta_intersection_alloc<A>& theta_intersection_alloc<A>::operator=(theta_inters
   return *this;
 }
 
-template<typename A>
-bool theta_intersection_alloc<A>::hash_search(uint64_t hash, const uint64_t* table, uint8_t lg_size) {
-  const uint32_t mask = (1 << lg_size) - 1;
-  const uint32_t stride = update_theta_sketch_alloc<A>::get_stride(hash, lg_size);
-  uint32_t cur_probe = static_cast<uint32_t>(hash) & mask;
-  const uint32_t loop_index = cur_probe;
-  do {
-    const uint64_t value = table[cur_probe];
-    if (value == 0) {
-      return false;
-    } else if (value == hash) {
-      return true;
-    }
-    cur_probe = (cur_probe + stride) & mask;
-  } while (cur_probe != loop_index);
-  std::cerr << "hash_search: lg=" << (int)lg_size << ", hash=" << hash << std::endl;
-  std::cerr << "cur_probe=" << cur_probe << ", stride=" << stride << std::endl;
-  throw std::logic_error("key not found and search wrapped");
-}
-
 constexpr uint8_t log2(uint32_t n) {
   return (n > 1) ? 1 + log2(n >> 1) : 0;
 }
@@ -149,7 +129,7 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
     uint32_t match_count = 0;
     for (auto key: sketch) {
       if (key < theta_) {
-        if (hash_search(key, keys_, lg_size_)) matched_keys[match_count++] = key;
+        if (update_theta_sketch_alloc<A>::hash_search(key, keys_, lg_size_)) matched_keys[match_count++] = key;
       } else if (sketch.is_ordered()) {
         break; // early stop
       }

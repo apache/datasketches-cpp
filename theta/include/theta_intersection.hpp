@@ -44,8 +44,6 @@ private:
   uint64_t* keys_;
   uint32_t num_keys_;
   uint16_t seed_hash_;
-
-  static bool hash_search(uint64_t hash, const uint64_t* table, uint8_t lg_size);
 };
 
 // alias with default allocator for convenience
