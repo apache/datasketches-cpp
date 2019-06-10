@@ -1,5 +1,7 @@
 include config.mk
 
+TEST_BINARY_INPUT_PATH = test
+
 BUILDDIR := build
 TARGETDIR := lib
 
@@ -10,7 +12,7 @@ TARGET := $(TARGETDIR)/$(LIBRARY)
 INC := -I /usr/local/include
 LIB := -L /usr/local/lib -lcppunit -L lib -l$(LIB_BASE_NAME)
 
-MODULES := hll cpc kll fi
+MODULES := hll cpc kll fi theta
 
 .PHONY: all
 all: $(MODULES) $(LIBRARY)
