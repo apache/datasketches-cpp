@@ -494,6 +494,12 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(
 }
 
 template<typename A>
+void update_theta_sketch_alloc<A>::update(const std::string& value) {
+  if (value.empty()) return;
+  update(value.c_str(), value.length());
+}
+
+template<typename A>
 void update_theta_sketch_alloc<A>::update(uint64_t value) {
   update(&value, sizeof(value));
 }

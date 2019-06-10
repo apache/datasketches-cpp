@@ -104,7 +104,7 @@ public:
   // header space is reserved, but not initialized
   virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
 
-  //void update(const std::string& value);
+  void update(const std::string& value);
   void update(uint64_t value);
   void update(int64_t value);
 
@@ -273,6 +273,18 @@ private:
 typedef theta_sketch_alloc<std::allocator<void>> theta_sketch;
 typedef update_theta_sketch_alloc<std::allocator<void>> update_theta_sketch;
 typedef compact_theta_sketch_alloc<std::allocator<void>> compact_theta_sketch;
+
+// common helping functions
+
+constexpr uint8_t log2(uint32_t n) {
+  return (n > 1) ? 1 + log2(n >> 1) : 0;
+}
+
+constexpr uint8_t lg_size_from_count(uint32_t n, double load_factor) {
+  uint8_t lg = log2(n) + 1;
+  if (n > (1 << lg) * load_factor) lg++;
+  return lg;
+}
 
 } /* namespace datasketches */
 

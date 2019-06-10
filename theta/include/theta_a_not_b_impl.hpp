@@ -21,16 +21,6 @@ theta_a_not_b_alloc<A>::theta_a_not_b_alloc(uint64_t seed):
 seed_hash_(theta_sketch_alloc<A>::get_seed_hash(seed))
 {}
 
-constexpr uint8_t log2(uint32_t n) {
-  return (n > 1) ? 1 + log2(n >> 1) : 0;
-}
-
-constexpr uint8_t lg_size_from_count(uint32_t n, double load_factor) {
-  uint8_t lg = log2(n) + 1;
-  if (n > (1 << lg) * load_factor) lg++;
-  return lg;
-}
-
 template<typename A>
 compact_theta_sketch_alloc<A> theta_a_not_b_alloc<A>::compute(const theta_sketch_alloc<A>& a, const theta_sketch_alloc<A>& b, bool ordered) const {
   if (a.is_empty()) return compact_theta_sketch_alloc<A>(a, ordered);
