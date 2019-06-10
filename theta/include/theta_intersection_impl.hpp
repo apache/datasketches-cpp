@@ -89,16 +89,6 @@ theta_intersection_alloc<A>& theta_intersection_alloc<A>::operator=(theta_inters
   return *this;
 }
 
-constexpr uint8_t log2(uint32_t n) {
-  return (n > 1) ? 1 + log2(n >> 1) : 0;
-}
-
-constexpr uint8_t lg_size_from_count(uint32_t n, double load_factor) {
-  uint8_t lg = log2(n) + 1;
-  if (n > (1 << lg) * load_factor) lg++;
-  return lg;
-}
-
 template<typename A>
 void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
   if (is_empty_) return;
