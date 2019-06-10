@@ -104,7 +104,7 @@ public:
   // header space is reserved, but not initialized
   virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
 
-  //void update(const std::string& value);
+  void update(const std::string& value);
   void update(uint64_t value);
   void update(int64_t value);
 
