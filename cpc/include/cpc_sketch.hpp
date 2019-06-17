@@ -91,7 +91,7 @@ class cpc_sketch {
       return getIconEstimate(state->lgK, state->numCoupons);
     }
 
-    double get_lower_bound(unsigned kappa) {
+    double get_lower_bound(unsigned kappa) const {
       if (kappa > 3) {
         throw std::invalid_argument("kappa must be 1, 2 or 3");
       }
@@ -99,7 +99,7 @@ class cpc_sketch {
       return getIconConfidenceLB(state, kappa);
     }
 
-    double get_upper_bound(unsigned kappa) {
+    double get_upper_bound(unsigned kappa) const {
       if (kappa > 3) {
         throw std::invalid_argument("kappa must be 1, 2 or 3");
       }
