@@ -20,8 +20,11 @@
 #ifndef _RELATIVEERRORTABLES_HPP_
 #define _RELATIVEERRORTABLES_HPP_
 
+#include <memory>
+
 namespace datasketches {
 
+template<typename A = std::allocator<char>>
 class RelativeErrorTables {
   public:
     /**
@@ -37,5 +40,7 @@ class RelativeErrorTables {
 };
 
 }
+
+#include "RelativeErrorTables-internal.hpp"
 
 #endif /* _RELATIVEERRORTABLES_HPP_ */

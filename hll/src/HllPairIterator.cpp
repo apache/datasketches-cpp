@@ -50,7 +50,7 @@ int HllPairIterator::getSlot() {
 }
 
 int HllPairIterator::getPair() {
-  return HllUtil::pair(index, val);
+  return HllUtil<>::pair(index, val);
 }
 
 int HllPairIterator::getValue() {
@@ -74,7 +74,7 @@ bool HllPairIterator::nextAll() {
 bool HllPairIterator::nextValid() {
   while (++index < lengthPairs) {
     val = value();
-    if (val != HllUtil::EMPTY) {
+    if (val != HllUtil<>::EMPTY) {
       return true;
     }
   }

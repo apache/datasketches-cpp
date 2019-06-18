@@ -20,16 +20,20 @@
 #ifndef _AUXHASHMAP_HPP_
 #define _AUXHASHMAP_HPP_
 
-#include "IntArrayPairIterator.hpp"
+#include "PairIterator.hpp"
 
 #include <memory>
 
 namespace datasketches {
 
+template<typename A = std::allocator<char>>
 class AuxHashMap final {
   public:
     explicit AuxHashMap(int lgAuxArrInts, int lgConfigK);
-    explicit AuxHashMap(AuxHashMap& that);
+    explicit AuxHashMap(const AuxHashMap<A>& that);
+    static AuxHashMap* newAuxHashMap(int lgAuxArrInts, int lgConfigK);
+    static AuxHashMap* newAuxHashMap(const AuxHashMap<A>& that);
+
     static AuxHashMap* deserialize(const void* bytes, size_t len,
                                    int lgConfigK,
                                    int auxCount, int lgAuxArrInts,
@@ -38,21 +42,24 @@ class AuxHashMap final {
                                    int auxCount, int lgAuxArrInts,
                                    bool srcCompact);
     virtual ~AuxHashMap();
+    static std::function<void(AuxHashMap<A>*)> make_deleter();
+    
+    AuxHashMap* copy() const;
+    int getUpdatableSizeBytes() const;
+    int getCompactSizeBytes() const;
 
-    AuxHashMap* copy();
-    int getUpdatableSizeBytes();
-    int getCompactSizeBytes();
-
-    int getAuxCount();
+    int getAuxCount() const;
     int* getAuxIntArr();
-    int getLgAuxArrInts();
-    std::unique_ptr<PairIterator> getIterator();
+    int getLgAuxArrInts() const;
+    PairIterator_with_deleter<A> getIterator() const;
 
     void mustAdd(int slotNo, int value);
     int mustFindValueFor(int slotNo);
     void mustReplace(int slotNo, int value);
 
   private:
+    typedef typename std::allocator_traits<A>::template rebind_alloc<AuxHashMap<A>> ahmAlloc;
+
     // static so it can be used when resizing
     static int find(const int* auxArr, int lgAuxArrInts, int lgConfigK, int slotNo);
 
@@ -66,5 +73,7 @@ class AuxHashMap final {
 };
 
 }
+
+#include "AuxHashMap-internal.hpp"
 
 #endif /* _AUXHASHMAP_HPP_ */

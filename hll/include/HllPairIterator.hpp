@@ -24,8 +24,9 @@
 #include "HllArray.hpp"
 
 namespace datasketches {
-  
-class HllPairIterator : public PairIterator {
+
+template<typename A>
+class HllPairIterator : public PairIterator<A> {
   public:
     HllPairIterator(const int lengthPairs);
     virtual std::string getHeader();
@@ -47,5 +48,7 @@ class HllPairIterator : public PairIterator {
 };
 
 }
+
+#include "HllPairIterator-internal.hpp"
 
 #endif /* _HLLPAIRITERATOR_HPP_ */

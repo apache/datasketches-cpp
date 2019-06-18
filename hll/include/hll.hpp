@@ -20,6 +20,9 @@
 #ifndef _HLL_HPP_
 #define _HLL_HPP_
 
+#include "HllUtil.hpp"
+#include "PairIterator.hpp"
+
 #include <memory>
 #include <iostream>
 
@@ -32,66 +35,73 @@ enum TgtHllType {
     HLL_8
 };
 
-class HllSketch;
+template<typename A>
+class HllSketchImpl;
+
+template<typename A>
 class HllUnion;
 
-typedef std::unique_ptr<HllSketch> hll_sketch;
-typedef std::unique_ptr<HllUnion> hll_union;
+using byte_ptr_with_deleter = std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>;
 
-class HllSketch {
+template<typename A = std::allocator<char> >
+class HllSketch final {
   public:
-    static hll_sketch newInstance(int lgConfigK, TgtHllType tgtHllType = HLL_4);
-    static hll_sketch deserialize(std::istream& is);
-    static hll_sketch deserialize(const void* bytes, size_t len);
+    explicit HllSketch(int lgConfigK, TgtHllType tgtHllType = HLL_4, bool startFullSize = false);
+    static HllSketch deserialize(std::istream& is);
+    static HllSketch deserialize(const void* bytes, size_t len);
+    HllSketch(const HllSketch<A>& that);
 
-    virtual ~HllSketch();
+    ~HllSketch();
 
-    hll_sketch copy() const;
-    hll_sketch copyAs(TgtHllType tgtHllType) const;
+    HllSketch operator=(HllSketch<A>& other);
+    HllSketch operator=(HllSketch<A>&& other);
+    HllSketch copy() const;
+    HllSketch* copyPtr() const;
+    HllSketch copyAs(TgtHllType tgtHllType) const;
 
-    virtual void reset() = 0;
+    void reset();
     
-    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const = 0;
-    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const = 0;
-    virtual void serializeCompact(std::ostream& os) const = 0;
-    virtual void serializeUpdatable(std::ostream& os) const = 0;
+    std::pair<byte_ptr_with_deleter, const size_t> serializeCompact() const;
+    std::pair<byte_ptr_with_deleter, const size_t> serializeUpdatable() const;
+    void serializeCompact(std::ostream& os) const;
+    void serializeUpdatable(std::ostream& os) const;
     
-    virtual std::ostream& to_string(std::ostream& os,
-                                    bool summary = true,
-                                    bool detail = false,
-                                    bool auxDetail = false,
-                                    bool all = false) const = 0;
-    virtual std::string to_string(bool summary = true,
-                                  bool detail = false,
-                                  bool auxDetail = false,
-                                  bool all = false) const = 0;                                    
+    std::ostream& to_string(std::ostream& os,
+                            bool summary = true,
+                            bool detail = false,
+                            bool auxDetail = false,
+                            bool all = false) const;
+    std::string to_string(bool summary = true,
+                          bool detail = false,
+                          bool auxDetail = false,
+                          bool all = false) const;                                    
 
-    virtual void update(const std::string& datum) = 0;
-    virtual void update(uint64_t datum) = 0;
-    virtual void update(uint32_t datum) = 0;
-    virtual void update(uint16_t datum) = 0;
-    virtual void update(uint8_t datum) = 0;
-    virtual void update(int64_t datum) = 0;
-    virtual void update(int32_t datum) = 0;
-    virtual void update(int16_t datum) = 0;
-    virtual void update(int8_t datum) = 0;
-    virtual void update(double datum) = 0;
-    virtual void update(float datum) = 0;
-    virtual void update(const void* data, size_t lengthBytes) = 0;
+    void update(const std::string& datum);
+    void update(uint64_t datum);
+    void update(uint32_t datum);
+    void update(uint16_t datum);
+    void update(uint8_t datum);
+    void update(int64_t datum);
+    void update(int32_t datum);
+    void update(int16_t datum);
+    void update(int8_t datum);
+    void update(double datum);
+    void update(float datum);
+    void update(const void* data, size_t lengthBytes);
 
-    virtual double getEstimate() const = 0;
-    virtual double getCompositeEstimate() const = 0;
-    virtual double getLowerBound(int numStdDev) const = 0;
-    virtual double getUpperBound(int numStdDev) const = 0;
+    double getEstimate() const;
+    double getCompositeEstimate() const;
+    double getLowerBound(int numStdDev) const;
+    double getUpperBound(int numStdDev) const;
 
-    virtual int getLgConfigK() const = 0;
-    virtual TgtHllType getTgtHllType() const = 0;
+    int getLgConfigK() const;
+    TgtHllType getTgtHllType() const;
 
-    virtual bool isCompact() const = 0;
-    virtual bool isEmpty() const = 0;
+    bool isCompact() const;
+    bool isEmpty() const;
 
-    virtual int getUpdatableSerializationBytes() const = 0;
-    virtual int getCompactSerializationBytes() const = 0;
+    int getUpdatableSerializationBytes() const;
+    int getCompactSerializationBytes() const;
 
     /**
      * Returns the maximum size in bytes that this sketch can grow to given lgConfigK.
@@ -107,72 +117,141 @@ class HllSketch {
     static double getRelErr(bool upperBound, bool unioned,
                             int lgConfigK, int numStdDev);
 
+    //std::unique_ptr<PairIterator<A>> getIterator() const;
+    PairIterator_with_deleter<A> getIterator() const;
+
+  private:
+    explicit HllSketch(HllSketchImpl<A>* that);
+
+    void couponUpdate(int coupon);
+
+    std::string typeAsString() const;
+    std::string modeAsString() const;
+
+    CurMode getCurrentMode() const;
+    int getSerializationVersion() const;
+    bool isOutOfOrderFlag() const;
+    bool isEstimationMode() const;
+
+    typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch> AllocHllSketch;
+    friend AllocHllSketch;
+
+    HllSketchImpl<A>* hllSketchImpl;
+    friend HllUnion<A>;
 };
 
+template<typename A = std::allocator<char> >
 class HllUnion {
   public:
-    static hll_union newInstance(int lgMaxK);
-    static hll_union deserialize(std::istream& is);
-    static hll_union deserialize(const void* bytes, size_t len);
+    //static HllUnion newInstance(int lgMaxK);
+    explicit HllUnion(int lgMaxK);
+    //explicit HllUnion(HllSketch<A>& sketch);
+    //explicit HllUnion(HllSketch<A>&& sketch);
+    HllUnion(const HllUnion<A>& that);
 
-    virtual ~HllUnion();
+    static HllUnion deserialize(std::istream& is);
+    static HllUnion deserialize(const void* bytes, size_t len);
 
-    virtual double getEstimate() const = 0;
-    virtual double getCompositeEstimate() const = 0;
-    virtual double getLowerBound(int numStdDev) const = 0;
-    virtual double getUpperBound(int numStdDev) const = 0;
+    ~HllUnion();
 
-    virtual int getCompactSerializationBytes() const = 0;
-    virtual int getUpdatableSerializationBytes() const = 0;
-    virtual int getLgConfigK() const = 0;
+    HllUnion operator=(HllUnion<A>& other);
+    HllUnion operator=(HllUnion<A>&& other);
 
-    virtual TgtHllType getTgtHllType() const = 0;
-    virtual bool isCompact() const = 0;
-    virtual bool isEmpty() const = 0;
+    double getEstimate() const;
+    double getCompositeEstimate() const;
+    double getLowerBound(int numStdDev) const;
+    double getUpperBound(int numStdDev) const;
 
-    virtual void reset() = 0;
+    int getCompactSerializationBytes() const;
+    int getUpdatableSerializationBytes() const;
+    int getLgConfigK() const;
 
-    virtual hll_sketch getResult(TgtHllType tgtHllType = HLL_4) const = 0;
+    TgtHllType getTgtHllType() const;
+    bool isCompact() const;
+    bool isEmpty() const;
 
-    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const = 0;
-    virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const = 0;
-    virtual void serializeCompact(std::ostream& os) const = 0;
-    virtual void serializeUpdatable(std::ostream& os) const = 0;
+    void reset();
 
-    virtual std::ostream& to_string(std::ostream& os,
-                                    bool summary = true,
-                                    bool detail = false,
-                                    bool auxDetail = false,
-                                    bool all = false) const = 0;
-    virtual std::string to_string(bool summary = true,
-                                  bool detail = false,
-                                  bool auxDetail = false,
-                                  bool all = false) const = 0;                                    
+    HllSketch<A> getResult(TgtHllType tgtHllType = HLL_4) const;
 
-    virtual void update(const HllSketch& sketch) = 0;
-    virtual void update(const std::string& datum) = 0;
-    virtual void update(uint64_t datum) = 0;
-    virtual void update(uint32_t datum) = 0;
-    virtual void update(uint16_t datum) = 0;
-    virtual void update(uint8_t datum) = 0;
-    virtual void update(int64_t datum) = 0;
-    virtual void update(int32_t datum) = 0;
-    virtual void update(int16_t datum) = 0;
-    virtual void update(int8_t datum) = 0;
-    virtual void update(double datum) = 0;
-    virtual void update(float datum) = 0;
-    virtual void update(const void* data, size_t lengthBytes) = 0;
+    std::pair<byte_ptr_with_deleter, const size_t> serializeCompact() const;
+    std::pair<byte_ptr_with_deleter, const size_t> serializeUpdatable() const;
+    void serializeCompact(std::ostream& os) const;
+    void serializeUpdatable(std::ostream& os) const;
+
+    std::ostream& to_string(std::ostream& os,
+                            bool summary = true,
+                            bool detail = false,
+                            bool auxDetail = false,
+                            bool all = false) const;
+    std::string to_string(bool summary = true,
+                          bool detail = false,
+                          bool auxDetail = false,
+                          bool all = false) const;                                    
+
+    void update(const HllSketch<A>& sketch);
+    void update(const std::string& datum);
+    void update(uint64_t datum);
+    void update(uint32_t datum);
+    void update(uint16_t datum);
+    void update(uint8_t datum);
+    void update(int64_t datum);
+    void update(int32_t datum);
+    void update(int16_t datum);
+    void update(int8_t datum);
+    void update(double datum);
+    void update(float datum);
+    void update(const void* data, size_t lengthBytes);
 
     static int getMaxSerializationBytes(int lgK);
     static double getRelErr(bool upperBound, bool unioned,
                             int lgConfigK, int numStdDev);
+
+  private:
+    typedef typename std::allocator_traits<A>::template rebind_alloc<HllUnion> AllocHllUnion;
+
+   /**
+    * Union the given source and destination sketches. This static method examines the state of
+    * the current internal gadget and the incoming sketch and determines the optimum way to
+    * perform the union. This may involve swapping, down-sampling, transforming, and / or
+    * copying one of the arguments and may completely replace the internals of the union.
+    *
+    * @param incomingImpl the given incoming sketch, which may not be modified.
+    * @param gadgetImpl the given gadget sketch, which must have a target of HLL_8 and may be
+    * modified.
+    * @param lgMaxK the maximum value of log2 K for this union.
+    * //@return the union of the two sketches in the form of the internal HllSketchImpl, which for
+    * //the union is always in HLL_8 form.
+    */
+    void unionImpl(HllSketchImpl<A>* incomingImpl, int lgMaxK);
+
+    static HllSketchImpl<A>* copyOrDownsampleHll(HllSketchImpl<A>* srcImpl, int tgtLgK);
+
+    void couponUpdate(int coupon);
+
+    CurMode getCurrentMode() const;
+    int getSerializationVersion() const;
+    bool isOutOfOrderFlag() const;
+    bool isEstimationMode() const;
+
+    // calls couponUpdate on sketch, freeing the old sketch upon changes in CurMode
+    static HllSketchImpl<A>* leakFreeCouponUpdate(HllSketchImpl<A>* impl, int coupon);
+
+    int lgMaxK;
+    HllSketch<A>* gadget;
+
 };
 
-std::ostream& operator<<(std::ostream& os, const HllSketch& sketch);
-std::ostream& operator<<(std::ostream& os, hll_sketch& sketch);
-std::ostream& operator<<(std::ostream& os, const HllUnion& hllUnion);
-std::ostream& operator<<(std::ostream& os, hll_union& hllUnion);
+template<typename A>
+static std::ostream& operator<<(std::ostream& os, const HllSketch<A>& sketch);
+
+template<typename A>
+static std::ostream& operator<<(std::ostream& os, const HllUnion<A>& hllUnion);
 
 } // namespace datasketches
+
+#include "hll.private.hpp"
+//#include "HllSketch.hpp"
+//#include "HllUnion.hpp"
 
 #endif // _HLL_HPP_

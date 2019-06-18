@@ -24,6 +24,7 @@
 
 namespace datasketches {
 
+template<typename A = std::allocator<char>>
 class PairIterator {
   public:
     virtual std::string getHeader() = 0;
@@ -41,6 +42,9 @@ class PairIterator {
 
     virtual ~PairIterator() {}
 };
+
+template<typename A = std::allocator<char>>
+using PairIterator_with_deleter = std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>;
 
 }
 

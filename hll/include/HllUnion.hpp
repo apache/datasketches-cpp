@@ -17,14 +17,14 @@
  * under the License.
  */
 
-#ifndef _HLLUNION_H_
-#define _HLLUNION_H_
+#ifndef _HLLUNION_HPP_
+#define _HLLUNION_HPP_
 
 #include "hll.hpp"
 #include "HllUtil.hpp"
 #include "HllSketch.hpp"
 
-namespace datasketches {
+//namespace datasketches {
 
 /**
  * This performs union operations for HLL sketches. This union operator is configured with a
@@ -50,16 +50,18 @@ namespace datasketches {
  * @author Lee Rhodes
  * @author Kevin Lang
  */
-class HllUnionPvt final : public HllUnion {
+/*
+template<typename A = std::allocator<void>>
+class HllUnionPvt final : public HllUnion<A> {
   public:
     explicit HllUnionPvt(int lgMaxK);
-    explicit HllUnionPvt(std::unique_ptr<HllSketchPvt> sketch);
+    explicit HllUnionPvt(HllSketchPvt<A>& sketch);
 
-    HllUnionPvt(const HllUnion& other);
-    HllUnionPvt& operator=(HllUnionPvt& other);
+    HllUnionPvt(const HllUnionPvt<A>& other);
+    HllUnionPvt& operator=(HllUnionPvt<A>& other);
 
-    static std::unique_ptr<HllUnionPvt> deserialize(std::istream& is);
-    static std::unique_ptr<HllUnionPvt> deserialize(const void* bytes, size_t len);
+    static HllUnionPvt<A> deserialize(std::istream& is);
+    static HllUnionPvt<A> deserialize(const void* bytes, size_t len);
 
     virtual ~HllUnionPvt();
 
@@ -78,7 +80,7 @@ class HllUnionPvt final : public HllUnion {
 
     virtual void reset();
 
-    virtual hll_sketch getResult(TgtHllType tgtHllType = HLL_4) const;
+    virtual HllSketch<A> getResult(TgtHllType tgtHllType = HLL_4) const;
 
     virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeCompact() const;
     virtual std::pair<std::unique_ptr<uint8_t[]>, const size_t> serializeUpdatable() const;
@@ -95,7 +97,7 @@ class HllUnionPvt final : public HllUnion {
                                   bool auxDetail = false,
                                   bool all = false) const;                                    
 
-    virtual void update(const HllSketch& sketch);
+    virtual void update(const HllSketch<A>& sketch);
     virtual void update(const std::string& datum);
     virtual void update(uint64_t datum);
     virtual void update(uint32_t datum);
@@ -116,7 +118,9 @@ class HllUnionPvt final : public HllUnion {
     bool isOutOfOrderFlag() const;
     bool isEstimationMode() const;
 
-
+  private:
+    typedef typename std::allocator_traits<A>::template rebind_alloc<HllUnionPvt> AllocHllUnion;
+  */
    /**
     * Union the given source and destination sketches. This static method examines the state of
     * the current internal gadget and the incoming sketch and determines the optimum way to
@@ -130,6 +134,7 @@ class HllUnionPvt final : public HllUnion {
     * //@return the union of the two sketches in the form of the internal HllSketchImpl, which for
     * //the union is always in HLL_8 form.
     */
+   /*
     void unionImpl(HllSketchImpl* incomingImpl, int lgMaxK);
 
     static HllSketchImpl* copyOrDownsampleHll(HllSketchImpl* srcImpl, int tgtLgK);
@@ -138,9 +143,12 @@ class HllUnionPvt final : public HllUnion {
     static HllSketchImpl* leakFreeCouponUpdate(HllSketchImpl* impl, int coupon);
 
     int lgMaxK;
-    std::unique_ptr<HllSketchPvt> gadget;
+    HllSketchPvt<A>* gadget;
 };
 
 }
+*/
 
-#endif // _HLLUNION_H_
+//#include "HllUnion-internal.hpp"
+
+#endif // _HLLUNION_HPP_

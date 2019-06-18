@@ -33,11 +33,11 @@ class TablesTest : public CppUnit::TestFixture {
 
   void interpolationException() {
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with x = -1.0",
-                                 CubicInterpolation::usingXAndYTables(-1.0),
+                                 CubicInterpolation<>::usingXAndYTables(-1.0),
                                  std::invalid_argument);
 
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with x = 1e12",
-                                 CubicInterpolation::usingXAndYTables(1e12),
+                                 CubicInterpolation<>::usingXAndYTables(1e12),
                                  std::invalid_argument);
   }
 
@@ -46,7 +46,7 @@ class TablesTest : public CppUnit::TestFixture {
     double xArr[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0};
     double yArr[] = {2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0};
     double x = xArr[len - 1];
-    double y = CubicInterpolation::usingXAndYTables(xArr, yArr, len, x);
+    double y = CubicInterpolation<>::usingXAndYTables(xArr, yArr, len, x);
     double yExp = yArr[len - 1];
     CPPUNIT_ASSERT_DOUBLES_EQUAL(yExp, y, 0.0);
   }

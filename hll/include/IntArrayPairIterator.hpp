@@ -24,7 +24,8 @@
 
 namespace datasketches {
 
-class IntArrayPairIterator : public PairIterator {
+template<typename A>
+class IntArrayPairIterator : public PairIterator<A> {
   public:
     explicit IntArrayPairIterator(const int* array, int len, int lgConfigK);
 
@@ -52,5 +53,7 @@ class IntArrayPairIterator : public PairIterator {
 };
 
 }
+
+#include "IntArrayPairIterator-internal.hpp"
 
 #endif /* _INTARRAYPAIRITERATOR_HPP_ */
