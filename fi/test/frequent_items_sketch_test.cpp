@@ -40,7 +40,7 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     frequent_items_sketch<int> sketch(3);
     CPPUNIT_ASSERT(sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(0U, sketch.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(0ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(0, (int) sketch.get_total_weight());
   }
 
   void one_item() {
@@ -48,10 +48,10 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch.update("a");
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(1U, sketch.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_total_weight());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("a"));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_lower_bound("a"));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_upper_bound("a"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("a"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_lower_bound("a"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_upper_bound("a"));
   }
 
   void several_items_no_resize_no_purge() {
@@ -64,12 +64,12 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch.update("c");
     sketch.update("b");
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(7ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(7, (int) sketch.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(4U, sketch.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("a"));
-    CPPUNIT_ASSERT_EQUAL(3ULL, sketch.get_estimate("b"));
-    CPPUNIT_ASSERT_EQUAL(2ULL, sketch.get_estimate("c"));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("d"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("a"));
+    CPPUNIT_ASSERT_EQUAL(3, (int) sketch.get_estimate("b"));
+    CPPUNIT_ASSERT_EQUAL(2, (int) sketch.get_estimate("c"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("d"));
   }
 
   void several_items_with_resize_no_purge() {
@@ -90,12 +90,12 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch.update("k");
     sketch.update("l");
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(15ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(15, (int) sketch.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(12U, sketch.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("a"));
-    CPPUNIT_ASSERT_EQUAL(3ULL, sketch.get_estimate("b"));
-    CPPUNIT_ASSERT_EQUAL(2ULL, sketch.get_estimate("c"));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("d"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("a"));
+    CPPUNIT_ASSERT_EQUAL(3, (int) sketch.get_estimate("b"));
+    CPPUNIT_ASSERT_EQUAL(2, (int) sketch.get_estimate("c"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("d"));
   }
 
   void estimation_mode() {
@@ -115,14 +115,14 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(sketch.get_maximum_error() > 0); // estimation mode
 
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(35ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(35, (int) sketch.get_total_weight());
 
     auto items = sketch.get_frequent_items(frequent_items_error_type::NO_FALSE_POSITIVES);
     CPPUNIT_ASSERT_EQUAL(2, (int) items.size()); // only 2 items (1 and 7) should have counts more than 1
     CPPUNIT_ASSERT_EQUAL(7, items[0].get_item());
-    CPPUNIT_ASSERT_EQUAL(15ULL, items[0].get_estimate());
+    CPPUNIT_ASSERT_EQUAL(15, (int) items[0].get_estimate());
     CPPUNIT_ASSERT_EQUAL(1, items[1].get_item());
-    CPPUNIT_ASSERT_EQUAL(10ULL, items[1].get_estimate());
+    CPPUNIT_ASSERT_EQUAL(10, (int) items[1].get_estimate());
 
     items = sketch.get_frequent_items(frequent_items_error_type::NO_FALSE_NEGATIVES);
     CPPUNIT_ASSERT(2 <= (int) items.size()); // at least 2 items
@@ -143,12 +143,12 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
 
     sketch1.merge(sketch2);
     CPPUNIT_ASSERT(!sketch1.is_empty());
-    CPPUNIT_ASSERT_EQUAL(7ULL, sketch1.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(7, (int) sketch1.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(4U, sketch1.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch1.get_estimate(1));
-    CPPUNIT_ASSERT_EQUAL(3ULL, sketch1.get_estimate(2));
-    CPPUNIT_ASSERT_EQUAL(2ULL, sketch1.get_estimate(3));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch1.get_estimate(4));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch1.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(3, (int) sketch1.get_estimate(2));
+    CPPUNIT_ASSERT_EQUAL(2, (int) sketch1.get_estimate(3));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch1.get_estimate(4));
   }
 
   void merge_estimation_mode() {
@@ -188,15 +188,15 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
 
     sketch1.merge(sketch2);
     CPPUNIT_ASSERT(!sketch1.is_empty());
-    CPPUNIT_ASSERT_EQUAL(46ULL, sketch1.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(46, (int) sketch1.get_total_weight());
     CPPUNIT_ASSERT(2U <= sketch1.get_num_active_items());
 
     auto items = sketch1.get_frequent_items(frequent_items_error_type::NO_FALSE_POSITIVES, 2);
     CPPUNIT_ASSERT_EQUAL(2, (int) items.size()); // only 2 items (1 and 21) should be above threshold
     CPPUNIT_ASSERT_EQUAL(21, items[0].get_item());
-    CPPUNIT_ASSERT(11ULL <= items[0].get_estimate()); // always overestimated
+    CPPUNIT_ASSERT(11 <= (int) items[0].get_estimate()); // always overestimated
     CPPUNIT_ASSERT_EQUAL(1, items[1].get_item());
-    CPPUNIT_ASSERT(9ULL <= items[1].get_estimate()); // always overestimated
+    CPPUNIT_ASSERT(9 <= (int) items[1].get_estimate()); // always overestimated
   }
 
   void deserialize_from_java_long() {
@@ -205,12 +205,12 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     is.open(testBinaryInputPath + "longs_sketch_from_java.bin", std::ios::binary);
     auto sketch = frequent_items_sketch<long long>::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(4ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(4, (int) sketch.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(4U, sketch.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate(1));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate(2));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate(3));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate(4));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate(2));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate(3));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate(4));
   }
 
   void deserialize_from_java_string() {
@@ -219,12 +219,12 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     is.open(testBinaryInputPath + "items_sketch_string_from_java.bin", std::ios::binary);
     auto sketch = frequent_items_sketch<std::string>::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(4ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(4, (int) sketch.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(4U, sketch.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("bbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("ccccccccccccccccccccccccccccc"));
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("ddddddddddddddddddddddddddddd"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("bbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("ccccccccccccccccccccccccccccc"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("ddddddddddddddddddddddddddddd"));
   }
 
   void deserialize_from_java_string_utf8() {
@@ -233,12 +233,12 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     is.open(testBinaryInputPath + "items_sketch_string_utf8_from_java.bin", std::ios::binary);
     auto sketch = frequent_items_sketch<std::string>::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL(10ULL, sketch.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(10, (int) sketch.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(4U, sketch.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch.get_estimate("абвгд"));
-    CPPUNIT_ASSERT_EQUAL(2ULL, sketch.get_estimate("еёжзи"));
-    CPPUNIT_ASSERT_EQUAL(3ULL, sketch.get_estimate("йклмн"));
-    CPPUNIT_ASSERT_EQUAL(4ULL, sketch.get_estimate("опрст"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch.get_estimate("абвгд"));
+    CPPUNIT_ASSERT_EQUAL(2, (int) sketch.get_estimate("еёжзи"));
+    CPPUNIT_ASSERT_EQUAL(3, (int) sketch.get_estimate("йклмн"));
+    CPPUNIT_ASSERT_EQUAL(4, (int) sketch.get_estimate("опрст"));
   }
 
   void serialize_deserialize_long64_stream() {
@@ -253,13 +253,13 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch1.serialize(s);
     auto sketch2 = frequent_items_sketch<long long>::deserialize(s);
     CPPUNIT_ASSERT(!sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(15, (int) sketch2.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate(1));
-    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate(2));
-    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate(3));
-    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate(4));
-    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate(5));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch2.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(2, (int) sketch2.get_estimate(2));
+    CPPUNIT_ASSERT_EQUAL(3, (int) sketch2.get_estimate(3));
+    CPPUNIT_ASSERT_EQUAL(4, (int) sketch2.get_estimate(4));
+    CPPUNIT_ASSERT_EQUAL(5, (int) sketch2.get_estimate(5));
   }
 
   void serialize_deserialize_long64_bytes() {
@@ -273,13 +273,13 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     auto p = sketch1.serialize();
     auto sketch2 = frequent_items_sketch<long long>::deserialize(p.first.get(), p.second);
     CPPUNIT_ASSERT(!sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(15, (int) sketch2.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate(1));
-    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate(2));
-    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate(3));
-    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate(4));
-    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate(5));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch2.get_estimate(1));
+    CPPUNIT_ASSERT_EQUAL(2, (int) sketch2.get_estimate(2));
+    CPPUNIT_ASSERT_EQUAL(3, (int) sketch2.get_estimate(3));
+    CPPUNIT_ASSERT_EQUAL(4, (int) sketch2.get_estimate(4));
+    CPPUNIT_ASSERT_EQUAL(5, (int) sketch2.get_estimate(5));
   }
 
   void serialize_deserialize_string_stream() {
@@ -294,13 +294,13 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch1.serialize(s);
     auto sketch2 = frequent_items_sketch<std::string>::deserialize(s);
     CPPUNIT_ASSERT(!sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(15, (int) sketch2.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate("aaaaaaaaaaaaaaaa"));
-    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate("bbbbbbbbbbbbbbbb"));
-    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate("cccccccccccccccc"));
-    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate("dddddddddddddddd"));
-    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate("eeeeeeeeeeeeeeee"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch2.get_estimate("aaaaaaaaaaaaaaaa"));
+    CPPUNIT_ASSERT_EQUAL(2, (int) sketch2.get_estimate("bbbbbbbbbbbbbbbb"));
+    CPPUNIT_ASSERT_EQUAL(3, (int) sketch2.get_estimate("cccccccccccccccc"));
+    CPPUNIT_ASSERT_EQUAL(4, (int) sketch2.get_estimate("dddddddddddddddd"));
+    CPPUNIT_ASSERT_EQUAL(5, (int) sketch2.get_estimate("eeeeeeeeeeeeeeee"));
   }
 
   void serialize_deserialize_string_bytes() {
@@ -314,13 +314,13 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     auto p = sketch1.serialize();
     auto sketch2 = frequent_items_sketch<std::string>::deserialize(p.first.get(), p.second);
     CPPUNIT_ASSERT(!sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(15, (int) sketch2.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate("aaaaaaaaaaaaaaaa"));
-    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate("bbbbbbbbbbbbbbbb"));
-    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate("cccccccccccccccc"));
-    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate("dddddddddddddddd"));
-    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate("eeeeeeeeeeeeeeee"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch2.get_estimate("aaaaaaaaaaaaaaaa"));
+    CPPUNIT_ASSERT_EQUAL(2, (int) sketch2.get_estimate("bbbbbbbbbbbbbbbb"));
+    CPPUNIT_ASSERT_EQUAL(3, (int) sketch2.get_estimate("cccccccccccccccc"));
+    CPPUNIT_ASSERT_EQUAL(4, (int) sketch2.get_estimate("dddddddddddddddd"));
+    CPPUNIT_ASSERT_EQUAL(5, (int) sketch2.get_estimate("eeeeeeeeeeeeeeee"));
   }
 
   void serialize_deserialize_string_utf8_stream() {
@@ -335,13 +335,13 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch1.serialize(s);
     auto sketch2 = frequent_items_sketch<std::string>::deserialize(s);
     CPPUNIT_ASSERT(!sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(15ULL, sketch2.get_total_weight());
+    CPPUNIT_ASSERT_EQUAL(15, (int) sketch2.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
-    CPPUNIT_ASSERT_EQUAL(1ULL, sketch2.get_estimate("абвгд"));
-    CPPUNIT_ASSERT_EQUAL(2ULL, sketch2.get_estimate("еёжзи"));
-    CPPUNIT_ASSERT_EQUAL(3ULL, sketch2.get_estimate("йклмн"));
-    CPPUNIT_ASSERT_EQUAL(4ULL, sketch2.get_estimate("опрст"));
-    CPPUNIT_ASSERT_EQUAL(5ULL, sketch2.get_estimate("уфхцч"));
+    CPPUNIT_ASSERT_EQUAL(1, (int) sketch2.get_estimate("абвгд"));
+    CPPUNIT_ASSERT_EQUAL(2, (int) sketch2.get_estimate("еёжзи"));
+    CPPUNIT_ASSERT_EQUAL(3, (int) sketch2.get_estimate("йклмн"));
+    CPPUNIT_ASSERT_EQUAL(4, (int) sketch2.get_estimate("опрст"));
+    CPPUNIT_ASSERT_EQUAL(5, (int) sketch2.get_estimate("уфхцч"));
   }
 
 };
