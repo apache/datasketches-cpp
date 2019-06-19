@@ -19,12 +19,12 @@ class CMakeExtension(Extension):
 
 class CMakeBuild(build_ext):
     def run(self):
-        # try:
-        #     out = subprocess.check_output(['cmake', '--version'])
-        # except OSError:
-        #     raise RuntimeError(
-        #         "CMake must be installed to build the following extensions: " +
-        #         ", ".join(e.name for e in self.extensions))
+        try:
+            out = subprocess.check_output(['cmake', '--version'])
+        except OSError:
+            raise RuntimeError(
+                "CMake >= 3.12 must be installed to build the following extensions: " +
+                ", ".join(e.name for e in self.extensions))
 
         # if platform.system() == "Windows":
         #     cmake_version = LooseVersion(re.search(r'version\s*([\d.]+)',
@@ -72,17 +72,15 @@ setup(
     author_email='jon.malkin@yahoo.com',
     description='A wrapper for the C++ Datasketches library',
     long_description='',
-    install_requires=[
-        'cmake>=3.12'
-    ],
     # tell setuptools to look for any packages under 'python/src'
     packages=find_packages('python/src'),
     # tell setuptools that all packages will be under the 'python/src' directory
     # and nowhere else
     package_dir={'':'python/src'},
     # likely need to add all source paths for proper sdist packages
-    ext_modules=[CMakeExtension('datasketches' [])],
+    ext_modules=[CMakeExtension('datasketches')],
     # add custom build_ext command
-    cmdclass=dict(build_ext=CMakeBuild)
-    #zip_safe=False
+    # cmdclass=dict(build_ext=CMakeBuild)
+    cmdclass={'build_ext': CMakeBuild},
+    zip_safe=False
 )
