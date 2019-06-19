@@ -1,6 +1,20 @@
 /*
- * Copyright 2018, Yahoo! Inc. Licensed under the terms of the
- * Apache License 2.0. See LICENSE file at the project root for terms.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include "HllSketchImpl.hpp"
@@ -34,11 +48,11 @@ HllSketchImpl* HllSketchImpl::deserialize(std::istream& is) {
   // we'll hand off the sketch based on PreInts so we don't need
   // to move the stream pointer back and forth -- perhaps somewhat fragile?
   const int preInts = is.peek();
-  if (preInts == HllUtil::HLL_PREINTS) {
+  if (preInts == HllUtil<>::HLL_PREINTS) {
     return HllArray::newHll(is);
-  } else if (preInts == HllUtil::HASH_SET_PREINTS) {
+  } else if (preInts == HllUtil<>::HASH_SET_PREINTS) {
     return CouponHashSet::newSet(is);
-  } else if (preInts == HllUtil::LIST_PREINTS) {
+  } else if (preInts == HllUtil<>::LIST_PREINTS) {
     return CouponList::newList(is);
   } else {
     throw std::invalid_argument("Attempt to deserialize unknown object type");
@@ -48,11 +62,11 @@ HllSketchImpl* HllSketchImpl::deserialize(std::istream& is) {
 HllSketchImpl* HllSketchImpl::deserialize(const void* bytes, size_t len) {
   // read current mode directly
   const int preInts = static_cast<const uint8_t*>(bytes)[0];
-  if (preInts == HllUtil::HLL_PREINTS) {
+  if (preInts == HllUtil<>::HLL_PREINTS) {
     return HllArray::newHll(bytes, len);
-  } else if (preInts == HllUtil::HASH_SET_PREINTS) {
+  } else if (preInts == HllUtil<>::HASH_SET_PREINTS) {
     return CouponHashSet::newSet(bytes, len);
-  } else if (preInts == HllUtil::LIST_PREINTS) {
+  } else if (preInts == HllUtil<>::LIST_PREINTS) {
     return CouponList::newList(bytes, len);
   } else {
     throw std::invalid_argument("Attempt to deserialize unknown object type");
@@ -88,9 +102,9 @@ CurMode HllSketchImpl::extractCurMode(const uint8_t modeByte) {
 
 uint8_t HllSketchImpl::makeFlagsByte(const bool compact) const {
   uint8_t flags(0);
-  flags |= (isEmpty() ? HllUtil::EMPTY_FLAG_MASK : 0);
-  flags |= (compact ? HllUtil::COMPACT_FLAG_MASK : 0);
-  flags |= (isOutOfOrderFlag() ? HllUtil::OUT_OF_ORDER_FLAG_MASK : 0);
+  flags |= (isEmpty() ? HllUtil<>::EMPTY_FLAG_MASK : 0);
+  flags |= (compact ? HllUtil<>::COMPACT_FLAG_MASK : 0);
+  flags |= (isOutOfOrderFlag() ? HllUtil<>::OUT_OF_ORDER_FLAG_MASK : 0);
   return flags;
 }
 

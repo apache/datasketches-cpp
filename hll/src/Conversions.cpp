@@ -1,6 +1,20 @@
 /*
- * Copyright 2018, Yahoo! Inc. Licensed under the terms of the
- * Apache License 2.0. See LICENSE file at the project root for terms.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include "Conversions.hpp"
@@ -18,8 +32,8 @@ Hll4Array* Conversions::convertToHll4(const HllArray& srcHllArr) {
 
   // 1st pass: compute starting curMin and numAtCurMin
   int pairVals = curMinAndNum(srcHllArr);
-  int curMin = HllUtil::getValue(pairVals);
-  int numAtCurMin = HllUtil::getLow26(pairVals);
+  int curMin = HllUtil<>::getValue(pairVals);
+  int numAtCurMin = HllUtil<>::getLow26(pairVals);
 
   // 2nd pass: must know curMin.
   // Populate KxQ registers, build AuxHashMap if needed
@@ -32,9 +46,9 @@ Hll4Array* Conversions::convertToHll4(const HllArray& srcHllArr) {
     const int actualValue = itr->getValue();
     HllArray::hipAndKxQIncrementalUpdate(*hll4Array, 0, actualValue);
     if (actualValue >= (curMin + 15)) {
-      hll4Array->putSlot(slotNo, HllUtil::AUX_TOKEN);
+      hll4Array->putSlot(slotNo, HllUtil<>::AUX_TOKEN);
       if (auxHashMap == nullptr) {
-        auxHashMap = new AuxHashMap(HllUtil::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
+        auxHashMap = new AuxHashMap(HllUtil<>::LG_AUX_ARR_INTS[lgConfigK], lgConfigK);
         hll4Array->putAuxHashMap(auxHashMap);
       }
       auxHashMap->mustAdd(slotNo, actualValue);
@@ -64,7 +78,7 @@ int Conversions::curMinAndNum(const HllArray& hllArr) {
     }
   }
 
-  return HllUtil::pair(numAtCurMin, curMin);
+  return HllUtil<>::pair(numAtCurMin, curMin);
 }
 
 Hll6Array* Conversions::convertToHll6(const HllArray& srcHllArr) {
@@ -75,7 +89,7 @@ Hll6Array* Conversions::convertToHll6(const HllArray& srcHllArr) {
   int numZeros = 1 << lgConfigK;
   std::unique_ptr<PairIterator> itr = srcHllArr.getIterator();
   while (itr->nextAll()) {
-    if (itr->getValue() != HllUtil::EMPTY) {
+    if (itr->getValue() != HllUtil<>::EMPTY) {
       --numZeros;
       hll6Array->couponUpdate(itr->getPair());
     }
@@ -94,7 +108,7 @@ Hll8Array* Conversions::convertToHll8(const HllArray& srcHllArr) {
   int numZeros = 1 << lgConfigK;
   std::unique_ptr<PairIterator> itr = srcHllArr.getIterator();
   while (itr->nextAll()) {
-    if (itr->getValue() != HllUtil::EMPTY) {
+    if (itr->getValue() != HllUtil<>::EMPTY) {
       --numZeros;
       hll8Array->couponUpdate(itr->getPair());
     }

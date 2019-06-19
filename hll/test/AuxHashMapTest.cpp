@@ -1,17 +1,25 @@
 /*
- * Copyright 2018, Oath Inc. Licensed under the terms of the
- * Apache License 2.0. See LICENSE file at the project root for terms.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
-#include "hll.hpp"
-#include "CouponList.hpp"
-#include "CouponHashSet.hpp"
-#include "HllArray.hpp"
+#include "AuxHashMap.hpp"
 
-#include "HllSketch.hpp"
-#include "HllUnion.hpp"
-#include "HllUtil.hpp"
-
+#include <memory>
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 
@@ -30,7 +38,7 @@ class AuxHashMapTest : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
   void checkMustReplace() {
-    AuxHashMap* map = new AuxHashMap(3, 7);
+    AuxHashMap<>* map = new AuxHashMap<>(3, 7);
     map->mustAdd(100, 5);
     int val = map->mustFindValueFor(100);
     CPPUNIT_ASSERT_EQUAL(val, 5);
@@ -46,13 +54,16 @@ class AuxHashMapTest : public CppUnit::TestFixture {
   }
 
   void checkGrowSpace() {
-    AuxHashMap* map = new AuxHashMap(3, 7);
+    auto map = std::unique_ptr<AuxHashMap<>, std::function<void(AuxHashMap<>*)>>(
+        AuxHashMap<>::newAuxHashMap(3, 7),
+        AuxHashMap<>::make_deleter()
+        );
     CPPUNIT_ASSERT_EQUAL(map->getLgAuxArrInts(), 3);
     for (int i = 1; i <= 7; ++i) {
       map->mustAdd(i, i);
     }
     CPPUNIT_ASSERT_EQUAL(map->getLgAuxArrInts(), 4);
-    std::unique_ptr<PairIterator> itr = map->getIterator();
+    std::unique_ptr<PairIterator<>, std::function<void(PairIterator<>*)>> itr = map->getIterator();
     int count1 = 0;
     int count2 = 0;
     while (itr->nextAll()) {
@@ -62,24 +73,22 @@ class AuxHashMapTest : public CppUnit::TestFixture {
     }
     CPPUNIT_ASSERT_EQUAL(count1, 7);
     CPPUNIT_ASSERT_EQUAL(count2, 16);
-
-    delete map;
   }
 
   void checkExceptionMustFindValueFor() {
-    AuxHashMap* map = new AuxHashMap(3, 7);
-    map->mustAdd(100, 5);
-    CPPUNIT_ASSERT_THROW_MESSAGE("map->mustFindValueFor() should fail",
-                                 map->mustFindValueFor(101), std::invalid_argument);
-    delete map;
+    AuxHashMap<> map(3, 7);
+    map.mustAdd(100, 5);
+    CPPUNIT_ASSERT_THROW_MESSAGE("map.mustFindValueFor() should fail",
+                                 map.mustFindValueFor(101), std::invalid_argument);
   }
 
   void checkExceptionMustAdd() {
-    AuxHashMap* map = new AuxHashMap(3, 7);
+    AuxHashMap<>* map = AuxHashMap<>::newAuxHashMap(3, 7);
     map->mustAdd(100, 5);
     CPPUNIT_ASSERT_THROW_MESSAGE("map->mustAdd() should fail",
                                  map->mustAdd(100, 6), std::invalid_argument);
-    delete map;
+    
+    AuxHashMap<>::make_deleter()(map);
   }
 
 };

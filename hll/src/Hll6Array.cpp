@@ -1,6 +1,20 @@
 /*
- * Copyright 2018, Yahoo! Inc. Licensed under the terms of the
- * Apache License 2.0. See LICENSE file at the project root for terms.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <cstring>
@@ -66,7 +80,7 @@ void Hll6Array::putSlot(const int slotNo, const int value) {
   const int byteIdx = startBit >> 3;
   const uint16_t valShifted = (value & 0x3F) << shift;
   uint16_t curMasked = (hllByteArr[byteIdx + 1] << 8) | hllByteArr[byteIdx];
-  curMasked &= (~(HllUtil::VAL_MASK_6 << shift));
+  curMasked &= (~(HllUtil<>::VAL_MASK_6 << shift));
   uint16_t insert = curMasked | valShifted;
   hllByteArr[byteIdx]     = insert & 0xFF;
   hllByteArr[byteIdx + 1] = (insert & 0xFF00) >> 8;
@@ -78,8 +92,8 @@ int Hll6Array::getHllByteArrBytes() const {
 
 HllSketchImpl* Hll6Array::couponUpdate(const int coupon) {
   const int configKmask = (1 << getLgConfigK()) - 1;
-  const int slotNo = HllUtil::getLow26(coupon) & configKmask;
-  const int newVal = HllUtil::getValue(coupon);
+  const int slotNo = HllUtil<>::getLow26(coupon) & configKmask;
+  const int newVal = HllUtil<>::getValue(coupon);
   if (newVal <= 0) {
     throw std::logic_error("newVal must be a positive integer: " + std::to_string(newVal));
   }

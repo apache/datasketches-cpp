@@ -1,6 +1,20 @@
 /*
- * Copyright 2018, Yahoo! Inc. Licensed under the terms of the
- * Apache License 2.0. See LICENSE file at the project root for terms.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include "HllSketch.hpp"
@@ -44,7 +58,7 @@ hll_sketch HllSketch::copyAs(TgtHllType tgtHllType) const {
 HllSketch::~HllSketch() {}
 
 HllSketchPvt::HllSketchPvt(const int lgConfigK, const TgtHllType tgtHllType) {
-  hllSketchImpl = new CouponList(HllUtil::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
+  hllSketchImpl = new CouponList(HllUtil<>::checkLgK(lgConfigK), tgtHllType, CurMode::LIST); 
 }
 
 std::unique_ptr<HllSketchPvt> HllSketchPvt::deserialize(std::istream& is) {
@@ -99,15 +113,15 @@ void HllSketchPvt::reset() {
 void HllSketchPvt::update(const std::string& datum) {
   if (datum.empty()) { return; }
   HashState hashResult;
-  HllUtil::hash(datum.c_str(), datum.length(), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(datum.c_str(), datum.length(), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const uint64_t datum) {
   // no sign extension with 64 bits so no need to cast to signed value
   HashState hashResult;
-  HllUtil::hash(&datum, sizeof(uint64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&datum, sizeof(uint64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const uint32_t datum) {
@@ -124,29 +138,29 @@ void HllSketchPvt::update(const uint8_t datum) {
 
 void HllSketchPvt::update(const int64_t datum) {
   HashState hashResult;
-  HllUtil::hash(&datum, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&datum, sizeof(int64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const int32_t datum) {
   int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
-  HllUtil::hash(&val, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&val, sizeof(int64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const int16_t datum) {
   int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
-  HllUtil::hash(&val, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&val, sizeof(int64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const int8_t datum) {
   int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
-  HllUtil::hash(&val, sizeof(int64_t), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&val, sizeof(int64_t), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const double datum) {
@@ -158,8 +172,8 @@ void HllSketchPvt::update(const double datum) {
     d.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
   }
   HashState hashResult;
-  HllUtil::hash(&d, sizeof(double), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&d, sizeof(double), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const float datum) {
@@ -171,19 +185,19 @@ void HllSketchPvt::update(const float datum) {
     d.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
   }
   HashState hashResult;
-  HllUtil::hash(&d, sizeof(double), HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(&d, sizeof(double), HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 void HllSketchPvt::update(const void* data, const size_t lengthBytes) {
   if (data == nullptr) { return; }
   HashState hashResult;
-  HllUtil::hash(data, lengthBytes, HllUtil::DEFAULT_UPDATE_SEED, hashResult);
-  couponUpdate(HllUtil::coupon(hashResult));
+  HllUtil<>::hash(data, lengthBytes, HllUtil<>::DEFAULT_UPDATE_SEED, hashResult);
+  couponUpdate(HllUtil<>::coupon(hashResult));
 }
 
 void HllSketchPvt::couponUpdate(int coupon) {
-  if (coupon == HllUtil::EMPTY) { return; }
+  if (coupon == HllUtil<>::EMPTY) { return; }
   HllSketchImpl* result = this->hllSketchImpl->couponUpdate(coupon);
   if (result != this->hllSketchImpl) {
     delete this->hllSketchImpl;
@@ -368,19 +382,19 @@ int HllSketch::getMaxUpdatableSerializationBytes(const int lgConfigK,
     const TgtHllType tgtHllType) {
   int arrBytes;
   if (tgtHllType == TgtHllType::HLL_4) {
-    const int auxBytes = 4 << HllUtil::LG_AUX_ARR_INTS[lgConfigK];
+    const int auxBytes = 4 << HllUtil<>::LG_AUX_ARR_INTS[lgConfigK];
     arrBytes = HllArray::hll4ArrBytes(lgConfigK) + auxBytes;
   } else if (tgtHllType == TgtHllType::HLL_6) {
     arrBytes = HllArray::hll6ArrBytes(lgConfigK);
   } else { //HLL_8
     arrBytes = HllArray::hll8ArrBytes(lgConfigK);
   }
-  return HllUtil::HLL_BYTE_ARR_START + arrBytes;
+  return HllUtil<>::HLL_BYTE_ARR_START + arrBytes;
 }
 
 double HllSketch::getRelErr(const bool upperBound, const bool unioned,
                            const int lgConfigK, const int numStdDev) {
-  return HllUtil::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
+  return HllUtil<>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
 }
 
 }

@@ -1,22 +1,36 @@
 /*
- * Copyright 2018, Oath Inc. Licensed under the terms of the
- * Apache License 2.0. See LICENSE file at the project root for terms.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include "hll.hpp"
-#include "HllUnion.hpp"
-#include "HllUtil.hpp"
+//#include "HllUnion.hpp"
+//#include "HllUtil.hpp"
 
 #include <cmath>
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 
 namespace datasketches {
-
+/*
 class UnionCaseTest : public CppUnit::TestFixture {
 
   static uint64_t v;
-
+  
   CPPUNIT_TEST_SUITE(UnionCaseTest);
   CPPUNIT_TEST(checkCase0);
   CPPUNIT_TEST(checkCase1);
@@ -35,6 +49,9 @@ class UnionCaseTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkCase14);
   CPPUNIT_TEST(checkCase14B);
   CPPUNIT_TEST_SUITE_END();
+
+  typedef HllSketch<> hll_sketch;
+  typedef HllUnion<> hll_union;
 
   void checkCase0() { // src: LIST, gadget: LIST, cases 0, 0
     int n1 = 2;
@@ -349,17 +366,17 @@ class UnionCaseTest : public CppUnit::TestFixture {
   }
 
   hll_union buildUnion(int lgMaxK, int n) {
-    hll_union u = HllUnion::newInstance(lgMaxK);
-    for (int i = 0; i < n; ++i) { u->update(i + v); }
+    hll_union u(lgMaxK);
+    for (int i = 0; i < n; ++i) { u.update(i + v); }
     v += n;
-    return u;
+    return std::move(u);
   }
 
   hll_sketch buildSketch(int lgK, TgtHllType type, int n) {
-    hll_sketch sk = HllSketch::newInstance(lgK);
-    for (int i = 0; i < n; ++i) { sk->update(i + v); }
+    hll_sketch sk(lgK);
+    for (int i = 0; i < n; ++i) { sk.update(i + v); }
     v += n;
-    return sk;
+    return std::move(sk);
   }
 
 };
@@ -367,5 +384,5 @@ class UnionCaseTest : public CppUnit::TestFixture {
 uint64_t UnionCaseTest::v = 0;
 
 CPPUNIT_TEST_SUITE_REGISTRATION(UnionCaseTest);
-
+*/
 } /* namespace datasketches */

@@ -1,6 +1,20 @@
 /*
- * Copyright 2018, Yahoo! Inc. Licensed under the terms of the
- * Apache License 2.0. See LICENSE file at the project root for terms.
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #ifndef _HLLUTIL_HPP_
@@ -18,6 +32,9 @@ namespace datasketches {
 
 enum CurMode { LIST = 0, SET, HLL };
 
+// template provides internal consistency and allows static float values
+// but we don't use the template parameter anywhere
+template<typename A = std::allocator<char> >
 class HllUtil final {
 public:
   // preamble stuff
@@ -27,6 +44,7 @@ public:
   static const int EMPTY_FLAG_MASK          = 4;
   static const int COMPACT_FLAG_MASK        = 8;
   static const int OUT_OF_ORDER_FLAG_MASK   = 16;
+  static const int FULL_SIZE_FLAG_MASK      = 32;
 
   static const int PREAMBLE_INTS_BYTE = 0;
   static const int SER_VER_BYTE       = 1;
@@ -107,62 +125,89 @@ public:
                           int lgConfigK, int numStdDev);
 };
 
-inline int HllUtil::coupon(const uint64_t hash[]) {
+template<typename A>
+const double HllUtil<A>::HLL_HIP_RSE_FACTOR = sqrt(log(2.0)); // 0.8325546
+template<typename A>
+const double HllUtil<A>::HLL_NON_HIP_RSE_FACTOR = sqrt((3.0 * log(2.0)) - 1.0); // 1.03896
+template<typename A>
+const double HllUtil<A>::COUPON_RSE_FACTOR = 0.409;
+template<typename A>
+const double HllUtil<A>::COUPON_RSE = COUPON_RSE_FACTOR / (1 << 13);
+
+template<typename A>
+const int HllUtil<A>::LG_AUX_ARR_INTS[] = {
+      0, 2, 2, 2, 2, 2, 2, 3, 3, 3,   // 0 - 9
+      4, 4, 5, 5, 6, 7, 8, 9, 10, 11, // 10-19
+      12, 13, 14, 15, 16, 17, 18      // 20-26
+      };
+
+template<typename A>
+inline int HllUtil<A>::coupon(const uint64_t hash[]) {
   int addr26 = (int) (hash[0] & KEY_MASK_26);
   int lz = CommonUtil::getNumberOfLeadingZeros(hash[1]);
   int value = ((lz > 62 ? 62 : lz) + 1); 
   return (value << KEY_BITS_26) | addr26;
 }
 
-inline int HllUtil::coupon(const HashState& hashState) {
+template<typename A>
+inline int HllUtil<A>::coupon(const HashState& hashState) {
   int addr26 = (int) (hashState.h1 & KEY_MASK_26);
   int lz = CommonUtil::getNumberOfLeadingZeros(hashState.h2);  
   int value = ((lz > 62 ? 62 : lz) + 1); 
   return (value << KEY_BITS_26) | addr26;
 }
 
-inline void HllUtil::hash(const void* key, const int keyLen, const uint64_t seed, HashState& result) {
+template<typename A>
+inline void HllUtil<A>::hash(const void* key, const int keyLen, const uint64_t seed, HashState& result) {
   MurmurHash3_x64_128(key, keyLen, DEFAULT_UPDATE_SEED, result);
 }
 
-inline double HllUtil::getRelErr(const bool upperBound, const bool unioned,
-                          const int lgConfigK, const int numStdDev) {
-  return RelativeErrorTables::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
+template<typename A>
+inline double HllUtil<A>::getRelErr(const bool upperBound, const bool unioned,
+                                    const int lgConfigK, const int numStdDev) {
+  return RelativeErrorTables<A>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
 }
 
-inline int HllUtil::checkLgK(const int lgK) {
-  if ((lgK >= HllUtil::MIN_LOG_K) && (lgK <= HllUtil::MAX_LOG_K)) {
+template<typename A>
+inline int HllUtil<A>::checkLgK(const int lgK) {
+  if ((lgK >= HllUtil<A>::MIN_LOG_K) && (lgK <= HllUtil<A>::MAX_LOG_K)) {
     return lgK;
   } else {
     throw std::invalid_argument("Invalid value of k: " + std::to_string(lgK));
   }
 }
 
-inline void HllUtil::checkMemSize(const uint64_t minBytes, const uint64_t capBytes) {
+template<typename A>
+inline void HllUtil<A>::checkMemSize(const uint64_t minBytes, const uint64_t capBytes) {
   if (capBytes < minBytes) {
     throw std::invalid_argument("Given destination array is not large enough: " + std::to_string(capBytes));
   }
 }
 
-inline void HllUtil::checkNumStdDev(const int numStdDev) {
+template<typename A>
+inline void HllUtil<A>::checkNumStdDev(const int numStdDev) {
   if ((numStdDev < 1) || (numStdDev > 3)) {
     throw std::invalid_argument("NumStdDev may not be less than 1 or greater than 3.");
   }
 }
 
-inline int HllUtil::pair(const int slotNo, const int value) {
-  return (value << HllUtil::KEY_BITS_26) | (slotNo & HllUtil::KEY_MASK_26);
+template<typename A>
+inline int HllUtil<A>::pair(const int slotNo, const int value) {
+  return (value << HllUtil<A>::KEY_BITS_26) | (slotNo & HllUtil<A>::KEY_MASK_26);
 }
 
-inline int HllUtil::getLow26(const unsigned int coupon) {
-  return coupon & HllUtil::KEY_MASK_26;
+template<typename A>
+inline int HllUtil<A>::getLow26(const unsigned int coupon) {
+  return coupon & HllUtil<A>::KEY_MASK_26;
 }
 
-inline int HllUtil::getValue(const unsigned int coupon) {
-  return coupon >> HllUtil::KEY_BITS_26;
+template<typename A>
+inline int HllUtil<A>::getValue(const unsigned int coupon) {
+  return coupon >> HllUtil<A>::KEY_BITS_26;
 }
 
-inline double HllUtil::invPow2(const int e) {
+template<typename A>
+inline double HllUtil<A>::invPow2(const int e) {
   union {
     long long longVal;
     double doubleVal;
@@ -173,7 +218,8 @@ inline double HllUtil::invPow2(const int e) {
 
 // compute the next highest power of 2 of 32-bit n
 // taken from https://graphics.stanford.edu/~seander/bithacks.html
-inline unsigned int HllUtil::ceilingPowerOf2(unsigned int n) {
+template<typename A>
+inline unsigned int HllUtil<A>::ceilingPowerOf2(unsigned int n) {
   --n;
   n |= n >> 1;
   n |= n >> 2;
@@ -183,7 +229,8 @@ inline unsigned int HllUtil::ceilingPowerOf2(unsigned int n) {
   return ++n;
 }
 
-inline unsigned int HllUtil::simpleIntLog2(unsigned int n) {
+template<typename A>
+inline unsigned int HllUtil<A>::simpleIntLog2(unsigned int n) {
   if (n == 0) {
     throw std::logic_error("cannot take log of 0");
   }
@@ -193,7 +240,8 @@ inline unsigned int HllUtil::simpleIntLog2(unsigned int n) {
 
 // taken from https://graphics.stanford.edu/~seander/bithacks.html
 // input is 32-bit word to count zero bits on right
-inline unsigned int HllUtil::numberOfTrailingZeros(uint32_t v) {
+template<typename A>
+inline unsigned int HllUtil<A>::numberOfTrailingZeros(uint32_t v) {
   unsigned int c;     // c will be the number of zero bits on the right,
                       // so if v is 1101000 (base 2), then c will be 3
   // NOTE: if 0 == v, then c = 31.
@@ -223,16 +271,17 @@ inline unsigned int HllUtil::numberOfTrailingZeros(uint32_t v) {
   return c;	
 }
 
-inline int HllUtil::computeLgArrInts(CurMode mode, int count, int lgConfigK) {
+template<typename A>
+inline int HllUtil<A>::computeLgArrInts(CurMode mode, int count, int lgConfigK) {
   // assume value missing and recompute
-  if (mode == LIST) { return HllUtil::LG_INIT_LIST_SIZE; }
-  int ceilPwr2 = HllUtil::ceilingPowerOf2(count);
-  if ((HllUtil::RESIZE_DENOM * count) > (HllUtil::RESIZE_NUMER * ceilPwr2)) { ceilPwr2 <<= 1;}
+  if (mode == LIST) { return HllUtil<A>::LG_INIT_LIST_SIZE; }
+  int ceilPwr2 = HllUtil<A>::ceilingPowerOf2(count);
+  if ((HllUtil<A>::RESIZE_DENOM * count) > (HllUtil<A>::RESIZE_NUMER * ceilPwr2)) { ceilPwr2 <<= 1;}
   if (mode == SET) {
-    return fmax(HllUtil::LG_INIT_SET_SIZE, HllUtil::simpleIntLog2(ceilPwr2));
+    return fmax(HllUtil<A>::LG_INIT_SET_SIZE, HllUtil<A>::simpleIntLog2(ceilPwr2));
   }
   //only used for HLL4
-  return fmax(HllUtil::LG_AUX_ARR_INTS[lgConfigK], HllUtil::simpleIntLog2(ceilPwr2));
+  return fmax(HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK], HllUtil<A>::simpleIntLog2(ceilPwr2));
 }
 
 }
