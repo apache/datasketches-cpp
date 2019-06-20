@@ -15,10 +15,7 @@ target_include_directories(kll
 )
 
 target_link_libraries(kll INTERFACE common)
-
-set_target_properties(kll PROPERTIES
-  INTERFACE_COMPILE_FEATURES cxx_std_11
-)
+target_compile_features(kll INTERFACE cxx_std_11)
 
 set(kll_HEADERS "include/kll_sketch.hpp;include/kll_helper.hpp;include/kll_quantile_calculator.hpp")
 
