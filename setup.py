@@ -80,7 +80,6 @@ setup(
     # likely need to add all source paths for proper sdist packages
     ext_modules=[CMakeExtension('datasketches')],
     # add custom build_ext command
-    # cmdclass=dict(build_ext=CMakeBuild)
     cmdclass={'build_ext': CMakeBuild},
     zip_safe=False
 )

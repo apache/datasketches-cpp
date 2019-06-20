@@ -15,10 +15,7 @@ target_include_directories(fi
 )
 
 target_link_libraries(fi INTERFACE common)
-
-set_target_properties(fi PROPERTIES
-  INTERFACE_COMPILE_FEATURES cxx_std_11
-)
+target_compile_features(fi INTERFACE cxx_std_11)
 
 set(fi_HEADERS "include/frequent_items_sketch.hpp;include/reverse_purge_hash_map.hpp")
 
