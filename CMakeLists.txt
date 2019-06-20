@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.5.0)
+cmake_minimum_required(VERSION 3.12.0)
 project(DataSketches
         VERSION 0.12.0
         LANGUAGES CXX)
 
 include(GNUInstallDirs)
+include(CMakeDependentOption)
 
 ### Require out-of-source builds
 file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
@@ -13,7 +14,7 @@ endif()
 
 # set default build type to debug
 # Mostly from: https://blog.kitware.com/cmake-and-the-default-build-type/
-set(default_build_type "Debug")
+set(default_build_type "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
   set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
@@ -25,6 +26,9 @@ endif()
 
 # Ensure builds on Windows export all symbols
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
+#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_MACOSX_RPATH ON)
 
 # enable compiler warnings globally
 # derived from https://foonathan.net/blog/2018/10/17/cmake-warnings.html
@@ -45,9 +49,9 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 ###### OPTIONS ######
 # Enable testing
-option(BUILD_TESTS "Create unit tests using CMake" ON)
-if (BUILD_TESTS)
-  find_package(CppUnit REQUIRED)
+find_package(CppUnit)
+CMAKE_DEPENDENT_OPTION(BUILD_TESTS "Compile unit tests" ON "CPPUNIT_FOUND" OFF)
+if (BUILD_TESTS)  
   enable_testing()
 endif()
 

@@ -1,18 +1,16 @@
-if(NOT DEFINED PYTHON_VERSION_SUFFIX)
-  message("No PYTHON_VERSION_SUFFIX defined.")
-  message("If building python wrapper, version defaults to 37 to use python37 libraries.")
-  message("Rerun cmake with -DPYTHON_VERSION_SUFFIX=<value> to override.")
-  set(PYTHON_VERSION_SUFFIX "37")
+find_package(Python3 COMPONENTS Development)
+
+if(NOT DEFINED Python3_VERSION_SUFFIX)
+  set(Python3_VERSION_SUFFIX "${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}")
+  message("Defaulting to look for libboost_python${Python3_VERSION_SUFFIX}")
 endif()
 
-find_package(Python COMPONENTS Development)
-find_package(Boost 1.53 COMPONENTS python${PYTHON_VERSION_SUFFIX})
+find_package(Boost 1.53 COMPONENTS python${Python3_VERSION_SUFFIX} REQUIRED)
 
-if(NOT(${Boost_FOUND} AND ${Python_Development_FOUND}))
-  message("If PythonLibs found but not Boost, check the Python version and set -DPYTHON_VERSION_SUFFIX accordingly.")
-  #return()
+if(NOT(${Boost_FOUND} AND ${Python3_Development_FOUND}))
+  message("If Python3 found but not Boost, check the Python3 version and set -DPython3_VERSION_SUFFIX to match the suffix on libboost_python.")
+  return()
 endif()
-message("Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIR}")
 
 add_library(python SHARED EXCLUDE_FROM_ALL)
 
@@ -22,13 +20,13 @@ target_link_libraries(python
   kll
   cpc
   fi
-  ${Python_LIBRARIES}
-  Boost::python${PYTHON_VERSION_SUFFIX}
+  ${Python3_LIBRARIES}
+  Boost::python${Python3_VERSION_SUFFIX}
 )
 
 target_include_directories(python
   PRIVATE
-    ${Python_INCLUDE_DIRS}
+    ${Python3_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
 )
 
