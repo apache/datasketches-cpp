@@ -14,7 +14,7 @@ target_include_directories(hll
     ${COMMON_INCLUDE_DIR}
 )
 
-target_link_libraries(hll common)
+target_link_libraries(hll INTERFACE common)
 
 set_target_properties(hll PROPERTIES
   PUBLIC_HEADER "include/hll.hpp"
@@ -24,7 +24,7 @@ set_target_properties(hll PROPERTIES
 )
 
 install(TARGETS hll
-  EXPORT ${PROJCT_NAME}
+  EXPORT ${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
 )

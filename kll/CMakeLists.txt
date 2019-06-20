@@ -10,12 +10,20 @@ target_include_directories(kll
   INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+  PRIVATE 
+    ${COMMON_INCLUDE_DIR}
+)
+
+target_link_libraries(kll INTERFACE common)
+
+set_target_properties(kll PROPERTIES
+  INTERFACE_COMPILE_FEATURES cxx_std_11
 )
 
 set(kll_HEADERS "include/kll_sketch.hpp;include/kll_helper.hpp;include/kll_quantile_calculator.hpp")
 
 install(TARGETS kll
-  EXPORT ${PROJCT_NAME}
+  EXPORT ${PROJECT_NAME}
 )
 
 install(FILES ${kll_HEADERS}

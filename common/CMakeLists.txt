@@ -12,6 +12,7 @@ target_include_directories(common
 target_sources(common
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/MurmurHash3.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/serde.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CommonUtil.hpp
 )
 
