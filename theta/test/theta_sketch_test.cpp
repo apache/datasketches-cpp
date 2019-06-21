@@ -26,6 +26,10 @@ namespace datasketches {
 
 class theta_sketch_test: public CppUnit::TestFixture {
 
+  // optional prefix for input binary files
+  // default value defined at end of file
+  static const std::string inputPath;
+
   CPPUNIT_TEST_SUITE(theta_sketch_test);
   CPPUNIT_TEST(empty);
   CPPUNIT_TEST(non_empty_no_retained_keys);
@@ -145,7 +149,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_update_empty_from_java_as_base() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_update_empty_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_update_empty_from_java.bin", std::ios::binary);
     auto sketchptr = theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(sketchptr->is_empty());
     CPPUNIT_ASSERT(!sketchptr->is_estimation_mode());
@@ -159,7 +163,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_update_empty_from_java_as_subclass() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_update_empty_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_update_empty_from_java.bin", std::ios::binary);
     auto sketch = update_theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(sketch.is_empty());
     CPPUNIT_ASSERT(!sketch.is_estimation_mode());
@@ -173,7 +177,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_update_estimation_from_java_as_base() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_update_estimation_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_update_estimation_from_java.bin", std::ios::binary);
     auto sketchptr = theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(!sketchptr->is_empty());
     CPPUNIT_ASSERT(sketchptr->is_estimation_mode());
@@ -186,7 +190,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_update_estimation_from_java_as_subclass() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_update_estimation_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_update_estimation_from_java.bin", std::ios::binary);
     auto sketch = update_theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT(sketch.is_estimation_mode());
@@ -199,7 +203,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_compact_empty_from_java_as_base() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_compact_empty_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_compact_empty_from_java.bin", std::ios::binary);
     auto sketchptr = theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(sketchptr->is_empty());
     CPPUNIT_ASSERT(!sketchptr->is_estimation_mode());
@@ -213,7 +217,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_compact_empty_from_java_as_subclass() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_compact_empty_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_compact_empty_from_java.bin", std::ios::binary);
     auto sketch = compact_theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(sketch.is_empty());
     CPPUNIT_ASSERT(!sketch.is_estimation_mode());
@@ -227,7 +231,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_single_item_from_java_as_base() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_compact_single_item_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_compact_single_item_from_java.bin", std::ios::binary);
     auto sketchptr = theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(!sketchptr->is_empty());
     CPPUNIT_ASSERT(!sketchptr->is_estimation_mode());
@@ -241,7 +245,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_single_item_from_java_as_subclass() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_compact_single_item_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_compact_single_item_from_java.bin", std::ios::binary);
     auto sketch = compact_theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT(!sketch.is_estimation_mode());
@@ -255,7 +259,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_compact_estimation_from_java_as_base() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_compact_estimation_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_compact_estimation_from_java.bin", std::ios::binary);
     auto sketchptr = theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(!sketchptr->is_empty());
     CPPUNIT_ASSERT(sketchptr->is_estimation_mode());
@@ -291,7 +295,7 @@ class theta_sketch_test: public CppUnit::TestFixture {
   void deserialize_compact_estimation_from_java_as_subclass() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open("test/theta_compact_estimation_from_java.bin", std::ios::binary);
+    is.open(inputPath + "theta_compact_estimation_from_java.bin", std::ios::binary);
     auto sketch = compact_theta_sketch::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT(sketch.is_estimation_mode());
@@ -430,5 +434,12 @@ class theta_sketch_test: public CppUnit::TestFixture {
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(theta_sketch_test);
+
+#ifdef TEST_BINARY_INPUT_PATH
+const std::string theta_sketch_test::inputPath = TEST_BINARY_INPUT_PATH;
+#else
+const std::string theta_sketch_test::inputPath = "test/";
+#endif
+
 
 } /* namespace datasketches */

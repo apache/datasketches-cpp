@@ -92,6 +92,9 @@ protected:
   static void check_serial_version(uint8_t actual, uint8_t expected);
   static void check_seed_hash(uint16_t actual, uint16_t expected);
   static void check_size(size_t actual, size_t expected);
+
+  friend theta_intersection_alloc<A>;
+  friend theta_a_not_b_alloc<A>;
 };
 
 // update sketch
@@ -295,9 +298,10 @@ constexpr uint8_t log2(uint32_t n) {
 }
 
 constexpr uint8_t lg_size_from_count(uint32_t n, double load_factor) {
-  uint8_t lg = log2(n) + 1;
-  if (n > (1 << lg) * load_factor) lg++;
-  return lg;
+  //uint8_t lg = log2(n) + 1;
+  //if (n > (1 << lg) * load_factor) lg++;
+  //return lg;
+  return log2(n) + (n > (1 << (log2(n) + 1)) ? 2 : 1);
 }
 
 } /* namespace datasketches */
