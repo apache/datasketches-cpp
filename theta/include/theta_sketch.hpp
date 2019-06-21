@@ -298,10 +298,7 @@ constexpr uint8_t log2(uint32_t n) {
 }
 
 constexpr uint8_t lg_size_from_count(uint32_t n, double load_factor) {
-  //uint8_t lg = log2(n) + 1;
-  //if (n > (1 << lg) * load_factor) lg++;
-  //return lg;
-  return log2(n) + ((n > (1 << (log2(n) + 1)) * load_factor) ? 2 : 1);
+  return log2(n) + ((n > static_cast<uint32_t>((1 << (log2(n) + 1)) * load_factor)) ? 2 : 1);
 }
 
 } /* namespace datasketches */
