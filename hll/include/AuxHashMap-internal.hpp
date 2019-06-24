@@ -44,9 +44,7 @@ AuxHashMap<A>::AuxHashMap(int lgAuxArrInts, int lgConfigK)
 
 template<typename A>
 AuxHashMap<A>* AuxHashMap<A>::newAuxHashMap(int lgAuxArrInts, int lgConfigK) {
-  AuxHashMap<A>* map = ahmAlloc().allocate(1);
-  ahmAlloc().construct(map, lgAuxArrInts, lgConfigK);
-  return map;
+  return new (ahmAlloc().allocate(1)) AuxHashMap<A>(lgAuxArrInts, lgConfigK);
 }
 
 template<typename A>
@@ -62,9 +60,7 @@ AuxHashMap<A>::AuxHashMap(const AuxHashMap& that)
 
 template<typename A>
 AuxHashMap<A>* AuxHashMap<A>::newAuxHashMap(const AuxHashMap& that) {
-  AuxHashMap<A>* map = ahmAlloc().allocate(1);
-  ahmAlloc().construct(map, that);
-  return map;
+  return new (ahmAlloc().allocate(1)) AuxHashMap<A>(that);
 }
 
 template<typename A>
@@ -87,8 +83,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
     if (len < auxCount * sizeof(int)) {
       throw std::invalid_argument("Input array too small to hold AuxHashMap image");
     }
-    auxHashMap = ahmAlloc().allocate(1);
-    ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
+    auxHashMap = new (ahmAlloc().allocate(1)) AuxHashMap<A>(lgArrInts, lgConfigK);
     for (int i = 0; i < auxCount; ++i) {
       int pair = auxPtr[i];
       int slotNo = HllUtil<A>::getLow26(pair) & configKmask;
@@ -100,8 +95,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
     if (len < itemsToRead * sizeof(int)) {
       throw std::invalid_argument("Input array too small to hold AuxHashMap image");
     }
-    auxHashMap = ahmAlloc().allocate(1);
-    ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
+    auxHashMap = new (ahmAlloc().allocate(1)) AuxHashMap<A>(lgArrInts, lgConfigK);
     for (int i = 0; i < itemsToRead; ++i) {
       int pair = auxPtr[i];
       if (pair == HllUtil<A>::EMPTY) { continue; }
@@ -131,8 +125,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(std::istream& is, const int lgConfigK,
   }
 
   // TODO: truncated stream will throw exception without freeing memory  
-  AuxHashMap<A>* auxHashMap = ahmAlloc().allocate(1);
-  ahmAlloc().construct(auxHashMap, lgArrInts, lgConfigK);
+  AuxHashMap<A>* auxHashMap = new (ahmAlloc().allocate(1)) AuxHashMap<A>(lgArrInts, lgConfigK);
   int configKmask = (1 << lgConfigK) - 1;
 
   if (srcCompact) {
@@ -180,9 +173,7 @@ std::function<void(AuxHashMap<A>*)> AuxHashMap<A>::make_deleter() {
 
 template<typename A>
 AuxHashMap<A>* AuxHashMap<A>::copy() const {
-  AuxHashMap<A>* ptr = ahmAlloc().allocate(1);
-  ahmAlloc().construct(ptr, *this);
-  return ptr;
+  return new (ahmAlloc().allocate(1)) AuxHashMap<A>(*this);
 }
 
 template<typename A>
@@ -213,8 +204,7 @@ int AuxHashMap<A>::getUpdatableSizeBytes() const {
 template<typename A>
 std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>> AuxHashMap<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
-  IntArrayPairIterator<A>* itr = iapiAlloc().allocate(1);
-  iapiAlloc().construct(itr, auxIntArr, 1 << lgAuxArrInts, lgConfigK);
+  IntArrayPairIterator<A>* itr = new (iapiAlloc().allocate(1)) IntArrayPairIterator<A>(auxIntArr, 1 << lgAuxArrInts, lgConfigK);
   return std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>(
     itr,
     [](PairIterator<A>* ptr) {

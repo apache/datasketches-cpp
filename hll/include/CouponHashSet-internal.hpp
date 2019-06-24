@@ -109,8 +109,7 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
                                 + ", found: " + std::to_string(len));
   }
 
-  CouponHashSet<A>* sketch = chsAlloc().allocate(1);
-  chsAlloc().construct(sketch, lgK, tgtHllType);
+  CouponHashSet<A>* sketch = new (chsAlloc().allocate(1)) CouponHashSet<A>(lgK, tgtHllType);
   sketch->putOutOfOrderFlag(true);
 
   if (compactFlag) {
@@ -174,8 +173,7 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
     lgArrInts = HllUtil<A>::computeLgArrInts(SET, couponCount, lgK);
   }
 
-  CouponHashSet<A>* sketch = chsAlloc().allocate(1);
-  chsAlloc().construct(sketch, lgK, tgtHllType);
+  CouponHashSet<A>* sketch = new (chsAlloc().allocate(1)) CouponHashSet<A>(lgK, tgtHllType);
   sketch->putOutOfOrderFlag(true);
 
   // Don't set couponCount here;
@@ -203,16 +201,12 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
 
 template<typename A>
 CouponHashSet<A>* CouponHashSet<A>::copy() const {
-  CouponHashSet<A>* sketch = chsAlloc().allocate(1);
-  chsAlloc().construct(sketch, *this);
-  return sketch;
+  return new (chsAlloc().allocate(1)) CouponHashSet<A>(*this);
 }
 
 template<typename A>
 CouponHashSet<A>* CouponHashSet<A>::copyAs(const TgtHllType tgtHllType) const {
-  CouponHashSet<A>* sketch = chsAlloc().allocate(1);
-  chsAlloc().construct(sketch, *this, tgtHllType);
-  return sketch;
+  return new (chsAlloc().allocate(1)) CouponHashSet<A>(*this, tgtHllType);
 }
 
 template<typename A>
