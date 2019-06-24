@@ -224,15 +224,15 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> HllArray<A>::serialize(bool compact) const {
-  const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> HllArray<A>::serialize(bool compact, unsigned header_size_bytes) const {
+  const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes()) + header_size_bytes;
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   std::unique_ptr<uint8_t, std::function<void(uint8_t*)>> byteArr(
     uint8Alloc().allocate(sketchSizeBytes),
     [sketchSizeBytes](uint8_t* p){ uint8Alloc().deallocate(p, sketchSizeBytes); }
     );
 
-  uint8_t* bytes = byteArr.get();
+  uint8_t* bytes = byteArr.get() + header_size_bytes;
   AuxHashMap<A>* auxHashMap = getAuxHashMap();
 
   bytes[HllUtil<A>::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
