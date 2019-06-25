@@ -8,4 +8,4 @@ git clone --recursive https://github.com/apache/incubator-datasketches-cpp.git
 pip install .
 ```
 
-Since this is still experimental, you may prefer to instead run `python3 config.py develop` to avoid installing the package.
+Since this is still experimental, you may prefer to instead run `python3 setup.py develop` to avoid installing the package.
