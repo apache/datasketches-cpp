@@ -1,5 +1,4 @@
-#find_package(Python3 REQUIRED COMPONENTS Development)
-
+# TODO: Can we force python version >= 3.0?
 if (MSVC)
   set(PYBIND11_CPP_STANDARD /std:c++11)
 else()
@@ -16,25 +15,16 @@ target_link_libraries(python
   PRIVATE
     common
     hll
-    #kll
+    kll
     cpc
     fi
-    #${Python3_LIBRARIES}
+    #theta
     pybind11::module
 )
-
-#target_include_directories(python
-#  PRIVATE
-#    ${Python3_INCLUDE_DIRS}
-#)
 
 set_target_properties(python PROPERTIES
   PREFIX ""
   OUTPUT_NAME datasketches
-#  POSITION_INDEPENDENT_CODE ON
-#  LINKER_LANGUAGE CXX
-#  CXX_STANDARD 11
-#  CXX_STANDARD_REQUIRED YES
 )
 
 # ensure we make a .so on Mac rather than .dylib
@@ -46,7 +36,8 @@ target_sources(python
   PRIVATE
     src/datasketches.cpp
     src/hll_wrapper.cpp
-    #src/kll_wrapper.cpp
+    src/kll_wrapper.cpp
     src/cpc_wrapper.cpp
     src/fi_wrapper.cpp
+    #stc/theta_wrapper.cpp
 )
