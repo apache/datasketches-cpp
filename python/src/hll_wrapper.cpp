@@ -18,93 +18,42 @@
  */
 
 #include "hll.hpp"
-#include <boost/python.hpp>
-#include <memory>
 
-namespace bpy = boost::python;
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
 
 namespace datasketches {
 namespace python {
 
-HllSketch<> HllSketch_deserialize(bpy::object obj) {
-  PyObject* skBytes = obj.ptr();
-  if (!PyBytes_Check(skBytes)) {
-    PyErr_SetString(PyExc_TypeError, "Attmpted to deserialize non-bytes object");
-    bpy::throw_error_already_set();
-  }
-  
-  size_t len = PyBytes_GET_SIZE(skBytes);
-  char* sketchImg = PyBytes_AS_STRING(skBytes);
-  HllSketch<> sk = HllSketch<>::deserialize(sketchImg, len);
-  return sk;
+HllSketch<> HllSketch_deserialize(py::bytes skBytes) {
+  std::string skStr = skBytes; // implicit cast  
+  return HllSketch<>::deserialize(skStr.c_str(), skStr.length());
 }
 
-bpy::object HllSketch_serializeCompact(const HllSketch<>& sk) {
-  std::pair<byte_ptr_with_deleter, const size_t> serResult = sk.serializeCompact();
-  PyObject* sketchBytes = PyBytes_FromStringAndSize((char*)serResult.first.get(), serResult.second);
-  return bpy::object{bpy::handle<>(sketchBytes)};
+py::object HllSketch_serializeCompact(const HllSketch<>& sk) {
+  auto serResult = sk.serializeCompact();
+  return py::bytes((char*)serResult.first.get(), serResult.second);
 }
 
-
-bpy::object HllSketch_serializeUpdatable(const HllSketch<>& sk) {
-  // TODO: can we just releast the smart pointer?
-  std::pair<byte_ptr_with_deleter, const size_t> serResult = sk.serializeUpdatable();
-  PyObject* sketchBytes = PyBytes_FromStringAndSize((char*)serResult.first.get(), serResult.second);
-  return bpy::object{bpy::handle<>(sketchBytes)};
+py::object HllSketch_serializeUpdatable(const HllSketch<>& sk) {
+  auto serResult = sk.serializeUpdatable();
+  return py::bytes((char*)serResult.first.get(), serResult.second);
 }
 
-std::string HllSketch_toString(const HllSketch<>& sk,
-                               bool summary = true,
-                               bool detail = false,
-                               bool auxDetail = false,
-                               bool all = false) {
-  return sk.to_string(summary, detail, auxDetail, all);
+HllUnion<> HllUnion_deserialize(py::bytes uBytes) {
+  std::string uStr = uBytes; // implicit cast
+  return HllUnion<>::deserialize(uStr.c_str(), uStr.length());
 }
 
-std::string HllSketch_toStringDefault(const HllSketch<>& sk) {
-  return HllSketch_toString(sk);
+py::object HllUnion_serializeCompact(const HllUnion<>& u) {
+  auto serResult = u.serializeCompact();
+  return py::bytes((char*)serResult.first.get(), serResult.second);
 }
 
-HllUnion<> HllUnion_deserialize(bpy::object obj) {
-  PyObject* skBytes = obj.ptr();
-  if (!PyBytes_Check(skBytes)) {
-    PyErr_SetString(PyExc_TypeError, "Attmpted to deserialize non-bytes object");
-    bpy::throw_error_already_set();
-  }
-  
-  size_t len = PyBytes_GET_SIZE(skBytes);
-  char* sketchImg = PyBytes_AS_STRING(skBytes);
-  HllUnion<> u = HllUnion<>::deserialize(sketchImg, len);
-  return u;
-}
-
-bpy::object HllUnion_serializeCompact(const HllUnion<>& u) {
-  std::pair<byte_ptr_with_deleter, const size_t> serResult = u.serializeCompact();
-  PyObject* unionBytes = PyBytes_FromStringAndSize((char*)serResult.first.get(), serResult.second);
-  return bpy::object{bpy::handle<>(unionBytes)};
-}
-
-bpy::object HllUnion_serializeUpdatable(const HllUnion<>& u) {
-  std::pair<byte_ptr_with_deleter, const size_t> serResult = u.serializeUpdatable();
-  PyObject* unionBytes = PyBytes_FromStringAndSize((char*)serResult.first.get(), serResult.second);
-  return bpy::object{bpy::handle<>(unionBytes)};
-}
-
-std::string HllUnion_toString(const HllUnion<>& u,
-                              bool summary = true,
-                              bool detail = false,
-                              bool auxDetail = false,
-                              bool all = false) {
-  return u.to_string(summary, detail, auxDetail, all);
-}
-
-std::string HllUnion_toStringDefault(const HllUnion<>& u) {
-  return HllUnion_toString(u);
-}
-
-HllSketch<> HllUnion_getResult(const HllUnion<>& u,
-                                TgtHllType tgtHllType = HLL_4) {
-  return std::move(u.getResult(tgtHllType));
+py::object HllUnion_serializeUpdatable(const HllUnion<>& u) {
+  auto serResult = u.serializeUpdatable();
+  return py::bytes((char*)serResult.first.get(), serResult.second);
 }
 
 }
@@ -112,82 +61,72 @@ HllSketch<> HllUnion_getResult(const HllUnion<>& u,
 
 namespace dspy = datasketches::python;
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(HllSketchToStringOverloads, dspy::HllSketch_toString, 1, 5);
-
-BOOST_PYTHON_FUNCTION_OVERLOADS(HllUnionToStringOverloads, dspy::HllUnion_toString, 1, 5);
-BOOST_PYTHON_FUNCTION_OVERLOADS(HllUnionGetResultOverloads, dspy::HllUnion_getResult, 1, 2);
-
-void export_hll()
-{
+void init_hll(py::module &m) {
   using namespace datasketches;
 
-  bpy::enum_<TgtHllType>("TgtHllType")
+  py::enum_<TgtHllType>(m, "tgt_hll_type", "Target HLL flavor")
     .value("HLL_4", HLL_4)
     .value("HLL_6", HLL_6)
     .value("HLL_8", HLL_8)
-    ;
+    .export_values();
 
-  bpy::class_<HllSketch<>, boost::noncopyable>("HllSketch", bpy::init<int>())
-    .def(bpy::init<int, TgtHllType>())
-    .def(bpy::init<int, TgtHllType, bool>())
-    //.def("deserialize", &dspy::HllSketch_deserialize, bpy::return_value_policy<bpy::manage_new_object>())
-    .def("deserialize", &dspy::HllSketch_deserialize)
-    .staticmethod("deserialize")
-    .def("serializeCompact", &dspy::HllSketch_serializeCompact)
-    .def("serializeUpdatable", &dspy::HllSketch_serializeUpdatable)
-    .def("__str__", &dspy::HllSketch_toStringDefault)
-    .add_property("lgConfigK", &HllSketch<>::getLgConfigK)
-    .add_property("tgtHllType", &HllSketch<>::getTgtHllType)
-    .def("toString", &dspy::HllSketch_toString, HllSketchToStringOverloads())
-    .def("getEstimate", &HllSketch<>::getEstimate)
-    .def("getCompositeEstimate", &HllSketch<>::getCompositeEstimate)
-    .def("getLowerBound", &HllSketch<>::getLowerBound)
-    .def("getUpperBound", &HllSketch<>::getUpperBound)
-    .def("isCompact", &HllSketch<>::isCompact)
-    .def("isEmpty", &HllSketch<>::isEmpty)
-    .def("getUpdatableSerializationBytes", &HllSketch<>::getUpdatableSerializationBytes)
-    .def("getCompactSerializationBytes", &HllSketch<>::getCompactSerializationBytes)
+  py::class_<HllSketch<>>(m, "hll_sketch")
+    .def(py::init<int>())
+    .def(py::init<int, TgtHllType>())
+    .def(py::init<int, TgtHllType, bool>())
+    .def_static("deserialize", &dspy::HllSketch_deserialize)
+    .def("serialize_compact", &dspy::HllSketch_serializeCompact)
+    .def("serialize_updatable", &dspy::HllSketch_serializeUpdatable)
+    .def("to_string", (std::string (HllSketch<>::*)(bool,bool,bool,bool) const) &HllSketch<>::to_string,
+         py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
+    .def("__str__", (std::string (HllSketch<>::*)(bool,bool,bool,bool) const) &HllSketch<>::to_string,
+         py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
+    .def_property_readonly("lg_config_k", &HllSketch<>::getLgConfigK)
+    .def_property_readonly("tgt_hll_type", &HllSketch<>::getTgtHllType)
+    .def("get_estimate", &HllSketch<>::getEstimate)
+    .def("get_composite_estimate", &HllSketch<>::getCompositeEstimate)
+    .def("get_lower_bound", &HllSketch<>::getLowerBound)
+    .def("get_upper_bound", &HllSketch<>::getUpperBound)
+    .def("is_compact", &HllSketch<>::isCompact)
+    .def("is_empty", &HllSketch<>::isEmpty)
+    .def("get_updatable_serialization_bytes", &HllSketch<>::getUpdatableSerializationBytes)
+    .def("get_compact_serialization_bytes", &HllSketch<>::getCompactSerializationBytes)
     .def("reset", &HllSketch<>::reset)
-    .def<void (HllSketch<>::*)(uint64_t)>("update", &HllSketch<>::update)
-    .def<void (HllSketch<>::*)(int64_t)>("update", &HllSketch<>::update)
-    .def<void (HllSketch<>::*)(double)>("update", &HllSketch<>::update)
-    .def<void (HllSketch<>::*)(const std::string&)>("update", &HllSketch<>::update)
-    .def("getMaxUpdatableSerializationBytes", &HllSketch<>::getMaxUpdatableSerializationBytes)
-    .staticmethod("getMaxUpdatableSerializationBytes")
-    .def("getRelErr", &HllSketch<>::getRelErr)
-    .staticmethod("getRelErr")
+    .def("update", (void (HllSketch<>::*)(uint64_t)) &HllSketch<>::update)
+    .def("update", (void (HllSketch<>::*)(int64_t)) &HllSketch<>::update)
+    .def("update", (void (HllSketch<>::*)(double)) &HllSketch<>::update)
+    .def("update", (void (HllSketch<>::*)(const std::string&)) &HllSketch<>::update)
+    .def_static("get_max_updatable_serialization_bytes", &HllSketch<>::getMaxUpdatableSerializationBytes)
+    .def_static("get_rel_err", &HllSketch<>::getRelErr)
     ;
 
-  bpy::class_<HllUnion<>, boost::noncopyable>("HllUnion", bpy::init<int>())
-    //.def("deserialize", &dspy::HllUnion_deserialize, bpy::return_value_policy<bpy::manage_new_object>())
-    .def("deserialize", &dspy::HllUnion_deserialize)
-    .staticmethod("deserialize")
-    .def("serializeCompact", &dspy::HllUnion_serializeCompact)
-    .def("serializeUpdatable", &dspy::HllUnion_serializeUpdatable)
-    .def("__str__", &dspy::HllUnion_toStringDefault)
-    .add_property("lgConfigK", &HllUnion<>::getLgConfigK)
-    .add_property("tgtHllType", &HllUnion<>::getTgtHllType)
-    .def("toString", &dspy::HllUnion_toString, HllUnionToStringOverloads())
-    .def("getEstimate", &HllUnion<>::getEstimate)
-    .def("getCompositeEstimate", &HllUnion<>::getCompositeEstimate)
-    .def("getLowerBound", &HllUnion<>::getLowerBound)
-    .def("getUpperBound", &HllUnion<>::getUpperBound)
-    .def("isCompact", &HllUnion<>::isCompact)
-    .def("isEmpty", &HllUnion<>::isEmpty)
-    .def("getUpdatableSerializationBytes", &HllUnion<>::getUpdatableSerializationBytes)
-    .def("getCompactSerializationBytes", &HllUnion<>::getCompactSerializationBytes)
+  py::class_<HllUnion<>>(m, "hll_union")
+    .def(py::init<int>())
+    .def_static("deserialize", &dspy::HllUnion_deserialize)
+    .def("serialize_compact", &dspy::HllUnion_serializeCompact)
+    .def("serialize_updatable", &dspy::HllUnion_serializeUpdatable)
+    .def("to_string", (std::string (HllUnion<>::*)(bool,bool,bool,bool) const) &HllUnion<>::to_string,
+         py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
+    .def("__str__", (std::string (HllUnion<>::*)(bool,bool,bool,bool) const) &HllUnion<>::to_string,
+         py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
+    .def_property_readonly("lg_config_k", &HllUnion<>::getLgConfigK)
+    .def_property_readonly("tgt_hll_type", &HllUnion<>::getTgtHllType)
+    .def("get_estimate", &HllUnion<>::getEstimate)
+    .def("get_composite_estimate", &HllUnion<>::getCompositeEstimate)
+    .def("get_lower_bound", &HllUnion<>::getLowerBound)
+    .def("get_upper_bound", &HllUnion<>::getUpperBound)
+    .def("is_Compact", &HllUnion<>::isCompact)
+    .def("is_empty", &HllUnion<>::isEmpty)
+    .def("get_updatable_serialization_bytes", &HllUnion<>::getUpdatableSerializationBytes)
+    .def("get_compact_serialization_bytes", &HllUnion<>::getCompactSerializationBytes)
     .def("reset", &HllUnion<>::reset)
-    //.def("getResult", &dspy::HllUnion_getResult, HllUnionGetResultOverloads()[bpy::return_value_policy<bpy::manage_new_object>()])
-    .def("getResult", &dspy::HllUnion_getResult, HllUnionGetResultOverloads())
+    .def("get_result", &HllUnion<>::getResult, py::arg("tgt_hll_type")=HLL_4)
     .def<void (HllUnion<>::*)(const HllSketch<>&)>("update", &HllUnion<>::update)
     .def<void (HllUnion<>::*)(uint64_t)>("update", &HllUnion<>::update)
     .def<void (HllUnion<>::*)(int64_t)>("update", &HllUnion<>::update)
     .def<void (HllUnion<>::*)(double)>("update", &HllUnion<>::update)
     .def<void (HllUnion<>::*)(const std::string&)>("update", &HllUnion<>::update)
-    //.def<void (HllUnion::*)(const void*, size_t)>("update", &HllUnion::update)
-    .def("getMaxSerializationBytes", &HllUnion<>::getMaxSerializationBytes)
-    .staticmethod("getMaxSerializationBytes")
-    .def("getRelErr", &HllUnion<>::getRelErr)
-    .staticmethod("getRelErr")
+    .def_static("get_max_serialization_bytes", &HllUnion<>::getMaxSerializationBytes)
+    .def_static("get_rel_err", &HllUnion<>::getRelErr)
     ;
 }
