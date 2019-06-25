@@ -93,16 +93,13 @@ std::function<void(HllSketchImpl<A>*)> Hll4Array<A>::get_deleter() const {
 template<typename A>
 Hll4Array<A>* Hll4Array<A>::copy() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Array<A>> hll4Alloc;
-  Hll4Array<A>* hll = hll4Alloc().allocate(1);
-  hll4Alloc().construct(hll, *this);
-  return hll;
+  return new (hll4Alloc().allocate(1)) Hll4Array<A>(*this);
 }
 
 template<typename A>
 PairIterator_with_deleter<A> Hll4Array<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Iterator<A>> itrAlloc;
-  Hll4Iterator<A>* itr = itrAlloc().allocate(1);
-  itrAlloc().construct(itr, *this, 1 << this->lgConfigK);
+  Hll4Iterator<A>* itr = new (itrAlloc().allocate(1)) Hll4Iterator<A>(*this, 1 << this->lgConfigK);
   return PairIterator_with_deleter<A>(
     itr,
     [](PairIterator<A>* ptr) {

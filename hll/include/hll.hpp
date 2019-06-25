@@ -61,7 +61,7 @@ class HllSketch final {
 
     void reset();
     
-    std::pair<byte_ptr_with_deleter, const size_t> serializeCompact() const;
+    std::pair<byte_ptr_with_deleter, const size_t> serializeCompact(unsigned header_size_bytes = 0) const;
     std::pair<byte_ptr_with_deleter, const size_t> serializeUpdatable() const;
     void serializeCompact(std::ostream& os) const;
     void serializeUpdatable(std::ostream& os) const;

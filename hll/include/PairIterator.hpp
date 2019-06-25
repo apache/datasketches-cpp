@@ -21,6 +21,8 @@
 #define _PAIRITERATOR_HPP_
 
 #include <string>
+#include <functional>
+#include <memory>
 
 namespace datasketches {
 

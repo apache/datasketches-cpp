@@ -92,16 +92,12 @@ std::function<void(HllSketchImpl<A>*)> CouponList<A>::get_deleter() const {
 
 template<typename A>
 CouponList<A>* CouponList<A>::copy() const {
-  CouponList<A>* cl = clAlloc().allocate(1);
-  clAlloc().construct(cl, *this);
-  return cl;
+  return new (clAlloc().allocate(1)) CouponList<A>(*this);
 }
 
 template<typename A>
 CouponList<A>* CouponList<A>::copyAs(const TgtHllType tgtHllType) const {
-  CouponList<A>* cl = clAlloc().allocate(1);
-  clAlloc().construct(cl, *this, tgtHllType);
-  return cl;
+  return new (clAlloc().allocate(1)) CouponList<A>(*this, tgtHllType);
 }
 
 template<typename A>
@@ -142,8 +138,7 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
                                 + ", found: " + std::to_string(len));
   }
 
-  CouponList<A>* sketch = clAlloc().allocate(1);
-  clAlloc().construct(sketch, lgK, tgtHllType, curMode);
+  CouponList<A>* sketch = new (clAlloc().allocate(1)) CouponList<A>(lgK, tgtHllType, curMode);
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
@@ -183,8 +178,7 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
   bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   bool emptyFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
 
-  CouponList<A>* sketch = clAlloc().allocate(1);
-  clAlloc().construct(sketch, lgK, tgtHllType, curMode);
+  CouponList<A>* sketch = new (clAlloc().allocate(1)) CouponList<A>(lgK, tgtHllType, curMode);
   const int couponCount = (int) listHeader[HllUtil<A>::LIST_COUNT_BYTE];
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
@@ -201,15 +195,15 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> CouponList<A>::serialize(bool compact) const {
-  size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes());
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> CouponList<A>::serialize(bool compact, unsigned header_size_bytes) const {
+  size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes()) + header_size_bytes;
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   std::unique_ptr<uint8_t, std::function<void(uint8_t*)>> byteArr(
     uint8Alloc().allocate(sketchSizeBytes),
     [sketchSizeBytes](uint8_t* p){ uint8Alloc().deallocate(p, sketchSizeBytes); }
   );
 
-  uint8_t* bytes = byteArr.get();
+  uint8_t* bytes = byteArr.get() + header_size_bytes;
 
   bytes[HllUtil<A>::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
   bytes[HllUtil<A>::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil<A>::SER_VER);
@@ -411,8 +405,7 @@ int* CouponList<A>::getCouponIntArr() const {
 template<typename A>
 PairIterator_with_deleter<A> CouponList<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
-  IntArrayPairIterator<A>* itr = iapiAlloc().allocate(1);
-  iapiAlloc().construct(itr, couponIntArr, 1 << lgCouponArrInts, this->lgConfigK);
+  IntArrayPairIterator<A>* itr = new (iapiAlloc().allocate(1)) IntArrayPairIterator<A>(couponIntArr, 1 << lgCouponArrInts, this->lgConfigK);
   return PairIterator_with_deleter<A>(
     itr,
     [](PairIterator<A>* ptr) {

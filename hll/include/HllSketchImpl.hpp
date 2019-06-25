@@ -35,7 +35,7 @@ class HllSketchImpl {
     virtual ~HllSketchImpl();
 
     virtual void serialize(std::ostream& os, bool compact) const = 0;
-    virtual std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serialize(bool compact) const = 0;
+    virtual std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serialize(bool compact, unsigned header_size_bytes) const = 0;
     //static HllSketchImpl* deserialize(std::istream& os);
     //static HllSketchImpl* deserialize(const void* bytes, size_t len);
 

@@ -35,8 +35,7 @@ template<typename A>
 HllUnion<A>::HllUnion(const int lgMaxK)
   : lgMaxK(HllUtil<A>::checkLgK(lgMaxK)) {
     typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch<A>> AllocHllSketch;
-    gadget = AllocHllSketch().allocate(1);
-    AllocHllSketch().construct(gadget, lgMaxK, TgtHllType::HLL_8);
+    gadget = new (AllocHllSketch().allocate(1)) HllSketch<A>(lgMaxK, TgtHllType::HLL_8);
 }
 
 template<typename A>
@@ -77,7 +76,7 @@ HllUnion<A>::~HllUnion() {
 }
 
 template<typename A>
-static std::ostream& operator<<(std::ostream& os, HllUnion<A>& hllUnion) {
+static std::ostream& operator<<(std::ostream& os, const HllUnion<A>& hllUnion) {
   return hllUnion.to_string(os, true, true, false, false);
 }
 

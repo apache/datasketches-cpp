@@ -48,9 +48,7 @@ HllSketch<A>::HllSketch(int lgConfigK, TgtHllType tgtHllType, bool startFullSize
     hllSketchImpl = HllSketchImplFactory<A>::newHll(lgConfigK, tgtHllType, startFullSize);
   } else {
     typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
-    CouponList<A>* cl = clAlloc().allocate(1);
-    clAlloc().construct(cl, lgConfigK, tgtHllType, CurMode::LIST); 
-    hllSketchImpl = cl;
+    hllSketchImpl = new (clAlloc().allocate(1)) CouponList<A>(lgConfigK, tgtHllType, CurMode::LIST);
   }
 }
 
@@ -76,7 +74,7 @@ HllSketch<A>::~HllSketch() {
 }
 
 template<typename A>
-std::ostream& operator<<(std::ostream& os, HllSketch<A>& sketch) {
+std::ostream& operator<<(std::ostream& os, const HllSketch<A>& sketch) {
   return sketch.to_string(os, true, true, false, false);
 }
 
@@ -234,7 +232,7 @@ void HllSketch<A>::couponUpdate(int coupon) {
   if (coupon == HllUtil<A>::EMPTY) { return; }
   HllSketchImpl<A>* result = this->hllSketchImpl->couponUpdate(coupon);
   if (result != this->hllSketchImpl) {
-    delete this->hllSketchImpl;
+    this->hllSketchImpl->get_deleter()(this->hllSketchImpl);
     this->hllSketchImpl = result;
   }
 }
@@ -251,14 +249,14 @@ void HllSketch<A>::serializeUpdatable(std::ostream& os) const {
 
 template<typename A>
 std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t>
-HllSketch<A>::serializeCompact() const {
-  return hllSketchImpl->serialize(true);
+HllSketch<A>::serializeCompact(unsigned header_size_bytes) const {
+  return hllSketchImpl->serialize(true, header_size_bytes);
 }
 
 template<typename A>
 std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t>
 HllSketch<A>::serializeUpdatable() const {
-  return hllSketchImpl->serialize(false);
+  return hllSketchImpl->serialize(false, 0);
 }
 
 template<typename A>

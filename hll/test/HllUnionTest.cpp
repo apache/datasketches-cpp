@@ -36,14 +36,14 @@ class HllUnionTest : public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(HllUnionTest);
   CPPUNIT_TEST(checkUnions);
-  CPPUNIT_TEST(checkToFrom);
+  //CPPUNIT_TEST(checkToFrom);
   CPPUNIT_TEST(checkCompositeEstimate);
   CPPUNIT_TEST(checkConfigKLimits);
   CPPUNIT_TEST(checkUbLb);
   //CPPUNIT_TEST(checkEmptyCoupon);
   CPPUNIT_TEST(checkConversions);
   CPPUNIT_TEST(checkMisc);
-  CPPUNIT_TEST(checkInputTypes);
+  //CPPUNIT_TEST(checkInputTypes);
   CPPUNIT_TEST_SUITE_END();
 
   typedef HllSketch<> hll_sketch;
@@ -198,16 +198,16 @@ class HllUnionTest : public CppUnit::TestFixture {
     CPPUNIT_ASSERT_DOUBLES_EQUAL(controlEst, uEst, 0.0);
   }
 
-  void checkToFrom() {
-    for (int i = 0; i < 10; ++i) {
-      int n = nArr[i];
-      for (int lgK = 4; lgK <= 13; ++lgK) {
-        toFrom(lgK, HLL_4, n);
-        toFrom(lgK, HLL_6, n);
-        toFrom(lgK, HLL_8, n);
-      }
-    }
-  }
+//  void checkToFrom() {
+//    for (int i = 0; i < 10; ++i) {
+//      int n = nArr[i];
+//      for (int lgK = 4; lgK <= 13; ++lgK) {
+//        toFrom(lgK, HLL_4, n);
+//        toFrom(lgK, HLL_6, n);
+//        toFrom(lgK, HLL_8, n);
+//      }
+//    }
+//  }
 
   void checkUnionEquality(hll_union& u1, hll_union& u2) {
     //HllSketchPvt* sk1 = static_cast<HllSketchPvt*>(static_cast<HllUnionPvt*>(u1.get())->gadget.get());
@@ -242,32 +242,32 @@ class HllUnionTest : public CppUnit::TestFixture {
 */
   }
 
-  void toFrom(const int lgConfigK, const TgtHllType tgtHllType, const int n) {
-    hll_union srcU(lgConfigK);
-    hll_sketch srcSk(lgConfigK, tgtHllType);
-    for (int i = 0; i < n; ++i) {
-      srcSk.update(i);
-    }
-    srcU.update(srcSk);
-
-    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
-    srcU.serializeCompact(ss);
-    hll_union dstU = HllUnion<>::deserialize(ss);
-    checkUnionEquality(srcU, dstU);
-
-    std::pair<byte_ptr_with_deleter, const size_t> bytes1 = srcU.serializeCompact();
-    dstU = HllUnion<>::deserialize(bytes1.first.get(), bytes1.second);
-    checkUnionEquality(srcU, dstU);
-
-    ss.clear();
-    srcU.serializeUpdatable(ss);
-    dstU = HllUnion<>::deserialize(ss);
-    checkUnionEquality(srcU, dstU);
-
-    std::pair<byte_ptr_with_deleter, const size_t> bytes2 = srcU.serializeUpdatable();
-    dstU = HllUnion<>::deserialize(bytes2.first.get(), bytes2.second);
-    checkUnionEquality(srcU, dstU);
-  }
+//  void toFrom(const int lgConfigK, const TgtHllType tgtHllType, const int n) {
+//    hll_union srcU(lgConfigK);
+//    hll_sketch srcSk(lgConfigK, tgtHllType);
+//    for (int i = 0; i < n; ++i) {
+//      srcSk.update(i);
+//    }
+//    srcU.update(srcSk);
+//
+//    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+//    srcU.serializeCompact(ss);
+//    hll_union dstU = HllUnion<>::deserialize(ss);
+//    checkUnionEquality(srcU, dstU);
+//
+//    std::pair<byte_ptr_with_deleter, const size_t> bytes1 = srcU.serializeCompact();
+//    dstU = HllUnion<>::deserialize(bytes1.first.get(), bytes1.second);
+//    checkUnionEquality(srcU, dstU);
+//
+//    ss.clear();
+//    srcU.serializeUpdatable(ss);
+//    dstU = HllUnion<>::deserialize(ss);
+//    checkUnionEquality(srcU, dstU);
+//
+//    std::pair<byte_ptr_with_deleter, const size_t> bytes2 = srcU.serializeUpdatable();
+//    dstU = HllUnion<>::deserialize(bytes2.first.get(), bytes2.second);
+//    checkUnionEquality(srcU, dstU);
+//  }
 
   void checkCompositeEstimate() {
     hll_union u(12);
@@ -382,51 +382,51 @@ class HllUnionTest : public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(8, static_cast<int>(oss.tellp()));
   }
 
-  void checkInputTypes() {
-    hll_union u(8);
-
-    // inserting the same value as a variety of input types
-    u.update((uint8_t) 102);
-    u.update((uint16_t) 102);
-    u.update((uint32_t) 102);
-    u.update((uint64_t) 102);
-    u.update((int8_t) 102);
-    u.update((int16_t) 102);
-    u.update((int32_t) 102);
-    u.update((int64_t) 102);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.getEstimate(), 0.01);
-
-    // identical binary representations
-    // no unsigned in Java, but need to sign-extend both as Java would do 
-    u.update((uint8_t) 255);
-    u.update((int8_t) -1);
-
-    u.update((float) -2.0);
-    u.update((double) -2.0);
-
-    std::string str = "input string";
-    u.update(str);
-    u.update(str.c_str(), str.length());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(4.0, u.getEstimate(), 0.01);
-
-    u = HllUnion<>(8);
-    u.update((float) 0.0);
-    u.update((float) -0.0);
-    u.update((double) 0.0);
-    u.update((double) -0.0);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.getEstimate(), 0.01);
-
-    u = HllUnion<>(8);
-    u.update(std::nanf("3"));
-    u.update(std::nan("12"));
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.getEstimate(), 0.01);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(u.getResult().getEstimate(), u.getEstimate(), 0.01);
-
-    u = HllUnion<>(8);
-    u.update(nullptr, 0);
-    u.update("");
-    CPPUNIT_ASSERT(u.isEmpty());
-  }
+//  void checkInputTypes() {
+//    hll_union u(8);
+//
+//    // inserting the same value as a variety of input types
+//    u.update((uint8_t) 102);
+//    u.update((uint16_t) 102);
+//    u.update((uint32_t) 102);
+//    u.update((uint64_t) 102);
+//    u.update((int8_t) 102);
+//    u.update((int16_t) 102);
+//    u.update((int32_t) 102);
+//    u.update((int64_t) 102);
+//    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.getEstimate(), 0.01);
+//
+//    // identical binary representations
+//    // no unsigned in Java, but need to sign-extend both as Java would do
+//    u.update((uint8_t) 255);
+//    u.update((int8_t) -1);
+//
+//    u.update((float) -2.0);
+//    u.update((double) -2.0);
+//
+//    std::string str = "input string";
+//    u.update(str);
+//    u.update(str.c_str(), str.length());
+//    CPPUNIT_ASSERT_DOUBLES_EQUAL(4.0, u.getEstimate(), 0.01);
+//
+//    u = HllUnion<>(8);
+//    u.update((float) 0.0);
+//    u.update((float) -0.0);
+//    u.update((double) 0.0);
+//    u.update((double) -0.0);
+//    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.getEstimate(), 0.01);
+//
+//    u = HllUnion<>(8);
+//    u.update(std::nanf("3"));
+//    u.update(std::nan("12"));
+//    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.getEstimate(), 0.01);
+//    CPPUNIT_ASSERT_DOUBLES_EQUAL(u.getResult().getEstimate(), u.getEstimate(), 0.01);
+//
+//    u = HllUnion<>(8);
+//    u.update(nullptr, 0);
+//    u.update("");
+//    CPPUNIT_ASSERT(u.isEmpty());
+//  }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(HllUnionTest);
