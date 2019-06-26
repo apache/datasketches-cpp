@@ -18,65 +18,47 @@
  */
 
 #include "frequent_items_sketch.hpp"
-#include <boost/python.hpp>
 
-namespace bpy = boost::python;
+#include <pybind11/pybind11.h>
+#include <sstream>
+
+namespace py = pybind11;
 
 namespace datasketches {
 namespace python {
 
 template<typename T>
-frequent_items_sketch<T>* FISketch_deserialize(bpy::object obj) {
-  PyObject* skBytes = obj.ptr();
-  if (!PyBytes_Check(skBytes)) {
-    PyErr_SetString(PyExc_TypeError, "Attmpted to deserialize non-bytes object");
-    bpy::throw_error_already_set();
-    return nullptr;
-  }
-  
-  size_t len = PyBytes_GET_SIZE(skBytes);
-  char* sketchImg = PyBytes_AS_STRING(skBytes);
-  auto sk = frequent_items_sketch<T>::deserialize(sketchImg, len);
-  return std::move(&sk);
+frequent_items_sketch<T> FISketch_deserialize(py::bytes skBytes) {
+  std::string skStr = skBytes; // implicit cast  
+  return frequent_items_sketch<T>::deserialize(skStr.c_str(), skStr.length());
 }
 
 template<typename T>
-bpy::object FISketch_serialize(const frequent_items_sketch<T>& sk) {
+py::object FISketch_serialize(const frequent_items_sketch<T>& sk) {
   auto serResult = sk.serialize();
-  PyObject* sketchBytes = PyBytes_FromStringAndSize((char*)serResult.first.get(), serResult.second);
-  return bpy::object{bpy::handle<>(sketchBytes)};
+  return py::bytes((char*)serResult.first.get(), serResult.second);
 }
 
-template<typename T>
-double FISketch_getSketchEpsilon(const frequent_items_sketch<T>& sk) {
-  return sk.get_epsilon();
-}
-
+// maybe possible to disambiguate the static vs method get_epsilon calls, but
+// this is easier for now
 template<typename T>
 double FISketch_getGenericEpsilon(uint8_t lg_max_map_size) {
   return frequent_items_sketch<T>::get_epsilon(lg_max_map_size);
 }
 
 template<typename T>
-void FISketch_update(frequent_items_sketch<T>& sk,
-                     const T& item,
-                     uint64_t weight = 1) {
-  sk.update(item, weight);
-}
-
-template<typename T>
-bpy::list FISketch_getFrequentItems(const frequent_items_sketch<T>& sk,
-                                    frequent_items_error_type err_type,
-                                    uint64_t threshold = 0) {
+py::list FISketch_getFrequentItems(const frequent_items_sketch<T>& sk,
+                                   frequent_items_error_type err_type,
+                                   uint64_t threshold = 0) {
   if (threshold == 0) { threshold = sk.get_maximum_error(); }
 
-  bpy::list list;
+  py::list list;
   auto items = sk.get_frequent_items(err_type, threshold);
   for (auto iter = items.begin(); iter != items.end(); ++iter) {
-    bpy::tuple t = bpy::make_tuple(iter->get_item(),
-                                   iter->get_estimate(),
-                                   iter->get_lower_bound(),
-                                   iter->get_upper_bound());
+    py::tuple t = py::make_tuple(iter->get_item(),
+                                 iter->get_estimate(),
+                                 iter->get_lower_bound(),
+                                 iter->get_upper_bound());
     list.append(t);
   }
   return list;
@@ -91,25 +73,20 @@ std::string FISketch_toString(const frequent_items_sketch<T>& sk,
 }
 
 }
-
 }
 
 namespace dspy = datasketches::python;
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(FISketchUpdateOverloads, dspy::FISketch_update, 2, 3)
-BOOST_PYTHON_FUNCTION_OVERLOADS(FISketchGetFrequentItemsOverloads, dspy::FISketch_getFrequentItems, 2, 3)
-BOOST_PYTHON_FUNCTION_OVERLOADS(FISketchToStringOverloads, dspy::FISketch_toString, 1, 2)
-
 template<typename T>
-void bind_fi_sketch(const char* name)
-{
+void bind_fi_sketch(py::module &m, const char* name) {
   using namespace datasketches;
 
-  bpy::class_<frequent_items_sketch<T>, boost::noncopyable>(name, bpy::init<uint8_t>())
-    .def("__str__", &dspy::FISketch_toString<T>, FISketchToStringOverloads())
-    .def("to_string", &dspy::FISketch_toString<T>, FISketchToStringOverloads())
-    .def("update", &dspy::FISketch_update<T>, FISketchUpdateOverloads())
-    .def("get_frequent_items", &dspy::FISketch_getFrequentItems<T>, FISketchGetFrequentItemsOverloads())
+  py::class_<frequent_items_sketch<T>>(m, name)
+    .def(py::init<uint8_t>())
+    .def("__str__", &dspy::FISketch_toString<T>, py::arg("print_items")=false)
+    .def("to_string", &dspy::FISketch_toString<T>, py::arg("print_items")=false)
+    .def("update", (void (frequent_items_sketch<T>::*)(const T&, uint64_t)) &frequent_items_sketch<T>::update, py::arg("item"), py::arg("weight")=1)
+    .def("get_frequent_items", &dspy::FISketch_getFrequentItems<T>, py::arg("err_type"), py::arg("threshold")=0)
     .def("merge", &frequent_items_sketch<T>::merge)
     .def("is_empty", &frequent_items_sketch<T>::is_empty)
     .def("get_num_active_items", &frequent_items_sketch<T>::get_num_active_items)
@@ -117,26 +94,22 @@ void bind_fi_sketch(const char* name)
     .def("get_estimate", &frequent_items_sketch<T>::get_estimate)
     .def("get_lower_bound", &frequent_items_sketch<T>::get_lower_bound)
     .def("get_upper_bound", &frequent_items_sketch<T>::get_upper_bound)
-    .def("get_sketch_epsilon", &dspy::FISketch_getSketchEpsilon<T>)
-    .def("get_epsilon_for_lg_size", &dspy::FISketch_getGenericEpsilon<T>)
-    .staticmethod("get_epsilon_for_lg_size")
-    .def("get_apriori_error", &frequent_items_sketch<T>::get_apriori_error)
-    .staticmethod("get_apriori_error")
+    .def("get_sketch_epsilon", (double (frequent_items_sketch<T>::*)(void) const) &frequent_items_sketch<T>::get_epsilon)
+    .def_static("get_epsilon_for_lg_size", &dspy::FISketch_getGenericEpsilon<T>)
+    .def_static("get_apriori_error", &frequent_items_sketch<T>::get_apriori_error)
     .def("get_serialized_size_bytes", &frequent_items_sketch<T>::get_serialized_size_bytes)
     .def("serialize", &dspy::FISketch_serialize<T>)
-    .def("deserialize", &dspy::FISketch_deserialize<T>, bpy::return_value_policy<bpy::manage_new_object>())
-    .staticmethod("deserialize")
+    .def_static("deserialize", &dspy::FISketch_deserialize<T>)
     ;
 }
 
-void export_fi()
-{
+void init_fi(py::module &m) {
   using namespace datasketches;
 
-  bpy::enum_<frequent_items_error_type>("frequent_items_error_type")
+  py::enum_<frequent_items_error_type>(m, "frequent_items_error_type")
     .value("NO_FALSE_POSITIVES", NO_FALSE_POSITIVES)
     .value("NO_FALSE_NEGATIVES", NO_FALSE_NEGATIVES)
-    ;
+    .export_values();
 
-  bind_fi_sketch<std::string>("FrequentStringsSketch");
+  bind_fi_sketch<std::string>(m, "frequent_strings_sketch");
 }
