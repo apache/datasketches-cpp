@@ -43,7 +43,7 @@ cpc_exec: $(COM_TSTOBJS) $(CPC_OBJECTS) $(CPC_TSTOBJS)
 	@$(CC) $^ -o $(CPC_TARGET) $(TSTLNKFLAGS) $(LIB)
 
 cpc_test: $(LIBRARY) cpc_exec
-	@cd cpc; DYLD_LIBRARY_PATH=../$(TARGETDIR) ./$(CPC_TEST_BIN)
+	@cd cpc; LD_LIBRARY_PATH=../$(TARGETDIR) ./$(CPC_TEST_BIN)
 
 cpc_clean:
 	@echo "Cleaning cpc...";
