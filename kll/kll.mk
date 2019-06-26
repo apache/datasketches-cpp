@@ -23,7 +23,7 @@ kll_exec: $(COM_TSTOBJS) $(KLL_TSTOBJS)
 	@$(CC) $^ -o $(KLL_TARGET) $(TSTLNKFLAGS) $(LIB)
 
 kll_test: kll_exec
-	@cd kll; DYLD_LIBRARY_PATH=../$(TARGETDIR) ./$(KLL_TEST_BIN)
+	@cd kll; LD_LIBRARY_PATH=../$(TARGETDIR) ./$(KLL_TEST_BIN)
 
 .PHONY: kll_clean
 kll_clean:

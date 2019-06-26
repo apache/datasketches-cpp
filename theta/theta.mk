@@ -23,7 +23,7 @@ theta_exec: $(COM_TSTOBJS) $(THETA_TSTOBJS)
 	@$(CC) $^ -o $(THETA_TARGET) $(TSTLNKFLAGS) $(LIB)
 
 theta_test: theta_exec
-	@cd theta; DYLD_LIBRARY_PATH=../$(TARGETDIR) ./$(THETA_TEST_BIN)
+	@cd theta; LD_LIBRARY_PATH=../$(TARGETDIR) ./$(THETA_TEST_BIN)
 
 .PHONY: theta_clean
 theta_clean:

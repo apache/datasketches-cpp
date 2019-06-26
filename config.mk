@@ -10,10 +10,12 @@ else
   LIB_SUFFIX := so
 endif
 
-COMMON_FLAGS := -O0 -fpic -Wall -pedantic -g3
+COMMON_FLAGS := -O3 -fpic -Wall -pedantic -g0
 
 ifeq ($(UNAME_S),Linux)
-    #CFLAGS += -std=gnu++11 -O2 # -fPIC
+    CFLAGS += -std=gnu++11 -fPIC
+    CPPFLAGS += -std=gnu++11 -fPIC
+    LINKFLAGS := -shared
 
     # PostgreSQL Special
     #PG_VER := 9.3
@@ -21,7 +23,7 @@ ifeq ($(UNAME_S),Linux)
     #LIB += -L /usr/pgsql-$(PG_VER)/lib
 else
   CFLAGS += -x c $(COMMON_FLAGS)
-  CPPFLAGS += -std=c++17 $(COMMON_FLAGS)
+  CPPFLAGS += -std=c++11 $(COMMON_FLAGS)
 
   ifeq (clang,$(findstring clang,$(CC)))
     LINKFLAGS := -dynamiclib
@@ -31,12 +33,14 @@ else
   endif
 endif
 
+TSTLNKFLAGS := -Wl,-rpath=/usr/local/lib
+
 ifeq ($(COVERAGE),1)
   #ifeq (clang,$(findstring clang,$(CC)))
     CFLAGS += --coverage
     CPPFLAGS += --coverage
     LINKFLAGS += --coverage
-    TSTLNKFLAGS := --coverage
+    TSTLNKFLAGS += --coverage
   #else
   #  CFLAGS += --coverage -ftest-covearge -fprofile-arcs
   #  CPPFLAGS += --coverage -ftest-covearge -fprofile-arcs
