@@ -37,7 +37,7 @@ template<typename T, typename Enable = void> struct serde {
 };
 
 // serde for all fixed-size arithmetic types (int and float of different sizes)
-// in particular, serde for signed 64-bit integers should produce sketches binary-compatible
+// in particular, kll_sketch<int64_t> should produce sketches binary-compatible
 // with LongsSketch and ItemsSketch<Long> with ArrayOfLongsSerDe in Java
 template<typename T>
 struct serde<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
