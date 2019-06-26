@@ -26,7 +26,7 @@
 namespace datasketches {
 
 // serialize and deserialize
-template<typename T> struct serde {
+template<typename T, typename Enable = void> struct serde {
   // stream
   void serialize(std::ostream& os, const T* items, unsigned num);
   void deserialize(std::istream& is, T* items, unsigned num); // items are not initialized
@@ -36,69 +36,27 @@ template<typename T> struct serde {
   size_t deserialize(const char* ptr, T* items, unsigned num); // items are not initialized
 };
 
-template<>
-struct serde<int32_t> {
-  void serialize(std::ostream& os, const int32_t* items, unsigned num) {
-    os.write((char*)items, sizeof(int32_t) * num);
+// serde for all fixed-size arithmetic types (int and float of different sizes)
+// in particular, kll_sketch<int64_t> should produce sketches binary-compatible
+// with LongsSketch and ItemsSketch<Long> with ArrayOfLongsSerDe in Java
+template<typename T>
+struct serde<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+  void serialize(std::ostream& os, const T* items, unsigned num) {
+    os.write((char*)items, sizeof(T) * num);
   }
-  void deserialize(std::istream& is, int32_t* items, unsigned num) {
-    is.read((char*)items, sizeof(int32_t) * num);
+  void deserialize(std::istream& is, T* items, unsigned num) {
+    is.read((char*)items, sizeof(T) * num);
   }
-  size_t size_of_item(int32_t item) {
-    return sizeof(int32_t);
+  size_t size_of_item(T item) {
+    return sizeof(T);
   }
-  size_t serialize(char* ptr, const int32_t* items, unsigned num) {
-    memcpy(ptr, items, sizeof(int32_t) * num);
+  size_t serialize(char* ptr, const T* items, unsigned num) {
+    memcpy(ptr, items, sizeof(T) * num);
     return sizeof(int32_t) * num;
   }
-  size_t deserialize(const char* ptr, int32_t* items, unsigned num) {
-    memcpy(items, ptr, sizeof(int32_t) * num);
-    return sizeof(int32_t) * num;
-  }
-};
-
-// serde for signed 64-bit integers
-// this should produce sketches binary-compatible with LongsSketch
-// and ItemsSketch<Long> with ArrayOfLongsSerDe in Java
-template<>
-struct serde<int64_t> {
-  void serialize(std::ostream& os, const int64_t* items, unsigned num) {
-    os.write((char*)items, sizeof(int64_t) * num);
-  }
-  void deserialize(std::istream& is, int64_t* items, unsigned num) {
-    is.read((char*)items, sizeof(int64_t) * num);
-  }
-  size_t size_of_item(int64_t item) {
-    return sizeof(int64_t);
-  }
-  size_t serialize(char* ptr, const int64_t* items, unsigned num) {
-    memcpy(ptr, items, sizeof(int64_t) * num);
-    return sizeof(int64_t) * num;
-  }
-  size_t deserialize(const char* ptr, int64_t* items, unsigned num) {
-    memcpy(items, ptr, sizeof(int64_t) * num);
-    return sizeof(int64_t) * num;
-  }
-};
-
-template<>
-struct serde<float> {
-  void serialize(std::ostream& os, const float* items, unsigned num) {
-    os.write((char*)items, sizeof(float) * num);
-  }
-  void deserialize(std::istream& is, float* items, unsigned num) {
-    is.read((char*)items, sizeof(float) * num);
-  }
-  size_t size_of_item(float item) {
-    return sizeof(float);
-  }
-  size_t serialize(char* ptr, const float* items, unsigned num) {
-    memcpy(ptr, items, sizeof(float) * num);
-    return sizeof(float) * num;
-  }
-  size_t deserialize(const char* ptr, float* items, unsigned num) {
-    memcpy(items, ptr, sizeof(float) * num);
-    return sizeof(float) * num;
+  size_t deserialize(const char* ptr, T* items, unsigned num) {
+    memcpy(items, ptr, sizeof(T) * num);
+    return sizeof(T) * num;
   }
 };
 
