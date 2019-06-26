@@ -111,9 +111,7 @@ HllSketch<A> HllSketch<A>::copy() const {
 
 template<typename A>
 HllSketch<A>* HllSketch<A>::copyPtr() const {
-  HllSketch<A>* sketch = AllocHllSketch().allocate(1);
-  AllocHllSketch().construct(sketch, this->hllSketchImpl->copy());
-  return sketch;
+  return new (AllocHllSketch().allocate(1)) HllSketch<A>(this->hllSketchImpl->copy());
 }
 
 template<typename A>
