@@ -282,6 +282,7 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(sketch_ptr->validate());
 
     // incompatible seed
+    s.seekg(0); // rewind the stream to read the same sketch again
     CPPUNIT_ASSERT_THROW(cpc_sketch::deserialize(s), std::invalid_argument);
   }
 
