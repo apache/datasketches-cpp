@@ -30,6 +30,22 @@ namespace py = pybind11;
 namespace datasketches {
 namespace python {
 
+update_theta_sketch update_theta_sketch_factory(uint8_t lg_k, double p, uint64_t seed) {
+  update_theta_sketch::builder builder;
+  builder.set_lg_k(lg_k);
+  builder.set_p(p);
+  builder.set_seed(seed);
+  return builder.build();
+}
+
+theta_union theta_union_factory(uint8_t lg_k, double p, uint64_t seed) {
+  theta_union::builder builder;
+  builder.set_lg_k(lg_k);
+  builder.set_p(p);
+  builder.set_seed(seed);
+  return builder.build();
+}
+
 theta_sketch* theta_sketch_deserialize(py::bytes skBytes,
                                        uint64_t seed = update_theta_sketch::builder::DEFAULT_SEED) {
   std::string skStr = skBytes; // implicit cast  
@@ -89,6 +105,8 @@ void init_theta(py::module &m) {
   ;
 
   py::class_<update_theta_sketch, theta_sketch>(m, "update_theta_sketch")
+    .def(py::init(&dspy::update_theta_sketch_factory),
+         py::arg("lg_k")=update_theta_sketch::builder::DEFAULT_LG_K, py::arg("p")=1.0, py::arg("seed")=update_theta_sketch::builder::DEFAULT_SEED)
     .def(py::init<const update_theta_sketch&>())
     .def("update", (void (update_theta_sketch::*)(int64_t)) &update_theta_sketch::update, py::arg("datum"))
     .def("update", (void (update_theta_sketch::*)(double)) &update_theta_sketch::update, py::arg("datum"))
@@ -104,6 +122,8 @@ void init_theta(py::module &m) {
   ;
 
   py::class_<theta_union>(m, "theta_union")
+    .def(py::init(&dspy::theta_union_factory),
+         py::arg("lg_k")=update_theta_sketch::builder::DEFAULT_LG_K, py::arg("p")=1.0, py::arg("seed")=update_theta_sketch::builder::DEFAULT_SEED)
     .def("update", &theta_union::update, py::arg("sketch"))
     .def("get_result", &theta_union::get_result, py::arg("ordered")=true)
   ;
@@ -120,22 +140,4 @@ void init_theta(py::module &m) {
     .def(py::init<uint64_t>(), py::arg("seed")=update_theta_sketch::builder::DEFAULT_SEED)
     .def("compute", &theta_a_not_b::compute, py::arg("a"), py::arg("b"), py::arg("ordered")=true)
   ;
-
-  // builders
-  py::class_<update_theta_sketch::builder>(m, "theta_sketch_builder")
-    .def(py::init<>())
-    .def("set_lg_k", &update_theta_sketch::builder::set_lg_k)
-    .def("set_p", &update_theta_sketch::builder::set_p)
-    .def("set_seed", &update_theta_sketch::builder::set_seed)
-    .def("build", &update_theta_sketch::builder::build)
-  ;
-
-  py::class_<theta_union::builder>(m, "theta_union_builder")
-    .def(py::init<>())
-    .def("set_lg_k", &theta_union::builder::set_lg_k)
-    .def("set_p", &theta_union::builder::set_p)
-    .def("set_seed", &theta_union::builder::set_seed)
-    .def("build", &theta_union::builder::build)
-  ;
-
 }
