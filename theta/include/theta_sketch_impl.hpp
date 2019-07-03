@@ -24,6 +24,8 @@
 #include <cmath>
 #include <memory>
 #include <functional>
+#include <istream>
+#include <ostream>
 
 #include "MurmurHash3.h"
 #include "serde.hpp"
