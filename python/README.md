@@ -21,6 +21,7 @@ Having followed installation instructions in the root directory, loading the Dat
 - HLL
     - `hll_sketch`
     - `hll_union`
+    - Target HLL types are `tgt_hll_type.{HLL_4 | HLL_6 | HLL_8}`
 - CPC
     - `cpc_sketch`
     - `cpc_union`
