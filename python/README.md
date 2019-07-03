@@ -1,8 +1,22 @@
 # Python Wrapper for Datasketches
 
+## Installation
+
+The easiest way to install the python wrapper is to run
+```pip install git+https://github.com/apache/incubator-datasketches-cpp.git```
+
+If you prefer to downlioad the source first, be sure to clone the repo with `--recursive` to ensure you get the python binding library ([pybind11](https://github.com/pybind/pybind11)):
+```
+git clone --recursive https://github.com/apache/incubator-datasketches-cpp.git
+cd incubator-datasketches-cpp
+pip install .
+```
+
+In the event you do not have `pip` installed, you can invoke the setup script directly by replacing the last line above with `python3 setup.py install`.
+
 ## Usage
 
-Having followed installation instructions in the root directory, loading the Datasketches library in Python is simple: `from datasketches import *`.
+Having installed the library, loading the Datasketches library in Python is simple: `from datasketches import *`.
 
 ## Available Sketch Classes
 
