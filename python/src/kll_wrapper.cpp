@@ -140,6 +140,6 @@ void bind_kll_sketch(py::module &m, const char* name) {
 }
 
 void init_kll(py::module &m) {
-  bind_kll_sketch<int>(m, "kll_int_sketch");
-  bind_kll_sketch<float>(m, "kll_float_sketch");
+  bind_kll_sketch<int>(m, "kll_ints_sketch");
+  bind_kll_sketch<float>(m, "kll_floats_sketch");
 }
