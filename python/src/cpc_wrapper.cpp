@@ -61,28 +61,24 @@ void init_cpc(py::module &m) {
   using namespace datasketches;
 
   py::class_<cpc_sketch>(m, "cpc_sketch")
+    .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k"), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_sketch&>())
-    .def(py::init<uint8_t>())
-    .def(py::init<uint8_t, uint64_t>())
     .def("__str__", &dspy::CpcSketch_toString)
     .def("serialize", &dspy::CpcSketch_serialize)
-    .def_static("deserialize", &dspy::CpcSketch_deserialize, py::return_value_policy::take_ownership)
-    .def<void (cpc_sketch::*)(uint64_t)>("update", &cpc_sketch::update)
-    .def<void (cpc_sketch::*)(int64_t)>("update", &cpc_sketch::update)
-    .def<void (cpc_sketch::*)(double)>("update", &cpc_sketch::update)
-    .def<void (cpc_sketch::*)(const std::string&)>("update", &cpc_sketch::update)
+    .def_static("deserialize", &dspy::CpcSketch_deserialize)
+    .def<void (cpc_sketch::*)(uint64_t)>("update", &cpc_sketch::update, py::arg("datum"))
+    .def<void (cpc_sketch::*)(double)>("update", &cpc_sketch::update, py::arg("datum"))
+    .def<void (cpc_sketch::*)(const std::string&)>("update", &cpc_sketch::update, py::arg("datum"))
     .def("is_empty", &cpc_sketch::is_empty)
     .def("get_estimate", &cpc_sketch::get_estimate)
-    .def("get_lower_bound", &cpc_sketch::get_lower_bound)
-    .def("get_upper_bound", &cpc_sketch::get_upper_bound)
-    .def("get_estimate", &cpc_sketch::get_estimate)
+    .def("get_lower_bound", &cpc_sketch::get_lower_bound, py::arg("kappa"))
+    .def("get_upper_bound", &cpc_sketch::get_upper_bound, py::arg("kappa"))
     ;
 
   py::class_<cpc_union>(m, "cpc_union")
+    .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k"), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_union&>())
-    .def(py::init<uint8_t>())
-    .def(py::init<uint8_t, uint64_t>())
-    .def("update", &cpc_union::update)
-    .def("get_result", &dspy::CpcUnion_getResult, py::return_value_policy::take_ownership)
+    .def("update", &cpc_union::update, py::arg("sketch"))
+    .def("get_result", &dspy::CpcUnion_getResult)
     ;
 }

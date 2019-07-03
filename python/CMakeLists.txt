@@ -8,8 +8,7 @@ endif()
 add_subdirectory(pybind11)
 message(STATUS "Found pybind11 v${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
-pybind11_add_module(python MODULE EXCLUDE_FROM_ALL)
-#add_library(python SHARED EXCLUDE_FROM_ALL)
+pybind11_add_module(python MODULE EXCLUDE_FROM_ALL THIN_LTO)
 
 target_link_libraries(python
   PRIVATE
@@ -18,7 +17,7 @@ target_link_libraries(python
     kll
     cpc
     fi
-    #theta
+    theta
     pybind11::module
 )
 
@@ -39,5 +38,5 @@ target_sources(python
     src/kll_wrapper.cpp
     src/cpc_wrapper.cpp
     src/fi_wrapper.cpp
-    #stc/theta_wrapper.cpp
+    src/theta_wrapper.cpp
 )

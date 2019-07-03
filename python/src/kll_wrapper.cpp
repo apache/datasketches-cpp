@@ -110,10 +110,10 @@ void bind_kll_sketch(py::module &m, const char* name) {
   using namespace datasketches;
 
   py::class_<kll_sketch<T>>(m, name)
-    .def(py::init<uint16_t>())
+    .def(py::init<uint16_t>(), py::arg("k"))
     .def(py::init<const kll_sketch<T>&>())
-    .def("update", &kll_sketch<T>::update)
-    .def("merge", &kll_sketch<T>::merge)
+    .def("update", &kll_sketch<T>::update, py::arg("item"))
+    .def("merge", &kll_sketch<T>::merge, py::arg("sketch"))
     .def("__str__", &dspy::KllSketch_toString<T>)
     .def("is_empty", &kll_sketch<T>::is_empty)
     .def("get_n", &kll_sketch<T>::get_n)
@@ -121,13 +121,15 @@ void bind_kll_sketch(py::module &m, const char* name) {
     .def("is_estimation_mode", &kll_sketch<T>::is_estimation_mode)
     .def("get_min_value", &kll_sketch<T>::get_min_value)
     .def("get_max_value", &kll_sketch<T>::get_max_value)
-    .def("get_quantile", &kll_sketch<T>::get_quantile)
-    .def("get_quantiles", &dspy::KllSketch_getQuantiles<T>)
-    .def("get_rank", &kll_sketch<T>::get_rank)
-    .def("get_pmf", &dspy::KllSketch_getPMF<T>)
-    .def("get_cdf", &dspy::KllSketch_getCDF<T>)
-    .def("normalized_rank_error", (double (kll_sketch<T>::*)(bool) const) &kll_sketch<T>::get_normalized_rank_error)
-    .def_static("get_normalized_rank_error", &dspy::KllSketch_generalNormalizedRankError<T>)
+    .def("get_quantile", &kll_sketch<T>::get_quantile, py::arg("fraction"))
+    .def("get_quantiles", &dspy::KllSketch_getQuantiles<T>, py::arg("fractions"))
+    .def("get_rank", &kll_sketch<T>::get_rank, py::arg("value"))
+    .def("get_pmf", &dspy::KllSketch_getPMF<T>, py::arg("split_points"))
+    .def("get_cdf", &dspy::KllSketch_getCDF<T>, py::arg("split_points"))
+    .def("normalized_rank_error", (double (kll_sketch<T>::*)(bool) const) &kll_sketch<T>::get_normalized_rank_error,
+         py::arg("as_pmf"))
+    .def_static("get_normalized_rank_error", &dspy::KllSketch_generalNormalizedRankError<T>,
+         py::arg("k"), py::arg("as_pmf"))
     // can't yet get this one to work
     //.def("get_serialized_size_bytes", &kll_sketch<T>::get_serialized_size_bytes)
     // this doesn't seem to be defined in the class
@@ -138,6 +140,6 @@ void bind_kll_sketch(py::module &m, const char* name) {
 }
 
 void init_kll(py::module &m) {
-  bind_kll_sketch<int>(m, "kll_int_sketch");
-  bind_kll_sketch<float>(m, "kll_float_sketch");
+  bind_kll_sketch<int>(m, "kll_ints_sketch");
+  bind_kll_sketch<float>(m, "kll_floats_sketch");
 }
