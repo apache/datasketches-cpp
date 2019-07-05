@@ -63,11 +63,11 @@ class HllUnionTest : public CppUnit::TestFixture {
     TgtHllType type2 = HLL_8;
     TgtHllType resultType = HLL_8;
 
-    int lgK1 = 7;
-    int lgK2 = 7;
-    int lgMaxK = 7;
-    int n1 = 7;
-    int n2 = 7;
+    uint64_t lgK1 = 7;
+    uint64_t lgK2 = 7;
+    uint64_t lgMaxK = 7;
+    uint64_t n1 = 7;
+    uint64_t n2 = 7;
     basicUnion(n1, n2, lgK1, lgK2, lgMaxK, type1, type2, resultType);
     n1 = 8;
     n2 = 7;
@@ -147,7 +147,8 @@ class HllUnionTest : public CppUnit::TestFixture {
     }
   }
 
-  void basicUnion(int n1, int n2, int lgk1, int lgk2, int lgMaxK,
+  void basicUnion(uint64_t n1, uint64_t n2,
+		  uint64_t lgk1, uint64_t lgk2, uint64_t lgMaxK,
                   TgtHllType type1, TgtHllType type2, TgtHllType resultType) {
     uint64_t v = 0;
     //int tot = n1 + n2;

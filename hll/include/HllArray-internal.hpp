@@ -555,6 +555,8 @@ int HllArray<A>::hllArrBytes(TgtHllType tgtHllType, int lgConfigK) {
     return hll6ArrBytes(lgConfigK);
   case HLL_8:
     return hll8ArrBytes(lgConfigK);
+  default:
+    throw std::invalid_argument("Invalid target HLL type"); 
   }
 }
 

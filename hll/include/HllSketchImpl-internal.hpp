@@ -25,10 +25,6 @@
 
 namespace datasketches {
 
-#ifdef DEBUG
-static int numImpls = 0;
-#endif
-
 template<typename A>
 HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType,
                                 const CurMode curMode, const bool startFullSize)
@@ -37,16 +33,10 @@ HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType
     curMode(curMode),
     startFullSize(startFullSize)
 {
-#ifdef DEBUG
-  std::cerr << "Num impls: " << ++numImpls << "\n";
-#endif
 }
 
 template<typename A>
 HllSketchImpl<A>::~HllSketchImpl() {
-#ifdef DEBUG
-  std::cerr << "Num impls: " << --numImpls << "\n";
-#endif
 }
 
 template<typename A>
@@ -59,7 +49,7 @@ TgtHllType HllSketchImpl<A>::extractTgtHllType(const uint8_t modeByte) {
   case 2:
     return TgtHllType::HLL_8;
   default:
-    throw std::invalid_argument("Invalid current sketch mode");
+    throw std::invalid_argument("Invalid target HLL type");
   }
 }
 
@@ -100,7 +90,7 @@ uint8_t HllSketchImpl<A>::makeFlagsByte(const bool compact) const {
 //  10     1010      HLL_8,     HLL
 template<typename A>
 uint8_t HllSketchImpl<A>::makeModeByte() const {
-  uint8_t byte;
+  uint8_t byte = 0;
 
   switch (curMode) {
   case LIST:

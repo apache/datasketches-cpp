@@ -54,6 +54,7 @@ class CrossCountingTest : public CppUnit::TestFixture {
       checksum += itr->getPair();
       key = itr->getKey(); // dummy
     }
+    CPPUNIT_ASSERT(key >= 0); // avoids "set but unused" warning
     return checksum;
   }
 

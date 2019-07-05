@@ -1048,7 +1048,9 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::assert_correct_total_weight() const {
   const uint64_t total(kll_helper::sum_the_sample_weights(num_levels_, levels_));
-  assert (total == n_);
+  if (total != n_) {
+    throw std::logic_error("Total weight does not match N");
+  }
 }
 
 template<typename T, typename C, typename S, typename A>
