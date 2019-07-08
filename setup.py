@@ -2,13 +2,11 @@
 # http://www.benjack.io/2018/02/02/python-cpp-revisited.html
 
 import os
-#import re
 import sys
 import sysconfig
 import platform
 import subprocess
 
-from distutils.version import LooseVersion
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 
@@ -20,7 +18,7 @@ class CMakeExtension(Extension):
 class CMakeBuild(build_ext):
     def run(self):
         try:
-            out = subprocess.check_output(['cmake', '--version'])
+            subprocess.check_output(['cmake', '--version'])
         except OSError:
             raise RuntimeError(
                 "CMake >= 3.12 must be installed to build the following extensions: " +
@@ -67,19 +65,18 @@ class CMakeBuild(build_ext):
 
 setup(
     name='datasketches',
-    version='0.0.1',
-    author='Jon Malkin',
-    author_email='jon.malkin@yahoo.com',
+    use_scm_version=True,
+    author='Datasketches Developers',
+    author_email='dev@datasketches.apache.org',
     description='A wrapper for the C++ Datasketches library',
-    long_description='',
-    # tell setuptools to look for any packages under 'python/src'
-    packages=find_packages('python/src'),
-    # tell setuptools that all packages will be under the 'python/src' directory
-    # and nowhere else
-    package_dir={'':'python/src'},
-    # likely need to add all source paths for proper sdist packages
+    license='Apache License 2.0',
+    url='http://datasketches.apache.org',
+    long_description=open('python/README.md').read(),
+    packages=find_packages('python'), # python pacakges only in this dir
+    package_dir={'':'python'},
+    # may need to add all source paths for sdist packages w/o MANIFEST.in
     ext_modules=[CMakeExtension('datasketches')],
-    # add custom build_ext command
     cmdclass={'build_ext': CMakeBuild},
+    setup_requires=["setuptools_scm"],
     zip_safe=False
 )

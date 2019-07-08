@@ -1,0 +1,4 @@
+graft cmake common cpc fi hll kll theta python
+global-include CMakeLists.txt *.cpp *.c *.hpp *.h *.bin
+global-exclude .git*
+prune python/pybind11
