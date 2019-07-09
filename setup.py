@@ -65,7 +65,8 @@ class CMakeBuild(build_ext):
 
 setup(
     name='datasketches',
-    use_scm_version=True,
+    #use_scm_version=True,
+    version='0.0.1',
     author='Datasketches Developers',
     author_email='dev@datasketches.apache.org',
     description='A wrapper for the C++ Datasketches library',
