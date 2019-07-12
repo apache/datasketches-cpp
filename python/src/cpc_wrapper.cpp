@@ -30,24 +30,24 @@ namespace py = pybind11;
 namespace datasketches {
 namespace python {
 
-cpc_sketch* CpcSketch_deserialize(py::bytes skBytes) {
+cpc_sketch* cpc_sketch_deserialize(py::bytes skBytes) {
   std::string skStr = skBytes; // implicit cast
   cpc_sketch_unique_ptr sk = cpc_sketch::deserialize(skStr.c_str(), skStr.length());
   return sk.release();
 }
 
-py::object CpcSketch_serialize(const cpc_sketch& sk) {
+py::object cpc_sketch_serialize(const cpc_sketch& sk) {
   auto serResult = sk.serialize();
   return py::bytes((char*)serResult.first.get(), serResult.second);
 }
 
-std::string CpcSketch_toString(const cpc_sketch& sk) {
+std::string cpc_sketch_to_string(const cpc_sketch& sk) {
   std::ostringstream ss;
   ss << sk;
   return ss.str();
 }
 
-cpc_sketch* CpcUnion_getResult(const cpc_union& u) {
+cpc_sketch* cpc_union_get_result(const cpc_union& u) {
   auto sk = u.get_result();
   return sk.release();
 }
@@ -63,9 +63,9 @@ void init_cpc(py::module &m) {
   py::class_<cpc_sketch>(m, "cpc_sketch")
     .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k"), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_sketch&>())
-    .def("__str__", &dspy::CpcSketch_toString)
-    .def("serialize", &dspy::CpcSketch_serialize)
-    .def_static("deserialize", &dspy::CpcSketch_deserialize)
+    .def("__str__", &dspy::cpc_sketch_to_string)
+    .def("serialize", &dspy::cpc_sketch_serialize)
+    .def_static("deserialize", &dspy::cpc_sketch_deserialize)
     .def<void (cpc_sketch::*)(uint64_t)>("update", &cpc_sketch::update, py::arg("datum"))
     .def<void (cpc_sketch::*)(double)>("update", &cpc_sketch::update, py::arg("datum"))
     .def<void (cpc_sketch::*)(const std::string&)>("update", &cpc_sketch::update, py::arg("datum"))
@@ -79,6 +79,6 @@ void init_cpc(py::module &m) {
     .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k"), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_union&>())
     .def("update", &cpc_union::update, py::arg("sketch"))
-    .def("get_result", &dspy::CpcUnion_getResult)
+    .def("get_result", &dspy::cpc_union_get_result)
     ;
 }
