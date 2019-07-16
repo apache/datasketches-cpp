@@ -1,0 +1,14 @@
+global-include CMakeLists.txt
+global-include .cmake
+global-include .cpp
+global-include .c
+global-include .hpp
+global-include .h
+global-include .bin
+global-include .cmake
+
+global-exclude .git*
+
+recursive-include python/pybind11 *
+
+graft cmake common cpc fi hll kll theta python
