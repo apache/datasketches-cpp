@@ -1011,11 +1011,12 @@ void kll_sketch<T, C, S, A>::increment_buckets_sorted_level(uint32_t from_index,
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::merge_higher_levels(const kll_sketch& other, uint64_t final_n) {
   const uint32_t tmp_num_items = get_num_retained() + other.get_num_retained_above_level_zero();
-  auto deleter = [tmp_num_items](T* ptr) { A().deallocate(ptr, tmp_num_items); };
-  const std::unique_ptr<T, decltype(deleter)> workbuf(A().allocate(tmp_num_items), deleter);
-  const uint8_t ub = kll_helper::ub_on_num_levels(final_n);
-  const std::unique_ptr<uint32_t[]> worklevels(new uint32_t[ub + 2]); // ub+1 does not work
-  const std::unique_ptr<uint32_t[]> outlevels(new uint32_t[ub + 2]);
+  auto tmp_items_deleter = [tmp_num_items](T* ptr) { A().deallocate(ptr, tmp_num_items); };
+  const std::unique_ptr<T, decltype(tmp_items_deleter)> workbuf(A().allocate(tmp_num_items), tmp_items_deleter);
+  const size_t work_levels_size = kll_helper::ub_on_num_levels(final_n) + 2; // ub+1 does not work
+  auto tmp_levels_deleter = [work_levels_size](uint32_t* ptr) { AllocU32().deallocate(ptr, work_levels_size); };
+  const std::unique_ptr<uint32_t[], decltype(tmp_levels_deleter)> worklevels(AllocU32().allocate(work_levels_size), tmp_levels_deleter);
+  const std::unique_ptr<uint32_t[], decltype(tmp_levels_deleter)> outlevels(AllocU32().allocate(work_levels_size), tmp_levels_deleter);
 
   const uint8_t provisional_num_levels = std::max(num_levels_, other.num_levels_);
 
