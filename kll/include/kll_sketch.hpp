@@ -1013,7 +1013,8 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(const kll_sketch& other, uint64
   const uint32_t tmp_num_items = get_num_retained() + other.get_num_retained_above_level_zero();
   auto tmp_items_deleter = [tmp_num_items](T* ptr) { A().deallocate(ptr, tmp_num_items); };
   const std::unique_ptr<T, decltype(tmp_items_deleter)> workbuf(A().allocate(tmp_num_items), tmp_items_deleter);
-  const size_t work_levels_size = kll_helper::ub_on_num_levels(final_n) + 2; // ub+1 does not work
+  const uint8_t ub = kll_helper::ub_on_num_levels(final_n);
+  const size_t work_levels_size = ub + 2; // ub+1 does not work
   auto tmp_levels_deleter = [work_levels_size](uint32_t* ptr) { AllocU32().deallocate(ptr, work_levels_size); };
   const std::unique_ptr<uint32_t[], decltype(tmp_levels_deleter)> worklevels(AllocU32().allocate(work_levels_size), tmp_levels_deleter);
   const std::unique_ptr<uint32_t[], decltype(tmp_levels_deleter)> outlevels(AllocU32().allocate(work_levels_size), tmp_levels_deleter);
