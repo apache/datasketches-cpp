@@ -349,10 +349,11 @@ class kll_helper {
     }
 
     template<typename T>
-    static void move_construct(T* src, size_t src_first, size_t src_last, T* dst, size_t dst_first) {
+    static void move_construct(T* src, size_t src_first, size_t src_last, T* dst, size_t dst_first, bool destroy) {
       while (src_first != src_last) {
         new (&dst[dst_first++]) T(std::move(src[src_first]));
-        src[src_first++].~T();
+        if (destroy) src[src_first].~T();
+        src_first++;
       }
     }
 

@@ -290,7 +290,7 @@ class kll_sketch {
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
     void sort_level_zero();
-    std::unique_ptr<kll_quantile_calculator<T, C>> get_quantile_calculator();
+    std::unique_ptr<kll_quantile_calculator<T, C, A>> get_quantile_calculator();
     std::unique_ptr<double[]> get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
     void increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
         const T* split_points, uint32_t size, double* buckets) const;
@@ -306,6 +306,19 @@ class kll_sketch {
     static void check_preamble_ints(uint8_t preamble_ints, uint8_t flags_byte);
     static void check_serial_version(uint8_t serial_version);
     static void check_family_id(uint8_t family_id);
+
+    // implementation for floating point types
+    template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
+    static TT get_invalid_value() {
+      return std::numeric_limits<TT>::quiet_NaN();
+    }
+
+    // implementation for all other types
+    template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
+    static TT get_invalid_value() {
+      throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
+    }
+
 };
 
 template<typename T, typename C, typename S, typename A>
@@ -475,34 +488,19 @@ bool kll_sketch<T, C, S, A>::is_estimation_mode() const {
 
 template<typename T, typename C, typename S, typename A>
 T kll_sketch<T, C, S, A>::get_min_value() const {
-  if (is_empty()) {
-    if (std::is_floating_point<T>::value) {
-      return std::numeric_limits<T>::quiet_NaN();
-    }
-    throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
-  }
+  if (is_empty()) return get_invalid_value();
   return *min_value_;
 }
 
 template<typename T, typename C, typename S, typename A>
 T kll_sketch<T, C, S, A>::get_max_value() const {
-  if (is_empty()) {
-    if (std::is_floating_point<T>::value) {
-      return std::numeric_limits<T>::quiet_NaN();
-    }
-    throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
-  }
+  if (is_empty()) return get_invalid_value();
   return *max_value_;
 }
 
 template<typename T, typename C, typename S, typename A>
 T kll_sketch<T, C, S, A>::get_quantile(double fraction) const {
-  if (is_empty()) {
-    if (std::is_floating_point<T>::value) {
-      return std::numeric_limits<T>::quiet_NaN();
-    }
-    throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
-  }
+  if (is_empty()) return get_invalid_value();
   if (fraction == 0.0) return *min_value_;
   if (fraction == 1.0) return *max_value_;
   if ((fraction < 0.0) or (fraction > 1.0)) {
@@ -516,7 +514,7 @@ T kll_sketch<T, C, S, A>::get_quantile(double fraction) const {
 template<typename T, typename C, typename S, typename A>
 std::unique_ptr<T[]> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions, uint32_t size) const {
   if (is_empty()) { return nullptr; }
-  std::unique_ptr<kll_quantile_calculator<T, C>> quantile_calculator;
+  std::unique_ptr<kll_quantile_calculator<T, C, A>> quantile_calculator;
   std::unique_ptr<T[]> quantiles(new T[size]);
   for (uint32_t i = 0; i < size; i++) {
     const double fraction = fractions[i];
@@ -931,9 +929,9 @@ void kll_sketch<T, C, S, A>::sort_level_zero() {
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<kll_quantile_calculator<T, C>> kll_sketch<T, C, S, A>::get_quantile_calculator() {
+std::unique_ptr<kll_quantile_calculator<T, C, A>> kll_sketch<T, C, S, A>::get_quantile_calculator() {
   sort_level_zero();
-  std::unique_ptr<kll_quantile_calculator<T, C>> quantile_calculator(new kll_quantile_calculator<T, C>(items_, levels_, num_levels_, n_));
+  std::unique_ptr<kll_quantile_calculator<T, C, A>> quantile_calculator(new kll_quantile_calculator<T, C, A>(items_, levels_, num_levels_, n_));
   return std::move(quantile_calculator);
 }
 
@@ -1037,7 +1035,7 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(const kll_sketch& other, uint64
     items_ = A().allocate(items_size_);
   }
   const uint32_t free_space_at_bottom = result.final_capacity - result.final_num_items;
-  kll_helper::move_construct<T>(workbuf.get(), outlevels[0], outlevels[0] + result.final_num_items, items_, free_space_at_bottom);
+  kll_helper::move_construct<T>(workbuf.get(), outlevels[0], outlevels[0] + result.final_num_items, items_, free_space_at_bottom, true);
 
   if (levels_size_ < (result.final_num_levels + 1)) {
     AllocU32().deallocate(levels_, levels_size_);
@@ -1057,7 +1055,7 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
   worklevels[0] = 0;
 
   // the level zero data from "other" was already inserted into "this"
-  kll_helper::move_construct<T>(items_, levels_[0], levels_[1], workbuf, 0);
+  kll_helper::move_construct<T>(items_, levels_[0], levels_[1], workbuf, 0, true);
   worklevels[1] = safe_level_size(0);
 
   for (uint8_t lvl = 1; lvl < provisional_num_levels; lvl++) {
@@ -1066,7 +1064,7 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
     worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;
 
     if ((self_pop > 0) and (other_pop == 0)) {
-      kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl]);
+      kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], true);
     } else if ((self_pop == 0) and (other_pop > 0)) {
       kll_helper::copy_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl]);
     } else if ((self_pop > 0) and (other_pop > 0)) {

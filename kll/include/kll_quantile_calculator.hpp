@@ -24,27 +24,34 @@
 #include <cmath>
 #include <assert.h>
 
+#include "kll_helper.hpp"
+
 namespace datasketches {
 
-template <typename T, typename C>
+template <typename T, typename C, typename A>
 class kll_quantile_calculator {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint32_t> AllocU32;
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
   public:
     // assumes that all levels are sorted including level 0
     kll_quantile_calculator(const T* items, const uint32_t* levels, uint8_t num_levels, uint64_t n) {
       n_ = n;
-      const uint32_t num_items(levels[num_levels] - levels[0]);
-      items_ = new T[num_items];
-      weights_ = new uint64_t[num_items + 1]; // one more is intentional
-      levels_ = new uint32_t[num_levels + 1];
+      const uint32_t num_items = levels[num_levels] - levels[0];
+      items_ = A().allocate(num_items);
+      weights_ = AllocU64().allocate(num_items + 1); // one more is intentional
+      levels_size_ = num_levels + 1;
+      levels_ = AllocU32().allocate(levels_size_);
       populate_from_sketch(items, num_items, levels, num_levels);
       blocky_tandem_merge_sort(items_, weights_, num_items, levels_, num_levels_);
       convert_to_preceding_cummulative(weights_, num_items + 1);
     }
 
     ~kll_quantile_calculator() {
-      delete [] items_;
-      delete [] weights_;
-      delete [] levels_;
+      const uint32_t num_items = levels_[num_levels_] - levels_[0];
+      for (uint32_t i = 0; i < num_items; i++) items_[i].~T();
+      A().deallocate(items_, num_items);
+      AllocU64().deallocate(weights_, num_items + 1);
+      AllocU32().deallocate(levels_, levels_size_);
     }
 
     T get_quantile(double fraction) const {
@@ -56,14 +63,15 @@ class kll_quantile_calculator {
     T* items_;
     uint64_t* weights_;
     uint32_t* levels_;
+    uint8_t levels_size_;
     uint8_t num_levels_;
 
     void populate_from_sketch(const T* items, uint32_t num_items, const uint32_t* levels, uint8_t num_levels) {
-      std::copy(&items[levels[0]], &items[levels[num_levels]], items_);
-      uint8_t src_level(0);
-      uint8_t dst_level(0);
-      uint64_t weight(1);
-      uint32_t offset(levels[0]);
+      kll_helper::copy_construct<T>(items, levels[0], levels[num_levels], items_, 0);
+      uint8_t src_level = 0;
+      uint8_t dst_level = 0;
+      uint64_t weight = 1;
+      uint32_t offset = levels[0];
       while (src_level < num_levels) {
         const uint32_t from_index(levels[src_level] - offset);
         const uint32_t to_index(levels[src_level + 1] - offset); // exclusive
@@ -123,12 +131,17 @@ class kll_quantile_calculator {
     static void blocky_tandem_merge_sort(T* items, uint64_t* weights, uint32_t num_items, const uint32_t* levels, uint8_t num_levels) {
       if (num_levels == 1) return;
 
-      // duplicate the input in preparation for the "ping-pong" copy reduction strategy
-      std::unique_ptr<T[]> items_tmp(new T[num_items]);
-      std::copy(items, &items[num_items], items_tmp.get());
-      std::unique_ptr<uint64_t[]> weights_tmp(new uint64_t[num_items]); // don't need the extra one here
-      std::copy(weights, &weights[num_items], weights_tmp.get());
-      blocky_tandem_merge_sort_recursion(items_tmp.get(), weights_tmp.get(), items, weights, levels, 0, num_levels);
+      // move the input in preparation for the "ping-pong" reduction strategy
+      auto tmp_items_deleter = [num_items](T* ptr) {
+        for (uint32_t i = 0; i < num_items; i++) ptr[i].~T();
+        A().deallocate(ptr, num_items);
+      };
+      std::unique_ptr<T, decltype(tmp_items_deleter)> tmp_items(A().allocate(num_items), tmp_items_deleter);
+      kll_helper::move_construct<T>(items, 0, num_items, tmp_items.get(), 0, false); // do not destroy since the items will be moved back
+      auto tmp_weights_deleter = [num_items](uint64_t* ptr) { AllocU64().deallocate(ptr, num_items); };
+      std::unique_ptr<uint64_t[], decltype(tmp_weights_deleter)> tmp_weights(AllocU64().allocate(num_items), tmp_weights_deleter); // don't need the extra one here
+      std::copy(weights, &weights[num_items], tmp_weights.get());
+      blocky_tandem_merge_sort_recursion(tmp_items.get(), tmp_weights.get(), items, weights, levels, 0, num_levels);
     }
 
     static void blocky_tandem_merge_sort_recursion(T* items_src, uint64_t* weights_src, T* items_dst, uint64_t* weights_dst, const uint32_t* levels, uint8_t starting_level, uint8_t num_levels) {
@@ -156,21 +169,21 @@ class kll_quantile_calculator {
 
       while ((i_src_1 < to_index_1) and (i_src_2 < to_index_2)) {
         if (C()(items_src[i_src_1], items_src[i_src_2])) {
-          items_dst[i_dst] = items_src[i_src_1];
+          items_dst[i_dst] = std::move(items_src[i_src_1]);
           weights_dst[i_dst] = weights_src[i_src_1];
           i_src_1++;
         } else {
-          items_dst[i_dst] = items_src[i_src_2];
+          items_dst[i_dst] = std::move(items_src[i_src_2]);
           weights_dst[i_dst] = weights_src[i_src_2];
           i_src_2++;
         }
         i_dst++;
       }
       if (i_src_1 < to_index_1) {
-        std::copy(&items_src[i_src_1], &items_src[to_index_1], &items_dst[i_dst]);
+        std::move(&items_src[i_src_1], &items_src[to_index_1], &items_dst[i_dst]);
         std::copy(&weights_src[i_src_1], &weights_src[to_index_1], &weights_dst[i_dst]);
       } else if (i_src_2 < to_index_2) {
-        std::copy(&items_src[i_src_2], &items_src[to_index_2], &items_dst[i_dst]);
+        std::move(&items_src[i_src_2], &items_src[to_index_2], &items_dst[i_dst]);
         std::copy(&weights_src[i_src_2], &weights_src[to_index_2], &weights_dst[i_dst]);
       }
     }
