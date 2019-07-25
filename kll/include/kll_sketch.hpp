@@ -171,10 +171,10 @@ class kll_sketch {
     T get_min_value() const;
     T get_max_value() const;
     T get_quantile(double fraction) const;
-    std::unique_ptr<T[]> get_quantiles(const double* fractions, uint32_t size) const;
+    std::unique_ptr<T[], std::function<void(T*)>> get_quantiles(const double* fractions, uint32_t size) const;
     double get_rank(const T& value) const;
-    std::unique_ptr<double[]> get_PMF(const T* split_points, uint32_t size) const;
-    std::unique_ptr<double[]> get_CDF(const T* split_points, uint32_t size) const;
+    std::unique_ptr<double[], std::function<void(double*)>> get_PMF(const T* split_points, uint32_t size) const;
+    std::unique_ptr<double[], std::function<void(double*)>> get_CDF(const T* split_points, uint32_t size) const;
     double get_normalized_rank_error(bool pmf) const;
 
     // implementation for fixed-size arithmetic types (integral and floating point)
@@ -290,8 +290,8 @@ class kll_sketch {
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
     void sort_level_zero();
-    std::unique_ptr<kll_quantile_calculator<T, C, A>> get_quantile_calculator();
-    std::unique_ptr<double[]> get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
+    std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> get_quantile_calculator();
+    std::unique_ptr<double[], std::function<void(double*)>> get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
     void increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
         const T* split_points, uint32_t size, double* buckets) const;
     void increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
@@ -512,23 +512,29 @@ T kll_sketch<T, C, S, A>::get_quantile(double fraction) const {
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<T[]> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions, uint32_t size) const {
-  if (is_empty()) { return nullptr; }
-  std::unique_ptr<kll_quantile_calculator<T, C, A>> quantile_calculator;
-  std::unique_ptr<T[]> quantiles(new T[size]);
+std::unique_ptr<T[], std::function<void(T*)>> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions, uint32_t size) const {
+  if (is_empty()) return std::unique_ptr<T[], std::function<void(T*)>>();
+  std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> quantile_calculator;
+  std::unique_ptr<T[], std::function<void(T*)>> quantiles(
+    A().allocate(size),
+    [size](T* ptr){
+      for (uint32_t i = 0; i < size; i++) ptr[i].~T();
+      A().deallocate(ptr, size);
+    }
+  );
   for (uint32_t i = 0; i < size; i++) {
     const double fraction = fractions[i];
     if ((fraction < 0.0) or (fraction > 1.0)) {
       throw std::invalid_argument("Fraction cannot be less than zero or greater than 1.0");
     }
-    if      (fraction == 0.0) quantiles[i] = *min_value_;
-    else if (fraction == 1.0) quantiles[i] = *max_value_;
+    if      (fraction == 0.0) new (&quantiles[i]) T(*min_value_);
+    else if (fraction == 1.0) new (&quantiles[i]) T(*max_value_);
     else {
       if (!quantile_calculator) {
         // has side effect of sorting level zero if needed
         quantile_calculator = const_cast<kll_sketch*>(this)->get_quantile_calculator();
       }
-      quantiles[i] = quantile_calculator->get_quantile(fraction);
+      new (&quantiles[i]) T(quantile_calculator->get_quantile(fraction));
     }
   }
   return std::move(quantiles);
@@ -557,12 +563,12 @@ double kll_sketch<T, C, S, A>::get_rank(const T& value) const {
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<double[]> kll_sketch<T, C, S, A>::get_PMF(const T* split_points, uint32_t size) const {
+std::unique_ptr<double[], std::function<void(double*)>> kll_sketch<T, C, S, A>::get_PMF(const T* split_points, uint32_t size) const {
   return get_PMF_or_CDF(split_points, size, false);
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<double[]> kll_sketch<T, C, S, A>::get_CDF(const T* split_points, uint32_t size) const {
+std::unique_ptr<double[], std::function<void(double*)>> kll_sketch<T, C, S, A>::get_CDF(const T* split_points, uint32_t size) const {
   return get_PMF_or_CDF(split_points, size, true);
 }
 
@@ -608,10 +614,9 @@ std::pair<void_ptr_with_deleter, const size_t> kll_sketch<T, C, S, A>::serialize
   const bool is_single_item = n_ == 1;
   const size_t size = header_size_bytes + get_serialized_size_bytes();
   typedef typename A::template rebind<char>::other AllocChar;
-  AllocChar allocator;
   void_ptr_with_deleter data_ptr(
-    static_cast<void*>(allocator.allocate(size)),
-    [size](void* ptr) { AllocChar allocator; allocator.deallocate(static_cast<char*>(ptr), size); }
+    static_cast<void*>(AllocChar().allocate(size)),
+    [size](void* ptr) { AllocChar().deallocate(static_cast<char*>(ptr), size); }
   );
   char* ptr = static_cast<char*>(data_ptr.get()) + header_size_bytes;
   const uint8_t preamble_ints(is_empty() or is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
@@ -901,10 +906,7 @@ void kll_sketch<T, C, S, A>::add_empty_top_level_to_completely_full_sketch() {
 
   // move (and shift) the current data into the new buffer
   T* new_buf = A().allocate(new_total_cap);
-  for (uint32_t i = 0; i < cur_total_cap; i++) {
-    new (&new_buf[i + delta_cap]) T(std::move(items_[i]));
-    items_[i].~T();
-  }
+  kll_helper::move_construct<T>(items_, 0, cur_total_cap, new_buf, delta_cap, true);
   A().deallocate(items_, items_size_);
   items_ = new_buf;
   items_size_ = new_total_cap;
@@ -929,18 +931,24 @@ void kll_sketch<T, C, S, A>::sort_level_zero() {
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<kll_quantile_calculator<T, C, A>> kll_sketch<T, C, S, A>::get_quantile_calculator() {
+std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> kll_sketch<T, C, S, A>::get_quantile_calculator() {
   sort_level_zero();
-  std::unique_ptr<kll_quantile_calculator<T, C, A>> quantile_calculator(new kll_quantile_calculator<T, C, A>(items_, levels_, num_levels_, n_));
+  typedef typename std::allocator_traits<A>::template rebind_alloc<kll_quantile_calculator<T, C, A>> AllocCalc;
+  std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> quantile_calculator(
+    new (AllocCalc().allocate(1)) kll_quantile_calculator<T, C, A>(items_, levels_, num_levels_, n_),
+    [](kll_quantile_calculator<T, C, A>* ptr){ ptr->~kll_quantile_calculator<T, C, A>(); AllocCalc().deallocate(ptr, 1); }
+  );
   return std::move(quantile_calculator);
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<double[]> kll_sketch<T, C, S, A>::get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const {
+std::unique_ptr<double[], std::function<void(double*)>> kll_sketch<T, C, S, A>::get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const {
   if (is_empty()) return nullptr;
   kll_helper::validate_values<T, C>(split_points, size);
-  std::unique_ptr<double[]> buckets(new double[size + 1]);
-  std::fill(&buckets.get()[0], &buckets.get()[size + 1], 0);
+  typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocD;
+  const size_t array_size = size + 1;
+  std::unique_ptr<double[], std::function<void(double*)>> buckets(AllocD().allocate(size + 1), [array_size](double* ptr){ AllocD().deallocate(ptr, array_size); });
+  std::fill(&buckets.get()[0], &buckets.get()[array_size], 0);
   uint8_t level(0);
   uint64_t weight(1);
   while (level < num_levels_) {
@@ -1009,7 +1017,7 @@ void kll_sketch<T, C, S, A>::increment_buckets_sorted_level(uint32_t from_index,
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::merge_higher_levels(const kll_sketch& other, uint64_t final_n) {
   const uint32_t tmp_num_items = get_num_retained() + other.get_num_retained_above_level_zero();
-  auto tmp_items_deleter = [tmp_num_items](T* ptr) { A().deallocate(ptr, tmp_num_items); };
+  auto tmp_items_deleter = [tmp_num_items](T* ptr) { A().deallocate(ptr, tmp_num_items); }; // no destructor needed
   const std::unique_ptr<T, decltype(tmp_items_deleter)> workbuf(A().allocate(tmp_num_items), tmp_items_deleter);
   const uint8_t ub = kll_helper::ub_on_num_levels(final_n);
   const size_t work_levels_size = ub + 2; // ub+1 does not work
@@ -1029,7 +1037,6 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(const kll_sketch& other, uint64
 
   // now we need to transfer the results back into "this" sketch
   if (result.final_capacity != items_size_) {
-    for (unsigned i = 0; i < items_size_; i++) A().destroy(&items_[i]);
     A().deallocate(items_, items_size_);
     items_size_ = result.final_capacity;
     items_ = A().allocate(items_size_);
