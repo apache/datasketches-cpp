@@ -10,7 +10,7 @@ FI_TARGET := fi/$(FI_TEST_BIN)
 FI_TSTSOURCES := $(shell find $(FI_TSTDIR) -type f -name "*.cpp")
 FI_TSTOBJS := $(patsubst $(FI_TSTDIR)/%,$(FI_TSTBUILD)/%,$(FI_TSTSOURCES:.cpp=.o))
 
-FI_INCLIST := $(COM_INCLIST) -I $(FI_INCDIR)
+FI_INCLIST := $(COM_INCLIST) -I $(FI_INCDIR) -I common/test
 
 $(FI_TSTBUILD)/%.o: $(FI_TSTDIR)/%.cpp
 	@mkdir -p $(FI_TSTBUILD)
