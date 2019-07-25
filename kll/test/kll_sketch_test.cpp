@@ -189,6 +189,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     auto reverse_quantiles = sketch.get_quantiles(reverse_fractions, 1001);
     float previous_quantile(0);
     for (int i = 0; i < 1001; i++) {
+      // expensive in a loop, just to check the equivalence here, not advised for real code
       const float quantile = sketch.get_quantile(fractions[i]);
       CPPUNIT_ASSERT_EQUAL(quantile, quantiles[i]);
       CPPUNIT_ASSERT_EQUAL(quantile, reverse_quantiles[1000 - i]);
@@ -196,7 +197,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
       previous_quantile = quantile;
     }
 
-    sketch.to_stream(std::cout);
+    //sketch.to_stream(std::cout);
   }
 
   void consistency_between_get_rank_and_get_PMF_CDF() {
@@ -520,7 +521,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     sketch.serialize(os);
 
     // debug print
-    sketch.to_stream(std::cout);
+    //sketch.to_stream(std::cout);
   }
 
   void copy() {
