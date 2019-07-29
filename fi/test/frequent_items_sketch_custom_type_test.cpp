@@ -21,71 +21,9 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <frequent_items_sketch.hpp>
+#include <A.hpp>
 
 namespace datasketches {
-
-class A {
-public:
-  A(int value): value(value) {
-    std::cerr << "A constructor" << std::endl;
-  }
-  ~A() {
-    std::cerr << "A destructor" << std::endl;
-  }
-  A(const A& other): value(other.value) {
-    std::cerr << "A copy constructor" << std::endl;
-  }
-  // noexcept is important here so that std::vector can move this type
-  A(A&& other) noexcept : value(other.value) {
-    std::cerr << "A move constructor" << std::endl;
-  }
-  A& operator=(const A& other) {
-    std::cerr << "A copy assignment" << std::endl;
-    value = other.value;
-    return *this;
-  }
-  A& operator=(A&& other) {
-    std::cerr << "A move assignment" << std::endl;
-    value = other.value;
-    return *this;
-  }
-  int get_value() const { return value; }
-private:
-  int value;
-};
-
-struct hashA {
-  std::size_t operator()(const A& a) const {
-    return std::hash<int>()(a.get_value());
-  }
-};
-
-struct equalA {
-  bool operator()(const A& a1, const A& a2) const {
-    return a1.get_value() == a2.get_value();
-  }
-};
-
-struct serdeA {
-  void serialize(std::ostream& os, const A* items, unsigned num) {
-    for (unsigned i = 0; i < num; i++) {
-      const int value = items[i].get_value();
-      os.write((char*)&value, sizeof(value));
-    }
-  }
-  void deserialize(std::istream& is, A* items, unsigned num) {
-    for (unsigned i = 0; i < num; i++) {
-      int value;
-      is.read((char*)&value, sizeof(value));
-      new (&items[i]) A(value);
-    }
-  }
-};
-
-std::ostream& operator<<(std::ostream& os, const A& a) {
-  os << a.get_value();
-  return os;
-}
 
 typedef frequent_items_sketch<A, hashA, equalA, serdeA> frequent_A_sketch;
 

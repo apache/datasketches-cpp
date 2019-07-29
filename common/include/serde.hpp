@@ -27,10 +27,11 @@ namespace datasketches {
 
 // serialize and deserialize
 template<typename T, typename Enable = void> struct serde {
-  // stream
+  // stream serialization
   void serialize(std::ostream& os, const T* items, unsigned num);
   void deserialize(std::istream& is, T* items, unsigned num); // items are not initialized
-  // raw bytes
+
+  // raw bytes serialization
   size_t size_of_item(const T& item);
   size_t serialize(char* ptr, const T* items, unsigned num);
   size_t deserialize(const char* ptr, T* items, unsigned num); // items are not initialized

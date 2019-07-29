@@ -24,3 +24,8 @@ target_sources(fi_test
     frequent_items_sketch_test.cpp
     frequent_items_sketch_custom_type_test.cpp
 )
+
+target_include_directories(fi_test
+  PRIVATE
+    ../../common/test
+)

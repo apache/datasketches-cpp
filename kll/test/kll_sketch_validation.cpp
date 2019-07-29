@@ -185,7 +185,7 @@ class kll_sketch_validation: public CppUnit::TestFixture {
         std::cout << " pass" << std::endl;
       } else {
         std::cout << " " << (correct_results[7 * i + 6]) << " != " << hashed_samples;
-        std::cout << sketch;
+        sketch.to_stream(std::cout);
         CPPUNIT_FAIL("fail");
       }
     }
