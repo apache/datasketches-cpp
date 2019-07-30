@@ -243,12 +243,4 @@ Hll8Array<A>* HllSketchImplFactory<A>::convertToHll8(const HllArray<A>& srcHllAr
 
 }
 
-//#include "HllSketchImpl-internal.hpp"
-//#include "CouponList-internal.hpp"
-//#include "CouponHashSet-internal.hpp"
-//#include "HllArray-internal.hpp"
-//#include "Hll4Array-internal.hpp"
-//#include "Hll6Array-internal.hpp"
-//#include "Hll8Array-internal.hpp"
-
 #endif /* _HLLSKETCHIMPLFACTORY_HPP_ */

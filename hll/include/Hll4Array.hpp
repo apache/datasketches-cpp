@@ -40,8 +40,6 @@ class Hll4Array final : public HllArray<A> {
 
     virtual Hll4Array* copy() const;
 
-    //virtual std::unique_ptr<PairIterator<A>> getIterator() const;
-    //virtual std::unique_ptr<PairIterator<A>> getAuxIterator() const;
     virtual PairIterator_with_deleter<A> getIterator() const;
     virtual PairIterator_with_deleter<A> getAuxIterator() const;
 
@@ -79,7 +77,5 @@ class Hll4Iterator : public HllPairIterator<A> {
 };
 
 }
-
-//#include "Hll4Array-internal.hpp"
 
 #endif /* _HLL4ARRAY_HPP_ */

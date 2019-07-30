@@ -35,7 +35,6 @@ class HllArray : public HllSketchImpl<A> {
     explicit HllArray(int lgConfigK, TgtHllType tgtHllType, bool startFullSize);
     explicit HllArray(const HllArray<A>& that);
 
-    //static HllArray* newHll(int lgConfigK, TgtHllType tgtHllType);
     static HllArray* newHll(const void* bytes, size_t len);
     static HllArray* newHll(std::istream& is);
 
@@ -65,8 +64,6 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual int getHllByteArrBytes() const = 0;
 
-    //virtual std::unique_ptr<PairIterator<A>> getIterator() const = 0;
-    //virtual std::unique_ptr<PairIterator<A>> getAuxIterator() const;
     virtual PairIterator_with_deleter<A> getIterator() const = 0;
     virtual PairIterator_with_deleter<A> getAuxIterator() const;
 
@@ -115,12 +112,9 @@ class HllArray : public HllSketchImpl<A> {
     int numAtCurMin; //interpreted as num zeros when curMin == 0
     bool oooFlag; //Out-Of-Order Flag
 
-    //friend class Conversions;
     friend class HllSketchImplFactory<A>;
 };
 
 }
-
-//#include "HllArray-internal.hpp"
 
 #endif /* _HLLARRAY_HPP_ */

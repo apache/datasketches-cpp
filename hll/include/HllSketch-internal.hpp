@@ -20,11 +20,9 @@
 #ifndef _HLLSKETCH_INTERNAL_HPP_
 #define _HLLSKETCH_INTERNAL_HPP_
 
-//#include "HllSketch.hpp"
 #include "hll.hpp"
 #include "HllUtil.hpp"
 #include "HllSketchImplFactory.hpp"
-//#include "CouponMode.hpp"
 #include "CouponList.hpp"
 #include "HllArray.hpp"
 

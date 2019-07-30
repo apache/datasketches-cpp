@@ -25,7 +25,6 @@
 #include "HarmonicNumbers.hpp"
 #include "CubicInterpolation.hpp"
 #include "CompositeInterpolationXTable.hpp"
-//#include "RelativeErrorTables.hpp"
 #include "CouponList.hpp"
 
 #include <cstring>

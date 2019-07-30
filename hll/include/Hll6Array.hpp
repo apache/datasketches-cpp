@@ -67,6 +67,4 @@ class Hll6Iterator : public HllPairIterator<A> {
 
 }
 
-//#include "Hll6Array-internal.hpp"
-
 #endif /* _HLL6ARRAY_HPP_ */
