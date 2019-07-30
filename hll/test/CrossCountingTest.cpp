@@ -36,8 +36,6 @@ class CrossCountingTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(crossCountingChecks);
   CPPUNIT_TEST_SUITE_END();
 
-  typedef HllSketch<> hll_sketch;
-
   hll_sketch buildSketch(const int n, const int lgK, const TgtHllType tgtHllType) {
     hll_sketch sketch(lgK, tgtHllType);
     for (int i = 0; i < n; ++i) {
@@ -46,7 +44,7 @@ class CrossCountingTest : public CppUnit::TestFixture {
     return sketch;
   }
 
-  int computeChecksum(const HllSketch<>& sketch) {
+  int computeChecksum(const hll_sketch& sketch) {
     PairIterator_with_deleter<> itr = sketch.getIterator();
     int checksum = 0;
     int key;

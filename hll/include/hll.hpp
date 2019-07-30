@@ -50,13 +50,12 @@ class HllSketch final {
     static HllSketch deserialize(std::istream& is);
     static HllSketch deserialize(const void* bytes, size_t len);
     HllSketch(const HllSketch<A>& that);
+    HllSketch(HllSketch<A>&& that) noexcept;
 
     ~HllSketch();
 
-    HllSketch operator=(HllSketch<A>& other);
+    HllSketch operator=(const HllSketch<A>& other);
     HllSketch operator=(HllSketch<A>&& other);
-    HllSketch copy() const;
-    HllSketch* copyPtr() const;
     HllSketch copyAs(TgtHllType tgtHllType) const;
 
     void reset();
@@ -143,19 +142,10 @@ class HllSketch final {
 template<typename A = std::allocator<char> >
 class HllUnion {
   public:
-    //static HllUnion newInstance(int lgMaxK);
     explicit HllUnion(int lgMaxK);
-    //explicit HllUnion(HllSketch<A>& sketch);
-    //explicit HllUnion(HllSketch<A>&& sketch);
-    HllUnion(const HllUnion<A>& that);
 
     static HllUnion deserialize(std::istream& is);
     static HllUnion deserialize(const void* bytes, size_t len);
-
-    ~HllUnion();
-
-    HllUnion operator=(HllUnion<A>& other);
-    HllUnion operator=(HllUnion<A>&& other);
 
     double getEstimate() const;
     double getCompositeEstimate() const;
@@ -208,7 +198,6 @@ class HllUnion {
                             int lgConfigK, int numStdDev);
 
   private:
-    typedef typename std::allocator_traits<A>::template rebind_alloc<HllUnion> AllocHllUnion;
 
    /**
     * Union the given source and destination sketches. This static method examines the state of
@@ -238,7 +227,7 @@ class HllUnion {
     static HllSketchImpl<A>* leakFreeCouponUpdate(HllSketchImpl<A>* impl, int coupon);
 
     int lgMaxK;
-    HllSketch<A>* gadget;
+    HllSketch<A> gadget;
 
 };
 
@@ -248,10 +237,12 @@ static std::ostream& operator<<(std::ostream& os, const HllSketch<A>& sketch);
 template<typename A>
 static std::ostream& operator<<(std::ostream& os, const HllUnion<A>& hllUnion);
 
+// aliases with default allocator for convenience
+typedef HllSketch<> hll_sketch;
+typedef HllUnion<> hll_union;
+
 } // namespace datasketches
 
 #include "hll.private.hpp"
-//#include "HllSketch.hpp"
-//#include "HllUnion.hpp"
 
 #endif // _HLL_HPP_

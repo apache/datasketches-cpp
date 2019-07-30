@@ -41,9 +41,6 @@ class HllUnionTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkInputTypes);
   CPPUNIT_TEST_SUITE_END();
 
-  typedef HllSketch<> hll_sketch;
-  typedef HllUnion<> hll_union;
-
   int min(int a, int b) {
     return (a < b) ? a : b;
   }
@@ -208,8 +205,8 @@ class HllUnionTest : public CppUnit::TestFixture {
   void checkUnionEquality(hll_union& u1, hll_union& u2) {
     //HllSketchPvt* sk1 = static_cast<HllSketchPvt*>(static_cast<HllUnionPvt*>(u1.get())->gadget.get());
     //HllSketchPvt* sk2 = static_cast<HllSketchPvt*>(static_cast<HllUnionPvt*>(u2.get())->gadget.get());
-    HllSketch<> sk1 = u1.getResult();
-    HllSketch<> sk2 = u2.getResult();
+    hll_sketch sk1 = u1.getResult();
+    hll_sketch sk2 = u2.getResult();
 
     CPPUNIT_ASSERT_EQUAL(sk1.getLgConfigK(), sk2.getLgConfigK());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1.getLowerBound(1), sk2.getLowerBound(1), 0.0);

@@ -65,7 +65,7 @@ class CouponListTest : public CppUnit::TestFixture {
 
   void checkDuplicatesAndMisc() {
     int lgConfigK = 8;
-    HllSketch<> sk(lgConfigK);
+    hll_sketch sk(lgConfigK);
 
     for (int i = 1; i <= 7; ++i) {
       sk.update(i);
@@ -103,7 +103,7 @@ class CouponListTest : public CppUnit::TestFixture {
   }
 
   void serializeDeserialize(const int lgK) {
-    HllSketch<> sk1(lgK);
+    hll_sketch sk1(lgK);
 
     int u = (lgK < 8) ? 7 : (((1 << (lgK - 3))/ 4) * 3);
     for (int i = 0; i < u; ++i) {
@@ -114,7 +114,7 @@ class CouponListTest : public CppUnit::TestFixture {
 
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
     sk1.serializeCompact(ss);
-    HllSketch<> sk2 = HllSketch<>::deserialize(ss);
+    hll_sketch sk2 = hll_sketch::deserialize(ss);
     double est2 = sk2.getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
 
@@ -122,7 +122,7 @@ class CouponListTest : public CppUnit::TestFixture {
     ss.clear();
 
     sk1.serializeUpdatable(ss);
-    sk2 = HllSketch<>::deserialize(ss);
+    sk2 = hll_sketch::deserialize(ss);
     est2 = sk2.getEstimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
   }
@@ -134,7 +134,7 @@ class CouponListTest : public CppUnit::TestFixture {
 
   void checkCorruptBytearrayData() {
     int lgK = 6;
-    HllSketch<> sk1(lgK);
+    hll_sketch sk1(lgK);
     sk1.update(1);
     sk1.update(2);
     std::pair<byte_ptr_with_deleter, const size_t> sketchBytes = sk1.serializeCompact();
@@ -142,7 +142,7 @@ class CouponListTest : public CppUnit::TestFixture {
 
     bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
                                  CouponList<>::newList(bytes, sketchBytes.second),
@@ -152,35 +152,35 @@ class CouponListTest : public CppUnit::TestFixture {
 
     bytes[HllUtil<>::SER_VER_BYTE] = 0;
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialization version byte",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     bytes[HllUtil<>::SER_VER_BYTE] = HllUtil<>::SER_VER;
 
     bytes[HllUtil<>::FAMILY_BYTE] = 0;
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in family id byte",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     bytes[HllUtil<>::FAMILY_BYTE] = HllUtil<>::FAMILY_ID;
 
     uint8_t tmp = bytes[HllUtil<>::MODE_BYTE];
     bytes[HllUtil<>::MODE_BYTE] = 0x01; // HLL_4, SET
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in mode byte",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     bytes[HllUtil<>::MODE_BYTE] = tmp;
 
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialized length",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second - 1),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second - 1),
                                  std::invalid_argument);
 
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialized length",
-                                 HllSketch<>::deserialize(bytes, 3),
+                                 hll_sketch::deserialize(bytes, 3),
                                  std::invalid_argument);
   }
 
   void checkCorruptStreamData() {
     int lgK = 6;
-    HllSketch<> sk1(lgK);
+    hll_sketch sk1(lgK);
     sk1.update(1);
     sk1.update(2);
     std::stringstream ss;
@@ -190,7 +190,7 @@ class CouponListTest : public CppUnit::TestFixture {
     ss.put(0);
     ss.seekg(0);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 HllSketch<>::deserialize(ss),
+                                 hll_sketch::deserialize(ss),
                                  std::invalid_argument);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
                                  CouponList<>::newList(ss),
@@ -202,7 +202,7 @@ class CouponListTest : public CppUnit::TestFixture {
     ss.put(0);
     ss.seekg(0);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialization version byte",
-                                 HllSketch<>::deserialize(ss),
+                                 hll_sketch::deserialize(ss),
                                  std::invalid_argument);
     ss.seekp(HllUtil<>::SER_VER_BYTE);
     ss.put(HllUtil<>::SER_VER);
@@ -211,7 +211,7 @@ class CouponListTest : public CppUnit::TestFixture {
     ss.put(0);
     ss.seekg(0);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in family id byte",
-                                 HllSketch<>::deserialize(ss),
+                                 hll_sketch::deserialize(ss),
                                  std::invalid_argument);
     ss.seekp(HllUtil<>::FAMILY_BYTE);
     ss.put(HllUtil<>::FAMILY_ID);
@@ -220,7 +220,7 @@ class CouponListTest : public CppUnit::TestFixture {
     ss.put(0x22); // HLL_8, HLL
     ss.seekg(0);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in mode bytes",
-                                 HllSketch<>::deserialize(ss),
+                                 hll_sketch::deserialize(ss),
                                  std::invalid_argument);
   }
 
