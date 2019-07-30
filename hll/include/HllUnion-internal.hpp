@@ -72,7 +72,7 @@ static std::ostream& operator<<(std::ostream& os, const HllUnion<A>& hllUnion) {
 
 template<typename A>
 HllSketch<A> HllUnion<A>::getResult(TgtHllType tgtHllType) const {
-  return hll_sketch(gadget, tgtHllType);
+  return HllSketch<A>(gadget, tgtHllType);
 }
 
 template<typename A>
