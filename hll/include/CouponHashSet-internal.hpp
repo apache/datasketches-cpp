@@ -39,7 +39,7 @@ CouponHashSet<A>::CouponHashSet(const int lgConfigK, const TgtHllType tgtHllType
   if (lgConfigK <= 7) {
     throw std::invalid_argument("CouponHashSet must be initialized with lgConfigK > 7. Found: "
                                 + std::to_string(lgConfigK));
-  }   
+  }
 }
 
 template<typename A>
@@ -102,8 +102,8 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
   // Don't set couponCount in sketch here;
   // we'll set later if updatable, and increment with updates if compact
   //int couponsInArray = (compactFlag ? couponCount : (1 << sketch->getLgCouponArrInts()));
-  int couponsInArray = (compactFlag ? couponCount : (1 << lgArrInts));
-  int expectedLength = HllUtil<A>::HASH_SET_INT_ARR_START + (couponsInArray * sizeof(int));
+  const int couponsInArray = (compactFlag ? couponCount : (1 << lgArrInts));
+  const size_t expectedLength = HllUtil<A>::HASH_SET_INT_ARR_START + (couponsInArray * sizeof(int));
   if (len < expectedLength) {
     throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
                                 + ", found: " + std::to_string(len));

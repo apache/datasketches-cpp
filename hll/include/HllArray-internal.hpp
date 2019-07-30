@@ -128,7 +128,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   const int curMin = (int) data[HllUtil<A>::HLL_CUR_MIN_BYTE];
 
   int arrayBytes = hllArrBytes(tgtHllType, lgK);
-  if (len < HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes) {
+  if (len < static_cast<size_t>(HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes)) {
     throw std::invalid_argument("Input array too small to hold sketch image");
   }
 
