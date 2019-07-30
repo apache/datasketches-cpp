@@ -55,7 +55,6 @@ class CouponList : public HllSketchImpl<A> {
 
     virtual bool isEmpty() const;
     virtual int getCouponCount() const;
-    //virtual std::unique_ptr<PairIterator<A>> getIterator() const;
     virtual PairIterator_with_deleter<A> getIterator() const;
 
   protected:
@@ -75,8 +74,6 @@ class CouponList : public HllSketchImpl<A> {
     virtual int getLgCouponArrInts() const;
     virtual int* getCouponIntArr() const;
 
-    //virtual CouponList* reset();
-
     int lgCouponArrInts;
     int couponCount;
     bool oooFlag;
@@ -86,7 +83,5 @@ class CouponList : public HllSketchImpl<A> {
 };
 
 }
-
-//#include "CouponList-internal.hpp"
 
 #endif /* _COUPONLIST_HPP_ */

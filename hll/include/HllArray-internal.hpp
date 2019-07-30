@@ -57,7 +57,7 @@ HllArray<A>::HllArray(const HllArray<A>& that)
   oooFlag = that.isOutOfOrderFlag();
 
   // can determine length, so allocate here
-  int arrayLen = that.getHllByteArrBytes();
+  const int arrayLen = that.getHllByteArrBytes();
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   hllByteArr = uint8Alloc().allocate(arrayLen);
   std::copy(that.hllByteArr, that.hllByteArr + arrayLen, hllByteArr);
@@ -77,7 +77,6 @@ HllArray<A>::~HllArray() {
 
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   uint8Alloc().deallocate(hllByteArr, hllArrBytes);
-  //delete [] hllByteArr;
 }
 
 template<typename A>
@@ -86,13 +85,10 @@ HllArray<A>* HllArray<A>::copyAs(const TgtHllType tgtHllType) const {
     return static_cast<HllArray*>(copy());
   }
   if (tgtHllType == TgtHllType::HLL_4) {
-    //return Conversions::convertToHll4(*this);
     return HllSketchImplFactory<A>::convertToHll4(*this);
   } else if (tgtHllType == TgtHllType::HLL_6) {
-    //return Conversions::convertToHll6(*this);
     return HllSketchImplFactory<A>::convertToHll6(*this);
   } else { // tgtHllType == HLL_8
-    //return Conversions::convertToHll8(*this);
     return HllSketchImplFactory<A>::convertToHll8(*this);
   }
 }
@@ -114,20 +110,20 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
     throw std::invalid_argument("Input array is not an HLL sketch");
   }
 
-  CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  const CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
   if (curMode != HLL) {
     throw std::invalid_argument("Calling HLL array construtor with non-HLL mode data");
   }
 
-  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
-  bool oooFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  bool comapctFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
-  bool startFullSizeFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
+  const TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
+  const bool oooFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  const bool comapctFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
+  const bool startFullSizeFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
 
   const int lgK = (int) data[HllUtil<A>::LG_K_BYTE];
   const int curMin = (int) data[HllUtil<A>::HLL_CUR_MIN_BYTE];
 
-  int arrayBytes = hllArrBytes(tgtHllType, lgK);
+  const int arrayBytes = hllArrBytes(tgtHllType, lgK);
   if (len < static_cast<size_t>(HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes)) {
     throw std::invalid_argument("Input array too small to hold sketch image");
   }
@@ -185,10 +181,10 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
     throw std::invalid_argument("Calling HLL construtor with non-HLL mode data");
   }
 
-  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
-  bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  bool comapctFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
-  bool startFullSizeFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
+  const TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
+  const bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  const bool comapctFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
+  const bool startFullSizeFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
 
   const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
   const int curMin = (int) listHeader[HllUtil<A>::HLL_CUR_MIN_BYTE];
@@ -214,7 +210,7 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
   is.read((char*)sketch->hllByteArr, sketch->getHllByteArrBytes());
   
   if (auxCount > 0) { // necessarily TgtHllType == HLL_4
-    int auxLgIntArrSize = (int) listHeader[4];
+    int auxLgIntArrSize = listHeader[4];
     AuxHashMap<A>* auxHashMap = AuxHashMap<A>::deserialize(is, lgK, auxCount, auxLgIntArrSize, comapctFlag);
     ((Hll4Array<A>*)sketch)->putAuxHashMap(auxHashMap);
   }
@@ -258,7 +254,6 @@ std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t>
     bytes += getMemDataStart() + hllByteArrBytes; // start of auxHashMap
     if (auxHashMap != nullptr) {
       if (compact) {
-        //std::unique_ptr<PairIterator<A>> itr = auxHashMap->getIterator();
         PairIterator_with_deleter<A> itr = auxHashMap->getIterator();
         while (itr->nextValid()) {
           const int pairValue = itr->getPair();

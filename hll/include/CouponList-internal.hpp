@@ -124,12 +124,12 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
 
   TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
 
-  const int lgK = (int) data[HllUtil<A>::LG_K_BYTE];
+  const int lgK = data[HllUtil<A>::LG_K_BYTE];
   const bool compact = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
   const bool oooFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   const bool emptyFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
 
-  const int couponCount = (int) data[HllUtil<A>::LIST_COUNT_BYTE];
+  const int couponCount = data[HllUtil<A>::LIST_COUNT_BYTE];
   const int couponsInArray = (compact ? couponCount : (1 << HllUtil<A>::computeLgArrInts(LIST, couponCount, lgK)));
   const size_t expectedLength = HllUtil<A>::LIST_INT_ARR_START + (couponsInArray * sizeof(int));
   if (len < expectedLength) {
@@ -169,16 +169,15 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
     throw std::invalid_argument("Calling list construtor with non-list mode data");
   }
 
-  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
+  const TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
-  //const int lgArrInts = (int) listHeader[HllUtil<A>::LG_ARR_BYTE];
-  bool compact = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
-  bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  bool emptyFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
+  const bool compact = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
+  const bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  const bool emptyFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
 
   CouponList<A>* sketch = new (clAlloc().allocate(1)) CouponList<A>(lgK, tgtHllType, curMode);
-  const int couponCount = (int) listHeader[HllUtil<A>::LIST_COUNT_BYTE];
+  const int couponCount = listHeader[HllUtil<A>::LIST_COUNT_BYTE];
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
@@ -186,16 +185,16 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
     // For stream processing, need to read entire number written to stream so read
     // pointer ends up set correctly.
     // If not compact, still need to read empty items even though in order.
-    int numToRead = (compact ? couponCount : (1 << sketch->lgCouponArrInts));
+    const int numToRead = (compact ? couponCount : (1 << sketch->lgCouponArrInts));
     is.read((char*)sketch->couponIntArr, numToRead * sizeof(int));
   }
-  
+
   return sketch;
 }
 
 template<typename A>
 std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> CouponList<A>::serialize(bool compact, unsigned header_size_bytes) const {
-  size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes()) + header_size_bytes;
+  const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes()) + header_size_bytes;
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   std::unique_ptr<uint8_t, std::function<void(uint8_t*)>> byteArr(
     uint8Alloc().allocate(sketchSizeBytes),
