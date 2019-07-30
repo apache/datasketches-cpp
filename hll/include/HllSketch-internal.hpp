@@ -84,6 +84,11 @@ HllSketch<A>::HllSketch(const HllSketch<A>& that) :
 {}
 
 template<typename A>
+HllSketch<A>::HllSketch(const HllSketch<A>& that, TgtHllType tgtHllType) :
+  hllSketchImpl(that.hllSketchImpl->copyAs(tgtHllType))
+{}
+
+template<typename A>
 HllSketch<A>::HllSketch(HllSketch<A>&& that) noexcept :
   hllSketchImpl(nullptr)
 {
@@ -106,12 +111,6 @@ template<typename A>
 HllSketch<A> HllSketch<A>::operator=(HllSketch<A>&& other) {
   std::swap(hllSketchImpl, other.hllSketchImpl);
   return *this;
-}
-
-template<typename A>
-HllSketch<A> HllSketch<A>::copyAs(const TgtHllType tgtHllType) const {
-  HllSketch<A> sketch(hllSketchImpl->copyAs(tgtHllType));
-  return sketch; // no move so copy elision can work
 }
 
 template<typename A>

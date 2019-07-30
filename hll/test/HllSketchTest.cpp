@@ -107,19 +107,19 @@ class hllSketchTest : public CppUnit::TestFixture {
     for (int i = 0; i < n1; ++i) {
       src.update(i + base);
     }
-    hll_sketch dst = src.copyAs(dstType);
+    hll_sketch dst(src, dstType);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(dst.getEstimate(), src.getEstimate(), 0.0);
 
     for (int i = n1; i < n2; ++i) {
       src.update(i + base);
     }
-    dst = src.copyAs(dstType);
+    dst = hll_sketch(src, dstType);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(dst.getEstimate(), src.getEstimate(), 0.0);
 
     for (int i = n2; i < n3; ++i) {
       src.update(i + base);
     }
-    dst = src.copyAs(dstType);
+    dst = hll_sketch(src, dstType);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(dst.getEstimate(), src.getEstimate(), 0.0);
   }
 

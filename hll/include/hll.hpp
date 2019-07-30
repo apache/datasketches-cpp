@@ -50,13 +50,13 @@ class HllSketch final {
     static HllSketch deserialize(std::istream& is);
     static HllSketch deserialize(const void* bytes, size_t len);
     HllSketch(const HllSketch<A>& that);
+    HllSketch(const HllSketch<A>& that, TgtHllType tgtHllType);
     HllSketch(HllSketch<A>&& that) noexcept;
 
     ~HllSketch();
 
     HllSketch operator=(const HllSketch<A>& other);
     HllSketch operator=(HllSketch<A>&& other);
-    HllSketch copyAs(TgtHllType tgtHllType) const;
 
     void reset();
     
