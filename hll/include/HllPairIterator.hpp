@@ -29,6 +29,7 @@ template<typename A>
 class HllPairIterator : public PairIterator<A> {
   public:
     HllPairIterator(const int lengthPairs);
+    virtual ~HllPairIterator() = default;
     virtual std::string getHeader();
     virtual int getIndex();
     virtual int getKey();

@@ -38,11 +38,6 @@ IntArrayPairIterator<A>::IntArrayPairIterator(const int* array, const int len, c
 }
 
 template<typename A>
-IntArrayPairIterator<A>::~IntArrayPairIterator() {
-  // we don't own array so nothing to do
-}
-
-template<typename A>
 std::string IntArrayPairIterator<A>::getHeader() {
   std::ostringstream ss;
   ss << std::left
