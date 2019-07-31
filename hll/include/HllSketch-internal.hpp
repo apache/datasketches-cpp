@@ -20,11 +20,9 @@
 #ifndef _HLLSKETCH_INTERNAL_HPP_
 #define _HLLSKETCH_INTERNAL_HPP_
 
-//#include "HllSketch.hpp"
 #include "hll.hpp"
 #include "HllUtil.hpp"
 #include "HllSketchImplFactory.hpp"
-//#include "CouponMode.hpp"
 #include "CouponList.hpp"
 #include "HllArray.hpp"
 
@@ -84,40 +82,33 @@ HllSketch<A>::HllSketch(const HllSketch<A>& that) :
 {}
 
 template<typename A>
+HllSketch<A>::HllSketch(const HllSketch<A>& that, TgtHllType tgtHllType) :
+  hllSketchImpl(that.hllSketchImpl->copyAs(tgtHllType))
+{}
+
+template<typename A>
+HllSketch<A>::HllSketch(HllSketch<A>&& that) noexcept :
+  hllSketchImpl(nullptr)
+{
+  std::swap(hllSketchImpl, that.hllSketchImpl);
+}
+
+template<typename A>
 HllSketch<A>::HllSketch(HllSketchImpl<A>* that) :
   hllSketchImpl(that)
 {}
 
 template<typename A>
-HllSketch<A> HllSketch<A>::operator=(HllSketch<A>& other) {
+HllSketch<A> HllSketch<A>::operator=(const HllSketch<A>& other) {
   hllSketchImpl->get_deleter()(hllSketchImpl);
-  hllSketchImpl = other.hllSketchImpl->copyPtr();
+  hllSketchImpl = other.hllSketchImpl->copy();
   return *this;
 }
 
 template<typename A>
 HllSketch<A> HllSketch<A>::operator=(HllSketch<A>&& other) {
-  hllSketchImpl->get_deleter()(hllSketchImpl);
-  hllSketchImpl = std::move(other.hllSketchImpl);
-  other.hllSketchImpl = nullptr;
+  std::swap(hllSketchImpl, other.hllSketchImpl);
   return *this;
-}
-
-template<typename A>
-HllSketch<A> HllSketch<A>::copy() const {
-  HllSketch<A> sketch(hllSketchImpl->copy());
-  return sketch; // no move so copy elision can work
-}
-
-template<typename A>
-HllSketch<A>* HllSketch<A>::copyPtr() const {
-  return new (AllocHllSketch().allocate(1)) HllSketch<A>(this->hllSketchImpl->copy());
-}
-
-template<typename A>
-HllSketch<A> HllSketch<A>::copyAs(const TgtHllType tgtHllType) const {
-  HllSketch<A> sketch(hllSketchImpl->copyAs(tgtHllType));
-  return sketch; // no move so copy elision can work
 }
 
 template<typename A>

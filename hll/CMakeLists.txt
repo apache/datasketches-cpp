@@ -20,7 +20,7 @@ target_compile_features(hll INTERFACE cxx_std_11)
 # TODO: would be useful if this didn't need to be reproduced in target_sources(), too
 set(hll_HEADERS "")
 list(APPEND hll_HEADERS "include/hll.hpp;include/AuxHashMap.hpp;include/CompositeInterpolationXTable.hpp")
-list(APPEND hll_HEADERS "include/Conversions.hpp;include/CouponHashSet.hpp;include/CouponList.hpp")
+list(APPEND hll_HEADERS "include/CouponHashSet.hpp;include/CouponList.hpp")
 list(APPEND hll_HEADERS "include/CubicInterpolation.hpp;include/HarmonicNumbers.hpp;include/Hll4Array.hpp")
 list(APPEND hll_HEADERS "include/Hll6Array.hpp;include/Hll8Array.hpp;include/HllArray.hpp")
 list(APPEND hll_HEADERS "include/HllPairIterator.hpp;include/HllSketch.hpp;include/HllSketchImpl.hpp")
@@ -47,7 +47,6 @@ target_sources(hll
     ${CMAKE_CURRENT_SOURCE_DIR}/include/hll.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/AuxHashMap.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CompositeInterpolationXTable.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Conversions.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CouponHashSet.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CouponList.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CubicInterpolation.hpp
@@ -57,16 +56,13 @@ target_sources(hll
     ${CMAKE_CURRENT_SOURCE_DIR}/include/Hll8Array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllArray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllPairIterator.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/HllSketch.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllSketchImpl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/HllUnion.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllUtil.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/IntArrayPairIterator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/PairIterator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/RelativeErrorTables.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/AuxHashMap-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CompositeInterpolationXTable-internal.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Conversions-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CouponHashSet-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CouponList-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CubicInterpolation-internal.hpp

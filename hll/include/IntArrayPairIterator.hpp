@@ -29,7 +29,7 @@ class IntArrayPairIterator : public PairIterator<A> {
   public:
     explicit IntArrayPairIterator(const int* array, int len, int lgConfigK);
 
-    virtual ~IntArrayPairIterator();
+    virtual ~IntArrayPairIterator() = default;
 
     virtual std::string getHeader();
 

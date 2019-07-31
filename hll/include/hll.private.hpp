@@ -3,7 +3,6 @@
 
 #include "AuxHashMap.hpp"
 #include "CompositeInterpolationXTable.hpp"
-//#include "Conversions.hpp"
 #include "CouponHashSet.hpp"
 #include "CouponList.hpp"
 #include "CubicInterpolation.hpp"
@@ -21,7 +20,6 @@
 #include "RelativeErrorTables.hpp"
 
 #include "AuxHashMap-internal.hpp"
-//#include "Conversions-internal.hpp"
 #include "CouponHashSet-internal.hpp"
 #include "CouponList-internal.hpp"
 #include "Hll4Array-internal.hpp"

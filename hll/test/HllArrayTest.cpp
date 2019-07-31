@@ -38,9 +38,6 @@ class HllArrayTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkCorruptStream);
   CPPUNIT_TEST_SUITE_END();
 
-  typedef HllSketch<> hll_sketch;
-  typedef HllUnion<> hll_union;
-
   void testComposite(const int lgK, const TgtHllType tgtHllType, const int n) {
     hll_union u(lgK);
     hll_sketch sk(lgK, tgtHllType);
@@ -95,12 +92,12 @@ class HllArrayTest : public CppUnit::TestFixture {
     // serialize as compact and updatable, deserialize, compare estimates are exact
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
     sk1.serializeCompact(ss);
-    hll_sketch sk2 = HllSketch<>::deserialize(ss);
+    hll_sketch sk2 = hll_sketch::deserialize(ss);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk2.getEstimate(), sk1.getEstimate(), 0.0);
 
     ss.clear();
     sk1.serializeUpdatable(ss);
-    sk2 = HllSketch<>::deserialize(ss);
+    sk2 = hll_sketch::deserialize(ss);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk2.getEstimate(), sk1.getEstimate(), 0.0);
 
     sk1.reset();
@@ -126,7 +123,7 @@ class HllArrayTest : public CppUnit::TestFixture {
 
     bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
                                  HllArray<>::newHll(bytes, sketchBytes.second),
@@ -135,34 +132,34 @@ class HllArrayTest : public CppUnit::TestFixture {
 
     bytes[HllUtil<>::SER_VER_BYTE] = 0;
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialization version byte",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     bytes[HllUtil<>::SER_VER_BYTE] = HllUtil<>::SER_VER;
 
     bytes[HllUtil<>::FAMILY_BYTE] = 0;
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in family id byte",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     bytes[HllUtil<>::FAMILY_BYTE] = HllUtil<>::FAMILY_ID;
 
     uint8_t tmp = bytes[HllUtil<>::MODE_BYTE];
     bytes[HllUtil<>::MODE_BYTE] = 0x10; // HLL_6, LIST
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in mode byte",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second),
                                  std::invalid_argument);
     bytes[HllUtil<>::MODE_BYTE] = tmp;
 
     tmp = bytes[HllUtil<>::LG_ARR_BYTE];
     bytes[HllUtil<>::LG_ARR_BYTE] = 0;
-    HllSketch<>::deserialize(bytes, sketchBytes.second);
+    hll_sketch::deserialize(bytes, sketchBytes.second);
     // should work fine despite the corruption
     bytes[HllUtil<>::LG_ARR_BYTE] = tmp;
 
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialized length",
-                                 HllSketch<>::deserialize(bytes, sketchBytes.second - 1),
+                                 hll_sketch::deserialize(bytes, sketchBytes.second - 1),
                                  std::invalid_argument);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialized length",
-                                 HllSketch<>::deserialize(bytes, 3),
+                                 hll_sketch::deserialize(bytes, 3),
                                  std::invalid_argument);
     }
 
@@ -179,7 +176,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     ss.put(0);
     ss.seekg(0);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 HllSketch<>::deserialize(ss),
+                                 hll_sketch::deserialize(ss),
                                  std::invalid_argument);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
                                  HllArray<>::newHll(ss),
@@ -191,7 +188,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     ss.put(0);
     ss.seekg(0);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialization version byte",
-                                 HllSketch<>::deserialize(ss),
+                                 hll_sketch::deserialize(ss),
                                  std::invalid_argument);
     ss.seekp(HllUtil<>::SER_VER_BYTE);
     ss.put(HllUtil<>::SER_VER);
@@ -200,7 +197,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     ss.put(0);
     ss.seekg(0);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in family id byte",
-                                 HllSketch<>::deserialize(ss),
+                                 hll_sketch::deserialize(ss),
                                  std::invalid_argument);
     ss.seekp(HllUtil<>::FAMILY_BYTE);
     ss.put(HllUtil<>::FAMILY_ID);
@@ -211,7 +208,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     ss.put(0x11); // HLL_6, SET
     ss.seekg(0);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in mode byte",
-                                 HllSketch<>::deserialize(ss),
+                                 hll_sketch::deserialize(ss),
                                  std::invalid_argument);
     ss.seekp(HllUtil<>::MODE_BYTE);
     ss.put(tmp);
@@ -221,7 +218,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     ss.seekp(HllUtil<>::LG_ARR_BYTE);
     ss.put(0);
     ss.seekg(0);
-    HllSketch<>::deserialize(ss);
+    hll_sketch::deserialize(ss);
     // should work fine despite the corruption
     ss.seekp(HllUtil<>::LG_ARR_BYTE);
     ss.put(tmp);

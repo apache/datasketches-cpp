@@ -32,11 +32,10 @@
 namespace datasketches {
 
 template<typename A>
-HllUnion<A>::HllUnion(const int lgMaxK)
-  : lgMaxK(HllUtil<A>::checkLgK(lgMaxK)) {
-    typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch<A>> AllocHllSketch;
-    gadget = new (AllocHllSketch().allocate(1)) HllSketch<A>(lgMaxK, TgtHllType::HLL_8);
-}
+HllUnion<A>::HllUnion(const int lgMaxK):
+  lgMaxK(HllUtil<A>::checkLgK(lgMaxK)),
+  gadget(lgMaxK, TgtHllType::HLL_8)
+{}
 
 template<typename A>
 HllUnion<A> HllUnion<A>::deserialize(const void* bytes, size_t len) {
@@ -45,7 +44,7 @@ HllUnion<A> HllUnion<A>::deserialize(const void* bytes, size_t len) {
   // we can initialize the Union with it as long as it's HLL_8.
   HllUnion<A> hllUnion(sk.getLgConfigK());
   if (sk.getTgtHllType() == HLL_8) {
-    std::swap(hllUnion.gadget->hllSketchImpl, sk.hllSketchImpl);
+    std::swap(hllUnion.gadget.hllSketchImpl, sk.hllSketchImpl);
   } else {
     hllUnion.update(sk);
   }
@@ -59,7 +58,7 @@ HllUnion<A> HllUnion<A>::deserialize(std::istream& is) {
   // we can initialize the Union with it as long as it's HLL_8.
   HllUnion<A> hllUnion(sk.getLgConfigK());
   if (sk.getTgtHllType() == HLL_8) {    
-    std::swap(hllUnion.gadget->hllSketchImpl, sk.hllSketchImpl);
+    std::swap(hllUnion.gadget.hllSketchImpl, sk.hllSketchImpl);
   } else {
     hllUnion.update(sk);
   }
@@ -67,57 +66,13 @@ HllUnion<A> HllUnion<A>::deserialize(std::istream& is) {
 }
 
 template<typename A>
-HllUnion<A>::~HllUnion() {
-  if (gadget != nullptr) {
-    typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch<A>> AllocHllSketch;
-    gadget->~HllSketch();
-    AllocHllSketch().deallocate(gadget, 1);
-  }
-}
-
-template<typename A>
 static std::ostream& operator<<(std::ostream& os, const HllUnion<A>& hllUnion) {
   return hllUnion.to_string(os, true, true, false, false);
 }
 
-/*
-static std::ostream& operator<<(std::ostream& os, hll_union& hllUnion) {
-  return hllUnion->to_string(os, true, true, false, false);
-}
-*/
-
-template<typename A>
-HllUnion<A>::HllUnion(const HllUnion<A>& other) :
-  lgMaxK(other.lgMaxK),
-  gadget(other.gadget->copyPtr())
-  {}
-
-template<typename A>
-HllUnion<A> HllUnion<A>::operator=(HllUnion<A>& other) {
-  lgMaxK = other.lgMaxK;
-
-  typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch<A>> Alloc;
-  gadget->~HllSketch();
-  Alloc().deallocate(gadget, 1);
-  gadget = other.gadget->copy();
-  return *this;
-}
-
-template<typename A>
-HllUnion<A> HllUnion<A>::operator=(HllUnion<A>&& other) {
-  lgMaxK = other.lgMaxK;
-
-  typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch<A>> Alloc;
-  gadget->~HllSketch();
-  Alloc().deallocate(gadget, 1);
-  gadget = other.gadget;
-  other.gadget = nullptr;
-  return *this;
-}
-
 template<typename A>
 HllSketch<A> HllUnion<A>::getResult(TgtHllType tgtHllType) const {
-  return std::move(gadget->copyAs(tgtHllType));
+  return HllSketch<A>(gadget, tgtHllType);
 }
 
 template<typename A>
@@ -127,169 +82,169 @@ void HllUnion<A>::update(const HllSketch<A>& sketch) {
 
 template<typename A>
 void HllUnion<A>::update(const std::string& datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const uint64_t datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const uint32_t datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const uint16_t datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const uint8_t datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const int64_t datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const int32_t datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const int16_t datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const int8_t datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const double datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const float datum) {
-  gadget->update(datum);
+  gadget.update(datum);
 }
 
 template<typename A>
 void HllUnion<A>::update(const void* data, const size_t lengthBytes) {
-  gadget->update(data, lengthBytes);
+  gadget.update(data, lengthBytes);
 }
 
 template<typename A>
 void HllUnion<A>::couponUpdate(const int coupon) {
   if (coupon == HllUtil<A>::EMPTY) { return; }
-  HllSketchImpl<A>* result = gadget->hllSketchImpl->couponUpdate(coupon);
-  if (result != gadget->hllSketchImpl) {
-    if (gadget->hllSketchImpl != nullptr) { gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl); }
-    gadget->hllSketchImpl = result;
+  HllSketchImpl<A>* result = gadget.hllSketchImpl->couponUpdate(coupon);
+  if (result != gadget.hllSketchImpl) {
+    if (gadget.hllSketchImpl != nullptr) { gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl); }
+    gadget.hllSketchImpl = result;
   }
 }
 
 template<typename A>
 std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> HllUnion<A>::serializeCompact() const {
-  return gadget->serializeCompact();
+  return gadget.serializeCompact();
 }
 
 template<typename A>
 std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> HllUnion<A>::serializeUpdatable() const {
-  return gadget->serializeUpdatable();
+  return gadget.serializeUpdatable();
 }
 
 template<typename A>
 void HllUnion<A>::serializeCompact(std::ostream& os) const {
-  return gadget->serializeCompact(os);
+  return gadget.serializeCompact(os);
 }
 
 template<typename A>
 void HllUnion<A>::serializeUpdatable(std::ostream& os) const {
-  return gadget->serializeUpdatable(os);
+  return gadget.serializeUpdatable(os);
 }
 
 template<typename A>
 std::ostream& HllUnion<A>::to_string(std::ostream& os, const bool summary,
                                   const bool detail, const bool auxDetail, const bool all) const {
-  return gadget->to_string(os, summary, detail, auxDetail, all);
+  return gadget.to_string(os, summary, detail, auxDetail, all);
 }
 
 template<typename A>
 std::string HllUnion<A>::to_string(const bool summary, const bool detail,
                                    const bool auxDetail, const bool all) const {
-  return gadget->to_string(summary, detail, auxDetail, all);
+  return gadget.to_string(summary, detail, auxDetail, all);
 }
 
 template<typename A>
 double HllUnion<A>::getEstimate() const {
-  return gadget->getEstimate();
+  return gadget.getEstimate();
 }
 
 template<typename A>
 double HllUnion<A>::getCompositeEstimate() const {
-  return gadget->getCompositeEstimate();
+  return gadget.getCompositeEstimate();
 }
 
 template<typename A>
 double HllUnion<A>::getLowerBound(const int numStdDev) const {
-  return gadget->getLowerBound(numStdDev);
+  return gadget.getLowerBound(numStdDev);
 }
 
 template<typename A>
 double HllUnion<A>::getUpperBound(const int numStdDev) const {
-  return gadget->getUpperBound(numStdDev);
+  return gadget.getUpperBound(numStdDev);
 }
 
 template<typename A>
 int HllUnion<A>::getCompactSerializationBytes() const {
-  return gadget->getCompactSerializationBytes();
+  return gadget.getCompactSerializationBytes();
 }
 
 template<typename A>
 int HllUnion<A>::getUpdatableSerializationBytes() const {
-  return gadget->getUpdatableSerializationBytes();
+  return gadget.getUpdatableSerializationBytes();
 }
 
 template<typename A>
 int HllUnion<A>::getLgConfigK() const {
-  return gadget->getLgConfigK();
+  return gadget.getLgConfigK();
 }
 
 template<typename A>
 void HllUnion<A>::reset() {
-  gadget->reset();
+  gadget.reset();
 }
 
 template<typename A>
 bool HllUnion<A>::isCompact() const {
-  return gadget->isCompact();
+  return gadget.isCompact();
 }
 
 template<typename A>
 bool HllUnion<A>::isEmpty() const {
-  return gadget->isEmpty();
+  return gadget.isEmpty();
 }
 
 template<typename A>
 bool HllUnion<A>::isOutOfOrderFlag() const {
-  return gadget->isOutOfOrderFlag();
+  return gadget.isOutOfOrderFlag();
 }
 
 template<typename A>
 CurMode HllUnion<A>::getCurrentMode() const {
-  return gadget->getCurrentMode();
+  return gadget.getCurrentMode();
 }
 
 template<typename A>
 bool HllUnion<A>::isEstimationMode() const {
-  return gadget->isEstimationMode();
+  return gadget.isEstimationMode();
 }
 
 template<typename A>
@@ -347,16 +302,16 @@ inline HllSketchImpl<A>* HllUnion<A>::leakFreeCouponUpdate(HllSketchImpl<A>* imp
 
 template<typename A>
 void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
-  if (gadget->hllSketchImpl->getTgtHllType() != TgtHllType::HLL_8) {
+  if (gadget.hllSketchImpl->getTgtHllType() != TgtHllType::HLL_8) {
     throw std::logic_error("Must call unionImpl() with HLL_8 input");
   }
   HllSketchImpl<A>* srcImpl = incomingImpl; //default
-  HllSketchImpl<A>* dstImpl = gadget->hllSketchImpl; //default
+  HllSketchImpl<A>* dstImpl = gadget.hllSketchImpl; //default
   if ((incomingImpl == nullptr) || incomingImpl->isEmpty()) {
-    return; // gadget->hllSketchImpl;
+    return; // gadget.hllSketchImpl;
   }
 
-  const int hi2bits = (gadget->hllSketchImpl->isEmpty()) ? 3 : gadget->hllSketchImpl->getCurMode();
+  const int hi2bits = (gadget.hllSketchImpl->isEmpty()) ? 3 : gadget.hllSketchImpl->getCurMode();
   const int lo2bits = incomingImpl->getCurMode();
 
   const int sw = (hi2bits << 2) | lo2bits;
@@ -385,7 +340,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
     case 2: { //src: HLL, gadget: LIST
       //swap so that src is gadget-LIST, tgt is HLL
       //use lgMaxK because LIST has effective K of 2^26
-      srcImpl = gadget->hllSketchImpl;
+      srcImpl = gadget.hllSketchImpl;
       dstImpl = copyOrDownsampleHll(incomingImpl, lgMaxK);
       PairIterator_with_deleter<A> srcItr = srcImpl->getIterator();
       while (srcItr->nextValid()) {
@@ -394,7 +349,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       //whichever is True wins:
       dstImpl->putOutOfOrderFlag(srcImpl->isOutOfOrderFlag() | dstImpl->isOutOfOrderFlag());
       // gadget: swapped, replacing with new impl
-      gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl);
+      gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl);
       break;
     }
     case 4: { //src: LIST, gadget: SET
@@ -418,7 +373,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
     case 6: { //src: HLL, gadget: SET
       //swap so that src is gadget-SET, tgt is HLL
       //use lgMaxK because LIST has effective K of 2^26
-      srcImpl = gadget->hllSketchImpl;
+      srcImpl = gadget.hllSketchImpl;
       dstImpl = copyOrDownsampleHll(incomingImpl, lgMaxK);
       PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
       if (dstImpl->getCurMode() != HLL) {
@@ -429,7 +384,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       }
       dstImpl->putOutOfOrderFlag(true); //merging SET into non-empty HLL -> true
       // gadget: swapped, replacing with new impl
-      gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl);
+      gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl);
       break;
     }
     case 8: { //src: LIST, gadget: HLL
@@ -443,7 +398,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       //whichever is True wins:
       dstImpl->putOutOfOrderFlag(dstImpl->isOutOfOrderFlag() | srcImpl->isOutOfOrderFlag());
       // gadget: should remain unchanged
-      if (dstImpl != gadget->hllSketchImpl) {
+      if (dstImpl != gadget.hllSketchImpl) {
         // should not have changed from HLL
         throw std::logic_error("dstImpl unepxectedly changed from gadget");
       } 
@@ -459,7 +414,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       }
       dstImpl->putOutOfOrderFlag(true); //merging SET into existing HLL -> true
       // gadget: should remain unchanged
-      if (dstImpl != gadget->hllSketchImpl) {
+      if (dstImpl != gadget.hllSketchImpl) {
         // should not have changed from HLL
         throw std::logic_error("dstImpl unepxectedly changed from gadget");
       } 
@@ -472,7 +427,7 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       if ((srcLgK < dstLgK) || (dstImpl->getTgtHllType() != HLL_8)) {
         dstImpl = copyOrDownsampleHll(dstImpl, minLgK);
         // always replaces gadget
-        gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl);
+        gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl);
       }
       PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //HLL
       while (srcItr->nextValid()) {
@@ -504,12 +459,12 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       dstImpl = copyOrDownsampleHll(srcImpl, lgMaxK);
       dstImpl->putOutOfOrderFlag(srcImpl->isOutOfOrderFlag()); //whatever source is.
       // gadget: always replaced with copied/downsampled sketch
-      gadget->hllSketchImpl->get_deleter()(gadget->hllSketchImpl);
+      gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl);
       break;
     }
   }
   
-  gadget->hllSketchImpl = dstImpl;
+  gadget.hllSketchImpl = dstImpl;
 }
 
 }

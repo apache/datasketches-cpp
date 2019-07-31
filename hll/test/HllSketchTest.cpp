@@ -18,10 +18,6 @@
  */
 
 #include "hll.hpp"
-//#include "HllSketch.hpp"
-//#include "CouponList.hpp"
-//#include "CouponHashSet.hpp"
-//#include "HllArray.hpp"
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
@@ -43,8 +39,6 @@ class hllSketchTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkInputTypes);
   CPPUNIT_TEST_SUITE_END();
 
-  typedef HllSketch<> hll_sketch;
-
   void checkCopies() {
     runCheckCopy(14, HLL_4);
     runCheckCopy(8, HLL_6);
@@ -59,7 +53,7 @@ class hllSketchTest : public CppUnit::TestFixture {
     }
     //CPPUNIT_ASSERT_EQUAL(sk.getCurrentMode(), CurMode::LIST);
 
-    hll_sketch skCopy = sk.copy();
+    hll_sketch skCopy = sk;
     //CPPUNIT_ASSERT_EQUAL(skCopyPvt.getCurrentMode(), CurMode::LIST);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(skCopy.getEstimate(), sk.getEstimate(), 0.0);
 
@@ -72,7 +66,7 @@ class hllSketchTest : public CppUnit::TestFixture {
     //CPPUNIT_ASSERT(sk.getCurrentMode() != skCopyPvt.getCurrentMode());
     CPPUNIT_ASSERT(16.0 < (sk.getEstimate() - skCopy.getEstimate()));
 
-    skCopy = sk.copy();
+    skCopy = sk;
     CPPUNIT_ASSERT_DOUBLES_EQUAL(skCopy.getEstimate(), sk.getEstimate(), 0.0);
 
     int u = (sk.getTgtHllType() == HLL_4) ? 100000 : 25;
@@ -83,7 +77,7 @@ class hllSketchTest : public CppUnit::TestFixture {
     //CPPUNIT_ASSERT(sk.getCurrentMode() != skCopyPvt.getCurrentMode());
     CPPUNIT_ASSERT(sk.getEstimate() != skCopy.getEstimate()); // either 1 or 100k difference
 
-    skCopy = sk.copy();
+    skCopy = sk;
     //CPPUNIT_ASSERT_EQUAL(skCopyPvt.getCurrentMode(), CurMode::HLL);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(skCopy.getEstimate(), sk.getEstimate(), 0.0);
 
@@ -113,19 +107,19 @@ class hllSketchTest : public CppUnit::TestFixture {
     for (int i = 0; i < n1; ++i) {
       src.update(i + base);
     }
-    hll_sketch dst = src.copyAs(dstType);
+    hll_sketch dst(src, dstType);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(dst.getEstimate(), src.getEstimate(), 0.0);
 
     for (int i = n1; i < n2; ++i) {
       src.update(i + base);
     }
-    dst = src.copyAs(dstType);
+    dst = hll_sketch(src, dstType);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(dst.getEstimate(), src.getEstimate(), 0.0);
 
     for (int i = n2; i < n3; ++i) {
       src.update(i + base);
     }
-    dst = src.copyAs(dstType);
+    dst = hll_sketch(src, dstType);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(dst.getEstimate(), src.getEstimate(), 0.0);
   }
 
@@ -160,7 +154,7 @@ class hllSketchTest : public CppUnit::TestFixture {
 
     const int hllBytes = HllUtil<>::HLL_BYTE_ARR_START + (1 << lgConfigK);
     CPPUNIT_ASSERT_EQUAL(hllBytes, sk.getCompactSerializationBytes());
-    CPPUNIT_ASSERT_EQUAL(hllBytes, HllSketch<>::getMaxUpdatableSerializationBytes(lgConfigK, HLL_8));
+    CPPUNIT_ASSERT_EQUAL(hllBytes, hll_sketch::getMaxUpdatableSerializationBytes(lgConfigK, HLL_8));
   }
 
   void checkNumStdDev() {
@@ -232,7 +226,7 @@ class hllSketchTest : public CppUnit::TestFixture {
     sk.to_string(oss, false, true, true, false);
 
     // need to delete old sketch?
-    sk = HllSketch<>(8, HLL_8);
+    sk = hll_sketch(8, HLL_8);
     for (int i = 0; i < 25; ++i) { sk.update(i); }
     sk.to_string(oss, false, true, true, true);
   }
@@ -242,7 +236,7 @@ class hllSketchTest : public CppUnit::TestFixture {
   void checkEmptyCoupon() {
     int lgK = 8;
     TgtHllType type = HLL_8;
-    hll_sketch sk = HllSketch<>(lgK, type);
+    hll_sketch sk = hll_sketch(lgK, type);
     for (int i = 0; i < 20; ++i) { sk.update(i); } // SET mode
     static_cast<HllSketchPvt*>(sk.get()).couponUpdate(0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(20, sk.getEstimate(), 0.001);
@@ -292,7 +286,7 @@ class hllSketchTest : public CppUnit::TestFixture {
       CPPUNIT_ASSERT_EQUAL(sk.getUpdatableSerializationBytes(), (int) ss.tellp());
     }
     
-    hll_sketch sk2 = HllSketch<>::deserialize(ss);
+    hll_sketch sk2 = hll_sketch::deserialize(ss);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sk2.getEstimate(), 0.01);
     bool isCompact = sk2.isCompact();
 
@@ -303,11 +297,11 @@ class hllSketchTest : public CppUnit::TestFixture {
     hll_sketch sketch1(HllUtil<>::MIN_LOG_K, TgtHllType::HLL_8);
     hll_sketch sketch2(HllUtil<>::MAX_LOG_K, TgtHllType::HLL_4);
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with lgK too small",
-                                 HllSketch<>(HllUtil<>::MIN_LOG_K - 1),
+                                 hll_sketch(HllUtil<>::MIN_LOG_K - 1),
                                  std::invalid_argument);
 
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with lgK too large",
-                                 HllSketch<>(HllUtil<>::MAX_LOG_K + 1),
+                                 hll_sketch(HllUtil<>::MAX_LOG_K + 1),
                                  std::invalid_argument);
   }
 
@@ -338,19 +332,19 @@ class hllSketchTest : public CppUnit::TestFixture {
     sk.update(str.c_str(), str.length());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(4.0, sk.getEstimate(), 0.01);
 
-    sk = HllSketch<>(8, TgtHllType::HLL_6);
+    sk = hll_sketch(8, TgtHllType::HLL_6);
     sk.update((float) 0.0);
     sk.update((float) -0.0);
     sk.update((double) 0.0);
     sk.update((double) -0.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, sk.getEstimate(), 0.01);
 
-    sk = HllSketch<>(8, TgtHllType::HLL_4);
+    sk = hll_sketch(8, TgtHllType::HLL_4);
     sk.update(std::nanf("3"));
     sk.update(std::nan("9"));
     CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, sk.getEstimate(), 0.01);
 
-    sk = HllSketch<>(8, TgtHllType::HLL_4);
+    sk = hll_sketch(8, TgtHllType::HLL_4);
     sk.update(nullptr, 0);
     sk.update("");
     CPPUNIT_ASSERT(sk.isEmpty());

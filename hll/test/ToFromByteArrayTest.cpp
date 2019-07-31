@@ -38,8 +38,6 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
   //CPPUNIT_TEST(doubleSerialize);
   CPPUNIT_TEST_SUITE_END();
 
-  typedef HllSketch<> hll_sketch;
-
   void doubleSerialize() {
     hll_sketch sk(9, HLL_8);
     for (int i = 0; i < 1024; ++i) {
@@ -55,7 +53,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     std::string str = ss.str();
 
 
-    hll_sketch sk2 = HllSketch<>::deserialize(ser1.first.get(), ser1.second);
+    hll_sketch sk2 = hll_sketch::deserialize(ser1.first.get(), ser1.second);
     //hll_sketch sk2 = HllSketch::deserialize(ss1);
     
     //std::stringstream ss2;
@@ -74,7 +72,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
 
     for (int i = 0; i < len; ++i) {
       if (b1[i] != b2[i]) {
-        hll_sketch from_ss = HllSketch<>::deserialize(ss1);
+        hll_sketch from_ss = hll_sketch::deserialize(ss1);
         std::cout << "ser3:\n";
         std::pair<byte_ptr_with_deleter, size_t> ser3 = from_ss.serializeUpdatable();
         uint8_t* b3 = ser3.first.get();
@@ -101,7 +99,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
 
     std::ifstream ifs;
     ifs.open(inputPath + "list_from_java.bin", std::ios::binary);
-    hll_sketch sk = HllSketch<>::deserialize(ifs);
+    hll_sketch sk = hll_sketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk.isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk.getLgConfigK(), 8);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.getLowerBound(1), 7.0, 0.0);
@@ -117,7 +115,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     ifs.close();
 
     ifs.open(inputPath + "compact_set_from_java.bin", std::ios::binary);
-    sk = HllSketch<>::deserialize(ifs);
+    sk = hll_sketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk.isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk.getLgConfigK(), 8);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.getLowerBound(1), 24.0, 0.0);
@@ -133,7 +131,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     ifs.close();
 
     ifs.open(inputPath + "updatable_set_from_java.bin", std::ios::binary);
-    sk = HllSketch<>::deserialize(ifs);
+    sk = hll_sketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk.isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk.getLgConfigK(), 8);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.getLowerBound(1), 24.0, 0.0);
@@ -150,7 +148,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
 
 
     ifs.open(inputPath + "array6_from_java.bin", std::ios::binary);
-    sk = HllSketch<>::deserialize(ifs);
+    sk = hll_sketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk.isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk.getLgConfigK(), 8);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.getLowerBound(1), 9589.968564, 1e-5); // java: 9589.968564432073
@@ -171,7 +169,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
 
 
     ifs.open(inputPath + "compact_array4_from_java.bin", std::ios::binary);
-    sk = HllSketch<>::deserialize(ifs);
+    sk = hll_sketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk.isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk.getLgConfigK(), 8);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.getLowerBound(1), 9589.968564, 1e-5); // java: 9589.968564432073
@@ -192,7 +190,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
 
 
     ifs.open(inputPath + "updatable_array4_from_java.bin", std::ios::binary);
-    sk = HllSketch<>::deserialize(ifs);
+    sk = hll_sketch::deserialize(ifs);
     CPPUNIT_ASSERT(sk.isEmpty() == false);
     CPPUNIT_ASSERT_EQUAL(sk.getLgConfigK(), 8);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.getLowerBound(1), 9589.968564, 1e-5); // java: 9589.968564432073
@@ -220,20 +218,20 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
 
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
     src.serializeCompact(ss);
-    hll_sketch dst = HllSketch<>::deserialize(ss);
+    hll_sketch dst = hll_sketch::deserialize(ss);
     checkSketchEquality(src, dst);
 
     std::pair<byte_ptr_with_deleter, const size_t> bytes1 = src.serializeCompact();
-    dst = HllSketch<>::deserialize(bytes1.first.get(), bytes1.second);
+    dst = hll_sketch::deserialize(bytes1.first.get(), bytes1.second);
     checkSketchEquality(src, dst);
 
     ss.clear();
     src.serializeUpdatable(ss);
-    dst = HllSketch<>::deserialize(ss);
+    dst = hll_sketch::deserialize(ss);
     checkSketchEquality(src, dst);
 
     std::pair<byte_ptr_with_deleter, const size_t> bytes2 = src.serializeUpdatable();
-    dst = HllSketch<>::deserialize(bytes2.first.get(), bytes2.second);
+    dst = hll_sketch::deserialize(bytes2.first.get(), bytes2.second);
     checkSketchEquality(src, dst);
   }
 

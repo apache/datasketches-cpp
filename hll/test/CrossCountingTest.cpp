@@ -36,8 +36,6 @@ class CrossCountingTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(crossCountingChecks);
   CPPUNIT_TEST_SUITE_END();
 
-  typedef HllSketch<> hll_sketch;
-
   hll_sketch buildSketch(const int n, const int lgK, const TgtHllType tgtHllType) {
     hll_sketch sketch(lgK, tgtHllType);
     for (int i = 0; i < n; ++i) {
@@ -46,7 +44,7 @@ class CrossCountingTest : public CppUnit::TestFixture {
     return sketch;
   }
 
-  int computeChecksum(const HllSketch<>& sketch) {
+  int computeChecksum(const hll_sketch& sketch) {
     PairIterator_with_deleter<> itr = sketch.getIterator();
     int checksum = 0;
     int key;
@@ -72,27 +70,27 @@ class CrossCountingTest : public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(csum, s4csum);
   
     // Conversions
-    hll_sketch sk4to6 = sk4.copyAs(HLL_6);
+    hll_sketch sk4to6(sk4, HLL_6);
     csum = computeChecksum(sk4to6);
     CPPUNIT_ASSERT_EQUAL(csum, s4csum);
 
-    hll_sketch sk4to8 = sk4.copyAs(HLL_8);
+    hll_sketch sk4to8(sk4, HLL_8);
     csum = computeChecksum(sk4to8);
     CPPUNIT_ASSERT_EQUAL(csum, s4csum);
 
-    hll_sketch sk6to4 = sk6.copyAs(HLL_4);
+    hll_sketch sk6to4(sk6, HLL_4);
     csum = computeChecksum(sk6to4);
     CPPUNIT_ASSERT_EQUAL(csum, s4csum);
 
-    hll_sketch sk6to8 = sk6.copyAs(HLL_8);
+    hll_sketch sk6to8(sk6, HLL_8);
     csum = computeChecksum(sk6to8);
     CPPUNIT_ASSERT_EQUAL(csum, s4csum);
 
-    hll_sketch sk8to4 = sk8.copyAs(HLL_4);
+    hll_sketch sk8to4(sk8, HLL_4);
     csum = computeChecksum(sk8to4);
     CPPUNIT_ASSERT_EQUAL(csum, s4csum);
 
-    hll_sketch sk8to6 = sk8.copyAs(HLL_6);
+    hll_sketch sk8to6(sk8, HLL_6);
     csum = computeChecksum(sk8to6);
     CPPUNIT_ASSERT_EQUAL(csum, s4csum);
   }

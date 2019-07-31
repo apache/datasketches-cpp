@@ -20,7 +20,6 @@
 #ifndef _COUPONHASHSET_INTERNAL_HPP_
 #define _COUPONHASHSET_INTERNAL_HPP_
 
-//#include "CouponMode.hpp"
 #include "CouponHashSet.hpp"
 
 #include <string>
@@ -39,7 +38,7 @@ CouponHashSet<A>::CouponHashSet(const int lgConfigK, const TgtHllType tgtHllType
   if (lgConfigK <= 7) {
     throw std::invalid_argument("CouponHashSet must be initialized with lgConfigK > 7. Found: "
                                 + std::to_string(lgConfigK));
-  }   
+  }
 }
 
 template<typename A>
@@ -79,20 +78,20 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  const CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
   if (curMode != SET) {
     throw std::invalid_argument("Calling set construtor with non-set mode data");
   }
 
-  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
+  const TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
 
-  const int lgK = (int) data[HllUtil<A>::LG_K_BYTE];
+  const int lgK = data[HllUtil<A>::LG_K_BYTE];
   if (lgK <= 7) {
     throw std::invalid_argument("Attempt to deserialize invalid CouponHashSet with lgConfigK <= 7. Found: "
                                 + std::to_string(lgK));
   }   
-  int lgArrInts = (int) data[HllUtil<A>::LG_ARR_BYTE];
-  bool compactFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
+  int lgArrInts = data[HllUtil<A>::LG_ARR_BYTE];
+  const bool compactFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
 
   int couponCount;
   std::memcpy(&couponCount, data + HllUtil<A>::HASH_SET_COUNT_INT, sizeof(couponCount));
@@ -101,9 +100,8 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
   }
   // Don't set couponCount in sketch here;
   // we'll set later if updatable, and increment with updates if compact
-  //int couponsInArray = (compactFlag ? couponCount : (1 << sketch->getLgCouponArrInts()));
-  int couponsInArray = (compactFlag ? couponCount : (1 << lgArrInts));
-  int expectedLength = HllUtil<A>::HASH_SET_INT_ARR_START + (couponsInArray * sizeof(int));
+  const int couponsInArray = (compactFlag ? couponCount : (1 << lgArrInts));
+  const size_t expectedLength = HllUtil<A>::HASH_SET_INT_ARR_START + (couponsInArray * sizeof(int));
   if (len < expectedLength) {
     throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
                                 + ", found: " + std::to_string(len));
@@ -120,7 +118,8 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
       sketch->couponUpdate(coupon);
     }
   } else {
-    int* tmp = sketch->couponIntArr;
+    int* oldArr = sketch->couponIntArr;
+    const size_t oldArrLen = 1 << sketch->lgCouponArrInts;
     sketch->lgCouponArrInts = lgArrInts;
     typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
     sketch->couponIntArr = intAlloc().allocate(1 << lgArrInts);
@@ -129,7 +128,7 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
     std::memcpy(sketch->couponIntArr,
                 data + HllUtil<A>::HASH_SET_INT_ARR_START,
                 couponCount * sizeof(int));
-    delete tmp;
+    intAlloc().deallocate(oldArr, oldArrLen);
   }
 
   return sketch;
@@ -157,15 +156,13 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
 
   TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
 
-  const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
+  const int lgK = listHeader[HllUtil<A>::LG_K_BYTE];
   if (lgK <= 7) {
     throw std::invalid_argument("Attempt to deserialize invalid CouponHashSet with lgConfigK <= 7. Found: "
                                 + std::to_string(lgK));
   }
-  int lgArrInts = (int) listHeader[HllUtil<A>::LG_ARR_BYTE];
-  bool compactFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
-  //bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  //bool emptyFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
+  int lgArrInts = listHeader[HllUtil<A>::LG_ARR_BYTE];
+  const bool compactFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
 
   int couponCount;
   is.read((char*)&couponCount, sizeof(couponCount));
@@ -185,15 +182,15 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
       sketch->couponUpdate(coupon);
     }
   } else {
-    int* tmp = sketch->couponIntArr;
+    int* oldArr = sketch->couponIntArr;
+    const size_t oldArrLen = 1 << sketch->lgCouponArrInts;
     sketch->lgCouponArrInts = lgArrInts;
     typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
     sketch->couponIntArr = intAlloc().allocate(1 << lgArrInts);
     sketch->couponCount = couponCount;
     // for stream processing, read entire list so read pointer ends up set correctly
-    //is.read((char*)sketch->couponIntArr, couponCount * sizeof(int));
     is.read((char*)sketch->couponIntArr, (1 << sketch->lgCouponArrInts) * sizeof(int));
-    delete tmp;
+    intAlloc().deallocate(oldArr, oldArrLen);
   } 
 
   return sketch;

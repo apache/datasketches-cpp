@@ -42,7 +42,7 @@ class PairIterator {
     virtual bool nextAll() = 0;
     virtual bool nextValid() = 0;
 
-    virtual ~PairIterator() {}
+    virtual ~PairIterator() = default;
 };
 
 template<typename A = std::allocator<char>>
