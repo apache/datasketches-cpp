@@ -51,7 +51,7 @@ template<typename T>
 py::list kll_sketch_get_quantiles(const kll_sketch<T>& sk,
                                 std::vector<double>& fractions) {
   size_t nQuantiles = fractions.size();
-  std::unique_ptr<T[]> result = sk.get_quantiles(&fractions[0], nQuantiles);
+  auto result = sk.get_quantiles(&fractions[0], nQuantiles);
 
   // returning as std::vector<> would copy values to a list anyway
   py::list list(nQuantiles);
@@ -66,7 +66,7 @@ template<typename T>
 py::list kll_sketch_get_pmf(const kll_sketch<T>& sk,
                           std::vector<T>& split_points) {
   size_t nPoints = split_points.size();
-  std::unique_ptr<double[]> result = sk.get_PMF(&split_points[0], nPoints);
+  auto result = sk.get_PMF(&split_points[0], nPoints);
 
   py::list list(nPoints);
   for (int i = 0; i < nPoints; ++i) {
@@ -80,7 +80,7 @@ template<typename T>
 py::list kll_sketch_get_cdf(const kll_sketch<T>& sk,
                           std::vector<T>& split_points) {
   size_t nPoints = split_points.size();
-  std::unique_ptr<double[]> result = sk.get_CDF(&split_points[0], nPoints);
+  auto result = sk.get_CDF(&split_points[0], nPoints);
 
   py::list list(nPoints);
   for (int i = 0; i < nPoints; ++i) {
@@ -109,7 +109,7 @@ void bind_kll_sketch(py::module &m, const char* name) {
   py::class_<kll_sketch<T>>(m, name)
     .def(py::init<uint16_t>(), py::arg("k"))
     .def(py::init<const kll_sketch<T>&>())
-    .def("update", &kll_sketch<T>::update, py::arg("item"))
+    .def("update", (void (kll_sketch<T>::*)(const T&)) &kll_sketch<T>::update, py::arg("item"))
     .def("merge", &kll_sketch<T>::merge, py::arg("sketch"))
     .def("__str__", &dspy::kll_sketch_to_string<T>)
     .def("is_empty", &kll_sketch<T>::is_empty)
