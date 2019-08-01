@@ -1071,8 +1071,7 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
     } else if ((self_pop == 0) and (other_pop > 0)) {
       kll_helper::copy_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl]);
     } else if ((self_pop > 0) and (other_pop > 0)) {
-      kll_helper::merge_sorted_arrays_special<T, C>(items_, levels_[lvl], self_pop, other.items_,
-          other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
+      kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
     }
   }
 }
