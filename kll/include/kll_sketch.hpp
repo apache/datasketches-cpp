@@ -842,7 +842,7 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
     kll_helper::randomly_halve_up(items_, adj_beg, adj_pop);
   } else {
     kll_helper::randomly_halve_down(items_, adj_beg, adj_pop);
-    kll_helper::merge_sorted_arrays<T, C>(items_, adj_beg, half_adj_pop, items_, raw_lim, pop_above, items_, adj_beg + half_adj_pop);
+    kll_helper::merge_sorted_arrays<T, C>(items_, adj_beg, half_adj_pop, raw_lim, pop_above, adj_beg + half_adj_pop);
   }
   levels_[level + 1] -= half_adj_pop; // adjust boundaries of the level above
   if (odd_pop) {

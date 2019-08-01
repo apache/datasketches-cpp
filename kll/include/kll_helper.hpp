@@ -171,11 +171,11 @@ class kll_helper {
       }
     }
 
-    // this version assumes that destination has initialized objects
-    // moves objects from both buf_a and buf_b
+    // this version moves objects within the same buffer
+    // assumes that destination has initialized objects
     // does not destroy the originals after the move
     template <typename T, typename C>
-    static void merge_sorted_arrays(const T* buf_a, uint32_t start_a, uint32_t len_a, const T* buf_b, uint32_t start_b, uint32_t len_b, T* buf_c, uint32_t start_c) {
+    static void merge_sorted_arrays(T* buf, uint32_t start_a, uint32_t len_a, uint32_t start_b, uint32_t len_b, uint32_t start_c) {
       const uint32_t len_c = len_a + len_b;
       const uint32_t lim_a = start_a + len_a;
       const uint32_t lim_b = start_b + len_b;
@@ -186,23 +186,28 @@ class kll_helper {
 
       for (uint32_t c = start_c; c < lim_c; c++) {
         if (a == lim_a) {
-          buf_c[c] = std::move(buf_b[b++]);
+          if (b != c) buf[c] = std::move(buf[b]);
+          b++;
         } else if (b == lim_b) {
-          buf_c[c] = std::move(buf_a[a++]);
-        } else if (C()(buf_a[a], buf_b[b])) {
-          buf_c[c] = std::move(buf_a[a++]);
+          if (a != c) buf[c] = std::move(buf[a]);
+          a++;
+        } else if (C()(buf[a], buf[b])) {
+          if (a != c) buf[c] = std::move(buf[a]);
+          a++;
         } else {
-          buf_c[c] = std::move(buf_b[b++]);
+          if (b != c) buf[c] = std::move(buf[b]);
+          b++;
         }
       }
       if (a != lim_a || b != lim_b) throw std::logic_error("inconsistent state");
     }
 
-    // this version initializes objects at the destination
+    // this version is to merge from two different buffers into a third buffer
+    // initializes objects is the destination buffer
     // moves objects from buf_a and destroys the originals
     // copies objects from buf_b
     template <typename T, typename C>
-    static void merge_sorted_arrays_special(const T* buf_a, uint32_t start_a, uint32_t len_a, const T* buf_b, uint32_t start_b, uint32_t len_b, T* buf_c, uint32_t start_c) {
+    static void merge_sorted_arrays(const T* buf_a, uint32_t start_a, uint32_t len_a, const T* buf_b, uint32_t start_b, uint32_t len_b, T* buf_c, uint32_t start_c) {
       const uint32_t len_c = len_a + len_b;
       const uint32_t lim_a = start_a + len_a;
       const uint32_t lim_b = start_b + len_b;
@@ -290,10 +295,10 @@ class kll_helper {
           const auto adj_pop = odd_pop ? raw_pop - 1 : raw_pop;
           const auto half_adj_pop = adj_pop / 2;
 
-          if (odd_pop) { // copy one guy over
+          if (odd_pop) { // move one guy over
             items[out_levels[current_level]] = std::move(items[raw_beg]);
             out_levels[current_level + 1] = out_levels[current_level] + 1;
-          } else { // copy zero guys over
+          } else { // even number of items
             out_levels[current_level + 1] = out_levels[current_level];
           }
 
@@ -306,7 +311,7 @@ class kll_helper {
             randomly_halve_up(items, adj_beg, adj_pop);
           } else { // Level above is nonempty, so halve down, then merge up
             randomly_halve_down(items, adj_beg, adj_pop);
-            merge_sorted_arrays<T, C>(items, adj_beg, half_adj_pop, items, raw_lim, pop_above, items, adj_beg + half_adj_pop);
+            merge_sorted_arrays<T, C>(items, adj_beg, half_adj_pop, raw_lim, pop_above, adj_beg + half_adj_pop);
           }
 
           // track the fact that we just eliminated some data
