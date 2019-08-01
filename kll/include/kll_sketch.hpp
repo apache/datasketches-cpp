@@ -831,6 +831,7 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
   const uint32_t adj_beg = odd_pop ? raw_beg + 1 : raw_beg;
   const uint32_t adj_pop = odd_pop ? raw_pop - 1 : raw_pop;
   const uint32_t half_adj_pop = adj_pop / 2;
+  const uint32_t destroy_beg = levels_[0];
 
   // level zero might not be sorted, so we must sort it if we wish to compact it
   // sort_level_zero() is not used here because of the adjustment for odd number of items
@@ -841,12 +842,12 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
     kll_helper::randomly_halve_up(items_, adj_beg, adj_pop);
   } else {
     kll_helper::randomly_halve_down(items_, adj_beg, adj_pop);
-    kll_helper::merge_sorted_arrays<T, C>(items_, adj_beg, half_adj_pop, items_, raw_lim, pop_above, items_, adj_beg + half_adj_pop);
+    kll_helper::merge_sorted_arrays<T, C>(items_, adj_beg, half_adj_pop, raw_lim, pop_above, adj_beg + half_adj_pop);
   }
   levels_[level + 1] -= half_adj_pop; // adjust boundaries of the level above
   if (odd_pop) {
     levels_[level] = levels_[level + 1] - 1; // the current level now contains one item
-    items_[levels_[level]] = std::move(items_[raw_beg]); // namely this leftover guy
+    if (levels_[level] != raw_beg) items_[levels_[level]] = std::move(items_[raw_beg]); // namely this leftover guy
   } else {
     levels_[level] = levels_[level + 1]; // the current level is now empty
   }
@@ -858,15 +859,10 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
   // so that the freed-up space can be used by level zero
   if (level > 0) {
     const uint32_t amount = raw_beg - levels_[0];
-    const uint32_t first = levels_[0];
-    uint32_t last = levels_[0] + amount;
-    while (first != last) {
-      --last;
-      items_[last + half_adj_pop] = std::move(items_[last]);
-    }
+    std::move_backward(&items_[levels_[0]], &items_[levels_[0] + amount], &items_[levels_[0] + half_adj_pop + amount]);
     for (uint8_t lvl = 0; lvl < level; lvl++) levels_[lvl] += half_adj_pop;
   }
-  for (uint32_t i = 0; i < half_adj_pop; i++) items_[i + raw_beg].~T();
+  for (uint32_t i = 0; i < half_adj_pop; i++) items_[i + destroy_beg].~T();
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -893,7 +889,7 @@ void kll_sketch<T, C, S, A>::add_empty_top_level_to_completely_full_sketch() {
 
   // note that merging MIGHT over-grow levels_, in which case we might not have to grow it here
   const uint8_t new_levels_size = num_levels_ + 2;
-  if (levels_size_ < (new_levels_size)) {
+  if (levels_size_ < new_levels_size) {
     uint32_t* new_levels = AllocU32().allocate(new_levels_size);
     std::copy(&levels_[0], &levels_[levels_size_], new_levels);
     AllocU32().deallocate(levels_, levels_size_);
@@ -1075,8 +1071,7 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
     } else if ((self_pop == 0) and (other_pop > 0)) {
       kll_helper::copy_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl]);
     } else if ((self_pop > 0) and (other_pop > 0)) {
-      kll_helper::merge_sorted_arrays_special<T, C>(items_, levels_[lvl], self_pop, other.items_,
-          other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
+      kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
     }
   }
 }
