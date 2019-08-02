@@ -46,7 +46,7 @@ class PairIterator {
 };
 
 template<typename A = std::allocator<char>>
-using PairIterator_with_deleter = std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>;
+using pair_iterator_with_deleter = std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>;
 
 }
 

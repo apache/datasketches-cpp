@@ -51,7 +51,7 @@ class AuxHashMap final {
     int getAuxCount() const;
     int* getAuxIntArr();
     int getLgAuxArrInts() const;
-    PairIterator_with_deleter<A> getIterator() const;
+    pair_iterator_with_deleter<A> getIterator() const;
 
     void mustAdd(int slotNo, int value);
     int mustFindValueFor(int slotNo);

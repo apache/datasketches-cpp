@@ -33,7 +33,7 @@
 namespace datasketches {
 
 template<typename A>
-CouponList<A>::CouponList(const int lgConfigK, const TgtHllType tgtHllType, const CurMode curMode)
+CouponList<A>::CouponList(const int lgConfigK, const target_hll_type tgtHllType, const CurMode curMode)
   : HllSketchImpl<A>(lgConfigK, tgtHllType, curMode, false) {
     if (curMode == CurMode::LIST) {
       lgCouponArrInts = HllUtil<A>::LG_INIT_LIST_SIZE;
@@ -63,7 +63,7 @@ CouponList<A>::CouponList(const CouponList& that)
 }
 
 template<typename A>
-CouponList<A>::CouponList(const CouponList& that, const TgtHllType tgtHllType)
+CouponList<A>::CouponList(const CouponList& that, const target_hll_type tgtHllType)
   : HllSketchImpl<A>(that.lgConfigK, tgtHllType, that.curMode, false),
     lgCouponArrInts(that.lgCouponArrInts),
     couponCount(that.couponCount),
@@ -96,7 +96,7 @@ CouponList<A>* CouponList<A>::copy() const {
 }
 
 template<typename A>
-CouponList<A>* CouponList<A>::copyAs(const TgtHllType tgtHllType) const {
+CouponList<A>* CouponList<A>::copyAs(target_hll_type tgtHllType) const {
   return new (clAlloc().allocate(1)) CouponList<A>(*this, tgtHllType);
 }
 
@@ -122,7 +122,7 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
     throw std::invalid_argument("Calling set construtor with non-list mode data");
   }
 
-  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
+  target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = data[HllUtil<A>::LG_K_BYTE];
   const bool compact = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
@@ -169,7 +169,7 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
     throw std::invalid_argument("Calling list construtor with non-list mode data");
   }
 
-  const TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
+  const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
   const bool compact = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
@@ -225,7 +225,7 @@ std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t>
       break;
     }
     case 1: { // src updatable, dst compact
-      PairIterator_with_deleter<A> itr = getIterator();
+      pair_iterator_with_deleter<A> itr = getIterator();
       bytes += getMemDataStart(); // reusing ponter for incremental writes
       while (itr->nextValid()) {
         const int pairValue = itr->getPair();
@@ -283,7 +283,7 @@ void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
       break;
     }
     case 1: { // src updatable, dst compact
-      PairIterator_with_deleter<A> itr = getIterator();
+      pair_iterator_with_deleter<A> itr = getIterator();
       while (itr->nextValid()) {
         const int pairValue = itr->getPair();
         os.write((char*)&pairValue, sizeof(pairValue));
@@ -401,10 +401,10 @@ int* CouponList<A>::getCouponIntArr() const {
 }
 
 template<typename A>
-PairIterator_with_deleter<A> CouponList<A>::getIterator() const {
+pair_iterator_with_deleter<A> CouponList<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
   IntArrayPairIterator<A>* itr = new (iapiAlloc().allocate(1)) IntArrayPairIterator<A>(couponIntArr, 1 << lgCouponArrInts, this->lgConfigK);
-  return PairIterator_with_deleter<A>(
+  return pair_iterator_with_deleter<A>(
     itr,
     [](PairIterator<A>* ptr) {
       IntArrayPairIterator<A>* iapi = static_cast<IntArrayPairIterator<A>*>(ptr);

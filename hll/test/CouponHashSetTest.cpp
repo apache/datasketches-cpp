@@ -43,7 +43,7 @@ class CouponHashSetTest : public CppUnit::TestFixture {
     for (int i = 0; i < 24; ++i) {
       sk1.update(i);
     }
-    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> sketchBytes = sk1.serializeUpdatable();
+    std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> sketchBytes = sk1.serialize_updatable();
     uint8_t* bytes = sketchBytes.first.get();
 
     bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
@@ -103,7 +103,7 @@ class CouponHashSetTest : public CppUnit::TestFixture {
       sk1.update(i);
     }
     std::stringstream ss;
-    sk1.serializeCompact(ss);
+    sk1.serialize_compact(ss);
 
     ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
     ss.put(0);

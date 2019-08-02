@@ -51,7 +51,7 @@ int Hll4Iterator<A>::value() {
 
 template<typename A>
 Hll4Array<A>::Hll4Array(const int lgConfigK, const bool startFullSize) :
-    HllArray<A>(lgConfigK, TgtHllType::HLL_4, startFullSize) {
+    HllArray<A>(lgConfigK, target_hll_type::HLL_4, startFullSize) {
   const int numBytes = this->hll4ArrBytes(lgConfigK);
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   this->hllByteArr = uint8Alloc().allocate(numBytes);
@@ -97,10 +97,10 @@ Hll4Array<A>* Hll4Array<A>::copy() const {
 }
 
 template<typename A>
-PairIterator_with_deleter<A> Hll4Array<A>::getIterator() const {
+pair_iterator_with_deleter<A> Hll4Array<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Iterator<A>> itrAlloc;
   Hll4Iterator<A>* itr = new (itrAlloc().allocate(1)) Hll4Iterator<A>(*this, 1 << this->lgConfigK);
-  return PairIterator_with_deleter<A>(
+  return pair_iterator_with_deleter<A>(
     itr,
     [](PairIterator<A>* ptr) {
       Hll4Iterator<A>* hll = static_cast<Hll4Iterator<A>*>(ptr);
@@ -111,7 +111,7 @@ PairIterator_with_deleter<A> Hll4Array<A>::getIterator() const {
 }
 
 template<typename A>
-PairIterator_with_deleter<A> Hll4Array<A>::getAuxIterator() const {
+pair_iterator_with_deleter<A> Hll4Array<A>::getAuxIterator() const {
   if (auxHashMap != nullptr) {
     return auxHashMap->getIterator();
   }
@@ -312,7 +312,7 @@ void Hll4Array<A>::shiftToBiggerCurMin() {
     int oldActualVal;
     int newShiftedVal;
 
-    PairIterator_with_deleter<A> itr = auxHashMap->getIterator();
+    pair_iterator_with_deleter<A> itr = auxHashMap->getIterator();
     while (itr->nextValid()) {
       slotNum = itr->getKey() & configKmask;
       oldActualVal = itr->getValue();

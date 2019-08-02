@@ -39,7 +39,7 @@ public:
 
   static CouponHashSet<A>* promoteListToSet(const CouponList<A>& list);
   static HllArray<A>* promoteListOrSetToHll(const CouponList<A>& list);
-  static HllArray<A>* newHll(int lgConfigK, TgtHllType tgtHllType, bool startFullSize = false);
+  static HllArray<A>* newHll(int lgConfigK, target_hll_type tgtHllType, bool startFullSize = false);
   
   // resets the input impl, deleting the input pointert and returning a new pointer
   static HllSketchImpl<A>* reset(HllSketchImpl<A>* impl, bool startFullSize);
@@ -54,7 +54,7 @@ private:
 
 template<typename A>
 CouponHashSet<A>* HllSketchImplFactory<A>::promoteListToSet(const CouponList<A>& list) {
-  PairIterator_with_deleter<A> iter = list.getIterator();
+  pair_iterator_with_deleter<A> iter = list.getIterator();
 
   typedef typename std::allocator_traits<A>::template rebind_alloc<CouponHashSet<A>> chsAlloc;
   CouponHashSet<A>* chSet = new (chsAlloc().allocate(1)) CouponHashSet<A>(list.getLgConfigK(), list.getTgtHllType());
@@ -69,7 +69,7 @@ CouponHashSet<A>* HllSketchImplFactory<A>::promoteListToSet(const CouponList<A>&
 template<typename A>
 HllArray<A>* HllSketchImplFactory<A>::promoteListOrSetToHll(const CouponList<A>& src) {
   HllArray<A>* tgtHllArr = HllSketchImplFactory<A>::newHll(src.getLgConfigK(), src.getTgtHllType());
-  PairIterator_with_deleter<A> srcItr = src.getIterator();
+  pair_iterator_with_deleter<A> srcItr = src.getIterator();
   tgtHllArr->putKxQ0(1 << src.getLgConfigK());
   while (srcItr->nextValid()) {
     tgtHllArr->couponUpdate(srcItr->getPair());
@@ -111,7 +111,7 @@ HllSketchImpl<A>* HllSketchImplFactory<A>::deserialize(const void* bytes, size_t
 }
 
 template<typename A>
-HllArray<A>* HllSketchImplFactory<A>::newHll(int lgConfigK, TgtHllType tgtHllType, bool startFullSize) {
+HllArray<A>* HllSketchImplFactory<A>::newHll(int lgConfigK, target_hll_type tgtHllType, bool startFullSize) {
   switch (tgtHllType) {
     case HLL_8:
       typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>> hll8Alloc;
@@ -123,7 +123,7 @@ HllArray<A>* HllSketchImplFactory<A>::newHll(int lgConfigK, TgtHllType tgtHllTyp
       typedef typename std::allocator_traits<A>::template rebind_alloc<Hll4Array<A>> hll4Alloc;
       return new (hll4Alloc().allocate(1)) Hll4Array<A>(lgConfigK, startFullSize);
   }
-  throw std::logic_error("Invalid TgtHllType");
+  throw std::logic_error("Invalid target_hll_type");
 }
 
 template<typename A>
@@ -154,7 +154,7 @@ Hll4Array<A>* HllSketchImplFactory<A>::convertToHll4(const HllArray<A>& srcHllAr
 
   // 2nd pass: must know curMin.
   // Populate KxQ registers, build AuxHashMap if needed
-  PairIterator_with_deleter<A> itr = srcHllArr.getIterator();
+  pair_iterator_with_deleter<A> itr = srcHllArr.getIterator();
   // nothing allocated, may be null
   AuxHashMap<A>* auxHashMap = srcHllArr.getAuxHashMap();
 
@@ -185,7 +185,7 @@ template<typename A>
 int HllSketchImplFactory<A>::curMinAndNum(const HllArray<A>& hllArr) {
   int curMin = 64;
   int numAtCurMin = 0;
-  PairIterator_with_deleter<A> itr = hllArr.getIterator();
+  pair_iterator_with_deleter<A> itr = hllArr.getIterator();
   while (itr->nextAll()) {
     int v = itr->getValue();
     if (v < curMin) {
@@ -207,7 +207,7 @@ Hll6Array<A>* HllSketchImplFactory<A>::convertToHll6(const HllArray<A>& srcHllAr
   hll6Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());
 
   int numZeros = 1 << lgConfigK;
-  PairIterator_with_deleter<A> itr = srcHllArr.getIterator();
+  pair_iterator_with_deleter<A> itr = srcHllArr.getIterator();
   while (itr->nextAll()) {
     if (itr->getValue() != HllUtil<A>::EMPTY) {
       --numZeros;
@@ -228,7 +228,7 @@ Hll8Array<A>* HllSketchImplFactory<A>::convertToHll8(const HllArray<A>& srcHllAr
   hll8Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());
 
   int numZeros = 1 << lgConfigK;
-  PairIterator_with_deleter<A> itr = srcHllArr.getIterator();
+  pair_iterator_with_deleter<A> itr = srcHllArr.getIterator();
   while (itr->nextAll()) {
     if (itr->getValue() != HllUtil<A>::EMPTY) {
       --numZeros;

@@ -26,7 +26,7 @@
 namespace datasketches {
 
 template<typename A>
-HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType,
+HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const target_hll_type tgtHllType,
                                 const CurMode curMode, const bool startFullSize)
   : lgConfigK(lgConfigK),
     tgtHllType(tgtHllType),
@@ -40,14 +40,14 @@ HllSketchImpl<A>::~HllSketchImpl() {
 }
 
 template<typename A>
-TgtHllType HllSketchImpl<A>::extractTgtHllType(const uint8_t modeByte) {
+target_hll_type HllSketchImpl<A>::extractTgtHllType(const uint8_t modeByte) {
   switch ((modeByte >> 2) & 0x3) {
   case 0:
-    return TgtHllType::HLL_4;
+    return target_hll_type::HLL_4;
   case 1:
-    return TgtHllType::HLL_6;
+    return target_hll_type::HLL_6;
   case 2:
-    return TgtHllType::HLL_8;
+    return target_hll_type::HLL_8;
   default:
     throw std::invalid_argument("Invalid target HLL type");
   }
@@ -125,7 +125,7 @@ HllSketchImpl<A>* HllSketchImpl<A>::reset() {
 }
 
 template<typename A>
-TgtHllType HllSketchImpl<A>::getTgtHllType() const {
+target_hll_type HllSketchImpl<A>::getTgtHllType() const {
   return tgtHllType;
 }
 

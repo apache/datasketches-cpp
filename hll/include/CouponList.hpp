@@ -31,9 +31,9 @@ class HllSketchImplFactory;
 template<typename A = std::allocator<char>>
 class CouponList : public HllSketchImpl<A> {
   public:
-    explicit CouponList(int lgConfigK, TgtHllType tgtHllType, CurMode curMode);
+    explicit CouponList(int lgConfigK, target_hll_type tgtHllType, CurMode curMode);
     explicit CouponList(const CouponList& that);
-    explicit CouponList(const CouponList& that, TgtHllType tgtHllType);
+    explicit CouponList(const CouponList& that, target_hll_type tgtHllType);
 
     static CouponList* newList(const void* bytes, size_t len);
     static CouponList* newList(std::istream& is);
@@ -44,7 +44,7 @@ class CouponList : public HllSketchImpl<A> {
     virtual std::function<void(HllSketchImpl<A>*)> get_deleter() const;
 
     virtual CouponList* copy() const;
-    virtual CouponList* copyAs(TgtHllType tgtHllType) const;
+    virtual CouponList* copyAs(target_hll_type tgtHllType) const;
 
     virtual HllSketchImpl<A>* couponUpdate(int coupon);
 
@@ -55,7 +55,7 @@ class CouponList : public HllSketchImpl<A> {
 
     virtual bool isEmpty() const;
     virtual int getCouponCount() const;
-    virtual PairIterator_with_deleter<A> getIterator() const;
+    virtual pair_iterator_with_deleter<A> getIterator() const;
 
   protected:
     typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
