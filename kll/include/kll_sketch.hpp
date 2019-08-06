@@ -752,7 +752,6 @@ kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, std::istream&
   }
   items_ = A().allocate(capacity);
   items_size_ = capacity;
-  for (unsigned i = 0; i < items_size_; i++) A().construct(&items_[i], T());
   const auto num_items = levels_[num_levels_] - levels_[0];
   S().deserialize(is, &items_[levels_[0]], num_items);
   if (is_single_item) {
@@ -798,7 +797,6 @@ kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, const void* b
   }
   items_ = A().allocate(capacity);
   items_size_ = capacity;
-  for (unsigned i = 0; i < items_size_; i++) A().construct(&items_[i], T());
   const auto num_items(levels_[num_levels_] - levels_[0]);
   ptr += S().deserialize(ptr, &items_[levels_[0]], num_items);
   if (is_single_item) {
