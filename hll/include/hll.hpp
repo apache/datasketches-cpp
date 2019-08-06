@@ -121,20 +121,20 @@ class hll_sketch_alloc final {
   private:
     explicit hll_sketch_alloc(HllSketchImpl<A>* that);
 
-    void couponUpdate(int coupon);
+    void coupon_update(int coupon);
 
-    std::string typeAsString() const;
-    std::string modeAsString() const;
+    std::string type_as_string() const;
+    std::string mode_as_string() const;
 
-    CurMode getCurrentMode() const;
-    int getSerializationVersion() const;
-    bool isOutOfOrderFlag() const;
-    bool isEstimationMode() const;
+    CurMode get_current_mode() const;
+    int get_serialization_version() const;
+    bool is_out_of_order_flag() const;
+    bool is_estimation_mode() const;
 
     typedef typename std::allocator_traits<A>::template rebind_alloc<hll_sketch_alloc> AllocHllSketch;
     friend AllocHllSketch;
 
-    HllSketchImpl<A>* hllSketchImpl;
+    HllSketchImpl<A>* sketch_impl;
     friend hll_union_alloc<A>;
 };
 
@@ -204,28 +204,26 @@ class hll_union_alloc {
     * perform the union. This may involve swapping, down-sampling, transforming, and / or
     * copying one of the arguments and may completely replace the internals of the union.
     *
-    * @param incomingImpl the given incoming sketch, which may not be modified.
-    * @param gadgetImpl the given gadget sketch, which must have a target of HLL_8 and may be
-    * modified.
-    * @param lgMaxK the maximum value of log2 K for this union.
+    * @param incoming_impl the given incoming sketch, which may not be modified.
+    * @param lg_max_k the maximum value of log2 K for this union.
     * //@return the union of the two sketches in the form of the internal HllSketchImpl, which for
     * //the union is always in HLL_8 form.
     */
-    void unionImpl(HllSketchImpl<A>* incomingImpl, int lgMaxK);
+    void union_impl(HllSketchImpl<A>* incoming_impl, int lg_max_k);
 
-    static HllSketchImpl<A>* copyOrDownsampleHll(HllSketchImpl<A>* srcImpl, int tgtLgK);
+    static HllSketchImpl<A>* copy_or_downsample(HllSketchImpl<A>* src_impl, int tgt_lg_k);
 
-    void couponUpdate(int coupon);
+    void coupon_update(int coupon);
 
-    CurMode getCurrentMode() const;
-    int getSerializationVersion() const;
-    bool isOutOfOrderFlag() const;
-    bool isEstimationMode() const;
+    CurMode get_current_mode() const;
+    int get_serialization_version() const;
+    bool is_out_of_order_flag() const;
+    bool is_estimation_mode() const;
 
     // calls couponUpdate on sketch, freeing the old sketch upon changes in CurMode
-    static HllSketchImpl<A>* leakFreeCouponUpdate(HllSketchImpl<A>* impl, int coupon);
+    static HllSketchImpl<A>* leak_free_coupon_update(HllSketchImpl<A>* impl, int coupon);
 
-    int lgMaxK;
+    int lg_max_k;
     hll_sketch_alloc<A> gadget;
 
 };
