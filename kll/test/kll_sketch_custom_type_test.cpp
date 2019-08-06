@@ -22,7 +22,8 @@
 
 #include <kll_sketch.hpp>
 #include <test_allocator.hpp>
-#include "../../common/test/test_type.hpp"
+#include <test_type.hpp>
+
 
 namespace datasketches {
 
@@ -34,6 +35,7 @@ class kll_sketch_custom_type_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(compact_level_zero);
   CPPUNIT_TEST(merge_small);
   CPPUNIT_TEST(merge_higher_levels);
+  CPPUNIT_TEST(serialize_deserialize);
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -120,6 +122,32 @@ public:
     CPPUNIT_ASSERT(sketch2.get_n() > sketch2.get_num_retained());
     CPPUNIT_ASSERT_EQUAL(1, sketch2.get_min_value().get_value());
     CPPUNIT_ASSERT_EQUAL(18, sketch2.get_max_value().get_value());
+  }
+
+  void serialize_deserialize() {
+    kll_test_type_sketch sketch1;
+
+    const int n = 1000;
+    for (int i = 0; i < n; i++) sketch1.update(i);
+
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch1.serialize(s);
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_serialized_size_bytes(), (uint32_t) s.tellp());
+    auto sketch2 = kll_test_type_sketch::deserialize(s);
+    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) s.tellg());
+    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
+    CPPUNIT_ASSERT_EQUAL(sketch1.is_empty(), sketch2.is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch1.is_estimation_mode(), sketch2.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_n(), sketch2.get_n());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_num_retained(), sketch2.get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_min_value().get_value(), sketch2.get_min_value().get_value());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_max_value().get_value(), sketch2.get_max_value().get_value());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_quantile(0.5).get_value(), sketch2.get_quantile(0.5).get_value());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(0), sketch2.get_rank(0));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(n), sketch2.get_rank(n));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(n / 2), sketch2.get_rank(n / 2));
   }
 
 };
