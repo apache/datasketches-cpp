@@ -21,11 +21,11 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <frequent_items_sketch.hpp>
-#include <A.hpp>
+#include "../../common/test/test_type.hpp"
 
 namespace datasketches {
 
-typedef frequent_items_sketch<A, hashA, equalA, serdeA> frequent_A_sketch;
+typedef frequent_items_sketch<test_type, test_type_hash, test_type_equal, test_type_serde> frequent_test_type_sketch;
 
 class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
 
@@ -35,7 +35,7 @@ class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
 
   void custom_type() {
 
-    frequent_A_sketch sketch(3);
+    frequent_test_type_sketch sketch(3);
     sketch.update(1, 10); // should survive the purge
     sketch.update(2);
     sketch.update(3);
@@ -43,7 +43,7 @@ class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
     sketch.update(5);
     sketch.update(6);
     sketch.update(7);
-    A a8(8);
+    test_type a8(8);
     sketch.update(a8);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL(17, (int) sketch.get_total_weight());
@@ -60,7 +60,7 @@ class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
     std::cerr << "serialize" << std::endl;
     sketch.serialize(s);
     std::cerr << "deserialize" << std::endl;
-    auto sketch2 = frequent_A_sketch::deserialize(s);
+    auto sketch2 = frequent_test_type_sketch::deserialize(s);
     CPPUNIT_ASSERT(!sketch2.is_empty());
     CPPUNIT_ASSERT_EQUAL(17, (int) sketch2.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(10, (int) sketch2.get_estimate(1));

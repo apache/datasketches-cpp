@@ -21,11 +21,12 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <kll_sketch.hpp>
-#include <A.hpp>
+#include <test_allocator.hpp>
+#include "../../common/test/test_type.hpp"
 
 namespace datasketches {
 
-typedef kll_sketch<A, lessA, serdeA> kll_sketch_a;
+typedef kll_sketch<test_type, test_type_less, test_type_serde, test_allocator<test_type>> kll_test_type_sketch;
 
 class kll_sketch_custom_type_test: public CppUnit::TestFixture {
 
@@ -35,8 +36,19 @@ class kll_sketch_custom_type_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(merge_higher_levels);
   CPPUNIT_TEST_SUITE_END();
 
+public:
+  void setUp() {
+    test_allocator_total_bytes = 0;
+  }
+
+  void tearDown() {
+    if (test_allocator_total_bytes != 0) {
+      CPPUNIT_ASSERT_EQUAL((long long) 0, test_allocator_total_bytes);
+    }
+  }
+
   void compact_level_zero() {
-    kll_sketch_a sketch(8);
+    kll_test_type_sketch sketch(8);
     CPPUNIT_ASSERT_THROW(sketch.get_quantile(0), std::runtime_error);
     CPPUNIT_ASSERT_THROW(sketch.get_min_value(), std::runtime_error);
     CPPUNIT_ASSERT_THROW(sketch.get_max_value(), std::runtime_error);
@@ -61,10 +73,10 @@ class kll_sketch_custom_type_test: public CppUnit::TestFixture {
   }
 
   void merge_small() {
-    kll_sketch_a sketch1(8);
+    kll_test_type_sketch sketch1(8);
     sketch1.update(1);
 
-    kll_sketch_a sketch2(8);
+    kll_test_type_sketch sketch2(8);
     sketch2.update(2);
 
     sketch2.merge(sketch1);
@@ -78,7 +90,7 @@ class kll_sketch_custom_type_test: public CppUnit::TestFixture {
   }
 
   void merge_higher_levels() {
-    kll_sketch_a sketch1(8);
+    kll_test_type_sketch sketch1(8);
     sketch1.update(1);
     sketch1.update(2);
     sketch1.update(3);
@@ -89,7 +101,7 @@ class kll_sketch_custom_type_test: public CppUnit::TestFixture {
     sketch1.update(8);
     sketch1.update(9);
 
-    kll_sketch_a sketch2(8);
+    kll_test_type_sketch sketch2(8);
     sketch2.update(10);
     sketch2.update(11);
     sketch2.update(12);
