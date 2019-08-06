@@ -30,7 +30,7 @@
 
 namespace datasketches {
 
-enum CurMode { LIST = 0, SET, HLL };
+enum hll_mode { LIST = 0, SET, HLL };
 
 // template provides internal consistency and allows static float values
 // but we don't use the template parameter anywhere
@@ -120,7 +120,7 @@ public:
   static unsigned int simpleIntLog2(unsigned int n); // n must be power of 2
   static unsigned int getNumberOfLeadingZeros(uint64_t x);
   static unsigned int numberOfTrailingZeros(uint32_t n);
-  static int computeLgArrInts(CurMode mode, int count, int lgConfigK);
+  static int computeLgArrInts(hll_mode mode, int count, int lgConfigK);
   static double getRelErr(bool upperBound, bool unioned,
                           int lgConfigK, int numStdDev);
 };
@@ -272,7 +272,7 @@ inline unsigned int HllUtil<A>::numberOfTrailingZeros(uint32_t v) {
 }
 
 template<typename A>
-inline int HllUtil<A>::computeLgArrInts(CurMode mode, int count, int lgConfigK) {
+inline int HllUtil<A>::computeLgArrInts(hll_mode mode, int count, int lgConfigK) {
   // assume value missing and recompute
   if (mode == LIST) { return HllUtil<A>::LG_INIT_LIST_SIZE; }
   int ceilPwr2 = HllUtil<A>::ceilingPowerOf2(count);

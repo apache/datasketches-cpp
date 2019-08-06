@@ -33,12 +33,12 @@
 namespace datasketches {
 
 template<typename A>
-CouponList<A>::CouponList(const int lgConfigK, const target_hll_type tgtHllType, const CurMode curMode)
-  : HllSketchImpl<A>(lgConfigK, tgtHllType, curMode, false) {
-    if (curMode == CurMode::LIST) {
+CouponList<A>::CouponList(const int lgConfigK, const target_hll_type tgtHllType, const hll_mode mode)
+  : HllSketchImpl<A>(lgConfigK, tgtHllType, mode, false) {
+    if (mode == hll_mode::LIST) {
       lgCouponArrInts = HllUtil<A>::LG_INIT_LIST_SIZE;
       oooFlag = false;
-    } else { // curMode == SET
+    } else { // mode == SET
       lgCouponArrInts = HllUtil<A>::LG_INIT_SET_SIZE;
       oooFlag = true;
     }
@@ -51,7 +51,7 @@ CouponList<A>::CouponList(const int lgConfigK, const target_hll_type tgtHllType,
 
 template<typename A>
 CouponList<A>::CouponList(const CouponList& that)
-  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, that.curMode, false),
+  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, that.mode, false),
     lgCouponArrInts(that.lgCouponArrInts),
     couponCount(that.couponCount),
     oooFlag(that.oooFlag) {
@@ -64,7 +64,7 @@ CouponList<A>::CouponList(const CouponList& that)
 
 template<typename A>
 CouponList<A>::CouponList(const CouponList& that, const target_hll_type tgtHllType)
-  : HllSketchImpl<A>(that.lgConfigK, tgtHllType, that.curMode, false),
+  : HllSketchImpl<A>(that.lgConfigK, tgtHllType, that.mode, false),
     lgCouponArrInts(that.lgCouponArrInts),
     couponCount(that.couponCount),
     oooFlag(that.oooFlag) {
@@ -117,8 +117,8 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
-  if (curMode != LIST) {
+  hll_mode mode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  if (mode != LIST) {
     throw std::invalid_argument("Calling set construtor with non-list mode data");
   }
 
@@ -137,7 +137,7 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
                                 + ", found: " + std::to_string(len));
   }
 
-  CouponList<A>* sketch = new (clAlloc().allocate(1)) CouponList<A>(lgK, tgtHllType, curMode);
+  CouponList<A>* sketch = new (clAlloc().allocate(1)) CouponList<A>(lgK, tgtHllType, mode);
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
@@ -164,8 +164,8 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
-  if (curMode != LIST) {
+  hll_mode mode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
+  if (mode != LIST) {
     throw std::invalid_argument("Calling list construtor with non-list mode data");
   }
 
@@ -176,7 +176,7 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
   const bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   const bool emptyFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
 
-  CouponList<A>* sketch = new (clAlloc().allocate(1)) CouponList<A>(lgK, tgtHllType, curMode);
+  CouponList<A>* sketch = new (clAlloc().allocate(1)) CouponList<A>(lgK, tgtHllType, mode);
   const int couponCount = listHeader[HllUtil<A>::LIST_COUNT_BYTE];
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
@@ -209,10 +209,10 @@ std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t>
   bytes[HllUtil<A>::LG_K_BYTE] = static_cast<uint8_t>(this->lgConfigK);
   bytes[HllUtil<A>::LG_ARR_BYTE] = static_cast<uint8_t>(lgCouponArrInts);
   bytes[HllUtil<A>::FLAGS_BYTE] = this->makeFlagsByte(compact);
-  bytes[HllUtil<A>::LIST_COUNT_BYTE] = static_cast<uint8_t>(this->curMode == LIST ? couponCount : 0);
+  bytes[HllUtil<A>::LIST_COUNT_BYTE] = static_cast<uint8_t>(this->mode == LIST ? couponCount : 0);
   bytes[HllUtil<A>::MODE_BYTE] = this->makeModeByte();
 
-  if (this->curMode == SET) {
+  if (this->mode == SET) {
     std::memcpy(bytes + HllUtil<A>::HASH_SET_COUNT_INT, &couponCount, sizeof(couponCount));
   }
 
@@ -258,10 +258,10 @@ void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
   const uint8_t flagsByte(this->makeFlagsByte(compact));
   os.write((char*)&flagsByte, sizeof(flagsByte));
 
-  if (this->curMode == LIST) {
+  if (this->mode == LIST) {
     const uint8_t listCount((uint8_t) couponCount);
     os.write((char*)&listCount, sizeof(listCount));
-  } else { // curMode == SET
+  } else { // mode == SET
     const uint8_t unused(0);
     os.write((char*)&unused, sizeof(unused));
   }
@@ -269,7 +269,7 @@ void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
   const uint8_t modeByte(this->makeModeByte());
   os.write((char*)&modeByte, sizeof(modeByte));
 
-  if (this->curMode == SET) {
+  if (this->mode == SET) {
     // writing as int, already stored as int
     os.write((char*)&couponCount, sizeof(couponCount));
   }

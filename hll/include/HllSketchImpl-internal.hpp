@@ -27,10 +27,10 @@ namespace datasketches {
 
 template<typename A>
 HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const target_hll_type tgtHllType,
-                                const CurMode curMode, const bool startFullSize)
+                                const hll_mode mode, const bool startFullSize)
   : lgConfigK(lgConfigK),
     tgtHllType(tgtHllType),
-    curMode(curMode),
+    mode(mode),
     startFullSize(startFullSize)
 {
 }
@@ -54,14 +54,14 @@ target_hll_type HllSketchImpl<A>::extractTgtHllType(const uint8_t modeByte) {
 }
 
 template<typename A>
-CurMode HllSketchImpl<A>::extractCurMode(const uint8_t modeByte) {
+hll_mode HllSketchImpl<A>::extractCurMode(const uint8_t modeByte) {
   switch (modeByte & 0x3) {
   case 0:
-    return CurMode::LIST;
+    return hll_mode::LIST;
   case 1:
-    return CurMode::SET;
+    return hll_mode::SET;
   case 2:
-    return CurMode::HLL;
+    return hll_mode::HLL;
   default:
     throw std::invalid_argument("Invalid current sketch mode");
   }
@@ -92,7 +92,7 @@ template<typename A>
 uint8_t HllSketchImpl<A>::makeModeByte() const {
   uint8_t byte = 0;
 
-  switch (curMode) {
+  switch (mode) {
   case LIST:
     byte = 0;
     break;
@@ -135,8 +135,8 @@ int HllSketchImpl<A>::getLgConfigK() const {
 }
 
 template<typename A>
-CurMode HllSketchImpl<A>::getCurMode() const {
-  return curMode;
+hll_mode HllSketchImpl<A>::getCurMode() const {
+  return mode;
 }
 
 template<typename A>

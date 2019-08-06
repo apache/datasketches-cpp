@@ -134,7 +134,7 @@ HllSketchImpl<A>* HllSketchImplFactory<A>::reset(HllSketchImpl<A>* impl, bool st
     return hll;
   } else {
     typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
-    CouponList<A>* cl = new (clAlloc().allocate(1)) CouponList<A>(impl->getLgConfigK(), impl->getTgtHllType(), CurMode::LIST);
+    CouponList<A>* cl = new (clAlloc().allocate(1)) CouponList<A>(impl->getLgConfigK(), impl->getTgtHllType(), hll_mode::LIST);
     impl->get_deleter()(impl);
     return cl;
   }

@@ -126,7 +126,7 @@ class hll_sketch_alloc final {
     std::string type_as_string() const;
     std::string mode_as_string() const;
 
-    CurMode get_current_mode() const;
+    hll_mode get_current_mode() const;
     int get_serialization_version() const;
     bool is_out_of_order_flag() const;
     bool is_estimation_mode() const;
@@ -215,12 +215,12 @@ class hll_union_alloc {
 
     void coupon_update(int coupon);
 
-    CurMode get_current_mode() const;
+    hll_mode get_current_mode() const;
     int get_serialization_version() const;
     bool is_out_of_order_flag() const;
     bool is_estimation_mode() const;
 
-    // calls couponUpdate on sketch, freeing the old sketch upon changes in CurMode
+    // calls couponUpdate on sketch, freeing the old sketch upon changes in hll_mode
     static HllSketchImpl<A>* leak_free_coupon_update(HllSketchImpl<A>* impl, int coupon);
 
     int lg_max_k;

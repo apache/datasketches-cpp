@@ -31,7 +31,7 @@ namespace datasketches {
 template<typename A = std::allocator<char>>
 class HllSketchImpl {
   public:
-    HllSketchImpl(int lgConfigK, target_hll_type tgtHllType, CurMode curMode, bool startFullSize);
+    HllSketchImpl(int lgConfigK, target_hll_type tgtHllType, hll_mode mode, bool startFullSize);
     virtual ~HllSketchImpl();
 
     virtual void serialize(std::ostream& os, bool compact) const = 0;
@@ -45,7 +45,7 @@ class HllSketchImpl {
 
     virtual HllSketchImpl* couponUpdate(int coupon) = 0;
 
-    CurMode getCurMode() const;
+    hll_mode getCurMode() const;
 
     virtual double getEstimate() const = 0;
     virtual double getCompositeEstimate() const = 0;
@@ -73,13 +73,13 @@ class HllSketchImpl {
 
   protected:
     static target_hll_type extractTgtHllType(uint8_t modeByte);
-    static CurMode extractCurMode(uint8_t modeByte);
+    static hll_mode extractCurMode(uint8_t modeByte);
     uint8_t makeFlagsByte(bool compact) const;
     uint8_t makeModeByte() const;
 
     const int lgConfigK;
     const target_hll_type tgtHllType;
-    const CurMode curMode;
+    const hll_mode mode;
     const bool startFullSize;
 };
 

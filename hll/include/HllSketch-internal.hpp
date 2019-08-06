@@ -46,7 +46,7 @@ hll_sketch_alloc<A>::hll_sketch_alloc(int lg_config_k, target_hll_type tgt_type,
     sketch_impl = HllSketchImplFactory<A>::newHll(lg_config_k, tgt_type, start_full_size);
   } else {
     typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
-    sketch_impl = new (clAlloc().allocate(1)) CouponList<A>(lg_config_k, tgt_type, CurMode::LIST);
+    sketch_impl = new (clAlloc().allocate(1)) CouponList<A>(lg_config_k, tgt_type, hll_mode::LIST);
   }
 }
 
@@ -344,7 +344,7 @@ double hll_sketch_alloc<A>::get_upper_bound(int numStdDev) const {
 }
 
 template<typename A>
-CurMode hll_sketch_alloc<A>::get_current_mode() const {
+hll_mode hll_sketch_alloc<A>::get_current_mode() const {
   return sketch_impl->getCurMode();
 }
 
@@ -417,7 +417,7 @@ std::string hll_sketch_alloc<A>::mode_as_string() const {
     case HLL:
       return std::string("HLL");
     default:
-      throw std::runtime_error("Sketch state error: Invalid CurMode");
+      throw std::runtime_error("Sketch state error: Invalid hll_mode");
   }
 }
 

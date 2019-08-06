@@ -238,7 +238,7 @@ bool hll_union_alloc<A>::is_out_of_order_flag() const {
 }
 
 template<typename A>
-CurMode hll_union_alloc<A>::get_current_mode() const {
+hll_mode hll_union_alloc<A>::get_current_mode() const {
   return gadget.get_current_mode();
 }
 
@@ -270,7 +270,7 @@ double hll_union_alloc<A>::get_rel_err(const bool upper_bound, const bool unione
 
 template<typename A>
 HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(HllSketchImpl<A>* src_impl, const int tgt_lg_k) {
-  if (src_impl->getCurMode() != CurMode::HLL) {
+  if (src_impl->getCurMode() != HLL) {
     throw std::logic_error("Attempt to downsample non-HLL sketch");
   }
   HllArray<A>* src = (HllArray<A>*) src_impl;
@@ -308,14 +308,13 @@ void hll_union_alloc<A>::union_impl(HllSketchImpl<A>* incoming_impl, const int l
   HllSketchImpl<A>* src_impl = incoming_impl; //default
   HllSketchImpl<A>* dstImpl = gadget.sketch_impl; //default
   if ((incoming_impl == nullptr) || incoming_impl->isEmpty()) {
-    return; // gadget.hllSketchImpl;
+    return; // gadget.sketch_impl;
   }
 
   const int hi2bits = (gadget.sketch_impl->isEmpty()) ? 3 : gadget.sketch_impl->getCurMode();
   const int lo2bits = incoming_impl->getCurMode();
 
   const int sw = (hi2bits << 2) | lo2bits;
-  //System.out.println("SW: " + sw);
   switch (sw) {
     case 0: { //src: LIST, gadget: LIST
       pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST

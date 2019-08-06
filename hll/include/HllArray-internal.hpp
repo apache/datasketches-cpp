@@ -36,7 +36,7 @@ namespace datasketches {
 
 template<typename A>
 HllArray<A>::HllArray(const int lgConfigK, const target_hll_type tgtHllType, bool startFullSize)
-  : HllSketchImpl<A>(lgConfigK, tgtHllType, CurMode::HLL, startFullSize) {
+  : HllSketchImpl<A>(lgConfigK, tgtHllType, hll_mode::HLL, startFullSize) {
   hipAccum = 0.0;
   kxq0 = 1 << lgConfigK;
   kxq1 = 0.0;
@@ -48,7 +48,7 @@ HllArray<A>::HllArray(const int lgConfigK, const target_hll_type tgtHllType, boo
 
 template<typename A>
 HllArray<A>::HllArray(const HllArray<A>& that)
-  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, CurMode::HLL, that.startFullSize) {
+  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, hll_mode::HLL, that.startFullSize) {
   hipAccum = that.getHipAccum();
   kxq0 = that.getKxQ0();
   kxq1 = that.getKxQ1();
@@ -110,8 +110,8 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
     throw std::invalid_argument("Input array is not an HLL sketch");
   }
 
-  const CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
-  if (curMode != HLL) {
+  const hll_mode mode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  if (mode != HLL) {
     throw std::invalid_argument("Calling HLL array construtor with non-HLL mode data");
   }
 
@@ -176,8 +176,8 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
-  if (curMode != HLL) {
+  hll_mode mode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
+  if (mode != HLL) {
     throw std::invalid_argument("Calling HLL construtor with non-HLL mode data");
   }
 

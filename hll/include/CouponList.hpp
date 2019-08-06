@@ -31,7 +31,7 @@ class HllSketchImplFactory;
 template<typename A = std::allocator<char>>
 class CouponList : public HllSketchImpl<A> {
   public:
-    explicit CouponList(int lgConfigK, target_hll_type tgtHllType, CurMode curMode);
+    explicit CouponList(int lgConfigK, target_hll_type tgtHllType, hll_mode mode);
     explicit CouponList(const CouponList& that);
     explicit CouponList(const CouponList& that, target_hll_type tgtHllType);
 
