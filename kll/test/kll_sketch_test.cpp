@@ -17,13 +17,13 @@
  * under the License.
  */
 
-#include <kll_sketch.hpp>
-#include <kll_helper.hpp>
-
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <cmath>
 #include <cstring>
+
+#include <kll_sketch.hpp>
+#include <test_allocator.hpp>
 
 namespace datasketches {
 
@@ -35,6 +35,11 @@ static std::string testBinaryInputPath = TEST_BINARY_INPUT_PATH;
 #else
 static std::string testBinaryInputPath = "test/";
 #endif
+
+// typical usage would be just kll_sketch<float> or kll_sketch<std::string>, but here we use test_allocator
+typedef kll_sketch<float, std::less<float>, serde<float>, test_allocator<float>> kll_float_sketch;
+// let std::string use the default allocator for simplicity, otherwise we need to define "less" and "serde"
+typedef kll_sketch<std::string, std::less<std::string>, serde<std::string>, test_allocator<std::string>> kll_string_sketch;
 
 class kll_sketch_test: public CppUnit::TestFixture {
 
@@ -66,15 +71,27 @@ class kll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST_SUITE_END();
 
+
+public:
+  void setUp() {
+    test_allocator_total_bytes = 0;
+  }
+
+  void tearDown() {
+    if (test_allocator_total_bytes != 0) {
+      CPPUNIT_ASSERT_EQUAL((long long) 0, test_allocator_total_bytes);
+    }
+  }
+
   void k_limits() {
-    kll_sketch<float> sketch1(kll_sketch<float>::MIN_K); // this should work
-    kll_sketch<float> sketch2(kll_sketch<float>::MAX_K); // this should work
-    CPPUNIT_ASSERT_THROW(new kll_sketch<float>(kll_sketch<float>::MIN_K - 1), std::invalid_argument);
+    kll_float_sketch sketch1(kll_float_sketch::MIN_K); // this should work
+    kll_float_sketch sketch2(kll_float_sketch::MAX_K); // this should work
+    CPPUNIT_ASSERT_THROW(new kll_float_sketch(kll_float_sketch::MIN_K - 1), std::invalid_argument);
     // MAX_K + 1 makes no sense because k is uint16_t
   }
 
   void empty() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     CPPUNIT_ASSERT(sketch.is_empty());
     CPPUNIT_ASSERT(!sketch.is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL((uint64_t) 0, sketch.get_n());
@@ -98,13 +115,13 @@ class kll_sketch_test: public CppUnit::TestFixture {
 }
 
   void bad_get_quantile() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     sketch.update(0); // has to be non-empty to reach the check
     CPPUNIT_ASSERT_THROW(sketch.get_quantile(-1), std::invalid_argument);
   }
 
   void one_item() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     sketch.update(1);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT(!sketch.is_estimation_mode());
@@ -131,7 +148,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void many_items_exact_mode() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     const uint32_t n(200);
     for (uint32_t i = 0; i < n; i++) {
       sketch.update(i);
@@ -159,7 +176,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void many_items_estimation_mode() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     const int n(1000000);
     for (int i = 0; i < n; i++) {
       sketch.update(i);
@@ -201,7 +218,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void consistency_between_get_rank_and_get_PMF_CDF() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     const int n = 1000;
     float values[n];
     for (int i = 0; i < n; i++) {
@@ -224,7 +241,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_sketch_from_java.bin", std::ios::binary);
-    auto sketch = kll_sketch<float>::deserialize(is);
+    auto sketch = kll_float_sketch::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT(sketch.is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL((uint64_t) 1000000, sketch.get_n());
@@ -234,11 +251,11 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void serialize_deserialize_empty() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
-    auto sketch2 = kll_sketch<float>::deserialize(s);
+    auto sketch2 = kll_float_sketch::deserialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch2.is_empty());
     CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch2.is_estimation_mode());
@@ -251,12 +268,12 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void serialize_deserialize_one_item() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     sketch.update(1);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
-    auto sketch2 = kll_sketch<float>::deserialize(s);
+    auto sketch2 = kll_float_sketch::deserialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
     CPPUNIT_ASSERT(!sketch2.is_empty());
@@ -274,7 +291,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.bin", std::ios::binary);
-    auto sketch = kll_sketch<float>::deserialize(is);
+    auto sketch = kll_float_sketch::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT(!sketch.is_estimation_mode());
     CPPUNIT_ASSERT_EQUAL((uint64_t) 1, sketch.get_n());
@@ -284,13 +301,13 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void serialize_deserialize_stream() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     const int n(1000);
     for (int i = 0; i < n; i++) sketch.update(i);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
-    auto sketch2 = kll_sketch<float>::deserialize(s);
+    auto sketch2 = kll_float_sketch::deserialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch2.is_empty());
@@ -307,12 +324,12 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void serialize_deserialize_bytes() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     const int n(1000);
     for (int i = 0; i < n; i++) sketch.update(i);
     auto data = sketch.serialize();
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) data.second);
-    auto sketch2 = kll_sketch<float>::deserialize(data.first.get(), data.second);
+    auto sketch2 = kll_float_sketch::deserialize(data.first.get(), data.second);
     CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) data.second);
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch2.is_empty());
     CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch2.is_estimation_mode());
@@ -340,7 +357,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void out_of_order_split_points_float() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     sketch.update(0); // has too be non-empty to reach the check
     float split_points[2] = {1, 0};
     CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 2), std::invalid_argument);
@@ -354,15 +371,15 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void nan_split_point() {
-    kll_sketch<float> sketch;
+    kll_float_sketch sketch;
     sketch.update(0); // has too be non-empty to reach the check
     float split_points[1] = {std::numeric_limits<float>::quiet_NaN()};
     CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 1), std::invalid_argument);
   }
 
   void merge() {
-    kll_sketch<float> sketch1;
-    kll_sketch<float> sketch2;
+    kll_float_sketch sketch1;
+    kll_float_sketch sketch2;
     const int n = 10000;
     for (int i = 0; i < n; i++) {
       sketch1.update(i);
@@ -384,8 +401,8 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void merge_lower_k() {
-    kll_sketch<float> sketch1(256);
-    kll_sketch<float> sketch2(128);
+    kll_float_sketch sketch1(256);
+    kll_float_sketch sketch2(128);
     const int n = 10000;
     for (int i = 0; i < n; i++) {
       sketch1.update(i);
@@ -414,8 +431,8 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void merge_exact_mode_lower_k() {
-    kll_sketch<float> sketch1(256);
-    kll_sketch<float> sketch2(128);
+    kll_float_sketch sketch1(256);
+    kll_float_sketch sketch2(128);
     const int n = 10000;
     for (int i = 0; i < n; i++) {
       sketch1.update(i);
@@ -439,8 +456,8 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void merge_min_value_from_other() {
-    kll_sketch<float> sketch1;
-    kll_sketch<float> sketch2;
+    kll_float_sketch sketch1;
+    kll_float_sketch sketch2;
     sketch1.update(1);
     sketch2.update(2);
     sketch2.merge(sketch1);
@@ -449,9 +466,9 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void merge_min_and_max_from_other() {
-    kll_sketch<float> sketch1;
+    kll_float_sketch sketch1;
     for (int i = 0; i < 1000000; i++) sketch1.update(i);
-    kll_sketch<float> sketch2;
+    kll_float_sketch sketch2;
     sketch2.merge(sketch1);
     CPPUNIT_ASSERT_EQUAL(0.0f, sketch2.get_min_value());
     CPPUNIT_ASSERT_EQUAL(999999.0f, sketch2.get_max_value());
@@ -486,7 +503,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   }
 
   void sketch_of_strings() {
-    kll_sketch<std::string> sketch;
+    kll_string_sketch sketch;
     CPPUNIT_ASSERT_THROW(sketch.get_quantile(0), std::runtime_error);
     CPPUNIT_ASSERT_THROW(sketch.get_min_value(), std::runtime_error);
     CPPUNIT_ASSERT_THROW(sketch.get_max_value(), std::runtime_error);
@@ -501,7 +518,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
-    auto sketch2 = kll_sketch<std::string>::deserialize(s);
+    auto sketch2 = kll_string_sketch::deserialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
     CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch2.is_empty());

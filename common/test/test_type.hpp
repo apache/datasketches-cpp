@@ -17,36 +17,36 @@
  * under the License.
  */
 
-#ifndef CLASS_A_HPP_
-#define CLASS_A_HPP_
+#ifndef CLASS_TEST_TYPE_HPP_
+#define CLASS_TEST_TYPE_HPP_
 
 #include <iostream>
 
 namespace datasketches {
 
-class A {
+class test_type {
   static const bool DEBUG = false;
 public:
   // no default constructor should be required
-  A(int value): value(value) {
+  test_type(int value): value(value) {
     if (DEBUG) std::cerr << "A constructor" << std::endl;
   }
-  ~A() {
+  ~test_type() {
     if (DEBUG) std::cerr << "A destructor" << std::endl;
   }
-  A(const A& other): value(other.value) {
+  test_type(const test_type& other): value(other.value) {
     if (DEBUG) std::cerr << "A copy constructor" << std::endl;
   }
   // noexcept is important here so that, for instance, std::vector could move this type
-  A(A&& other) noexcept : value(other.value) {
+  test_type(test_type&& other) noexcept : value(other.value) {
     if (DEBUG) std::cerr << "A move constructor" << std::endl;
   }
-  A& operator=(const A& other) {
+  test_type& operator=(const test_type& other) {
     if (DEBUG) std::cerr << "A copy assignment" << std::endl;
     value = other.value;
     return *this;
   }
-  A& operator=(A&& other) {
+  test_type& operator=(test_type&& other) {
     if (DEBUG) std::cerr << "A move assignment" << std::endl;
     value = other.value;
     return *this;
@@ -56,44 +56,44 @@ private:
   int value;
 };
 
-struct hashA {
-  std::size_t operator()(const A& a) const {
+struct test_type_hash {
+  std::size_t operator()(const test_type& a) const {
     return std::hash<int>()(a.get_value());
   }
 };
 
-struct equalA {
-  bool operator()(const A& a1, const A& a2) const {
+struct test_type_equal {
+  bool operator()(const test_type& a1, const test_type& a2) const {
     return a1.get_value() == a2.get_value();
   }
 };
 
-struct lessA {
-  bool operator()(const A& a1, const A& a2) const {
+struct test_type_less {
+  bool operator()(const test_type& a1, const test_type& a2) const {
     return a1.get_value() < a2.get_value();
   }
 };
 
-struct serdeA {
-  void serialize(std::ostream& os, const A* items, unsigned num) {
+struct test_type_serde {
+  void serialize(std::ostream& os, const test_type* items, unsigned num) {
     for (unsigned i = 0; i < num; i++) {
       const int value = items[i].get_value();
       os.write((char*)&value, sizeof(value));
     }
   }
-  void deserialize(std::istream& is, A* items, unsigned num) {
+  void deserialize(std::istream& is, test_type* items, unsigned num) {
     for (unsigned i = 0; i < num; i++) {
       int value;
       is.read((char*)&value, sizeof(value));
-      new (&items[i]) A(value);
+      new (&items[i]) test_type(value);
     }
   }
-  size_t size_of_item(const A& item) {
+  size_t size_of_item(const test_type& item) {
     return sizeof(int);
   }
 };
 
-std::ostream& operator<<(std::ostream& os, const A& a) {
+std::ostream& operator<<(std::ostream& os, const test_type& a) {
   os << a.get_value();
   return os;
 }
