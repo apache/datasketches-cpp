@@ -32,7 +32,7 @@ class AuxHashMap;
 template<typename A = std::allocator<char>>
 class HllArray : public HllSketchImpl<A> {
   public:
-    explicit HllArray(int lgConfigK, TgtHllType tgtHllType, bool startFullSize);
+    explicit HllArray(int lgConfigK, target_hll_type tgtHllType, bool startFullSize);
     explicit HllArray(const HllArray<A>& that);
 
     static HllArray* newHll(const void* bytes, size_t len);
@@ -45,7 +45,7 @@ class HllArray : public HllSketchImpl<A> {
     virtual std::function<void(HllSketchImpl<A>*)> get_deleter() const = 0;
 
     virtual HllArray* copy() const = 0;
-    virtual HllArray* copyAs(TgtHllType tgtHllType) const;
+    virtual HllArray* copyAs(target_hll_type tgtHllType) const;
 
     virtual HllSketchImpl<A>* couponUpdate(int coupon) = 0;
 
@@ -64,8 +64,8 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual int getHllByteArrBytes() const = 0;
 
-    virtual PairIterator_with_deleter<A> getIterator() const = 0;
-    virtual PairIterator_with_deleter<A> getAuxIterator() const;
+    virtual pair_iterator_with_deleter<A> getIterator() const = 0;
+    virtual pair_iterator_with_deleter<A> getAuxIterator() const;
 
     virtual int getUpdatableSerializationBytes() const;
     virtual int getCompactSerializationBytes() const;
@@ -91,7 +91,7 @@ class HllArray : public HllSketchImpl<A> {
     void putKxQ1(double kxq1);
     void putNumAtCurMin(int numAtCurMin);
 
-    static int hllArrBytes(TgtHllType tgtHllType, int lgConfigK);
+    static int hllArrBytes(target_hll_type tgtHllType, int lgConfigK);
     static int hll4ArrBytes(int lgConfigK);
     static int hll6ArrBytes(int lgConfigK);
     static int hll8ArrBytes(int lgConfigK);

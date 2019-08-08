@@ -29,7 +29,7 @@
 namespace datasketches {
 
 // The different types of HLL sketches
-enum TgtHllType {
+enum target_hll_type {
     HLL_4,
     HLL_6,
     HLL_8
@@ -39,40 +39,40 @@ template<typename A>
 class HllSketchImpl;
 
 template<typename A>
-class HllUnion;
+class hll_union_alloc;
 
 using byte_ptr_with_deleter = std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>;
 
 template<typename A = std::allocator<char> >
-class HllSketch final {
+class hll_sketch_alloc final {
   public:
-    explicit HllSketch(int lgConfigK, TgtHllType tgtHllType = HLL_4, bool startFullSize = false);
-    static HllSketch deserialize(std::istream& is);
-    static HllSketch deserialize(const void* bytes, size_t len);
-    HllSketch(const HllSketch<A>& that);
-    HllSketch(const HllSketch<A>& that, TgtHllType tgtHllType);
-    HllSketch(HllSketch<A>&& that) noexcept;
+    explicit hll_sketch_alloc(int lg_config_k, target_hll_type tgt_type = HLL_4, bool start_full_size = false);
+    static hll_sketch_alloc deserialize(std::istream& is);
+    static hll_sketch_alloc deserialize(const void* bytes, size_t len);
+    hll_sketch_alloc(const hll_sketch_alloc<A>& that);
+    hll_sketch_alloc(const hll_sketch_alloc<A>& that, target_hll_type tgt_type);
+    hll_sketch_alloc(hll_sketch_alloc<A>&& that) noexcept;
 
-    ~HllSketch();
+    ~hll_sketch_alloc();
 
-    HllSketch operator=(const HllSketch<A>& other);
-    HllSketch operator=(HllSketch<A>&& other);
+    hll_sketch_alloc operator=(const hll_sketch_alloc<A>& other);
+    hll_sketch_alloc operator=(hll_sketch_alloc<A>&& other);
 
     void reset();
     
-    std::pair<byte_ptr_with_deleter, const size_t> serializeCompact(unsigned header_size_bytes = 0) const;
-    std::pair<byte_ptr_with_deleter, const size_t> serializeUpdatable() const;
-    void serializeCompact(std::ostream& os) const;
-    void serializeUpdatable(std::ostream& os) const;
+    std::pair<byte_ptr_with_deleter, const size_t> serialize_compact(unsigned header_size_bytes = 0) const;
+    std::pair<byte_ptr_with_deleter, const size_t> serialize_updatable() const;
+    void serialize_compact(std::ostream& os) const;
+    void serialize_updatable(std::ostream& os) const;
     
     std::ostream& to_string(std::ostream& os,
                             bool summary = true,
                             bool detail = false,
-                            bool auxDetail = false,
+                            bool aux_detail = false,
                             bool all = false) const;
     std::string to_string(bool summary = true,
                           bool detail = false,
-                          bool auxDetail = false,
+                          bool aux_detail = false,
                           bool all = false) const;                                    
 
     void update(const std::string& datum);
@@ -86,100 +86,99 @@ class HllSketch final {
     void update(int8_t datum);
     void update(double datum);
     void update(float datum);
-    void update(const void* data, size_t lengthBytes);
+    void update(const void* data, size_t length_bytes);
 
-    double getEstimate() const;
-    double getCompositeEstimate() const;
-    double getLowerBound(int numStdDev) const;
-    double getUpperBound(int numStdDev) const;
+    double get_estimate() const;
+    double get_composite_estimate() const;
+    double get_lower_bound(int num_std_dev) const;
+    double get_upper_bound(int num_std_dev) const;
 
-    int getLgConfigK() const;
-    TgtHllType getTgtHllType() const;
+    int get_lg_config_k() const;
+    target_hll_type get_target_type() const;
 
-    bool isCompact() const;
-    bool isEmpty() const;
+    bool is_compact() const;
+    bool is_empty() const;
 
-    int getUpdatableSerializationBytes() const;
-    int getCompactSerializationBytes() const;
+    int get_updatable_serialization_bytes() const;
+    int get_compact_serialization_bytes() const;
 
     /**
-     * Returns the maximum size in bytes that this sketch can grow to given lgConfigK.
+     * Returns the maximum size in bytes that this sketch can grow to given lg_config_k.
      * However, for the HLL_4 sketch type, this value can be exceeded in extremely rare cases.
      * If exceeded, it will be larger by only a few percent.
      *
-     * @param lgConfigK The Log2 of K for the target HLL sketch. This value must be
+     * @param lg_config_k The Log2 of K for the target HLL sketch. This value must be
      * between 4 and 21 inclusively.
-     * @param tgtHllType the desired Hll type
+     * @param tgt_type the desired Hll type
      * @return the maximum size in bytes that this sketch can grow to.
      */
-    static int getMaxUpdatableSerializationBytes(int lgK, TgtHllType tgtHllType);
-    static double getRelErr(bool upperBound, bool unioned,
-                            int lgConfigK, int numStdDev);
+    static int get_max_updatable_serialization_bytes(int lg_k, target_hll_type tgt_type);
+    static double get_rel_err(bool upper_bound, bool unioned,
+                              int lg_config_k, int num_std_dev);
 
-    //std::unique_ptr<PairIterator<A>> getIterator() const;
-    PairIterator_with_deleter<A> getIterator() const;
+    pair_iterator_with_deleter<A> get_iterator() const;
 
   private:
-    explicit HllSketch(HllSketchImpl<A>* that);
+    explicit hll_sketch_alloc(HllSketchImpl<A>* that);
 
-    void couponUpdate(int coupon);
+    void coupon_update(int coupon);
 
-    std::string typeAsString() const;
-    std::string modeAsString() const;
+    std::string type_as_string() const;
+    std::string mode_as_string() const;
 
-    CurMode getCurrentMode() const;
-    int getSerializationVersion() const;
-    bool isOutOfOrderFlag() const;
-    bool isEstimationMode() const;
+    hll_mode get_current_mode() const;
+    int get_serialization_version() const;
+    bool is_out_of_order_flag() const;
+    bool is_estimation_mode() const;
 
-    typedef typename std::allocator_traits<A>::template rebind_alloc<HllSketch> AllocHllSketch;
+    typedef typename std::allocator_traits<A>::template rebind_alloc<hll_sketch_alloc> AllocHllSketch;
     friend AllocHllSketch;
 
-    HllSketchImpl<A>* hllSketchImpl;
-    friend HllUnion<A>;
+    HllSketchImpl<A>* sketch_impl;
+    friend hll_union_alloc<A>;
 };
 
 template<typename A = std::allocator<char> >
-class HllUnion {
+class hll_union_alloc {
   public:
-    explicit HllUnion(int lgMaxK);
+    explicit hll_union_alloc(int lg_max_k);
 
-    static HllUnion deserialize(std::istream& is);
-    static HllUnion deserialize(const void* bytes, size_t len);
+    static hll_union_alloc deserialize(std::istream& is);
+    static hll_union_alloc deserialize(const void* bytes, size_t len);
 
-    double getEstimate() const;
-    double getCompositeEstimate() const;
-    double getLowerBound(int numStdDev) const;
-    double getUpperBound(int numStdDev) const;
+    double get_estimate() const;
+    double get_composite_estimate() const;
+    double get_lower_bound(int num_std_dev) const;
+    double get_upper_bound(int num_std_dev) const;
 
-    int getCompactSerializationBytes() const;
-    int getUpdatableSerializationBytes() const;
-    int getLgConfigK() const;
+    int get_compact_serialization_bytes() const;
+    int get_updatable_serialization_bytes() const;
+    int get_lg_config_k() const;
 
-    TgtHllType getTgtHllType() const;
-    bool isCompact() const;
-    bool isEmpty() const;
+    target_hll_type get_target_type() const;
+    bool is_compact() const;
+    bool is_empty() const;
 
     void reset();
 
-    HllSketch<A> getResult(TgtHllType tgtHllType = HLL_4) const;
+    hll_sketch_alloc<A> get_result(target_hll_type tgt_type = HLL_4) const;
 
-    std::pair<byte_ptr_with_deleter, const size_t> serializeCompact() const;
-    std::pair<byte_ptr_with_deleter, const size_t> serializeUpdatable() const;
-    void serializeCompact(std::ostream& os) const;
-    void serializeUpdatable(std::ostream& os) const;
+    std::pair<byte_ptr_with_deleter, const size_t> serialize_compact() const;
+    std::pair<byte_ptr_with_deleter, const size_t> serialize_updatable() const;
+    void serialize_compact(std::ostream& os) const;
+    void serialize_updatable(std::ostream& os) const;
 
     std::ostream& to_string(std::ostream& os,
                             bool summary = true,
                             bool detail = false,
-                            bool auxDetail = false,
+                            bool aux_Detail = false,
                             bool all = false) const;
     std::string to_string(bool summary = true,
                           bool detail = false,
-                          bool auxDetail = false,
+                          bool aux_detail = false,
                           bool all = false) const;                                    
 
-    void update(const HllSketch<A>& sketch);
+    void update(const hll_sketch_alloc<A>& sketch);
     void update(const std::string& datum);
     void update(uint64_t datum);
     void update(uint32_t datum);
@@ -191,11 +190,11 @@ class HllUnion {
     void update(int8_t datum);
     void update(double datum);
     void update(float datum);
-    void update(const void* data, size_t lengthBytes);
+    void update(const void* data, size_t length_bytes);
 
-    static int getMaxSerializationBytes(int lgK);
-    static double getRelErr(bool upperBound, bool unioned,
-                            int lgConfigK, int numStdDev);
+    static int get_max_serialization_bytes(int lg_k);
+    static double get_rel_err(bool upper_bound, bool unioned,
+                              int lg_config_k, int num_std_dev);
 
   private:
 
@@ -205,41 +204,39 @@ class HllUnion {
     * perform the union. This may involve swapping, down-sampling, transforming, and / or
     * copying one of the arguments and may completely replace the internals of the union.
     *
-    * @param incomingImpl the given incoming sketch, which may not be modified.
-    * @param gadgetImpl the given gadget sketch, which must have a target of HLL_8 and may be
-    * modified.
-    * @param lgMaxK the maximum value of log2 K for this union.
+    * @param incoming_impl the given incoming sketch, which may not be modified.
+    * @param lg_max_k the maximum value of log2 K for this union.
     * //@return the union of the two sketches in the form of the internal HllSketchImpl, which for
     * //the union is always in HLL_8 form.
     */
-    void unionImpl(HllSketchImpl<A>* incomingImpl, int lgMaxK);
+    void union_impl(HllSketchImpl<A>* incoming_impl, int lg_max_k);
 
-    static HllSketchImpl<A>* copyOrDownsampleHll(HllSketchImpl<A>* srcImpl, int tgtLgK);
+    static HllSketchImpl<A>* copy_or_downsample(HllSketchImpl<A>* src_impl, int tgt_lg_k);
 
-    void couponUpdate(int coupon);
+    void coupon_update(int coupon);
 
-    CurMode getCurrentMode() const;
-    int getSerializationVersion() const;
-    bool isOutOfOrderFlag() const;
-    bool isEstimationMode() const;
+    hll_mode get_current_mode() const;
+    int get_serialization_version() const;
+    bool is_out_of_order_flag() const;
+    bool is_estimation_mode() const;
 
-    // calls couponUpdate on sketch, freeing the old sketch upon changes in CurMode
-    static HllSketchImpl<A>* leakFreeCouponUpdate(HllSketchImpl<A>* impl, int coupon);
+    // calls couponUpdate on sketch, freeing the old sketch upon changes in hll_mode
+    static HllSketchImpl<A>* leak_free_coupon_update(HllSketchImpl<A>* impl, int coupon);
 
-    int lgMaxK;
-    HllSketch<A> gadget;
+    int lg_max_k;
+    hll_sketch_alloc<A> gadget;
 
 };
 
 template<typename A>
-static std::ostream& operator<<(std::ostream& os, const HllSketch<A>& sketch);
+static std::ostream& operator<<(std::ostream& os, const hll_sketch_alloc<A>& sketch);
 
 template<typename A>
-static std::ostream& operator<<(std::ostream& os, const HllUnion<A>& hllUnion);
+static std::ostream& operator<<(std::ostream& os, const hll_union_alloc<A>& union_in);
 
 // aliases with default allocator for convenience
-typedef HllSketch<> hll_sketch;
-typedef HllUnion<> hll_union;
+typedef hll_sketch_alloc<> hll_sketch;
+typedef hll_union_alloc<> hll_union;
 
 } // namespace datasketches
 

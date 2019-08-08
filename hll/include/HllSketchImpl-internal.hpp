@@ -26,11 +26,11 @@
 namespace datasketches {
 
 template<typename A>
-HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const TgtHllType tgtHllType,
-                                const CurMode curMode, const bool startFullSize)
+HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const target_hll_type tgtHllType,
+                                const hll_mode mode, const bool startFullSize)
   : lgConfigK(lgConfigK),
     tgtHllType(tgtHllType),
-    curMode(curMode),
+    mode(mode),
     startFullSize(startFullSize)
 {
 }
@@ -40,28 +40,28 @@ HllSketchImpl<A>::~HllSketchImpl() {
 }
 
 template<typename A>
-TgtHllType HllSketchImpl<A>::extractTgtHllType(const uint8_t modeByte) {
+target_hll_type HllSketchImpl<A>::extractTgtHllType(const uint8_t modeByte) {
   switch ((modeByte >> 2) & 0x3) {
   case 0:
-    return TgtHllType::HLL_4;
+    return target_hll_type::HLL_4;
   case 1:
-    return TgtHllType::HLL_6;
+    return target_hll_type::HLL_6;
   case 2:
-    return TgtHllType::HLL_8;
+    return target_hll_type::HLL_8;
   default:
     throw std::invalid_argument("Invalid target HLL type");
   }
 }
 
 template<typename A>
-CurMode HllSketchImpl<A>::extractCurMode(const uint8_t modeByte) {
+hll_mode HllSketchImpl<A>::extractCurMode(const uint8_t modeByte) {
   switch (modeByte & 0x3) {
   case 0:
-    return CurMode::LIST;
+    return hll_mode::LIST;
   case 1:
-    return CurMode::SET;
+    return hll_mode::SET;
   case 2:
-    return CurMode::HLL;
+    return hll_mode::HLL;
   default:
     throw std::invalid_argument("Invalid current sketch mode");
   }
@@ -92,7 +92,7 @@ template<typename A>
 uint8_t HllSketchImpl<A>::makeModeByte() const {
   uint8_t byte = 0;
 
-  switch (curMode) {
+  switch (mode) {
   case LIST:
     byte = 0;
     break;
@@ -125,7 +125,7 @@ HllSketchImpl<A>* HllSketchImpl<A>::reset() {
 }
 
 template<typename A>
-TgtHllType HllSketchImpl<A>::getTgtHllType() const {
+target_hll_type HllSketchImpl<A>::getTgtHllType() const {
   return tgtHllType;
 }
 
@@ -135,8 +135,8 @@ int HllSketchImpl<A>::getLgConfigK() const {
 }
 
 template<typename A>
-CurMode HllSketchImpl<A>::getCurMode() const {
-  return curMode;
+hll_mode HllSketchImpl<A>::getCurMode() const {
+  return mode;
 }
 
 template<typename A>

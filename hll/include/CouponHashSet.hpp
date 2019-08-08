@@ -29,8 +29,8 @@ class CouponHashSet : public CouponList<A> {
   public:
     static CouponHashSet* newSet(const void* bytes, size_t len);
     static CouponHashSet* newSet(std::istream& is);
-    explicit CouponHashSet(int lgConfigK, TgtHllType tgtHllType);
-    explicit CouponHashSet(const CouponHashSet& that, TgtHllType tgtHllType);
+    explicit CouponHashSet(int lgConfigK, target_hll_type tgtHllType);
+    explicit CouponHashSet(const CouponHashSet& that, target_hll_type tgtHllType);
     explicit CouponHashSet(const CouponHashSet& that);
 
     virtual ~CouponHashSet();
@@ -39,7 +39,7 @@ class CouponHashSet : public CouponList<A> {
   protected:
     
     virtual CouponHashSet* copy() const;
-    virtual CouponHashSet* copyAs(TgtHllType tgtHllType) const;
+    virtual CouponHashSet* copyAs(target_hll_type tgtHllType) const;
 
     virtual HllSketchImpl<A>* couponUpdate(int coupon);
 

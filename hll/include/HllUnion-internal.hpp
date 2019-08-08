@@ -32,19 +32,19 @@
 namespace datasketches {
 
 template<typename A>
-HllUnion<A>::HllUnion(const int lgMaxK):
-  lgMaxK(HllUtil<A>::checkLgK(lgMaxK)),
-  gadget(lgMaxK, TgtHllType::HLL_8)
+hll_union_alloc<A>::hll_union_alloc(const int lg_max_k):
+  lg_max_k(HllUtil<A>::checkLgK(lg_max_k)),
+  gadget(lg_max_k, target_hll_type::HLL_8)
 {}
 
 template<typename A>
-HllUnion<A> HllUnion<A>::deserialize(const void* bytes, size_t len) {
-  HllSketch<A> sk(HllSketch<A>::deserialize(bytes, len));
-  // we're using the sketch's lgConfigK to initialize the union so
+hll_union_alloc<A> hll_union_alloc<A>::deserialize(const void* bytes, size_t len) {
+  hll_sketch_alloc<A> sk(hll_sketch_alloc<A>::deserialize(bytes, len));
+  // we're using the sketch's lg_config_k to initialize the union so
   // we can initialize the Union with it as long as it's HLL_8.
-  HllUnion<A> hllUnion(sk.getLgConfigK());
-  if (sk.getTgtHllType() == HLL_8) {
-    std::swap(hllUnion.gadget.hllSketchImpl, sk.hllSketchImpl);
+  hll_union_alloc<A> hllUnion(sk.get_lg_config_k());
+  if (sk.get_target_type() == HLL_8) {
+    std::swap(hllUnion.gadget.sketch_impl, sk.sketch_impl);
   } else {
     hllUnion.update(sk);
   }
@@ -52,13 +52,13 @@ HllUnion<A> HllUnion<A>::deserialize(const void* bytes, size_t len) {
 }
 
 template<typename A>
-HllUnion<A> HllUnion<A>::deserialize(std::istream& is) {
-  HllSketch<A> sk(HllSketch<A>::deserialize(is));
-  // we're using the sketch's lgConfigK to initialize the union so
+hll_union_alloc<A> hll_union_alloc<A>::deserialize(std::istream& is) {
+  hll_sketch_alloc<A> sk(hll_sketch_alloc<A>::deserialize(is));
+  // we're using the sketch's lg_config_k to initialize the union so
   // we can initialize the Union with it as long as it's HLL_8.
-  HllUnion<A> hllUnion(sk.getLgConfigK());
-  if (sk.getTgtHllType() == HLL_8) {    
-    std::swap(hllUnion.gadget.hllSketchImpl, sk.hllSketchImpl);
+  hll_union_alloc<A> hllUnion(sk.get_lg_config_k());
+  if (sk.get_target_type() == HLL_8) {    
+    std::swap(hllUnion.gadget.sketch_impl, sk.sketch_impl);
   } else {
     hllUnion.update(sk);
   }
@@ -66,221 +66,221 @@ HllUnion<A> HllUnion<A>::deserialize(std::istream& is) {
 }
 
 template<typename A>
-static std::ostream& operator<<(std::ostream& os, const HllUnion<A>& hllUnion) {
+static std::ostream& operator<<(std::ostream& os, const hll_union_alloc<A>& hllUnion) {
   return hllUnion.to_string(os, true, true, false, false);
 }
 
 template<typename A>
-HllSketch<A> HllUnion<A>::getResult(TgtHllType tgtHllType) const {
-  return HllSketch<A>(gadget, tgtHllType);
+hll_sketch_alloc<A> hll_union_alloc<A>::get_result(target_hll_type target_type) const {
+  return hll_sketch_alloc<A>(gadget, target_type);
 }
 
 template<typename A>
-void HllUnion<A>::update(const HllSketch<A>& sketch) {
-  unionImpl(static_cast<const HllSketch<A>&>(sketch).hllSketchImpl, lgMaxK);
+void hll_union_alloc<A>::update(const hll_sketch_alloc<A>& sketch) {
+  union_impl(static_cast<const hll_sketch_alloc<A>&>(sketch).sketch_impl, lg_max_k);
 }
 
 template<typename A>
-void HllUnion<A>::update(const std::string& datum) {
+void hll_union_alloc<A>::update(const std::string& datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const uint64_t datum) {
+void hll_union_alloc<A>::update(const uint64_t datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const uint32_t datum) {
+void hll_union_alloc<A>::update(const uint32_t datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const uint16_t datum) {
+void hll_union_alloc<A>::update(const uint16_t datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const uint8_t datum) {
+void hll_union_alloc<A>::update(const uint8_t datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const int64_t datum) {
+void hll_union_alloc<A>::update(const int64_t datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const int32_t datum) {
+void hll_union_alloc<A>::update(const int32_t datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const int16_t datum) {
+void hll_union_alloc<A>::update(const int16_t datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const int8_t datum) {
+void hll_union_alloc<A>::update(const int8_t datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const double datum) {
+void hll_union_alloc<A>::update(const double datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const float datum) {
+void hll_union_alloc<A>::update(const float datum) {
   gadget.update(datum);
 }
 
 template<typename A>
-void HllUnion<A>::update(const void* data, const size_t lengthBytes) {
-  gadget.update(data, lengthBytes);
+void hll_union_alloc<A>::update(const void* data, const size_t length_bytes) {
+  gadget.update(data, length_bytes);
 }
 
 template<typename A>
-void HllUnion<A>::couponUpdate(const int coupon) {
+void hll_union_alloc<A>::coupon_update(const int coupon) {
   if (coupon == HllUtil<A>::EMPTY) { return; }
-  HllSketchImpl<A>* result = gadget.hllSketchImpl->couponUpdate(coupon);
-  if (result != gadget.hllSketchImpl) {
-    if (gadget.hllSketchImpl != nullptr) { gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl); }
-    gadget.hllSketchImpl = result;
+  HllSketchImpl<A>* result = gadget.sketch_impl->coupon_update(coupon);
+  if (result != gadget.sketch_impl) {
+    if (gadget.sketch_impl != nullptr) { gadget.sketch_impl->get_deleter()(gadget.sketch_impl); }
+    gadget.sketch_impl = result;
   }
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> HllUnion<A>::serializeCompact() const {
-  return gadget.serializeCompact();
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> hll_union_alloc<A>::serialize_compact() const {
+  return gadget.serialize_compact();
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> HllUnion<A>::serializeUpdatable() const {
-  return gadget.serializeUpdatable();
+std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> hll_union_alloc<A>::serialize_updatable() const {
+  return gadget.serialize_updatable();
 }
 
 template<typename A>
-void HllUnion<A>::serializeCompact(std::ostream& os) const {
-  return gadget.serializeCompact(os);
+void hll_union_alloc<A>::serialize_compact(std::ostream& os) const {
+  return gadget.serialize_compact(os);
 }
 
 template<typename A>
-void HllUnion<A>::serializeUpdatable(std::ostream& os) const {
-  return gadget.serializeUpdatable(os);
+void hll_union_alloc<A>::serialize_updatable(std::ostream& os) const {
+  return gadget.serialize_updatable(os);
 }
 
 template<typename A>
-std::ostream& HllUnion<A>::to_string(std::ostream& os, const bool summary,
-                                  const bool detail, const bool auxDetail, const bool all) const {
-  return gadget.to_string(os, summary, detail, auxDetail, all);
+std::ostream& hll_union_alloc<A>::to_string(std::ostream& os, const bool summary,
+                                  const bool detail, const bool aux_detail, const bool all) const {
+  return gadget.to_string(os, summary, detail, aux_detail, all);
 }
 
 template<typename A>
-std::string HllUnion<A>::to_string(const bool summary, const bool detail,
-                                   const bool auxDetail, const bool all) const {
-  return gadget.to_string(summary, detail, auxDetail, all);
+std::string hll_union_alloc<A>::to_string(const bool summary, const bool detail,
+                                   const bool aux_detail, const bool all) const {
+  return gadget.to_string(summary, detail, aux_detail, all);
 }
 
 template<typename A>
-double HllUnion<A>::getEstimate() const {
-  return gadget.getEstimate();
+double hll_union_alloc<A>::get_estimate() const {
+  return gadget.get_estimate();
 }
 
 template<typename A>
-double HllUnion<A>::getCompositeEstimate() const {
-  return gadget.getCompositeEstimate();
+double hll_union_alloc<A>::get_composite_estimate() const {
+  return gadget.get_composite_estimate();
 }
 
 template<typename A>
-double HllUnion<A>::getLowerBound(const int numStdDev) const {
-  return gadget.getLowerBound(numStdDev);
+double hll_union_alloc<A>::get_lower_bound(const int num_std_dev) const {
+  return gadget.get_lower_bound(num_std_dev);
 }
 
 template<typename A>
-double HllUnion<A>::getUpperBound(const int numStdDev) const {
-  return gadget.getUpperBound(numStdDev);
+double hll_union_alloc<A>::get_upper_bound(const int num_std_dev) const {
+  return gadget.get_upper_bound(num_std_dev);
 }
 
 template<typename A>
-int HllUnion<A>::getCompactSerializationBytes() const {
-  return gadget.getCompactSerializationBytes();
+int hll_union_alloc<A>::get_compact_serialization_bytes() const {
+  return gadget.get_compact_serialization_bytes();
 }
 
 template<typename A>
-int HllUnion<A>::getUpdatableSerializationBytes() const {
-  return gadget.getUpdatableSerializationBytes();
+int hll_union_alloc<A>::get_updatable_serialization_bytes() const {
+  return gadget.get_updatable_serialization_bytes();
 }
 
 template<typename A>
-int HllUnion<A>::getLgConfigK() const {
-  return gadget.getLgConfigK();
+int hll_union_alloc<A>::get_lg_config_k() const {
+  return gadget.get_lg_config_k();
 }
 
 template<typename A>
-void HllUnion<A>::reset() {
+void hll_union_alloc<A>::reset() {
   gadget.reset();
 }
 
 template<typename A>
-bool HllUnion<A>::isCompact() const {
-  return gadget.isCompact();
+bool hll_union_alloc<A>::is_compact() const {
+  return gadget.is_compact();
 }
 
 template<typename A>
-bool HllUnion<A>::isEmpty() const {
-  return gadget.isEmpty();
+bool hll_union_alloc<A>::is_empty() const {
+  return gadget.is_empty();
 }
 
 template<typename A>
-bool HllUnion<A>::isOutOfOrderFlag() const {
-  return gadget.isOutOfOrderFlag();
+bool hll_union_alloc<A>::is_out_of_order_flag() const {
+  return gadget.is_out_of_order_flag();
 }
 
 template<typename A>
-CurMode HllUnion<A>::getCurrentMode() const {
-  return gadget.getCurrentMode();
+hll_mode hll_union_alloc<A>::get_current_mode() const {
+  return gadget.get_current_mode();
 }
 
 template<typename A>
-bool HllUnion<A>::isEstimationMode() const {
-  return gadget.isEstimationMode();
+bool hll_union_alloc<A>::is_estimation_mode() const {
+  return gadget.is_estimation_mode();
 }
 
 template<typename A>
-int HllUnion<A>::getSerializationVersion() const {
+int hll_union_alloc<A>::get_serialization_version() const {
   return HllUtil<A>::SER_VER;
 }
 
 template<typename A>
-TgtHllType HllUnion<A>::getTgtHllType() const {
-  return TgtHllType::HLL_8;
+target_hll_type hll_union_alloc<A>::get_target_type() const {
+  return target_hll_type::HLL_8;
 }
 
 template<typename A>
-int HllUnion<A>::getMaxSerializationBytes(const int lgK) {
-  return HllSketch<A>::getMaxUpdatableSerializationBytes(lgK, TgtHllType::HLL_8);
+int hll_union_alloc<A>::get_max_serialization_bytes(const int lg_k) {
+  return hll_sketch_alloc<A>::get_max_updatable_serialization_bytes(lg_k, target_hll_type::HLL_8);
 }
 
 template<typename A>
-double HllUnion<A>::getRelErr(const bool upperBound, const bool unioned,
-                           const int lgConfigK, const int numStdDev) {
-  return HllUtil<A>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
+double hll_union_alloc<A>::get_rel_err(const bool upper_bound, const bool unioned,
+                           const int lg_config_k, const int num_std_dev) {
+  return HllUtil<A>::getRelErr(upper_bound, unioned, lg_config_k, num_std_dev);
 }
 
 template<typename A>
-HllSketchImpl<A>* HllUnion<A>::copyOrDownsampleHll(HllSketchImpl<A>* srcImpl, const int tgtLgK) {
-  if (srcImpl->getCurMode() != CurMode::HLL) {
+HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(HllSketchImpl<A>* src_impl, const int tgt_lg_k) {
+  if (src_impl->getCurMode() != HLL) {
     throw std::logic_error("Attempt to downsample non-HLL sketch");
   }
-  HllArray<A>* src = (HllArray<A>*) srcImpl;
-  const int srcLgK = src->getLgConfigK();
-  if ((srcLgK <= tgtLgK) && (src->getTgtHllType() == TgtHllType::HLL_8)) {
+  HllArray<A>* src = (HllArray<A>*) src_impl;
+  const int src_lg_k = src->getLgConfigK();
+  if ((src_lg_k <= tgt_lg_k) && (src->getTgtHllType() == target_hll_type::HLL_8)) {
     return src->copy();
   }
-  const int minLgK = ((srcLgK < tgtLgK) ? srcLgK : tgtLgK);
-  HllArray<A>* tgtHllArr = HllSketchImplFactory<A>::newHll(minLgK, TgtHllType::HLL_8);
-  PairIterator_with_deleter<A> srcItr = src->getIterator();
+  const int minLgK = ((src_lg_k < tgt_lg_k) ? src_lg_k : tgt_lg_k);
+  HllArray<A>* tgtHllArr = HllSketchImplFactory<A>::newHll(minLgK, target_hll_type::HLL_8);
+  pair_iterator_with_deleter<A> srcItr = src->getIterator();
   while (srcItr->nextValid()) {
     tgtHllArr->couponUpdate(srcItr->getPair());
   }
@@ -292,7 +292,7 @@ HllSketchImpl<A>* HllUnion<A>::copyOrDownsampleHll(HllSketchImpl<A>* srcImpl, co
 }
 
 template<typename A>
-inline HllSketchImpl<A>* HllUnion<A>::leakFreeCouponUpdate(HllSketchImpl<A>* impl, const int coupon) {
+inline HllSketchImpl<A>* hll_union_alloc<A>::leak_free_coupon_update(HllSketchImpl<A>* impl, const int coupon) {
   HllSketchImpl<A>* result = impl->couponUpdate(coupon);
   if (result != impl) {
     impl->get_deleter()(impl);
@@ -301,37 +301,36 @@ inline HllSketchImpl<A>* HllUnion<A>::leakFreeCouponUpdate(HllSketchImpl<A>* imp
 }
 
 template<typename A>
-void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
-  if (gadget.hllSketchImpl->getTgtHllType() != TgtHllType::HLL_8) {
+void hll_union_alloc<A>::union_impl(HllSketchImpl<A>* incoming_impl, const int lg_max_k) {
+  if (gadget.sketch_impl->getTgtHllType() != target_hll_type::HLL_8) {
     throw std::logic_error("Must call unionImpl() with HLL_8 input");
   }
-  HllSketchImpl<A>* srcImpl = incomingImpl; //default
-  HllSketchImpl<A>* dstImpl = gadget.hllSketchImpl; //default
-  if ((incomingImpl == nullptr) || incomingImpl->isEmpty()) {
-    return; // gadget.hllSketchImpl;
+  HllSketchImpl<A>* src_impl = incoming_impl; //default
+  HllSketchImpl<A>* dstImpl = gadget.sketch_impl; //default
+  if ((incoming_impl == nullptr) || incoming_impl->isEmpty()) {
+    return; // gadget.sketch_impl;
   }
 
-  const int hi2bits = (gadget.hllSketchImpl->isEmpty()) ? 3 : gadget.hllSketchImpl->getCurMode();
-  const int lo2bits = incomingImpl->getCurMode();
+  const int hi2bits = (gadget.sketch_impl->isEmpty()) ? 3 : gadget.sketch_impl->getCurMode();
+  const int lo2bits = incoming_impl->getCurMode();
 
   const int sw = (hi2bits << 2) | lo2bits;
-  //System.out.println("SW: " + sw);
   switch (sw) {
     case 0: { //src: LIST, gadget: LIST
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       //whichever is True wins:
-      dstImpl->putOutOfOrderFlag(dstImpl->isOutOfOrderFlag() | srcImpl->isOutOfOrderFlag());
+      dstImpl->putOutOfOrderFlag(dstImpl->isOutOfOrderFlag() | src_impl->isOutOfOrderFlag());
       // gadget: cleanly updated as needed
       break;
     }
     case 1: { //src: SET, gadget: LIST
       //consider a swap here
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //SET
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //SET
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       dstImpl->putOutOfOrderFlag(true); //SET oooFlag is always true
       // gadget: cleanly updated as needed
@@ -339,32 +338,32 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
     }
     case 2: { //src: HLL, gadget: LIST
       //swap so that src is gadget-LIST, tgt is HLL
-      //use lgMaxK because LIST has effective K of 2^26
-      srcImpl = gadget.hllSketchImpl;
-      dstImpl = copyOrDownsampleHll(incomingImpl, lgMaxK);
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator();
+      //use lg_max_k because LIST has effective K of 2^26
+      src_impl = gadget.sketch_impl;
+      dstImpl = copy_or_downsample(incoming_impl, lg_max_k);
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator();
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       //whichever is True wins:
-      dstImpl->putOutOfOrderFlag(srcImpl->isOutOfOrderFlag() | dstImpl->isOutOfOrderFlag());
+      dstImpl->putOutOfOrderFlag(src_impl->isOutOfOrderFlag() | dstImpl->isOutOfOrderFlag());
       // gadget: swapped, replacing with new impl
-      gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl);
+      gadget.sketch_impl->get_deleter()(gadget.sketch_impl);
       break;
     }
     case 4: { //src: LIST, gadget: SET
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       dstImpl->putOutOfOrderFlag(true); //SET oooFlag is always true
       // gadget: cleanly updated as needed
       break;
     }
     case 5: { //src: SET, gadget: SET
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //SET
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //SET
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       dstImpl->putOutOfOrderFlag(true); //SET oooFlag is always true
       // gadget: cleanly updated as needed
@@ -372,33 +371,33 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
     }
     case 6: { //src: HLL, gadget: SET
       //swap so that src is gadget-SET, tgt is HLL
-      //use lgMaxK because LIST has effective K of 2^26
-      srcImpl = gadget.hllSketchImpl;
-      dstImpl = copyOrDownsampleHll(incomingImpl, lgMaxK);
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
+      //use lg_max_k because LIST has effective K of 2^26
+      src_impl = gadget.sketch_impl;
+      dstImpl = copy_or_downsample(incoming_impl, lg_max_k);
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
       if (dstImpl->getCurMode() != HLL) {
         throw std::logic_error("dstImpl must be in HLL mode");
       }
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       dstImpl->putOutOfOrderFlag(true); //merging SET into non-empty HLL -> true
       // gadget: swapped, replacing with new impl
-      gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl);
+      gadget.sketch_impl->get_deleter()(gadget.sketch_impl);
       break;
     }
     case 8: { //src: LIST, gadget: HLL
       if (dstImpl->getCurMode() != HLL) {
         throw std::logic_error("dstImpl must be in HLL mode");
       }
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       //whichever is True wins:
-      dstImpl->putOutOfOrderFlag(dstImpl->isOutOfOrderFlag() | srcImpl->isOutOfOrderFlag());
+      dstImpl->putOutOfOrderFlag(dstImpl->isOutOfOrderFlag() | src_impl->isOutOfOrderFlag());
       // gadget: should remain unchanged
-      if (dstImpl != gadget.hllSketchImpl) {
+      if (dstImpl != gadget.sketch_impl) {
         // should not have changed from HLL
         throw std::logic_error("dstImpl unepxectedly changed from gadget");
       } 
@@ -408,63 +407,63 @@ void HllUnion<A>::unionImpl(HllSketchImpl<A>* incomingImpl, const int lgMaxK) {
       if (dstImpl->getCurMode() != HLL) {
         throw std::logic_error("dstImpl must be in HLL mode");
       }
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //SET
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //SET
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       dstImpl->putOutOfOrderFlag(true); //merging SET into existing HLL -> true
       // gadget: should remain unchanged
-      if (dstImpl != gadget.hllSketchImpl) {
+      if (dstImpl != gadget.sketch_impl) {
         // should not have changed from HLL
         throw std::logic_error("dstImpl unepxectedly changed from gadget");
       } 
       break;
     }
     case 10: { //src: HLL, gadget: HLL
-      const int srcLgK = srcImpl->getLgConfigK();
+      const int src_lg_k = src_impl->getLgConfigK();
       const int dstLgK = dstImpl->getLgConfigK();
-      const int minLgK = ((srcLgK < dstLgK) ? srcLgK : dstLgK);
-      if ((srcLgK < dstLgK) || (dstImpl->getTgtHllType() != HLL_8)) {
-        dstImpl = copyOrDownsampleHll(dstImpl, minLgK);
+      const int minLgK = ((src_lg_k < dstLgK) ? src_lg_k : dstLgK);
+      if ((src_lg_k < dstLgK) || (dstImpl->getTgtHllType() != HLL_8)) {
+        dstImpl = copy_or_downsample(dstImpl, minLgK);
         // always replaces gadget
-        gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl);
+        gadget.sketch_impl->get_deleter()(gadget.sketch_impl);
       }
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //HLL
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //HLL
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       dstImpl->putOutOfOrderFlag(true); //union of two HLL modes is always true
       // gadget: replaced if copied/downampled, otherwise should be unchanged
       break;
     }
     case 12: { //src: LIST, gadget: empty
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //LIST
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
-      dstImpl->putOutOfOrderFlag(srcImpl->isOutOfOrderFlag()); //whatever source is
+      dstImpl->putOutOfOrderFlag(src_impl->isOutOfOrderFlag()); //whatever source is
       // gadget: cleanly updated as needed
       break;
     }
     case 13: { //src: SET, gadget: empty
-      PairIterator_with_deleter<A> srcItr = srcImpl->getIterator(); //SET
+      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //SET
       while (srcItr->nextValid()) {
-        dstImpl = leakFreeCouponUpdate(dstImpl, srcItr->getPair()); //assignment required
+        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
       }
       dstImpl->putOutOfOrderFlag(true); //SET oooFlag is always true
       // gadget: cleanly updated as needed
       break;
     }
     case 14: { //src: HLL, gadget: empty
-      dstImpl = copyOrDownsampleHll(srcImpl, lgMaxK);
-      dstImpl->putOutOfOrderFlag(srcImpl->isOutOfOrderFlag()); //whatever source is.
+      dstImpl = copy_or_downsample(src_impl, lg_max_k);
+      dstImpl->putOutOfOrderFlag(src_impl->isOutOfOrderFlag()); //whatever source is.
       // gadget: always replaced with copied/downsampled sketch
-      gadget.hllSketchImpl->get_deleter()(gadget.hllSketchImpl);
+      gadget.sketch_impl->get_deleter()(gadget.sketch_impl);
       break;
     }
   }
   
-  gadget.hllSketchImpl = dstImpl;
+  gadget.sketch_impl = dstImpl;
 }
 
 }

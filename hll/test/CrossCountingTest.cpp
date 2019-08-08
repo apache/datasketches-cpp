@@ -18,9 +18,6 @@
  */
 
 #include "hll.hpp"
-//#include "HllSketch.hpp"
-//#include "HllUnion.hpp"
-//#include "HllUtil.hpp"
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
@@ -36,7 +33,7 @@ class CrossCountingTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(crossCountingChecks);
   CPPUNIT_TEST_SUITE_END();
 
-  hll_sketch buildSketch(const int n, const int lgK, const TgtHllType tgtHllType) {
+  hll_sketch buildSketch(const int n, const int lgK, const target_hll_type tgtHllType) {
     hll_sketch sketch(lgK, tgtHllType);
     for (int i = 0; i < n; ++i) {
       sketch.update(i);
@@ -45,7 +42,7 @@ class CrossCountingTest : public CppUnit::TestFixture {
   }
 
   int computeChecksum(const hll_sketch& sketch) {
-    PairIterator_with_deleter<> itr = sketch.getIterator();
+    pair_iterator_with_deleter<> itr = sketch.get_iterator();
     int checksum = 0;
     int key;
     while(itr->nextAll()) {
