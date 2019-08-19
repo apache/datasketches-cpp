@@ -67,7 +67,9 @@ class kll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(merge_min_value_from_other);
   CPPUNIT_TEST(merge_min_and_max_from_other);
   CPPUNIT_TEST(sketch_of_ints);
-  CPPUNIT_TEST(sketch_of_strings);
+  CPPUNIT_TEST(sketch_of_strings_stream);
+  CPPUNIT_TEST(sketch_of_strings_bytes);
+  CPPUNIT_TEST(sketch_of_strings_single_item_bytes);
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST_SUITE_END();
 
@@ -502,43 +504,83 @@ public:
     CPPUNIT_ASSERT_EQUAL(sketch.get_rank(n), sketch2.get_rank(n));
   }
 
-  void sketch_of_strings() {
-    kll_string_sketch sketch;
-    CPPUNIT_ASSERT_THROW(sketch.get_quantile(0), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch.get_min_value(), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch.get_max_value(), std::runtime_error);
-    CPPUNIT_ASSERT_EQUAL(8u, sketch.get_serialized_size_bytes());
+  void sketch_of_strings_stream() {
+    kll_string_sketch sketch1;
+    CPPUNIT_ASSERT_THROW(sketch1.get_quantile(0), std::runtime_error);
+    CPPUNIT_ASSERT_THROW(sketch1.get_min_value(), std::runtime_error);
+    CPPUNIT_ASSERT_THROW(sketch1.get_max_value(), std::runtime_error);
+    CPPUNIT_ASSERT_EQUAL(8u, sketch1.get_serialized_size_bytes());
 
-    const int n(1000);
-    for (int i = 0; i < n; i++) sketch.update(std::to_string(i));
+    const int n = 1000;
+    for (int i = 0; i < n; i++) sketch1.update(std::to_string(i));
 
-    CPPUNIT_ASSERT_EQUAL(std::string("0"), sketch.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(std::string("999"), sketch.get_max_value());
+    CPPUNIT_ASSERT_EQUAL(std::string("0"), sketch1.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(std::string("999"), sketch1.get_max_value());
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
-    sketch.serialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (uint32_t) s.tellp());
+    sketch1.serialize(s);
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_serialized_size_bytes(), (uint32_t) s.tellp());
     auto sketch2 = kll_string_sketch::deserialize(s);
     CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_n(), sketch2.get_n());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_num_retained(), sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_min_value(), sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_max_value(), sketch2.get_max_value());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch2.get_quantile(0.5));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(std::to_string(0)), sketch2.get_rank(std::to_string(0)));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(std::to_string(n)), sketch2.get_rank(std::to_string(n)));
+    CPPUNIT_ASSERT_EQUAL(sketch1.is_empty(), sketch2.is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch1.is_estimation_mode(), sketch2.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_n(), sketch2.get_n());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_num_retained(), sketch2.get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_min_value(), sketch2.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_max_value(), sketch2.get_max_value());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_quantile(0.5), sketch2.get_quantile(0.5));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(std::to_string(0)), sketch2.get_rank(std::to_string(0)));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(std::to_string(n)), sketch2.get_rank(std::to_string(n)));
 
     // to take a look using hexdump
-    std::ofstream os("kll-string.bin");
-    sketch.serialize(os);
+    //std::ofstream os("kll-string.bin");
+    //sketch1.serialize(os);
 
     // debug print
-    //sketch.to_stream(std::cout);
+    //sketch1.to_stream(std::cout);
+  }
+
+  void sketch_of_strings_bytes() {
+    kll_string_sketch sketch1;
+    CPPUNIT_ASSERT_THROW(sketch1.get_quantile(0), std::runtime_error);
+    CPPUNIT_ASSERT_THROW(sketch1.get_min_value(), std::runtime_error);
+    CPPUNIT_ASSERT_THROW(sketch1.get_max_value(), std::runtime_error);
+    CPPUNIT_ASSERT_EQUAL(8u, sketch1.get_serialized_size_bytes());
+
+    const int n = 1000;
+    for (int i = 0; i < n; i++) sketch1.update(std::to_string(i));
+
+    CPPUNIT_ASSERT_EQUAL(std::string("0"), sketch1.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(std::string("999"), sketch1.get_max_value());
+
+    auto data = sketch1.serialize();
+    CPPUNIT_ASSERT_EQUAL((size_t) sketch1.get_serialized_size_bytes(), data.second);
+    auto sketch2 = kll_string_sketch::deserialize(data.first.get(), data.second);
+    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) data.second);
+    CPPUNIT_ASSERT_EQUAL(sketch1.is_empty(), sketch2.is_empty());
+    CPPUNIT_ASSERT_EQUAL(sketch1.is_estimation_mode(), sketch2.is_estimation_mode());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_n(), sketch2.get_n());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_num_retained(), sketch2.get_num_retained());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_min_value(), sketch2.get_min_value());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_max_value(), sketch2.get_max_value());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_quantile(0.5), sketch2.get_quantile(0.5));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(std::to_string(0)), sketch2.get_rank(std::to_string(0)));
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(std::to_string(n)), sketch2.get_rank(std::to_string(n)));
+  }
+
+
+  void sketch_of_strings_single_item_bytes() {
+    kll_string_sketch sketch1;
+    sketch1.update("a");
+    auto data = sketch1.serialize();
+    CPPUNIT_ASSERT_EQUAL((size_t) sketch1.get_serialized_size_bytes(), data.second);
+    auto sketch2 = kll_string_sketch::deserialize(data.first.get(), data.second);
+    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) data.second);
   }
 
   void copy() {
