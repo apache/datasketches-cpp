@@ -61,20 +61,22 @@ void fm85Init (void) {
 // This is to support custom allocator and deallocator
 void fm85InitAD (void* (*alloc)(size_t), void (*dealloc)(void*)) {
   if (!fm85Initialized) {
-    fm85Initialized = 1;
     fm85alloc = alloc;
     fm85free = dealloc;
     fillByteLeadingZerosTable();
     fillByteTrailingZerosTable();
     makeTheDecodingTables();
-    fillInvPow2Tab ();
-    fillKxpByteLookup ();
+    fillInvPow2Tab();
+    fillKxpByteLookup();
+    fm85Initialized = 1;
   }
 }
 
 void fm85Clean (void) {
-  freeTheDecodingTables();
-  fm85Initialized = 0;
+  if (fm85Initialized) {
+    freeTheDecodingTables();
+    fm85Initialized = 0;
+  }
 }
 
 /*******************************************************/
