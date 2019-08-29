@@ -42,7 +42,7 @@ int Hll8Iterator<A>::value() {
 
 template<typename A>
 Hll8Array<A>::Hll8Array(const int lgConfigK, const bool startFullSize) :
-    HllArray<A>(lgConfigK, TgtHllType::HLL_8, startFullSize) {
+    HllArray<A>(lgConfigK, target_hll_type::HLL_8, startFullSize) {
   const int numBytes = this->hll8ArrBytes(lgConfigK);
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   this->hllByteArr = uint8Alloc().allocate(numBytes);
@@ -78,10 +78,10 @@ Hll8Array<A>* Hll8Array<A>::copy() const {
 }
 
 template<typename A>
-PairIterator_with_deleter<A> Hll8Array<A>::getIterator() const {
+pair_iterator_with_deleter<A> Hll8Array<A>::getIterator() const {
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Iterator<A>> itrAlloc;
   Hll8Iterator<A>* itr = new (itrAlloc().allocate(1)) Hll8Iterator<A>(*this, 1 << this->lgConfigK);
-  return PairIterator_with_deleter<A>(
+  return pair_iterator_with_deleter<A>(
     itr,
     [](PairIterator<A>* ptr) {
       Hll8Iterator<A>* hll = static_cast<Hll8Iterator<A>*>(ptr);

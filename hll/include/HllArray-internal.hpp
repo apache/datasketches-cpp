@@ -35,8 +35,8 @@
 namespace datasketches {
 
 template<typename A>
-HllArray<A>::HllArray(const int lgConfigK, const TgtHllType tgtHllType, bool startFullSize)
-  : HllSketchImpl<A>(lgConfigK, tgtHllType, CurMode::HLL, startFullSize) {
+HllArray<A>::HllArray(const int lgConfigK, const target_hll_type tgtHllType, bool startFullSize)
+  : HllSketchImpl<A>(lgConfigK, tgtHllType, hll_mode::HLL, startFullSize) {
   hipAccum = 0.0;
   kxq0 = 1 << lgConfigK;
   kxq1 = 0.0;
@@ -48,7 +48,7 @@ HllArray<A>::HllArray(const int lgConfigK, const TgtHllType tgtHllType, bool sta
 
 template<typename A>
 HllArray<A>::HllArray(const HllArray<A>& that)
-  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, CurMode::HLL, that.startFullSize) {
+  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, hll_mode::HLL, that.startFullSize) {
   hipAccum = that.getHipAccum();
   kxq0 = that.getKxQ0();
   kxq1 = that.getKxQ1();
@@ -67,9 +67,9 @@ template<typename A>
 HllArray<A>::~HllArray() {
   // need to determine number of bytes to deallocate
   int hllArrBytes = 0;
-  if (this->tgtHllType == TgtHllType::HLL_4) {
+  if (this->tgtHllType == target_hll_type::HLL_4) {
     hllArrBytes = hll4ArrBytes(this->lgConfigK);
-  } else if (this->tgtHllType == TgtHllType::HLL_6) {
+  } else if (this->tgtHllType == target_hll_type::HLL_6) {
     hllArrBytes = hll6ArrBytes(this->lgConfigK);
   } else { // tgtHllType == HLL_8
     hllArrBytes = hll8ArrBytes(this->lgConfigK);
@@ -80,13 +80,13 @@ HllArray<A>::~HllArray() {
 }
 
 template<typename A>
-HllArray<A>* HllArray<A>::copyAs(const TgtHllType tgtHllType) const {
+HllArray<A>* HllArray<A>::copyAs(const target_hll_type tgtHllType) const {
   if (tgtHllType == this->getTgtHllType()) {
     return static_cast<HllArray*>(copy());
   }
-  if (tgtHllType == TgtHllType::HLL_4) {
+  if (tgtHllType == target_hll_type::HLL_4) {
     return HllSketchImplFactory<A>::convertToHll4(*this);
-  } else if (tgtHllType == TgtHllType::HLL_6) {
+  } else if (tgtHllType == target_hll_type::HLL_6) {
     return HllSketchImplFactory<A>::convertToHll6(*this);
   } else { // tgtHllType == HLL_8
     return HllSketchImplFactory<A>::convertToHll8(*this);
@@ -110,12 +110,12 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
     throw std::invalid_argument("Input array is not an HLL sketch");
   }
 
-  const CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
-  if (curMode != HLL) {
+  const hll_mode mode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  if (mode != HLL) {
     throw std::invalid_argument("Calling HLL array construtor with non-HLL mode data");
   }
 
-  const TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
+  const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
   const bool oooFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   const bool comapctFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
   const bool startFullSizeFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
@@ -176,12 +176,12 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
-  if (curMode != HLL) {
+  hll_mode mode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
+  if (mode != HLL) {
     throw std::invalid_argument("Calling HLL construtor with non-HLL mode data");
   }
 
-  const TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
+  const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
   const bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   const bool comapctFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
   const bool startFullSizeFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
@@ -254,7 +254,7 @@ std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t>
     bytes += getMemDataStart() + hllByteArrBytes; // start of auxHashMap
     if (auxHashMap != nullptr) {
       if (compact) {
-        PairIterator_with_deleter<A> itr = auxHashMap->getIterator();
+        pair_iterator_with_deleter<A> itr = auxHashMap->getIterator();
         while (itr->nextValid()) {
           const int pairValue = itr->getPair();
           std::memcpy(bytes, &pairValue, sizeof(pairValue));
@@ -315,8 +315,7 @@ void HllArray<A>::serialize(std::ostream& os, const bool compact) const {
   if (this->tgtHllType == HLL_4) {
     if (auxHashMap != nullptr) {
       if (compact) {
-        //std::unique_ptr<PairIterator<A>> itr = auxHashMap->getIterator();
-        PairIterator_with_deleter<A> itr = auxHashMap->getIterator();
+        pair_iterator_with_deleter<A> itr = auxHashMap->getIterator();
         while (itr->nextValid()) {
           const int pairValue = itr->getPair();
           os.write((char*)&pairValue, sizeof(pairValue));
@@ -541,7 +540,7 @@ bool HllArray<A>::isOutOfOrderFlag() const {
 }
 
 template<typename A>
-int HllArray<A>::hllArrBytes(TgtHllType tgtHllType, int lgConfigK) {
+int HllArray<A>::hllArrBytes(target_hll_type tgtHllType, int lgConfigK) {
   switch (tgtHllType) {
   case HLL_4:
     return hll4ArrBytes(lgConfigK);
@@ -593,7 +592,7 @@ int HllArray<A>::getPreInts() const {
 }
 
 template<typename A>
-PairIterator_with_deleter<A> HllArray<A>::getAuxIterator() const {
+pair_iterator_with_deleter<A> HllArray<A>::getAuxIterator() const {
   return nullptr;
 }
 

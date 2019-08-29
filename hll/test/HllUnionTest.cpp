@@ -56,9 +56,9 @@ class HllUnionTest : public CppUnit::TestFixture {
    * sketches are presented to the union.
    */
   void checkUnions() {
-    TgtHllType type1 = HLL_8;
-    TgtHllType type2 = HLL_8;
-    TgtHllType resultType = HLL_8;
+    target_hll_type type1 = HLL_8;
+    target_hll_type type2 = HLL_8;
+    target_hll_type resultType = HLL_8;
 
     uint64_t lgK1 = 7;
     uint64_t lgK2 = 7;
@@ -146,7 +146,7 @@ class HllUnionTest : public CppUnit::TestFixture {
 
   void basicUnion(uint64_t n1, uint64_t n2,
 		  uint64_t lgk1, uint64_t lgk2, uint64_t lgMaxK,
-                  TgtHllType type1, TgtHllType type2, TgtHllType resultType) {
+                  target_hll_type type1, target_hll_type type2, target_hll_type resultType) {
     uint64_t v = 0;
     //int tot = n1 + n2;
 
@@ -170,18 +170,17 @@ class HllUnionTest : public CppUnit::TestFixture {
     u.update(h1);
     u.update(h2);
 
-    hll_sketch result = u.getResult(resultType);
-    //int lgkr = result->getLgConfigK();
+    hll_sketch result = u.get_result(resultType);
 
     // force non-HIP estimates to avoid issues with in- vs out-of-order
-    double uEst = result.getCompositeEstimate();
-    double uUb = result.getUpperBound(2);
-    double uLb = result.getLowerBound(2);
+    double uEst = result.get_composite_estimate();
+    double uUb = result.get_upper_bound(2);
+    double uLb = result.get_lower_bound(2);
     //double rerr = ((uEst/tot) - 1.0) * 100;
 
-    double controlEst = control.getCompositeEstimate();
-    double controlUb = control.getUpperBound(2);
-    double controlLb = control.getLowerBound(2);
+    double controlEst = control.get_composite_estimate();
+    double controlUb = control.get_upper_bound(2);
+    double controlLb = control.get_lower_bound(2);
 
     CPPUNIT_ASSERT((controlUb - controlEst) >= 0.0);
     CPPUNIT_ASSERT((uUb - uEst) >= 0.0);
@@ -203,39 +202,17 @@ class HllUnionTest : public CppUnit::TestFixture {
   }
 
   void checkUnionEquality(hll_union& u1, hll_union& u2) {
-    //HllSketchPvt* sk1 = static_cast<HllSketchPvt*>(static_cast<HllUnionPvt*>(u1.get())->gadget.get());
-    //HllSketchPvt* sk2 = static_cast<HllSketchPvt*>(static_cast<HllUnionPvt*>(u2.get())->gadget.get());
-    hll_sketch sk1 = u1.getResult();
-    hll_sketch sk2 = u2.getResult();
+    hll_sketch sk1 = u1.get_result();
+    hll_sketch sk2 = u2.get_result();
 
-    CPPUNIT_ASSERT_EQUAL(sk1.getLgConfigK(), sk2.getLgConfigK());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1.getLowerBound(1), sk2.getLowerBound(1), 0.0);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1.getEstimate(), sk2.getEstimate(), 0.0);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1.getUpperBound(1), sk2.getUpperBound(1), 0.0);
-    //CPPUNIT_ASSERT_EQUAL(sk1.getCurrentMode(), sk2.getCurrentMode());
-    CPPUNIT_ASSERT_EQUAL(sk1.getTgtHllType(), sk2.getTgtHllType());
-
-/*
-    if (sk1->getCurrentMode() == LIST) {
-      CouponList* cl1 = static_cast<CouponList*>(sk1->hllSketchImpl);
-      CouponList* cl2 = static_cast<CouponList*>(sk2->hllSketchImpl);
-      CPPUNIT_ASSERT_EQUAL(cl1->getCouponCount(), cl2->getCouponCount());
-    } else if (sk1->getCurrentMode() == SET) {
-      CouponHashSet* chs1 = static_cast<CouponHashSet*>(sk1->hllSketchImpl);
-      CouponHashSet* chs2 = static_cast<CouponHashSet*>(sk2->hllSketchImpl);
-      CPPUNIT_ASSERT_EQUAL(chs1->getCouponCount(), chs2->getCouponCount());
-    } else { // sk1->getCurrentMode() == HLL      
-      HllArray* ha1 = static_cast<HllArray*>(sk1->hllSketchImpl);
-      HllArray* ha2 = static_cast<HllArray*>(sk2->hllSketchImpl);
-      CPPUNIT_ASSERT_EQUAL(ha1->getCurMin(), ha2->getCurMin());
-      CPPUNIT_ASSERT_EQUAL(ha1->getNumAtCurMin(), ha2->getNumAtCurMin());
-      CPPUNIT_ASSERT_DOUBLES_EQUAL(ha1->getKxQ0(), ha2->getKxQ0(), 0);
-      CPPUNIT_ASSERT_DOUBLES_EQUAL(ha1->getKxQ1(), ha2->getKxQ1(), 0);
-    }
-*/
+    CPPUNIT_ASSERT_EQUAL(sk1.get_lg_config_k(), sk2.get_lg_config_k());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1.get_lower_bound(1), sk2.get_lower_bound(1), 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1.get_estimate(), sk2.get_estimate(), 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk1.get_upper_bound(1), sk2.get_upper_bound(1), 0.0);
+    CPPUNIT_ASSERT_EQUAL(sk1.get_target_type(), sk2.get_target_type());
   }
 
-  void toFrom(const int lgConfigK, const TgtHllType tgtHllType, const int n) {
+  void toFrom(const int lgConfigK, const target_hll_type tgtHllType, const int n) {
     hll_union srcU(lgConfigK);
     hll_sketch srcSk(lgConfigK, tgtHllType);
     for (int i = 0; i < n; ++i) {
@@ -244,41 +221,41 @@ class HllUnionTest : public CppUnit::TestFixture {
     srcU.update(srcSk);
 
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
-    srcU.serializeCompact(ss);
-    hll_union dstU = HllUnion<>::deserialize(ss);
+    srcU.serialize_compact(ss);
+    hll_union dstU = hll_union::deserialize(ss);
     checkUnionEquality(srcU, dstU);
 
-    std::pair<byte_ptr_with_deleter, const size_t> bytes1 = srcU.serializeCompact();
-    dstU = HllUnion<>::deserialize(bytes1.first.get(), bytes1.second);
+    std::pair<byte_ptr_with_deleter, const size_t> bytes1 = srcU.serialize_compact();
+    dstU = hll_union::deserialize(bytes1.first.get(), bytes1.second);
     checkUnionEquality(srcU, dstU);
 
     ss.clear();
-    srcU.serializeUpdatable(ss);
-    dstU = HllUnion<>::deserialize(ss);
+    srcU.serialize_updatable(ss);
+    dstU = hll_union::deserialize(ss);
     checkUnionEquality(srcU, dstU);
 
-    std::pair<byte_ptr_with_deleter, const size_t> bytes2 = srcU.serializeUpdatable();
-    dstU = HllUnion<>::deserialize(bytes2.first.get(), bytes2.second);
+    std::pair<byte_ptr_with_deleter, const size_t> bytes2 = srcU.serialize_updatable();
+    dstU = hll_union::deserialize(bytes2.first.get(), bytes2.second);
     checkUnionEquality(srcU, dstU);
   } 
 
   void checkCompositeEstimate() {
     hll_union u(12);
-    CPPUNIT_ASSERT(u.isEmpty());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, u.getCompositeEstimate(), 0.03);
+    CPPUNIT_ASSERT(u.is_empty());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, u.get_composite_estimate(), 0.03);
     for (int i = 1; i <= 15; ++i) { u.update(i); }
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(15.0, u.getCompositeEstimate(), 15 * 0.03);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(15.0, u.get_composite_estimate(), 15 * 0.03);
     for (int i = 16; i <= 1000; ++i) { u.update(i); }
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1000.0, u.getCompositeEstimate(), 1000 * 0.03);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1000.0, u.get_composite_estimate(), 1000 * 0.03);
   }
 
   void checkConfigKLimits() {
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect lgK too small",
-                                 HllUnion<>(HllUtil<>::MIN_LOG_K - 1),
+                                 hll_union(HllUtil<>::MIN_LOG_K - 1),
                                  std::invalid_argument);
 
     CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect lgK too large",
-                                 HllUnion<>(HllUtil<>::MAX_LOG_K + 1),
+                                 hll_union(HllUtil<>::MAX_LOG_K + 1),
                                  std::invalid_argument);
   }
 
@@ -315,22 +292,6 @@ class HllUnionTest : public CppUnit::TestFixture {
     println(str);
   }
 
-/*
-  void checkEmptyCoupon() {
-    int lgK = 8;
-    HllUnionPvt* hllUnion = new HllUnionPvt(lgK);
-    for (int i = 0; i < 20; ++i) { hllUnion->update(i); } // SET mode
-    hllUnion->couponUpdate(0);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(20.0, hllUnion->getEstimate(), 0.001);
-    CPPUNIT_ASSERT_EQUAL(HLL_8, hllUnion->getTgtHllType());
-    int bytes = hllUnion->getUpdatableSerializationBytes();
-    CPPUNIT_ASSERT(bytes <= HllUnion::getMaxSerializationBytes(lgK));
-    CPPUNIT_ASSERT_EQUAL(false, hllUnion->isCompact());
-    
-    delete hllUnion;
-  }
-*/
-
   void checkConversions() {
     int lgK = 4;
     hll_sketch sk1(lgK, HLL_8);
@@ -344,12 +305,12 @@ class HllUnionTest : public CppUnit::TestFixture {
     hllUnion.update(sk1);
     hllUnion.update(sk2);
 
-    hll_sketch rsk1 = hllUnion.getResult(HLL_4);
-    hll_sketch rsk2 = hllUnion.getResult(HLL_6);
-    hll_sketch rsk3 = hllUnion.getResult(HLL_8);
-    double est1 = rsk1.getEstimate();
-    double est2 = rsk2.getEstimate();
-    double est3 = rsk3.getEstimate();
+    hll_sketch rsk1 = hllUnion.get_result(HLL_4);
+    hll_sketch rsk2 = hllUnion.get_result(HLL_6);
+    hll_sketch rsk3 = hllUnion.get_result(HLL_8);
+    double est1 = rsk1.get_estimate();
+    double est2 = rsk2.get_estimate();
+    double est3 = rsk3.get_estimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est1, est2, 0.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est1, est3, 0.0);
   }
@@ -357,21 +318,21 @@ class HllUnionTest : public CppUnit::TestFixture {
   // moved from UnionCaseTest in java
   void checkMisc() {
     hll_union u(12);
-    int bytes = u.getCompactSerializationBytes();
+    int bytes = u.get_compact_serialization_bytes();
     CPPUNIT_ASSERT_EQUAL(8, bytes);
-    bytes = HllUnion<>::getMaxSerializationBytes(7);
+    bytes = hll_union::get_max_serialization_bytes(7);
     CPPUNIT_ASSERT_EQUAL(40 + 128, bytes);
-    double v = u.getEstimate();
+    double v = u.get_estimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, v, 0.0);
-    v = u.getLowerBound(1);
+    v = u.get_lower_bound(1);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, v, 0.0);
-    v = u.getUpperBound(1);
+    v = u.get_upper_bound(1);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, v, 0.0);
-    CPPUNIT_ASSERT(u.isEmpty());
+    CPPUNIT_ASSERT(u.is_empty());
     u.reset();
-    CPPUNIT_ASSERT(u.isEmpty());
+    CPPUNIT_ASSERT(u.is_empty());
     std::ostringstream oss(std::ios::binary);
-    u.serializeCompact(oss);
+    u.serialize_compact(oss);
     CPPUNIT_ASSERT_EQUAL(8, static_cast<int>(oss.tellp()));
   }
 
@@ -387,7 +348,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     u.update((int16_t) 102);
     u.update((int32_t) 102);
     u.update((int64_t) 102);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.getEstimate(), 0.01);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.get_estimate(), 0.01);
 
     // identical binary representations
     // no unsigned in Java, but need to sign-extend both as Java would do
@@ -400,25 +361,25 @@ class HllUnionTest : public CppUnit::TestFixture {
     std::string str = "input string";
     u.update(str);
     u.update(str.c_str(), str.length());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(4.0, u.getEstimate(), 0.01);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(4.0, u.get_estimate(), 0.01);
 
-    u = HllUnion<>(8);
+    u = hll_union(8);
     u.update((float) 0.0);
     u.update((float) -0.0);
     u.update((double) 0.0);
     u.update((double) -0.0);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.getEstimate(), 0.01);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.get_estimate(), 0.01);
 
-    u = HllUnion<>(8);
+    u = hll_union(8);
     u.update(std::nanf("3"));
     u.update(std::nan("12"));
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.getEstimate(), 0.01);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(u.getResult().getEstimate(), u.getEstimate(), 0.01);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1.0, u.get_estimate(), 0.01);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(u.get_result().get_estimate(), u.get_estimate(), 0.01);
 
-    u = HllUnion<>(8);
+    u = hll_union(8);
     u.update(nullptr, 0);
     u.update("");
-    CPPUNIT_ASSERT(u.isEmpty());
+    CPPUNIT_ASSERT(u.is_empty());
   }
 };
 

@@ -48,7 +48,7 @@ class CouponListTest : public CppUnit::TestFixture {
     int lgConfigK = 8;
     CouponList<>* sk = new CouponList<>(lgConfigK, HLL_4, LIST);
     for (int i = 0; i < 7; ++i) { sk->couponUpdate(i); } // not hashes but distinct values
-    PairIterator_with_deleter<> itr = sk->getIterator();
+    pair_iterator_with_deleter<> itr = sk->getIterator();
     println_string(itr->getHeader());
     while (itr->nextAll()) {
       int key = itr->getKey();
@@ -71,22 +71,19 @@ class CouponListTest : public CppUnit::TestFixture {
       sk.update(i);
       sk.update(i);
     }
-    //CPPUNIT_ASSERT_EQUAL(sk.getCurrentMode(), CurMode::LIST);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.getCompositeEstimate(), 7.0, 7 * 0.1);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.get_composite_estimate(), 7.0, 7 * 0.1);
 
     sk.update(8);
     sk.update(8);
-    //CPPUNIT_ASSERT_EQUAL(sk.getCurrentMode(), CurMode::SET);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.getCompositeEstimate(), 8.0, 8 * 0.1);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.get_composite_estimate(), 8.0, 8 * 0.1);
 
     for (int i = 9; i <= 25; ++i) {
       sk.update(i);
       sk.update(i);
     }
-    //CPPUNIT_ASSERT_EQUAL(sk.getCurrentMode(), CurMode::HLL);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.getCompositeEstimate(), 25.0, 25 * 0.1);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk.get_composite_estimate(), 25.0, 25 * 0.1);
 
-    double relErr = sk.getRelErr(true, true, 4, 1);
+    double relErr = sk.get_rel_err(true, true, 4, 1);
     CPPUNIT_ASSERT(relErr < 0.0);
   }
 
@@ -109,21 +106,21 @@ class CouponListTest : public CppUnit::TestFixture {
     for (int i = 0; i < u; ++i) {
       sk1.update(i);
     }
-    double est1 = sk1.getEstimate();
+    double est1 = sk1.get_estimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est1, u, u * 1e-4);
 
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
-    sk1.serializeCompact(ss);
+    sk1.serialize_compact(ss);
     hll_sketch sk2 = hll_sketch::deserialize(ss);
-    double est2 = sk2.getEstimate();
+    double est2 = sk2.get_estimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
 
     ss.str(std::string());
     ss.clear();
 
-    sk1.serializeUpdatable(ss);
+    sk1.serialize_updatable(ss);
     sk2 = hll_sketch::deserialize(ss);
-    est2 = sk2.getEstimate();
+    est2 = sk2.get_estimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(est2, est1, 0.0);
   }
   
@@ -137,7 +134,7 @@ class CouponListTest : public CppUnit::TestFixture {
     hll_sketch sk1(lgK);
     sk1.update(1);
     sk1.update(2);
-    std::pair<byte_ptr_with_deleter, const size_t> sketchBytes = sk1.serializeCompact();
+    std::pair<byte_ptr_with_deleter, const size_t> sketchBytes = sk1.serialize_compact();
     uint8_t* bytes = sketchBytes.first.get();
 
     bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
@@ -184,7 +181,7 @@ class CouponListTest : public CppUnit::TestFixture {
     sk1.update(1);
     sk1.update(2);
     std::stringstream ss;
-    sk1.serializeCompact(ss);
+    sk1.serialize_compact(ss);
 
     ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
     ss.put(0);

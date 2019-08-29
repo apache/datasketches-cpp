@@ -10,5 +10,7 @@ target_include_directories(common_test
 target_sources(common_test
   PRIVATE
     test_runner.cpp
-    A.hpp
+    test_type.hpp
+    test_allocator.hpp
+    test_allocator.cpp
 )

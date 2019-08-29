@@ -32,8 +32,8 @@ template<typename A>
 static int find(const int* array, const int lgArrInts, const int coupon);
 
 template<typename A>
-CouponHashSet<A>::CouponHashSet(const int lgConfigK, const TgtHllType tgtHllType)
-  : CouponList<A>(lgConfigK, tgtHllType, CurMode::SET)
+CouponHashSet<A>::CouponHashSet(const int lgConfigK, const target_hll_type tgtHllType)
+  : CouponList<A>(lgConfigK, tgtHllType, hll_mode::SET)
 {
   if (lgConfigK <= 7) {
     throw std::invalid_argument("CouponHashSet must be initialized with lgConfigK > 7. Found: "
@@ -46,7 +46,7 @@ CouponHashSet<A>::CouponHashSet(const CouponHashSet<A>& that)
   : CouponList<A>(that) {}
 
 template<typename A>
-CouponHashSet<A>::CouponHashSet(const CouponHashSet<A>& that, const TgtHllType tgtHllType)
+CouponHashSet<A>::CouponHashSet(const CouponHashSet<A>& that, const target_hll_type tgtHllType)
   : CouponList<A>(that, tgtHllType) {}
 
 template<typename A>
@@ -78,12 +78,12 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  const CurMode curMode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
-  if (curMode != SET) {
+  const hll_mode mode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  if (mode != SET) {
     throw std::invalid_argument("Calling set construtor with non-set mode data");
   }
 
-  const TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
+  const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = data[HllUtil<A>::LG_K_BYTE];
   if (lgK <= 7) {
@@ -149,12 +149,12 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  CurMode curMode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
-  if (curMode != SET) {
+  hll_mode mode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
+  if (mode != SET) {
     throw std::invalid_argument("Calling set construtor with non-set mode data");
   }
 
-  TgtHllType tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
+  target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
 
   const int lgK = listHeader[HllUtil<A>::LG_K_BYTE];
   if (lgK <= 7) {
@@ -202,7 +202,7 @@ CouponHashSet<A>* CouponHashSet<A>::copy() const {
 }
 
 template<typename A>
-CouponHashSet<A>* CouponHashSet<A>::copyAs(const TgtHllType tgtHllType) const {
+CouponHashSet<A>* CouponHashSet<A>::copyAs(const target_hll_type tgtHllType) const {
   return new (chsAlloc().allocate(1)) CouponHashSet<A>(*this, tgtHllType);
 }
 

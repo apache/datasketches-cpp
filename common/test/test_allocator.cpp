@@ -17,37 +17,11 @@
  * under the License.
  */
 
-#ifndef _PAIRITERATOR_HPP_
-#define _PAIRITERATOR_HPP_
-
-#include <string>
-#include <functional>
-#include <memory>
+#include "test_allocator.hpp"
 
 namespace datasketches {
 
-template<typename A = std::allocator<char>>
-class PairIterator {
-  public:
-    virtual std::string getHeader() = 0;
+// global variable to keep track of allocated size
+long long test_allocator_total_bytes = 0;
 
-    virtual int getIndex() = 0;
-    virtual int getKey() = 0;
-    virtual int getPair() = 0;
-    virtual int getSlot() = 0;
-
-    virtual std::string getString() = 0;
-
-    virtual int getValue() = 0;
-    virtual bool nextAll() = 0;
-    virtual bool nextValid() = 0;
-
-    virtual ~PairIterator() = default;
-};
-
-template<typename A = std::allocator<char>>
-using pair_iterator_with_deleter = std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>;
-
-}
-
-#endif /* _PAIRITERATOR_HPP_ */
+} /* namespace datasketches */

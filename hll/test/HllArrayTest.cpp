@@ -38,7 +38,7 @@ class HllArrayTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkCorruptStream);
   CPPUNIT_TEST_SUITE_END();
 
-  void testComposite(const int lgK, const TgtHllType tgtHllType, const int n) {
+  void testComposite(const int lgK, const target_hll_type tgtHllType, const int n) {
     hll_union u(lgK);
     hll_sketch sk(lgK, tgtHllType);
     for (int i = 0; i < n; ++i) {
@@ -46,16 +46,16 @@ class HllArrayTest : public CppUnit::TestFixture {
       sk.update(i);
     }
     u.update(sk); // merge
-    hll_sketch res = u.getResult(TgtHllType::HLL_8);
-    double est = res.getCompositeEstimate();
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(est, sk.getCompositeEstimate(), 0.0);
+    hll_sketch res = u.get_result(target_hll_type::HLL_8);
+    double est = res.get_composite_estimate();
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(est, sk.get_composite_estimate(), 0.0);
   }
 
   void checkCompositeEstimate() {
-    testComposite(4, TgtHllType::HLL_8, 10000);
-    testComposite(5, TgtHllType::HLL_8, 10000);
-    testComposite(6, TgtHllType::HLL_8, 10000);
-    testComposite(13, TgtHllType::HLL_8, 10000);
+    testComposite(4, target_hll_type::HLL_8, 10000);
+    testComposite(5, target_hll_type::HLL_8, 10000);
+    testComposite(6, target_hll_type::HLL_8, 10000);
+    testComposite(13, target_hll_type::HLL_8, 10000);
   }
 
   void checkSerializeDeserialize() {
@@ -78,7 +78,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     serializeDeserialize(lgK, HLL_8, n);
   }
 
-  void serializeDeserialize(const int lgK, TgtHllType tgtHllType, const int n) {
+  void serializeDeserialize(const int lgK, target_hll_type tgtHllType, const int n) {
     hll_sketch sk1(lgK, tgtHllType);
 
     for (int i = 0; i < n; ++i) {
@@ -86,22 +86,22 @@ class HllArrayTest : public CppUnit::TestFixture {
     }
     //CPPUNIT_ASSERT(sk1.getCurrentMode() == CurMode::HLL);
 
-    double est1 = sk1.getEstimate();
+    double est1 = sk1.get_estimate();
     CPPUNIT_ASSERT_DOUBLES_EQUAL(n, est1, n * 0.03);
 
     // serialize as compact and updatable, deserialize, compare estimates are exact
     std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
-    sk1.serializeCompact(ss);
+    sk1.serialize_compact(ss);
     hll_sketch sk2 = hll_sketch::deserialize(ss);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk2.getEstimate(), sk1.getEstimate(), 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk2.get_estimate(), sk1.get_estimate(), 0.0);
 
     ss.clear();
-    sk1.serializeUpdatable(ss);
+    sk1.serialize_updatable(ss);
     sk2 = hll_sketch::deserialize(ss);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk2.getEstimate(), sk1.getEstimate(), 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(sk2.get_estimate(), sk1.get_estimate(), 0.0);
 
     sk1.reset();
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, sk1.getEstimate(), 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, sk1.get_estimate(), 0.0);
   }
 
   void checkIsCompact() {
@@ -109,7 +109,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     for (int i = 0; i < 8; ++i) {
       sk.update(i);
     }
-    CPPUNIT_ASSERT(!sk.isCompact());
+    CPPUNIT_ASSERT(!sk.is_compact());
   }
 
   void checkCorruptBytearray() {
@@ -118,7 +118,7 @@ class HllArrayTest : public CppUnit::TestFixture {
     for (int i = 0; i < 50; ++i) {
       sk1.update(i);
     }
-    std::pair<byte_ptr_with_deleter, size_t> sketchBytes = sk1.serializeCompact();
+    std::pair<byte_ptr_with_deleter, size_t> sketchBytes = sk1.serialize_compact();
     uint8_t* bytes = sketchBytes.first.get();
 
     bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
@@ -170,7 +170,7 @@ class HllArrayTest : public CppUnit::TestFixture {
       sk1.update(i);
     }
     std::stringstream ss;
-    sk1.serializeCompact(ss);
+    sk1.serialize_compact(ss);
 
     ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
     ss.put(0);

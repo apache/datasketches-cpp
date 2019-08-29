@@ -285,7 +285,7 @@ class kll_sketch {
     kll_sketch(uint16_t k, uint8_t flags_byte, const void* bytes, size_t size);
 
     // common update code
-    uint32_t internal_update(const T& value);
+    inline uint32_t internal_update(const T& value);
 
     // The following code is only valid in the special case of exactly reaching capacity while updating.
     // It cannot be used while merging, while reducing k, or anything else.
@@ -420,14 +420,14 @@ kll_sketch<T, C, S, A>::~kll_sketch() {
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::update(const T& value) {
-  const uint32_t next_pos = internal_update(value);
-  new (&items_[next_pos]) T(value);
+  const uint32_t index = internal_update(value);
+  new (&items_[index]) T(value);
 }
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::update(T&& value) {
-  const uint32_t next_pos = internal_update(value);
-  new (&items_[next_pos]) T(std::move(value));
+  const uint32_t index = internal_update(value);
+  new (&items_[index]) T(std::move(value));
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -442,9 +442,7 @@ uint32_t kll_sketch<T, C, S, A>::internal_update(const T& value) {
   if (levels_[0] == 0) compress_while_updating();
   n_++;
   is_level_zero_sorted_ = false;
-  const uint32_t next_pos(levels_[0] - 1);
-  levels_[0] = next_pos;
-  return next_pos;
+  return --levels_[0];
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -651,7 +649,8 @@ std::pair<void_ptr_with_deleter, const size_t> kll_sketch<T, C, S, A>::serialize
     }
     ptr += S().serialize(ptr, &items_[levels_[0]], get_num_retained());
   }
-  if (ptr != static_cast<char*>(data_ptr.get()) + size) throw std::logic_error("serialized size mismatch");
+  const size_t delta = ptr - static_cast<const char*>(data_ptr.get());
+  if (delta != size) throw std::logic_error("serialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
   return std::make_pair(std::move(data_ptr), size);
 }
 
@@ -756,7 +755,6 @@ kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, std::istream&
   }
   items_ = A().allocate(capacity);
   items_size_ = capacity;
-  for (unsigned i = 0; i < items_size_; i++) A().construct(&items_[i], T());
   const auto num_items = levels_[num_levels_] - levels_[0];
   S().deserialize(is, &items_[levels_[0]], num_items);
   if (is_single_item) {
@@ -802,7 +800,6 @@ kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, const void* b
   }
   items_ = A().allocate(capacity);
   items_size_ = capacity;
-  for (unsigned i = 0; i < items_size_; i++) A().construct(&items_[i], T());
   const auto num_items(levels_[num_levels_] - levels_[0]);
   ptr += S().deserialize(ptr, &items_[levels_[0]], num_items);
   if (is_single_item) {
@@ -810,7 +807,8 @@ kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, const void* b
     new (max_value_) T(items_[levels_[0]]);
   }
   is_level_zero_sorted_ = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
-  if (ptr != static_cast<const char*>(bytes) + size) throw std::logic_error("deserialized size mismatch");
+  const size_t delta = ptr - static_cast<const char*>(bytes);
+  if (delta != size) throw std::logic_error("deserialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
 }
 
 // The following code is only valid in the special case of exactly reaching capacity while updating.
