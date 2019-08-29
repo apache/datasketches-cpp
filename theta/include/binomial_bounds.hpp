@@ -23,6 +23,11 @@
 #include <algorithm>
 #include <cmath>
 
+#if defined(_MSC_VER)
+#include <iso646.h> // for and/or keywords
+#endif // _MSC_VER
+
+
 /*
  * This class enables the estimation of error bounds given a sample set size, the sampling
  * probability theta, the number of standard deviations and a simple noDataSeen flag. This can

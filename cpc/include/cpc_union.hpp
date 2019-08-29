@@ -20,6 +20,12 @@
 #ifndef CPC_UNION_HPP_
 #define CPC_UNION_HPP_
 
+#include <string>
+
+#if defined(_MSC_VER)
+#include <iso646.h> // for and/or keywords
+#endif // _MSC_VER
+
 #include "fm85Merging.h"
 #include "cpc_sketch.hpp"
 

@@ -25,6 +25,10 @@
 #include <iterator>
 #include <cmath>
 
+#if defined(_MSC_VER)
+#include <iso646.h> // for and/or keywords
+#endif // _MSC_VER
+
 namespace datasketches {
 
 /*
