@@ -252,7 +252,7 @@ void promoteSparseToWindowed (FM85 * self) {
 
   U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
   if (window == NULL) throw std::bad_alloc();
-  bzero ((void *) window, (size_t) k); // zero the memory (because we will be OR'ing into it)
+  memset ((void *) window,0, (size_t) k); // zero the memory (because we will be OR'ing into it)
 
   u32Table * newTable = u32TableMake (2, 6 + self->lgK);
 
