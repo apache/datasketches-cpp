@@ -20,7 +20,7 @@
 
 // Microsoft Visual Studio
 
-#if defined(_MSC_VER) && (_MSC_VER < 1600)
+#if defined(_MSC_VER)
 
 typedef unsigned char uint8_t;
 typedef unsigned int uint32_t;

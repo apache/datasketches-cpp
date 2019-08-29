@@ -25,16 +25,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/time.h>
+#include <stdint.h>
 #include <time.h>
 #include <math.h>
 
 typedef int Boolean;
 
-typedef u_int8_t  U8;
-typedef u_int16_t U16;
-typedef u_int32_t U32;
-typedef u_int64_t U64;
+typedef uint8_t  U8;
+typedef uint16_t U16;
+typedef uint32_t U32;
+typedef uint64_t U64;
 
 typedef int16_t Short; // signed
 typedef int64_t Long;  // signed

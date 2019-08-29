@@ -684,7 +684,7 @@ void uncompressHybridFlavor (FM85 * target, FM85 * source) {
 
   U8 * window = (U8 *) fm85alloc ((size_t) (k * sizeof(U8)));
   if (window == NULL) throw std::bad_alloc();
-  bzero ((void *) window, (size_t) k); // important: zero the memory
+  memset ((void *) window, 0, (size_t) k); // important: zero the memory
   
   Long nextTruePair = 0;
   Long i;
