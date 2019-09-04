@@ -6,3 +6,25 @@ The Apache Software Foundation (http://www.apache.org/).
 
 Prior to moving to ASF, the software for this project was developed at
 Yahoo (now Verizon Media) (https://developer.yahoo.com).
+
+This product contains 3rd party code under the following licenses:
+
+Public Domain
+=============
+
+This product contains code written by Austin Appleby and placed in the public domain.
+The original: https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
+  * common/include/MurmurHash3.h
+
+Unknown
+=======
+
+This product contains code by Marco Clemencic:
+https://github.com/apache/incubator-datasketches-cpp/blob/master/cmake/FindCppUnit.cmake
+adapted from:
+https://gitlab.cern.ch/gaudi/Gaudi/blob/master/cmake/modules/FindCppUnit.cmake
+
+This product contains code by Benjamin R. Jack:
+https://github.com/apache/incubator-datasketches-cpp/blob/master/setup.py
+adapted from:
+https://www.benjack.io/2018/02/02/python-cpp-revisited.html
