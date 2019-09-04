@@ -20,7 +20,8 @@ make files using cmake. Exsisting make files might not work on all platforms
 or with all C++ compilers. Generating make files using cmake should solve
 this problem, but it currently requires cmake version 3.12.0 or later that might not
 be readily available as a package on all platforms.
-Installing latest cmake on OSX: brew install cmake
+
+Installing the latest cmake on OSX: brew install cmake
 
 Building and running unit tests using existing make files:
 
