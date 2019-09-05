@@ -19,6 +19,10 @@ add_library(common_test OBJECT "")
 
 target_link_libraries(common_test ${CPPUNIT_LIBRARY})
 
+set_target_properties(common_test PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
+)
 target_include_directories(common_test
   PUBLIC
     ${CPPUNIT_INCLUDE_DIR}
