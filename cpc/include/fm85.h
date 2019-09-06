@@ -36,28 +36,25 @@ enum flavorType {
   SLIDING  // 27K/8 <= C
 };
 
-/*******************************************************/
-
-typedef struct fm85_sketch_type
-{
+typedef struct fm85_sketch_type {
   // The following variables occur in all sketch types.
   Short lgK;
-  Boolean isCompressed;
-  Boolean mergeFlag; // Is the sketch the result of merging?
+  bool isCompressed;
+  bool mergeFlag; // Is the sketch the result of merging?
 
   Long numCoupons; // The number of coupons collected so far.
 
   // The following variables occur in the updateable semi-compressed type.
-  U8 * slidingWindow;
+  U8* slidingWindow;
   Short windowOffset; // Derivable from numCoupons, but made explicit for speed.
-  u32Table * surprisingValueTable;
+  u32Table* surprisingValueTable;
 
   // The following variables occur in the non-updateable fully-compressed type.
-  U32 * compressedWindow; // A bitstream.
-  Long  cwLength; // The number of 32-bit words in this bitstream. (Not needed in Java).
-  Long  numCompressedSurprisingValues;
-  U32 * compressedSurprisingValues; // A bitstream.
-  Long  csvLength; // The number of 32-bit words in this bitstream. (Not needed in Java).
+  U32* compressedWindow; // A bitstream.
+  Long cwLength; // The number of 32-bit words in this bitstream. (Not needed in Java).
+  Long numCompressedSurprisingValues;
+  U32* compressedSurprisingValues; // A bitstream.
+  Long csvLength; // The number of 32-bit words in this bitstream. (Not needed in Java).
 
   // Note that (as an optimization) the two bitstreams could be concatenated.
 
@@ -72,53 +69,36 @@ typedef struct fm85_sketch_type
 extern void* (*fm85alloc)(size_t);
 extern void (*fm85free)(void*);
 
-/*******************************************************/
 // These routines are exported.
 
-void fm85Init (void); // Call this before anything else.
-void fm85InitAD (void* (*alloc)(size_t), void (*dealloc)(void*)); // or this to use custom allocator and deallocator
+void fm85Init(void); // Call this before anything else.
+void fm85InitAD(void* (*alloc)(size_t), void (*dealloc)(void*)); // or this to use custom allocator and deallocator
 
-void fm85Clean (void); // Call this at the end to clean up (optional)
+void fm85Clean(void); // Call this at the end to clean up (optional)
 
-FM85 * fm85Make (Short lgK);
+FM85* fm85Make(Short lgK);
 
-FM85 * fm85Copy (FM85 * self);
+FM85* fm85Copy(const FM85* self);
 
-void fm85Free (FM85 * sketch);
+void fm85Free(FM85* sketch);
 
-void fm85Update (FM85 * sketch, U64 hash0, U64 hash1);
+void fm85Update(FM85* sketch, U64 hash0, U64 hash1);
 
-double getHIPEstimate (FM85 * sketch);
-
-// getIconEstimate() is defined in a separate file.
-
-/*******************************************************/
+double getHIPEstimate(const FM85* sketch);
 
 // The following is used during testing, and is basically package private.
-U32 rowColFromTwoHashes (U64 hash0, U64 hash1, Short lgK);
+U32 rowColFromTwoHashes(U64 hash0, U64 hash1, Short lgK);
 
-/*******************************************************/
 // These routines are internal.
 
-void fm85RowColUpdate (FM85 * sketch, U32 rowCol);
+void fm85RowColUpdate(FM85* sketch, U32 rowCol);
 
-enum flavorType determineFlavor (Short lgK, Long c);
-enum flavorType determineSketchFlavor (FM85 * self);
+enum flavorType determineFlavor(Short lgK, Long c);
+enum flavorType determineSketchFlavor(const FM85* self);
 
-Short determineCorrectOffset (Short lgK, Long c);
+Short determineCorrectOffset(Short lgK, Long c);
 
-U64 * bitMatrixOfSketch (FM85 * self);
-
-// these are only used internally
-// void promoteEmptyToSparse (FM85 * self);
-// void promoteSparseToWindowed (FM85 * self);
-// void modifyOffset (FM85 * self, Short newOffset);
-// void updateSparse   (FM85 * self, U32 rowCol);
-// void updateWindowed (FM85 * self, U32 rowCol);
-
-
-/*******************************************************/
+U64* bitMatrixOfSketch(const FM85* self);
 
 #define GOT_FM85_H
 #endif
-

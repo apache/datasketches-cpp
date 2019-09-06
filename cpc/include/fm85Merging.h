@@ -27,13 +27,10 @@
 #include "fm85Util.h"
 #include "u32Table.h"
 
-/****************************************/
-
-typedef struct fm85_unioning_gadget
-{
+typedef struct fm85_unioning_gadget {
   Short lgK; // Note: in some cases this will be reduced.
-  FM85 * accumulator; // this is a sketch object
-  U64  * bitMatrix;
+  FM85* accumulator; // this is a sketch object
+  U64* bitMatrix;
   // Note: at most one of the previous two fields will be non-NULL at any given moment.
   // accumulator is a sketch object that is employed until it graduates out of Sparse mode.
   // At that point, it is converted into a full-sized bitMatrix, which is mathematically a sketch,
@@ -41,21 +38,15 @@ typedef struct fm85_unioning_gadget
   // is required when getResult is called at the end.
 } UG85;
 
-/****************************************/
+UG85* ug85Make(Short lgK);
 
-UG85 * ug85Make (Short lgK);
+void ug85Free(UG85* unioner);
 
-void ug85Free (UG85 * unioner);
+void ug85MergeInto(UG85* unioner, const FM85* sourceSketch);
 
-void ug85MergeInto (UG85 * unioner, FM85 * sourceSketch);
+FM85* ug85GetResult(const UG85* unioner);
 
-FM85 * ug85GetResult (UG85 * unioner);
-
-/****************************************/
-
-U64 * bitMatrixOfUG85 (UG85 * self, Boolean * needToFreePtr); // used for testing
-
-/****************************************/
+U64* bitMatrixOfUG85(const UG85* self, bool* needToFreePtr); // used for testing
 
 #define GOT_FM85_MERGING_H
 #endif
@@ -99,7 +90,6 @@ U64 * bitMatrixOfUG85 (UG85 * self, Boolean * needToFreePtr); // used for testin
 // wouldn't work because of the partially inverted Logic in the Sliding flavor, where the presence of
 // coupons is sometimes indicated by the ABSENCE of rowCol pairs in the surprises table.]
 
-/****************************************/
 
 // How does getResult work?
 
@@ -108,5 +98,3 @@ U64 * bitMatrixOfUG85 (UG85 * self, Boolean * needToFreePtr); // used for testin
 // If the unioner is using its bitMatrix field, then we have to convert the
 // bitMatrix back into a sketch, which requires doing some extra work to
 // figure out the values of numCoupons, offset, firstInterestingColumn, and KxQ.
-
-/*******************************************************************************************/

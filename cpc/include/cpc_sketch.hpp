@@ -325,12 +325,12 @@ class cpc_sketch {
       is.read((char*)&flags_byte, sizeof(flags_byte));
       uint16_t seed_hash;
       is.read((char*)&seed_hash, sizeof(seed_hash));
-      const bool has_hip(flags_byte & (1 << flags::HAS_HIP));
-      const bool has_table(flags_byte & (1 << flags::HAS_TABLE));
-      const bool has_window(flags_byte & (1 << flags::HAS_WINDOW));
+      const bool has_hip = flags_byte & (1 << flags::HAS_HIP);
+      const bool has_table = flags_byte & (1 << flags::HAS_TABLE);
+      const bool has_window = flags_byte & (1 << flags::HAS_WINDOW);
       FM85 compressed;
-      compressed.isCompressed = 1;
-      compressed.mergeFlag = has_hip ? 0 : 1;
+      compressed.isCompressed = true;
+      compressed.mergeFlag = !has_hip;
       compressed.lgK = lg_k;
       compressed.firstInterestingColumn = first_interesting_column;
       compressed.numCoupons = 0;
@@ -422,12 +422,12 @@ class cpc_sketch {
       ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
       uint16_t seed_hash;
       ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
-      const bool has_hip(flags_byte & (1 << flags::HAS_HIP));
-      const bool has_table(flags_byte & (1 << flags::HAS_TABLE));
-      const bool has_window(flags_byte & (1 << flags::HAS_WINDOW));
+      const bool has_hip = flags_byte & (1 << flags::HAS_HIP);
+      const bool has_table = flags_byte & (1 << flags::HAS_TABLE);
+      const bool has_window = flags_byte & (1 << flags::HAS_WINDOW);
       FM85 compressed;
-      compressed.isCompressed = 1;
-      compressed.mergeFlag = has_hip ? 0 : 1;
+      compressed.isCompressed = true;
+      compressed.mergeFlag = !has_hip;
       compressed.lgK = lg_k;
       compressed.firstInterestingColumn = first_interesting_column;
       compressed.numCoupons = 0;
@@ -517,7 +517,6 @@ class cpc_sketch {
     }
 
     friend std::ostream& operator<<(std::ostream& os, cpc_sketch const& sketch);
-
     friend class cpc_union;
 
   private:

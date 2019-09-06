@@ -29,52 +29,39 @@
 extern void* (*fm85alloc)(size_t);
 extern void (*fm85free)(void*);
 
-/*******************************************************/
-
-u32Table * u32TableMake (Short lgSize, Short numValidBits) {
+u32Table* u32TableMake(Short lgSize, Short numValidBits) {
   if (lgSize < 2) throw std::invalid_argument("lgSize must be >= 2");
-  Long numSlots = (1LL << lgSize);
-  u32Table * self = (u32Table *) fm85alloc (sizeof(u32Table));
+  const Long numSlots = 1LL << lgSize;
+  u32Table* self = (u32Table*) fm85alloc(sizeof(u32Table));
   if (self == NULL) throw std::bad_alloc();
-  U32 * arr = (U32 *) fm85alloc ((size_t) (numSlots * sizeof(U32)));
+  U32* arr = (U32*) fm85alloc((size_t) (numSlots * sizeof(U32)));
   if (arr == NULL) throw std::bad_alloc();
-  Long i = 0;
-  for (i = 0; i < numSlots; i++) { arr[i] = ALL32BITS; }
+  for (Long i = 0; i < numSlots; i++) { arr[i] = ALL32BITS; }
   if (numValidBits < 1 || numValidBits > 32) throw std::invalid_argument("numValidBits must be between 1 and 32");
   self->validBits = numValidBits;
   self->lgSize = lgSize;
   self->numItems = 0;
   self->slots = arr;
-  return (self);
+  return self;
 }
 
-/*******************************************************/
-
-u32Table * u32TableCopy (u32Table * self) {
+u32Table* u32TableCopy(const u32Table* self) {
   if (self == NULL) throw std::invalid_argument("self is null");
   if (self->slots == NULL) throw std::invalid_argument("no slots");
-  Long numSlots = (1LL << self->lgSize);
-  u32Table * newObj = (u32Table *) shallowCopy ((void *) self, sizeof(u32Table));
-  newObj->slots = (U32 *) shallowCopy ((void *) self->slots, ((size_t) numSlots) * sizeof(U32));
-  return (newObj);
+  const Long numSlots = 1LL << self->lgSize;
+  u32Table* newObj = (u32Table*) shallowCopy((void*) self, sizeof(u32Table));
+  newObj->slots = (U32*) shallowCopy((void*) self->slots, ((size_t) numSlots) * sizeof(U32));
+  return newObj;
 }
 
-//  newObj->validBits = self->validBits;
-//  newObj->lgSize    = self->lgSize;
-//  newObj->numItems  = self->numItems;
-
-/*******************************************************/
-
-void u32TableFree (u32Table * self) {
+void u32TableFree(u32Table* self) {
   if (self != NULL) {
-    if (self->slots != NULL) fm85free (self->slots);
-    fm85free (self);
+    if (self->slots != NULL) fm85free(self->slots);
+    fm85free(self);
   }
 }
 
-/*******************************************************/
-
-void u32TableShow (u32Table * self) {
+void u32TableShow(const u32Table* self) {
   Long tableSize = 1LL << self->lgSize;
   printf ("\nu32Table (%d valid bits; %lld of %lld slots occupied)\n",
 	  self->validBits, (long long int) self->numItems, (long long int) tableSize);
@@ -87,45 +74,35 @@ void u32TableShow (u32Table * self) {
   fflush (stdout);
 }
 
-/*******************************************************/
-
-void u32TableClear (u32Table * self) { // clear the table without resizing it
-  Long tableSize = 1LL << self->lgSize;
-  U32 * arr = self->slots;
-  Long i;
-  for (i = 0; i < tableSize; i++) { arr[i] = ALL32BITS; }
+void u32TableClear(u32Table* self) { // clear the table without resizing it
+  const Long tableSize = 1LL << self->lgSize;
+  U32* arr = self->slots;
+  for (Long i = 0; i < tableSize; i++) { arr[i] = ALL32BITS; }
   self->numItems = 0;
 }
 
-/*******************************************************/
-
-void printU32Array (U32 * array, Long arrayLength) {
-  Long i = 0;
+void printU32Array(const U32* array, Long arrayLength) {
   printf ("\nu32Array [%lld]\n", (long long int) arrayLength);
-  for (i = 0; i < arrayLength; i++) {
+  for (Long i = 0; i < arrayLength; i++) {
     printf ("%d:\t%8X\n", (int) i, array[i]);    
   }
-  fflush (stdout);
+  fflush(stdout);
 }
 
-/*******************************************************/
-
 #define U32_TABLE_LOOKUP_SHARED_CODE_SECTION \
-  Long tableSize = 1LL << self->lgSize; \
-  Long mask = tableSize - 1LL; \
-  Short shift = self->validBits - self->lgSize; \
+  const Long tableSize = 1LL << self->lgSize; \
+  const Long mask = tableSize - 1LL; \
+  const Short shift = self->validBits - self->lgSize; \
   Long probe = ((Long) item) >> shift; \
   if (probe < 0 || probe > mask) throw std::out_of_range("probe out of range"); \
-  U32 * arr = self->slots; \
+  U32* arr = self->slots; \
   U32 fetched = arr[probe]; \
   while (fetched != item && fetched != ALL32BITS) { \
     probe = (probe + 1) & mask; \
     fetched = arr[probe]; \
   }
 
-/*******************************************************/
-
-void u32TableMustInsert (u32Table * self, U32 item) {
+void u32TableMustInsert(u32Table* self, U32 item) {
   U32_TABLE_LOOKUP_SHARED_CODE_SECTION;
   if (fetched == item) { throw std::logic_error("item exists"); }
   else {
@@ -135,58 +112,48 @@ void u32TableMustInsert (u32Table * self, U32 item) {
   }
 }
 
-/*******************************************************/
-
 // This one is specifically tailored to be part of our fm85 decompression scheme.
 
-u32Table * makeU32TableFromPairsArray (U32 * pairs, Long numPairs, Short sketchLgK) {
+u32Table* makeU32TableFromPairsArray(const U32* pairs, Long numPairs, Short sketchLgK) {
   Short lgNumSlots = 2;
   while (u32TableUpsizeDenom * numPairs > u32TableUpsizeNumer * (1LL << lgNumSlots)) { lgNumSlots++; }
-  u32Table * table = u32TableMake (lgNumSlots, 6 + sketchLgK); // Already filled with the "Empty" value which is ALL32BITS.
-  Long i = 0;
+  u32Table* table = u32TableMake(lgNumSlots, 6 + sketchLgK); // Already filled with the "Empty" value which is ALL32BITS.
   // Note: there is a possible "snowplow effect" here because the caller is passing in a sorted pairs array.
   // However, we are starting out with the correct final table size, so the problem might not occur.
-  for (i = 0; i < numPairs; i++) {
-    u32TableMustInsert (table, pairs[i]);
+  for (Long i = 0; i < numPairs; i++) {
+    u32TableMustInsert(table, pairs[i]);
   }
   table->numItems = numPairs;
-  return (table);
+  return table;
 }
 
-/*******************************************************/
-
-void privateU32TableRebuild (u32Table * self, Short newLgSize) {
+void privateU32TableRebuild(u32Table* self, Short newLgSize) {
   if (newLgSize < 2) throw std::logic_error("newLgSize < 2");
-  Long newSize = (1LL << newLgSize);
-  Long oldSize = (1LL << self->lgSize);
-  //  printf ("rebuilding: %lld -> %lld; %lld items in table\n", oldSize, newSize, self->numItems); fflush (stdout);
+  const Long newSize = 1LL << newLgSize;
+  const Long oldSize = 1LL << self->lgSize;
   if (newSize <= self->numItems) throw std::logic_error("newSize <= numItems");
-  U32 * oldSlots = self->slots;
-  U32 * newSlots = (U32 *) fm85alloc ((size_t) (newSize * sizeof(U32)));
+  U32* oldSlots = self->slots;
+  U32* newSlots = (U32*) fm85alloc((size_t) (newSize * sizeof(U32)));
   if (newSlots == NULL) throw std::bad_alloc();
-  Long i;
-  for (i = 0; i < newSize; i++) { 
+  for (Long i = 0; i < newSize; i++) {
     newSlots[i] = ALL32BITS;
   }  
   self->slots = newSlots;
   self->lgSize = newLgSize;
-  for (i = 0; i < oldSize; i++) {
+  for (Long i = 0; i < oldSize; i++) {
     U32 item = oldSlots[i];
     if (item != ALL32BITS) {
-      u32TableMustInsert (self, item);
+      u32TableMustInsert(self, item);
     }
   }
-  fm85free (oldSlots);
-  return;
+  fm85free(oldSlots);
 }
-
-/*******************************************************/
 
 // Returns true iff the item was new and was therefore added to the table.
 
-Boolean u32TableMaybeInsert (u32Table * self, U32 item) {
+bool u32TableMaybeInsert(u32Table* self, U32 item) {
   U32_TABLE_LOOKUP_SHARED_CODE_SECTION;
-  if (fetched == item) { return 0; }
+  if (fetched == item) { return false; }
   else {
     if (fetched != ALL32BITS) throw std::logic_error("could not insert");
     arr[probe] = item;
@@ -194,17 +161,15 @@ Boolean u32TableMaybeInsert (u32Table * self, U32 item) {
     while (u32TableUpsizeDenom * self->numItems > u32TableUpsizeNumer * (1LL << self->lgSize)) {
       privateU32TableRebuild(self, self->lgSize + 1);
     }
-    return 1;
+    return true;
   }
 }
 
-/*******************************************************/
-
 // Returns true iff the item was present and was therefore removed from the table.
 
-Boolean u32TableMaybeDelete (u32Table * self, U32 item) {
+bool u32TableMaybeDelete(u32Table* self, U32 item) {
   U32_TABLE_LOOKUP_SHARED_CODE_SECTION;
-  if (fetched == ALL32BITS) { return 0; }
+  if (fetched == ALL32BITS) { return false; }
   else {
     if (fetched != item) throw std::logic_error("item does not exist");
     // delete the item
@@ -224,11 +189,9 @@ Boolean u32TableMaybeDelete (u32Table * self, U32 item) {
     while (u32TableDownsizeDenom * self->numItems < u32TableDownsizeNumer * (1LL << self->lgSize) && self->lgSize > 2) {
       privateU32TableRebuild(self, self->lgSize - 1);
     }
-    return 1;
+    return true;
   }
 }
-
-/*******************************************************/
 
 // While extracting the items from a linear probing hashtable,
 // this will usually undo the wrap-around provided that the table 
@@ -236,12 +199,12 @@ Boolean u32TableMaybeDelete (u32Table * self, U32 item) {
 // the load factor would have to be over 90 percent before this would fail frequently, 
 // and even then the subsequent sort would fix things up.
 
-U32 * u32TableUnwrappingGetItems (u32Table * self, Long * returnNumItems) {
+U32* u32TableUnwrappingGetItems(const u32Table* self, Long* returnNumItems) {
   *returnNumItems = self->numItems;
   if (self->numItems < 1) { return (NULL); }
-  U32 * slots = self->slots;
-  Long tableSize = (1LL << self->lgSize);
-  U32 * result = (U32 *) fm85alloc ((size_t) (self->numItems * sizeof(U32)));
+  U32* slots = self->slots;
+  const Long tableSize = 1LL << self->lgSize;
+  U32* result = (U32*) fm85alloc((size_t) (self->numItems * sizeof(U32)));
   if (result == NULL) throw std::bad_alloc();
   Long i = 0;
   Long l = 0;
@@ -261,32 +224,31 @@ U32 * u32TableUnwrappingGetItems (u32Table * self, Long * returnNumItems) {
     if (look != ALL32BITS) { result[l++] = look; }
   }
   if (l != r + 1) throw std::logic_error("unwrapping error");
-  return (result);
+  return result;
 }
 
 
-/*******************************************************/
 // The Java version won't need this, because it provides a good array sort.
 
-void u32KnuthShellSort3(U32 a[], Long l, Long r)
-{ Long i, h;
-  for (h = 1; h <= (r-l)/9; h = 3*h+1) ;
+void u32KnuthShellSort3(U32 a[], Long l, Long r) {
+  Long h;
+  for (h = 1; h <= (r-l)/9; h = 3*h+1);
   for ( ; h > 0; h /= 3) {
-    for (i = l+h; i <= r; i++) {
-      Long j = i; U32 v = a[i]; 
-      while (j >= l+h && v < a[j-h])
-	{ a[j] = a[j-h]; j -= h; }
+    for (Long i = l+h; i <= r; i++) {
+      Long j = i; U32 v = a[i];
+      while (j >= l + h && v < a[j - h]) {
+        a[j] = a[j - h]; j -= h;
+      }
       a[j] = v; 
     } 
   }
   Long bad = 0;
-  for (i = l; i < r-1; i++) {
-    if (a[i] > a[i+1]) bad++;
+  for (Long i = l; i < r - 1; i++) {
+    if (a[i] > a[i + 1]) bad++;
   };
   if (bad != 0) throw std::logic_error("sorting error");
 }
 
-/*******************************************************/
 // In applications where the input array is already nearly sorted,
 // insertion sort runs in linear time with a very small constant.
 // This introspective version of insertion sort protects against
@@ -294,49 +256,38 @@ void u32KnuthShellSort3(U32 a[], Long l, Long r)
 // It keeps track of how much work has been done, and if that exceeds a
 // constant times the array length, it switches to a different sorting algorithm.
 
-void introspectiveInsertionSort(U32 a[], Long l, Long r) // r points AT the rightmost element
-{ Long i;
-  Long length = r - l + 1;
+void introspectiveInsertionSort(U32 a[], Long l, Long r) { // r points AT the rightmost element
+  const Long length = r - l + 1;
   Long cost = 0;
   Long costLimit = 8 * length;
-  for (i = l+1; i <= r; i++) {
+  for (Long i = l + 1; i <= r; i++) {
     Long j = i; 
     U32 v = a[i]; 
-    while (j >= l+1 && v < a[j-1]) { 
-      a[j] = a[j-1]; 
+    while (j >= l + 1 && v < a[j - 1]) {
+      a[j] = a[j - 1];
       j -= 1; 
     }
     a[j] = v; 
-    cost += (i - j); // distance moved is a measure of work
+    cost += i - j; // distance moved is a measure of work
     if (cost > costLimit) {
-      //fprintf (stderr, "switching to the other sorting algorithm\n"); fflush (stderr);
       u32KnuthShellSort3(a, l, r); // In the Java version, this should be the system's array sort.
       return;
     }
   } 
-  // The following sanity check can eventually go away, but it seems like a
-  // good idea to perform it while the code is under development.
-  //  Long bad = 0;
-  //  for (i = l; i < r-1; i++) {
-  //    if (a[i] > a[i+1]) bad++;
-  //  };
-  //  assert (bad == 0);
 }
 
 
-//  printf ("cost was %lld (arrlen=%lld)\n", cost, length); fflush (stdout);
-
-
-/******************************************************/
 // This merge is safe to use in carefully designed overlapping scenarios.
 
-void u32Merge (U32 * arrA, Long startA, Long lengthA, // input
-	       U32 * arrB, Long startB, Long lengthB, // input
-	       U32 * arrC, Long startC) { // output
-  Long lengthC = lengthA + lengthB;
-  Long limA = startA + lengthA;
-  Long limB = startB + lengthB;
-  Long limC = startC + lengthC;
+void u32Merge(
+    const U32* arrA, Long startA, Long lengthA, // input
+    const U32* arrB, Long startB, Long lengthB, // input
+    U32* arrC, Long startC) // output
+{
+  const Long lengthC = lengthA + lengthB;
+  const Long limA = startA + lengthA;
+  const Long limB = startB + lengthB;
+  const Long limC = startC + lengthC;
   Long a = startA;
   Long b = startB;
   Long c = startC;
@@ -350,12 +301,9 @@ void u32Merge (U32 * arrA, Long startA, Long lengthA, // input
 }
 
 
-
-/*******************************************************/
-
 #ifdef TOKUDA
 
-Long tokudaIncrements [48] = 
+const Long tokudaIncrements [48] =
   { 1LL, 4LL, 9LL, 20LL, 46LL, 103LL, 233LL, 525LL, 1182LL, 2660LL, 5985LL, 13467LL, 30301LL, 68178LL,
     153401LL, 345152LL, 776591LL, 1747331LL, 3931496LL, 8845866LL, 19903198LL, 44782196LL,
     100759940LL, 226709866LL, 510097200LL, 1147718700LL, 2582367076LL, 5810325920LL,
@@ -367,15 +315,16 @@ Long tokudaIncrements [48] =
 
 // Call with r pointing AT the rightmost element of the subarray.
 
-void u32TokudaShellSort(U32 a[], Long l, Long r)
-{ Long i, h, k;
-  for (k = 0; tokudaIncrements[k] <= (r-l)/5; k++) ;
+void u32TokudaShellSort(U32 a[], Long l, Long r) {
+  Long k;
+  for (k = 0; tokudaIncrements[k] <= (r - l) / 5; k++);
   for (; k >= 0; k--) {
-    h = tokudaIncrements[k];
-    for (i = l+h; i <= r; i++) {
+    Long h = tokudaIncrements[k];
+    for (Long i = l + h; i <= r; i++) {
       Long j = i; U32 v = a[i]; 
-      while (j >= l+h && v < a[j-h])
-	{ a[j] = a[j-h]; j -= h; }
+      while (j >= l+h && v < a[j - h]) {
+        a[j] = a[j - h]; j -= h;
+      }
       a[j] = v; 
     } 
   }

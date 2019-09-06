@@ -29,8 +29,6 @@
 #include <time.h>
 #include <math.h>
 
-typedef int Boolean;
-
 typedef uint8_t  U8;
 typedef uint16_t U16;
 typedef uint32_t U32;
