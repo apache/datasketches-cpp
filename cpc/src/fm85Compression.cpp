@@ -411,7 +411,7 @@ Short determinePseudoPhase(Short lgK, Long c) {
   }
 }
 
-void compressTheWindow(FM85* target, FM85* source) {
+void compressTheWindow(FM85* target, const FM85* source) {
   const Long k = 1LL << source->lgK;
   const Long windowBufLen = safeLengthForCompressedWindowBuf (k);
   U32* windowBuf = (U32 *) fm85alloc ((size_t) (windowBufLen * sizeof(U32)));
@@ -431,7 +431,7 @@ void compressTheWindow(FM85* target, FM85* source) {
   target->compressedWindow = shorterBuf;
 }
 
-void uncompressTheWindow(FM85* target, FM85* source) {
+void uncompressTheWindow(FM85* target, const FM85* source) {
   const Long k = 1LL << source->lgK;
   U8* window = (U8*) fm85alloc((size_t) (k * sizeof(U8)));
   if (window == NULL) throw std::bad_alloc();
@@ -446,7 +446,7 @@ void uncompressTheWindow(FM85* target, FM85* source) {
 			   source->cwLength);
 }
 
-void compressTheSurprisingValues(FM85* target, FM85* source, U32* pairs, Long numPairs) {
+void compressTheSurprisingValues(FM85* target, const FM85* source, U32* pairs, Long numPairs) {
   if (numPairs <= 0) throw std::invalid_argument("numPairs <= 0");
   target->numCompressedSurprisingValues = numPairs;  
   const Long k = 1LL << source->lgK;
@@ -469,7 +469,7 @@ void compressTheSurprisingValues(FM85* target, FM85* source, U32* pairs, Long nu
 
 // allocates and returns an array of uncompressed pairs.
 // the length of this array is known to the source sketch.
-U32* uncompressTheSurprisingValues(FM85* source) {
+U32* uncompressTheSurprisingValues(const FM85* source) {
   if (!source->isCompressed) throw std::logic_error("not compressed");
   const Long k = 1LL << source->lgK;
   const Long numPairs = source->numCompressedSurprisingValues;
@@ -482,15 +482,15 @@ U32* uncompressTheSurprisingValues(FM85* source) {
   return pairs;
 }
 
-void compressEmptyFlavor(FM85* target, FM85* source) {
+void compressEmptyFlavor(FM85* target, const FM85* source) {
   return; // nothing to do, so just return
 }
 
-void uncompressEmptyFlavor(FM85* target, FM85* source) {
+void uncompressEmptyFlavor(FM85* target, const FM85* source) {
   return; // nothing to do, so just return
 }
 
-void compressSparseFlavor(FM85* target, FM85* source) {
+void compressSparseFlavor(FM85* target, const FM85* source) {
   if (source->slidingWindow != NULL) throw std::logic_error("source->slidingWindow != NULL"); // there is no window to compress
   Long numPairs = 0;
   U32* pairs = u32TableUnwrappingGetItems(source->surprisingValueTable, &numPairs);
@@ -499,7 +499,7 @@ void compressSparseFlavor(FM85* target, FM85* source) {
   if (pairs) fm85free(pairs);
 }
 
-void uncompressSparseFlavor(FM85* target, FM85* source) {
+void uncompressSparseFlavor(FM85* target, const FM85* source) {
   if (source->compressedWindow != NULL) throw std::logic_error("source->compressedWindow != NULL");
   if (source->compressedSurprisingValues == NULL) throw std::logic_error("source->compressedSurprisingValues == NULL");
   U32* pairs = uncompressTheSurprisingValues (source);
@@ -532,7 +532,7 @@ U32* trickyGetPairsFromWindow(U8* window, Long k, Long numPairsToGet, Long empty
 
 // This is complicated because it effectively builds a Sparse version
 // of a Pinned sketch before compressing it. Hence the name Hybrid.
-void compressHybridFlavor(FM85* target, FM85* source) {
+void compressHybridFlavor(FM85* target, const FM85* source) {
   const Long k = 1LL << source->lgK;
   Long numPairsFromTable = 0; 
   U32* pairsFromTable = u32TableUnwrappingGetItems(source->surprisingValueTable, &numPairsFromTable);
@@ -552,7 +552,7 @@ void compressHybridFlavor(FM85* target, FM85* source) {
   fm85free(allPairs);
 }
 
-void uncompressHybridFlavor(FM85* target, FM85* source) {
+void uncompressHybridFlavor(FM85* target, const FM85* source) {
   if (source->compressedWindow != NULL) throw std::logic_error("source->compressedWindow != NULL");
   if (source->compressedSurprisingValues == NULL) throw std::logic_error("source->compressedSurprisingValues == NULL");
   U32* pairs = uncompressTheSurprisingValues(source);
@@ -591,7 +591,7 @@ void uncompressHybridFlavor(FM85* target, FM85* source) {
   fm85free(pairs);
 }
 
-void compressPinnedFlavor(FM85* target, FM85* source) {
+void compressPinnedFlavor(FM85* target, const FM85* source) {
   compressTheWindow(target, source);
   const Long numPairs = source->surprisingValueTable->numItems;
   if (numPairs > 0) {
@@ -615,7 +615,7 @@ void compressPinnedFlavor(FM85* target, FM85* source) {
   }
 }
 
-void uncompressPinnedFlavor(FM85* target, FM85* source) {
+void uncompressPinnedFlavor(FM85* target, const FM85* source) {
   if (source->compressedWindow == NULL) throw std::logic_error("source->compressedWindow == NULL");
   uncompressTheWindow(target, source);
   const Long numPairs = source->numCompressedSurprisingValues;
@@ -637,7 +637,7 @@ void uncompressPinnedFlavor(FM85* target, FM85* source) {
 }
 
 // Complicated by the existence of both a left fringe and a right fringe.
-void compressSlidingFlavor(FM85* target, FM85* source) {
+void compressSlidingFlavor(FM85* target, const FM85* source) {
   compressTheWindow(target, source);
   const Long numPairs = source->surprisingValueTable->numItems;
   if (numPairs > 0) {
@@ -673,7 +673,7 @@ void compressSlidingFlavor(FM85* target, FM85* source) {
   }
 }
 
-void uncompressSlidingFlavor(FM85* target, FM85* source) {
+void uncompressSlidingFlavor(FM85* target, const FM85* source) {
   if (source->compressedWindow == NULL) throw std::logic_error("source->compressedWindow == NULL");
   uncompressTheWindow(target, source);
   const Long numPairs = source->numCompressedSurprisingValues;
@@ -709,7 +709,7 @@ void uncompressSlidingFlavor(FM85* target, FM85* source) {
   }
 }
 
-FM85* fm85Compress(FM85* source) {
+FM85* fm85Compress(const FM85* source) {
   if (source->isCompressed) throw std::invalid_argument("already compressed");
 
   FM85* target = (FM85*) fm85alloc(sizeof(FM85));
@@ -764,7 +764,7 @@ FM85* fm85Compress(FM85* source) {
   return target;
 }
 
-FM85* fm85Uncompress(FM85* source) {
+FM85* fm85Uncompress(const FM85* source) {
   if (!source->isCompressed) throw std::invalid_argument("not compressed");
 
   FM85* target = (FM85*) fm85alloc(sizeof(FM85));

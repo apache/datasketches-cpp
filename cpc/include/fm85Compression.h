@@ -69,9 +69,9 @@ void lowLevelUncompressBytes(U8* byteArray, // output
 			      const U32* compressedWords, // input
 			      Long numCompressedWords); // input
 
-FM85* fm85Compress(FM85* uncompressedSketch); // returns a compressed copy of its input
+FM85* fm85Compress(const FM85* uncompressedSketch); // returns a compressed copy of its input
 
-FM85* fm85Uncompress(FM85* compressedSketch); // returns an updateable copy of its input
+FM85* fm85Uncompress(const FM85* compressedSketch); // returns an updateable copy of its input
 
 #define GOT_FM85_COMPRESSION_H
 #endif
