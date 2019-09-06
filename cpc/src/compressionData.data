@@ -38,12 +38,8 @@ which is defined in fm85Compression.c
 */
 
 
-/************************************************************************************************************/
-/************************************************************************************************************/
-/************************************************************************************************************/
-
 // These decoding tables are created at library startup time by inverting the encoding tables.
-U16 * decodingTablesForHighEntropyByte [22] = {
+U16* decodingTablesForHighEntropyByte [22] = {
   // sixteen tables for the steady state (chosen based on the "phase" of C/K)
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
@@ -52,7 +48,7 @@ U16 * decodingTablesForHighEntropyByte [22] = {
   // six more tables for the gradual transition between warmup mode and the steady state.
   NULL, NULL, NULL, NULL, NULL, NULL};
 
-U16 encodingTablesForHighEntropyByte [22][256] = {
+const U16 encodingTablesForHighEntropyByte [22][256] = {
  // Sixteen Encoding Tables for the Steady State.
 
  // (table 0 of 22) (steady 0 of 16) (phase = 0.031250000 = 1.0 / 32.0)
@@ -5949,10 +5945,6 @@ U16 lengthLimitedUnaryEncodingTable65 [65] = {
  0xcfff  // (12, 4095)  64
 };
 
-/************************************************************************************************************/
-/************************************************************************************************************/
-/************************************************************************************************************/
-
 /*
 Note: these column permutations are part of the encoding scheme for sketches where C >= 3.375 * K.
 In each row, we identify the (0-based) column indices of all surprising bits
@@ -5967,7 +5959,7 @@ by the phase of C / K). Finally, the remapped indices are encoding with a unary 
 (with delta encoding for rows containing more than one surprising bit).
 */
 
-U8 * columnPermutationsForDecoding [16] = {
+U8* columnPermutationsForDecoding [16] = {
   NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 };
@@ -5975,7 +5967,7 @@ U8 * columnPermutationsForDecoding [16] = {
 // These permutations were created by
 // the ocaml program "generatePermutationsForSLIDING.ml".
 
-U8 columnPermutationsForEncoding [16] [56] = {
+const U8 columnPermutationsForEncoding [16] [56] = {
   // for phase = 1 / 32
   {0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21,
    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40,
@@ -6041,6 +6033,3 @@ U8 columnPermutationsForEncoding [16] [56] = {
    22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 38, 39, 40,
    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 32, 13, 3}
 };
-
-
-
