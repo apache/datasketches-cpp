@@ -5,7 +5,7 @@ class HllTest(unittest.TestCase):
     def test_hll_sketch(self):
         k = 8
         n = 117
-        hll = generate_sketch(n, k, tgt_hll_type.HLL_6)
+        hll = self.generate_sketch(n, k, tgt_hll_type.HLL_6)
         hll.update('string data')
         hll.update(3.14159) # double data
 
@@ -25,17 +25,14 @@ class HllTest(unittest.TestCase):
         self.assertFalse(hll.is_compact())
         self.assertFalse(hll.is_empty())
 
+        self.assertTrue(isinstance(hll_sketch.deserialize(bytes_compact), hll_sketch))
+        self.assertTrue(isinstance(hll_sketch.deserialize(bytes_update), hll_sketch))
+
         self.assertIsNotNone(hll_sketch.get_rel_err(True, False, 12, 1))
         self.assertIsNotNone(hll_sketch.get_max_updatable_serialization_bytes(20, tgt_hll_type.HLL_6))
 
         hll.reset()
         self.assertTrue(hll.is_empty())
-
-    def generate_sketch(self, n, k, type=tgt_hll_type.HLL_4, st_idx=0):
-        sk = hll_sketch(k, type)
-        for i in range(st_idx, st_idx + n):
-            sk.update(i)
-        return sk
 
     def test_hll_union(self):
         k = 7
@@ -57,10 +54,26 @@ class HllTest(unittest.TestCase):
         self.assertEqual(union.lg_config_k, k)
         self.assertFalse(union.is_compact())
         self.assertFalse(union.is_empty())
-        
-        
 
+        sk = union.get_result()
+        self.assertTrue(isinstance(sk, hll_sketch))
+        self.assertEqual(sk.tgt_type, tgt_hll_type.HLL_4)
 
+        bytes_compact = union.serialize_compact()
+        bytes_update = union.serialize_updatable()
+        self.assertEqual(len(bytes_compact), union.get_compact_serialization_bytes())
+        self.assertEqual(len(bytes_update), union.get_updatable_serialization_bytes())
+
+        self.assertTrue(isinstance(hll_union.deserialize(bytes_compact), hll_union))
+        self.assertTrue(isinstance(hll_union.deserialize(bytes_update), hll_union))
+
+        
+    def generate_sketch(self, n, k, type=tgt_hll_type.HLL_4, st_idx=0):
+        sk = hll_sketch(k, type)
+        for i in range(st_idx, st_idx + n):
+            sk.update(i)
+        return sk
+        
         
 if __name__ == '__main__':
     unittest.main()
