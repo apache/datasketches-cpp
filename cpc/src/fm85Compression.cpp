@@ -31,7 +31,7 @@
 // Intentionally uses malloc instead of the custom allocator
 // since it is for global initialization, not for allocating instances.
 U8* makeInversePermutation(const U8* permu, int length) {
-  U8* inverse = (U8*) malloc (((size_t) length) * sizeof(U8));
+  U8* inverse = (U8*) malloc(((size_t) length) * sizeof(U8));
   if (inverse == NULL) throw std::bad_alloc();
   for (int i = 0; i < length; i++) {
     inverse[permu[i]] = i;
@@ -110,8 +110,8 @@ static inline void writeUnary(
     Long* nextWordIndexPtr,
     U64* bitbufPtr,
     int* bufbitsPtr,
-    Long the_value)
-{
+    Long the_value
+) {
   if (compressedWords == NULL) throw std::logic_error("compressedWords == NULL");
   if (nextWordIndexPtr == NULL) throw std::logic_error("nextWordIndexPtr == NULL");
   if (bitbufPtr == NULL) throw std::logic_error("bitbufPtr == NULL");
@@ -145,11 +145,12 @@ static inline void writeUnary(
   *bufbitsPtr = bufbits;
 }
 
-static inline Long readUnary(const U32* compressedWords,
-			      Long* nextWordIndexPtr,
-			      U64* bitbufPtr,
-			      int* bufbitsPtr)
-{
+static inline Long readUnary(
+    const U32* compressedWords,
+    Long* nextWordIndexPtr,
+    U64* bitbufPtr,
+    int* bufbitsPtr
+) {
   if (compressedWords == NULL) throw std::logic_error("compressedWords == NULL");
   if (nextWordIndexPtr == NULL) throw std::logic_error("nextWordIndexPtr == NULL");
   if (bitbufPtr == NULL) throw std::logic_error("bitbufPtr == NULL");
@@ -187,14 +188,16 @@ static inline Long readUnary(const U32* compressedWords,
 
 // This returns the number of compressedWords that were actually used.
 // It is the caller's responsibility to ensure that the compressedWords array is long enough.
-Long lowLevelCompressBytes(const U8* byteArray, // input
-    Long numBytesToEncode,  // input
-    const U16* encodingTable,     // input
-    U32* compressedWords) { // output
+Long lowLevelCompressBytes(
+    const U8* byteArray,      // input
+    Long numBytesToEncode,    // input
+    const U16* encodingTable, // input
+    U32* compressedWords      // output
+) {
 
   Long byteIndex = 0;
   Long nextWordIndex = 0;
-  
+
   U64 bitbuf = 0; /* bits are packed into this first, then are flushed to compressedWords */
   int bufbits = 0; /* number of bits currently in bitbuf; must be between 0 and 31 */
 
@@ -219,11 +222,13 @@ Long lowLevelCompressBytes(const U8* byteArray, // input
   return nextWordIndex;
 }
 
-void lowLevelUncompressBytes(U8* byteArray, // output
-    Long numBytesToDecode, // input (but refers to the output)
-    const U16* decodingTable, // input
+void lowLevelUncompressBytes(
+    U8* byteArray,              // output
+    Long numBytesToDecode,      // input (but refers to the output)
+    const U16* decodingTable,   // input
     const U32* compressedWords, // input
-    Long numCompressedWords) { // input
+    Long numCompressedWords     // input
+) {
   Long byteIndex = 0;
   Long wordIndex = 0;  
 
@@ -254,10 +259,12 @@ void lowLevelUncompressBytes(U8* byteArray, // output
 // the positions of surprising values in the bit matrix.
 
 // returns the number of compressedWords actually used
-Long lowLevelCompressPairs(const U32* pairArray, // input
+Long lowLevelCompressPairs(
+    const U32* pairArray,  // input
     Long numPairsToEncode, // input
     Long numBaseBits,      // input
-    U32* compressedWords) { // output
+    U32* compressedWords   // output
+) {
   Long pairIndex = 0;
   Long nextWordIndex = 0;
   U64 bitbuf = 0; 
@@ -269,10 +276,10 @@ Long lowLevelCompressPairs(const U32* pairArray, // input
   Short predictedColIndex = 0;
 
   for (pairIndex = 0; pairIndex < numPairsToEncode; pairIndex++) {
-    const U32 rowCol = pairArray[pairIndex];
+    const U32   rowCol   = pairArray[pairIndex];
     const Long  rowIndex = (Long)  (rowCol >> 6);
     const Short colIndex = (Short) (rowCol & 63);
-    
+
     if (rowIndex != predictedRowIndex) { predictedColIndex = 0; }
 
     if (rowIndex < predictedRowIndex) throw std::logic_error("rowIndex < predictedRowIndex");
@@ -315,11 +322,13 @@ Long lowLevelCompressPairs(const U32* pairArray, // input
   return nextWordIndex;
 }
 
-void lowLevelUncompressPairs(U32* pairArray, // output
-    Long numPairsToDecode,  // input (but refers to the output)
-    Long numBaseBits,       // input
-    const U32* compressedWords,   // input
-    Long numCompressedWords) { // input
+void lowLevelUncompressPairs(
+    U32* pairArray,             // output
+    Long numPairsToDecode,      // input (but refers to the output)
+    Long numBaseBits,           // input
+    const U32* compressedWords, // input
+    Long numCompressedWords     // input
+) {
   Long pairIndex = 0;
   Long wordIndex = 0;
   U64 bitbuf = 0; 
@@ -385,7 +394,7 @@ Long safeLengthForCompressedPairBuf(Long k, Long numPairs, Long numBaseBits) {
 // so we would be safe with max (0, 10 - B) bits of padding at the end of the bitstream.
 
 Long safeLengthForCompressedWindowBuf(Long k) { // measured in 32-bit words
-  Long bits = 12 * k + 11; // 11 bits of padding, due to 12-bit lookahead, with 1 bit certainly present.
+  const Long bits = 12 * k + 11; // 11 bits of padding, due to 12-bit lookahead, with 1 bit certainly present.
   return divideLongsRoundingUp(bits, 32);
 }
 
@@ -652,7 +661,7 @@ void compressSlidingFlavor(FM85* target, const FM85* source) {
     if (pseudoPhase >= 16) throw std::logic_error("pseudoPhase >= 16");
     const U8* permutation = columnPermutationsForEncoding[pseudoPhase];
 
-    Short offset = source->windowOffset;
+    const Short offset = source->windowOffset;
     if (offset <= 0 || offset > 56) throw std::out_of_range("offset out of range");
 
     for (Long i = 0; i < numPairs; i++) {
@@ -684,7 +693,7 @@ void uncompressSlidingFlavor(FM85* target, const FM85* source) {
     if (source->compressedSurprisingValues == NULL) throw std::logic_error("source->compressedSurprisingValues == NULL");
     U32* pairs = uncompressTheSurprisingValues(source);
 
-    Short pseudoPhase = determinePseudoPhase (source->lgK, source->numCoupons); // NB
+    const Short pseudoPhase = determinePseudoPhase (source->lgK, source->numCoupons); // NB
     if (pseudoPhase >= 16) throw std::logic_error("pseudoPhase >= 16");
     const U8* permutation = columnPermutationsForDecoding[pseudoPhase];
 
@@ -737,7 +746,7 @@ FM85* fm85Compress(const FM85* source) {
   target->slidingWindow = NULL;
   target->surprisingValueTable = NULL;
 
-  enum flavorType flavor = determineSketchFlavor(source);
+  const enum flavorType flavor = determineSketchFlavor(source);
   switch (flavor) {
   case EMPTY: compressEmptyFlavor(target, source); break;
   case SPARSE:
@@ -792,7 +801,7 @@ FM85* fm85Uncompress(const FM85* source) {
   target->compressedWindow = (U32*) NULL;
   target->cwLength = 0;
 
-  enum flavorType flavor = determineSketchFlavor(source);
+  const enum flavorType flavor = determineSketchFlavor(source);
   switch (flavor) {
   case EMPTY: uncompressEmptyFlavor  (target, source); break;
   case SPARSE:  

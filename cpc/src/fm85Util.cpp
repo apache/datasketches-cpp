@@ -113,7 +113,7 @@ double invPow2Tab[256];
 
 void fillInvPow2Tab(void) {
   for (int j = 0; j < 256; j++) {
-    invPow2Tab[j] = pow (2.0, (-1.0 * ((double) j)));
+    invPow2Tab[j] = pow(2.0, (-1.0 * ((double) j)));
   }
 }
 

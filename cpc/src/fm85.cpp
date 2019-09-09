@@ -68,7 +68,7 @@ void fm85InitAD(void* (*alloc)(size_t), void (*dealloc)(void*)) {
   }
 }
 
-void fm85Clean(void) {
+void fm85Clean() {
   if (fm85Initialized) {
     freeTheDecodingTables();
     fm85Initialized = false;
@@ -383,7 +383,7 @@ void updateWindowed(FM85* self, U32 rowCol) {
   if (c8pre >= (27 + w8pre) * k) throw std::logic_error("c8pre is wrong"); // C < (K * 27/8) + (K * windowOffset)
 
   bool isNovel = false;
-  Short col = (Short) (rowCol & 63);
+  const Short col = (Short) (rowCol & 63);
 
   if (col < self->windowOffset) { // track the surprising 0's "before" the window
     isNovel = u32TableMaybeDelete(self->surprisingValueTable, rowCol); // inverted logic

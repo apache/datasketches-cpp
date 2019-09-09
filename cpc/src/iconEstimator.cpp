@@ -299,13 +299,13 @@ double exactIconEstimatorBinarySearch(double kf, double targetC, double nLoIn, d
   double nLo = nLoIn;
   double nHi = nHiIn;
  tailRecurse: // manual tail recursion optimization
-  if (depth > 100) { throw std::logic_errir("excessive recursion in binary search"); }
+  if (depth > 100) { throw std::logic_error("excessive recursion in binary search"); }
   if (nHi <= nLo) throw std::logic_error("binary search error");
-  double nMid = nLo + 0.5 * (nHi - nLo);
+  const double nMid = nLo + 0.5 * (nHi - nLo);
   if (nMid <= nLo || nMid >= nHi) throw std::logic_error("binary search error");
   if (((nHi - nLo) / nMid) < iconInversionTolerance) return (nMid);
-  double midC = exactCofN(kf, nMid);
-  if (midC == targetC) return (nMid);
+  const double midC = exactCofN(kf, nMid);
+  if (midC == targetC) return nMid;
   if (midC  < targetC) {nLo = nMid; depth++; goto tailRecurse;}
   if (midC  > targetC) {nHi = nMid; depth++; goto tailRecurse;}
   throw std::logic_error("bad value in binary search");
@@ -326,11 +326,12 @@ double exactIconEstimatorBracketHi(double kf, double targetC, double nLo) {
 }
 
 double exactIconEstimator(int lgK, long c) {
-  double targetC = (double) c;
-  if (c == 0L || c == 1L) return (targetC);
-  double kf = (double) (1L << lgK);
-  double nLo = targetC; if (exactCofN(kf, nLo) >= targetC) throw std::logic_error("bracket lo error"); // bracket lo
-  double nHi = exactIconEstimatorBracketHi(kf, targetC, nLo); // bracket hi
+  const double targetC = (double) c;
+  if (c == 0L || c == 1L) return targetC;
+  const double kf = (double) (1L << lgK);
+  const double nLo = targetC;
+  if (exactCofN(kf, nLo) >= targetC) throw std::logic_error("bracket lo error"); // bracket lo
+  const double nHi = exactIconEstimatorBracketHi(kf, targetC, nLo); // bracket hi
   return exactIconEstimatorBinarySearch(kf, targetC, nLo, nHi);
 }
 

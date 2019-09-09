@@ -144,7 +144,7 @@ void ug85ReduceK(UG85* unioner, Short newLgK) {
     if (oldSketch->slidingWindow != NULL || oldSketch->surprisingValueTable == NULL) throw std::logic_error("invalid state");
     walkTableUpdatingSketch(newSketch, oldSketch->surprisingValueTable);
 
-    enum flavorType finalNewFlavor = determineSketchFlavor(newSketch);
+    const enum flavorType finalNewFlavor = determineSketchFlavor(newSketch);
     if (finalNewFlavor == EMPTY) throw std::logic_error("finalNewFlavor == EMPTY");
     if (finalNewFlavor == SPARSE) {
       unioner->accumulator = newSketch;
@@ -168,7 +168,7 @@ void ug85MergeInto(UG85* unioner, const FM85* source) {
   if (NULL == unioner) throw std::invalid_argument("unioner is null");
   if (NULL == source) return;
   
-  enum flavorType sourceFlavor = determineSketchFlavor(source);
+  const enum flavorType sourceFlavor = determineSketchFlavor(source);
   if (EMPTY == sourceFlavor) return;
 
   if (source->lgK < unioner->lgK) { ug85ReduceK(unioner, source->lgK); }
@@ -179,7 +179,7 @@ void ug85MergeInto(UG85* unioner, const FM85* source) {
 
   if (SPARSE == sourceFlavor && unioner->accumulator != NULL)  { // Case A
     if (unioner->bitMatrix != NULL) throw std::logic_error("unioner->bitMatrix != NULL");
-    enum flavorType initialDestFlavor = determineSketchFlavor(unioner->accumulator);
+    const enum flavorType initialDestFlavor = determineSketchFlavor(unioner->accumulator);
     if (EMPTY != initialDestFlavor && SPARSE != initialDestFlavor) throw std::logic_error("wrong flavor");
 
     // The following partially fixes the snowplow problem provided that the K's are equal.
@@ -190,7 +190,7 @@ void ug85MergeInto(UG85* unioner, const FM85* source) {
     }
 
     walkTableUpdatingSketch(unioner->accumulator, source->surprisingValueTable);
-    enum flavorType finalDestFlavor = determineSketchFlavor(unioner->accumulator);
+    const enum flavorType finalDestFlavor = determineSketchFlavor(unioner->accumulator);
     // if the accumulator has graduated beyond sparse, switch to a bitMatrix representation
     if (finalDestFlavor != EMPTY && finalDestFlavor != SPARSE) {
       unioner->bitMatrix = bitMatrixOfSketch(unioner->accumulator);
@@ -295,7 +295,7 @@ FM85* ug85GetResult(const UG85* unioner) {
     pattern ^= maskForFlippingEarlyZone; // This flipping converts surprising 0's to 1's.
     allSurprisesORed |= pattern;
     while (pattern != 0) {
-      Short col = countTrailingZerosInUnsignedLong(pattern);
+      const Short col = countTrailingZerosInUnsignedLong(pattern);
       pattern = pattern ^ (1ULL << col); // erase the 1.
       const U32 rowCol = (i << 6) | col;
       bool isNovel = u32TableMaybeInsert(table, rowCol);
