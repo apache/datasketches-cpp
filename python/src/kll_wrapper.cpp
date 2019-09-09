@@ -49,7 +49,7 @@ double kll_sketch_generic_normalized_rank_error(uint16_t k, bool pmf) {
 
 template<typename T>
 py::list kll_sketch_get_quantiles(const kll_sketch<T>& sk,
-                                std::vector<double>& fractions) {
+                                 std::vector<double>& fractions) {
   size_t nQuantiles = fractions.size();
   auto result = sk.get_quantiles(&fractions[0], nQuantiles);
 
@@ -64,12 +64,12 @@ py::list kll_sketch_get_quantiles(const kll_sketch<T>& sk,
 
 template<typename T>
 py::list kll_sketch_get_pmf(const kll_sketch<T>& sk,
-                          std::vector<T>& split_points) {
+                            std::vector<T>& split_points) {
   size_t nPoints = split_points.size();
   auto result = sk.get_PMF(&split_points[0], nPoints);
 
-  py::list list(nPoints);
-  for (int i = 0; i < nPoints; ++i) {
+  py::list list(nPoints + 1);
+  for (int i = 0; i <= nPoints; ++i) {
     list[i] = result[i];
   }
 
@@ -78,12 +78,12 @@ py::list kll_sketch_get_pmf(const kll_sketch<T>& sk,
 
 template<typename T>
 py::list kll_sketch_get_cdf(const kll_sketch<T>& sk,
-                          std::vector<T>& split_points) {
+                            std::vector<T>& split_points) {
   size_t nPoints = split_points.size();
   auto result = sk.get_CDF(&split_points[0], nPoints);
 
-  py::list list(nPoints);
-  for (int i = 0; i < nPoints; ++i) {
+  py::list list(nPoints + 1);
+  for (int i = 0; i <= nPoints; ++i) {
     list[i] = result[i];
   }
 
