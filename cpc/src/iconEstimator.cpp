@@ -45,16 +45,11 @@
 // This file also provides a validation procedure that compares its approximate 
 // and exact implementations of the FM85 ICON estimator.
 
-#define iconMinLogK 4
-
-#define iconMaxLogK 26
-
-#define iconPolynomialDegree 19
-
-#define iconPolynomialNumCoefficients (1 + iconPolynomialDegree)
-
-#define iconTableSize (iconPolynomialNumCoefficients * (1 + (iconMaxLogK - iconMinLogK)))
-
+const int iconMinLogK = 4;
+const int iconMaxLogK = 26;
+const int iconPolynomialDegree = 19;
+const int iconPolynomialNumCoefficients = 1 + iconPolynomialDegree;
+const int iconTableSize = iconPolynomialNumCoefficients * (1 + (iconMaxLogK - iconMinLogK));
 
 const double iconPolynomialCoefficents[iconTableSize] = {
 
