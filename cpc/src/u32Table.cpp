@@ -181,7 +181,7 @@ bool u32TableMaybeDelete(u32Table* self, U32 item) {
     probe = (probe + 1) & mask; fetched = arr[probe];
     while (fetched != ALL32BITS) {
       arr[probe] = ALL32BITS;
-      u32TableMustInsert (self, fetched);
+      u32TableMustInsert(self, fetched);
       probe = (probe + 1) & mask; fetched = arr[probe];      
     }
 
@@ -282,8 +282,8 @@ void introspectiveInsertionSort(U32 a[], Long l, Long r) { // r points AT the ri
 void u32Merge(
     const U32* arrA, Long startA, Long lengthA, // input
     const U32* arrB, Long startB, Long lengthB, // input
-    U32* arrC, Long startC) // output
-{
+    U32* arrC, Long startC // output
+) {
   const Long lengthC = lengthA + lengthB;
   const Long limA = startA + lengthA;
   const Long limB = startB + lengthB;
