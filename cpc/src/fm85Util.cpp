@@ -53,13 +53,13 @@ void fillByteLeadingZerosTable(void) {
     byteLeadingZerosTable[j] = slow_count_leading_zeros_in_byte ((U8) j);
 }
 
-#define FCLZ_MASK_56 ((U64) 0x00ffffffffffffff)
-#define FCLZ_MASK_48 ((U64) 0x0000ffffffffffff)
-#define FCLZ_MASK_40 ((U64) 0x000000ffffffffff)
-#define FCLZ_MASK_32 ((U64) 0x00000000ffffffff)
-#define FCLZ_MASK_24 ((U64) 0x0000000000ffffff)
-#define FCLZ_MASK_16 ((U64) 0x000000000000ffff)
-#define FCLZ_MASK_08 ((U64) 0x00000000000000ff)
+const U64 FCLZ_MASK_56 = 0x00ffffffffffffff;
+const U64 FCLZ_MASK_48 = 0x0000ffffffffffff;
+const U64 FCLZ_MASK_40 = 0x000000ffffffffff;
+const U64 FCLZ_MASK_32 = 0x00000000ffffffff;
+const U64 FCLZ_MASK_24 = 0x0000000000ffffff;
+const U64 FCLZ_MASK_16 = 0x000000000000ffff;
+const U64 FCLZ_MASK_08 = 0x00000000000000ff;
 
 Short countLeadingZerosInUnsignedLong(U64 theInput) {
   if (theInput > FCLZ_MASK_56)
@@ -169,13 +169,12 @@ Long golombChooseNumberOfBaseBits(Long k, Long count) {
 // very simple and trustworthy during initial testing.
 
 Long wegnerCountBitsSetInMatrix(const U64* array, Long length) {
-  Long i = 0;
   U64 pattern = 0;
   Long count = 0;
   //  clock_t t0, t1;
   //  t0 = clock();
   // Wegner's Bit-Counting Algorithm, CACM 3 (1960), p. 322.
-  for (i = 0; i < length; i++) {
+  for (Long i = 0; i < length; i++) {
     pattern = array[i];
     while (pattern != 0) { 
       pattern &= (pattern - 1); 
@@ -200,7 +199,7 @@ static inline Long warrenBitCount(U64 i) {
   i = i + (i >> 8);
   i = i + (i >> 16);
   i = i + (i >> 32);
-  return (Long)i & 0x7f;
+  return (Long) i & 0x7f;
 }
 
 Long warrenCountBitsSetInMatrix(const U64* array, Long length) {
@@ -239,7 +238,7 @@ Long countBitsSetInMatrix(const U64* A, Long length) {
   // Because I still don't fully trust this fancy version
   // assert(tot == wegnerCountBitsSetInMatrix(A, length));
 
-  return (tot);
+  return tot;
 }
 
 // Here are some timings made with quickTestMerge.c
