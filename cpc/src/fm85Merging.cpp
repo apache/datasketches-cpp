@@ -70,8 +70,7 @@ void walkTableUpdatingSketch(FM85* dest, const u32Table* table) {
   if (stride == ((stride >> 1) << 1)) { stride += 1; }; // force the stride to be odd
   if (stride < 3 || stride >= numSlots) throw std::out_of_range("stride out of range");
 
-  Long i,j;
-  for (i = 0, j = 0; i < numSlots; i++, j += stride) {
+  for (Long i = 0, j = 0; i < numSlots; i++, j += stride) {
     j &= numSlots - 1LL;
     const U32 rowCol = slots[j];
     if (rowCol != ALL32BITS) {
