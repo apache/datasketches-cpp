@@ -37,12 +37,8 @@ typedef uint64_t U64;
 typedef int16_t Short; // signed
 typedef int64_t Long;  // signed
 
-#define ALL64BITS 0xffffffffffffffffULL
-#define ALL32BITS 0xffffffffULL
-
-// Do not use either of these with a shift of 0 or 64.
-#define ROTATE_RIGHT_MACRO(val,shift) (((val) >> (shift)) | ((val) << (64 - (shift))))
-#define ROTATE_LEFT_MACRO(val,shift)  (((val) << (shift)) | ((val) >> (64 - (shift))))
+static const uint64_t ALL64BITS = 0xffffffffffffffffULL;
+static const uint32_t ALL32BITS = 0xffffffffULL;
 
 #define GOT_COMMON_H
 #endif
