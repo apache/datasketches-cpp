@@ -25,11 +25,11 @@
 #ifndef GOT_U32_TABLE_H
 #include "common.h"
 
-#define u32TableUpsizeNumer 3LL
-#define u32TableUpsizeDenom 4LL
+static const uint64_t u32TableUpsizeNumer = 3LL;
+static const uint64_t u32TableUpsizeDenom = 4LL;
 
-#define u32TableDownsizeNumer 1LL
-#define u32TableDownsizeDenom 4LL
+static const uint64_t u32TableDownsizeNumer = 1LL;
+static const uint64_t u32TableDownsizeDenom = 4LL;
 
 typedef struct u32_table_type {
   Short validBits;
@@ -66,7 +66,8 @@ void introspectiveInsertionSort(U32 a[], Long l, Long r);
 void u32Merge(
     const U32* arrA, Long startA, Long lengthA, // input
 	  const U32* arrB, Long startB, Long lengthB, // input
-	  U32* arrC, Long startC);                    // output
+	  U32* arrC, Long startC                      // output
+);
 
 #define GOT_U32_TABLE_H
 #endif
