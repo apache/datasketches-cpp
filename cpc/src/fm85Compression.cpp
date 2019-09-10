@@ -26,7 +26,7 @@
 #include <new>
 
 // The following material is in a separate file because it is so big.
-#include "compressionData.data"
+#include "compressionData.h"
 
 // Intentionally uses malloc instead of the custom allocator
 // since it is for global initialization, not for allocating instances.
