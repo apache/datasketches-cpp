@@ -25,66 +25,49 @@
 #ifndef GOT_U32_TABLE_H
 #include "common.h"
 
-#define u32TableUpsizeNumer 3LL
-#define u32TableUpsizeDenom 4LL
+static const uint64_t u32TableUpsizeNumer = 3LL;
+static const uint64_t u32TableUpsizeDenom = 4LL;
 
-#define u32TableDownsizeNumer 1LL
-#define u32TableDownsizeDenom 4LL
+static const uint64_t u32TableDownsizeNumer = 1LL;
+static const uint64_t u32TableDownsizeDenom = 4LL;
 
-typedef struct u32_table_type
-{
+typedef struct u32_table_type {
   Short validBits;
   Short lgSize; // log2 of number of slots
   Long  numItems;
-  U32 * slots;
+  U32* slots;
 } u32Table;
 
-/*******************************************************/
+u32Table* u32TableMake(Short initialLgSize, Short numValidBits);
 
-u32Table * u32TableMake (Short initialLgSize, Short numValidBits);
+u32Table* u32TableCopy(const u32Table* self);
 
-u32Table * u32TableCopy (u32Table * self);
+void u32TableClear(u32Table* self);
 
-void u32TableClear (u32Table * self);
+void u32TableFree(u32Table* self);
 
-void u32TableFree (u32Table * self);
+void u32TableShow(const u32Table* self); // for debugging
 
-void u32TableShow (u32Table * self); // for debugging
+bool u32TableMaybeInsert(u32Table* self, U32 item);
 
-/*******************************************************/
-
-Boolean u32TableMaybeInsert (u32Table * self, U32 item);
-
-Boolean u32TableMaybeDelete (u32Table * self, U32 item);
-
-/*******************************************************/
+bool u32TableMaybeDelete(u32Table* self, U32 item);
 
 // this one slightly breaks the abstraction boundary
+u32Table* makeU32TableFromPairsArray(const U32* pairs, Long numPairs, Short sketchLgK);
 
-u32Table * makeU32TableFromPairsArray (U32 * pairs, Long numPairs, Short sketchLgK);
+U32* u32TableUnwrappingGetItems(const u32Table* self, Long* returnNumItems);
 
-/*******************************************************/
-
-U32 * u32TableUnwrappingGetItems (u32Table * self, Long * returnNumItems);
-
-void printU32Array (U32 * array, Long arrayLength);
-
-/*******************************************************/
-
-// void u32TokudaShellSort(U32 a[], Long l, Long r);
+void printU32Array(const U32* array, Long arrayLength);
 
 void u32KnuthShellSort3(U32 a[], Long l, Long r);
 
 void introspectiveInsertionSort(U32 a[], Long l, Long r);
 
-
-/*******************************************************/
-
-void u32Merge (U32 * arrA, Long startA, Long lengthA, // input
-	       U32 * arrB, Long startB, Long lengthB, // input
-	       U32 * arrC, Long startC);              // output
-
-/*******************************************************/
+void u32Merge(
+    const U32* arrA, Long startA, Long lengthA, // input
+	  const U32* arrB, Long startB, Long lengthB, // input
+	  U32* arrC, Long startC                      // output
+);
 
 #define GOT_U32_TABLE_H
 #endif

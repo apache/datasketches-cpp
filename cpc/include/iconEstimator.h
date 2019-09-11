@@ -23,7 +23,7 @@
 
 #include "common.h"
 
-double getIconEstimate (Short lgK, Long c);
+double getIconEstimate(Short lgK, Long c);
 
 #define GOT_ICON_H
 #endif

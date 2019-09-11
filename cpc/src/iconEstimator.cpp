@@ -28,8 +28,6 @@
 
 #include <stdexcept>
 
-/******************************************************************************************/
-
 // The ICON estimator for FM85 sketches is defined by the arXiv paper.
 
 // The current file provides exact and approximate implementations of this estimator.
@@ -47,21 +45,13 @@
 // This file also provides a validation procedure that compares its approximate 
 // and exact implementations of the FM85 ICON estimator.
 
-/******************************************************************************************/
+const int iconMinLogK = 4;
+const int iconMaxLogK = 26;
+const int iconPolynomialDegree = 19;
+const int iconPolynomialNumCoefficients = 1 + iconPolynomialDegree;
+const int iconTableSize = iconPolynomialNumCoefficients * (1 + (iconMaxLogK - iconMinLogK));
 
-#define iconMinLogK 4
-
-#define iconMaxLogK 26
-
-#define iconPolynomialDegree 19
-
-#define iconPolynomialNumCoefficients (1 + iconPolynomialDegree)
-
-#define iconTableSize (iconPolynomialNumCoefficients * (1 + (iconMaxLogK - iconMinLogK)))
-
-/******************************************************************************************/
-
-double iconPolynomialCoefficents [iconTableSize] = {
+const double iconPolynomialCoefficents[iconTableSize] = {
 
  // log K = 4
  0.9895027971889700513, 0.3319496644645180128, 0.1242818722715769986, -0.03324149686026930256, -0.2985637298081619817,
@@ -241,50 +231,41 @@ double iconPolynomialCoefficents [iconTableSize] = {
 #endif
 };
 
-/******************************************************************************************/
-
-double evaluatePolynomial (double * coefficients, int start, int num, double x) {
-  int final = start + num - 1;
+double evaluatePolynomial(const double* coefficients, int start, int num, double x) {
+  const int final = start + num - 1;
   double total = coefficients[final];
-  int j;
-  for (j = final-1; j >= start; j--) {
+  for (int j = final - 1; j >= start; j--) {
     total *= x;
     total += coefficients[j];
   }
   return total;
 }
 
-/******************************************************************************************/
-
-double iconExponentialApproximation (double k, double c) {
+double iconExponentialApproximation(double k, double c) {
   return (0.7940236163830469 * k * pow(2.0, c / k));
 }
-/******************************************************************************************/
 
-double getIconEstimate (Short lgK, Long c) {
+double getIconEstimate(Short lgK, Long c) {
   if (lgK < iconMinLogK || lgK > iconMaxLogK) throw std::out_of_range("lgK out of range");
   if (c < 2L) return ((c == 0L) ? 0.0 : 1.0);
-  Long k = 1L << lgK;  
-  double doubleK = (double) k;
-  double doubleC = (double) c;
+  const Long k = 1L << lgK;
+  const double doubleK = (double) k;
+  const double doubleC = (double) c;
   // Differing thresholds ensure that the approximated estimator is monotonically increasing.
-  double thresholdFactor = ((lgK < 14) ? 5.7 : 5.6); 
-  if (doubleC > (thresholdFactor * doubleK)) return (iconExponentialApproximation (doubleK, doubleC));
-  double factor = evaluatePolynomial (iconPolynomialCoefficents,
+  const double thresholdFactor = ((lgK < 14) ? 5.7 : 5.6);
+  if (doubleC > (thresholdFactor * doubleK)) return iconExponentialApproximation(doubleK, doubleC);
+  const double factor = evaluatePolynomial(iconPolynomialCoefficents,
 				      iconPolynomialNumCoefficients * (lgK - iconMinLogK),
 				      iconPolynomialNumCoefficients,
   // The somewhat arbitrary constant 2.0 is baked into the table iconPolynomialCoefficents[].
 				      doubleC / (2.0 * doubleK)); 
-  double ratio = doubleC / doubleK;
+  const double ratio = doubleC / doubleK;
   // The somewhat arbitrary constant 66.774757 is baked into the table iconPolynomialCoefficents[].
-  double term = 1.0 + (ratio * ratio * ratio / 66.774757);
-  double result = doubleC * factor * term;
+  const double term = 1.0 + (ratio * ratio * ratio / 66.774757);
+  const double result = doubleC * factor * term;
   if (result >= doubleC) return result;
   else return doubleC;
 }
-
-/******************************************************************************************/
-/******************************************************************************************/
 
 #ifdef SLOW_EXACT_VERSION
 
@@ -292,16 +273,15 @@ double getIconEstimate (Short lgK, Long c) {
 // It has been carefully designed and tested for numerical accuracy.
 // In particular, the use of log1p and expm1 is critically important.
 
-static inline double qnj (double kf, double nf, int col) {
-  double tmp1 = -1.0 / (kf * (pow (2.0, ((double) col))));
-  double tmp2 = log1p (tmp1);
-  return (-1.0 * (expm1 (nf * tmp2)));
+static inline double qnj(double kf, double nf, int col) {
+  const double tmp1 = -1.0 / (kf * (pow(2.0, ((double) col))));
+  const double tmp2 = log1p(tmp1);
+  return (-1.0 * (expm1(nf * tmp2)));
 }
 
-double exactCofN (double kf, double nf) {
+double exactCofN(double kf, double nf) {
   double total = 0.0;
-  int col;
-  for (col=128; col >= 1; col--) { 
+  for (int col = 128; col >= 1; col--) {
     total += qnj (kf, nf, col);
   };
   return (kf * total);
@@ -309,24 +289,24 @@ double exactCofN (double kf, double nf) {
 
 #define iconInversionTolerance 1.0e-15
 
-double exactIconEstimatorBinarySearch (double kf, double targetC, double nLoIn, double nHiIn) {
+double exactIconEstimatorBinarySearch(double kf, double targetC, double nLoIn, double nHiIn) {
   int depth = 0;
   double nLo = nLoIn;
   double nHi = nHiIn;
  tailRecurse: // manual tail recursion optimization
-  if (depth > 100) { throw std::logic_errir("excessive recursion in binary search"); }
+  if (depth > 100) { throw std::logic_error("excessive recursion in binary search"); }
   if (nHi <= nLo) throw std::logic_error("binary search error");
-  double nMid = nLo + 0.5 * (nHi - nLo);
+  const double nMid = nLo + 0.5 * (nHi - nLo);
   if (nMid <= nLo || nMid >= nHi) throw std::logic_error("binary search error");
   if (((nHi - nLo) / nMid) < iconInversionTolerance) return (nMid);
-  double midC = exactCofN (kf, nMid);
-  if (midC == targetC) return (nMid);
+  const double midC = exactCofN(kf, nMid);
+  if (midC == targetC) return nMid;
   if (midC  < targetC) {nLo = nMid; depth++; goto tailRecurse;}
   if (midC  > targetC) {nHi = nMid; depth++; goto tailRecurse;}
   throw std::logic_error("bad value in binary search");
 }
 
-double exactIconEstimatorBracketHi (double kf, double targetC, double nLo) {
+double exactIconEstimatorBracketHi(double kf, double targetC, double nLo) {
   int depth = 0;
   double curN = 2.0 * nLo;
   double curC = exactCofN(kf, curN);
@@ -337,43 +317,38 @@ double exactIconEstimatorBracketHi (double kf, double targetC, double nLo) {
     curC = exactCofN(kf, curN);
   }
   if (curC <= targetC) throw std::logic_error("error in exactIconEstimatorBracketHi");
-  return (curN);
+  return curN;
 }
 
-double exactIconEstimator (int lgK, long c) {
-  double targetC = (double) c;
-  if (c == 0L || c == 1L) return (targetC);
-  double kf = (double) (1L << lgK);
-  double nLo = targetC; if (exactCofN(kf, nLo) >= targetC) throw std::logic_error("bracket lo error"); // bracket lo
-  double nHi = exactIconEstimatorBracketHi (kf, targetC, nLo); // bracket hi
-  return (exactIconEstimatorBinarySearch (kf, targetC, nLo, nHi));
+double exactIconEstimator(int lgK, long c) {
+  const double targetC = (double) c;
+  if (c == 0L || c == 1L) return targetC;
+  const double kf = (double) (1L << lgK);
+  const double nLo = targetC;
+  if (exactCofN(kf, nLo) >= targetC) throw std::logic_error("bracket lo error"); // bracket lo
+  const double nHi = exactIconEstimatorBracketHi(kf, targetC, nLo); // bracket hi
+  return exactIconEstimatorBinarySearch(kf, targetC, nLo, nHi);
 }
-
-/*
-  while  (exactCofN(kf, nHi) <= targetC) {nHi *= 2.0;} // bracket
-*/
 
 #endif
 
-/*******************************************************/
-
 #ifdef TESTING_DRIVER
 
-int main (int argc, char ** argv) {
+int main(int argc, char ** argv) {
   if (argc != 2) {
-    fprintf (stderr, "Usage: %s lg_k > output_file\n", argv[0]); fflush (stderr);
+    fprintf(stderr, "Usage: %s lg_k > output_file\n", argv[0]); fflush(stderr);
     exit(EXIT_FAILURE);
   }
   int lgK = atoi(argv[1]);
-  long k = (1L << lgK);
+  const long k = 1L << lgK;
   long c = 1;
   while (c < k * 64) { // was k * 15
-    double exact  = exactIconEstimator (lgK, c);
-    double approx = approximateIconEstimator (lgK, c);
-    double relDiff = (approx - exact) / exact;
-    printf ("%ld\t%.19g\t%.19g\t%.19g\n", c, relDiff, exact, approx);
-    long a = c+1;
-    long b = 1001 * c / 1000;
+    const double exact  = exactIconEstimator(lgK, c);
+    const double approx = approximateIconEstimator(lgK, c);
+    const double relDiff = (approx - exact) / exact;
+    printf("%ld\t%.19g\t%.19g\t%.19g\n", c, relDiff, exact, approx);
+    const long a = c + 1;
+    const long b = 1001 * c / 1000;
     c = ((a > b) ? a : b);
   }
 }
