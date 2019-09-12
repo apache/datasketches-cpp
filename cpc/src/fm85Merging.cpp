@@ -21,6 +21,7 @@
 
 #include "fm85Merging.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <new>
 
@@ -42,6 +43,17 @@ void ug85Free(UG85* self) {
     if (self->bitMatrix != NULL) { fm85free(self->bitMatrix); }
     fm85free(self);
   }
+}
+
+UG85* ug85Copy(UG85* other) {
+  UG85* copy(new UG85(*other));
+  if (other->accumulator != nullptr) copy->accumulator = fm85Copy(other->accumulator);
+  if (other->bitMatrix != nullptr) {
+    uint32_t k = 1 << copy->lgK;
+    copy->bitMatrix = (U64 *) malloc ((size_t) (k * sizeof(U64)));
+    std::copy(&other->bitMatrix[0], &other->bitMatrix[k], copy->bitMatrix);
+  }
+  return copy;
 }
 
 // This is used for testing purposes only.

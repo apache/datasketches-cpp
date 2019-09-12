@@ -44,9 +44,9 @@ class cpc_union_test: public CppUnit::TestFixture {
 
   void empty() {
     cpc_union u(11);
-    auto sketch_ptr(u.get_result());
-    CPPUNIT_ASSERT(sketch_ptr->is_empty());
-    CPPUNIT_ASSERT_EQUAL(0.0, sketch_ptr->get_estimate());
+    auto s = u.get_result();
+    CPPUNIT_ASSERT(s.is_empty());
+    CPPUNIT_ASSERT_EQUAL(0.0, s.get_estimate());
   }
 
   void copy() {
@@ -56,15 +56,15 @@ class cpc_union_test: public CppUnit::TestFixture {
     u1.update(s);
 
     cpc_union u2 = u1; // copy constructor
-    auto sp1(u2.get_result());
-    CPPUNIT_ASSERT(!sp1->is_empty());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1, sp1->get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    auto s1 = u2.get_result();
+    CPPUNIT_ASSERT(!s1.is_empty());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1, s1.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
     s.update(2);
     u2.update(s);
     u1 = u2; // operator=
-    auto sp2(u1.get_result());
-    CPPUNIT_ASSERT(!sp2->is_empty());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(2, sp2->get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    auto s2 = u1.get_result();
+    CPPUNIT_ASSERT(!s2.is_empty());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(2, s2.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
   }
 
   void custom_seed() {
@@ -76,9 +76,9 @@ class cpc_union_test: public CppUnit::TestFixture {
 
     cpc_union u1(11, 123);
     u1.update(s);
-    auto sp(u1.get_result());
-    CPPUNIT_ASSERT(!sp->is_empty());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(3, sp->get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    auto r = u1.get_result();
+    CPPUNIT_ASSERT(!r.is_empty());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(3, r.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
 
     // incompatible seed
     cpc_union u2(11, 234);

@@ -42,6 +42,8 @@ UG85* ug85Make(Short lgK);
 
 void ug85Free(UG85* unioner);
 
+UG85* ug85Copy(UG85* other);
+
 void ug85MergeInto(UG85* unioner, const FM85* sourceSketch);
 
 FM85* ug85GetResult(const UG85* unioner);
