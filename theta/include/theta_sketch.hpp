@@ -305,4 +305,4 @@ constexpr uint8_t lg_size_from_count(uint32_t n, double load_factor) {
 
 #include "theta_sketch_impl.hpp"
 
-# endif
+#endif
