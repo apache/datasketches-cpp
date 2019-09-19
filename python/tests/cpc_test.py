@@ -23,7 +23,7 @@ class CpcTest(unittest.TestCase):
     k = 12      # 2^k = 4096 rows in the table
     n = 1 << 18 # ~256k unique values
 
-    # create a couple sketchrd and inject some values
+    # create a couple sketches and inject some values
     # we'll have 1/4 of the values overlap
     cpc  = cpc_sketch(k)
     cpc2 = cpc_sketch(k)
@@ -49,8 +49,9 @@ class CpcTest(unittest.TestCase):
     union.update(cpc2)
     result = union.get_result()
 
-    # since CPC is deterministic, we have checked and know the
-    # exact answer is within one standard deviation of the estimate
+    # since our process here (including post-union CPC) is
+    # deterministic, we have checked and know the exact
+    # answer is within one standard deviation of the estimate
     self.assertLessEqual(result.get_lower_bound(1), 7 * n / 4)
     self.assertGreaterEqual(result.get_upper_bound(1), 7 * n / 4)
      

@@ -23,7 +23,7 @@ class HllTest(unittest.TestCase):
         k = 12      # 2^k = 4096 rows in the table
         n = 1 << 18 # ~256k unique values
 
-        # create a couple sketchrd and inject some values
+        # create a couple sketches and inject some values
         # we'll have 1/4 of the values overlap
         hll  = hll_sketch(k, tgt_hll_type.HLL_8)
         hll2 = hll_sketch(k, tgt_hll_type.HLL_6)
@@ -50,8 +50,9 @@ class HllTest(unittest.TestCase):
         result = union.get_result()
         self.assertEqual(result.get_estimate(), union.get_estimate())
 
-        # since HLL is deterministic, we have checked and know the
-        # exact answer is within one standard deviation of the estimate
+        # since our process here (including post-union HLL) is
+        # deterministic, we have checked and know the exact
+        # answer is within one standard deviation of the estimate
         self.assertLessEqual(union.get_lower_bound(1), 7 * n / 4)
         self.assertGreaterEqual(union.get_upper_bound(1), 7 * n / 4)
 
