@@ -29,8 +29,10 @@ class KllTest(unittest.TestCase):
       for i in range(0, n):
         kll.update(randn())
 
-      # median should be near 0, and 0 should be near the median
+      # 0 should be near the median
       self.assertAlmostEqual(0.5, kll.get_rank(0.0), delta=0.02)
+      
+      # the median should be near 0
       self.assertAlmostEqual(0.0, kll.get_quantile(0.5), delta=0.02)
 
       # we also track the min/max independently from the rest of the data
@@ -57,7 +59,7 @@ class KllTest(unittest.TestCase):
       self.assertEqual(kll.get_n(), n)
       self.assertLess(kll.get_num_retained(), n)
 
-      # merging itself will double the number of item sthe sketch has seen
+      # merging itself will double the number of items the sketch has seen
       kll.merge(kll)
       self.assertEqual(kll.get_n(), 2*n)
 
