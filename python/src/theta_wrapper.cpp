@@ -112,13 +112,15 @@ void init_theta(py::module &m) {
     .def("update", (void (update_theta_sketch::*)(double)) &update_theta_sketch::update, py::arg("datum"))
     .def("update", (void (update_theta_sketch::*)(const std::string&)) &update_theta_sketch::update, py::arg("datum"))
     .def("compact", &update_theta_sketch::compact, py::arg("ordered")=true)
-    .def_static("deserialize", &dspy::update_theta_sketch_deserialize)
+    .def_static("deserialize", &dspy::update_theta_sketch_deserialize,
+        py::arg("bytes"), py::arg("seed")=update_theta_sketch::builder::DEFAULT_SEED)
   ;
 
   py::class_<compact_theta_sketch, theta_sketch>(m, "compact_theta_sketch")
     .def(py::init<const compact_theta_sketch&>())
     .def(py::init<const theta_sketch&, bool>())
-    .def_static("deserialize", &dspy::compact_theta_sketch_deserialize)
+    .def_static("deserialize", &dspy::compact_theta_sketch_deserialize,
+        py::arg("bytes"), py::arg("seed")=update_theta_sketch::builder::DEFAULT_SEED)
   ;
 
   py::class_<theta_union>(m, "theta_union")
