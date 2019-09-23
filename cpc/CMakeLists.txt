@@ -52,7 +52,6 @@ target_sources(cpc
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_union.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_common.hpp
   PRIVATE
-    src/compressionData.data
     src/cpc_sketch.cpp
     src/fm85.cpp
     src/fm85Compression.cpp
@@ -62,6 +61,7 @@ target_sources(cpc
     src/iconEstimator.cpp
     src/u32Table.cpp
     include/common.h
+    include/compressionData.h
     include/fm85.h
     include/fm85Compression.h
     include/fm85Confidence.h
