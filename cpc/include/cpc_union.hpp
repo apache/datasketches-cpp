@@ -26,7 +26,6 @@
 #include <iso646.h> // for and/or keywords
 #endif // _MSC_VER
 
-#include "fm85Merging.h"
 #include "cpc_sketch.hpp"
 
 namespace datasketches {
@@ -44,15 +43,35 @@ class cpc_union_alloc {
 
     explicit cpc_union_alloc(uint8_t lg_k = CPC_DEFAULT_LG_K, uint64_t seed = DEFAULT_SEED);
     cpc_union_alloc(const cpc_union_alloc<A>& other);
-    cpc_union_alloc<A>& operator=(cpc_union_alloc<A> other);
+    cpc_union_alloc(cpc_union_alloc<A>&& other) noexcept;
     ~cpc_union_alloc();
+
+    cpc_union_alloc<A>& operator=(const cpc_union_alloc<A>& other);
+    cpc_union_alloc<A>& operator=(cpc_union_alloc<A>&& other) noexcept;
 
     void update(const cpc_sketch_alloc<A>& sketch);
     cpc_sketch_alloc<A> get_result() const;
 
   private:
-    UG85* state;
+    typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
+    typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
+    typedef typename std::allocator_traits<A>::template rebind_alloc<cpc_sketch_alloc<A>> AllocCpc;
+    typedef typename std::vector<uint8_t, AllocU8> window_type;
+
+    uint8_t lg_k;
     uint64_t seed;
+    cpc_sketch_alloc<A>* accumulator;
+    uint64_t* bit_matrix;
+
+    cpc_sketch_alloc<A> get_result_from_accumulator() const;
+    cpc_sketch_alloc<A> get_result_from_bit_matrix() const;
+
+    void switch_to_bit_matrix();
+    void walk_table_updating_sketch(const u32_table<A>& table);
+    void or_table_into_matrix(const u32_table<A>& table);
+    void or_window_into_matrix(const window_type& sliding_window, uint8_t offset, uint8_t src_lg_k);
+    void or_matrix_into_matrix(const uint64_t* src_matrix, uint8_t src_lg_k);
+    void reduce_k(uint8_t new_lg_k);
 };
 
 // alias with default allocator for convenience

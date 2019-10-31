@@ -20,8 +20,10 @@
 #ifndef CPC_COMMON_HPP_
 #define CPC_COMMON_HPP_
 
-#include "MurmurHash3.h"
 #include <memory>
+
+#include "MurmurHash3.h"
+#include "u32_table.hpp"
 
 namespace datasketches {
 
@@ -30,11 +32,24 @@ static const uint8_t CPC_MAX_LG_K = 26;
 static const uint8_t CPC_DEFAULT_LG_K = 11;
 static const uint64_t DEFAULT_SEED = 9001;
 
-static uint16_t compute_seed_hash(uint64_t seed) {
-  HashState hashes;
-  MurmurHash3_x64_128(&seed, sizeof(seed), 0, hashes);
-  return hashes.h1 & 0xffff;
-}
+typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
+typedef std::unique_ptr<uint32_t, std::function<void(uint32_t*)>> u32_ptr_with_deleter;
+
+struct compressed_state {
+  u32_ptr_with_deleter table_data_ptr;
+  uint32_t table_data_words;
+  uint32_t table_num_entries; // can be different from the number of entries in the sketch in hybrid mode
+  u32_ptr_with_deleter window_data_ptr;
+  uint32_t window_data_words;
+};
+
+template<typename A>
+struct uncompressed_state {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
+  typedef typename std::vector<uint8_t, AllocU8> window_type;
+  u32_table<A> table;
+  window_type window;
+};
 
 } /* namespace datasketches */
 

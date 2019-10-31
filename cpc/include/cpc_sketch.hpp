@@ -23,18 +23,16 @@
 #include <iostream>
 #include <functional>
 #include <string>
+#include <vector>
 
 #if defined(_MSC_VER)
 #include <iso646.h> // for and/or keywords
 #endif // _MSC_VER
 
-#include "fm85.h"
-#include "fm85Compression.h"
-#include "iconEstimator.h"
-#include "fm85Confidence.h"
-#include "fm85Util.h"
-#include "MurmurHash3.h"
+#include "u32_table.hpp"
 #include "cpc_common.hpp"
+#include "cpc_compressor.hpp"
+#include "cpc_confidence.hpp"
 
 namespace datasketches {
 
@@ -45,32 +43,16 @@ namespace datasketches {
  * author Alexander Saydakov
  */
 
-typedef std::unique_ptr<void, std::function<void(void*)>> ptr_with_deleter;
-
 // forward-declarations
 template<typename A> class cpc_sketch_alloc;
 template<typename A> class cpc_union_alloc;
-
-// allocation and initialization of global compression tables
-// call this before anything else if you want to control the initialization time
-// or you want to use a custom memory allocation and deallocation mechanism
-// otherwise initialization happens during instantiation of the first cpc_sketch or cpc_union
-// it is safe to call more than once assuming no race conditions
-// this is not thread safe! neither is the rest of the library
-void cpc_init(void* (*alloc)(size_t) = &malloc, void (*dealloc)(void*) = &free);
-
-// optional deallocation of globally allocated compression tables
-void cpc_cleanup();
 
 template<typename A>
 class cpc_sketch_alloc {
   public:
 
     explicit cpc_sketch_alloc(uint8_t lg_k = CPC_DEFAULT_LG_K, uint64_t seed = DEFAULT_SEED);
-    cpc_sketch_alloc(const cpc_sketch_alloc<A>& other);
-    cpc_sketch_alloc<A>& operator=(cpc_sketch_alloc<A> other);
-    ~cpc_sketch_alloc();
-
+    uint8_t get_lg_k() const;
     bool is_empty() const;
     double get_estimate() const;
     double get_lower_bound(unsigned kappa) const;
@@ -102,39 +84,90 @@ class cpc_sketch_alloc {
     void to_stream(std::ostream& os) const;
 
     void serialize(std::ostream& os) const;
-    std::pair<ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
+    std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
 
     static cpc_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
     static cpc_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
 
-    // for debugging
-    uint64_t get_num_coupons() const;
+    // for internal use
+    uint32_t get_num_coupons() const;
 
     // for debugging
     // this should catch some forms of corruption during serialization-deserialization
     bool validate() const;
 
-    friend cpc_union_alloc<A>;
-
   private:
+    typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
+    typedef typename std::allocator_traits<A>::template rebind_alloc<uint32_t> AllocU32;
+    typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
+    typedef typename std::vector<uint8_t, AllocU8> window_type;
+
     static const uint8_t SERIAL_VERSION = 1;
     static const uint8_t FAMILY = 16;
 
     enum flags { IS_BIG_ENDIAN, IS_COMPRESSED, HAS_HIP, HAS_TABLE, HAS_WINDOW };
 
-    FM85* state;
+    // Note: except for brief transitional moments, these sketches always obey
+    // the following strict mapping between the flavor of a sketch and the
+    // number of coupons that it has collected
+    enum flavor {
+      EMPTY,   //     0 == C <     1
+      SPARSE,  //     1 <= C < 3K/32
+      HYBRID,  // 3K/32 <= C <   K/2
+      PINNED,  //   K/2 <= C < 27K/8  [NB: 27/8 = 3 + 3/8]
+      SLIDING  // 27K/8 <= C
+    };
+
+    uint8_t lg_k;
     uint64_t seed;
+    bool was_merged; // is the sketch the result of merging?
+    uint32_t num_coupons; // the number of coupons collected so far
+
+    u32_table<A> surprising_value_table;
+    window_type sliding_window;
+    uint8_t window_offset; // derivable from num_coupons, but made explicit for speed
+    uint8_t first_interesting_column; // This is part of a speed optimization
+
+    double kxp;
+    double hip_est_accum;
 
     // for deserialization and cpc_union::get_result()
-    cpc_sketch_alloc(FM85* state, uint64_t seed = DEFAULT_SEED);
+    cpc_sketch_alloc(uint8_t lg_k, uint32_t num_coupons, uint8_t first_interesting_column, u32_table<A>&& table,
+        window_type&& window, bool has_hip, double kxp, double hip_est_accum, uint64_t seed);
 
-    static uint8_t get_preamble_ints(const FM85* state);
-    static inline void write_hip(const FM85* state, std::ostream& os);
-    static inline void read_hip(FM85* state, std::istream& is);
-    static inline size_t copy_hip_to_mem(const FM85* state, void* dst);
-    static inline size_t copy_hip_from_mem(FM85* state, const void* src);
+    inline void row_col_update(uint32_t row_col);
+    inline void update_sparse(uint32_t row_col);
+    inline void update_windowed(uint32_t row_col);
+    inline void update_hip(uint32_t row_col);
+    void promote_sparse_to_windowed();
+    void move_window();
+    void refresh_kxp(const uint64_t* bit_matrix);
+
+    friend double get_hip_confidence_lb<A>(const cpc_sketch_alloc<A>& sketch, int kappa);
+    friend double get_hip_confidence_ub<A>(const cpc_sketch_alloc<A>& sketch, int kappa);
+    friend double get_icon_confidence_lb<A>(const cpc_sketch_alloc<A>& sketch, int kappa);
+    friend double get_icon_confidence_ub<A>(const cpc_sketch_alloc<A>& sketch, int kappa);
+    double get_hip_estimate() const;
+    double get_icon_estimate() const;
+
+    inline flavor determine_flavor() const;
+    static inline flavor determine_flavor(uint8_t lg_k, uint64_t c);
+
+    static inline uint8_t determine_correct_offset(uint8_t lg_k, uint64_t c);
+
+    // this produces a full-size k-by-64 bit matrix
+    // since this is for internal use, deallocation of the matrix is on the caller
+    uint64_t* build_bit_matrix() const;
+
+    static uint32_t row_col_from_two_hashes(uint64_t hash1, uint64_t hash2, uint8_t lg_k);
+    static uint8_t get_preamble_ints(uint32_t num_coupons, bool has_hip, bool has_table, bool has_window);
+    inline void write_hip(std::ostream& os) const;
+    inline size_t copy_hip_to_mem(void* dst) const;
     static inline size_t copy_to_mem(void* dst, const void* src, size_t size);
     static inline size_t copy_from_mem(const void* src, void* dst, size_t size);
+
+    friend cpc_compressor<A>;
+    friend cpc_union_alloc<A>;
 };
 
 // alias with default allocator for convenience
