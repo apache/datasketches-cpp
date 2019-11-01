@@ -188,7 +188,7 @@ void cpc_compressor<A>::compress_sparse_flavor(const cpc_sketch_alloc<A>& source
   if (source.sliding_window.size() > 0) throw std::logic_error("unexpected sliding window");
   uint32_t* pairs = source.surprising_value_table.unwrapping_get_items();
   const size_t num_pairs = source.surprising_value_table.get_num_items();
-  u32_table<A>::introspective_insertion_sort(pairs, 0, num_pairs - 1);
+  std::sort(pairs, &pairs[num_pairs]);
   compress_surprising_values(pairs, num_pairs, source.get_lg_k(), result);
   AllocU32().deallocate(pairs, num_pairs);
 }
@@ -211,7 +211,7 @@ void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source
   const size_t k = 1 << source.get_lg_k();
   uint32_t* pairs_from_table = source.surprising_value_table.unwrapping_get_items();
   const size_t num_pairs_from_table = source.surprising_value_table.get_num_items();
-  if (num_pairs_from_table > 0) u32_table<A>::introspective_insertion_sort(pairs_from_table, 0, num_pairs_from_table - 1);
+  if (num_pairs_from_table > 0) std::sort(pairs_from_table, &pairs_from_table[num_pairs_from_table]);
   const size_t num_pairs_from_window = source.get_num_coupons() - num_pairs_from_table; // because the window offset is zero
 
   uint32_t* all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, num_pairs_from_table);
@@ -271,7 +271,7 @@ void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source
       pairs[i] -= 8;
     }
 
-    u32_table<A>::introspective_insertion_sort(pairs, 0, num_pairs - 1);
+    std::sort(pairs, &pairs[num_pairs]);
     compress_surprising_values(pairs, num_pairs, source.get_lg_k(), result);
     AllocU32().deallocate(pairs, num_pairs);
   }
@@ -323,7 +323,7 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
       pairs[i] = (row << 6) | col;
     }
 
-    u32_table<A>::introspective_insertion_sort(pairs, 0, num_pairs - 1);
+    std::sort(pairs, &pairs[num_pairs]);
     compress_surprising_values(pairs, num_pairs, source.get_lg_k(), result);
     AllocU32().deallocate(pairs, num_pairs);
   }

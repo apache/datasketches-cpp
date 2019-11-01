@@ -33,7 +33,7 @@ u32_table<A>::u32_table():
 lg_size(0),
 num_valid_bits(0),
 num_items(0),
-slots(nullptr)
+slots()
 {}
 
 template<typename A>
@@ -41,61 +41,10 @@ u32_table<A>::u32_table(uint8_t lg_size, uint8_t num_valid_bits):
 lg_size(lg_size),
 num_valid_bits(num_valid_bits),
 num_items(0),
-slots(nullptr)
+slots(1 << lg_size, UINT32_MAX)
 {
   if (lg_size < 2) throw std::invalid_argument("lg_size must be >= 2");
   if (num_valid_bits < 1 or num_valid_bits > 32) throw std::invalid_argument("num_valid_bits must be between 1 and 32");
-  const size_t num_slots = 1 << lg_size;
-  slots = AllocU32().allocate(num_slots);
-  std::fill(slots, &slots[num_slots], UINT32_MAX);
-}
-
-template<typename A>
-u32_table<A>::u32_table(const u32_table& other):
-lg_size(other.lg_size),
-num_valid_bits(other.num_valid_bits),
-num_items(other.num_items),
-slots(nullptr)
-{
-  const size_t num_slots = 1 << lg_size;
-  slots = AllocU32().allocate(num_slots);
-  std::copy(other.slots, &other.slots[num_slots], slots);
-}
-
-template<typename A>
-u32_table<A>::u32_table(u32_table&& other) noexcept:
-lg_size(other.lg_size),
-num_valid_bits(other.num_valid_bits),
-num_items(other.num_items),
-slots(other.slots)
-{
-  other.slots = nullptr;
-}
-
-template<typename A>
-u32_table<A>::~u32_table() {
-  if (slots != nullptr) {
-    AllocU32().deallocate(slots, 1 << lg_size);
-  }
-}
-
-template<typename A>
-u32_table<A>& u32_table<A>::operator=(const u32_table<A>& other) {
-  u32_table<A> copy(other);
-  std::swap(lg_size, copy.lg_size);
-  num_valid_bits = copy.num_valid_bits;
-  num_items = copy.num_items;
-  std::swap(slots, copy.slots);
-  return *this;
-}
-
-template<typename A>
-u32_table<A>& u32_table<A>::operator=(u32_table<A>&& other) noexcept {
-  std::swap(lg_size, other.lg_size);
-  num_valid_bits = other.num_valid_bits;
-  num_items = other.num_items;
-  std::swap(slots, other.slots);
-  return *this;
 }
 
 template<typename A>
@@ -105,7 +54,7 @@ size_t u32_table<A>::get_num_items() const {
 
 template<typename A>
 const uint32_t* u32_table<A>::get_slots() const {
-  return slots;
+  return slots.data();
 }
 
 template<typename A>
@@ -115,7 +64,7 @@ uint8_t u32_table<A>::get_lg_size() const {
 
 template<typename A>
 void u32_table<A>::clear() {
-  std::fill(slots, &slots[1 << lg_size], UINT32_MAX);
+  std::fill(slots.begin(), slots.end(), UINT32_MAX);
   num_items = 0;
 }
 
@@ -202,16 +151,14 @@ void u32_table<A>::rebuild(uint8_t new_lg_size) {
   const size_t old_size = 1 << lg_size;
   const size_t new_size = 1 << new_lg_size;
   if (new_size <= num_items) throw std::logic_error("new_size <= num_items");
-  uint32_t* old_slots = slots;
-  slots = AllocU32().allocate(new_size);
+  vector_u32 old_slots = std::move(slots);
+  slots = vector_u32(new_size, UINT32_MAX);
   lg_size = new_lg_size;
-  std::fill(slots, &slots[1 << lg_size], UINT32_MAX);
   for (size_t i = 0; i < old_size; i++) {
     if (old_slots[i] != UINT32_MAX) {
       must_insert(old_slots[i]);
     }
   }
-  AllocU32().deallocate(old_slots, old_size);
 }
 
 // While extracting the items from a linear probing hashtable,
@@ -219,6 +166,7 @@ void u32_table<A>::rebuild(uint8_t new_lg_size) {
 // isn't too full. Experiments suggest that for sufficiently large tables
 // the load factor would have to be over 90 percent before this would fail frequently,
 // and even then the subsequent sort would fix things up.
+// The result is nearly sorted, so make sure to use an efficient sort for that case
 // This is for internal use, so deallocation is on the caller.
 template<typename A>
 uint32_t* u32_table<A>::unwrapping_get_items() const {
@@ -244,55 +192,6 @@ uint32_t* u32_table<A>::unwrapping_get_items() const {
   }
   if (l != r + 1) throw std::logic_error("unwrapping error");
   return result;
-}
-
-// In applications where the input array is already nearly sorted,
-// insertion sort runs in linear time with a very small constant.
-// This introspective version of insertion sort protects against
-// the quadratic cost of sorting bad input arrays.
-// It keeps track of how much work has been done, and if that exceeds a
-// constant times the array length, it switches to a different sorting algorithm.
-
-template<typename A>
-void u32_table<A>::introspective_insertion_sort(uint32_t* a, size_t l, size_t r) { // r points at the rightmost element
-  const size_t length = r - l + 1;
-  const size_t cost_limit = 8 * length;
-  size_t cost = 0;
-  for (size_t i = l + 1; i <= r; i++) {
-    size_t j = i;
-    uint32_t v = a[i];
-    while (j >= l + 1 and v < a[j - 1]) {
-      a[j] = a[j - 1];
-      j--;
-    }
-    a[j] = v;
-    cost += i - j; // distance moved is a measure of work
-    if (cost > cost_limit) {
-      knuth_shell_sort3(a, l, r);
-      return;
-    }
-  }
-}
-
-template<typename A>
-void u32_table<A>::knuth_shell_sort3(uint32_t* a, size_t l, size_t r) {
-  size_t h;
-  for (h = 1; h <= (r - l) / 9; h = 3 * h + 1);
-  for ( ; h > 0; h /= 3) {
-    for (size_t i = l + h; i <= r; i++) {
-      size_t j = i;
-      const uint32_t v = a[i];
-      while (j >= l + h && v < a[j - h]) {
-        a[j] = a[j - h]; j -= h;
-      }
-      a[j] = v;
-    }
-  }
-  size_t bad = 0;
-  for (size_t i = l; i < r - 1; i++) {
-    if (a[i] > a[i + 1]) bad++;
-  };
-  if (bad != 0) throw std::logic_error("sorting error");
 }
 
 // This merge is safe to use in carefully designed overlapping scenarios.

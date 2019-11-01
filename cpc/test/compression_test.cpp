@@ -47,7 +47,8 @@ class compression_test: public CppUnit::TestFixture {
       pairArray[i] = rand;
       value += golden64;
     }
-    table::knuth_shell_sort3(pairArray, 0, N - 1); // unsigned numerical sort
+    //table::knuth_shell_sort3(pairArray, 0, N - 1); // unsigned numerical sort
+    std::sort(pairArray, &pairArray[N]);
     uint32_t prev = UINT32_MAX;
     int nxt = 0;
     for (int i = 0; i < N; i++) { // uniquify

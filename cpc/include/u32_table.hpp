@@ -39,12 +39,6 @@ public:
 
   u32_table();
   u32_table(uint8_t lg_size, uint8_t num_valid_bits);
-  u32_table(const u32_table& other);
-  u32_table(u32_table&& other) noexcept;
-  ~u32_table();
-
-  u32_table& operator=(const u32_table& other);
-  u32_table& operator=(u32_table&& other) noexcept;
 
   inline size_t get_num_items() const;
   inline const uint32_t* get_slots() const;
@@ -60,9 +54,6 @@ public:
 
   uint32_t* unwrapping_get_items() const;
 
-  static void introspective_insertion_sort(uint32_t* a, size_t l, size_t r);
-  static void knuth_shell_sort3(uint32_t* a, size_t l, size_t r);
-
   static void merge(
     const uint32_t* arr_a, size_t start_a, size_t length_a, // input
     const uint32_t* arr_b, size_t start_b, size_t length_b, // input
@@ -70,16 +61,17 @@ public:
   );
 
 private:
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint32_t> AllocU32;
+  typedef std::vector<uint32_t, AllocU32> vector_u32;
+
   uint8_t lg_size; // log2 of number of slots
   uint8_t num_valid_bits;
   size_t num_items;
-  uint32_t* slots;
+  vector_u32 slots;
 
   inline size_t lookup(uint32_t item) const;
   inline void must_insert(uint32_t item);
   inline void rebuild(uint8_t new_lg_size);
-
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint32_t> AllocU32;
 };
 
 } /* namespace datasketches */
