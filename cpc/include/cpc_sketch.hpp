@@ -159,7 +159,6 @@ class cpc_sketch_alloc {
     // since this is for internal use, deallocation of the matrix is on the caller
     uint64_t* build_bit_matrix() const;
 
-    static uint32_t row_col_from_two_hashes(uint64_t hash1, uint64_t hash2, uint8_t lg_k);
     static uint8_t get_preamble_ints(uint32_t num_coupons, bool has_hip, bool has_table, bool has_window);
     inline void write_hip(std::ostream& os) const;
     inline size_t copy_hip_to_mem(void* dst) const;

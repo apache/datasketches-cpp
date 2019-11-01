@@ -160,6 +160,19 @@ void cpc_sketch_alloc<A>::update(float value) {
   update(static_cast<double>(value));
 }
 
+static inline uint32_t row_col_from_two_hashes(uint64_t hash0, uint64_t hash1, uint8_t lg_k) {
+  if (lg_k > 26) throw std::logic_error("lg_k > 26");
+  const uint64_t k = 1 << lg_k;
+  uint8_t col = count_leading_zeros_in_u64(hash1); // 0 <= col <= 64
+  if (col > 63) col = 63; // clip so that 0 <= col <= 63
+  const uint32_t row = hash0 & (k - 1);
+  uint32_t row_col = (row << 6) | col;
+  // To avoid the hash table's "empty" value, we change the row of the following pair.
+  // This case is extremely unlikely, but we might as well handle it.
+  if (row_col == UINT32_MAX) row_col ^= 1 << 6;
+  return row_col;
+}
+
 template<typename A>
 void cpc_sketch_alloc<A>::update(const void* value, int size) {
   HashState hashes;
@@ -171,8 +184,8 @@ template<typename A>
 void cpc_sketch_alloc<A>::row_col_update(uint32_t row_col) {
   const uint8_t col = row_col & 63;
   if (col < first_interesting_column) return; // important speed optimization
-  const uint64_t k = 1 << lg_k;
-  if ((num_coupons << 5) < 3 * k) {
+  // window size is 0 until sketch is promoted from sparse to windowed
+  if (sliding_window.size() == 0) {
     update_sparse(row_col);
   } else {
     update_windowed(row_col);
@@ -181,7 +194,6 @@ void cpc_sketch_alloc<A>::row_col_update(uint32_t row_col) {
 
 template<typename A>
 void cpc_sketch_alloc<A>::update_sparse(uint32_t row_col) {
-  if (sliding_window.size() > 0) throw std::logic_error("window is not expected in sparse mode");
   const uint64_t k = 1 << lg_k;
   const uint64_t c32pre = num_coupons << 5;
   if (c32pre >= 3 * k) throw std::logic_error("c32pre >= 3 * k"); // C < 3K/32, in other words flavor == SPARSE
@@ -357,26 +369,12 @@ void cpc_sketch_alloc<A>::refresh_kxp(const uint64_t* bit_matrix) {
 }
 
 template<typename A>
-uint32_t cpc_sketch_alloc<A>::row_col_from_two_hashes(uint64_t hash0, uint64_t hash1, uint8_t lg_k) {
-  if (lg_k > 26) throw std::logic_error("lg_k > 26");
-  const uint64_t k = 1 << lg_k;
-  uint8_t col = count_leading_zeros_in_u64(hash1); // 0 <= col <= 64
-  if (col > 63) col = 63; // clip so that 0 <= col <= 63
-  const uint32_t row = hash0 & (k - 1);
-  uint32_t row_col = (row << 6) | col;
-  // To avoid the hash table's "empty" value, we change the row of the following pair.
-  // This case is extremely unlikely, but we might as well handle it.
-  if (row_col == UINT32_MAX) row_col ^= 1 << 6;
-  return row_col;
-}
-
-template<typename A>
 void cpc_sketch_alloc<A>::to_stream(std::ostream& os) const {
   os << "### CPC sketch summary:" << std::endl;
   os << "   lg_k           : " << std::to_string(lg_k) << std::endl;
   os << "   seed hash      : " << std::hex << compute_seed_hash(seed) << std::dec << std::endl;
   os << "   C              : " << num_coupons << std::endl;
-  os << "   flavor         : " << determine_flavor(lg_k, num_coupons) << std::endl;
+  os << "   flavor         : " << determine_flavor() << std::endl;
   os << "   merged         : " << (was_merged ? "true" : "false") << std::endl;
   if (!was_merged) {
     os << "   HIP estimate   : " << hip_est_accum << std::endl;
