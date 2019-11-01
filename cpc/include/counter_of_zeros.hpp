@@ -74,7 +74,7 @@ static const uint64_t FCLZ_MASK_08 = 0x00000000000000ff;
 
 static inline uint8_t count_leading_zeros_in_u64(uint64_t input) {
   if (input > FCLZ_MASK_56)
-    return  0 + byte_leading_zeros_table[(input >> 56) & FCLZ_MASK_08];
+    return      byte_leading_zeros_table[(input >> 56) & FCLZ_MASK_08];
   if (input > FCLZ_MASK_48)
     return  8 + byte_leading_zeros_table[(input >> 48) & FCLZ_MASK_08];
   if (input > FCLZ_MASK_40)
@@ -87,8 +87,7 @@ static inline uint8_t count_leading_zeros_in_u64(uint64_t input) {
     return 40 + byte_leading_zeros_table[(input >> 16) & FCLZ_MASK_08];
   if (input > FCLZ_MASK_08)
     return 48 + byte_leading_zeros_table[(input >>  8) & FCLZ_MASK_08];
-  if (1)
-    return 56 + byte_leading_zeros_table[(input >>  0) & FCLZ_MASK_08];
+    return 56 + byte_leading_zeros_table[(input      ) & FCLZ_MASK_08];
 }
 
 static inline uint8_t count_trailing_zeros_in_u64(uint64_t input) {
