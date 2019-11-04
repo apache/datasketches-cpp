@@ -33,6 +33,7 @@ class cpc_union_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(empty);
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST(custom_seed);
+  CPPUNIT_TEST(large);
   CPPUNIT_TEST_SUITE_END();
 
   void lg_k_limits() {
@@ -83,6 +84,24 @@ class cpc_union_test: public CppUnit::TestFixture {
     // incompatible seed
     cpc_union u2(11, 234);
     CPPUNIT_ASSERT_THROW(u2.update(s), std::invalid_argument);
+  }
+
+  void large() {
+    int key = 0;
+    cpc_sketch s(11);
+    cpc_union u(11);
+    for (int i = 0; i < 1000; i++) {
+      cpc_sketch tmp(11);
+      for (int i = 0; i < 10000; i++) {
+        s.update(key);
+        tmp.update(key);
+        key++;
+      }
+      u.update(tmp);
+    }
+    cpc_sketch r = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(s.get_num_coupons(), r.get_num_coupons());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(s.get_estimate(), r.get_estimate(), s.get_estimate() * 0.01);
   }
 
 };
