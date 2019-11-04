@@ -303,10 +303,10 @@ void cpc_sketch_alloc<A>::move_window() {
   const uint64_t k = 1 << lg_k;
 
   // Construct the full-sized bit matrix that corresponds to the sketch
-  uint64_t* bit_matrix = build_bit_matrix();
+  vector_u64<A> bit_matrix = build_bit_matrix();
 
   // refresh the KXP register on every 8th window shift.
-  if ((new_offset & 0x7) == 0) refresh_kxp(bit_matrix);
+  if ((new_offset & 0x7) == 0) refresh_kxp(bit_matrix.data());
 
   surprising_value_table.clear(); // the new number of surprises will be about the same
 
@@ -331,7 +331,6 @@ void cpc_sketch_alloc<A>::move_window() {
     }
   }
 
-  AllocU64().deallocate(bit_matrix, k);
   window_offset = new_offset;
 
   first_interesting_column = count_trailing_zeros_in_u64(all_surprises_ored);
@@ -674,9 +673,8 @@ uint32_t cpc_sketch_alloc<A>::get_num_coupons() const {
 
 template<typename A>
 bool cpc_sketch_alloc<A>::validate() const {
-  uint64_t* bit_matrix = build_bit_matrix();
-  const uint64_t num_bits_set = count_bits_set_in_matrix(bit_matrix, 1 << lg_k);
-  AllocU64().deallocate(bit_matrix, 1 << lg_k);
+  vector_u64<A> bit_matrix = build_bit_matrix();
+  const uint64_t num_bits_set = count_bits_set_in_matrix(bit_matrix.data(), 1 << lg_k);
   return num_bits_set == num_coupons;
 }
 
@@ -744,15 +742,14 @@ uint8_t cpc_sketch_alloc<A>::determine_correct_offset(uint8_t lg_k, uint64_t c) 
 }
 
 template<typename A>
-uint64_t* cpc_sketch_alloc<A>::build_bit_matrix() const {
+vector_u64<A> cpc_sketch_alloc<A>::build_bit_matrix() const {
   const size_t k = 1 << lg_k;
   if (window_offset > 56) throw std::logic_error("offset > 56");
-  uint64_t* matrix = AllocU64().allocate(k);
 
   // Fill the matrix with default rows in which the "early zone" is filled with ones.
   // This is essential for the routine's O(k) time cost (as opposed to O(C)).
   const uint64_t default_row = (1 << window_offset) - 1;
-  std::fill(matrix, &matrix[k], default_row);
+  vector_u64<A> matrix(k, default_row);
 
   if (num_coupons == 0) return matrix;
 

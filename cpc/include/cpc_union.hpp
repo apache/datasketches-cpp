@@ -56,12 +56,11 @@ class cpc_union_alloc {
     typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
     typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
     typedef typename std::allocator_traits<A>::template rebind_alloc<cpc_sketch_alloc<A>> AllocCpc;
-    typedef typename std::vector<uint8_t, AllocU8> window_type;
 
     uint8_t lg_k;
     uint64_t seed;
     cpc_sketch_alloc<A>* accumulator;
-    uint64_t* bit_matrix;
+    vector_u64<A> bit_matrix;
 
     cpc_sketch_alloc<A> get_result_from_accumulator() const;
     cpc_sketch_alloc<A> get_result_from_bit_matrix() const;
@@ -69,8 +68,8 @@ class cpc_union_alloc {
     void switch_to_bit_matrix();
     void walk_table_updating_sketch(const u32_table<A>& table);
     void or_table_into_matrix(const u32_table<A>& table);
-    void or_window_into_matrix(const window_type& sliding_window, uint8_t offset, uint8_t src_lg_k);
-    void or_matrix_into_matrix(const uint64_t* src_matrix, uint8_t src_lg_k);
+    void or_window_into_matrix(const vector_u8<A>& sliding_window, uint8_t offset, uint8_t src_lg_k);
+    void or_matrix_into_matrix(const vector_u64<A>& src_matrix, uint8_t src_lg_k);
     void reduce_k(uint8_t new_lg_k);
 };
 

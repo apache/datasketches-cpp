@@ -156,8 +156,7 @@ class cpc_sketch_alloc {
     static inline uint8_t determine_correct_offset(uint8_t lg_k, uint64_t c);
 
     // this produces a full-size k-by-64 bit matrix
-    // since this is for internal use, deallocation of the matrix is on the caller
-    uint64_t* build_bit_matrix() const;
+    vector_u64<A> build_bit_matrix() const;
 
     static uint8_t get_preamble_ints(uint32_t num_coupons, bool has_hip, bool has_table, bool has_window);
     inline void write_hip(std::ostream& os) const;
