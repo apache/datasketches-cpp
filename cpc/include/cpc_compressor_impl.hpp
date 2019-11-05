@@ -187,18 +187,16 @@ template<typename A>
 void cpc_compressor<A>::compress_sparse_flavor(const cpc_sketch_alloc<A>& source, compressed_state* result) const {
   if (source.sliding_window.size() > 0) throw std::logic_error("unexpected sliding window");
   vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
-  const size_t num_pairs = source.surprising_value_table.get_num_items();
   std::sort(pairs.begin(), pairs.end());
-  compress_surprising_values(pairs.data(), num_pairs, source.get_lg_k(), result);
+  compress_surprising_values(pairs.data(), pairs.size(), source.get_lg_k(), result);
 }
 
 template<typename A>
 void cpc_compressor<A>::uncompress_sparse_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k) const {
   if (source.window_data_ptr != nullptr) throw std::logic_error("unexpected sliding window");
   if (source.table_data_ptr == nullptr) throw std::logic_error("table is expected");
-  uint32_t* pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, source.table_num_entries, lg_k);
-  target.table = u32_table<A>::make_from_pairs(pairs, source.table_num_entries, lg_k);
-  AllocU32<A>().deallocate(pairs, source.table_num_entries);
+  vector_u32<A> pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, source.table_num_entries, lg_k);
+  target.table = u32_table<A>::make_from_pairs(pairs.data(), source.table_num_entries, lg_k);
 }
 
 // This is complicated because it effectively builds a Sparse version
@@ -229,7 +227,7 @@ template<typename A>
 void cpc_compressor<A>::uncompress_hybrid_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k) const {
   if (source.window_data_ptr != nullptr) throw std::logic_error("window is not expected");
   if (source.table_data_ptr == nullptr) throw std::logic_error("table is expected");
-  uint32_t* pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, source.table_num_entries, lg_k);
+  vector_u32<A> pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, source.table_num_entries, lg_k);
 
   // In the hybrid flavor, some of these pairs actually
   // belong in the window, so we will separate them out,
@@ -248,29 +246,26 @@ void cpc_compressor<A>::uncompress_hybrid_flavor(const compressed_state& source,
       pairs[next_true_pair++] = row_col; // move true pair down
     }
   }
-  target.table = u32_table<A>::make_from_pairs(pairs, next_true_pair, lg_k);
-  AllocU32<A>().deallocate(pairs, source.table_num_entries);
+  target.table = u32_table<A>::make_from_pairs(pairs.data(), next_true_pair, lg_k);
 }
 
 template<typename A>
 void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source, compressed_state* result) const {
   compress_sliding_window(source.sliding_window.data(), source.get_lg_k(), source.get_num_coupons(), result);
-  const size_t num_pairs = source.surprising_value_table.get_num_items();
-  if (num_pairs > 0) {
-    vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
-
+  vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
+  if (pairs.size() > 0) {
     // Here we subtract 8 from the column indices. Because they are stored in the low 6 bits
     // of each row_col pair, and because no column index is less than 8 for a "Pinned" sketch,
     // we can simply subtract 8 from the pairs themselves.
 
     // shift the columns over by 8 positions before compressing (because of the window)
-    for (size_t i = 0; i < num_pairs; i++) {
+    for (size_t i = 0; i < pairs.size(); i++) {
       if ((pairs[i] & 63) < 8) throw std::logic_error("(pairs[i] & 63) < 8");
       pairs[i] -= 8;
     }
 
     std::sort(pairs.begin(), pairs.end());
-    compress_surprising_values(pairs.data(), num_pairs, source.get_lg_k(), result);
+    compress_surprising_values(pairs.data(), pairs.size(), source.get_lg_k(), result);
   }
 }
 
@@ -281,24 +276,21 @@ void cpc_compressor<A>::uncompress_pinned_flavor(const compressed_state& source,
   const size_t num_pairs = source.table_num_entries;
   if (num_pairs > 0) {
     if (source.table_data_ptr == nullptr) throw std::logic_error("table is expected");
-    uint32_t* pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, num_pairs, lg_k);
+    vector_u32<A> pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, num_pairs, lg_k);
     // undo the compressor's 8-column shift
     for (size_t i = 0; i < num_pairs; i++) {
       if ((pairs[i] & 63) >= 56) throw std::logic_error("(pairs[i] & 63) >= 56");
       pairs[i] += 8;
     }
-    target.table = u32_table<A>::make_from_pairs(pairs, num_pairs, lg_k);
-    AllocU32<A>().deallocate(pairs, num_pairs);
+    target.table = u32_table<A>::make_from_pairs(pairs.data(), num_pairs, lg_k);
   }
 }
 
 template<typename A>
 void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& source, compressed_state* result) const {
   compress_sliding_window(source.sliding_window.data(), source.get_lg_k(), source.get_num_coupons(), result);
-  const size_t num_pairs = source.surprising_value_table.get_num_items();
-  if (num_pairs > 0) {
-    vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
-
+  vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
+  if (pairs.size() > 0) {
     // Here we apply a complicated transformation to the column indices, which
     // changes the implied ordering of the pairs, so we must do it before sorting.
 
@@ -308,7 +300,7 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
     const uint8_t offset = source.window_offset;
     if (offset > 56) throw std::out_of_range("offset out of range");
 
-    for (size_t i = 0; i < num_pairs; i++) {
+    for (size_t i = 0; i < pairs.size(); i++) {
       const uint32_t row_col = pairs[i];
       const size_t row = row_col >> 6;
       uint8_t col = row_col & 63;
@@ -321,7 +313,7 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
     }
 
     std::sort(pairs.begin(), pairs.end());
-    compress_surprising_values(pairs.data(), num_pairs, source.get_lg_k(), result);
+    compress_surprising_values(pairs.data(), pairs.size(), source.get_lg_k(), result);
   }
 }
 
@@ -334,7 +326,7 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state& source
     target.table = u32_table<A>(2, 6 + lg_k);
   } else {
     if (source.table_data_ptr == nullptr) throw std::logic_error("table is expected");
-    uint32_t* pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, num_pairs, lg_k);
+    vector_u32<A> pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, num_pairs, lg_k);
 
     const uint8_t pseudo_phase = determine_pseudo_phase(lg_k, num_coupons);
     if (pseudo_phase >= 16) throw std::logic_error("pseudo phase >= 16");
@@ -354,8 +346,7 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state& source
       pairs[i] = (row << 6) | col;
     }
 
-    target.table = u32_table<A>::make_from_pairs(pairs, num_pairs, lg_k);
-    AllocU32<A>().deallocate(pairs, num_pairs);
+    target.table = u32_table<A>::make_from_pairs(pairs.data(), num_pairs, lg_k);
   }
 }
 
@@ -380,11 +371,11 @@ void cpc_compressor<A>::compress_surprising_values(const uint32_t* pairs, size_t
 }
 
 template<typename A>
-uint32_t* cpc_compressor<A>::uncompress_surprising_values(const uint32_t* data, size_t data_words, size_t num_pairs, uint8_t lg_k) const {
+vector_u32<A> cpc_compressor<A>::uncompress_surprising_values(const uint32_t* data, size_t data_words, size_t num_pairs, uint8_t lg_k) const {
   const size_t k = 1 << lg_k;
-  uint32_t* pairs = AllocU32<A>().allocate(num_pairs);
+  vector_u32<A> pairs(num_pairs);
   const uint8_t num_base_bits = golomb_choose_number_of_base_bits(k + num_pairs, num_pairs);
-  low_level_uncompress_pairs(pairs, num_pairs, num_base_bits, data, data_words);
+  low_level_uncompress_pairs(pairs.data(), num_pairs, num_base_bits, data, data_words);
   return pairs;
 }
 

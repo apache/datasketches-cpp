@@ -129,7 +129,7 @@ private:
   void compress_surprising_values(const uint32_t* pairs, size_t num_pairs, uint8_t lg_k, compressed_state* result) const;
   void compress_sliding_window(const uint8_t* window, uint8_t lg_k, uint32_t num_coupons, compressed_state* target) const;
 
-  uint32_t* uncompress_surprising_values(const uint32_t* data, size_t data_words, size_t num_pairs, uint8_t lg_k) const;
+  vector_u32<A> uncompress_surprising_values(const uint32_t* data, size_t data_words, size_t num_pairs, uint8_t lg_k) const;
   void uncompress_sliding_window(const uint32_t* data, size_t data_words, vector_u8<A>& window, uint8_t lg_k, uint32_t num_coupons) const;
 
   static size_t safe_length_for_compressed_pair_buf(uint64_t k, size_t num_pairs, size_t num_base_bits);
