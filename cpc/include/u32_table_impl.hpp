@@ -151,8 +151,8 @@ void u32_table<A>::rebuild(uint8_t new_lg_size) {
   const size_t old_size = 1 << lg_size;
   const size_t new_size = 1 << new_lg_size;
   if (new_size <= num_items) throw std::logic_error("new_size <= num_items");
-  vector_u32 old_slots = std::move(slots);
-  slots = vector_u32(new_size, UINT32_MAX);
+  vector_u32<A> old_slots = std::move(slots);
+  slots = vector_u32<A>(new_size, UINT32_MAX);
   lg_size = new_lg_size;
   for (size_t i = 0; i < old_size; i++) {
     if (old_slots[i] != UINT32_MAX) {
@@ -167,12 +167,11 @@ void u32_table<A>::rebuild(uint8_t new_lg_size) {
 // the load factor would have to be over 90 percent before this would fail frequently,
 // and even then the subsequent sort would fix things up.
 // The result is nearly sorted, so make sure to use an efficient sort for that case
-// This is for internal use, so deallocation is on the caller.
 template<typename A>
-uint32_t* u32_table<A>::unwrapping_get_items() const {
-  if (num_items == 0) return nullptr;
+vector_u32<A> u32_table<A>::unwrapping_get_items() const {
+  if (num_items == 0) return vector_u32<A>();
   const size_t table_size = 1 << lg_size;
-  uint32_t* result = AllocU32().allocate(num_items);
+  vector_u32<A> result(num_items);
   size_t i = 0;
   size_t l = 0;
   size_t r = num_items - 1;

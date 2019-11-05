@@ -186,11 +186,10 @@ void cpc_compressor<A>::uncompress(const compressed_state& source, uncompressed_
 template<typename A>
 void cpc_compressor<A>::compress_sparse_flavor(const cpc_sketch_alloc<A>& source, compressed_state* result) const {
   if (source.sliding_window.size() > 0) throw std::logic_error("unexpected sliding window");
-  uint32_t* pairs = source.surprising_value_table.unwrapping_get_items();
+  vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
   const size_t num_pairs = source.surprising_value_table.get_num_items();
-  std::sort(pairs, &pairs[num_pairs]);
-  compress_surprising_values(pairs, num_pairs, source.get_lg_k(), result);
-  AllocU32<A>().deallocate(pairs, num_pairs);
+  std::sort(pairs.begin(), pairs.end());
+  compress_surprising_values(pairs.data(), num_pairs, source.get_lg_k(), result);
 }
 
 template<typename A>
@@ -209,21 +208,20 @@ void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source
   if (source.sliding_window.size() == 0) throw std::logic_error("no sliding window");
   if (source.window_offset != 0) throw std::logic_error("window_offset != 0");
   const size_t k = 1 << source.get_lg_k();
-  uint32_t* pairs_from_table = source.surprising_value_table.unwrapping_get_items();
+  vector_u32<A> pairs_from_table = source.surprising_value_table.unwrapping_get_items();
   const size_t num_pairs_from_table = source.surprising_value_table.get_num_items();
-  if (num_pairs_from_table > 0) std::sort(pairs_from_table, &pairs_from_table[num_pairs_from_table]);
+  if (num_pairs_from_table > 0) std::sort(pairs_from_table.begin(), pairs_from_table.end());
   const size_t num_pairs_from_window = source.get_num_coupons() - num_pairs_from_table; // because the window offset is zero
 
   uint32_t* all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, num_pairs_from_table);
 
   u32_table<A>::merge(
-      pairs_from_table, 0, num_pairs_from_table,
+      pairs_from_table.data(), 0, num_pairs_from_table,
       all_pairs, num_pairs_from_table, num_pairs_from_window,
       all_pairs, 0
   );  // note the overlapping subarray trick
 
   compress_surprising_values(all_pairs, source.get_num_coupons(), source.get_lg_k(), result);
-  if (pairs_from_table != nullptr) AllocU32<A>().deallocate(pairs_from_table, num_pairs_from_table);
   AllocU32<A>().deallocate(all_pairs, source.get_num_coupons());
 }
 
@@ -259,7 +257,7 @@ void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source
   compress_sliding_window(source.sliding_window.data(), source.get_lg_k(), source.get_num_coupons(), result);
   const size_t num_pairs = source.surprising_value_table.get_num_items();
   if (num_pairs > 0) {
-    uint32_t* pairs = source.surprising_value_table.unwrapping_get_items();
+    vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
 
     // Here we subtract 8 from the column indices. Because they are stored in the low 6 bits
     // of each row_col pair, and because no column index is less than 8 for a "Pinned" sketch,
@@ -271,9 +269,8 @@ void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source
       pairs[i] -= 8;
     }
 
-    std::sort(pairs, &pairs[num_pairs]);
-    compress_surprising_values(pairs, num_pairs, source.get_lg_k(), result);
-    AllocU32<A>().deallocate(pairs, num_pairs);
+    std::sort(pairs.begin(), pairs.end());
+    compress_surprising_values(pairs.data(), num_pairs, source.get_lg_k(), result);
   }
 }
 
@@ -300,7 +297,7 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
   compress_sliding_window(source.sliding_window.data(), source.get_lg_k(), source.get_num_coupons(), result);
   const size_t num_pairs = source.surprising_value_table.get_num_items();
   if (num_pairs > 0) {
-    uint32_t* pairs = source.surprising_value_table.unwrapping_get_items();
+    vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
 
     // Here we apply a complicated transformation to the column indices, which
     // changes the implied ordering of the pairs, so we must do it before sorting.
@@ -323,9 +320,8 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
       pairs[i] = (row << 6) | col;
     }
 
-    std::sort(pairs, &pairs[num_pairs]);
-    compress_surprising_values(pairs, num_pairs, source.get_lg_k(), result);
-    AllocU32<A>().deallocate(pairs, num_pairs);
+    std::sort(pairs.begin(), pairs.end());
+    compress_surprising_values(pairs.data(), num_pairs, source.get_lg_k(), result);
   }
 }
 

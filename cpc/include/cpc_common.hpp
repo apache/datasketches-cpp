@@ -23,7 +23,6 @@
 #include <memory>
 
 #include "MurmurHash3.h"
-#include "u32_table.hpp"
 
 namespace datasketches {
 
@@ -41,7 +40,11 @@ template<typename A> using AllocU32 = typename std::allocator_traits<A>::templat
 template<typename A> using AllocU64 = typename std::allocator_traits<A>::template rebind_alloc<uint64_t>;
 
 template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
+template<typename A> using vector_u32 = std::vector<uint32_t, AllocU32<A>>;
 template<typename A> using vector_u64 = std::vector<uint64_t, AllocU64<A>>;
+
+// forward declaration
+template<typename A> class u32_table;
 
 struct compressed_state {
   u32_ptr_with_deleter table_data_ptr;

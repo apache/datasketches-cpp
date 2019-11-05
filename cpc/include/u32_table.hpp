@@ -25,6 +25,8 @@
 // This is a highly specialized hash table that was designed
 // to be a part of the library's CPC sketch implementation
 
+#include "cpc_common.hpp"
+
 namespace datasketches {
 
 static const uint64_t U32_TABLE_UPSIZE_NUMER = 3LL;
@@ -52,7 +54,7 @@ public:
 
   static u32_table make_from_pairs(const uint32_t* pairs, size_t num_pairs, uint8_t lg_k);
 
-  uint32_t* unwrapping_get_items() const;
+  vector_u32<A> unwrapping_get_items() const;
 
   static void merge(
     const uint32_t* arr_a, size_t start_a, size_t length_a, // input
@@ -61,13 +63,11 @@ public:
   );
 
 private:
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint32_t> AllocU32;
-  typedef std::vector<uint32_t, AllocU32> vector_u32;
 
   uint8_t lg_size; // log2 of number of slots
   uint8_t num_valid_bits;
   size_t num_items;
-  vector_u32 slots;
+  vector_u32<A> slots;
 
   inline size_t lookup(uint32_t item) const;
   inline void must_insert(uint32_t item);
