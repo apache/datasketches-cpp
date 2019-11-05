@@ -26,12 +26,21 @@
 
 namespace datasketches {
 
+/*
+ * This is a very efficient compressor specialized for use by the CPC Sketch.
+ * There are two very different compression schemes here: one for the sliding window
+ * and another for the table of so-called surprising values.
+ * These two compression schemes are designed for specific probability distributions of entries
+ * in these data structures and make some compromises for performance. As a result
+ * the compression is slightly less effective than theoretically achievable but is very fast.
+ */
+
 // forward declarations
 template<typename A> class cpc_sketch_alloc;
 template<typename A> class cpc_compressor;
 
-// do not instantiate compressor directly
-// use this global function to statically allocate and construct on first use
+// the compressor is not instantiated directly
+// the sketch implementation uses this global function to statically allocate and construct on the first use
 template<typename A>
 inline cpc_compressor<A>& get_compressor();
 
