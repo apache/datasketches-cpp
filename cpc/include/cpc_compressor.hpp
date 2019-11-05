@@ -113,11 +113,6 @@ private:
   void uncompress_pinned_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const;
   void uncompress_sliding_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const;
 
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint16_t> AllocU16;
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint32_t> AllocU32;
-  typedef typename std::vector<uint8_t, AllocU8> window_type;
-
   uint8_t* make_inverse_permutation(const uint8_t* permu, int length);
   uint16_t* make_decoding_table(const uint16_t* encoding_table, int num_byte_values);
   void validate_decoding_table(const uint16_t* decoding_table, const uint16_t* encoding_table) const;
@@ -126,7 +121,7 @@ private:
   void compress_sliding_window(const uint8_t* window, uint8_t lg_k, uint32_t num_coupons, compressed_state* target) const;
 
   uint32_t* uncompress_surprising_values(const uint32_t* data, size_t data_words, size_t num_pairs, uint8_t lg_k) const;
-  void uncompress_sliding_window(const uint32_t* data, size_t data_words, window_type& window, uint8_t lg_k, uint32_t num_coupons) const;
+  void uncompress_sliding_window(const uint32_t* data, size_t data_words, vector_u8<A>& window, uint8_t lg_k, uint32_t num_coupons) const;
 
   static size_t safe_length_for_compressed_pair_buf(uint64_t k, size_t num_pairs, size_t num_base_bits);
   static size_t safe_length_for_compressed_window_buf(uint64_t k);

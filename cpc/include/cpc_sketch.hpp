@@ -97,11 +97,6 @@ class cpc_sketch_alloc {
     bool validate() const;
 
   private:
-    typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
-    typedef typename std::allocator_traits<A>::template rebind_alloc<uint32_t> AllocU32;
-    typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-    typedef typename std::vector<uint8_t, AllocU8> window_type;
-
     static const uint8_t SERIAL_VERSION = 1;
     static const uint8_t FAMILY = 16;
 
@@ -124,7 +119,7 @@ class cpc_sketch_alloc {
     uint32_t num_coupons; // the number of coupons collected so far
 
     u32_table<A> surprising_value_table;
-    window_type sliding_window;
+    vector_u8<A> sliding_window;
     uint8_t window_offset; // derivable from num_coupons, but made explicit for speed
     uint8_t first_interesting_column; // This is part of a speed optimization
 
@@ -133,7 +128,7 @@ class cpc_sketch_alloc {
 
     // for deserialization and cpc_union::get_result()
     cpc_sketch_alloc(uint8_t lg_k, uint32_t num_coupons, uint8_t first_interesting_column, u32_table<A>&& table,
-        window_type&& window, bool has_hip, double kxp, double hip_est_accum, uint64_t seed);
+        vector_u8<A>&& window, bool has_hip, double kxp, double hip_est_accum, uint64_t seed);
 
     inline void row_col_update(uint32_t row_col);
     inline void update_sparse(uint32_t row_col);

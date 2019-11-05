@@ -454,8 +454,8 @@ std::pair<void_ptr_with_deleter, const size_t> cpc_sketch_alloc<A>::serialize(un
   const uint8_t preamble_ints = get_preamble_ints(num_coupons, has_hip, has_table, has_window);
   const size_t size = header_size_bytes + (preamble_ints + compressed.table_data_words + compressed.window_data_words) * sizeof(uint32_t);
   void_ptr_with_deleter data_ptr(
-      AllocU8().allocate(size),
-      [size](void* ptr) { AllocU8().deallocate(static_cast<uint8_t*>(ptr), size); }
+      AllocU8<A>().allocate(size),
+      [size](void* ptr) { AllocU8<A>().deallocate(static_cast<uint8_t*>(ptr), size); }
   );
   char* ptr = static_cast<char*>(data_ptr.get()) + header_size_bytes;
   ptr += copy_to_mem(ptr, &preamble_ints, sizeof(preamble_ints));
@@ -549,12 +549,12 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t 
     }
     if (has_window) {
       const size_t len = compressed.window_data_words;
-      compressed.window_data_ptr = u32_ptr_with_deleter(AllocU32().allocate(len), [len] (uint32_t* ptr) { AllocU32().deallocate(ptr, len); });
+      compressed.window_data_ptr = u32_ptr_with_deleter(AllocU32<A>().allocate(len), [len] (uint32_t* ptr) { AllocU32<A>().deallocate(ptr, len); });
       is.read((char*)compressed.window_data_ptr.get(), compressed.window_data_words * sizeof(uint32_t));
     }
     if (has_table) {
       const size_t len = compressed.table_data_words;
-      compressed.table_data_ptr = u32_ptr_with_deleter(AllocU32().allocate(len), [len] (uint32_t* ptr) { AllocU32().deallocate(ptr, len); });
+      compressed.table_data_ptr = u32_ptr_with_deleter(AllocU32<A>().allocate(len), [len] (uint32_t* ptr) { AllocU32<A>().deallocate(ptr, len); });
       is.read((char*)compressed.table_data_ptr.get(), compressed.table_data_words * sizeof(uint32_t));
     }
     if (!has_window) compressed.table_num_entries = num_coupons;
@@ -631,12 +631,12 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
     }
     if (has_window) {
       const size_t len = compressed.window_data_words;
-      compressed.window_data_ptr = u32_ptr_with_deleter(AllocU32().allocate(len), [len] (uint32_t* ptr) { AllocU32().deallocate(ptr, len); });
+      compressed.window_data_ptr = u32_ptr_with_deleter(AllocU32<A>().allocate(len), [len] (uint32_t* ptr) { AllocU32<A>().deallocate(ptr, len); });
       ptr += copy_from_mem(ptr, compressed.window_data_ptr.get(), compressed.window_data_words * sizeof(uint32_t));
     }
     if (has_table) {
       const size_t len = compressed.table_data_words;
-      compressed.table_data_ptr = u32_ptr_with_deleter(AllocU32().allocate(len), [len] (uint32_t* ptr) { AllocU32().deallocate(ptr, len); });
+      compressed.table_data_ptr = u32_ptr_with_deleter(AllocU32<A>().allocate(len), [len] (uint32_t* ptr) { AllocU32<A>().deallocate(ptr, len); });
       ptr += copy_from_mem(ptr, compressed.table_data_ptr.get(), compressed.table_data_words * sizeof(uint32_t));
     }
     if (!has_window) compressed.table_num_entries = num_coupons;
@@ -680,7 +680,7 @@ bool cpc_sketch_alloc<A>::validate() const {
 
 template<typename A>
 cpc_sketch_alloc<A>::cpc_sketch_alloc(uint8_t lg_k, uint32_t num_coupons, uint8_t first_interesting_column,
-    u32_table<A>&& table, window_type&& window, bool has_hip, double kxp, double hip_est_accum, uint64_t seed):
+    u32_table<A>&& table, vector_u8<A>&& window, bool has_hip, double kxp, double hip_est_accum, uint64_t seed):
 lg_k(lg_k),
 seed(seed),
 was_merged(!has_hip),

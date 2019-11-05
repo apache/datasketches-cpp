@@ -36,6 +36,8 @@ typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
 typedef std::unique_ptr<uint32_t, std::function<void(uint32_t*)>> u32_ptr_with_deleter;
 
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
+template<typename A> using AllocU16 = typename std::allocator_traits<A>::template rebind_alloc<uint16_t>;
+template<typename A> using AllocU32 = typename std::allocator_traits<A>::template rebind_alloc<uint32_t>;
 template<typename A> using AllocU64 = typename std::allocator_traits<A>::template rebind_alloc<uint64_t>;
 
 template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
@@ -51,10 +53,8 @@ struct compressed_state {
 
 template<typename A>
 struct uncompressed_state {
-  //typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
-  typedef typename std::vector<uint8_t, AllocU8<A>> window_type;
   u32_table<A> table;
-  window_type window;
+  vector_u8<A> window;
 };
 
 } /* namespace datasketches */

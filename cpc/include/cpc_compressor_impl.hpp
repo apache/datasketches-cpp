@@ -52,7 +52,7 @@ cpc_compressor<A>::~cpc_compressor() {
 
 template<typename A>
 uint8_t* cpc_compressor<A>::make_inverse_permutation(const uint8_t* permu, int length) {
-  uint8_t* inverse = AllocU8().allocate(length);
+  uint8_t* inverse = AllocU8<A>().allocate(length);
   for (int i = 0; i < length; i++) {
     inverse[permu[i]] = i;
   }
@@ -67,7 +67,7 @@ uint8_t* cpc_compressor<A>::make_inverse_permutation(const uint8_t* permu, int l
 // The second argument is typically 256, but can be other values such as 65.
 template<typename A>
 uint16_t* cpc_compressor<A>::make_decoding_table(const uint16_t* encoding_table, int num_byte_values) {
-  uint16_t* decoding_table = AllocU16().allocate(4096);
+  uint16_t* decoding_table = AllocU16<A>().allocate(4096);
   for (int byte_value = 0; byte_value < num_byte_values; byte_value++) {
     const int encoding_entry = encoding_table[byte_value];
     const int code_value = encoding_entry & 0xfff;
@@ -190,7 +190,7 @@ void cpc_compressor<A>::compress_sparse_flavor(const cpc_sketch_alloc<A>& source
   const size_t num_pairs = source.surprising_value_table.get_num_items();
   std::sort(pairs, &pairs[num_pairs]);
   compress_surprising_values(pairs, num_pairs, source.get_lg_k(), result);
-  AllocU32().deallocate(pairs, num_pairs);
+  AllocU32<A>().deallocate(pairs, num_pairs);
 }
 
 template<typename A>
@@ -199,7 +199,7 @@ void cpc_compressor<A>::uncompress_sparse_flavor(const compressed_state& source,
   if (source.table_data_ptr == nullptr) throw std::logic_error("table is expected");
   uint32_t* pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, source.table_num_entries, lg_k);
   target.table = u32_table<A>::make_from_pairs(pairs, source.table_num_entries, lg_k);
-  AllocU32().deallocate(pairs, source.table_num_entries);
+  AllocU32<A>().deallocate(pairs, source.table_num_entries);
 }
 
 // This is complicated because it effectively builds a Sparse version
@@ -223,8 +223,8 @@ void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source
   );  // note the overlapping subarray trick
 
   compress_surprising_values(all_pairs, source.get_num_coupons(), source.get_lg_k(), result);
-  if (pairs_from_table != nullptr) AllocU32().deallocate(pairs_from_table, num_pairs_from_table);
-  AllocU32().deallocate(all_pairs, source.get_num_coupons());
+  if (pairs_from_table != nullptr) AllocU32<A>().deallocate(pairs_from_table, num_pairs_from_table);
+  AllocU32<A>().deallocate(all_pairs, source.get_num_coupons());
 }
 
 template<typename A>
@@ -251,7 +251,7 @@ void cpc_compressor<A>::uncompress_hybrid_flavor(const compressed_state& source,
     }
   }
   target.table = u32_table<A>::make_from_pairs(pairs, next_true_pair, lg_k);
-  AllocU32().deallocate(pairs, source.table_num_entries);
+  AllocU32<A>().deallocate(pairs, source.table_num_entries);
 }
 
 template<typename A>
@@ -273,7 +273,7 @@ void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source
 
     std::sort(pairs, &pairs[num_pairs]);
     compress_surprising_values(pairs, num_pairs, source.get_lg_k(), result);
-    AllocU32().deallocate(pairs, num_pairs);
+    AllocU32<A>().deallocate(pairs, num_pairs);
   }
 }
 
@@ -291,7 +291,7 @@ void cpc_compressor<A>::uncompress_pinned_flavor(const compressed_state& source,
       pairs[i] += 8;
     }
     target.table = u32_table<A>::make_from_pairs(pairs, num_pairs, lg_k);
-    AllocU32().deallocate(pairs, num_pairs);
+    AllocU32<A>().deallocate(pairs, num_pairs);
   }
 }
 
@@ -325,7 +325,7 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
 
     std::sort(pairs, &pairs[num_pairs]);
     compress_surprising_values(pairs, num_pairs, source.get_lg_k(), result);
-    AllocU32().deallocate(pairs, num_pairs);
+    AllocU32<A>().deallocate(pairs, num_pairs);
   }
 }
 
@@ -359,7 +359,7 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state& source
     }
 
     target.table = u32_table<A>::make_from_pairs(pairs, num_pairs, lg_k);
-    AllocU32().deallocate(pairs, num_pairs);
+    AllocU32<A>().deallocate(pairs, num_pairs);
   }
 }
 
@@ -369,8 +369,8 @@ void cpc_compressor<A>::compress_surprising_values(const uint32_t* pairs, size_t
   const uint64_t num_base_bits = golomb_choose_number_of_base_bits(k + num_pairs, num_pairs);
   const uint64_t table_len = safe_length_for_compressed_pair_buf(k, num_pairs, num_base_bits);
   result->table_data_ptr = u32_ptr_with_deleter(
-      AllocU32().allocate(table_len),
-      [table_len] (uint32_t* ptr) { AllocU32().deallocate(ptr, table_len); }
+      AllocU32<A>().allocate(table_len),
+      [table_len] (uint32_t* ptr) { AllocU32<A>().deallocate(ptr, table_len); }
   );
 
   size_t csv_length = low_level_compress_pairs(pairs, num_pairs, num_base_bits, result->table_data_ptr.get());
@@ -386,7 +386,7 @@ void cpc_compressor<A>::compress_surprising_values(const uint32_t* pairs, size_t
 template<typename A>
 uint32_t* cpc_compressor<A>::uncompress_surprising_values(const uint32_t* data, size_t data_words, size_t num_pairs, uint8_t lg_k) const {
   const size_t k = 1 << lg_k;
-  uint32_t* pairs = AllocU32().allocate(num_pairs);
+  uint32_t* pairs = AllocU32<A>().allocate(num_pairs);
   const uint8_t num_base_bits = golomb_choose_number_of_base_bits(k + num_pairs, num_pairs);
   low_level_uncompress_pairs(pairs, num_pairs, num_base_bits, data, data_words);
   return pairs;
@@ -397,8 +397,8 @@ void cpc_compressor<A>::compress_sliding_window(const uint8_t* window, uint8_t l
   const size_t k = 1 << lg_k;
   const size_t window_buf_len = safe_length_for_compressed_window_buf(k);
   target->window_data_ptr = u32_ptr_with_deleter(
-      AllocU32().allocate(window_buf_len),
-      [window_buf_len] (uint32_t* ptr) { AllocU32().deallocate(ptr, window_buf_len); }
+      AllocU32<A>().allocate(window_buf_len),
+      [window_buf_len] (uint32_t* ptr) { AllocU32<A>().deallocate(ptr, window_buf_len); }
   );
   const uint8_t pseudo_phase = determine_pseudo_phase(lg_k, num_coupons);
   size_t data_words = low_level_compress_bytes(window, k, encoding_tables_for_high_entropy_byte[pseudo_phase], target->window_data_ptr.get());
@@ -411,7 +411,7 @@ void cpc_compressor<A>::compress_sliding_window(const uint8_t* window, uint8_t l
 }
 
 template<typename A>
-void cpc_compressor<A>::uncompress_sliding_window(const uint32_t* data, size_t data_words, window_type& window, uint8_t lg_k, uint32_t num_coupons) const {
+void cpc_compressor<A>::uncompress_sliding_window(const uint32_t* data, size_t data_words, vector_u8<A>& window, uint8_t lg_k, uint32_t num_coupons) const {
   const size_t k = 1 << lg_k;
   window.resize(k); // zeroing not needed here (unlike the Hybrid Flavor)
   const uint8_t pseudo_phase = determine_pseudo_phase(lg_k, num_coupons);
@@ -736,7 +736,7 @@ void write_unary(
 template<typename A>
 uint32_t* cpc_compressor<A>::tricky_get_pairs_from_window(const uint8_t* window, uint32_t k, uint32_t num_pairs_to_get, uint32_t empty_space) {
   const size_t output_length = empty_space + num_pairs_to_get;
-  uint32_t* pairs = AllocU32().allocate(output_length);
+  uint32_t* pairs = AllocU32<A>().allocate(output_length);
   size_t pair_index = empty_space;
   for (unsigned row_index = 0; row_index < k; row_index++) {
     uint8_t byte = window[row_index];
