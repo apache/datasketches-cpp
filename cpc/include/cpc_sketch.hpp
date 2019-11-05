@@ -37,7 +37,11 @@
 namespace datasketches {
 
 /*
- * High performance C++ implementation of Compressed Probabilistic Counting sketch
+ * High performance C++ implementation of Compressed Probabilistic Counting (CPC) Sketch
+ *
+ * This is a very compact (in serialized form) distinct counting sketch.
+ * The theory is described in the following paper:
+ * https://arxiv.org/abs/1708.06839
  *
  * author Kevin Lang
  * author Alexander Saydakov
@@ -46,6 +50,9 @@ namespace datasketches {
 // forward-declarations
 template<typename A> class cpc_sketch_alloc;
 template<typename A> class cpc_union_alloc;
+
+// alias with default allocator for convenience
+typedef cpc_sketch_alloc<std::allocator<void>> cpc_sketch;
 
 template<typename A>
 class cpc_sketch_alloc {
@@ -162,9 +169,6 @@ class cpc_sketch_alloc {
     friend cpc_compressor<A>;
     friend cpc_union_alloc<A>;
 };
-
-// alias with default allocator for convenience
-typedef cpc_sketch_alloc<std::allocator<void>> cpc_sketch;
 
 } /* namespace datasketches */
 

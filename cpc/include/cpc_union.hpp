@@ -31,11 +31,14 @@
 namespace datasketches {
 
 /*
- * High performance C++ implementation of Compressed Probabilistic Counting sketch
+ * High performance C++ implementation of Compressed Probabilistic Counting (CPC) Union
  *
  * author Kevin Lang
  * author Alexander Saydakov
  */
+
+// alias with default allocator for convenience
+typedef cpc_union_alloc<std::allocator<void>> cpc_union;
 
 template<typename A>
 class cpc_union_alloc {
@@ -72,9 +75,6 @@ class cpc_union_alloc {
     void or_matrix_into_matrix(const vector_u64<A>& src_matrix, uint8_t src_lg_k);
     void reduce_k(uint8_t new_lg_k);
 };
-
-// alias with default allocator for convenience
-typedef cpc_union_alloc<std::allocator<void>> cpc_union;
 
 } /* namespace datasketches */
 
