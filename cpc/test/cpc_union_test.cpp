@@ -34,6 +34,9 @@ class cpc_union_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST(custom_seed);
   CPPUNIT_TEST(large);
+  CPPUNIT_TEST(reduce_k_empty);
+  CPPUNIT_TEST(reduce_k_sparse);
+  CPPUNIT_TEST(reduce_k_window);
   CPPUNIT_TEST_SUITE_END();
 
   void lg_k_limits() {
@@ -65,7 +68,7 @@ class cpc_union_test: public CppUnit::TestFixture {
     u1 = u2; // operator=
     auto s2 = u1.get_result();
     CPPUNIT_ASSERT(!s2.is_empty());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(2, s2.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(2, s2.get_estimate(), 2 * RELATIVE_ERROR_FOR_LG_K_11);
   }
 
   void custom_seed() {
@@ -79,7 +82,7 @@ class cpc_union_test: public CppUnit::TestFixture {
     u1.update(s);
     auto r = u1.get_result();
     CPPUNIT_ASSERT(!r.is_empty());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(3, r.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(3, r.get_estimate(), 3 * RELATIVE_ERROR_FOR_LG_K_11);
 
     // incompatible seed
     cpc_union u2(11, 234);
@@ -101,7 +104,49 @@ class cpc_union_test: public CppUnit::TestFixture {
     }
     cpc_sketch r = u.get_result();
     CPPUNIT_ASSERT_EQUAL(s.get_num_coupons(), r.get_num_coupons());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(s.get_estimate(), r.get_estimate(), s.get_estimate() * 0.01);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(s.get_estimate(), r.get_estimate(), s.get_estimate() * RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void reduce_k_empty() {
+    cpc_sketch s(11);
+    for (int i = 0; i < 10000; i++) s.update(i);
+    cpc_union u(12);
+    u.update(s);
+    cpc_sketch r = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(11, (int) r.get_lg_k());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(10000, r.get_estimate(), 10000 * RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void reduce_k_sparse() {
+    cpc_union u(12);
+
+    cpc_sketch s12(12);
+    for (int i = 0; i < 100; i++) s12.update(i);
+    u.update(s12);
+
+    cpc_sketch s11(11);
+    for (int i = 0; i < 1000; i++) s11.update(i);
+    u.update(s11);
+
+    cpc_sketch r = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(11, (int) r.get_lg_k());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1000, r.get_estimate(), 1000 * RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void reduce_k_window() {
+    cpc_union u(12);
+
+    cpc_sketch s12(12);
+    for (int i = 0; i < 500; i++) s12.update(i);
+    u.update(s12);
+
+    cpc_sketch s11(11);
+    for (int i = 0; i < 1000; i++) s11.update(i);
+    u.update(s11);
+
+    cpc_sketch r = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(11, (int) r.get_lg_k());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1000, r.get_estimate(), 1000 * RELATIVE_ERROR_FOR_LG_K_11);
   }
 
 };
