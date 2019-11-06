@@ -188,7 +188,7 @@ void cpc_compressor<A>::compress_sparse_flavor(const cpc_sketch_alloc<A>& source
   if (source.sliding_window.size() > 0) throw std::logic_error("unexpected sliding window");
   vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
   std::sort(pairs.begin(), pairs.end());
-  compress_surprising_values(pairs.data(), pairs.size(), source.get_lg_k(), result);
+  compress_surprising_values(pairs, source.get_lg_k(), result);
 }
 
 template<typename A>
@@ -211,16 +211,15 @@ void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source
   if (num_pairs_from_table > 0) std::sort(pairs_from_table.begin(), pairs_from_table.end());
   const size_t num_pairs_from_window = source.get_num_coupons() - num_pairs_from_table; // because the window offset is zero
 
-  uint32_t* all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, num_pairs_from_table);
+  vector_u32<A> all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, num_pairs_from_table);
 
   u32_table<A>::merge(
       pairs_from_table.data(), 0, num_pairs_from_table,
-      all_pairs, num_pairs_from_table, num_pairs_from_window,
-      all_pairs, 0
+      all_pairs.data(), num_pairs_from_table, num_pairs_from_window,
+      all_pairs.data(), 0
   );  // note the overlapping subarray trick
 
-  compress_surprising_values(all_pairs, source.get_num_coupons(), source.get_lg_k(), result);
-  AllocU32<A>().deallocate(all_pairs, source.get_num_coupons());
+  compress_surprising_values(all_pairs, source.get_lg_k(), result);
 }
 
 template<typename A>
@@ -265,7 +264,7 @@ void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source
     }
 
     std::sort(pairs.begin(), pairs.end());
-    compress_surprising_values(pairs.data(), pairs.size(), source.get_lg_k(), result);
+    compress_surprising_values(pairs, source.get_lg_k(), result);
   }
 }
 
@@ -313,7 +312,7 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
     }
 
     std::sort(pairs.begin(), pairs.end());
-    compress_surprising_values(pairs.data(), pairs.size(), source.get_lg_k(), result);
+    compress_surprising_values(pairs, source.get_lg_k(), result);
   }
 }
 
@@ -351,23 +350,23 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state& source
 }
 
 template<typename A>
-void cpc_compressor<A>::compress_surprising_values(const uint32_t* pairs, size_t num_pairs, uint8_t lg_k, compressed_state* result) const {
+void cpc_compressor<A>::compress_surprising_values(const vector_u32<A>& pairs, uint8_t lg_k, compressed_state* result) const {
   const size_t k = 1 << lg_k;
-  const uint64_t num_base_bits = golomb_choose_number_of_base_bits(k + num_pairs, num_pairs);
-  const uint64_t table_len = safe_length_for_compressed_pair_buf(k, num_pairs, num_base_bits);
+  const uint64_t num_base_bits = golomb_choose_number_of_base_bits(k + pairs.size(), pairs.size());
+  const uint64_t table_len = safe_length_for_compressed_pair_buf(k, pairs.size(), num_base_bits);
   result->table_data_ptr = u32_ptr_with_deleter(
       AllocU32<A>().allocate(table_len),
       [table_len] (uint32_t* ptr) { AllocU32<A>().deallocate(ptr, table_len); }
   );
 
-  size_t csv_length = low_level_compress_pairs(pairs, num_pairs, num_base_bits, result->table_data_ptr.get());
+  size_t csv_length = low_level_compress_pairs(pairs.data(), pairs.size(), num_base_bits, result->table_data_ptr.get());
 
   // At this point we could free the unused portion of the compression output buffer,
   // but it is not necessary if it is temporary
   // Note: realloc caused strange timing spikes for lgK = 11 and 12.
 
   result->table_data_words = csv_length;
-  result->table_num_entries = num_pairs;
+  result->table_num_entries = pairs.size();
 }
 
 template<typename A>
@@ -721,9 +720,9 @@ void write_unary(
 // The empty space that this leaves at the beginning of the output array
 // will be filled in later by the caller.
 template<typename A>
-uint32_t* cpc_compressor<A>::tricky_get_pairs_from_window(const uint8_t* window, uint32_t k, uint32_t num_pairs_to_get, uint32_t empty_space) {
+vector_u32<A> cpc_compressor<A>::tricky_get_pairs_from_window(const uint8_t* window, uint32_t k, uint32_t num_pairs_to_get, uint32_t empty_space) {
   const size_t output_length = empty_space + num_pairs_to_get;
-  uint32_t* pairs = AllocU32<A>().allocate(output_length);
+  vector_u32<A> pairs(output_length);
   size_t pair_index = empty_space;
   for (unsigned row_index = 0; row_index < k; row_index++) {
     uint8_t byte = window[row_index];
