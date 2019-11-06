@@ -32,7 +32,6 @@ static const uint8_t CPC_DEFAULT_LG_K = 11;
 static const uint64_t DEFAULT_SEED = 9001;
 
 typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
-typedef std::unique_ptr<uint32_t, std::function<void(uint32_t*)>> u32_ptr_with_deleter;
 
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 template<typename A> using AllocU16 = typename std::allocator_traits<A>::template rebind_alloc<uint16_t>;
@@ -46,11 +45,12 @@ template<typename A> using vector_u64 = std::vector<uint64_t, AllocU64<A>>;
 // forward declaration
 template<typename A> class u32_table;
 
+template<typename A>
 struct compressed_state {
-  u32_ptr_with_deleter table_data_ptr;
+  vector_u32<A> table_data;
   uint32_t table_data_words;
   uint32_t table_num_entries; // can be different from the number of entries in the sketch in hybrid mode
-  u32_ptr_with_deleter window_data_ptr;
+  vector_u32<A> window_data;
   uint32_t window_data_words;
 };
 

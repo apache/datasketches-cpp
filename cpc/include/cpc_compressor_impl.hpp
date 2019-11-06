@@ -132,34 +132,34 @@ void cpc_compressor<A>::free_decoding_tables() {
 }
 
 template<typename A>
-void cpc_compressor<A>::compress(const cpc_sketch_alloc<A>& source, compressed_state& result) const {
+void cpc_compressor<A>::compress(const cpc_sketch_alloc<A>& source, compressed_state<A>& result) const {
   switch (source.determine_flavor()) {
     case cpc_sketch_alloc<A>::flavor::EMPTY:
       break;
     case cpc_sketch_alloc<A>::flavor::SPARSE:
-      compress_sparse_flavor(source, &result);
-      if (result.window_data_ptr != nullptr) throw std::logic_error("window is not expected");
-      if (result.table_data_ptr == nullptr) throw std::logic_error("table is expected");
+      compress_sparse_flavor(source, result);
+      if (result.window_data.size() > 0) throw std::logic_error("window is not expected");
+      if (result.table_data.size() == 0) throw std::logic_error("table is expected");
       break;
     case cpc_sketch_alloc<A>::flavor::HYBRID:
-      compress_hybrid_flavor(source, &result);
-      if (result.window_data_ptr != nullptr) throw std::logic_error("window is not expected");
-      if (result.table_data_ptr == nullptr) throw std::logic_error("table is expected");
+      compress_hybrid_flavor(source, result);
+      if (result.window_data.size() > 0) throw std::logic_error("window is not expected");
+      if (result.table_data.size() == 0) throw std::logic_error("table is expected");
       break;
     case cpc_sketch_alloc<A>::flavor::PINNED:
-      compress_pinned_flavor(source, &result);
-      if (result.window_data_ptr == nullptr) throw std::logic_error("window is not expected");
+      compress_pinned_flavor(source, result);
+      if (result.window_data.size() == 0) throw std::logic_error("window is not expected");
       break;
     case cpc_sketch_alloc<A>::flavor::SLIDING:
-      compress_sliding_flavor(source, &result);
-      if (result.window_data_ptr == nullptr) throw std::logic_error("window is expected");
+      compress_sliding_flavor(source, result);
+      if (result.window_data.size() == 0) throw std::logic_error("window is expected");
       break;
     default: throw std::logic_error("Unknown sketch flavor");
   }
 }
 
 template<typename A>
-void cpc_compressor<A>::uncompress(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k, uint64_t num_coupons) const {
+void cpc_compressor<A>::uncompress(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k, uint64_t num_coupons) const {
   switch (cpc_sketch_alloc<A>::determine_flavor(lg_k, num_coupons)) {
     case cpc_sketch_alloc<A>::flavor::EMPTY:
       target.table = u32_table<A>(2, 6 + lg_k);
@@ -171,7 +171,7 @@ void cpc_compressor<A>::uncompress(const compressed_state& source, uncompressed_
       uncompress_hybrid_flavor(source, target, lg_k);
       break;
     case cpc_sketch_alloc<A>::flavor::PINNED:
-      if (source.window_data_ptr == nullptr) throw std::logic_error("window == NULL");
+      if (source.window_data.size() == 0) throw std::logic_error("window is expected");
       uncompress_pinned_flavor(source, target, lg_k, num_coupons);
       break;
     case cpc_sketch_alloc<A>::flavor::SLIDING:
@@ -182,7 +182,7 @@ void cpc_compressor<A>::uncompress(const compressed_state& source, uncompressed_
 }
 
 template<typename A>
-void cpc_compressor<A>::compress_sparse_flavor(const cpc_sketch_alloc<A>& source, compressed_state* result) const {
+void cpc_compressor<A>::compress_sparse_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& result) const {
   if (source.sliding_window.size() > 0) throw std::logic_error("unexpected sliding window");
   vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
   std::sort(pairs.begin(), pairs.end());
@@ -190,30 +190,29 @@ void cpc_compressor<A>::compress_sparse_flavor(const cpc_sketch_alloc<A>& source
 }
 
 template<typename A>
-void cpc_compressor<A>::uncompress_sparse_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k) const {
-  if (source.window_data_ptr != nullptr) throw std::logic_error("unexpected sliding window");
-  if (source.table_data_ptr == nullptr) throw std::logic_error("table is expected");
-  vector_u32<A> pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, source.table_num_entries, lg_k);
+void cpc_compressor<A>::uncompress_sparse_flavor(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k) const {
+  if (source.window_data.size() > 0) throw std::logic_error("unexpected sliding window");
+  if (source.table_data.size() == 0) throw std::logic_error("table is expected");
+  vector_u32<A> pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, source.table_num_entries, lg_k);
   target.table = u32_table<A>::make_from_pairs(pairs.data(), source.table_num_entries, lg_k);
 }
 
 // This is complicated because it effectively builds a Sparse version
 // of a Pinned sketch before compressing it. Hence the name Hybrid.
 template<typename A>
-void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source, compressed_state* result) const {
+void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& result) const {
   if (source.sliding_window.size() == 0) throw std::logic_error("no sliding window");
   if (source.window_offset != 0) throw std::logic_error("window_offset != 0");
   const size_t k = 1 << source.get_lg_k();
   vector_u32<A> pairs_from_table = source.surprising_value_table.unwrapping_get_items();
-  const size_t num_pairs_from_table = source.surprising_value_table.get_num_items();
-  if (num_pairs_from_table > 0) std::sort(pairs_from_table.begin(), pairs_from_table.end());
-  const size_t num_pairs_from_window = source.get_num_coupons() - num_pairs_from_table; // because the window offset is zero
+  std::sort(pairs_from_table.begin(), pairs_from_table.end());
+  const size_t num_pairs_from_window = source.get_num_coupons() - pairs_from_table.size(); // because the window offset is zero
 
-  vector_u32<A> all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, num_pairs_from_table);
+  vector_u32<A> all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, pairs_from_table.size());
 
   u32_table<A>::merge(
-      pairs_from_table.data(), 0, num_pairs_from_table,
-      all_pairs.data(), num_pairs_from_table, num_pairs_from_window,
+      pairs_from_table.data(), 0, pairs_from_table.size(),
+      all_pairs.data(), pairs_from_table.size(), num_pairs_from_window,
       all_pairs.data(), 0
   );  // note the overlapping subarray trick
 
@@ -221,10 +220,10 @@ void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source
 }
 
 template<typename A>
-void cpc_compressor<A>::uncompress_hybrid_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k) const {
-  if (source.window_data_ptr != nullptr) throw std::logic_error("window is not expected");
-  if (source.table_data_ptr == nullptr) throw std::logic_error("table is expected");
-  vector_u32<A> pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, source.table_num_entries, lg_k);
+void cpc_compressor<A>::uncompress_hybrid_flavor(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k) const {
+  if (source.window_data.size() > 0) throw std::logic_error("window is not expected");
+  if (source.table_data.size() == 0) throw std::logic_error("table is expected");
+  vector_u32<A> pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, source.table_num_entries, lg_k);
 
   // In the hybrid flavor, some of these pairs actually
   // belong in the window, so we will separate them out,
@@ -247,7 +246,7 @@ void cpc_compressor<A>::uncompress_hybrid_flavor(const compressed_state& source,
 }
 
 template<typename A>
-void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source, compressed_state* result) const {
+void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& result) const {
   compress_sliding_window(source.sliding_window.data(), source.get_lg_k(), source.get_num_coupons(), result);
   vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
   if (pairs.size() > 0) {
@@ -267,13 +266,13 @@ void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source
 }
 
 template<typename A>
-void cpc_compressor<A>::uncompress_pinned_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const {
-  if (source.window_data_ptr == nullptr) throw std::logic_error("window is expected");
-  uncompress_sliding_window(source.window_data_ptr.get(), source.window_data_words, target.window, lg_k, num_coupons);
+void cpc_compressor<A>::uncompress_pinned_flavor(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const {
+  if (source.window_data.size() == 0) throw std::logic_error("window is expected");
+  uncompress_sliding_window(source.window_data.data(), source.window_data_words, target.window, lg_k, num_coupons);
   const size_t num_pairs = source.table_num_entries;
   if (num_pairs > 0) {
-    if (source.table_data_ptr == nullptr) throw std::logic_error("table is expected");
-    vector_u32<A> pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, num_pairs, lg_k);
+    if (source.table_data.size() == 0) throw std::logic_error("table is expected");
+    vector_u32<A> pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, num_pairs, lg_k);
     // undo the compressor's 8-column shift
     for (size_t i = 0; i < num_pairs; i++) {
       if ((pairs[i] & 63) >= 56) throw std::logic_error("(pairs[i] & 63) >= 56");
@@ -284,7 +283,7 @@ void cpc_compressor<A>::uncompress_pinned_flavor(const compressed_state& source,
 }
 
 template<typename A>
-void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& source, compressed_state* result) const {
+void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& result) const {
   compress_sliding_window(source.sliding_window.data(), source.get_lg_k(), source.get_num_coupons(), result);
   vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
   if (pairs.size() > 0) {
@@ -315,15 +314,15 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
 }
 
 template<typename A>
-void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const {
-  if (source.window_data_ptr == nullptr) throw std::logic_error("window is expected");
-  uncompress_sliding_window(source.window_data_ptr.get(), source.window_data_words, target.window, lg_k, num_coupons);
+void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const {
+  if (source.window_data.size() == 0) throw std::logic_error("window is expected");
+  uncompress_sliding_window(source.window_data.data(), source.window_data_words, target.window, lg_k, num_coupons);
   const size_t num_pairs = source.table_num_entries;
   if (num_pairs == 0) {
     target.table = u32_table<A>(2, 6 + lg_k);
   } else {
-    if (source.table_data_ptr == nullptr) throw std::logic_error("table is expected");
-    vector_u32<A> pairs = uncompress_surprising_values(source.table_data_ptr.get(), source.table_data_words, num_pairs, lg_k);
+    if (source.table_data.size() == 0) throw std::logic_error("table is expected");
+    vector_u32<A> pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, num_pairs, lg_k);
 
     const uint8_t pseudo_phase = determine_pseudo_phase(lg_k, num_coupons);
     if (pseudo_phase >= 16) throw std::logic_error("pseudo phase >= 16");
@@ -348,23 +347,20 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state& source
 }
 
 template<typename A>
-void cpc_compressor<A>::compress_surprising_values(const vector_u32<A>& pairs, uint8_t lg_k, compressed_state* result) const {
+void cpc_compressor<A>::compress_surprising_values(const vector_u32<A>& pairs, uint8_t lg_k, compressed_state<A>& result) const {
   const size_t k = 1 << lg_k;
   const uint64_t num_base_bits = golomb_choose_number_of_base_bits(k + pairs.size(), pairs.size());
   const uint64_t table_len = safe_length_for_compressed_pair_buf(k, pairs.size(), num_base_bits);
-  result->table_data_ptr = u32_ptr_with_deleter(
-      AllocU32<A>().allocate(table_len),
-      [table_len] (uint32_t* ptr) { AllocU32<A>().deallocate(ptr, table_len); }
-  );
+  result.table_data.resize(table_len);
 
-  size_t csv_length = low_level_compress_pairs(pairs.data(), pairs.size(), num_base_bits, result->table_data_ptr.get());
+  size_t csv_length = low_level_compress_pairs(pairs.data(), pairs.size(), num_base_bits, result.table_data.data());
 
   // At this point we could free the unused portion of the compression output buffer,
   // but it is not necessary if it is temporary
   // Note: realloc caused strange timing spikes for lgK = 11 and 12.
 
-  result->table_data_words = csv_length;
-  result->table_num_entries = pairs.size();
+  result.table_data_words = csv_length;
+  result.table_num_entries = pairs.size();
 }
 
 template<typename A>
@@ -377,21 +373,18 @@ vector_u32<A> cpc_compressor<A>::uncompress_surprising_values(const uint32_t* da
 }
 
 template<typename A>
-void cpc_compressor<A>::compress_sliding_window(const uint8_t* window, uint8_t lg_k, uint32_t num_coupons, compressed_state* target) const {
+void cpc_compressor<A>::compress_sliding_window(const uint8_t* window, uint8_t lg_k, uint32_t num_coupons, compressed_state<A>& target) const {
   const size_t k = 1 << lg_k;
   const size_t window_buf_len = safe_length_for_compressed_window_buf(k);
-  target->window_data_ptr = u32_ptr_with_deleter(
-      AllocU32<A>().allocate(window_buf_len),
-      [window_buf_len] (uint32_t* ptr) { AllocU32<A>().deallocate(ptr, window_buf_len); }
-  );
+  target.window_data.resize(window_buf_len);
   const uint8_t pseudo_phase = determine_pseudo_phase(lg_k, num_coupons);
-  size_t data_words = low_level_compress_bytes(window, k, encoding_tables_for_high_entropy_byte[pseudo_phase], target->window_data_ptr.get());
+  size_t data_words = low_level_compress_bytes(window, k, encoding_tables_for_high_entropy_byte[pseudo_phase], target.window_data.data());
 
   // At this point we could free the unused portion of the compression output buffer,
   // but it is not necessary if it is temporary
   // Note: realloc caused strange timing spikes for lgK = 11 and 12.
 
-  target->window_data_words = data_words;
+  target.window_data_words = data_words;
 }
 
 template<typename A>

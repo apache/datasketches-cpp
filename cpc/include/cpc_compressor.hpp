@@ -47,8 +47,8 @@ inline cpc_compressor<A>& get_compressor();
 template<typename A>
 class cpc_compressor {
 public:
-  void compress(const cpc_sketch_alloc<A>& source, compressed_state& target) const;
-  void uncompress(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k, uint64_t num_coupons) const;
+  void compress(const cpc_sketch_alloc<A>& source, compressed_state<A>& target) const;
+  void uncompress(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k, uint64_t num_coupons) const;
 
   // methods below are public for testing
 
@@ -112,22 +112,22 @@ private:
   void make_decoding_tables(); // call this at startup
   void free_decoding_tables(); // call this at the end
 
-  void compress_sparse_flavor(const cpc_sketch_alloc<A>& source, compressed_state* target) const;
-  void compress_hybrid_flavor(const cpc_sketch_alloc<A>& source, compressed_state* target) const;
-  void compress_pinned_flavor(const cpc_sketch_alloc<A>& source, compressed_state* target) const;
-  void compress_sliding_flavor(const cpc_sketch_alloc<A>& source, compressed_state* target) const;
+  void compress_sparse_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& target) const;
+  void compress_hybrid_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& target) const;
+  void compress_pinned_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& target) const;
+  void compress_sliding_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& target) const;
 
-  void uncompress_sparse_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k) const;
-  void uncompress_hybrid_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k) const;
-  void uncompress_pinned_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const;
-  void uncompress_sliding_flavor(const compressed_state& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const;
+  void uncompress_sparse_flavor(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k) const;
+  void uncompress_hybrid_flavor(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k) const;
+  void uncompress_pinned_flavor(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const;
+  void uncompress_sliding_flavor(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const;
 
   uint8_t* make_inverse_permutation(const uint8_t* permu, int length);
   uint16_t* make_decoding_table(const uint16_t* encoding_table, int num_byte_values);
   void validate_decoding_table(const uint16_t* decoding_table, const uint16_t* encoding_table) const;
 
-  void compress_surprising_values(const vector_u32<A>& pairs, uint8_t lg_k, compressed_state* result) const;
-  void compress_sliding_window(const uint8_t* window, uint8_t lg_k, uint32_t num_coupons, compressed_state* target) const;
+  void compress_surprising_values(const vector_u32<A>& pairs, uint8_t lg_k, compressed_state<A>& result) const;
+  void compress_sliding_window(const uint8_t* window, uint8_t lg_k, uint32_t num_coupons, compressed_state<A>& target) const;
 
   vector_u32<A> uncompress_surprising_values(const uint32_t* data, size_t data_words, size_t num_pairs, uint8_t lg_k) const;
   void uncompress_sliding_window(const uint32_t* data, size_t data_words, vector_u8<A>& window, uint8_t lg_k, uint32_t num_coupons) const;
