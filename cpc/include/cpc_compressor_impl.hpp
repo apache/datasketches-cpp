@@ -122,14 +122,12 @@ void cpc_compressor<A>::make_decoding_tables() {
 
 template<typename A>
 void cpc_compressor<A>::free_decoding_tables() {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint16_t> AllocU16;
-  AllocU16().deallocate(length_limited_unary_decoding_table65, 4096);
+  AllocU16<A>().deallocate(length_limited_unary_decoding_table65, 4096);
   for (int i = 0; i < (16 + 6); i++) {
-    AllocU16().deallocate(decoding_tables_for_high_entropy_byte[i], 4096);
+    AllocU16<A>().deallocate(decoding_tables_for_high_entropy_byte[i], 4096);
   }
   for (int i = 0; i < 16; i++) {
-    AllocU8().deallocate(column_permutations_for_decoding[i], 56);
+    AllocU8<A>().deallocate(column_permutations_for_decoding[i], 56);
   }
 }
 
@@ -695,8 +693,7 @@ void write_unary(
     uint8_t& bufbits,
     uint64_t value
 ) {
-
-  if (compressed_words == NULL) throw std::logic_error("compressed_words == NULL");
+  if (compressed_words == nullptr) throw std::logic_error("compressed_words == NULL");
   if (bufbits > 31) throw std::out_of_range("bufbits out of range");
 
   uint64_t remaining = value;
