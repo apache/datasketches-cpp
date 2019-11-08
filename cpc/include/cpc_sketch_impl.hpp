@@ -215,7 +215,7 @@ void cpc_sketch_alloc<A>::update_windowed(uint32_t row_col) {
   if (c32pre < 3 * k) throw std::logic_error("c32pre < 3 * k"); // C < 3K/32, in other words flavor >= HYBRID
   const uint64_t c8pre = num_coupons << 3;
   const uint64_t w8pre = window_offset << 3;
-  if (c8pre >= (27 + w8pre) * k) throw std::logic_error("c8pre is wrong"); // C < (K * 27/8) + (K * windowOffset)
+  if (c8pre >= (27 + w8pre) * k) throw std::logic_error("c8pre is wrong"); // C < (K * 27/8) + (K * window_offset)
 
   bool is_novel = false;
   const uint8_t col = row_col & 63;
@@ -244,7 +244,7 @@ void cpc_sketch_alloc<A>::update_windowed(uint32_t row_col) {
       move_window();
       if (window_offset < 1 or window_offset > 56) throw std::logic_error("wrong window offset");
       const uint64_t w8post = window_offset << 3;
-      if (c8post >= (27 + w8post) * k) throw std::logic_error("c8pre is wrong"); // C < (K * 27/8) + (K * windowOffset)
+      if (c8post >= (27 + w8post) * k) throw std::logic_error("c8pre is wrong"); // C < (K * 27/8) + (K * window_offset)
     }
   }
 }
