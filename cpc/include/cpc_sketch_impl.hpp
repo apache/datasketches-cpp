@@ -32,6 +32,11 @@
 namespace datasketches {
 
 template<typename A>
+void cpc_init() {
+  get_compressor<A>(); // this initializes a global static instance of the compressor on the first use
+}
+
+template<typename A>
 cpc_sketch_alloc<A>::cpc_sketch_alloc(uint8_t lg_k, uint64_t seed):
 lg_k(lg_k),
 seed(seed),

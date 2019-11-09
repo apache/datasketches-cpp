@@ -54,6 +54,14 @@ template<typename A> class cpc_union_alloc;
 // alias with default allocator for convenience
 typedef cpc_sketch_alloc<std::allocator<void>> cpc_sketch;
 
+// allocation and initialization of global decompression (decoding) tables
+// call this before anything else if you want to control the initialization time
+// for instance, to have this happen outside of a transaction context
+// otherwise initialization happens on the first use (serialization or deserialization)
+// it is safe to call more than once assuming no race conditions
+// this is not thread safe! neither is the rest of the library
+template<typename A> void cpc_init();
+
 template<typename A>
 class cpc_sketch_alloc {
   public:

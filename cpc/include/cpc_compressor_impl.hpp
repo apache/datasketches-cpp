@@ -35,8 +35,7 @@ namespace datasketches {
 // construct on first use
 template<typename A>
 cpc_compressor<A>& get_compressor() {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<cpc_compressor<A>> Alloc;
-  static cpc_compressor<A>* instance = new (Alloc().allocate(1)) cpc_compressor<A>();
+  static cpc_compressor<A>* instance = new cpc_compressor<A>(); // use new for global initialization
   return *instance;
 }
 
@@ -52,7 +51,7 @@ cpc_compressor<A>::~cpc_compressor() {
 
 template<typename A>
 uint8_t* cpc_compressor<A>::make_inverse_permutation(const uint8_t* permu, int length) {
-  uint8_t* inverse = AllocU8<A>().allocate(length);
+  uint8_t* inverse = new uint8_t[length]; // use new for global initialization
   for (int i = 0; i < length; i++) {
     inverse[permu[i]] = i;
   }
@@ -67,7 +66,7 @@ uint8_t* cpc_compressor<A>::make_inverse_permutation(const uint8_t* permu, int l
 // The second argument is typically 256, but can be other values such as 65.
 template<typename A>
 uint16_t* cpc_compressor<A>::make_decoding_table(const uint16_t* encoding_table, int num_byte_values) {
-  uint16_t* decoding_table = AllocU16<A>().allocate(4096);
+  uint16_t* decoding_table = new uint16_t[4096]; // use new for global initialization
   for (int byte_value = 0; byte_value < num_byte_values; byte_value++) {
     const int encoding_entry = encoding_table[byte_value];
     const int code_value = encoding_entry & 0xfff;
@@ -122,12 +121,12 @@ void cpc_compressor<A>::make_decoding_tables() {
 
 template<typename A>
 void cpc_compressor<A>::free_decoding_tables() {
-  AllocU16<A>().deallocate(length_limited_unary_decoding_table65, 4096);
+  delete[] length_limited_unary_decoding_table65;
   for (int i = 0; i < (16 + 6); i++) {
-    AllocU16<A>().deallocate(decoding_tables_for_high_entropy_byte[i], 4096);
+    delete[] decoding_tables_for_high_entropy_byte[i];
   }
   for (int i = 0; i < 16; i++) {
-    AllocU8<A>().deallocate(column_permutations_for_decoding[i], 56);
+    delete[] column_permutations_for_decoding[i];
   }
 }
 
