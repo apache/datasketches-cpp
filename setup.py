@@ -93,6 +93,7 @@ setup(
     long_description=open('python/README.md').read(),
     packages=find_packages('python'), # python pacakges only in this dir
     package_dir={'':'python'},
+    test_suite='python.tests',
     # may need to add all source paths for sdist packages w/o MANIFEST.in
     ext_modules=[CMakeExtension('datasketches')],
     cmdclass={'build_ext': CMakeBuild},
