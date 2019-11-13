@@ -22,6 +22,7 @@
 
 #include <stdexcept>
 #include <cmath>
+#include <cstring>
 
 #include "cpc_confidence.hpp"
 #include "kxp_byte_lookup.hpp"
