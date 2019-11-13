@@ -23,7 +23,6 @@ else()
 endif()
 
 add_subdirectory(pybind11)
-message(STATUS "Found pybind11 v${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
 pybind11_add_module(python MODULE EXCLUDE_FROM_ALL SYSTEM THIN_LTO)
 
