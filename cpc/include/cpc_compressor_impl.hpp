@@ -184,7 +184,7 @@ template<typename A>
 void cpc_compressor<A>::compress_sparse_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& result) const {
   if (source.sliding_window.size() > 0) throw std::logic_error("unexpected sliding window");
   vector_u32<A> pairs = source.surprising_value_table.unwrapping_get_items();
-  std::sort(pairs.begin(), pairs.end());
+  u32_table<A>::introspective_insertion_sort(pairs.data(), 0, pairs.size());
   compress_surprising_values(pairs, source.get_lg_k(), result);
 }
 
@@ -204,7 +204,7 @@ void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source
   if (source.window_offset != 0) throw std::logic_error("window_offset != 0");
   const size_t k = 1 << source.get_lg_k();
   vector_u32<A> pairs_from_table = source.surprising_value_table.unwrapping_get_items();
-  std::sort(pairs_from_table.begin(), pairs_from_table.end());
+  if (pairs_from_table.size() > 0) u32_table<A>::introspective_insertion_sort(pairs_from_table.data(), 0, pairs_from_table.size());
   const size_t num_pairs_from_window = source.get_num_coupons() - pairs_from_table.size(); // because the window offset is zero
 
   vector_u32<A> all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, pairs_from_table.size());
@@ -259,7 +259,7 @@ void cpc_compressor<A>::compress_pinned_flavor(const cpc_sketch_alloc<A>& source
       pairs[i] -= 8;
     }
 
-    std::sort(pairs.begin(), pairs.end());
+    if (pairs.size() > 0) u32_table<A>::introspective_insertion_sort(pairs.data(), 0, pairs.size());
     compress_surprising_values(pairs, source.get_lg_k(), result);
   }
 }
@@ -307,7 +307,7 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
       pairs[i] = (row << 6) | col;
     }
 
-    std::sort(pairs.begin(), pairs.end());
+    if (pairs.size() > 0) u32_table<A>::introspective_insertion_sort(pairs.data(), 0, pairs.size());
     compress_surprising_values(pairs, source.get_lg_k(), result);
   }
 }

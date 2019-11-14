@@ -62,6 +62,9 @@ public:
     uint32_t* arr_c, size_t start_c                         // output
   );
 
+  static void introspective_insertion_sort(uint32_t* a, size_t l, size_t r);
+  static void knuth_shell_sort3(uint32_t* a, size_t l, size_t r);
+
 private:
 
   uint8_t lg_size; // log2 of number of slots

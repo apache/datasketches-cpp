@@ -216,6 +216,51 @@ void u32_table<A>::merge(
   if (a != lim_a or b != lim_b) throw std::logic_error("merging error");
 }
 
+// In applications where the input array is already nearly sorted,
+// insertion sort runs in linear time with a very small constant.
+// This introspective version of insertion sort protects against
+// the quadratic cost of sorting bad input arrays.
+// It keeps track of how much work has been done, and if that exceeds a
+// constant times the array length, it switches to a different sorting algorithm.
+
+template<typename A>
+void u32_table<A>::introspective_insertion_sort(uint32_t* a, size_t l, size_t r) { // r points past the rightmost element
+  const size_t length = r - l;
+  const size_t cost_limit = 8 * length;
+  size_t cost = 0;
+  for (size_t i = l + 1; i < r; i++) {
+    size_t j = i;
+    uint32_t v = a[i];
+    while (j >= l + 1 and v < a[j - 1]) {
+      a[j] = a[j - 1];
+      j--;
+    }
+    a[j] = v;
+    cost += i - j; // distance moved is a measure of work
+    if (cost > cost_limit) {
+      knuth_shell_sort3(a, l, r);
+      return;
+    }
+  }
+}
+
+template<typename A>
+void u32_table<A>::knuth_shell_sort3(uint32_t* a, size_t l, size_t r) {
+  size_t h;
+  for (h = 1; h < (r - l) / 9; h = 3 * h + 1);
+  for ( ; h > 0; h /= 3) {
+    for (size_t i = l + h; i < r; i++) {
+      size_t j = i;
+      const uint32_t v = a[i];
+      while (j >= l + h and v < a[j - h]) {
+        a[j] = a[j - h];
+        j -= h;
+      }
+      a[j] = v;
+    }
+  }
+}
+
 } /* namespace datasketches */
 
 #endif
