@@ -137,8 +137,14 @@ class theta_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(update_sketch.get_lower_bound(1) < n);
     CPPUNIT_ASSERT(update_sketch.get_upper_bound(1) > n);
 
+    const uint32_t k = 1 << update_theta_sketch::builder::DEFAULT_LG_K;
+    CPPUNIT_ASSERT(update_sketch.get_num_retained() >= k);
+    update_sketch.trim();
+    CPPUNIT_ASSERT_EQUAL(k, update_sketch.get_num_retained());
+
     compact_theta_sketch compact_sketch = update_sketch.compact();
     CPPUNIT_ASSERT(!compact_sketch.is_empty());
+    CPPUNIT_ASSERT(compact_sketch.is_ordered());
     CPPUNIT_ASSERT(compact_sketch.is_estimation_mode());
     CPPUNIT_ASSERT(compact_sketch.get_theta() < 1.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL((double) n, compact_sketch.get_estimate(), n * 0.01);

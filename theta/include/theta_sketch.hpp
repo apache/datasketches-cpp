@@ -143,6 +143,9 @@ public:
   // which does widening conversion to int64_t, if compatibility with Java is expected
   void update(const void* data, unsigned length);
 
+  // remove retained entries in excess of the nominal size k (if any)
+  void trim();
+
   compact_theta_sketch_alloc<A> compact(bool ordered = true) const;
 
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
@@ -190,8 +193,8 @@ private:
   static bool hash_search(uint64_t hash, const uint64_t* table, uint8_t lg_size);
 
   friend theta_sketch_alloc<A>;
-  static update_theta_sketch_alloc<A> internal_deserialize(std::istream& is, resize_factor rf, uint8_t lg_cur_size, uint8_t lg_nom_size, uint8_t flags_byte, uint64_t seed);
-  static update_theta_sketch_alloc<A> internal_deserialize(const void* bytes, size_t size, resize_factor rf, uint8_t lg_cur_size, uint8_t lg_nom_size, uint8_t flags_byte, uint64_t seed);
+  static update_theta_sketch_alloc<A> internal_deserialize(std::istream& is, resize_factor rf, uint8_t lg_nom_size, uint8_t lg_cur_size, uint8_t flags_byte, uint64_t seed);
+  static update_theta_sketch_alloc<A> internal_deserialize(const void* bytes, size_t size, resize_factor rf, uint8_t lg_nom_size, uint8_t lg_cur_size, uint8_t flags_byte, uint64_t seed);
 };
 
 // compact sketch
