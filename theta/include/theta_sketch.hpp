@@ -193,7 +193,7 @@ private:
   static bool hash_search(uint64_t hash, const uint64_t* table, uint8_t lg_size);
 
   friend theta_sketch_alloc<A>;
-  static update_theta_sketch_alloc<A> internal_deserialize(std::istream& is, resize_factor rf, uint8_t lg_cur_size, uint8_t lg_nom_size, uint8_t flags_byte, uint64_t seed);    static update_theta_sketch_alloc<A> internal_deserialize(std::istream& is, resize_factor rf, uint8_t lg_nom_size, uint8_t lg_cur_size, uint8_t flags_byte, uint64_t seed);
+  static update_theta_sketch_alloc<A> internal_deserialize(std::istream& is, resize_factor rf, uint8_t lg_cur_size, uint8_t lg_nom_size, uint8_t flags_byte, uint64_t seed);
   static update_theta_sketch_alloc<A> internal_deserialize(const void* bytes, size_t size, resize_factor rf, uint8_t lg_cur_size, uint8_t lg_nom_size, uint8_t flags_byte, uint64_t seed);
 };
 
