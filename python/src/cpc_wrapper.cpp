@@ -32,8 +32,7 @@ namespace python {
 
 cpc_sketch* cpc_sketch_deserialize(py::bytes skBytes) {
   std::string skStr = skBytes; // implicit cast
-  cpc_sketch_unique_ptr sk = cpc_sketch::deserialize(skStr.c_str(), skStr.length());
-  return sk.release();
+  return new cpc_sketch(cpc_sketch::deserialize(skStr.c_str(), skStr.length()));
 }
 
 py::object cpc_sketch_serialize(const cpc_sketch& sk) {
@@ -43,13 +42,12 @@ py::object cpc_sketch_serialize(const cpc_sketch& sk) {
 
 std::string cpc_sketch_to_string(const cpc_sketch& sk) {
   std::ostringstream ss;
-  ss << sk;
+  sk.to_stream(ss);
   return ss.str();
 }
 
 cpc_sketch* cpc_union_get_result(const cpc_union& u) {
-  auto sk = u.get_result();
-  return sk.release();
+  return new cpc_sketch(u.get_result());
 }
 
 }

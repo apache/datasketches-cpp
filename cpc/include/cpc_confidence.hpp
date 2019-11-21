@@ -19,17 +19,20 @@
 
 // author Kevin Lang, Oath Research
 
-#include "common.h"
-#include "fm85.h"
-#include "iconEstimator.h"
+#ifndef CPC_CONFIDENCE_HPP_
+#define CPC_CONFIDENCE_HPP_
 
-#include <stdexcept>
+#include <cmath>
+
+#include "cpc_sketch.hpp"
+
+namespace datasketches {
 
 // ln 2.0
-const double iconErrorConstant = 0.693147180559945286;
+static const double ICON_ERROT_CONSTANT = 0.693147180559945286;
 
 //  1,    2,    3, // kappa
-const Short iconLowSideData [33] = {   // Empirically measured at N = 1000 * K.
+static const int16_t ICON_LOW_SIDE_DATA [33] = {   // Empirically measured at N = 1000 * K.
  6037, 5720, 5328, // 4 1000000
  6411, 6262, 5682, // 5 1000000
  6724, 6403, 6127, // 6 1000000
@@ -41,10 +44,10 @@ const Short iconLowSideData [33] = {   // Empirically measured at N = 1000 * K.
  6871, 6845, 6812, // 12 1046369
  6909, 6861, 6828, // 13 1043411
  6919, 6897, 6842, // 14 1000297
-};                // lgK numtrials
+};                 // lgK numtrials
 
 //  1,    2,    3, // kappa
-const Short iconHighSideData [33] = {   // Empirically measured at N = 1000 * K.
+static const int16_t ICON_HIGH_SIDE_DATA [33] = {   // Empirically measured at N = 1000 * K.
  8031, 8559, 9309, // 4 1000000
  7084, 7959, 8660, // 5 1000000
  7141, 7514, 7876, // 6 1000000
@@ -56,13 +59,13 @@ const Short iconHighSideData [33] = {   // Empirically measured at N = 1000 * K.
  6993, 7019, 7053, // 12 1046369
  6953, 7001, 6983, // 13 1043411
  6944, 6966, 7004, // 14 1000297
-};                // lgK numtrials
+};                 // lgK numtrials
 
 // sqrt((ln 2.0) / 2.0)
-const double hipErrorConstant = 0.588705011257737332;
+static const double HIP_ERROR_CONSTANT = 0.588705011257737332;
 
 //  1,    2,    3, // kappa
-const Short hipLowSideData [33] = {   // Empirically measured at N = 1000 * K.
+static const int16_t HIP_LOW_SIDE_DATA [33] = {   // Empirically measured at N = 1000 * K.
  5871, 5247, 4826, // 4 1000000
  5877, 5403, 5070, // 5 1000000
  5873, 5533, 5304, // 6 1000000
@@ -74,10 +77,10 @@ const Short hipLowSideData [33] = {   // Empirically measured at N = 1000 * K.
  5869, 5827, 5784, // 12 1046369
  5876, 5860, 5827, // 13 1043411
  5881, 5853, 5842, // 14 1000297
-};                // lgK numtrials
+};                 // lgK numtrials
 
 //  1,    2,    3, // kappa
-const Short hipHighSideData [33] = {   // Empirically measured at N = 1000 * K.
+static const int16_t HIP_HIGH_SIDE_DATA [33] = {   // Empirically measured at N = 1000 * K.
  5855, 6688, 7391, // 4 1000000
  5886, 6444, 6923, // 5 1000000
  5885, 6254, 6594, // 6 1000000
@@ -89,68 +92,76 @@ const Short hipHighSideData [33] = {   // Empirically measured at N = 1000 * K.
  5871, 5926, 5973, // 12 1046369
  5866, 5901, 5915, // 13 1043411
  5880, 5914, 5953, // 14 1000297
-};                // lgK numtrials
+};                 // lgK numtrials
 
-double getIconConfidenceLB(const FM85* sketch, int kappa) {
-  if (sketch->numCoupons == 0) return 0.0;
-  const int lgK = sketch->lgK;
-  const long k = 1LL << lgK;
-  if (lgK < 4) throw std::logic_error("lgk < 4");
+template<typename A>
+double get_icon_confidence_lb(const cpc_sketch_alloc<A>& sketch, int kappa) {
+  if (sketch.get_num_coupons() == 0) return 0.0;
+  const int lg_k = sketch.get_lg_k();
+  const long k = 1 << lg_k;
+  if (lg_k < 4) throw std::logic_error("lgk < 4");
   if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
-  double x = iconErrorConstant;
-  if (lgK <= 14) x = ((double) iconHighSideData[3 * (lgK - 4) + (kappa - 1)]) / 10000.0;
-  const double rel = x / (sqrt((double) k));
-  const double eps = ((double) kappa) * rel;
-  const double est = getIconEstimate (lgK, sketch->numCoupons);
+  double x = ICON_ERROT_CONSTANT;
+  if (lg_k <= 14) x = ((double) ICON_HIGH_SIDE_DATA[3 * (lg_k - 4) + (kappa - 1)]) / 10000.0;
+  const double rel = x / sqrt(k);
+  const double eps = kappa * rel;
+  const double est = sketch.get_icon_estimate();
   double result = est / (1.0 + eps);
-  const double check = (double) sketch->numCoupons;
+  const double check = sketch.get_num_coupons();
   if (result < check) result = check;
   return result;
 }
 
-double getIconConfidenceUB(const FM85* sketch, int kappa) {
-  if (sketch->numCoupons == 0) return 0.0;
-  const int lgK = sketch->lgK;
-  const long k = 1LL << lgK;
-  if (lgK < 4) throw std::logic_error("lgk < 4");
+template<typename A>
+double get_icon_confidence_ub(const cpc_sketch_alloc<A>& sketch, int kappa) {
+  if (sketch.get_num_coupons() == 0) return 0.0;
+  const int lg_k = sketch.get_lg_k();
+  const long k = 1 << lg_k;
+  if (lg_k < 4) throw std::logic_error("lgk < 4");
   if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
-  double x = iconErrorConstant;
-  if (lgK <= 14) x = ((double) iconLowSideData[3 * (lgK - 4) + (kappa - 1)]) / 10000.0;
-  const double rel = x / (sqrt((double) k));
-  const double eps = ((double) kappa) * rel;
-  const double est = getIconEstimate (lgK, sketch->numCoupons);
-  const double result = est / (1.0 - eps);
-  return ceil(result);  // widening for coverage
-}
-
-double getHIPConfidenceLB(const FM85 * sketch, int kappa) {
-  if (sketch->numCoupons == 0) return 0.0;
-  const int lgK = sketch->lgK;
-  const long k = 1LL << lgK;
-  if (lgK < 4) throw std::logic_error("lgk < 4");
-  if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
-  double x = hipErrorConstant;
-  if (lgK <= 14) x = ((double) hipHighSideData[3 * (lgK - 4) + (kappa - 1)]) / 10000.0;
-  const double rel = x / (sqrt((double) k));
-  const double eps = ((double) kappa) * rel;
-  const double est = getHIPEstimate(sketch);
-  double result = est / (1.0 + eps);
-  const double check = (double) sketch->numCoupons;
-  if (result < check) result = check;
-  return result;
-}
-
-double getHIPConfidenceUB(const FM85* sketch, int kappa) {
-  if (sketch->numCoupons == 0) return 0.0;
-  const int lgK = sketch->lgK;
-  const long k = 1LL << lgK;
-  if (lgK < 4) throw std::logic_error("lgk < 4");
-  if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
-  double x = hipErrorConstant;
-  if (lgK <= 14) x = ((double) hipLowSideData[3 * (lgK - 4) + (kappa - 1)]) / 10000.0;
-  const double rel = x / (sqrt((double) k));
-  const double eps = ((double) kappa) * rel;
-  const double est = getHIPEstimate(sketch);
+  double x = ICON_ERROT_CONSTANT;
+  if (lg_k <= 14) x = ((double) ICON_LOW_SIDE_DATA[3 * (lg_k - 4) + (kappa - 1)]) / 10000.0;
+  const double rel = x / sqrt(k);
+  const double eps = kappa * rel;
+  const double est = sketch.get_icon_estimate();
   const double result = est / (1.0 - eps);
   return ceil(result); // widening for coverage
 }
+
+template<typename A>
+double get_hip_confidence_lb(const cpc_sketch_alloc<A>& sketch, int kappa) {
+  if (sketch.get_num_coupons() == 0) return 0.0;
+  const int lg_k = sketch.get_lg_k();
+  const long k = 1 << lg_k;
+  if (lg_k < 4) throw std::logic_error("lgk < 4");
+  if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
+  double x = HIP_ERROR_CONSTANT;
+  if (lg_k <= 14) x = ((double) HIP_HIGH_SIDE_DATA[3 * (lg_k - 4) + (kappa - 1)]) / 10000.0;
+  const double rel = x / (sqrt((double) k));
+  const double eps = ((double) kappa) * rel;
+  const double est = sketch.get_hip_estimate();
+  double result = est / (1.0 + eps);
+  const double check = (double) sketch.get_num_coupons();
+  if (result < check) result = check;
+  return result;
+}
+
+template<typename A>
+double get_hip_confidence_ub(const cpc_sketch_alloc<A>& sketch, int kappa) {
+  if (sketch.get_num_coupons() == 0) return 0.0;
+  const int lg_k = sketch.get_lg_k();
+  const long k = 1 << lg_k;
+  if (lg_k < 4) throw std::logic_error("lgk < 4");
+  if (kappa < 1 || kappa > 3) throw std::invalid_argument("kappa must be between 1 and 3");
+  double x = HIP_ERROR_CONSTANT;
+  if (lg_k <= 14) x = ((double) HIP_LOW_SIDE_DATA[3 * (lg_k - 4) + (kappa - 1)]) / 10000.0;
+  const double rel = x / sqrt(k);
+  const double eps = kappa * rel;
+  const double est = sketch.get_hip_estimate();
+  const double result = est / (1.0 - eps);
+  return ceil(result); // widening for coverage
+}
+
+} /* namespace datasketches */
+
+#endif

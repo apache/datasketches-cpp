@@ -33,6 +33,10 @@ class cpc_union_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(empty);
   CPPUNIT_TEST(copy);
   CPPUNIT_TEST(custom_seed);
+  CPPUNIT_TEST(large);
+  CPPUNIT_TEST(reduce_k_empty);
+  CPPUNIT_TEST(reduce_k_sparse);
+  CPPUNIT_TEST(reduce_k_window);
   CPPUNIT_TEST_SUITE_END();
 
   void lg_k_limits() {
@@ -44,9 +48,9 @@ class cpc_union_test: public CppUnit::TestFixture {
 
   void empty() {
     cpc_union u(11);
-    auto sketch_ptr(u.get_result());
-    CPPUNIT_ASSERT(sketch_ptr->is_empty());
-    CPPUNIT_ASSERT_EQUAL(0.0, sketch_ptr->get_estimate());
+    auto s = u.get_result();
+    CPPUNIT_ASSERT(s.is_empty());
+    CPPUNIT_ASSERT_EQUAL(0.0, s.get_estimate());
   }
 
   void copy() {
@@ -56,15 +60,15 @@ class cpc_union_test: public CppUnit::TestFixture {
     u1.update(s);
 
     cpc_union u2 = u1; // copy constructor
-    auto sp1(u2.get_result());
-    CPPUNIT_ASSERT(!sp1->is_empty());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1, sp1->get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    auto s1 = u2.get_result();
+    CPPUNIT_ASSERT(!s1.is_empty());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1, s1.get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
     s.update(2);
     u2.update(s);
     u1 = u2; // operator=
-    auto sp2(u1.get_result());
-    CPPUNIT_ASSERT(!sp2->is_empty());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(2, sp2->get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    auto s2 = u1.get_result();
+    CPPUNIT_ASSERT(!s2.is_empty());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(2, s2.get_estimate(), 2 * RELATIVE_ERROR_FOR_LG_K_11);
   }
 
   void custom_seed() {
@@ -76,13 +80,73 @@ class cpc_union_test: public CppUnit::TestFixture {
 
     cpc_union u1(11, 123);
     u1.update(s);
-    auto sp(u1.get_result());
-    CPPUNIT_ASSERT(!sp->is_empty());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(3, sp->get_estimate(), RELATIVE_ERROR_FOR_LG_K_11);
+    auto r = u1.get_result();
+    CPPUNIT_ASSERT(!r.is_empty());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(3, r.get_estimate(), 3 * RELATIVE_ERROR_FOR_LG_K_11);
 
     // incompatible seed
     cpc_union u2(11, 234);
     CPPUNIT_ASSERT_THROW(u2.update(s), std::invalid_argument);
+  }
+
+  void large() {
+    int key = 0;
+    cpc_sketch s(11);
+    cpc_union u(11);
+    for (int i = 0; i < 1000; i++) {
+      cpc_sketch tmp(11);
+      for (int i = 0; i < 10000; i++) {
+        s.update(key);
+        tmp.update(key);
+        key++;
+      }
+      u.update(tmp);
+    }
+    cpc_sketch r = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(s.get_num_coupons(), r.get_num_coupons());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(s.get_estimate(), r.get_estimate(), s.get_estimate() * RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void reduce_k_empty() {
+    cpc_sketch s(11);
+    for (int i = 0; i < 10000; i++) s.update(i);
+    cpc_union u(12);
+    u.update(s);
+    cpc_sketch r = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(11, (int) r.get_lg_k());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(10000, r.get_estimate(), 10000 * RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void reduce_k_sparse() {
+    cpc_union u(12);
+
+    cpc_sketch s12(12);
+    for (int i = 0; i < 100; i++) s12.update(i);
+    u.update(s12);
+
+    cpc_sketch s11(11);
+    for (int i = 0; i < 1000; i++) s11.update(i);
+    u.update(s11);
+
+    cpc_sketch r = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(11, (int) r.get_lg_k());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1000, r.get_estimate(), 1000 * RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void reduce_k_window() {
+    cpc_union u(12);
+
+    cpc_sketch s12(12);
+    for (int i = 0; i < 500; i++) s12.update(i);
+    u.update(s12);
+
+    cpc_sketch s11(11);
+    for (int i = 0; i < 1000; i++) s11.update(i);
+    u.update(s11);
+
+    cpc_sketch r = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(11, (int) r.get_lg_k());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(1000, r.get_estimate(), 1000 * RELATIVE_ERROR_FOR_LG_K_11);
   }
 
 };

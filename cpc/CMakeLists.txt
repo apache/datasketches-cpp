@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(cpc OBJECT "")
+add_library(cpc INTERFACE)
 
 add_library(${PROJECT_NAME}::CPC ALIAS cpc)
 
@@ -24,49 +24,57 @@ if (BUILD_TESTS)
 endif()
 
 target_include_directories(cpc
-  PUBLIC
+  INTERFACE
     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE 
     ${COMMON_INCLUDE_DIR}
 )
 
-target_link_libraries(cpc common)
+target_link_libraries(cpc INTERFACE common)
+target_compile_features(cpc INTERFACE cxx_std_11)
 
-set_target_properties(cpc PROPERTIES
-  PUBLIC_HEADER "include/cpc_sketch.hpp;include/cpc_union.hpp;include/cpc_common.hpp"
-  POSITION_INDEPENDENT_CODE ON
-  CXX_STANDARD 11
-  CXX_STANDARD_REQUIRED YES
-)
+set(cpc_HEADERS "")
+list(APPEND cpc_HEADERS "include/compression_data.hpp")
+list(APPEND cpc_HEADERS "include/counter_of_zeros.hpp")
+list(APPEND cpc_HEADERS "include/cpc_common.hpp")
+list(APPEND cpc_HEADERS "include/cpc_compressor.hpp")
+list(APPEND cpc_HEADERS "include/cpc_compressor_impl.hpp")
+list(APPEND cpc_HEADERS "include/cpc_confidence.hpp")
+list(APPEND cpc_HEADERS "include/cpc_sketch.hpp")
+list(APPEND cpc_HEADERS "include/cpc_sketch_impl.hpp")
+list(APPEND cpc_HEADERS "include/cpc_union.hpp")
+list(APPEND cpc_HEADERS "include/cpc_union_impl.hpp")
+list(APPEND cpc_HEADERS "include/cpc_util.hpp")
+list(APPEND cpc_HEADERS "include/icon_estimator.hpp")
+list(APPEND cpc_HEADERS "include/inv_pow_2_tab.hpp")
+list(APPEND cpc_HEADERS "include/kxp_byte_lookup.hpp")
+list(APPEND cpc_HEADERS "include/u32_table.hpp")
+list(APPEND cpc_HEADERS "include/u32_table_impl.hpp")
 
 install(TARGETS cpc
   EXPORT ${PROJECT_NAME}
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
 )
+
+install(FILES ${cpc_HEADERS}
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
 
 target_sources(cpc
   INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_sketch.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_union.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/compression_data.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/counter_of_zeros.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_common.hpp
-  PRIVATE
-    src/cpc_sketch.cpp
-    src/fm85.cpp
-    src/fm85Compression.cpp
-    src/fm85Confidence.cpp
-    src/fm85Merging.cpp
-    src/fm85Util.cpp
-    src/iconEstimator.cpp
-    src/u32Table.cpp
-    include/common.h
-    include/compressionData.h
-    include/fm85.h
-    include/fm85Compression.h
-    include/fm85Confidence.h
-    include/fm85Merging.h
-    include/fm85Util.h
-    include/iconEstimator.h
-    include/u32Table.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_compressor.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_compressor_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_confidence.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_sketch.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_sketch_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_union.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_union_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_util.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/icon_estimator.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/inv_pow_2_tab.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/kxp_byte_lookup.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/u32_table.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/u32_table_impl.hpp
 )

@@ -26,77 +26,58 @@
 #include <iso646.h> // for and/or keywords
 #endif // _MSC_VER
 
-#include "fm85Merging.h"
 #include "cpc_sketch.hpp"
 
 namespace datasketches {
 
 /*
- * High performance C++ implementation of Compressed Probabilistic Counting sketch
+ * High performance C++ implementation of Compressed Probabilistic Counting (CPC) Union
  *
  * author Kevin Lang
  * author Alexander Saydakov
  */
 
-UG85* ug85Copy(UG85* other) {
-  UG85* copy(new UG85(*other));
-  if (other->accumulator != nullptr) copy->accumulator = fm85Copy(other->accumulator);
-  if (other->bitMatrix != nullptr) {
-    uint32_t k = 1 << copy->lgK;
-    copy->bitMatrix = (U64 *) malloc ((size_t) (k * sizeof(U64)));
-    std::copy(&other->bitMatrix[0], &other->bitMatrix[k], copy->bitMatrix);
-  }
-  return copy;
-}
+// alias with default allocator for convenience
+typedef cpc_union_alloc<std::allocator<void>> cpc_union;
 
-class cpc_union {
+template<typename A>
+class cpc_union_alloc {
   public:
-    explicit cpc_union(uint8_t lg_k = CPC_DEFAULT_LG_K, uint64_t seed = DEFAULT_SEED) : seed(seed) {
-      fm85Init();
-      if (lg_k < CPC_MIN_LG_K or lg_k > CPC_MAX_LG_K) {
-        throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
-      }
-      state = ug85Make(lg_k);
-    }
 
-    cpc_union(const cpc_union& other) {
-      seed = other.seed;
-      state = ug85Copy(other.state);
-    }
+    explicit cpc_union_alloc(uint8_t lg_k = CPC_DEFAULT_LG_K, uint64_t seed = DEFAULT_SEED);
+    cpc_union_alloc(const cpc_union_alloc<A>& other);
+    cpc_union_alloc(cpc_union_alloc<A>&& other) noexcept;
+    ~cpc_union_alloc();
 
-    cpc_union& operator=(cpc_union other) {
-      seed = other.seed;
-      std::swap(state, other.state); // @suppress("Invalid arguments")
-      return *this;
-    }
+    cpc_union_alloc<A>& operator=(const cpc_union_alloc<A>& other);
+    cpc_union_alloc<A>& operator=(cpc_union_alloc<A>&& other) noexcept;
 
-    ~cpc_union() {
-      ug85Free(state);
-    }
-
-    void update(const cpc_sketch& sketch) {
-      const uint16_t seed_hash_union = compute_seed_hash(seed);
-      const uint16_t seed_hash_sketch = compute_seed_hash(sketch.seed);
-      if (seed_hash_union != seed_hash_sketch) {
-        throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash_union) + ", "
-            + std::to_string(seed_hash_sketch));
-      }
-      ug85MergeInto(state, sketch.state);
-    }
-
-    cpc_sketch_unique_ptr get_result() const {
-      cpc_sketch_unique_ptr sketch_ptr(
-          new (fm85alloc(sizeof(cpc_sketch))) cpc_sketch(ug85GetResult(state), seed),
-          [](cpc_sketch* s) { s->~cpc_sketch(); fm85free(s); }
-      );
-      return sketch_ptr;
-    }
+    void update(const cpc_sketch_alloc<A>& sketch);
+    cpc_sketch_alloc<A> get_result() const;
 
   private:
-    UG85* state;
+    typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
+    typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
+    typedef typename std::allocator_traits<A>::template rebind_alloc<cpc_sketch_alloc<A>> AllocCpc;
+
+    uint8_t lg_k;
     uint64_t seed;
+    cpc_sketch_alloc<A>* accumulator;
+    vector_u64<A> bit_matrix;
+
+    cpc_sketch_alloc<A> get_result_from_accumulator() const;
+    cpc_sketch_alloc<A> get_result_from_bit_matrix() const;
+
+    void switch_to_bit_matrix();
+    void walk_table_updating_sketch(const u32_table<A>& table);
+    void or_table_into_matrix(const u32_table<A>& table);
+    void or_window_into_matrix(const vector_u8<A>& sliding_window, uint8_t offset, uint8_t src_lg_k);
+    void or_matrix_into_matrix(const vector_u64<A>& src_matrix, uint8_t src_lg_k);
+    void reduce_k(uint8_t new_lg_k);
 };
 
 } /* namespace datasketches */
+
+#include "cpc_union_impl.hpp"
 
 #endif

@@ -1091,4 +1091,4 @@ uint64_t theta_sketch_alloc<A>::const_iterator::operator*() const {
 
 } /* namespace datasketches */
 
-# endif
+#endif
