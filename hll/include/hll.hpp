@@ -604,6 +604,12 @@ class hll_union_alloc {
                           bool all = false) const;
 
     /**
+     * Update this union operator iwth the given sketch.
+     * @param The given sketch.
+     */
+    void update(const hll_sketch_alloc<A>& sketch);
+  
+    /**
      * Present the given std::string as a potential unique item.
      * The string is converted to a byte array using UTF8 encoding.
      * If the string is null or empty no update attempt is made and the method returns.
@@ -678,7 +684,6 @@ class hll_union_alloc {
      */
     void update(const void* data, size_t length_bytes);
 
-
     /**
      * Returns the maximum size in bytes that this union operator can grow to given a lg_k.
      *
@@ -686,7 +691,7 @@ class hll_union_alloc {
      * between 4 and 21 inclusively.
      * @return the maximum size in bytes that this union operator can grow to.
      */
-    sta`tic int get_max_serialization_bytes(int lg_k);
+    static int get_max_serialization_bytes(int lg_k);
 
     /**
      * Gets the current (approximate) Relative Error (RE) asymptotic values given several
