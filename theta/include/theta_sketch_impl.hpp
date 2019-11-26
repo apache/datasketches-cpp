@@ -607,6 +607,11 @@ void update_theta_sketch_alloc<A>::internal_update(uint64_t hash) {
 }
 
 template<typename A>
+void update_theta_sketch_alloc<A>::trim() {
+  if (num_keys_ > (1 << lg_nom_size_)) rebuild();
+}
+
+template<typename A>
 void update_theta_sketch_alloc<A>::resize() {
   const uint32_t cur_size = 1 << lg_cur_size_;
   const uint8_t lg_tgt_size = lg_nom_size_ + 1;
