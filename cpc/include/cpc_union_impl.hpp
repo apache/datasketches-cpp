@@ -172,7 +172,7 @@ cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_accumulator() const {
   if (accumulator->determine_flavor() != cpc_sketch_alloc<A>::flavor::SPARSE) throw std::logic_error("wrong flavor");
   cpc_sketch_alloc<A> copy(*accumulator);
   copy.was_merged = true;
-  return std::move(copy);
+  return copy;
 }
 
 template<typename A>
