@@ -269,7 +269,9 @@ void cpc_compressor<A>::uncompress_pinned_flavor(const compressed_state<A>& sour
   if (source.window_data.size() == 0) throw std::logic_error("window is expected");
   uncompress_sliding_window(source.window_data.data(), source.window_data_words, target.window, lg_k, num_coupons);
   const size_t num_pairs = source.table_num_entries;
-  if (num_pairs > 0) {
+  if (num_pairs == 0) {
+    target.table = u32_table<A>(2, 6 + lg_k);
+  } else {
     if (source.table_data.size() == 0) throw std::logic_error("table is expected");
     vector_u32<A> pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, num_pairs, lg_k);
     // undo the compressor's 8-column shift

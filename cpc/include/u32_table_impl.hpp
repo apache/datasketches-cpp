@@ -120,7 +120,7 @@ u32_table<A> u32_table<A>::make_from_pairs(const uint32_t* pairs, size_t num_pai
     table.must_insert(pairs[i]);
   }
   table.num_items = num_pairs;
-  return std::move(table);
+  return table;
 }
 
 template<typename A>
