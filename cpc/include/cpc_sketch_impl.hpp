@@ -201,13 +201,13 @@ void cpc_sketch_alloc<A>::row_col_update(uint32_t row_col) {
 template<typename A>
 void cpc_sketch_alloc<A>::update_sparse(uint32_t row_col) {
   const uint64_t k = 1 << lg_k;
-  const uint64_t c32pre = num_coupons << 5;
+  const uint64_t c32pre = static_cast<uint64_t>(num_coupons) << 5;
   if (c32pre >= 3 * k) throw std::logic_error("c32pre >= 3 * k"); // C < 3K/32, in other words flavor == SPARSE
   bool is_novel = surprising_value_table.maybe_insert(row_col);
   if (is_novel) {
     num_coupons++;
     update_hip(row_col);
-    const uint64_t c32post = num_coupons << 5;
+    const uint64_t c32post = static_cast<uint64_t>(num_coupons) << 5;
     if (c32post >= 3 * k) promote_sparse_to_windowed(); // C >= 3K/32
   }
 }
@@ -217,10 +217,10 @@ template<typename A>
 void cpc_sketch_alloc<A>::update_windowed(uint32_t row_col) {
   if (window_offset > 56) throw std::logic_error("wrong window offset");
   const uint64_t k = 1 << lg_k;
-  const uint64_t c32pre = num_coupons << 5;
+  const uint64_t c32pre = static_cast<uint64_t>(num_coupons) << 5;
   if (c32pre < 3 * k) throw std::logic_error("c32pre < 3 * k"); // C < 3K/32, in other words flavor >= HYBRID
-  const uint64_t c8pre = num_coupons << 3;
-  const uint64_t w8pre = window_offset << 3;
+  const uint64_t c8pre = static_cast<uint64_t>(num_coupons) << 3;
+  const uint64_t w8pre = static_cast<uint64_t>(window_offset) << 3;
   if (c8pre >= (27 + w8pre) * k) throw std::logic_error("c8pre is wrong"); // C < (K * 27/8) + (K * window_offset)
 
   bool is_novel = false;
@@ -245,11 +245,11 @@ void cpc_sketch_alloc<A>::update_windowed(uint32_t row_col) {
   if (is_novel) {
     num_coupons++;
     update_hip(row_col);
-    const uint64_t c8post = num_coupons << 3;
+    const uint64_t c8post = static_cast<uint64_t>(num_coupons) << 3;
     if (c8post >= (27 + w8pre) * k) {
       move_window();
       if (window_offset < 1 or window_offset > 56) throw std::logic_error("wrong window offset");
-      const uint64_t w8post = window_offset << 3;
+      const uint64_t w8post = static_cast<uint64_t>(window_offset) << 3;
       if (c8post >= (27 + w8post) * k) throw std::logic_error("c8pre is wrong"); // C < (K * 27/8) + (K * window_offset)
     }
   }
@@ -269,7 +269,7 @@ void cpc_sketch_alloc<A>::update_hip(uint32_t row_col) {
 template<typename A>
 void cpc_sketch_alloc<A>::promote_sparse_to_windowed() {
   const uint64_t k = 1 << lg_k;
-  const uint64_t c32 = num_coupons << 5;
+  const uint64_t c32 = static_cast<uint64_t>(num_coupons) << 5;
   if (!(c32 == 3 * k or (lg_k == 4 and c32 > 3 * k))) throw std::logic_error("wrong c32");
 
   sliding_window.resize(k, 0); // zero the memory (because we will be OR'ing into it)
@@ -316,8 +316,8 @@ void cpc_sketch_alloc<A>::move_window() {
 
   surprising_value_table.clear(); // the new number of surprises will be about the same
 
-  const uint64_t mask_for_clearing_window = (0xff << new_offset) ^ UINT64_MAX;
-  const uint64_t mask_for_flipping_early_zone = (1 << new_offset) - 1;
+  const uint64_t mask_for_clearing_window = (static_cast<uint64_t>(0xff) << new_offset) ^ UINT64_MAX;
+  const uint64_t mask_for_flipping_early_zone = (static_cast<uint64_t>(1) << new_offset) - 1;
   uint64_t all_surprises_ored = 0;
 
   for (size_t i = 0; i < k; i++) {
@@ -330,7 +330,7 @@ void cpc_sketch_alloc<A>::move_window() {
     all_surprises_ored |= pattern; // a cheap way to recalculate first_interesting_column
     while (pattern != 0) {
       const uint8_t col = count_trailing_zeros_in_u64(pattern);
-      pattern = pattern ^ (1 << col); // erase the 1
+      pattern = pattern ^ (static_cast<uint64_t>(1) << col); // erase the 1
       const uint32_t row_col = (i << 6) | col;
       const bool is_novel = surprising_value_table.maybe_insert(row_col);
       if (!is_novel) throw std::logic_error("is_novel != true");
@@ -750,7 +750,7 @@ vector_u64<A> cpc_sketch_alloc<A>::build_bit_matrix() const {
 
   // Fill the matrix with default rows in which the "early zone" is filled with ones.
   // This is essential for the routine's O(k) time cost (as opposed to O(C)).
-  const uint64_t default_row = (1 << window_offset) - 1;
+  const uint64_t default_row = (static_cast<uint64_t>(1) << window_offset) - 1;
   vector_u64<A> matrix(k, default_row);
 
   if (num_coupons == 0) return matrix;
@@ -771,7 +771,7 @@ vector_u64<A> cpc_sketch_alloc<A>::build_bit_matrix() const {
       // Flip the specified matrix bit from its default value.
       // In the "early" zone the bit changes from 1 to 0.
       // In the "late" zone the bit changes from 0 to 1.
-      matrix[row] ^= 1 << col;
+      matrix[row] ^= static_cast<uint64_t>(1) << col;
     }
   }
   return matrix;
