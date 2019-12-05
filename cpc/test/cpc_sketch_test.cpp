@@ -35,6 +35,7 @@ class cpc_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(empty);
   CPPUNIT_TEST(one_value);
   CPPUNIT_TEST(many_values);
+  CPPUNIT_TEST(overfolw_bug);
   CPPUNIT_TEST(serialize_deserialize_empty);
   CPPUNIT_TEST(serialize_deserialize_sparse);
   CPPUNIT_TEST(serialize_deserialize_hybrid);
@@ -88,6 +89,19 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     for (int i = 0; i < n; i++) sketch.update(i);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sketch.get_estimate(), n * RELATIVE_ERROR_FOR_LG_K_11);
+    CPPUNIT_ASSERT(sketch.get_estimate() >= sketch.get_lower_bound(1));
+    CPPUNIT_ASSERT(sketch.get_estimate() <= sketch.get_upper_bound(1));
+    CPPUNIT_ASSERT(sketch.validate());
+  }
+
+  void overfolw_bug() {
+    cpc_sketch sketch(12);
+    const int n = 100000000;
+    uint64_t key = 15200000000; // problem happened with this sequence
+    for (int i = 0; i < n; i++) sketch.update(key++);
+    //sketch.to_stream(std::cout);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sketch.get_estimate(), n * 0.1); // the problem was much worse than 10%
     CPPUNIT_ASSERT(sketch.get_estimate() >= sketch.get_lower_bound(1));
     CPPUNIT_ASSERT(sketch.get_estimate() <= sketch.get_upper_bound(1));
     CPPUNIT_ASSERT(sketch.validate());
@@ -269,7 +283,7 @@ class cpc_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_estimate(), deserialized.get_estimate());
     CPPUNIT_ASSERT(deserialized.validate());
 
-    sketch.to_stream(std::cout);
+    //sketch.to_stream(std::cout);
   }
 
   void serialize_deserialize_sliding_bytes() {

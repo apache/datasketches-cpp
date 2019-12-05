@@ -195,8 +195,8 @@ cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_bit_matrix() const {
   u32_table<A> table(table_lg_size, 6 + lg_k);
 
   // the following should work even when the offset is zero
-  const uint64_t mask_for_clearing_window = (0xff << offset) ^ UINT64_MAX;
-  const uint64_t mask_for_flipping_early_zone = (1 << offset) - 1;
+  const uint64_t mask_for_clearing_window = (static_cast<uint64_t>(0xff) << offset) ^ UINT64_MAX;
+  const uint64_t mask_for_flipping_early_zone = (static_cast<uint64_t>(1) << offset) - 1;
   uint64_t all_surprises_ored = 0;
 
   // The snowplow effect was caused by processing the rows in order,
@@ -209,7 +209,7 @@ cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_bit_matrix() const {
     all_surprises_ored |= pattern;
     while (pattern != 0) {
       const uint8_t col = count_trailing_zeros_in_u64(pattern);
-      pattern = pattern ^ (1 << col); // erase the 1
+      pattern = pattern ^ (static_cast<uint64_t>(1) << col); // erase the 1
       const uint32_t row_col = (i << 6) | col;
       bool is_novel = table.maybe_insert(row_col);
       if (!is_novel) throw std::logic_error("is_novel != true");
@@ -237,7 +237,7 @@ template<typename A>
 void cpc_union_alloc<A>::walk_table_updating_sketch(const u32_table<A>& table) {
   const uint32_t* slots = table.get_slots();
   const size_t num_slots = 1 << table.get_lg_size();
-  const uint32_t dst_mask = (((1 << accumulator->get_lg_k()) - 1) << 6) | 63; // downsamples when dst lgK < src LgK
+  const uint64_t dst_mask = (((1 << accumulator->get_lg_k()) - 1) << 6) | 63; // downsamples when dst lgK < src LgK
 
   // Using a golden ratio stride fixes the snowplow effect.
   const double golden = 0.6180339887498949025;
@@ -259,13 +259,13 @@ template<typename A>
 void cpc_union_alloc<A>::or_table_into_matrix(const u32_table<A>& table) {
   const uint32_t* slots = table.get_slots();
   const size_t num_slots = 1 << table.get_lg_size();
-  const size_t dest_mask = (1 << lg_k) - 1;  // downsamples when dst lgK < sr LgK
+  const uint64_t dest_mask = (1 << lg_k) - 1;  // downsamples when dst lgK < sr LgK
   for (size_t i = 0; i < num_slots; i++) {
     const uint32_t row_col = slots[i];
     if (row_col != UINT32_MAX) {
       const uint8_t col = row_col & 63;
       const size_t row = row_col >> 6;
-      bit_matrix[row & dest_mask] |= 1 << col; // set the bit
+      bit_matrix[row & dest_mask] |= static_cast<uint64_t>(1) << col; // set the bit
     }
   }
 }
