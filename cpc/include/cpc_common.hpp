@@ -31,8 +31,6 @@ static const uint8_t CPC_MAX_LG_K = 26;
 static const uint8_t CPC_DEFAULT_LG_K = 11;
 static const uint64_t DEFAULT_SEED = 9001;
 
-typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
-
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 template<typename A> using AllocU16 = typename std::allocator_traits<A>::template rebind_alloc<uint16_t>;
 template<typename A> using AllocU32 = typename std::allocator_traits<A>::template rebind_alloc<uint32_t>;

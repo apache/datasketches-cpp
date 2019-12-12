@@ -99,10 +99,10 @@ class cpc_sketch_alloc {
     void to_stream(std::ostream& os) const;
 
     void serialize(std::ostream& os) const;
-    std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
+    vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
 
     static cpc_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
-    static cpc_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
+    static cpc_sketch_alloc<A> deserialize(const uint8_t* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
 
     // for internal use
     uint32_t get_num_coupons() const;
