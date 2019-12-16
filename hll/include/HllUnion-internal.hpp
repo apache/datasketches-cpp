@@ -151,12 +151,12 @@ void hll_union_alloc<A>::coupon_update(const int coupon) {
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> hll_union_alloc<A>::serialize_compact() const {
+vector_u8<A> hll_union_alloc<A>::serialize_compact() const {
   return gadget.serialize_compact();
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> hll_union_alloc<A>::serialize_updatable() const {
+vector_u8<A> hll_union_alloc<A>::serialize_updatable() const {
   return gadget.serialize_updatable();
 }
 

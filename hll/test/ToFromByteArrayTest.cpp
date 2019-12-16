@@ -43,20 +43,20 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     
     std::stringstream ss1;
     sk.serialize_updatable(ss1);
-    std::pair<byte_ptr_with_deleter, size_t> ser1 = sk.serialize_updatable();
+    auto ser1 = sk.serialize_updatable();
 
     std::stringstream ss;
     sk.serialize_updatable(ss);
     std::string str = ss.str();
 
 
-    hll_sketch sk2 = hll_sketch::deserialize(ser1.first.get(), ser1.second);
-    std::pair<byte_ptr_with_deleter, size_t> ser2 = sk.serialize_updatable();
+    hll_sketch sk2 = hll_sketch::deserialize(ser1.data(), ser1.size());
+    auto ser2 = sk.serialize_updatable();
 
-    CPPUNIT_ASSERT_EQUAL(ser1.second, ser2.second);
-    int len = ser1.second;
-    uint8_t* b1 = ser1.first.get();
-    uint8_t* b2 = ser2.first.get();
+    CPPUNIT_ASSERT_EQUAL(ser1.size(), ser2.size());
+    int len = ser1.size();
+    uint8_t* b1 = ser1.data();
+    uint8_t* b2 = ser2.data();
 
     for (int i = 0; i < len; ++i) {
       CPPUNIT_ASSERT_EQUAL(b1[i], b2[i]);
@@ -142,8 +142,8 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     hll_sketch dst = hll_sketch::deserialize(ss);
     checkSketchEquality(src, dst);
 
-    std::pair<byte_ptr_with_deleter, const size_t> bytes1 = src.serialize_compact();
-    dst = hll_sketch::deserialize(bytes1.first.get(), bytes1.second);
+    auto bytes1 = src.serialize_compact();
+    dst = hll_sketch::deserialize(bytes1.data(), bytes1.size());
     checkSketchEquality(src, dst);
 
     ss.clear();
@@ -151,8 +151,8 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
     dst = hll_sketch::deserialize(ss);
     checkSketchEquality(src, dst);
 
-    std::pair<byte_ptr_with_deleter, const size_t> bytes2 = src.serialize_updatable();
-    dst = hll_sketch::deserialize(bytes2.first.get(), bytes2.second);
+    auto bytes2 = src.serialize_updatable();
+    dst = hll_sketch::deserialize(bytes2.data(), bytes2.size());
     checkSketchEquality(src, dst);
   }
 

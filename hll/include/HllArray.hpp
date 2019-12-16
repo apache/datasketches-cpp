@@ -38,7 +38,7 @@ class HllArray : public HllSketchImpl<A> {
     static HllArray* newHll(const void* bytes, size_t len);
     static HllArray* newHll(std::istream& is);
 
-    virtual std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> serialize(bool compact, unsigned header_size_bytes) const;
+    virtual vector_u8<A> serialize(bool compact, unsigned header_size_bytes) const;
     virtual void serialize(std::ostream& os, bool compact) const;
 
     virtual ~HllArray();
