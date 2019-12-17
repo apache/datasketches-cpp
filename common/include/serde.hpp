@@ -33,8 +33,8 @@ template<typename T, typename Enable = void> struct serde {
 
   // raw bytes serialization
   size_t size_of_item(const T& item);
-  size_t serialize(char* ptr, const T* items, unsigned num);
-  size_t deserialize(const char* ptr, T* items, unsigned num); // items are not initialized
+  size_t serialize(void* ptr, const T* items, unsigned num);
+  size_t deserialize(const void* ptr, T* items, unsigned num); // items are not initialized
 };
 
 // serde for all fixed-size arithmetic types (int and float of different sizes)
@@ -51,11 +51,11 @@ struct serde<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
   size_t size_of_item(T item) {
     return sizeof(T);
   }
-  size_t serialize(char* ptr, const T* items, unsigned num) {
+  size_t serialize(void* ptr, const T* items, unsigned num) {
     memcpy(ptr, items, sizeof(T) * num);
     return sizeof(int32_t) * num;
   }
-  size_t deserialize(const char* ptr, T* items, unsigned num) {
+  size_t deserialize(const void* ptr, T* items, unsigned num) {
     memcpy(items, ptr, sizeof(T) * num);
     return sizeof(T) * num;
   }
@@ -91,40 +91,40 @@ struct serde<std::string> {
   size_t size_of_item(const std::string& item) {
     return sizeof(uint32_t) + item.size();
   }
-  size_t serialize(char* ptr, const std::string* items, unsigned num) {
+  size_t serialize(void* ptr, const std::string* items, unsigned num) {
     size_t size = sizeof(uint32_t) * num;
     for (unsigned i = 0; i < num; i++) {
       uint32_t length = items[i].size();
       memcpy(ptr, &length, sizeof(length));
-      ptr += sizeof(uint32_t);
+      ptr = static_cast<char*>(ptr) + sizeof(uint32_t);
       memcpy(ptr, items[i].c_str(), length);
-      ptr += length;
+      ptr = static_cast<char*>(ptr) + length;
       size += length;
     }
     return size;
   }
-  size_t deserialize(const char* ptr, std::string* items, unsigned num) {
+  size_t deserialize(const void* ptr, std::string* items, unsigned num) {
     size_t size = sizeof(uint32_t) * num;
     for (unsigned i = 0; i < num; i++) {
       uint32_t length;
       memcpy(&length, ptr, sizeof(length));
-      ptr += sizeof(uint32_t);
-      new (&items[i]) std::string(ptr, length);
-      ptr += length;
+      ptr = static_cast<const char*>(ptr) + sizeof(uint32_t);
+      new (&items[i]) std::string(static_cast<const char*>(ptr), length);
+      ptr = static_cast<const char*>(ptr) + length;
       size += length;
     }
     return size;
   }
 };
 
-static inline void copy_from_mem(const char** src, void* dst, size_t size) {
-  memcpy(dst, *src, size);
-  *src += size;
+static inline size_t copy_from_mem(const void* src, void* dst, size_t size) {
+  memcpy(dst, src, size);
+  return size;
 }
 
-static inline void copy_to_mem(const void* src, char** dst, size_t size) {
-  memcpy(*dst, src, size);
-  *dst += size;
+static inline size_t copy_to_mem(const void* src, void* dst, size_t size) {
+  memcpy(dst, src, size);
+  return size;
 }
 
 } /* namespace datasketches */

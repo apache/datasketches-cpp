@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <iostream>
+#include <vector>
 
 namespace datasketches {
 

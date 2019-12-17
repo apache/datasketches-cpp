@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <functional>
 #include <cstring>
+#include <vector>
 
 #if defined(_MSC_VER)
 #include <iso646.h> // for and/or keywords
@@ -149,7 +150,10 @@ namespace datasketches {
  * author Lee Rhodes
  */
 
-typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
+template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
+template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
+template<typename A> using AllocD = typename std::allocator_traits<A>::template rebind_alloc<double>;
+template<typename A> using vector_d = std::vector<double, AllocD<A>>;
 
 template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class kll_sketch {
@@ -175,15 +179,15 @@ class kll_sketch {
     T get_min_value() const;
     T get_max_value() const;
     T get_quantile(double fraction) const;
-    std::unique_ptr<T[], std::function<void(T*)>> get_quantiles(const double* fractions, uint32_t size) const;
+    std::vector<T, A> get_quantiles(const double* fractions, uint32_t size) const;
     double get_rank(const T& value) const;
-    std::unique_ptr<double[], std::function<void(double*)>> get_PMF(const T* split_points, uint32_t size) const;
-    std::unique_ptr<double[], std::function<void(double*)>> get_CDF(const T* split_points, uint32_t size) const;
+    vector_d<A> get_PMF(const T* split_points, uint32_t size) const;
+    vector_d<A> get_CDF(const T* split_points, uint32_t size) const;
     double get_normalized_rank_error(bool pmf) const;
 
     // implementation for fixed-size arithmetic types (integral and floating point)
     template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-    uint32_t get_serialized_size_bytes() const {
+    size_t get_serialized_size_bytes() const {
       if (is_empty()) { return EMPTY_SIZE_BYTES; }
       if (num_levels_ == 1 and get_num_retained() == 1) {
         return DATA_START_SINGLE_ITEM + sizeof(TT);
@@ -194,13 +198,13 @@ class kll_sketch {
 
     // implementation for all other types
     template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-    uint32_t get_serialized_size_bytes() const {
+    size_t get_serialized_size_bytes() const {
       if (is_empty()) { return EMPTY_SIZE_BYTES; }
       if (num_levels_ == 1 and get_num_retained() == 1) {
         return DATA_START_SINGLE_ITEM + S().size_of_item(items_[levels_[0]]);
       }
       // the last integer in the levels_ array is not serialized because it can be derived
-      uint32_t size = DATA_START + num_levels_ * sizeof(uint32_t);
+      size_t size = DATA_START + num_levels_ * sizeof(uint32_t);
       size += S().size_of_item(*min_value_);
       size += S().size_of_item(*max_value_);
       for (auto& it: *this) size += S().size_of_item(it.first);
@@ -211,10 +215,10 @@ class kll_sketch {
     // this method is for the user's convenience to predict the sketch size before serialization
     // and is not used in the serialization and deserialization code
     // predicting the size before serialization may not make sense if the item type is not of a fixed size (like string)
-    static uint32_t get_max_serialized_size_bytes(uint16_t k, uint64_t n);
+    static size_t get_max_serialized_size_bytes(uint16_t k, uint64_t n);
 
     void serialize(std::ostream& os) const;
-    std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
+    vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
     static kll_sketch<T, C, S, A> deserialize(std::istream& is);
     static kll_sketch<T, C, S, A> deserialize(const void* bytes, size_t size);
 
@@ -295,7 +299,7 @@ class kll_sketch {
     void add_empty_top_level_to_completely_full_sketch();
     void sort_level_zero();
     std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> get_quantile_calculator();
-    std::unique_ptr<double[], std::function<void(double*)>> get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
+    vector_d<A> get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
     void increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
         const T* split_points, uint32_t size, double* buckets) const;
     void increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
@@ -514,32 +518,27 @@ T kll_sketch<T, C, S, A>::get_quantile(double fraction) const {
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<T[], std::function<void(T*)>> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions, uint32_t size) const {
-  if (is_empty()) return std::unique_ptr<T[], std::function<void(T*)>>();
+std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions, uint32_t size) const {
+  std::vector<T, A> quantiles;
+  if (is_empty()) return quantiles;
   std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> quantile_calculator;
-  std::unique_ptr<T[], std::function<void(T*)>> quantiles(
-    A().allocate(size),
-    [size](T* ptr){
-      for (uint32_t i = 0; i < size; i++) ptr[i].~T();
-      A().deallocate(ptr, size);
-    }
-  );
+  quantiles.reserve(size);
   for (uint32_t i = 0; i < size; i++) {
     const double fraction = fractions[i];
     if ((fraction < 0.0) or (fraction > 1.0)) {
       throw std::invalid_argument("Fraction cannot be less than zero or greater than 1.0");
     }
-    if      (fraction == 0.0) new (&quantiles[i]) T(*min_value_);
-    else if (fraction == 1.0) new (&quantiles[i]) T(*max_value_);
+    if      (fraction == 0.0) quantiles.push_back(*min_value_);
+    else if (fraction == 1.0) quantiles.push_back(*max_value_);
     else {
       if (!quantile_calculator) {
         // has side effect of sorting level zero if needed
         quantile_calculator = const_cast<kll_sketch*>(this)->get_quantile_calculator();
       }
-      new (&quantiles[i]) T(quantile_calculator->get_quantile(fraction));
+      quantiles.push_back(quantile_calculator->get_quantile(fraction));
     }
   }
-  return std::move(quantiles);
+  return quantiles;
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -565,12 +564,12 @@ double kll_sketch<T, C, S, A>::get_rank(const T& value) const {
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<double[], std::function<void(double*)>> kll_sketch<T, C, S, A>::get_PMF(const T* split_points, uint32_t size) const {
+vector_d<A> kll_sketch<T, C, S, A>::get_PMF(const T* split_points, uint32_t size) const {
   return get_PMF_or_CDF(split_points, size, false);
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<double[], std::function<void(double*)>> kll_sketch<T, C, S, A>::get_CDF(const T* split_points, uint32_t size) const {
+vector_d<A> kll_sketch<T, C, S, A>::get_CDF(const T* split_points, uint32_t size) const {
   return get_PMF_or_CDF(split_points, size, true);
 }
 
@@ -612,46 +611,42 @@ void kll_sketch<T, C, S, A>::serialize(std::ostream& os) const {
 }
 
 template<typename T, typename C, typename S, typename A>
-std::pair<void_ptr_with_deleter, const size_t> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const {
+vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const {
   const bool is_single_item = n_ == 1;
   const size_t size = header_size_bytes + get_serialized_size_bytes();
-  typedef typename A::template rebind<char>::other AllocChar;
-  void_ptr_with_deleter data_ptr(
-    static_cast<void*>(AllocChar().allocate(size)),
-    [size](void* ptr) { AllocChar().deallocate(static_cast<char*>(ptr), size); }
-  );
-  char* ptr = static_cast<char*>(data_ptr.get()) + header_size_bytes;
+  vector_u8<A> bytes(size);
+  uint8_t* ptr = bytes.data() + header_size_bytes;
   const uint8_t preamble_ints(is_empty() or is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
-  copy_to_mem(&preamble_ints, &ptr, sizeof(preamble_ints));
+  ptr += copy_to_mem(&preamble_ints, ptr, sizeof(preamble_ints));
   const uint8_t serial_version(is_single_item ? SERIAL_VERSION_2 : SERIAL_VERSION_1);
-  copy_to_mem(&serial_version, &ptr, sizeof(serial_version));
+  ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
   const uint8_t family(FAMILY);
-  copy_to_mem(&family, &ptr, sizeof(family));
+  ptr += copy_to_mem(&family, ptr, sizeof(family));
   const uint8_t flags_byte(
       (is_empty() ? 1 << flags::IS_EMPTY : 0)
     | (is_level_zero_sorted_ ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
     | (is_single_item ? 1 << flags::IS_SINGLE_ITEM : 0)
   );
-  copy_to_mem(&flags_byte, &ptr, sizeof(flags_byte));
-  copy_to_mem(&k_, &ptr, sizeof(k_));
-  copy_to_mem(&m_, &ptr, sizeof(m_));
+  ptr += copy_to_mem(&flags_byte, ptr, sizeof(flags_byte));
+  ptr += copy_to_mem(&k_, ptr, sizeof(k_));
+  ptr += copy_to_mem(&m_, ptr, sizeof(m_));
   const uint8_t unused(0);
-  copy_to_mem(&unused, &ptr, sizeof(unused));
+  ptr += copy_to_mem(&unused, ptr, sizeof(unused));
   if (!is_empty()) {
     if (!is_single_item) {
-      copy_to_mem(&n_, &ptr, sizeof(n_));
-      copy_to_mem(&min_k_, &ptr, sizeof(min_k_));
-      copy_to_mem(&num_levels_, &ptr, sizeof(num_levels_));
-      copy_to_mem(&unused, &ptr, sizeof(unused));
-      copy_to_mem(levels_, &ptr, sizeof(levels_[0]) * num_levels_);
+      ptr += copy_to_mem(&n_, ptr, sizeof(n_));
+      ptr += copy_to_mem(&min_k_, ptr, sizeof(min_k_));
+      ptr += copy_to_mem(&num_levels_, ptr, sizeof(num_levels_));
+      ptr += copy_to_mem(&unused, ptr, sizeof(unused));
+      ptr += copy_to_mem(levels_, ptr, sizeof(levels_[0]) * num_levels_);
       ptr += S().serialize(ptr, min_value_, 1);
       ptr += S().serialize(ptr, max_value_, 1);
     }
     ptr += S().serialize(ptr, &items_[levels_[0]], get_num_retained());
   }
-  const size_t delta = ptr - static_cast<const char*>(data_ptr.get());
+  const size_t delta = ptr - bytes.data();
   if (delta != size) throw std::logic_error("serialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
-  return std::make_pair(std::move(data_ptr), size);
+  return bytes;
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -684,17 +679,17 @@ template<typename T, typename C, typename S, typename A>
 kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, size_t size) {
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_ints;
-  copy_from_mem(&ptr, &preamble_ints, sizeof(preamble_ints));
+  ptr += copy_from_mem(ptr, &preamble_ints, sizeof(preamble_ints));
   uint8_t serial_version;
-  copy_from_mem(&ptr, &serial_version, sizeof(serial_version));
+  ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
   uint8_t family_id;
-  copy_from_mem(&ptr, &family_id, sizeof(family_id));
+  ptr += copy_from_mem(ptr, &family_id, sizeof(family_id));
   uint8_t flags_byte;
-  copy_from_mem(&ptr, &flags_byte, sizeof(flags_byte));
+  ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
   uint16_t k;
-  copy_from_mem(&ptr, &k, sizeof(k));
+  ptr += copy_from_mem(ptr, &k, sizeof(k));
   uint8_t m;
-  copy_from_mem(&ptr, &m, sizeof(m));
+  ptr += copy_from_mem(ptr, &m, sizeof(m));
 
   check_m(m);
   check_preamble_ints(preamble_ints, flags_byte);
@@ -777,9 +772,9 @@ kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, const void* b
     min_k_ = k_;
     num_levels_ = 1;
   } else {
-    copy_from_mem(&ptr, &n_, sizeof(n_));
-    copy_from_mem(&ptr, &min_k_, sizeof(min_k_));
-    copy_from_mem(&ptr, &num_levels_, sizeof(num_levels_));
+    ptr += copy_from_mem(ptr, &n_, sizeof(n_));
+    ptr += copy_from_mem(ptr, &min_k_, sizeof(min_k_));
+    ptr += copy_from_mem(ptr, &num_levels_, sizeof(num_levels_));
     ptr++; // skip unused byte
   }
   levels_ = AllocU32().allocate(num_levels_ + 1);
@@ -789,7 +784,7 @@ kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, const void* b
     levels_[0] = capacity - 1;
   } else {
     // the last integer in levels_ is not serialized because it can be derived
-    copy_from_mem(&ptr, levels_, sizeof(levels_[0]) * num_levels_);
+    ptr += copy_from_mem(ptr, levels_, sizeof(levels_[0]) * num_levels_);
   }
   levels_[num_levels_] = capacity;
   min_value_ = A().allocate(1);
@@ -936,26 +931,23 @@ std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantil
     new (AllocCalc().allocate(1)) kll_quantile_calculator<T, C, A>(items_, levels_, num_levels_, n_),
     [](kll_quantile_calculator<T, C, A>* ptr){ ptr->~kll_quantile_calculator<T, C, A>(); AllocCalc().deallocate(ptr, 1); }
   );
-  return std::move(quantile_calculator);
+  return quantile_calculator;
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<double[], std::function<void(double*)>> kll_sketch<T, C, S, A>::get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const {
-  if (is_empty()) return nullptr;
+vector_d<A> kll_sketch<T, C, S, A>::get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const {
+  if (is_empty()) return vector_d<A>();
   kll_helper::validate_values<T, C>(split_points, size);
-  typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocD;
-  const size_t array_size = size + 1;
-  std::unique_ptr<double[], std::function<void(double*)>> buckets(AllocD().allocate(size + 1), [array_size](double* ptr){ AllocD().deallocate(ptr, array_size); });
-  std::fill(&buckets.get()[0], &buckets.get()[array_size], 0);
+  vector_d<A> buckets(size + 1, 0);
   uint8_t level(0);
   uint64_t weight(1);
   while (level < num_levels_) {
     const auto from_index = levels_[level];
     const auto to_index = levels_[level + 1]; // exclusive
     if ((level == 0) and !is_level_zero_sorted_) {
-      increment_buckets_unsorted_level(from_index, to_index, weight, split_points, size, buckets.get());
+      increment_buckets_unsorted_level(from_index, to_index, weight, split_points, size, buckets.data());
     } else {
-      increment_buckets_sorted_level(from_index, to_index, weight, split_points, size, buckets.get());
+      increment_buckets_sorted_level(from_index, to_index, weight, split_points, size, buckets.data());
     }
     level++;
     weight *= 2;

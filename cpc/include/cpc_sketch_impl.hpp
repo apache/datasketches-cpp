@@ -29,6 +29,7 @@
 #include "inv_pow_2_tab.hpp"
 #include "cpc_util.hpp"
 #include "icon_estimator.hpp"
+#include "serde.hpp"
 
 namespace datasketches {
 
@@ -461,44 +462,44 @@ vector_u8<A> cpc_sketch_alloc<A>::serialize(unsigned header_size_bytes) const {
   const size_t size = header_size_bytes + (preamble_ints + compressed.table_data_words + compressed.window_data_words) * sizeof(uint32_t);
   vector_u8<A> bytes(size);
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  ptr += copy_to_mem(ptr, &preamble_ints, sizeof(preamble_ints));
+  ptr += copy_to_mem(&preamble_ints, ptr, sizeof(preamble_ints));
   const uint8_t serial_version = SERIAL_VERSION;
-  ptr += copy_to_mem(ptr, &serial_version, sizeof(serial_version));
+  ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
   const uint8_t family = FAMILY;
-  ptr += copy_to_mem(ptr, &family, sizeof(family));
-  ptr += copy_to_mem(ptr, &lg_k, sizeof(lg_k));
-  ptr += copy_to_mem(ptr, &first_interesting_column, sizeof(first_interesting_column));
+  ptr += copy_to_mem(&family, ptr, sizeof(family));
+  ptr += copy_to_mem(&lg_k, ptr, sizeof(lg_k));
+  ptr += copy_to_mem(&first_interesting_column, ptr, sizeof(first_interesting_column));
   const uint8_t flags_byte(
     (1 << flags::IS_COMPRESSED)
     | (has_hip ? 1 << flags::HAS_HIP : 0)
     | (has_table ? 1 << flags::HAS_TABLE : 0)
     | (has_window ? 1 << flags::HAS_WINDOW : 0)
   );
-  ptr += copy_to_mem(ptr, &flags_byte, sizeof(flags_byte));
+  ptr += copy_to_mem(&flags_byte, ptr, sizeof(flags_byte));
   const uint16_t seed_hash = compute_seed_hash(seed);
-  ptr += copy_to_mem(ptr, &seed_hash, sizeof(seed_hash));
+  ptr += copy_to_mem(&seed_hash, ptr, sizeof(seed_hash));
   if (!is_empty()) {
-    ptr += copy_to_mem(ptr, &num_coupons, sizeof(num_coupons));
+    ptr += copy_to_mem(&num_coupons, ptr, sizeof(num_coupons));
     if (has_table and has_window) {
       // if there is no window it is the same as number of coupons
-      ptr += copy_to_mem(ptr, &compressed.table_num_entries, sizeof(compressed.table_num_entries));
+      ptr += copy_to_mem(&compressed.table_num_entries, ptr, sizeof(compressed.table_num_entries));
       // HIP values can be in two different places in the sequence of fields
       // this is the first HIP decision point
       if (has_hip) ptr += copy_hip_to_mem(ptr);
     }
     if (has_table) {
-      ptr += copy_to_mem(ptr, &compressed.table_data_words, sizeof(compressed.table_data_words));
+      ptr += copy_to_mem(&compressed.table_data_words, ptr, sizeof(compressed.table_data_words));
     }
     if (has_window) {
-      ptr += copy_to_mem(ptr, &compressed.window_data_words, sizeof(compressed.window_data_words));
+      ptr += copy_to_mem(&compressed.window_data_words, ptr, sizeof(compressed.window_data_words));
     }
     // this is the second HIP decision point
     if (has_hip and !(has_table and has_window)) ptr += copy_hip_to_mem(ptr);
     if (has_window) {
-      ptr += copy_to_mem(ptr, compressed.window_data.data(), compressed.window_data_words * sizeof(uint32_t));
+      ptr += copy_to_mem(compressed.window_data.data(), ptr, compressed.window_data_words * sizeof(uint32_t));
     }
     if (has_table) {
-      ptr += copy_to_mem(ptr, compressed.table_data.data(), compressed.table_data_words * sizeof(uint32_t));
+      ptr += copy_to_mem(compressed.table_data.data(), ptr, compressed.table_data_words * sizeof(uint32_t));
     }
   }
   if (ptr != bytes.data() + size) throw std::logic_error("serialized size mismatch");
@@ -785,18 +786,6 @@ size_t cpc_sketch_alloc<A>::copy_hip_to_mem(void* dst) const {
   memcpy(dst, &kxp, sizeof(kxp));
   memcpy(static_cast<char*>(dst) + sizeof(kxp), &hip_est_accum, sizeof(hip_est_accum));
   return sizeof(kxp) + sizeof(hip_est_accum);
-}
-
-template<typename A>
-size_t cpc_sketch_alloc<A>::copy_to_mem(void* dst, const void* src, size_t size) {
-  memcpy(dst, src, size);
-  return size;
-}
-
-template<typename A>
-size_t cpc_sketch_alloc<A>::copy_from_mem(const void* src, void* dst, size_t size) {
-  memcpy(dst, src, size);
-  return size;
 }
 
 } /* namespace datasketches */

@@ -41,7 +41,8 @@ namespace datasketches {
 enum frequent_items_error_type { NO_FALSE_POSITIVES, NO_FALSE_NEGATIVES };
 
 // for serialization as raw bytes
-typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
+template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
+template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
 
 template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class frequent_items_sketch {
@@ -68,7 +69,7 @@ public:
   std::vector<row, AllocRow> get_frequent_items(frequent_items_error_type err_type, uint64_t threshold = USE_MAX_ERROR) const;
   size_t get_serialized_size_bytes() const;
   void serialize(std::ostream& os) const;
-  std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
+  vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
   static frequent_items_sketch deserialize(std::istream& is);
   static frequent_items_sketch deserialize(const void* bytes, size_t size);
   void to_stream(std::ostream& os, bool print_items = false) const;
@@ -274,38 +275,34 @@ size_t frequent_items_sketch<T, H, E, S, A>::get_serialized_size_bytes() const {
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
-std::pair<void_ptr_with_deleter, const size_t> frequent_items_sketch<T, H, E, S, A>::serialize(unsigned header_size_bytes) const {
+vector_u8<A> frequent_items_sketch<T, H, E, S, A>::serialize(unsigned header_size_bytes) const {
   const size_t size = header_size_bytes + get_serialized_size_bytes();
-  typedef typename std::allocator_traits<A>::template rebind_alloc<char> AllocChar;
-  void_ptr_with_deleter data_ptr(
-    static_cast<void*>(AllocChar().allocate(size)),
-    [size](void* ptr) { AllocChar().deallocate(static_cast<char*>(ptr), size); }
-  );
-  char* ptr = static_cast<char*>(data_ptr.get()) + header_size_bytes;
+  vector_u8<A> bytes(size);
+  uint8_t* ptr = bytes.data() + header_size_bytes;
 
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NONEMPTY;
-  copy_to_mem(&preamble_longs, &ptr, sizeof(uint8_t));
+  ptr += copy_to_mem(&preamble_longs, ptr, sizeof(uint8_t));
   const uint8_t serial_version = SERIAL_VERSION;
-  copy_to_mem(&serial_version, &ptr, sizeof(uint8_t));
+  ptr += copy_to_mem(&serial_version, ptr, sizeof(uint8_t));
   const uint8_t family = FAMILY_ID;
-  copy_to_mem(&family, &ptr, sizeof(uint8_t));
+  ptr += copy_to_mem(&family, ptr, sizeof(uint8_t));
   const uint8_t lg_max_size = map.get_lg_max_size();
-  copy_to_mem(&lg_max_size, &ptr, sizeof(uint8_t));
+  ptr += copy_to_mem(&lg_max_size, ptr, sizeof(uint8_t));
   const uint8_t lg_cur_size = map.get_lg_cur_size();
-  copy_to_mem(&lg_cur_size, &ptr, sizeof(uint8_t));
+  ptr += copy_to_mem(&lg_cur_size, ptr, sizeof(uint8_t));
   const uint8_t flags_byte(
     (is_empty() ? 1 << flags::IS_EMPTY : 0)
   );
-  copy_to_mem(&flags_byte, &ptr, sizeof(uint8_t));                                                                                                         
+  ptr += copy_to_mem(&flags_byte, ptr, sizeof(uint8_t));
   const uint16_t unused16 = 0;
-  copy_to_mem(&unused16, &ptr, sizeof(uint16_t));
+  ptr += copy_to_mem(&unused16, ptr, sizeof(uint16_t));
   if (!is_empty()) {
     const uint32_t num_items = map.get_num_active();
-    copy_to_mem(&num_items, &ptr, sizeof(uint32_t));
+    ptr += copy_to_mem(&num_items, ptr, sizeof(uint32_t));
     const uint32_t unused32 = 0;
-    copy_to_mem(&unused32, &ptr, sizeof(uint32_t));
-    copy_to_mem(&total_weight, &ptr, sizeof(uint64_t));
-    copy_to_mem(&offset, &ptr, sizeof(uint64_t));
+    ptr += copy_to_mem(&unused32, ptr, sizeof(uint32_t));
+    ptr += copy_to_mem(&total_weight, ptr, sizeof(uint64_t));
+    ptr += copy_to_mem(&offset, ptr, sizeof(uint64_t));
 
     // copy active items and their weights to use batch serialization
     typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
@@ -316,13 +313,13 @@ std::pair<void_ptr_with_deleter, const size_t> frequent_items_sketch<T, H, E, S,
       new (&items[i]) T(it.first);
       weights[i++] = it.second;
     }
-    copy_to_mem(weights, &ptr, sizeof(uint64_t) * num_items);
+    ptr += copy_to_mem(weights, ptr, sizeof(uint64_t) * num_items);
     AllocU64().deallocate(weights, num_items);
     ptr += S().serialize(ptr, items, num_items);
     for (unsigned i = 0; i < num_items; i++) items[i].~T();
     A().deallocate(items, num_items);
   }
-  return std::make_pair(std::move(data_ptr), size);
+  return bytes;
 }
 
 template<typename T, typename H, typename E, typename S, typename A>
@@ -383,19 +380,19 @@ template<typename T, typename H, typename E, typename S, typename A>
 frequent_items_sketch<T, H, E, S, A> frequent_items_sketch<T, H, E, S, A>::deserialize(const void* bytes, size_t size) {
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
-  copy_from_mem(&ptr, &preamble_longs, sizeof(uint8_t));
+  ptr += copy_from_mem(ptr, &preamble_longs, sizeof(uint8_t));
   uint8_t serial_version;
-  copy_from_mem(&ptr, &serial_version, sizeof(uint8_t));
+  ptr += copy_from_mem(ptr, &serial_version, sizeof(uint8_t));
   uint8_t family_id;
-  copy_from_mem(&ptr, &family_id, sizeof(uint8_t));
+  ptr += copy_from_mem(ptr, &family_id, sizeof(uint8_t));
   uint8_t lg_max_size;
-  copy_from_mem(&ptr, &lg_max_size, sizeof(uint8_t));
+  ptr += copy_from_mem(ptr, &lg_max_size, sizeof(uint8_t));
   uint8_t lg_cur_size;
-  copy_from_mem(&ptr, &lg_cur_size, sizeof(uint8_t));
+  ptr += copy_from_mem(ptr, &lg_cur_size, sizeof(uint8_t));
   uint8_t flags_byte;
-  copy_from_mem(&ptr, &flags_byte, sizeof(uint8_t));
+  ptr += copy_from_mem(ptr, &flags_byte, sizeof(uint8_t));
   uint16_t unused16;
-  copy_from_mem(&ptr, &unused16, sizeof(uint16_t));
+  ptr += copy_from_mem(ptr, &unused16, sizeof(uint16_t));
 
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
 
@@ -407,18 +404,18 @@ frequent_items_sketch<T, H, E, S, A> frequent_items_sketch<T, H, E, S, A>::deser
   frequent_items_sketch<T, H, E, S, A> sketch(lg_cur_size, lg_max_size);
   if (!is_empty) {
     uint32_t num_items;
-    copy_from_mem(&ptr, &num_items, sizeof(uint32_t));
+    ptr += copy_from_mem(ptr, &num_items, sizeof(uint32_t));
     uint32_t unused32;
-    copy_from_mem(&ptr, &unused32, sizeof(uint32_t));
+    ptr += copy_from_mem(ptr, &unused32, sizeof(uint32_t));
     uint64_t total_weight;
-    copy_from_mem(&ptr, &total_weight, sizeof(uint64_t));
+    ptr += copy_from_mem(ptr, &total_weight, sizeof(uint64_t));
     uint64_t offset;
-    copy_from_mem(&ptr, &offset, sizeof(uint64_t));
+    ptr += copy_from_mem(ptr, &offset, sizeof(uint64_t));
 
     // batch deserialization with intermediate array of items and weights
     typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
     uint64_t* weights = AllocU64().allocate(num_items);
-    copy_from_mem(&ptr, weights, sizeof(uint64_t) * num_items);
+    ptr += copy_from_mem(ptr, weights, sizeof(uint64_t) * num_items);
     T* items = A().allocate(num_items);
     ptr += S().deserialize(ptr, items, num_items);
     for (uint32_t i = 0; i < num_items; i++) {

@@ -171,8 +171,6 @@ class cpc_sketch_alloc {
     static uint8_t get_preamble_ints(uint32_t num_coupons, bool has_hip, bool has_table, bool has_window);
     inline void write_hip(std::ostream& os) const;
     inline size_t copy_hip_to_mem(void* dst) const;
-    static inline size_t copy_to_mem(void* dst, const void* src, size_t size);
-    static inline size_t copy_from_mem(const void* src, void* dst, size_t size);
 
     friend cpc_compressor<A>;
     friend cpc_union_alloc<A>;
