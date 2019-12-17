@@ -586,8 +586,8 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t 
 }
 
 template<typename A>
-cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const uint8_t* bytes, size_t size, uint64_t seed) {
-  const uint8_t* ptr = bytes;
+cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
+  const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_ints;
   ptr += copy_from_mem(ptr, &preamble_ints, sizeof(preamble_ints));
   uint8_t serial_version;
@@ -641,7 +641,7 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const uint8_t* bytes, size_
     }
     if (!has_window) compressed.table_num_entries = num_coupons;
   }
-  if (ptr != bytes + size) throw std::logic_error("deserialized size mismatch");
+  if (ptr != static_cast<const char*>(bytes) + size) throw std::logic_error("deserialized size mismatch");
 
   uint8_t expected_preamble_ints = get_preamble_ints(num_coupons, has_hip, has_table, has_window);
   if (preamble_ints != expected_preamble_ints) {
