@@ -54,7 +54,7 @@ theta_sketch* theta_sketch_deserialize(py::bytes skBytes,
 
 py::object theta_sketch_serialize(const theta_sketch& sk) {
   auto serResult = sk.serialize();
-  return py::bytes((char*)serResult.first.get(), serResult.second);
+  return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 std::string theta_sketch_to_string(const theta_sketch& sk,

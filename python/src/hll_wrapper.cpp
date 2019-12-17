@@ -33,12 +33,12 @@ hll_sketch hll_sketch_deserialize(py::bytes skBytes) {
 
 py::object hll_sketch_serialize_compact(const hll_sketch& sk) {
   auto serResult = sk.serialize_compact();
-  return py::bytes((char*)serResult.first.get(), serResult.second);
+  return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 py::object hll_sketch_serialize_updatable(const hll_sketch& sk) {
   auto serResult = sk.serialize_updatable();
-  return py::bytes((char*)serResult.first.get(), serResult.second);
+  return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 hll_union hll_union_deserialize(py::bytes uBytes) {
@@ -48,12 +48,12 @@ hll_union hll_union_deserialize(py::bytes uBytes) {
 
 py::object hll_union_serialize_compact(const hll_union& u) {
   auto serResult = u.serialize_compact();
-  return py::bytes((char*)serResult.first.get(), serResult.second);
+  return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 py::object hll_union_serialize_updatable(const hll_union& u) {
   auto serResult = u.serialize_updatable();
-  return py::bytes((char*)serResult.first.get(), serResult.second);
+  return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 }

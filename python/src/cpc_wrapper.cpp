@@ -37,7 +37,7 @@ cpc_sketch* cpc_sketch_deserialize(py::bytes skBytes) {
 
 py::object cpc_sketch_serialize(const cpc_sketch& sk) {
   auto serResult = sk.serialize();
-  return py::bytes((char*)serResult.first.get(), serResult.second);
+  return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 std::string cpc_sketch_to_string(const cpc_sketch& sk) {

@@ -36,7 +36,7 @@ frequent_items_sketch<T> fi_sketch_deserialize(py::bytes skBytes) {
 template<typename T>
 py::object fi_sketch_serialize(const frequent_items_sketch<T>& sk) {
   auto serResult = sk.serialize();
-  return py::bytes((char*)serResult.first.get(), serResult.second);
+  return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 // maybe possible to disambiguate the static vs method get_epsilon calls, but
