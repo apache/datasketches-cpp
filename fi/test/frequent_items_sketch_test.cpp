@@ -284,8 +284,8 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch1.update(4, 4);
     sketch1.update(5, 5);
 
-    auto p = sketch1.serialize();
-    auto sketch2 = frequent_items_sketch<long long>::deserialize(p.first.get(), p.second);
+    auto bytes = sketch1.serialize();
+    auto sketch2 = frequent_items_sketch<long long>::deserialize(bytes.data(), bytes.size());
     CPPUNIT_ASSERT(!sketch2.is_empty());
     CPPUNIT_ASSERT_EQUAL(15, (int) sketch2.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());
@@ -325,8 +325,8 @@ class frequent_items_sketch_test: public CppUnit::TestFixture {
     sketch1.update("dddddddddddddddd", 4);
     sketch1.update("eeeeeeeeeeeeeeee", 5);
 
-    auto p = sketch1.serialize();
-    auto sketch2 = frequent_items_sketch<std::string>::deserialize(p.first.get(), p.second);
+    auto bytes = sketch1.serialize();
+    auto sketch2 = frequent_items_sketch<std::string>::deserialize(bytes.data(), bytes.size());
     CPPUNIT_ASSERT(!sketch2.is_empty());
     CPPUNIT_ASSERT_EQUAL(15, (int) sketch2.get_total_weight());
     CPPUNIT_ASSERT_EQUAL(5U, sketch2.get_num_active_items());

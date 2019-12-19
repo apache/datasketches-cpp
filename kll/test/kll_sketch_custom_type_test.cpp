@@ -54,7 +54,7 @@ public:
     CPPUNIT_ASSERT_THROW(sketch.get_quantile(0), std::runtime_error);
     CPPUNIT_ASSERT_THROW(sketch.get_min_value(), std::runtime_error);
     CPPUNIT_ASSERT_THROW(sketch.get_max_value(), std::runtime_error);
-    CPPUNIT_ASSERT_EQUAL(8u, sketch.get_serialized_size_bytes());
+    CPPUNIT_ASSERT_EQUAL((size_t) 8, sketch.get_serialized_size_bytes());
 
     sketch.update(1);
     sketch.update(2);
@@ -132,9 +132,9 @@ public:
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch1.serialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_serialized_size_bytes(), (uint32_t) s.tellp());
+    CPPUNIT_ASSERT_EQUAL(sketch1.get_serialized_size_bytes(), (size_t) s.tellp());
     auto sketch2 = kll_test_type_sketch::deserialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (uint32_t) s.tellg());
+    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (size_t) s.tellg());
     CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
     CPPUNIT_ASSERT_EQUAL(sketch1.is_empty(), sketch2.is_empty());
     CPPUNIT_ASSERT_EQUAL(sketch1.is_estimation_mode(), sketch2.is_estimation_mode());

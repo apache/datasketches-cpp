@@ -23,6 +23,7 @@
 #include <memory>
 #include <functional>
 #include <climits>
+#include <vector>
 
 namespace datasketches {
 
@@ -41,7 +42,8 @@ template<typename A> class theta_intersection_alloc;
 template<typename A> class theta_a_not_b_alloc;
 
 // for serialization as raw bytes
-typedef std::unique_ptr<void, std::function<void(void*)>> void_ptr_with_deleter;
+template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
+template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
 
 template<typename A>
 class theta_sketch_alloc {
@@ -70,7 +72,7 @@ public:
   virtual bool is_ordered() const = 0;
   virtual void to_stream(std::ostream& os, bool print_items = false) const = 0;
   virtual void serialize(std::ostream& os) const = 0;
-  virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const = 0;
+  virtual vector_u8<A> serialize(unsigned header_size_bytes = 0) const = 0;
 
   typedef std::unique_ptr<theta_sketch_alloc<A>, std::function<void(theta_sketch_alloc<A>*)>> unique_ptr;
   static unique_ptr deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
@@ -119,7 +121,7 @@ public:
   virtual void to_stream(std::ostream& os, bool print_items = false) const;
   virtual void serialize(std::ostream& os) const;
   // header space is reserved, but not initialized
-  virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
+  virtual vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
 
   void update(const std::string& value);
   void update(uint64_t value);
@@ -218,7 +220,7 @@ public:
   virtual void to_stream(std::ostream& os, bool print_items = false) const;
   virtual void serialize(std::ostream& os) const;
   // header space is reserved, but not initialized
-  virtual std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
+  virtual vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
 
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;

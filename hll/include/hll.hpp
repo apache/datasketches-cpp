@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <iostream>
+#include <vector>
 
 namespace datasketches {
 
@@ -104,7 +105,8 @@ class HllSketchImpl;
 template<typename A>
 class hll_union_alloc;
 
-using byte_ptr_with_deleter = std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>;
+template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
+template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
 
 template<typename A = std::allocator<char> >
 class hll_sketch_alloc final {
@@ -167,13 +169,13 @@ class hll_sketch_alloc final {
      * where feasible to eliminate unused storage in the serialized image.
      * @param header_size_bytes Allows for PostgreSQL integration
      */
-    std::pair<byte_ptr_with_deleter, const size_t> serialize_compact(unsigned header_size_bytes = 0) const;
+    vector_u8<A> serialize_compact(unsigned header_size_bytes = 0) const;
 
     /**
      * Serializes the sketch to a byte array, retaining all internal 
      * data structures in their current form.
      */
-    std::pair<byte_ptr_with_deleter, const size_t> serialize_updatable() const;
+    vector_u8<A> serialize_updatable() const;
 
     /**
      * Serializes the sketch to an ostream, compacting data structures
@@ -553,13 +555,13 @@ class hll_union_alloc {
      * where feasible to eliminate unused storage in the serialized image.
      * @param header_size_bytes Allows for PostgreSQL integration
      */
-    std::pair<byte_ptr_with_deleter, const size_t> serialize_compact() const;
+    vector_u8<A> serialize_compact() const;
   
     /**
      * Serializes the sketch to a byte array, retaining all internal 
      * data structures in their current form.
      */
-    std::pair<byte_ptr_with_deleter, const size_t> serialize_updatable() const;
+    vector_u8<A> serialize_updatable() const;
 
     /**
      * Serializes the sketch to an ostream, compacting data structures

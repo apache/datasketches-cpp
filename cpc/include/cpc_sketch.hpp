@@ -99,7 +99,7 @@ class cpc_sketch_alloc {
     void to_stream(std::ostream& os) const;
 
     void serialize(std::ostream& os) const;
-    std::pair<void_ptr_with_deleter, const size_t> serialize(unsigned header_size_bytes = 0) const;
+    vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
 
     static cpc_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
     static cpc_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
@@ -171,8 +171,6 @@ class cpc_sketch_alloc {
     static uint8_t get_preamble_ints(uint32_t num_coupons, bool has_hip, bool has_table, bool has_window);
     inline void write_hip(std::ostream& os) const;
     inline size_t copy_hip_to_mem(void* dst) const;
-    static inline size_t copy_to_mem(void* dst, const void* src, size_t size);
-    static inline size_t copy_from_mem(const void* src, void* dst, size_t size);
 
     friend cpc_compressor<A>;
     friend cpc_union_alloc<A>;

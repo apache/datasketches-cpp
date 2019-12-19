@@ -193,15 +193,10 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
 }
 
 template<typename A>
-std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t> CouponList<A>::serialize(bool compact, unsigned header_size_bytes) const {
+vector_u8<A> CouponList<A>::serialize(bool compact, unsigned header_size_bytes) const {
   const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes()) + header_size_bytes;
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
-  std::unique_ptr<uint8_t, std::function<void(uint8_t*)>> byteArr(
-    uint8Alloc().allocate(sketchSizeBytes),
-    [sketchSizeBytes](uint8_t* p){ uint8Alloc().deallocate(p, sketchSizeBytes); }
-  );
-
-  uint8_t* bytes = byteArr.get() + header_size_bytes;
+  vector_u8<A> byteArr(sketchSizeBytes);
+  uint8_t* bytes = byteArr.data() + header_size_bytes;
 
   bytes[HllUtil<A>::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
   bytes[HllUtil<A>::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil<A>::SER_VER);
@@ -239,7 +234,7 @@ std::pair<std::unique_ptr<uint8_t, std::function<void(uint8_t*)>>, const size_t>
       throw std::runtime_error("Impossible condition when serializing");
   }
 
-  return std::make_pair(std::move(byteArr), sketchSizeBytes);
+  return byteArr;
 }
 
 template<typename A>

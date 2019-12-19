@@ -37,7 +37,7 @@ kll_sketch<T> kll_sketch_deserialize(py::bytes skBytes) {
 template<typename T>
 py::object kll_sketch_serialize(const kll_sketch<T>& sk) {
   auto serResult = sk.serialize();
-  return py::bytes((char*)serResult.first.get(), serResult.second);
+  return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 // maybe possible to disambiguate the static vs method rank error calls, but
