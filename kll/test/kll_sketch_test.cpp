@@ -71,6 +71,7 @@ class kll_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(sketch_of_strings_bytes);
   CPPUNIT_TEST(sketch_of_strings_single_item_bytes);
   CPPUNIT_TEST(copy);
+  CPPUNIT_TEST(move);
   CPPUNIT_TEST_SUITE_END();
 
 
@@ -599,6 +600,25 @@ public:
     sketch3 = sketch1;
     for (int i = 0; i < n; i++) {
       CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(i), sketch3.get_rank(i));
+    }
+  }
+
+  void move() {
+    kll_sketch<int> sketch1;
+    const int n(100);
+    for (int i = 0; i < n; i++) sketch1.update(i);
+
+    // move constructor
+    kll_sketch<int> sketch2(std::move(sketch1));
+    for (int i = 0; i < n; i++) {
+      CPPUNIT_ASSERT_EQUAL((double) i / n, sketch2.get_rank(i));
+    }
+
+    // move assignment
+    kll_sketch<int> sketch3;
+    sketch3 = std::move(sketch2);
+    for (int i = 0; i < n; i++) {
+      CPPUNIT_ASSERT_EQUAL((double) i / n, sketch3.get_rank(i));
     }
   }
 
