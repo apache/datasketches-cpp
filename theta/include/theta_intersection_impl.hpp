@@ -125,18 +125,33 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
     lg_size_ = lg_size_from_count(sketch.get_num_retained(), update_theta_sketch_alloc<A>::REBUILD_THRESHOLD);
     keys_ = AllocU64().allocate(1 << lg_size_);
     std::fill(keys_, &keys_[1 << lg_size_], 0);
-    num_keys_ = sketch.get_num_retained();
-    for (auto key: sketch) update_theta_sketch_alloc<A>::hash_search_or_insert(key, keys_, lg_size_);
+    for (auto key: sketch) {
+      if (!update_theta_sketch_alloc<A>::hash_search_or_insert(key, keys_, lg_size_)) {
+        throw std::invalid_argument("duplicate key, possibly corrupted input sketch");
+      }
+      ++num_keys_;
+    }
+    if (num_keys_ != sketch.get_num_retained()) throw std::invalid_argument("num keys mismatch, possibly corrupted input sketch");
   } else { // intersection
     const uint32_t max_matches = std::min(num_keys_, sketch.get_num_retained());
     uint64_t* matched_keys = AllocU64().allocate(max_matches);
     uint32_t match_count = 0;
+    uint32_t count = 0;
     for (auto key: sketch) {
       if (key < theta_) {
-        if (update_theta_sketch_alloc<A>::hash_search(key, keys_, lg_size_)) matched_keys[match_count++] = key;
+        if (update_theta_sketch_alloc<A>::hash_search(key, keys_, lg_size_)) {
+          if (match_count == max_matches) throw std::invalid_argument("max matches exceeded, possibly corrupted input sketch");
+          matched_keys[match_count++] = key;
+        }
       } else if (sketch.is_ordered()) {
         break; // early stop
       }
+      ++count;
+    }
+    if (count > sketch.get_num_retained()) {
+      throw std::invalid_argument(" more keys then expected, possibly corrupted input sketch");
+    } else if (!sketch.is_ordered() and count < sketch.get_num_retained()) {
+      throw std::invalid_argument(" fewer keys then expected, possibly corrupted input sketch");
     }
     if (match_count == 0) {
       AllocU64().deallocate(keys_, 1 << lg_size_);
