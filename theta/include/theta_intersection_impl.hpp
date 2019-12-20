@@ -165,8 +165,8 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
         AllocU64().deallocate(keys_, 1 << lg_size_);
         lg_size_ = lg_size;
         keys_ = AllocU64().allocate(1 << lg_size_);
-        std::fill(keys_, &keys_[1 << lg_size_], 0);
       }
+      std::fill(keys_, &keys_[1 << lg_size_], 0);
       for (uint32_t i = 0; i < match_count; i++) {
         update_theta_sketch_alloc<A>::hash_search_or_insert(matched_keys[i], keys_, lg_size_);
       }
