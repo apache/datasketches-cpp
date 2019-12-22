@@ -167,8 +167,10 @@ class kll_sketch {
 
     explicit kll_sketch(uint16_t k = DEFAULT_K);
     kll_sketch(const kll_sketch& other);
+    kll_sketch(kll_sketch&& other) noexcept;
     ~kll_sketch();
-    kll_sketch& operator=(kll_sketch other);
+    kll_sketch& operator=(const kll_sketch& other);
+    kll_sketch& operator=(kll_sketch&& other);
     void update(const T& value);
     void update(T&& value);
     void merge(const kll_sketch& other);
@@ -371,36 +373,78 @@ kll_sketch<T, C, S, A>::kll_sketch(uint16_t k) {
 }
 
 template<typename T, typename C, typename S, typename A>
-kll_sketch<T, C, S, A>::kll_sketch(const kll_sketch& other) {
-  k_ = other.k_;
-  m_ = other.m_;
-  min_k_ = other.min_k_;
-  n_ = other.n_;
-  num_levels_ = other.num_levels_;
-  levels_size_ = other.levels_size_;
+kll_sketch<T, C, S, A>::kll_sketch(const kll_sketch& other):
+k_(other.k_),
+m_(other.m_),
+min_k_(other.min_k_),
+n_(other.n_),
+num_levels_(other.num_levels_),
+levels_(nullptr),
+levels_size_(other.levels_size_),
+items_(nullptr),
+items_size_(other.items_size_),
+min_value_(nullptr),
+max_value_(nullptr),
+is_level_zero_sorted_(other.is_level_zero_sorted_)
+{
   levels_ = AllocU32().allocate(levels_size_);
   std::copy(&other.levels_[0], &other.levels_[levels_size_], levels_);
-  items_size_ = other.items_size_;
   items_ = A().allocate(items_size_);
   std::copy(other.items_, &other.items_[items_size_], items_);
-  min_value_ = A().allocate(1);
-  max_value_ = A().allocate(1);
-  new (min_value_) T(*other.min_value_);
-  new (max_value_) T(*other.max_value_);
-  is_level_zero_sorted_ = other.is_level_zero_sorted_;
+  min_value_ = new (A().allocate(1)) T(*other.min_value_);
+  max_value_ = new (A().allocate(1)) T(*other.max_value_);
 }
 
 template<typename T, typename C, typename S, typename A>
-kll_sketch<T, C, S, A>& kll_sketch<T, C, S, A>::operator=(kll_sketch other) {
+kll_sketch<T, C, S, A>::kll_sketch(kll_sketch&& other) noexcept:
+k_(other.k_),
+m_(other.m_),
+min_k_(other.min_k_),
+n_(other.n_),
+num_levels_(other.num_levels_),
+levels_(other.levels_),
+levels_size_(other.levels_size_),
+items_(other.items_),
+items_size_(other.items_size_),
+min_value_(other.min_value_),
+max_value_(other.max_value_),
+is_level_zero_sorted_(other.is_level_zero_sorted_)
+{
+  other.levels_ = nullptr;
+  other.items_ = nullptr;
+  other.min_value_ = nullptr;
+  other.max_value_ = nullptr;
+}
+
+template<typename T, typename C, typename S, typename A>
+kll_sketch<T, C, S, A>& kll_sketch<T, C, S, A>::operator=(const kll_sketch& other) {
+  kll_sketch<T, C, S, A> copy(other);
+  std::swap(k_, copy.k_);
+  std::swap(m_, copy.m_);
+  std::swap(min_k_, copy.min_k_);
+  std::swap(n_, copy.n_);
+  std::swap(num_levels_, copy.num_levels_);
+  std::swap(levels_, copy.levels_);
+  std::swap(levels_size_, copy.levels_size_);
+  std::swap(items_, copy.items_);
+  std::swap(items_size_, copy.items_size_);
+  std::swap(min_value_, copy.min_value_);
+  std::swap(max_value_, copy.max_value_);
+  std::swap(is_level_zero_sorted_, copy.is_level_zero_sorted_);
+  return *this;
+}
+
+template<typename T, typename C, typename S, typename A>
+kll_sketch<T, C, S, A>& kll_sketch<T, C, S, A>::operator=(kll_sketch&& other) {
   std::swap(k_, other.k_);
   std::swap(m_, other.m_);
   std::swap(min_k_, other.min_k_);
   std::swap(n_, other.n_);
   std::swap(num_levels_, other.num_levels_);
-  std::swap(levels_size_, other.levels_size_);
   std::swap(levels_, other.levels_);
-  std::swap(items_size_, other.items_size_);
+  std::swap(levels_size_, other.levels_size_);
   std::swap(items_, other.items_);
+  std::swap(items_size_, other.items_size_);
   std::swap(min_value_, other.min_value_);
   std::swap(max_value_, other.max_value_);
   std::swap(is_level_zero_sorted_, other.is_level_zero_sorted_);
@@ -409,17 +453,21 @@ kll_sketch<T, C, S, A>& kll_sketch<T, C, S, A>::operator=(kll_sketch other) {
 
 template<typename T, typename C, typename S, typename A>
 kll_sketch<T, C, S, A>::~kll_sketch() {
-  const uint32_t begin = levels_[0];
-  const uint32_t end = begin + get_num_retained();
-  for (uint32_t i = begin; i < end; i++) items_[i].~T();
-  if (!is_empty()) {
-    min_value_->~T();
-    max_value_->~T();
+  if (levels_ != nullptr) AllocU32().deallocate(levels_, levels_size_);
+  if (items_ != nullptr) {
+    const uint32_t begin = levels_[0];
+    const uint32_t end = begin + get_num_retained();
+    for (uint32_t i = begin; i < end; i++) items_[i].~T();
+    A().deallocate(items_, items_size_);
   }
-  AllocU32().deallocate(levels_, levels_size_);
-  A().deallocate(items_, items_size_);
-  A().deallocate(min_value_, 1);
-  A().deallocate(max_value_, 1);
+  if (min_value_ != nullptr) {
+    min_value_->~T();
+    A().deallocate(min_value_, 1);
+  }
+  if (max_value_ != nullptr) {
+    max_value_->~T();
+    A().deallocate(max_value_, 1);
+  }
 }
 
 template<typename T, typename C, typename S, typename A>
