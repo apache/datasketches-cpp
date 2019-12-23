@@ -121,8 +121,9 @@ public:
   virtual bool is_ordered() const;
   virtual void to_stream(std::ostream& os, bool print_items = false) const;
   virtual void serialize(std::ostream& os) const;
+  typedef vector_u8<A> vector_bytes; // alias for users
   // header space is reserved, but not initialized
-  virtual vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
+  virtual vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
   void update(const std::string& value);
   void update(uint64_t value);
@@ -220,8 +221,9 @@ public:
   virtual bool is_ordered() const;
   virtual void to_stream(std::ostream& os, bool print_items = false) const;
   virtual void serialize(std::ostream& os) const;
+  typedef vector_u8<A> vector_bytes; // alias for users
   // header space is reserved, but not initialized
-  virtual vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
+  virtual vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;
