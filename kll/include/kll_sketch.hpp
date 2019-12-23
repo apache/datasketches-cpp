@@ -220,7 +220,8 @@ class kll_sketch {
     static size_t get_max_serialized_size_bytes(uint16_t k, uint64_t n);
 
     void serialize(std::ostream& os) const;
-    vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
+    typedef vector_u8<A> vector_bytes; // alias for users
+    vector_bytes serialize(unsigned header_size_bytes = 0) const;
     static kll_sketch<T, C, S, A> deserialize(std::istream& is);
     static kll_sketch<T, C, S, A> deserialize(const void* bytes, size_t size);
 

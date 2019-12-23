@@ -164,18 +164,20 @@ class hll_sketch_alloc final {
      */
     void reset();
 
+    typedef vector_u8<A> vector_bytes; // alias for users
+
     /**
      * Serializes the sketch to a byte array, compacting data structures
      * where feasible to eliminate unused storage in the serialized image.
      * @param header_size_bytes Allows for PostgreSQL integration
      */
-    vector_u8<A> serialize_compact(unsigned header_size_bytes = 0) const;
+    vector_bytes serialize_compact(unsigned header_size_bytes = 0) const;
 
     /**
      * Serializes the sketch to a byte array, retaining all internal 
      * data structures in their current form.
      */
-    vector_u8<A> serialize_updatable() const;
+    vector_bytes serialize_updatable() const;
 
     /**
      * Serializes the sketch to an ostream, compacting data structures
@@ -550,18 +552,20 @@ class hll_union_alloc {
      */
     hll_sketch_alloc<A> get_result(target_hll_type tgt_type = HLL_4) const;
 
+    typedef vector_u8<A> vector_bytes; // alias for users
+
     /**
      * Serializes the sketch to a byte array, compacting data structures
      * where feasible to eliminate unused storage in the serialized image.
      * @param header_size_bytes Allows for PostgreSQL integration
      */
-    vector_u8<A> serialize_compact() const;
+    vector_bytes serialize_compact() const;
   
     /**
      * Serializes the sketch to a byte array, retaining all internal 
      * data structures in their current form.
      */
-    vector_u8<A> serialize_updatable() const;
+    vector_bytes serialize_updatable() const;
 
     /**
      * Serializes the sketch to an ostream, compacting data structures

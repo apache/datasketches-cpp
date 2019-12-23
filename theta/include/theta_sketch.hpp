@@ -72,7 +72,8 @@ public:
   virtual bool is_ordered() const = 0;
   virtual void to_stream(std::ostream& os, bool print_items = false) const = 0;
   virtual void serialize(std::ostream& os) const = 0;
-  virtual vector_u8<A> serialize(unsigned header_size_bytes = 0) const = 0;
+  typedef vector_u8<A> vector_bytes; // alias for users
+  virtual vector_bytes serialize(unsigned header_size_bytes = 0) const = 0;
 
   typedef std::unique_ptr<theta_sketch_alloc<A>, std::function<void(theta_sketch_alloc<A>*)>> unique_ptr;
   static unique_ptr deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
