@@ -11,6 +11,7 @@
 
 # Compiler output, build specific
 *.a
+*.o
 *.so
 *.dll
 *.dylib
