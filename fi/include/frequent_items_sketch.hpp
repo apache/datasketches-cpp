@@ -69,7 +69,8 @@ public:
   std::vector<row, AllocRow> get_frequent_items(frequent_items_error_type err_type, uint64_t threshold = USE_MAX_ERROR) const;
   size_t get_serialized_size_bytes() const;
   void serialize(std::ostream& os) const;
-  vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
+  typedef vector_u8<A> vector_bytes; // alias for users
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
   static frequent_items_sketch deserialize(std::istream& is);
   static frequent_items_sketch deserialize(const void* bytes, size_t size);
   void to_stream(std::ostream& os, bool print_items = false) const;
