@@ -310,7 +310,7 @@ std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
             os << auxItr->getString() << std::endl;
           }
         } else {
-          while (auxItr->nextAll()) {
+          while (auxItr->nextValid()) {
             os << auxItr->getString() << std::endl;
           }
         }
