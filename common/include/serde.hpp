@@ -20,8 +20,10 @@
 #ifndef DATASKETCHES_SERDE_HPP_
 #define DATASKETCHES_SERDE_HPP_
 
-#include <memory>
 #include <cstring>
+#include <iostream>
+#include <memory>
+#include <string>
 
 namespace datasketches {
 
