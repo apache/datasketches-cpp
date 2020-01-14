@@ -32,22 +32,25 @@
 namespace datasketches {
 
 template<typename T, typename C, typename S, typename A>
-kll_sketch<T, C, S, A>::kll_sketch(uint16_t k) {
+kll_sketch<T, C, S, A>::kll_sketch(uint16_t k):
+k_(k),
+m_(DEFAULT_M),
+min_k_(k),
+n_(0),
+num_levels_(1),
+levels_(nullptr),
+levels_size_(2),
+items_(nullptr),
+items_size_(k_),
+min_value_(nullptr),
+max_value_(nullptr),
+is_level_zero_sorted_(false)
+{
   if (k < MIN_K or k > MAX_K) {
     throw std::invalid_argument("K must be >= " + std::to_string(MIN_K) + " and <= " + std::to_string(MAX_K) + ": " + std::to_string(k));
   }
-  k_ = k;
-  m_ = DEFAULT_M;
-  min_k_ = k;
-  n_ = 0;
-  num_levels_ = 1;
-  levels_size_ = 2;
   levels_ = new (AllocU32().allocate(2)) uint32_t[2] {k_, k_};
-  items_size_ = k_;
   items_ = A().allocate(items_size_);
-  min_value_ = A().allocate(1);
-  max_value_ = A().allocate(1);
-  is_level_zero_sorted_ = false;
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -68,9 +71,9 @@ is_level_zero_sorted_(other.is_level_zero_sorted_)
   levels_ = AllocU32().allocate(levels_size_);
   std::copy(&other.levels_[0], &other.levels_[levels_size_], levels_);
   items_ = A().allocate(items_size_);
-  std::copy(other.items_, &other.items_[items_size_], items_);
-  min_value_ = new (A().allocate(1)) T(*other.min_value_);
-  max_value_ = new (A().allocate(1)) T(*other.max_value_);
+  std::copy(other.items_[levels_[0]], &other.items_[levels_[num_levels_]], items_[levels_[0]]);
+  if (other.min_value_ != nullptr) min_value_ = new (A().allocate(1)) T(*other.min_value_);
+  if (other.max_value_ != nullptr) max_value_ = new (A().allocate(1)) T(*other.max_value_);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -131,13 +134,13 @@ kll_sketch<T, C, S, A>& kll_sketch<T, C, S, A>::operator=(kll_sketch&& other) {
 
 template<typename T, typename C, typename S, typename A>
 kll_sketch<T, C, S, A>::~kll_sketch() {
-  if (levels_ != nullptr) AllocU32().deallocate(levels_, levels_size_);
   if (items_ != nullptr) {
     const uint32_t begin = levels_[0];
-    const uint32_t end = begin + get_num_retained();
+    const uint32_t end = levels_[num_levels_];
     for (uint32_t i = begin; i < end; i++) items_[i].~T();
     A().deallocate(items_, items_size_);
   }
+  if (levels_ != nullptr) AllocU32().deallocate(levels_, levels_size_);
   if (min_value_ != nullptr) {
     min_value_->~T();
     A().deallocate(min_value_, 1);
@@ -163,8 +166,8 @@ void kll_sketch<T, C, S, A>::update(T&& value) {
 template<typename T, typename C, typename S, typename A>
 uint32_t kll_sketch<T, C, S, A>::internal_update(const T& value) {
   if (is_empty()) {
-    new (min_value_) T(value);
-    new (max_value_) T(value);
+    min_value_ = new (A().allocate(1)) T(value);
+    max_value_ = new (A().allocate(1)) T(value);
   } else {
     if (C()(value, *min_value_)) *min_value_ = value;
     if (C()(*max_value_, value)) *max_value_ = value;
@@ -186,8 +189,8 @@ void kll_sketch<T, C, S, A>::merge(const kll_sketch& other) {
     update(other.items_[i]);
   }
   if (is_empty()) {
-    new (min_value_) T(*other.min_value_);
-    new (max_value_) T(*other.max_value_);
+    min_value_ = new (A().allocate(1)) T(*other.min_value_);
+    max_value_ = new (A().allocate(1)) T(*other.max_value_);
   } else {
     if (C()(*other.min_value_, *min_value_)) *min_value_ = *other.min_value_;
     if (C()(*max_value_, *other.max_value_)) *max_value_ = *other.max_value_;
