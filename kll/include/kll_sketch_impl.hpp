@@ -71,7 +71,7 @@ is_level_zero_sorted_(other.is_level_zero_sorted_)
   levels_ = AllocU32().allocate(levels_size_);
   std::copy(&other.levels_[0], &other.levels_[levels_size_], levels_);
   items_ = A().allocate(items_size_);
-  std::copy(other.items_[levels_[0]], &other.items_[levels_[num_levels_]], items_[levels_[0]]);
+  std::copy(&other.items_[levels_[0]], &other.items_[levels_[num_levels_]], &items_[levels_[0]]);
   if (other.min_value_ != nullptr) min_value_ = new (A().allocate(1)) T(*other.min_value_);
   if (other.max_value_ != nullptr) max_value_ = new (A().allocate(1)) T(*other.max_value_);
 }
