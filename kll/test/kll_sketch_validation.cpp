@@ -179,8 +179,8 @@ class kll_sketch_validation: public CppUnit::TestFixture {
       unsigned num_samples = sketch.get_num_retained();
       int64_t hashed_samples = simple_hash_of_sub_array(sketch.get_items(), sketch.get_levels()[0], num_samples);
       std::cout << i;
-      assert (correct_results[7 * i + 4] == num_levels);
-      assert (correct_results[7 * i + 5] == num_samples);
+      CPPUNIT_ASSERT(correct_results[7 * i + 4] == num_levels);
+      CPPUNIT_ASSERT(correct_results[7 * i + 5] == num_samples);
       if (correct_results[7 * i + 6] == hashed_samples) {
         std::cout << " pass" << std::endl;
       } else {
@@ -201,7 +201,7 @@ class kll_sketch_validation: public CppUnit::TestFixture {
       cur &= mask;
       arr[i] = cur;
     }
-    return std::move(arr);
+    return arr;
   }
 
   static int64_t simple_hash_of_sub_array(const float* arr, unsigned start, unsigned length) {
