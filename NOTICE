@@ -16,6 +16,10 @@ This product contains code written by Austin Appleby and placed in the public do
 The original: https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
   * common/include/MurmurHash3.h
 
+This product contains code published by Sean Eron Anderson and placed in the public domain.
+The original: https://graphics.stanford.edu/~seander/bithacks.html
+  * common/include/CommonUtil.h
+
 Apache 2.0 License
 ==================
 

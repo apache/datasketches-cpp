@@ -80,12 +80,13 @@ add_subdirectory(cpc)
 add_subdirectory(kll)
 add_subdirectory(fi)
 add_subdirectory(theta)
+add_subdirectory(sampling)
 
 if (WITH_PYTHON)
   add_subdirectory(python)
 endif()
 
-target_link_libraries(datasketches PUBLIC hll cpc kll fi theta)
+target_link_libraries(datasketches PUBLIC hll cpc kll fi theta sampling)
 
 set_target_properties(datasketches PROPERTIES
   LINKER_LANGUAGE CXX
