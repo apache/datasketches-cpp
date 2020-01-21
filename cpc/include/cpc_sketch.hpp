@@ -99,7 +99,8 @@ class cpc_sketch_alloc {
     void to_stream(std::ostream& os) const;
 
     void serialize(std::ostream& os) const;
-    vector_u8<A> serialize(unsigned header_size_bytes = 0) const;
+    typedef vector_u8<A> vector_bytes; // alias for users
+    vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
     static cpc_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
     static cpc_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
