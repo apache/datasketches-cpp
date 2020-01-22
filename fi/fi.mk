@@ -40,9 +40,8 @@ fi_exec: $(COM_TSTOBJS) $(FI_TSTOBJS)
 	@$(CC) $^ -o $(FI_TARGET) $(TSTLNKFLAGS) $(LIB)
 
 fi_test: fi_exec
-	@cd fi; LD_LIBRARY_PATH=../$(TARGETDIR) ./$(FI_TEST_BIN)
+	@cd fi; ./$(FI_TEST_BIN)
 
-.PHONY: fi_clean
 fi_clean:
 	@echo "Cleaning fi...";
-	@$(RM) -r $(FI_TSTBUILD) $(FI_TARGET) $(FI_TARGET)
+	@$(RM) -r $(FI_BUILDDIR) $(FI_TSTBUILD) $(FI_TARGET)

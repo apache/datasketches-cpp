@@ -20,24 +20,18 @@ include config.mk
 TEST_BINARY_INPUT_PATH = test
 
 BUILDDIR := build
-TARGETDIR := lib
-
-LIB_BASE_NAME := datasketches
-LIBRARY := lib$(LIB_BASE_NAME).$(LIB_SUFFIX)
-TARGET := $(TARGETDIR)/$(LIBRARY)
 
 INC := -I /usr/local/include
-LIB := -L /usr/local/lib -lcppunit -L lib -l$(LIB_BASE_NAME)
+LIB := -L /usr/local/lib -lcppunit
 
 MODULES := cpc kll fi theta hll
 
 .PHONY: all
-all: $(MODULES) $(LIBRARY)
+all: test
 
 include common/common.mk
 
 INCLIST := $(COM_INCLIST)
-OBJECTS := $(COM_OBJECTS)
 
 # pull in configs for each of the specified modules
 define MODULETASKS
@@ -46,21 +40,14 @@ endef
 $(foreach MODULE,$(MODULES),$(eval $(call MODULETASKS,$(MODULE))))
 
 INCLIST += $(foreach mod, $(MODULES), $($(shell echo $(mod) | tr a-z A-Z)_INCLIST))
-OBJECTS += $(foreach mod, $(MODULES), $($(shell echo $(mod) | tr a-z A-Z)_OBJECTS))
 
 TEST_MODULES := common_test $(addsuffix _test, $(MODULES))
 CLEAN_MODULES := common_clean $(addsuffix _clean, $(MODULES))
 EXEC_MODULES := $(addsuffix _exec, $(MODULES))
 
-$(LIBRARY): $(OBJECTS) 
-	@mkdir -p $(TARGETDIR)
-	@echo "Linking $(LIBRARY)"
-	@$(CC) $^ $(LINKFLAGS) $(CPPFLAGS) -o $@
-	@mv $(LIBRARY) $(TARGETDIR)
-
 .PHONY: test clean
 
-test: $(LIBRARY) $(TEST_MODULES) $(EXEC_MODULES)
+test: $(TEST_MODULES) $(EXEC_MODULES)
 
 clean: $(CLEAN_MODULES)
 	@echo "Cleaning $(TARGET)..."

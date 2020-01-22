@@ -40,9 +40,8 @@ hll_exec: $(COM_TSTOBJS) $(HLL_TSTOBJS)
 	@$(CC) $^ -o $(HLL_TARGET) $(TSTLNKFLAGS) $(LIB)
 
 hll_test: hll_exec
-	@cd hll; LD_LIBRARY_PATH=../$(TARGETDIR) ./$(HLL_TEST_BIN)
+	@cd hll; ./$(HLL_TEST_BIN)
 
-.PHONY: hll_clean
 hll_clean:
 	@echo "Cleaning hll...";
 	@$(RM) -r $(HLL_BUILDDIR) $(HLL_TSTBUILD) $(HLL_TARGET)

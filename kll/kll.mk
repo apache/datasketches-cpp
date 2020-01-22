@@ -40,9 +40,8 @@ kll_exec: $(COM_TSTOBJS) $(KLL_TSTOBJS)
 	@$(CC) $^ -o $(KLL_TARGET) $(TSTLNKFLAGS) $(LIB)
 
 kll_test: kll_exec
-	@cd kll; LD_LIBRARY_PATH=../$(TARGETDIR) ./$(KLL_TEST_BIN)
+	@cd kll; ./$(KLL_TEST_BIN)
 
-.PHONY: kll_clean
 kll_clean:
 	@echo "Cleaning kll...";
-	@$(RM) -r $(KLL_TSTBUILD) $(KLL_TARGET) $(KLL_TARGET)
+	@$(RM) -r $(KLL_BUILDDIR) $(KLL_TSTBUILD) $(KLL_TARGET)

@@ -40,9 +40,8 @@ theta_exec: $(COM_TSTOBJS) $(THETA_TSTOBJS)
 	@$(CC) $^ -o $(THETA_TARGET) $(TSTLNKFLAGS) $(LIB)
 
 theta_test: theta_exec
-	@cd theta; LD_LIBRARY_PATH=../$(TARGETDIR) ./$(THETA_TEST_BIN)
+	@cd theta; ./$(THETA_TEST_BIN)
 
-.PHONY: theta_clean
 theta_clean:
 	@echo "Cleaning theta...";
-	@$(RM) -r $(THETA_TSTBUILD) $(THETA_TARGET) $(THETA_TARGET)
+	@$(RM) -r $(THETA_BUILDDIR) $(THETA_TSTBUILD) $(THETA_TARGET)
