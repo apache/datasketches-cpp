@@ -23,6 +23,7 @@
 #include "counting_allocator.hpp"
 
 #include <var_opt_sketch.hpp>
+#include <var_opt_union.hpp>
 
 #include <string>
 #include <sstream>
@@ -36,15 +37,34 @@ static std::string testBinaryInputPath = "test/";
 
 namespace datasketches {
 
-long long int total_allocated_memory;
-long long int total_objects_constructed;
-
 class var_opt_sketch_test: public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(var_opt_sketch_test);
   CPPUNIT_TEST(empty);
-  CPPUNIT_TEST(mem_test);
+  CPPUNIT_TEST(vo_union);
   CPPUNIT_TEST_SUITE_END();
+
+  void vo_union() {
+    int k = 10;
+    var_opt_sketch<int> sk(k), sk2(k+3);
+
+    for (int i = 0; i < 10*k; ++i) {
+      sk.update(i);
+      sk2.update(i);
+    }
+    sk.update(-1, 10000.0);
+    sk2.update(-2, 4000.0);
+    std::cerr << sk.to_string() << std::endl;
+
+    var_opt_union<int> vou(k+3);
+    std::cerr << vou.to_string() << std::endl;
+    vou.update(sk);
+    vou.update(sk2);
+    std::cerr << vou.to_string() << std::endl;
+
+    var_opt_sketch<int> r = vou.get_result();
+    std::cerr << "-----------------------" << std::endl << r.to_string() << std::endl;
+  }
 
   void empty() {
     int k = 10;
@@ -64,7 +84,7 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     var_opt_sketch<int> sk2 = var_opt_sketch<int>::deserialize(ss);
     std::cout << sk2.to_string() << std::endl;;
     }
-    std::cerr << "num allocs: " << num_allocs << "\n";
+
     {
     var_opt_sketch<std::string> sk(k);
     std::cout << "Expected size: " << sk.get_serialized_size_bytes() << std::endl;
@@ -110,91 +130,6 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     const std::string str("much longer string with luck won't fit nicely in existing structure location");
     sk2.update(str, 1000000);
     }
-  }
-
-  void print_mem_stats() {
-    std::cout << "construct(): " << total_objects_constructed << std::endl;
-    std::cout << "memory used: " << total_allocated_memory << std::endl;
-  }
-
-  void mem_test() {
-    int k = 10;
-
-    total_allocated_memory = 0;
-    total_objects_constructed = 0;
-
-    typedef var_opt_sketch<std::string, serde<std::string>, counting_allocator<std::string>> var_opt_sketch_a;
-    var_opt_sketch_a* s = new (counting_allocator<var_opt_sketch_a>().allocate(1)) var_opt_sketch_a(k);
-  
-    std::string x[26];
-    x[0]  = std::string("a");
-    x[1]  = std::string("b");
-    x[2]  = std::string("c");
-    x[3]  = std::string("d");
-    x[4]  = std::string("e");
-    x[5]  = std::string("f");
-    x[6]  = std::string("g");
-    x[7]  = std::string("h");
-    x[8]  = std::string("i");
-    x[9]  = std::string("j");
-    x[10] = std::string("k");
-    x[11] = std::string("l");
-    x[12] = std::string("m");
-    x[13] = std::string("n");
-    x[14] = std::string("o");
-    x[15] = std::string("p");
-    x[16] = std::string("q");
-    x[17] = std::string("r");
-    x[18] = std::string("s");
-    x[19] = std::string("t");
-    x[20] = std::string("u");
-    x[21] = std::string("v");
-    x[22] = std::string("w");
-    x[23] = std::string("x");
-    x[24] = std::string("y");
-    x[25] = std::string("z");
-
-    for (int i=0; i <5; ++i)
-      s->update(x[i]);
-    print_mem_stats();
-
-    for (int i=5; i <11; ++i)
-      s->update(x[i]);
-    print_mem_stats();
-
-    s->update(x[11], 10000);
-    print_mem_stats();
-
-    for (int i=12; i <26; ++i)
-      s->update(x[i]);
-    print_mem_stats();
-
-    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
-    s->serialize(ss);
-    std::cout << s->to_string() << std::endl;
-    print_mem_stats();
-
-    counting_allocator<var_opt_sketch_a>().destroy(s);
-    counting_allocator<var_opt_sketch_a>().deallocate(s, 1);
-    print_mem_stats();
-
-    {
-      auto sk = var_opt_sketch_a::deserialize(ss);
-      print_mem_stats();
-
-      sk.update("qrs");
-      print_mem_stats();
-
-      sk.update("zyx");
-      print_mem_stats();
-
-      std::cout << sk.to_string() << std::endl;
-
-      auto vec = sk.serialize();
-      var_opt_sketch_a sk2 = var_opt_sketch_a::deserialize(vec.data(), vec.size());
-      std::cout << sk2.to_string() << std::endl;
-    }
-    print_mem_stats();
   }
 
 };

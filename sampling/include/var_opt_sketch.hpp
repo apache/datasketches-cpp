@@ -22,19 +22,30 @@
 
 #include "serde.hpp"
 
-#include <vector>
 #include <iterator>
+#include <vector>
 
 namespace datasketches {
 
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 
-int num_allocs = 0;
-
 /**
  * author Kevin Lang 
  * author Jon Malkin
  */
+
+/**
+ * A struct to hold the result of subset sum queries
+ */
+struct subset_summary {
+  const double lower_bound;
+  const double estimate;
+  const double upper_bound;
+  const double total_sketch_weight;
+};
+
+template <typename T, typename S, typename A> class var_opt_union; // forward declaration
+
 template <typename T, typename S = serde<T>, typename A = std::allocator<T>>
 class var_opt_sketch {
 
@@ -43,10 +54,15 @@ class var_opt_sketch {
     static const resize_factor DEFAULT_RESIZE_FACTOR = X8;
 
     var_opt_sketch(uint32_t k, resize_factor rf = DEFAULT_RESIZE_FACTOR);
-    static var_opt_sketch<T,S,A> deserialize(std::istream& is);
-    static var_opt_sketch<T,S,A> deserialize(const void* bytes, size_t size);
+    var_opt_sketch(const var_opt_sketch& other);
+    var_opt_sketch(var_opt_sketch&& other) noexcept;
+    static var_opt_sketch deserialize(std::istream& is);
+    static var_opt_sketch deserialize(const void* bytes, size_t size);
 
-    virtual ~var_opt_sketch();
+    ~var_opt_sketch();
+
+    var_opt_sketch& operator=(const var_opt_sketch& other);
+    var_opt_sketch& operator=(var_opt_sketch&& other);
 
     void update(const T& item, double weight=1.0);
     //void update(T&& item, double weight=1.0);
@@ -72,7 +88,11 @@ class var_opt_sketch {
     std::ostream& to_stream(std::ostream& os) const;
     std::string to_string() const;
 
-    //estimate_subset_sum()
+    subset_summary estimate_subset_sum(std::function<bool(T)> predicate) const;
+
+    class const_iterator;
+    const_iterator begin() const;
+    const_iterator end() const;
 
   private:
     typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocDouble;
@@ -88,6 +108,9 @@ class var_opt_sketch {
     static const uint8_t EMPTY_FLAG_MASK  = 4;
     static const uint8_t GADGET_FLAG_MASK = 128;
 
+    // Number of standard deviations to use for subset sum error bounds
+    constexpr static const double DEFAULT_KAPPA = 2.0;
+
     // TODO: should probably rearrange a bit to minimize gaps once aligned
     uint32_t k_;                    // max size of sketch, in items
 
@@ -98,7 +121,7 @@ class var_opt_sketch {
     uint64_t n_;                    // total number of items processed by sketch
     double total_wt_r_;             // total weight of items in reservoir-like area
 
-    const resize_factor rf_;        // resize factor
+    resize_factor rf_;              // resize factor
 
     uint32_t curr_items_alloc_;     // currently allocated array size
     bool filled_data_;              // true if we've explciitly set all entries in data_
@@ -128,6 +151,10 @@ class var_opt_sketch {
     var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs, std::istream& is);
     var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs, const void* bytes, size_t size);
 
+    friend class var_opt_union<T,S,A>;
+    var_opt_sketch(const var_opt_sketch& other, bool as_sketch, uint64_t adjusted_n);
+    var_opt_sketch(T* data, double* weights, size_t len, uint32_t k, uint64_t n, uint32_t h_count, uint32_t r_count, double total_wt_r);
+
     // internal-use-only updates
     void update(const T& item, double weight, bool mark);
     void update_warmup_phase(const T& item, double weight, bool mark);
@@ -139,9 +166,9 @@ class var_opt_sketch {
     double peek_min() const;
     bool is_marked(int idx) const;
     
-    int pick_random_slot_in_r() const;
-    int choose_delete_slot(double wt_cand, int num_cand) const;
-    int choose_weighted_delete_slot(double wt_cand, int num_cand) const;
+    uint32_t pick_random_slot_in_r() const;
+    uint32_t choose_delete_slot(double wt_cand, int num_cand) const;
+    uint32_t choose_weighted_delete_slot(double wt_cand, int num_cand) const;
 
     void transition_from_warmup();
     void convert_to_heap();
@@ -151,6 +178,7 @@ class var_opt_sketch {
     void pop_min_to_m_region();
     void grow_candidate_set(double wt_cands, int num_cands);    
     void decrease_k_by_1();
+    void strip_marks();
     void force_set_k(int k); // used to resolve union gadget into sketch
     void downsample_candidate_set(double wt_cands, int num_cands);
     void swap_values(int src, int dst);
@@ -162,20 +190,19 @@ class var_opt_sketch {
     static void check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);
     
     // things to move to common utils and share among sketches
-    static int get_adjusted_size(int max_size, int resize_target);
-    static int starting_sub_multiple(int lg_target, int lg_rf, int lg_min);
+    static uint32_t get_adjusted_size(int max_size, int resize_target);
+    static uint32_t starting_sub_multiple(int lg_target, int lg_rf, int lg_min);
+    static double pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, double sampling_rate);
+    static double pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, double sampling_rate);
     static bool is_power_of_2(uint32_t v);
     static uint32_t to_log_2(uint32_t v);
     static uint32_t count_trailing_zeros(uint32_t v);
     static uint32_t ceiling_power_of_2(uint32_t n);
-    static int next_int(int max_value);
+    static uint32_t next_int(uint32_t max_value);
     static double next_double_exclude_zero();
-
-    class const_iterator;
-    const_iterator begin() const;
-    const_iterator end() const;
 };
 
+/*
 template<typename T, typename S, typename A>
 class var_opt_sketch<T, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
 public:
@@ -189,12 +216,49 @@ public:
 private:
   const T* items;
   const double* weights;
+  const bool* marks;
   const uint32_t h_count;
   const uint32_t r_count;
+  const double total_wt_r;
   const double r_item_wt;
+  double cum_weight; // used for weight correction in R
+  uint32_t final_idx;
   uint32_t index;
-  const_iterator(const T* items, const double* weights, const uint32_t h_count, const uint32_t r_count,
-                 const double total_wt_r, bool use_end=false);
+  const bool get_mark() const;
+  const_iterator(const T* items, const double* weights, const bool* marks_,
+                 const uint32_t h_count, const uint32_t r_count, const double total_wt_r, bool use_end=false);
+};
+*/
+
+template<typename T, typename S, typename A>
+class var_opt_sketch<T, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+public:
+  const_iterator(const const_iterator& other);
+  const_iterator& operator++();
+  const_iterator& operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  const std::pair<const T&, const double> operator*() const;
+
+private:
+  friend class var_opt_sketch<T,S,A>;
+  friend class var_opt_union<T,S,A>;
+
+  // default iterator over full sketch
+  const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end);
+  
+  // iterates over only one of the H or R region, optionally applying weight correction
+  // to R region (can correct for numerical precision issues)
+  const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region, bool weight_corr);
+
+  const bool get_mark() const;
+
+  const var_opt_sketch<T,S,A>* sk_;
+  double cum_r_weight_; // used for weight correction
+  double r_item_wt_;
+  size_t idx_;
+  size_t final_idx_;
+  bool weight_correction_;
 };
 
 } // namespace datasketches
