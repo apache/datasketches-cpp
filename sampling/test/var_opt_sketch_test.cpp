@@ -20,8 +20,6 @@
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "counting_allocator.hpp"
-
 #include <var_opt_sketch.hpp>
 #include <var_opt_union.hpp>
 
