@@ -89,7 +89,6 @@ template<typename T, typename H, typename E, typename A>
 class reverse_purge_hash_map<T, H, E, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
 public:
   friend class reverse_purge_hash_map<T, H, E, A>;
-  const_iterator(const const_iterator& other) : map(other.map), index(other.index), count(other.count), stride(other.stride) {}
   const_iterator& operator++() {
     ++count;
     if (count < map->num_active) {
