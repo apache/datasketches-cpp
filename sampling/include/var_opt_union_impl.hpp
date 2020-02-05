@@ -23,6 +23,7 @@
 #include "var_opt_union.hpp"
 
 #include <cmath>
+#include <sstream>
 
 namespace datasketches {
 

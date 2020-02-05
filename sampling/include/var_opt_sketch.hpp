@@ -44,14 +44,16 @@ struct subset_summary {
   const double total_sketch_weight;
 };
 
+enum resize_factor { X1 = 0, X2, X4, X8 };
+
 template <typename T, typename S, typename A> class var_opt_union; // forward declaration
 
 template <typename T, typename S = serde<T>, typename A = std::allocator<T>>
 class var_opt_sketch {
 
   public:
-    enum resize_factor { X1 = 0, X2, X4, X8 };
     static const resize_factor DEFAULT_RESIZE_FACTOR = X8;
+    static const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2;
 
     var_opt_sketch(uint32_t k, resize_factor rf = DEFAULT_RESIZE_FACTOR);
     var_opt_sketch(const var_opt_sketch& other);
@@ -188,7 +190,9 @@ class var_opt_sketch {
     // validation
     static void check_preamble_longs(uint8_t preamble_longs, uint8_t flags);
     static void check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);
-    
+    // next method sets current_items_alloc_
+    void validate_and_set_current_size(int preamble_longs);
+
     // things to move to common utils and share among sketches
     static uint32_t get_adjusted_size(int max_size, int resize_target);
     static uint32_t starting_sub_multiple(int lg_target, int lg_rf, int lg_min);
