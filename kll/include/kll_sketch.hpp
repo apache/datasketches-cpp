@@ -331,7 +331,6 @@ template<typename T, typename C, typename S, typename A>
 class kll_sketch<T, C, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
 public:
   friend class kll_sketch<T, C, S, A>;
-  const_iterator(const const_iterator& other);
   const_iterator& operator++();
   const_iterator& operator++(int);
   bool operator==(const const_iterator& other) const;
