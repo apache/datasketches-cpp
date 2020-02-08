@@ -40,7 +40,7 @@ namespace datasketches {
 
 class var_opt_sketch_test: public CppUnit::TestFixture {
 
-  static constexpr double EPS = 1e-10;
+  static constexpr double EPS = 1e-13;
 
   CPPUNIT_TEST_SUITE(var_opt_sketch_test);
   CPPUNIT_TEST(invalid_k);
@@ -53,15 +53,16 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(invalid_weight);
   CPPUNIT_TEST(corrupt_serialized_weight);
   CPPUNIT_TEST(cumulative_weight);
-  // CPPUNIT_TEST(under_full_sketch_serialization);
-  // CPPUNIT_TEST(end_of_warmup_sketch_serialization);
-  // CPPUNIT_TEST(full_sketch_serialization);
-  // CPPUNIT_TEST(pseudo_light_update);
-  // CPPUNIT_TEST(pseudo_heavy_update);
+  CPPUNIT_TEST(under_full_sketch_serialization);
+  CPPUNIT_TEST(end_of_warmup_sketch_serialization);
+  CPPUNIT_TEST(full_sketch_serialization);
+  CPPUNIT_TEST(string_serialization);
+  CPPUNIT_TEST(pseudo_light_update);
+  CPPUNIT_TEST(pseudo_heavy_update);
   // CPPUNIT_TEST(decrease_k_with_under_full_sketch);
   // CPPUNIT_TEST(decrease_k_with_full_sketch);
-  // CPPUNIT_TEST(reset);
-  // CPPUNIT_TEST(estimate_subset_sum);
+  CPPUNIT_TEST(reset);
+  CPPUNIT_TEST(estimate_subset_sum);
   // CPPUNIT_TEST(binary_compatibility);
   
   // CPPUNIT_TEST(empty);
@@ -74,6 +75,35 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
       sk.update(i, 1.0);
     }
     return sk;
+  }
+
+  template<typename T, typename S, typename A>
+  void check_if_equal(var_opt_sketch<T,S,A>& sk1, var_opt_sketch<T,S,A>& sk2) {
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("sketches have different values of k",
+      sk1.get_k(), sk2.get_k());
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("sketches have different values of n",
+      sk1.get_n(), sk2.get_n());
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("sketches have different sample counts",
+      sk1.get_num_samples(), sk2.get_num_samples());
+      
+    auto it1 = sk1.begin();
+    auto it2 = sk2.begin();
+    size_t i = 0;
+
+    while ((it1 != sk1.end()) && (it2 != sk2.end())) {
+      const std::pair<const T&, const double> p1 = *it1;
+      const std::pair<const T&, const double> p2 = *it2;
+      CPPUNIT_ASSERT_EQUAL_MESSAGE("data values differ at sample " + std::to_string(i),
+        p1.first, p2.first); 
+      CPPUNIT_ASSERT_EQUAL_MESSAGE("weight values differ at sample " + std::to_string(i),
+        p1.second, p2.second);
+      ++i;
+      ++it1;
+      ++it2;
+    }
+
+    CPPUNIT_ASSERT_MESSAGE("iterators did not end at the same time",
+      (it1 == sk1.end()) && (it2 == sk2.end()));
   }
 
   void invalid_k() {
@@ -287,14 +317,13 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     for (size_t i = 0; i < n; ++i) {
       // generate weights aboev and below 1.0 using w ~ exp(5*N(0,1))
       // which covers about 10 orders of magnitude
-
       double w = std::exp(5 * N(rand));
       input_sum += w;
       sk.update(i, w);
     }
 
     double output_sum = 0.0;
-    for (auto& it : sk) { // pair<int, weight>
+    for (auto& it : sk) { // std::pair<int, weight>
       output_sum += it.second;
     }
     
@@ -302,6 +331,261 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT(std::abs(weight_ratio - 1.0) < EPS);
     }
     std::cerr << "end cumulative_weight()" << std::endl;
+  }
+
+  void under_full_sketch_serialization() {
+    std::cerr << "start under_full_sketch_serialization()" << std::endl;
+    {
+    var_opt_sketch<int> sk = create_unweighted_sketch(100, 10); // need n < k
+
+    auto bytes = sk.serialize();
+    var_opt_sketch<int> sk_from_bytes = var_opt_sketch<int>::deserialize(bytes.data(), bytes.size());
+    check_if_equal(sk, sk_from_bytes);
+
+    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+    sk.serialize(ss);
+    var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
+    check_if_equal(sk, sk_from_stream);
+    }
+    std::cerr << "end under_full_sketch_serialization()" << std::endl;
+  }
+
+  void end_of_warmup_sketch_serialization() {
+    std::cerr << "start end_of_warmup_sketch_serialization()" << std::endl;
+    {
+    var_opt_sketch<int> sk = create_unweighted_sketch(2843, 2843); // need n == k
+    auto bytes = sk.serialize();
+
+    // ensure still only 3 preamble longs
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("Wrong number of preamble longs at end of warmup mode",
+      3, bytes.data()[0] & 0x3f); // PREAMBLE_LONGS_WARMUP
+
+    var_opt_sketch<int> sk_from_bytes = var_opt_sketch<int>::deserialize(bytes.data(), bytes.size());
+    check_if_equal(sk, sk_from_bytes);
+
+    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+    sk.serialize(ss);
+    var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
+    check_if_equal(sk, sk_from_stream);
+    }
+    std::cerr << "end end_of_warmup_sketch_serialization()" << std::endl;
+  }
+
+  void full_sketch_serialization() {
+    std::cerr << "start full_sketch_serialization()" << std::endl;
+    {
+    var_opt_sketch<int> sk = create_unweighted_sketch(32, 32);
+    sk.update(100, 100.0);
+    sk.update(101, 101.0);
+
+    // first 2 entries should be heavy and in heap order (smallest at root)
+    auto it = sk.begin();
+    const std::pair<const int, const double> p1 = *it;
+    ++it;
+    const std::pair<const int, const double> p2 = *it;
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(100.0, p1.second, EPS);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(101.0, p2.second, EPS);
+    CPPUNIT_ASSERT_EQUAL(100, p1.first);
+    CPPUNIT_ASSERT_EQUAL(101, p2.first);
+
+    // check for 4 preamble longs
+    auto bytes = sk.serialize();
+    CPPUNIT_ASSERT_EQUAL_MESSAGE("Wrong number of preamble longs at end of warmup mode",
+      4, bytes.data()[0] & 0x3f); // PREAMBLE_LONGS_WARMUP
+
+    var_opt_sketch<int> sk_from_bytes = var_opt_sketch<int>::deserialize(bytes.data(), bytes.size());
+    check_if_equal(sk, sk_from_bytes);
+
+    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+    sk.serialize(ss);
+    var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
+    check_if_equal(sk, sk_from_stream);
+    }
+    std::cerr << "end full_sketch_serialization()" << std::endl;
+  }
+
+  void string_serialization() {
+    std::cerr << "start string_serialization()" << std::endl;
+    {
+    var_opt_sketch<std::string> sk(5);
+    sk.update("a", 1.0);
+    sk.update("bc", 1.0);
+    sk.update("def", 1.0);
+    sk.update("ghij", 1.0);
+    sk.update("klmno", 1.0);
+    sk.update("heavy item", 100.0);
+
+    auto bytes = sk.serialize();
+    var_opt_sketch<std::string> sk_from_bytes = var_opt_sketch<std::string>::deserialize(bytes.data(), bytes.size());
+    check_if_equal(sk, sk_from_bytes);
+
+    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+    sk.serialize(ss);
+    var_opt_sketch<std::string> sk_from_stream = var_opt_sketch<std::string>::deserialize(ss);
+    check_if_equal(sk, sk_from_stream);
+
+    }
+    std::cerr << "end string_serialization()" << std::endl;
+  }
+
+  void pseudo_light_update() {
+    std::cerr << "start pseudo_light_update()" << std::endl;
+    {
+    uint32_t k = 1024;
+    var_opt_sketch<int> sk = create_unweighted_sketch(k, k + 1);
+    sk.update(0, 1.0); // k+2nd update
+
+    // check the first weight, assuming all k items are unweighted
+    // (and consequently in R).
+    // Expected: (k + 2) / |R| = (k + 2) / k
+    auto it = sk.begin();
+    double wt = (*it).second;
+    CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("weight corruption in pseudo_light_update()",
+      ((1.0 * (k + 2)) / k), wt, EPS);
+    }
+    std::cerr << "end pseudo_light_update()" << std::endl;
+  }
+
+  void pseudo_heavy_update() {
+    std::cerr << "start pseudo_heavy_update()" << std::endl;
+    {
+    uint32_t k = 1024;
+    double wt_scale = 10.0 * k;
+    var_opt_sketch<int> sk = create_unweighted_sketch(k, k + 1);
+
+    // Next k-1 updates should be update_pseudo_heavy_general()
+    // Last one should call update_pseudo_heavy_r_eq_1(), since we'll have
+    // added k-1 heavy items, leaving only 1 item left in R
+    for (int i = 1; i <= k; ++i) {
+      sk.update(-i, k + (i * wt_scale));
+    }
+
+    auto it = sk.begin();
+
+    // Expected: lightest "heavy" item (first one out): k + 2*wt_scale
+    double wt = (*it).second;
+    CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("weight corruption in pseudo_heavy_update()",
+      1.0 * (k + (2 * wt_scale)), wt, EPS);
+
+    // we don't know which R item is left, but there should be only one, at the end
+    // of the sample set.
+    // Expected: k+1 + (min "heavy" item) / |R| = ((k+1) + (k*wt_scale)) / 1 = wt_scale + 2k + 1
+    while (it != sk.end()) {
+      wt = (*it).second;
+      ++it;
+    }
+    CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("weight corruption in pseudo_light_update()",
+      1.0 + wt_scale + (2 * k), wt, EPS);
+    }
+    std::cerr << "end pseudo_heavy_update()" << std::endl;
+  }
+
+  void reset() {
+    std::cerr << "start reset()" << std::endl;
+    {
+    uint32_t k = 1024;
+    uint64_t n1 = 20;
+    uint64_t n2 = 2 * k;
+    var_opt_sketch<std::string> sk(k);
+
+    // reset from sampling mode
+    for (int i = 0; i < n2; ++i) {
+      sk.update(std::to_string(i), 100.0 + i);
+    }
+    CPPUNIT_ASSERT_EQUAL(n2, sk.get_n());
+    CPPUNIT_ASSERT_EQUAL(k, sk.get_k());
+
+    sk.reset();
+    CPPUNIT_ASSERT_EQUAL((uint64_t) 0, sk.get_n());
+    CPPUNIT_ASSERT_EQUAL(k, sk.get_k());
+
+    // reset from exact mode
+    for (int i = 0; i < n1; ++i)
+      sk.update(std::to_string(i));
+    CPPUNIT_ASSERT_EQUAL(n1, sk.get_n());
+    CPPUNIT_ASSERT_EQUAL(k, sk.get_k());
+
+    sk.reset();
+    CPPUNIT_ASSERT_EQUAL((uint64_t) 0, sk.get_n());
+    CPPUNIT_ASSERT_EQUAL(k, sk.get_k());
+    }
+    std::cerr << "end reset()" << std::endl;
+  }
+
+  void estimate_subset_sum() {
+    std::cerr << "start estimate_subset_sum()" << std::endl;
+    {
+    uint32_t k = 10;
+    var_opt_sketch<int> sk(k);
+
+    // empty sketch -- all zeros
+    subset_summary summary = sk.estimate_subset_sum([](int){ return true; });
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, summary.estimate, 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, summary.total_sketch_weight, 0.0);
+
+    // add items, keeping in exact mode
+    double total_weight = 0.0;
+    for (int i = 1; i <= (k - 1); ++i) {
+      sk.update(i, 1.0 * i);
+      total_weight += 1.0 * i;
+    }
+
+    summary = sk.estimate_subset_sum([](int){ return true; });
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(total_weight, summary.estimate, 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(total_weight, summary.lower_bound, 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(total_weight, summary.upper_bound, 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(total_weight, summary.total_sketch_weight, 0.0);
+
+    // add a few more items, pushing to sampling mode
+    for (int i = k; i <= (k + 1); ++i) {
+      sk.update(i, 1.0 * i);
+      total_weight += 1.0 * i;
+    }
+
+    // predicate always true so estimate == upper bound
+    summary = sk.estimate_subset_sum([](int){ return true; });
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(total_weight, summary.estimate, EPS);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(total_weight, summary.upper_bound, EPS);
+    CPPUNIT_ASSERT_LESS(total_weight, summary.lower_bound); // lower_bound < total_weight
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(total_weight, summary.total_sketch_weight, EPS);
+
+    // predicate always false so estimate == lower bound == 0.0
+    summary = sk.estimate_subset_sum([](int){ return false; });
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, summary.estimate, EPS);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.0, summary.lower_bound, EPS);
+    CPPUNIT_ASSERT_GREATER(0.0, summary.upper_bound); // upper_bound > 0.0
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(total_weight, summary.total_sketch_weight, EPS);
+
+    // finally, a non-degenerate predicate
+    // insert negative items with identical weights, filter for negative weights only
+    for (int i = 1; i <= (k + 1); ++i) {
+      sk.update(-i, 1.0 * i);
+      total_weight += 1.0 * i;
+    }
+
+    summary= sk.estimate_subset_sum([](int x) { return x < 0; });
+    CPPUNIT_ASSERT_GREATEREQUAL(summary.lower_bound, summary.estimate); // estimate >= lower_bound)
+    CPPUNIT_ASSERT_LESSEQUAL(summary.upper_bound, summary.estimate); // estimate <= upper_bound)
+
+    // allow pretty generous bounds when testing
+    CPPUNIT_ASSERT(summary.lower_bound < (total_weight / 1.4));
+    CPPUNIT_ASSERT(summary.upper_bound > (total_weight / 2.6));
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(total_weight, summary.total_sketch_weight, EPS);
+
+    // and another data type, keeping it in exact mode for simplicity
+    var_opt_sketch<bool> sk2(k);
+    total_weight = 0.0;
+    for (int i = 1; i <= (k - 1); ++i) {
+      sk2.update((i % 2) == 0, 1.0 * i);
+      total_weight += i;
+    }
+
+    summary = sk2.estimate_subset_sum([](bool b){ return !b; });
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(summary.lower_bound, summary.estimate, 0.0);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(summary.upper_bound, summary.estimate, 0.0);
+    CPPUNIT_ASSERT_LESS(total_weight, summary.estimate); // exact mode, so know it must be strictly less
+    }
+    std::cerr << "end estimate_subset_sum()" << std::endl;
   }
 
   /**********************************************************************/

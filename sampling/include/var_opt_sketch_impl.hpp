@@ -582,13 +582,6 @@ bool var_opt_sketch<T,S,A>::is_empty() const {
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::reset() {
-  n_ = 0;
-  h_ = 0;
-  m_ = 0;
-  r_ = 0;
-  num_marks_in_h_ = 0;
-  total_wt_r_ = 0.0;
-
   uint32_t prev_alloc = curr_items_alloc_;
 
   uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
@@ -598,31 +591,38 @@ void var_opt_sketch<T,S,A>::reset() {
     ++curr_items_alloc_;
   }
   
+  if (filled_data_) {
+    // destroy everything
+    for (size_t i = 0; i < curr_items_alloc_; ++i) 
+      A().destroy(data_ + i);      
+  } else {
+    // skip gap or anything unused at the end
+    for (size_t i = 0; i < h_; ++i)
+      A().destroy(data_+ i);
+    
+    for (size_t i = h_ + 1; i < curr_items_alloc_; ++i)
+      A().destroy(data_ + i);
+  }
+
   if (curr_items_alloc_ < prev_alloc) {
     bool is_gadget = (marks_ != nullptr);
   
-    if (filled_data_) {
-      // destroy everything
-      for (size_t i = 0; i < curr_items_alloc_; ++i) 
-        A().destroy(data_ + i);      
-    } else {
-      // skip gap or anything unused at the end
-      for (size_t i = 0; i < h_; ++i)
-        A().destroy(data_+ i);
-    
-      for (size_t i = h_ + 1; i < curr_items_alloc_; ++i)
-        A().destroy(data_ + i);
-    }
     A().deallocate(data_, curr_items_alloc_);
     AllocDouble().deallocate(weights_, curr_items_alloc_);
   
     if (marks_ != nullptr)
-    AllocBool().deallocate(marks_, curr_items_alloc_);
+      AllocBool().deallocate(marks_, curr_items_alloc_);
 
     allocate_data_arrays(curr_items_alloc_, is_gadget);
-  } else {
-    filled_data_ = false;
   }
+  
+  n_ = 0;
+  h_ = 0;
+  m_ = 0;
+  r_ = 0;
+  num_marks_in_h_ = 0;
+  total_wt_r_ = 0.0;
+  filled_data_ = false;
 }
 
 template<typename T, typename S, typename A>
@@ -898,7 +898,7 @@ void var_opt_sketch<T,S,A>::grow_data_arrays() {
     double* tmp_weights = AllocDouble().allocate(curr_items_alloc_);
 
     for (int i = 0; i < prev_size; ++i) {
-      tmp_data[i] = std::move(data_[i]);
+      A().construct(&tmp_data[i], std::move(data_[i]));
       A().destroy(data_ + i);
       tmp_weights[i] = std::move(weights_[i]); // primitive double, but for consistency
     }

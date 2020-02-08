@@ -38,10 +38,10 @@ template<typename A> using AllocU8 = typename std::allocator_traits<A>::template
  * A struct to hold the result of subset sum queries
  */
 struct subset_summary {
-  const double lower_bound;
-  const double estimate;
-  const double upper_bound;
-  const double total_sketch_weight;
+  double lower_bound;
+  double estimate;
+  double upper_bound;
+  double total_sketch_weight;
 };
 
 enum resize_factor { X1 = 0, X2, X4, X8 };
