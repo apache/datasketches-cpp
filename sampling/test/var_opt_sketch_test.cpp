@@ -59,14 +59,10 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(string_serialization);
   CPPUNIT_TEST(pseudo_light_update);
   CPPUNIT_TEST(pseudo_heavy_update);
-  // CPPUNIT_TEST(decrease_k_with_under_full_sketch);
-  // CPPUNIT_TEST(decrease_k_with_full_sketch);
   CPPUNIT_TEST(reset);
   CPPUNIT_TEST(estimate_subset_sum);
-  // CPPUNIT_TEST(binary_compatibility);
-  
-  // CPPUNIT_TEST(empty);
-  // CPPUNIT_TEST(vo_union);
+  CPPUNIT_TEST(deserialize_exact_from_java);
+  CPPUNIT_TEST(deserialize_sampling_from_java);
   CPPUNIT_TEST_SUITE_END();
 
   var_opt_sketch<int> create_unweighted_sketch(uint32_t k, uint64_t n) {
@@ -107,8 +103,6 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
   }
 
   void invalid_k() {
-    std::cerr << "start invalid_k()" << std::endl;
-    {
     CPPUNIT_ASSERT_THROW_MESSAGE("constructor failed to catch invalid k = 0",
       var_opt_sketch<int> sk(0),
       std::invalid_argument);
@@ -116,13 +110,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_THROW_MESSAGE("constructor failed to catch invalid k < 0 (aka >= 2^31)",
       var_opt_sketch<int> sk(1<<31),
       std::invalid_argument);
-    }
-    std::cerr << "end invalid_k()" << std::endl;
   }
 
   void bad_ser_ver() {
-    std::cerr << "start bad_ser_ver()" << std::endl;
-    {
     var_opt_sketch<int> sk = create_unweighted_sketch(16, 16);
     std::vector<uint8_t> bytes = sk.serialize();
     bytes[1] = 0; // corrupt the serialization version byte
@@ -138,13 +128,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_THROW_MESSAGE("deserialize(stream) failed to catch bad serialization version",
       var_opt_sketch<int>::deserialize(ss),
       std::invalid_argument);
-    }
-    std::cerr << "end bad_ser_ver()" << std::endl;
   }
 
   void bad_family() {
-    std::cerr << "start bad_family()" << std::endl;
-    {
     var_opt_sketch<int> sk = create_unweighted_sketch(16, 16);
     std::vector<uint8_t> bytes = sk.serialize();
     bytes[2] = 0; // corrupt the family byte
@@ -159,13 +145,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_THROW_MESSAGE("deserialize(stream) failed to catch bad family id",
       var_opt_sketch<int>::deserialize(ss),
       std::invalid_argument);
-    }
-    std::cerr << "end bad_family()" << std::endl;
   }
 
   void bad_prelongs() {
-    std::cerr << "start bad_prelongs()" << std::endl;
-    {
     // The nubmer of preamble longs shares bits with resize_factor, but the latter
     // has no invalid values as it gets 2 bites for 4 enum values.
     var_opt_sketch<int> sk = create_unweighted_sketch(32, 33);
@@ -185,13 +167,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_THROW_MESSAGE("deserialize(bytes) failed to catch bad preamble longs",
       var_opt_sketch<int>::deserialize(bytes.data(), bytes.size()),
       std::invalid_argument);
-    }
-    std::cerr << "end bad_prelongs()" << std::endl;
   }
 
   void malformed_preamble() {
-    std::cerr << "start malformed_preamble()" << std::endl;
-    {
     uint32_t k = 50;
     var_opt_sketch<int> sk = create_unweighted_sketch(k, k);
     const std::vector<uint8_t> src_bytes = sk.serialize();
@@ -225,13 +203,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_THROW_MESSAGE("deserialize(bytes) failed to catch invalid R count",
       var_opt_sketch<int>::deserialize(bytes.data(), bytes.size()),
       std::invalid_argument);
-    }
-    std::cerr << "end malformed_preamble()" << std::endl;
   }
 
   void empty_sketch() {
-    std::cerr << "start empty_sketch()" << std::endl;
-    {
     var_opt_sketch<std::string> sk(5);
     CPPUNIT_ASSERT_EQUAL((uint64_t) 0, sk.get_n());
     CPPUNIT_ASSERT_EQUAL((uint32_t) 0, sk.get_num_samples());
@@ -242,13 +216,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     var_opt_sketch<std::string> loaded_sk = var_opt_sketch<std::string>::deserialize(bytes.data(), bytes.size());
     CPPUNIT_ASSERT_EQUAL((uint64_t) 0, loaded_sk.get_n());
     CPPUNIT_ASSERT_EQUAL((uint32_t) 0, loaded_sk.get_num_samples());
-    }
-    std::cerr << "end empty_sketch()" << std::endl;
   }
 
   void non_empty_degenerate_sketch() {
-    std::cerr << "start non_empty_degenerate_sketch()" << std::endl;
-    {
     // Make an empty serialized sketch, then extend it to a
     // PREAMBLE_LONGS_WARMUP-sized byte array, with no items.
     // Then clear the empty flag so it will try to load the rest.
@@ -264,24 +234,16 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_THROW_MESSAGE("deserialize() failed to catch non-empty sketch with no items",
       var_opt_sketch<std::string>::deserialize(bytes.data(), bytes.size()),
       std::invalid_argument);
-    }
-    std::cerr << "end non_empty_degenerate_sketch()" << std::endl;
   }
 
   void invalid_weight() {
-    std::cerr << "start invalid_weights()" << std::endl;
-    {
     var_opt_sketch<std::string> sk(100, resize_factor::X2);
     CPPUNIT_ASSERT_THROW_MESSAGE("update() accepted a negative weight",
       sk.update("invalid_weight", -1.0),
       std::invalid_argument);
-    }
-    std::cerr << "end invalid_weights()" << std::endl;
   }
 
   void corrupt_serialized_weight() {
-    std::cerr << "start corrupt_serialized_weight()" << std::endl;
-    {
     var_opt_sketch<int> sk = create_unweighted_sketch(100, 20);
     auto bytes = sk.to_string();
     
@@ -298,13 +260,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_THROW_MESSAGE("deserialize() failed to catch negative item weight",
       var_opt_sketch<std::string>::deserialize(ss),
       std::invalid_argument);
-    }
-    std::cerr << "end corrupt_serialized_weight()" << std::endl;
   }
 
   void cumulative_weight() {
-    std::cerr << "start cumulative_weight()" << std::endl;
-    {
     uint32_t k = 256;
     uint64_t n = 10 * k;
     var_opt_sketch<int> sk(k);
@@ -329,13 +287,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     
     double weight_ratio = output_sum / input_sum;
     CPPUNIT_ASSERT(std::abs(weight_ratio - 1.0) < EPS);
-    }
-    std::cerr << "end cumulative_weight()" << std::endl;
   }
 
   void under_full_sketch_serialization() {
-    std::cerr << "start under_full_sketch_serialization()" << std::endl;
-    {
     var_opt_sketch<int> sk = create_unweighted_sketch(100, 10); // need n < k
 
     auto bytes = sk.serialize();
@@ -346,13 +300,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     sk.serialize(ss);
     var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
     check_if_equal(sk, sk_from_stream);
-    }
-    std::cerr << "end under_full_sketch_serialization()" << std::endl;
   }
 
   void end_of_warmup_sketch_serialization() {
-    std::cerr << "start end_of_warmup_sketch_serialization()" << std::endl;
-    {
     var_opt_sketch<int> sk = create_unweighted_sketch(2843, 2843); // need n == k
     auto bytes = sk.serialize();
 
@@ -367,13 +317,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     sk.serialize(ss);
     var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
     check_if_equal(sk, sk_from_stream);
-    }
-    std::cerr << "end end_of_warmup_sketch_serialization()" << std::endl;
   }
 
   void full_sketch_serialization() {
-    std::cerr << "start full_sketch_serialization()" << std::endl;
-    {
     var_opt_sketch<int> sk = create_unweighted_sketch(32, 32);
     sk.update(100, 100.0);
     sk.update(101, 101.0);
@@ -400,13 +346,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     sk.serialize(ss);
     var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
     check_if_equal(sk, sk_from_stream);
-    }
-    std::cerr << "end full_sketch_serialization()" << std::endl;
   }
 
   void string_serialization() {
-    std::cerr << "start string_serialization()" << std::endl;
-    {
     var_opt_sketch<std::string> sk(5);
     sk.update("a", 1.0);
     sk.update("bc", 1.0);
@@ -423,14 +365,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     sk.serialize(ss);
     var_opt_sketch<std::string> sk_from_stream = var_opt_sketch<std::string>::deserialize(ss);
     check_if_equal(sk, sk_from_stream);
-
-    }
-    std::cerr << "end string_serialization()" << std::endl;
   }
 
   void pseudo_light_update() {
-    std::cerr << "start pseudo_light_update()" << std::endl;
-    {
     uint32_t k = 1024;
     var_opt_sketch<int> sk = create_unweighted_sketch(k, k + 1);
     sk.update(0, 1.0); // k+2nd update
@@ -442,13 +379,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     double wt = (*it).second;
     CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("weight corruption in pseudo_light_update()",
       ((1.0 * (k + 2)) / k), wt, EPS);
-    }
-    std::cerr << "end pseudo_light_update()" << std::endl;
   }
 
   void pseudo_heavy_update() {
-    std::cerr << "start pseudo_heavy_update()" << std::endl;
-    {
     uint32_t k = 1024;
     double wt_scale = 10.0 * k;
     var_opt_sketch<int> sk = create_unweighted_sketch(k, k + 1);
@@ -476,13 +409,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     }
     CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("weight corruption in pseudo_light_update()",
       1.0 + wt_scale + (2 * k), wt, EPS);
-    }
-    std::cerr << "end pseudo_heavy_update()" << std::endl;
   }
 
   void reset() {
-    std::cerr << "start reset()" << std::endl;
-    {
     uint32_t k = 1024;
     uint64_t n1 = 20;
     uint64_t n2 = 2 * k;
@@ -508,13 +437,9 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     sk.reset();
     CPPUNIT_ASSERT_EQUAL((uint64_t) 0, sk.get_n());
     CPPUNIT_ASSERT_EQUAL(k, sk.get_k());
-    }
-    std::cerr << "end reset()" << std::endl;
   }
 
   void estimate_subset_sum() {
-    std::cerr << "start estimate_subset_sum()" << std::endl;
-    {
     uint32_t k = 10;
     var_opt_sketch<int> sk(k);
 
@@ -563,7 +488,7 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
       total_weight += 1.0 * i;
     }
 
-    summary= sk.estimate_subset_sum([](int x) { return x < 0; });
+    summary = sk.estimate_subset_sum([](int x) { return x < 0; });
     CPPUNIT_ASSERT_GREATEREQUAL(summary.lower_bound, summary.estimate); // estimate >= lower_bound)
     CPPUNIT_ASSERT_LESSEQUAL(summary.upper_bound, summary.estimate); // estimate <= upper_bound)
 
@@ -584,98 +509,42 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_DOUBLES_EQUAL(summary.lower_bound, summary.estimate, 0.0);
     CPPUNIT_ASSERT_DOUBLES_EQUAL(summary.upper_bound, summary.estimate, 0.0);
     CPPUNIT_ASSERT_LESS(total_weight, summary.estimate); // exact mode, so know it must be strictly less
-    }
-    std::cerr << "end estimate_subset_sum()" << std::endl;
   }
 
-  /**********************************************************************/
+  void deserialize_exact_from_java() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open(testBinaryInputPath + "varopt_string_exact.bin", std::ios::binary);
+    var_opt_sketch<std::string> sketch = var_opt_sketch<std::string>::deserialize(is);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT_EQUAL((uint32_t) 1024, sketch.get_k());
+    CPPUNIT_ASSERT_EQUAL((uint64_t) 200, sketch.get_n());
+    CPPUNIT_ASSERT_EQUAL((uint32_t) 200, sketch.get_num_samples());
+    subset_summary ss = sketch.estimate_subset_sum([](std::string x){ return true; });
 
-  void vo_union() {
-    int k = 10;
-    var_opt_sketch<int> sk(k), sk2(k+3);
-
-    for (int i = 0; i < 10*k; ++i) {
-      sk.update(i);
-      sk2.update(i);
-    }
-    sk.update(-1, 10000.0);
-    sk2.update(-2, 4000.0);
-    std::cerr << sk.to_string() << std::endl;
-
-    var_opt_union<int> vou(k+3);
-    std::cerr << vou.to_string() << std::endl;
-    vou.update(sk);
-    vou.update(sk2);
-    std::cerr << vou.to_string() << std::endl;
-
-    var_opt_sketch<int> r = vou.get_result();
-    std::cerr << "-----------------------" << std::endl << r.to_string() << std::endl;
+    double tgt_wt = 0.0;
+    for (int i = 1; i <= 200; ++i) { tgt_wt += 1000.0 / i; }
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(tgt_wt, ss.total_sketch_weight, EPS);
   }
 
-  void empty() {
-    int k = 10;
+  void deserialize_sampling_from_java() {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open(testBinaryInputPath + "varopt_long_sampling.bin", std::ios::binary);
+    var_opt_sketch<int64_t> sketch = var_opt_sketch<int64_t>::deserialize(is);
+    CPPUNIT_ASSERT(!sketch.is_empty());
+    CPPUNIT_ASSERT_EQUAL((uint32_t) 1024, sketch.get_k());
+    CPPUNIT_ASSERT_EQUAL((uint64_t) 2003, sketch.get_n());
+    CPPUNIT_ASSERT_EQUAL(sketch.get_k(), sketch.get_num_samples());
+    subset_summary ss = sketch.estimate_subset_sum([](int64_t x){ return true; });
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(332000.0, ss.estimate, EPS);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(332000.0, ss.total_sketch_weight, EPS);
 
-    {
-    var_opt_sketch<int> sketch(k);
+    ss = sketch.estimate_subset_sum([](int64_t x){ return x < 0; });
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(330000.0, ss.estimate, 0.0);
 
-    for (int i = 0; i < 2*k; ++i)
-      sketch.update(i);
-    sketch.update(1000, 100000.0);
-
-    std::cout << sketch.to_string();
-
-    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
-    sketch.serialize(ss);
-    std::cout << "sketch.serialize() done\n";
-    var_opt_sketch<int> sk2 = var_opt_sketch<int>::deserialize(ss);
-    std::cout << sk2.to_string() << std::endl;;
-    }
-
-    {
-    var_opt_sketch<std::string> sk(k);
-    std::cout << "Expected size: " << sk.get_serialized_size_bytes() << std::endl;
-    std::string x[26];
-    x[0]  = std::string("a");
-    x[1]  = std::string("b");
-    x[2]  = std::string("c");
-    x[3]  = std::string("d");
-    x[4]  = std::string("e");
-    x[5]  = std::string("f");
-    x[6]  = std::string("g");
-    x[7]  = std::string("h");
-    x[8]  = std::string("i");
-    x[9]  = std::string("j");
-    x[10] = std::string("k");
-    x[11] = std::string("l");
-    x[12] = std::string("m");
-    x[13] = std::string("n");
-    x[14] = std::string("o");
-    x[15] = std::string("p");
-    x[16] = std::string("q");
-    x[17] = std::string("r");
-    x[18] = std::string("s");
-    x[19] = std::string("t");
-    x[20] = std::string("u");
-    x[21] = std::string("v");
-    x[22] = std::string("w");
-    x[23] = std::string("x");
-    x[24] = std::string("y");
-    x[25] = std::string("z");
-
-    for (int i=0; i <11; ++i)
-      sk.update(x[i]);
-    sk.update(x[11], 10000);
-    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
-    sk.serialize(ss);
-    std::cout << "ss size: " << ss.str().length() << std::endl;
-    auto vec = sk.serialize();
-    std::cout << "Vector size: " << vec.size() << std::endl;
-    
-    var_opt_sketch<std::string> sk2 = var_opt_sketch<std::string>::deserialize(ss);
-    std::cout << sk2.to_string() << std::endl;
-    const std::string str("much longer string with luck won't fit nicely in existing structure location");
-    sk2.update(str, 1000000);
-    }
+    ss = sketch.estimate_subset_sum([](int64_t x){ return x >= 0; });
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(2000.0, ss.estimate, EPS);
   }
 
 };

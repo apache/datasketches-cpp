@@ -106,7 +106,7 @@ class var_opt_sketch {
     static const uint8_t PREAMBLE_LONGS_WARMUP = 3;
     static const uint8_t PREAMBLE_LONGS_FULL   = 4;
     static const uint8_t SER_VER = 2;
-    static const uint8_t FAMILY  = 12;
+    static const uint8_t FAMILY  = 13;
     static const uint8_t EMPTY_FLAG_MASK  = 4;
     static const uint8_t GADGET_FLAG_MASK = 128;
 
