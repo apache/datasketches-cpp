@@ -23,11 +23,7 @@
 #include "CouponList.hpp"
 #include "CubicInterpolation.hpp"
 #include "HllUtil.hpp"
-#include "IntArrayPairIterator.hpp"
 
-#include <iostream>
-#include <cstring>
-#include <cmath>
 #include <algorithm>
 
 namespace datasketches {
@@ -220,12 +216,10 @@ vector_u8<A> CouponList<A>::serialize(bool compact, unsigned header_size_bytes) 
       break;
     }
     case 1: { // src updatable, dst compact
-      pair_iterator_with_deleter<A> itr = getIterator();
-      bytes += getMemDataStart(); // reusing ponter for incremental writes
-      while (itr->nextValid()) {
-        const int pairValue = itr->getPair();
-        std::memcpy(bytes, &pairValue, sizeof(pairValue));
-        bytes += sizeof(pairValue);
+      bytes += getMemDataStart(); // reusing pointer for incremental writes
+      for (uint32_t coupon: *this) {
+        std::memcpy(bytes, &coupon, sizeof(coupon));
+        bytes += sizeof(coupon);
       }
       break;
     }
@@ -278,10 +272,13 @@ void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
       break;
     }
     case 1: { // src updatable, dst compact
-      pair_iterator_with_deleter<A> itr = getIterator();
-      while (itr->nextValid()) {
-        const int pairValue = itr->getPair();
-        os.write((char*)&pairValue, sizeof(pairValue));
+//      pair_iterator_with_deleter<A> itr = getIterator();
+//      while (itr->nextValid()) {
+//        const int pairValue = itr->getPair();
+//        os.write((char*)&pairValue, sizeof(pairValue));
+//      }
+      for (uint32_t coupon: *this) {
+        os.write((char*)&coupon, sizeof(coupon));
       }
       break;
     }
@@ -396,20 +393,6 @@ int* CouponList<A>::getCouponIntArr() const {
 }
 
 template<typename A>
-pair_iterator_with_deleter<A> CouponList<A>::getIterator() const {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
-  IntArrayPairIterator<A>* itr = new (iapiAlloc().allocate(1)) IntArrayPairIterator<A>(couponIntArr, 1 << lgCouponArrInts, this->lgConfigK);
-  return pair_iterator_with_deleter<A>(
-    itr,
-    [](PairIterator<A>* ptr) {
-      IntArrayPairIterator<A>* iapi = static_cast<IntArrayPairIterator<A>*>(ptr);
-      iapi->~IntArrayPairIterator();
-      iapiAlloc().deallocate(iapi, 1);
-    }
-  );
-}
-
-template<typename A>
 HllSketchImpl<A>* CouponList<A>::promoteHeapListToSet(CouponList& list) {
   return HllSketchImplFactory<A>::promoteListToSet(list);
 }
@@ -417,6 +400,16 @@ HllSketchImpl<A>* CouponList<A>::promoteHeapListToSet(CouponList& list) {
 template<typename A>
 HllSketchImpl<A>* CouponList<A>::promoteHeapListOrSetToHll(CouponList& src) {
   return HllSketchImplFactory<A>::promoteListOrSetToHll(src);
+}
+
+template<typename A>
+coupon_iterator<A> CouponList<A>::begin(bool all) const {
+  return coupon_iterator<A>(couponIntArr, 1 << lgCouponArrInts, 0, all);
+}
+
+template<typename A>
+coupon_iterator<A> CouponList<A>::end() const {
+  return coupon_iterator<A>(couponIntArr, 1 << lgCouponArrInts, 1 << lgCouponArrInts, false);
 }
 
 }

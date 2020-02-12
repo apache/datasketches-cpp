@@ -47,7 +47,6 @@ list(APPEND cpc_HEADERS "include/cpc_union.hpp")
 list(APPEND cpc_HEADERS "include/cpc_union_impl.hpp")
 list(APPEND cpc_HEADERS "include/cpc_util.hpp")
 list(APPEND cpc_HEADERS "include/icon_estimator.hpp")
-list(APPEND cpc_HEADERS "include/inv_pow_2_tab.hpp")
 list(APPEND cpc_HEADERS "include/kxp_byte_lookup.hpp")
 list(APPEND cpc_HEADERS "include/u32_table.hpp")
 list(APPEND cpc_HEADERS "include/u32_table_impl.hpp")
@@ -73,7 +72,6 @@ target_sources(cpc
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_union_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_util.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/icon_estimator.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/inv_pow_2_tab.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/kxp_byte_lookup.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/u32_table.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/u32_table_impl.hpp

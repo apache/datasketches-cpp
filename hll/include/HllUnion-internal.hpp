@@ -77,7 +77,7 @@ hll_sketch_alloc<A> hll_union_alloc<A>::get_result(target_hll_type target_type) 
 
 template<typename A>
 void hll_union_alloc<A>::update(const hll_sketch_alloc<A>& sketch) {
-  union_impl(static_cast<const hll_sketch_alloc<A>&>(sketch).sketch_impl, lg_max_k);
+  union_impl(sketch, lg_max_k);
 }
 
 template<typename A>
@@ -269,25 +269,22 @@ double hll_union_alloc<A>::get_rel_err(const bool upper_bound, const bool unione
 }
 
 template<typename A>
-HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(HllSketchImpl<A>* src_impl, const int tgt_lg_k) {
+HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(const HllSketchImpl<A>* src_impl, const int tgt_lg_k) {
   if (src_impl->getCurMode() != HLL) {
     throw std::logic_error("Attempt to downsample non-HLL sketch");
   }
-  HllArray<A>* src = (HllArray<A>*) src_impl;
+  const HllArray<A>* src = static_cast<const HllArray<A>*>(src_impl);
   const int src_lg_k = src->getLgConfigK();
-  if ((src_lg_k <= tgt_lg_k) && (src->getTgtHllType() == target_hll_type::HLL_8)) {
-    return src->copy();
+  if (src_lg_k <= tgt_lg_k) {
+    return src->copyAs(target_hll_type::HLL_8);
   }
   const int minLgK = ((src_lg_k < tgt_lg_k) ? src_lg_k : tgt_lg_k);
-  HllArray<A>* tgtHllArr = HllSketchImplFactory<A>::newHll(minLgK, target_hll_type::HLL_8);
-  pair_iterator_with_deleter<A> srcItr = src->getIterator();
-  while (srcItr->nextValid()) {
-    tgtHllArr->couponUpdate(srcItr->getPair());
-  }
+  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>> hll8Alloc;
+  Hll8Array<A>* tgtHllArr = new (hll8Alloc().allocate(1)) Hll8Array<A>(minLgK, false);
+  tgtHllArr->mergeHll(*src);
   //both of these are required for isomorphism
   tgtHllArr->putHipAccum(src->getHipAccum());
   tgtHllArr->putOutOfOrderFlag(src->isOutOfOrderFlag());
-  
   return tgtHllArr;
 }
 
@@ -301,169 +298,68 @@ inline HllSketchImpl<A>* hll_union_alloc<A>::leak_free_coupon_update(HllSketchIm
 }
 
 template<typename A>
-void hll_union_alloc<A>::union_impl(HllSketchImpl<A>* incoming_impl, const int lg_max_k) {
-  if (gadget.sketch_impl->getTgtHllType() != target_hll_type::HLL_8) {
-    throw std::logic_error("Must call unionImpl() with HLL_8 input");
-  }
-  HllSketchImpl<A>* src_impl = incoming_impl; //default
-  HllSketchImpl<A>* dstImpl = gadget.sketch_impl; //default
-  if ((incoming_impl == nullptr) || incoming_impl->isEmpty()) {
-    return; // gadget.sketch_impl;
-  }
+void hll_union_alloc<A>::union_impl(const hll_sketch_alloc<A>& sketch, const int lg_max_k) {
+  if (sketch.is_empty()) return;
+  const HllSketchImpl<A>* src_impl = sketch.sketch_impl; //default
+  HllSketchImpl<A>* dst_impl = gadget.sketch_impl; //default
 
-  const int hi2bits = (gadget.sketch_impl->isEmpty()) ? 3 : gadget.sketch_impl->getCurMode();
-  const int lo2bits = incoming_impl->getCurMode();
+  const int lo2bits = src_impl->getCurMode();
+  const int hi2bits = (dst_impl->isEmpty()) ? 3 : dst_impl->getCurMode();
 
   const int sw = (hi2bits << 2) | lo2bits;
   switch (sw) {
-    case 0: { //src: LIST, gadget: LIST
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
+    case 0: // src: LIST, gadget: LIST
+    case 1: // src: SET, gadget: LIST
+    case 4: // src: LIST, gadget: SET
+    case 5: // src: SET, gadget: SET
+    case 8: // src: LIST, gadget: HLL
+    case 9: // src: SET, gadget: HLL
+    case 12: // src: LIST, gadget: empty
+    case 13: // src: SET, gadget: empty
+    {
+      if (dst_impl->isEmpty() and src_impl->getLgConfigK() == dst_impl->getLgConfigK()) {
+        dst_impl = src_impl->copyAs(target_hll_type::HLL_8);
+        gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
       }
-      //whichever is True wins:
-      dstImpl->putOutOfOrderFlag(dstImpl->isOutOfOrderFlag() | src_impl->isOutOfOrderFlag());
-      // gadget: cleanly updated as needed
+      const CouponList<A>* src = static_cast<const CouponList<A>*>(src_impl);
+      for (auto coupon: *src) {
+        dst_impl = leak_free_coupon_update(dst_impl, coupon); //assignment required
+      }
       break;
     }
-    case 1: { //src: SET, gadget: LIST
-      //consider a swap here
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //SET
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      dstImpl->putOutOfOrderFlag(true); //SET oooFlag is always true
-      // gadget: cleanly updated as needed
-      break;
-    }
-    case 2: { //src: HLL, gadget: LIST
-      //swap so that src is gadget-LIST, tgt is HLL
-      //use lg_max_k because LIST has effective K of 2^26
+    case 2: // src: HLL, gadget: LIST
+    case 6: // src: HLL, gadget: SET
+    {
+      // swap so that src is LIST or SET, tgt is HLL
+      // use lg_max_k because LIST has effective K of 2^26
+      dst_impl = copy_or_downsample(src_impl, lg_max_k);
       src_impl = gadget.sketch_impl;
-      dstImpl = copy_or_downsample(incoming_impl, lg_max_k);
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator();
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      //whichever is True wins:
-      dstImpl->putOutOfOrderFlag(src_impl->isOutOfOrderFlag() | dstImpl->isOutOfOrderFlag());
-      // gadget: swapped, replacing with new impl
-      gadget.sketch_impl->get_deleter()(gadget.sketch_impl);
+      const CouponList<A>* src = static_cast<const CouponList<A>*>(src_impl);
+      Hll8Array<A>* dst = static_cast<Hll8Array<A>*>(dst_impl);
+      dst->mergeList(*src);
+      gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
       break;
     }
-    case 4: { //src: LIST, gadget: SET
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      dstImpl->putOutOfOrderFlag(true); //SET oooFlag is always true
-      // gadget: cleanly updated as needed
-      break;
-    }
-    case 5: { //src: SET, gadget: SET
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //SET
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      dstImpl->putOutOfOrderFlag(true); //SET oooFlag is always true
-      // gadget: cleanly updated as needed
-      break;
-    }
-    case 6: { //src: HLL, gadget: SET
-      //swap so that src is gadget-SET, tgt is HLL
-      //use lg_max_k because LIST has effective K of 2^26
-      src_impl = gadget.sketch_impl;
-      dstImpl = copy_or_downsample(incoming_impl, lg_max_k);
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
-      if (dstImpl->getCurMode() != HLL) {
-        throw std::logic_error("dstImpl must be in HLL mode");
-      }
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      dstImpl->putOutOfOrderFlag(true); //merging SET into non-empty HLL -> true
-      // gadget: swapped, replacing with new impl
-      gadget.sketch_impl->get_deleter()(gadget.sketch_impl);
-      break;
-    }
-    case 8: { //src: LIST, gadget: HLL
-      if (dstImpl->getCurMode() != HLL) {
-        throw std::logic_error("dstImpl must be in HLL mode");
-      }
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      //whichever is True wins:
-      dstImpl->putOutOfOrderFlag(dstImpl->isOutOfOrderFlag() | src_impl->isOutOfOrderFlag());
-      // gadget: should remain unchanged
-      if (dstImpl != gadget.sketch_impl) {
-        // should not have changed from HLL
-        throw std::logic_error("dstImpl unepxectedly changed from gadget");
-      } 
-      break;
-    }
-    case 9: { //src: SET, gadget: HLL
-      if (dstImpl->getCurMode() != HLL) {
-        throw std::logic_error("dstImpl must be in HLL mode");
-      }
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //SET
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      dstImpl->putOutOfOrderFlag(true); //merging SET into existing HLL -> true
-      // gadget: should remain unchanged
-      if (dstImpl != gadget.sketch_impl) {
-        // should not have changed from HLL
-        throw std::logic_error("dstImpl unepxectedly changed from gadget");
-      } 
-      break;
-    }
-    case 10: { //src: HLL, gadget: HLL
+    case 10: { // src: HLL, gadget: HLL
       const int src_lg_k = src_impl->getLgConfigK();
-      const int dstLgK = dstImpl->getLgConfigK();
-      const int minLgK = ((src_lg_k < dstLgK) ? src_lg_k : dstLgK);
-      if ((src_lg_k < dstLgK) || (dstImpl->getTgtHllType() != HLL_8)) {
-        dstImpl = copy_or_downsample(dstImpl, minLgK);
-        // always replaces gadget
-        gadget.sketch_impl->get_deleter()(gadget.sketch_impl);
+      const int dst_lg_k = dst_impl->getLgConfigK();
+      if (src_lg_k < dst_lg_k) {
+        dst_impl = copy_or_downsample(dst_impl, src_lg_k);
+        gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
       }
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //HLL
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      dstImpl->putOutOfOrderFlag(true); //union of two HLL modes is always true
-      // gadget: replaced if copied/downampled, otherwise should be unchanged
-      break;
-    }
-    case 12: { //src: LIST, gadget: empty
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //LIST
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      dstImpl->putOutOfOrderFlag(src_impl->isOutOfOrderFlag()); //whatever source is
-      // gadget: cleanly updated as needed
-      break;
-    }
-    case 13: { //src: SET, gadget: empty
-      pair_iterator_with_deleter<A> srcItr = src_impl->getIterator(); //SET
-      while (srcItr->nextValid()) {
-        dstImpl = leak_free_coupon_update(dstImpl, srcItr->getPair()); //assignment required
-      }
-      dstImpl->putOutOfOrderFlag(true); //SET oooFlag is always true
-      // gadget: cleanly updated as needed
+      const HllArray<A>* src = static_cast<const HllArray<A>*>(src_impl);
+      Hll8Array<A>* dst = static_cast<Hll8Array<A>*>(dst_impl);
+      dst->mergeHll(*src);
       break;
     }
     case 14: { //src: HLL, gadget: empty
-      dstImpl = copy_or_downsample(src_impl, lg_max_k);
-      dstImpl->putOutOfOrderFlag(src_impl->isOutOfOrderFlag()); //whatever source is.
-      // gadget: always replaced with copied/downsampled sketch
-      gadget.sketch_impl->get_deleter()(gadget.sketch_impl);
+      dst_impl = copy_or_downsample(src_impl, lg_max_k);
+      gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
       break;
     }
   }
-  
-  gadget.sketch_impl = dstImpl;
+  dst_impl->putOutOfOrderFlag(dst_impl->isOutOfOrderFlag() | src_impl->isOutOfOrderFlag());
+  gadget.sketch_impl = dst_impl;
 }
 
 }

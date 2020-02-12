@@ -27,26 +27,6 @@
 namespace datasketches {
 
 template<typename A>
-Hll6Iterator<A>::Hll6Iterator(const Hll6Array<A>& hllArray, const int lengthPairs)
-  : HllPairIterator<A>(lengthPairs),
-    hllArray(hllArray),
-    bitOffset(-6)
-{}
-
-template<typename A>
-Hll6Iterator<A>::~Hll6Iterator() { }
-
-template<typename A>
-int Hll6Iterator<A>::value() {
-  bitOffset += 6;
-  const int shift = bitOffset & 0x7;
-  const int byteIdx = bitOffset >> 3;
-  const uint16_t twoByteVal = (hllArray.hllByteArr[byteIdx + 1] << 8)
-                              | hllArray.hllByteArr[byteIdx];
-  return (uint8_t) (twoByteVal >> shift) & 0x3F;
-}
-
-template<typename A>
 Hll6Array<A>::Hll6Array(const int lgConfigK, const bool startFullSize) :
     HllArray<A>(lgConfigK, target_hll_type::HLL_6, startFullSize) {
   const int numBytes = this->hll6ArrBytes(lgConfigK);
@@ -84,37 +64,23 @@ Hll6Array<A>* Hll6Array<A>::copy() const {
 }
 
 template<typename A>
-pair_iterator_with_deleter<A> Hll6Array<A>::getIterator() const {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll6Iterator<A>> itrAlloc;
-  Hll6Iterator<A>* itr = new (itrAlloc().allocate(1)) Hll6Iterator<A>(*this, 1 << this->lgConfigK);
-  return pair_iterator_with_deleter<A>(
-    itr,
-    [](PairIterator<A>* ptr) {
-      Hll6Iterator<A>* hll = static_cast<Hll6Iterator<A>*>(ptr);
-      hll->~Hll6Iterator();
-      itrAlloc().deallocate(hll, 1);
-    }
-  );
-}
-
-template<typename A>
-int Hll6Array<A>::getSlot(const int slotNo) const {
+uint8_t Hll6Array<A>::getSlot(int slotNo) const {
   const int startBit = slotNo * 6;
   const int shift = startBit & 0x7;
   const int byteIdx = startBit >> 3;  
   const uint16_t twoByteVal = (this->hllByteArr[byteIdx + 1] << 8) | this->hllByteArr[byteIdx];
-  return (uint8_t) (twoByteVal >> shift) & 0x3F;
+  return (twoByteVal >> shift) & HllUtil<A>::VAL_MASK_6;
 }
 
 template<typename A>
-void Hll6Array<A>::putSlot(const int slotNo, const int value) {
+void Hll6Array<A>::putSlot(int slotNo, uint8_t value) {
   const int startBit = slotNo * 6;
   const int shift = startBit & 0x7;
   const int byteIdx = startBit >> 3;
   const uint16_t valShifted = (value & 0x3F) << shift;
   uint16_t curMasked = (this->hllByteArr[byteIdx + 1] << 8) | this->hllByteArr[byteIdx];
   curMasked &= (~(HllUtil<A>::VAL_MASK_6 << shift));
-  uint16_t insert = curMasked | valShifted;
+  const uint16_t insert = curMasked | valShifted;
   this->hllByteArr[byteIdx]     = insert & 0xFF;
   this->hllByteArr[byteIdx + 1] = (insert & 0xFF00) >> 8;
 }
@@ -126,25 +92,31 @@ int Hll6Array<A>::getHllByteArrBytes() const {
 
 template<typename A>
 HllSketchImpl<A>* Hll6Array<A>::couponUpdate(const int coupon) {
+  internalCouponUpdate(coupon);
+  return this;
+}
+
+template<typename A>
+void Hll6Array<A>::internalCouponUpdate(const int coupon) {
   const int configKmask = (1 << this->lgConfigK) - 1;
   const int slotNo = HllUtil<A>::getLow26(coupon) & configKmask;
   const int newVal = HllUtil<A>::getValue(coupon);
-  if (newVal <= 0) {
-    throw std::logic_error("newVal must be a positive integer: " + std::to_string(newVal));
-  }
 
   const int curVal = getSlot(slotNo);
   if (newVal > curVal) {
     putSlot(slotNo, newVal);
-    this->hipAndKxQIncrementalUpdate(*this, curVal, newVal);
+    this->hipAndKxQIncrementalUpdate(curVal, newVal);
     if (curVal == 0) {
-      this->decNumAtCurMin(); // interpret numAtCurMin as num zeros
-      if (this->getNumAtCurMin() < 0) { 
-        throw std::logic_error("getNumAtCurMin() must return a nonnegative integer: " + std::to_string(this->getNumAtCurMin()));
-      }
+      this->numAtCurMin--; // interpret numAtCurMin as num zeros
     }
   }
-  return this;
+}
+
+template<typename A>
+void Hll6Array<A>::mergeHll(const HllArray<A>& src) {
+  for (auto coupon: src) {
+    internalCouponUpdate(coupon);
+  }
 }
 
 }

@@ -20,9 +20,11 @@
 #ifndef _AUXHASHMAP_HPP_
 #define _AUXHASHMAP_HPP_
 
-#include "PairIterator.hpp"
-
+#include <iostream>
 #include <memory>
+#include <functional>
+
+#include "coupon_iterator.hpp"
 
 namespace datasketches {
 
@@ -51,10 +53,12 @@ class AuxHashMap final {
     int getAuxCount() const;
     int* getAuxIntArr();
     int getLgAuxArrInts() const;
-    pair_iterator_with_deleter<A> getIterator() const;
+
+    coupon_iterator<A> begin(bool all = false) const;
+    coupon_iterator<A> end() const;
 
     void mustAdd(int slotNo, int value);
-    int mustFindValueFor(int slotNo);
+    int mustFindValueFor(int slotNo) const;
     void mustReplace(int slotNo, int value);
 
   private:

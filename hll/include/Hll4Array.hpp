@@ -20,7 +20,6 @@
 #ifndef _HLL4ARRAY_HPP_
 #define _HLL4ARRAY_HPP_
 
-#include "HllPairIterator.hpp"
 #include "AuxHashMap.hpp"
 #include "HllArray.hpp"
 
@@ -40,40 +39,29 @@ class Hll4Array final : public HllArray<A> {
 
     virtual Hll4Array* copy() const;
 
-    virtual pair_iterator_with_deleter<A> getIterator() const;
-    virtual pair_iterator_with_deleter<A> getAuxIterator() const;
-
-    virtual int getSlot(int slotNo) const final;
-    virtual void putSlot(int slotNo, int value) final;
+    inline uint8_t getSlot(int slotNo) const;
+    inline void putSlot(int slotNo, uint8_t value);
+    inline uint8_t get_value(uint32_t index) const;
 
     virtual int getUpdatableSerializationBytes() const;
     virtual int getHllByteArrBytes() const;
 
     virtual HllSketchImpl<A>* couponUpdate(int coupon) final;
+    void mergeHll(const HllArray<A>& src);
 
     virtual AuxHashMap<A>* getAuxHashMap() const;
     // does *not* delete old map if overwriting
     void putAuxHashMap(AuxHashMap<A>* auxHashMap);
 
-  protected:
+    virtual typename HllArray<A>::const_iterator begin(bool all = false) const;
+    virtual typename HllArray<A>::const_iterator end() const;
+
+  private:
+    void internalCouponUpdate(int coupon);
     void internalHll4Update(int slotNo, int newVal);
     void shiftToBiggerCurMin();
 
     AuxHashMap<A>* auxHashMap;
-
-    friend class Hll4Iterator<A>;
-};
-
-template<typename A>
-class Hll4Iterator : public HllPairIterator<A> {
-  public:
-    Hll4Iterator(const Hll4Array<A>& array, int lengthPairs);
-    virtual int value();
-
-    virtual ~Hll4Iterator();
-
-  private:
-    const Hll4Array<A>& hllArray;
 };
 
 }

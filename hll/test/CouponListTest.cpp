@@ -41,26 +41,28 @@ class CouponListTest : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE_END();
 
   void println_string(std::string str) {
-    //std::cout << str << "\n";
+    //std::cout << str << std::endl;
   }
 
   void checkIterator() {
     int lgConfigK = 8;
-    CouponList<>* sk = new CouponList<>(lgConfigK, HLL_4, LIST);
-    for (int i = 0; i < 7; ++i) { sk->couponUpdate(i); } // not hashes but distinct values
-    pair_iterator_with_deleter<> itr = sk->getIterator();
-    println_string(itr->getHeader());
-    while (itr->nextAll()) {
-      int key = itr->getKey();
-      int val = itr->getValue();
-      int idx = itr->getIndex();
-      int slot = itr->getSlot();
+    CouponList<> cl(lgConfigK, HLL_4, LIST);
+    for (int i = 1; i <= 8; ++i) { cl.couponUpdate(HllUtil<>::pair(i, i)); } // not hashes but distinct values
+    const int mask = (1 << lgConfigK) - 1;
+    int idx = 0;
+    auto itr = cl.begin(true);
+    while (itr != cl.end()) {
+      int key = HllUtil<>::getLow26(*itr);
+      int val = HllUtil<>::getValue(*itr);
+      int slot = HllUtil<>::getLow26(*itr) & mask;
       std::ostringstream oss;
       oss << "Idx: " << idx << ", Key: " << key << ", Val: " << val
           << ", Slot: " << slot;
       println_string(oss.str());
+      CPPUNIT_ASSERT_EQUAL(val, idx + 1);
+      ++itr;
+      ++idx;
     }
-    delete sk;
   }
 
   void checkDuplicatesAndMisc() {

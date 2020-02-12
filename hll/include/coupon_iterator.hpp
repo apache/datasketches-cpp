@@ -17,37 +17,27 @@
  * under the License.
  */
 
-#ifndef _PAIRITERATOR_HPP_
-#define _PAIRITERATOR_HPP_
-
-#include <string>
-#include <functional>
-#include <memory>
+#ifndef _INTARRAYPAIRITERATOR_HPP_
+#define _INTARRAYPAIRITERATOR_HPP_
 
 namespace datasketches {
 
-template<typename A = std::allocator<char>>
-class PairIterator {
-  public:
-    virtual std::string getHeader() = 0;
-
-    virtual int getIndex() = 0;
-    virtual int getKey() = 0;
-    virtual int getPair() = 0;
-    virtual int getSlot() = 0;
-
-    virtual std::string getString() = 0;
-
-    virtual int getValue() = 0;
-    virtual bool nextAll() = 0;
-    virtual bool nextValid() = 0;
-
-    virtual ~PairIterator() = default;
+template<typename A>
+class coupon_iterator: public std::iterator<std::input_iterator_tag, uint32_t> {
+public:
+  coupon_iterator(const int* array, size_t array_slze, size_t index, bool all);
+  coupon_iterator& operator++();
+  bool operator!=(const coupon_iterator& other) const;
+  uint32_t operator*() const;
+private:
+  const int* array;
+  size_t array_size;
+  size_t index;
+  bool all;
 };
-
-template<typename A = std::allocator<char>>
-using pair_iterator_with_deleter = std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>;
 
 }
 
-#endif /* _PAIRITERATOR_HPP_ */
+#include "coupon_iterator-internal.hpp"
+
+#endif /* _INTARRAYPAIRITERATOR_HPP_ */

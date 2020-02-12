@@ -41,55 +41,52 @@ class CrossCountingTest : public CppUnit::TestFixture {
     return sketch;
   }
 
-  int computeChecksum(const hll_sketch& sketch) {
-    pair_iterator_with_deleter<> itr = sketch.get_iterator();
-    int checksum = 0;
-    int key;
-    while(itr->nextAll()) {
-      checksum += itr->getPair();
-      key = itr->getKey(); // dummy
-    }
-    CPPUNIT_ASSERT(key >= 0); // avoids "set but unused" warning
-    return checksum;
-  }
-
   void crossCountingCheck(const int lgK, const int n) {
     hll_sketch sk4 = buildSketch(n, lgK, HLL_4);
-    int s4csum = computeChecksum(sk4);
-    int csum;
+    const double est = sk4.get_estimate();
+    const double lb = sk4.get_lower_bound(1);
+    const double ub = sk4.get_upper_bound(1);
 
     hll_sketch sk6 = buildSketch(n, lgK, HLL_6);
-    csum = computeChecksum(sk6);
-    CPPUNIT_ASSERT_EQUAL(csum, s4csum);
+    CPPUNIT_ASSERT_EQUAL(sk6.get_estimate(), est);
+    CPPUNIT_ASSERT_EQUAL(sk6.get_lower_bound(1), lb);
+    CPPUNIT_ASSERT_EQUAL(sk6.get_upper_bound(1), ub);
 
     hll_sketch sk8 = buildSketch(n, lgK, HLL_8);
-    csum = computeChecksum(sk8);
-    CPPUNIT_ASSERT_EQUAL(csum, s4csum);
-  
+    CPPUNIT_ASSERT_EQUAL(sk8.get_estimate(), est);
+    CPPUNIT_ASSERT_EQUAL(sk8.get_lower_bound(1), lb);
+    CPPUNIT_ASSERT_EQUAL(sk8.get_upper_bound(1), ub);
+
     // Conversions
     hll_sketch sk4to6(sk4, HLL_6);
-    csum = computeChecksum(sk4to6);
-    CPPUNIT_ASSERT_EQUAL(csum, s4csum);
+    CPPUNIT_ASSERT_EQUAL(sk4to6.get_estimate(), est);
+    CPPUNIT_ASSERT_EQUAL(sk4to6.get_lower_bound(1), lb);
+    CPPUNIT_ASSERT_EQUAL(sk4to6.get_upper_bound(1), ub);
 
     hll_sketch sk4to8(sk4, HLL_8);
-    csum = computeChecksum(sk4to8);
-    CPPUNIT_ASSERT_EQUAL(csum, s4csum);
+    CPPUNIT_ASSERT_EQUAL(sk4to8.get_estimate(), est);
+    CPPUNIT_ASSERT_EQUAL(sk4to8.get_lower_bound(1), lb);
+    CPPUNIT_ASSERT_EQUAL(sk4to8.get_upper_bound(1), ub);
 
     hll_sketch sk6to4(sk6, HLL_4);
-    csum = computeChecksum(sk6to4);
-    CPPUNIT_ASSERT_EQUAL(csum, s4csum);
+    CPPUNIT_ASSERT_EQUAL(sk6to4.get_estimate(), est);
+    CPPUNIT_ASSERT_EQUAL(sk6to4.get_lower_bound(1), lb);
+    CPPUNIT_ASSERT_EQUAL(sk6to4.get_upper_bound(1), ub);
 
     hll_sketch sk6to8(sk6, HLL_8);
-    csum = computeChecksum(sk6to8);
-    CPPUNIT_ASSERT_EQUAL(csum, s4csum);
+    CPPUNIT_ASSERT_EQUAL(sk6to8.get_estimate(), est);
+    CPPUNIT_ASSERT_EQUAL(sk6to8.get_lower_bound(1), lb);
+    CPPUNIT_ASSERT_EQUAL(sk6to8.get_upper_bound(1), ub);
 
     hll_sketch sk8to4(sk8, HLL_4);
-    csum = computeChecksum(sk8to4);
-    CPPUNIT_ASSERT_EQUAL(csum, s4csum);
+    CPPUNIT_ASSERT_EQUAL(sk8to4.get_estimate(), est);
+    CPPUNIT_ASSERT_EQUAL(sk8to4.get_lower_bound(1), lb);
+    CPPUNIT_ASSERT_EQUAL(sk8to4.get_upper_bound(1), ub);
 
     hll_sketch sk8to6(sk8, HLL_6);
-    csum = computeChecksum(sk8to6);
-    CPPUNIT_ASSERT_EQUAL(csum, s4csum);
+    CPPUNIT_ASSERT_EQUAL(sk8to6.get_estimate(), est);
+    CPPUNIT_ASSERT_EQUAL(sk8to6.get_lower_bound(1), lb);
+    CPPUNIT_ASSERT_EQUAL(sk8to6.get_upper_bound(1), ub);
   }
 
   void crossCountingChecks() {

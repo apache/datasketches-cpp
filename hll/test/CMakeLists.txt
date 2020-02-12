@@ -17,12 +17,6 @@
 
 add_executable(hll_test)
 
-#target_include_directories(hll_test
-#  PRIVATE
-#    ${HLL_INCLUDE_DIR}
-#    ${CPPUNIT_INCLUDE_DIR}
-#)
-
 target_link_libraries(hll_test hll common_test)
 
 set_target_properties(hll_test PROPERTIES
@@ -53,4 +47,5 @@ target_sources(hll_test
     TablesTest.cpp
     ToFromByteArrayTest.cpp
     UnionCaseTest.cpp
+    IsomorphicTest.cpp
 )

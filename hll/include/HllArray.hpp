@@ -22,7 +22,6 @@
 
 #include "HllSketchImpl.hpp"
 #include "HllUtil.hpp"
-#include "PairIterator.hpp"
 
 namespace datasketches {
 
@@ -54,18 +53,15 @@ class HllArray : public HllSketchImpl<A> {
     virtual double getLowerBound(int numStdDev) const;
     virtual double getUpperBound(int numStdDev) const;
 
-    void addToHipAccum(double delta);
+    inline void addToHipAccum(double delta);
 
-    void decNumAtCurMin();
+    inline void decNumAtCurMin();
 
-    int getCurMin() const;
-    int getNumAtCurMin() const;
-    double getHipAccum() const;
+    inline int getCurMin() const;
+    inline int getNumAtCurMin() const;
+    inline double getHipAccum() const;
 
     virtual int getHllByteArrBytes() const = 0;
-
-    virtual pair_iterator_with_deleter<A> getIterator() const = 0;
-    virtual pair_iterator_with_deleter<A> getAuxIterator() const;
 
     virtual int getUpdatableSerializationBytes() const;
     virtual int getCompactSerializationBytes() const;
@@ -76,19 +72,16 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual void putOutOfOrderFlag(bool flag);
 
-    double getKxQ0() const;
-    double getKxQ1() const;
+    inline double getKxQ0() const;
+    inline double getKxQ1() const;
 
     virtual int getMemDataStart() const;
     virtual int getPreInts() const;
 
-    virtual int getSlot(int slotNo) const = 0;
-    virtual void putSlot(int slotNo, int value) = 0;
-
     void putCurMin(int curMin);
     void putHipAccum(double hipAccum);
-    void putKxQ0(double kxq0);
-    void putKxQ1(double kxq1);
+    inline void putKxQ0(double kxq0);
+    inline void putKxQ1(double kxq1);
     void putNumAtCurMin(int numAtCurMin);
 
     static int hllArrBytes(target_hll_type tgtHllType, int lgConfigK);
@@ -98,9 +91,12 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual AuxHashMap<A>* getAuxHashMap() const;
 
+    class const_iterator;
+    virtual const_iterator begin(bool all = false) const;
+    virtual const_iterator end() const;
+
   protected:
-    // TODO: does this need to be static?
-    static void hipAndKxQIncrementalUpdate(HllArray& host, int oldValue, int newValue);
+    void hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue);
     double getHllBitMapEstimate(int lgConfigK, int curMin, int numAtCurMin) const;
     double getHllRawEstimate(int lgConfigK, double kxqSum) const;
 
@@ -108,11 +104,31 @@ class HllArray : public HllSketchImpl<A> {
     double kxq0;
     double kxq1;
     uint8_t* hllByteArr; //init by sub-classes
-    int curMin; //always zero for Hll6 and Hll8, only used / tracked by Hll4Array
+    int curMin; //always zero for Hll6 and Hll8, only tracked by Hll4Array
     int numAtCurMin; //interpreted as num zeros when curMin == 0
     bool oooFlag; //Out-Of-Order Flag
 
     friend class HllSketchImplFactory<A>;
+};
+
+template<typename A>
+class HllArray<A>::const_iterator: public std::iterator<std::input_iterator_tag, uint32_t> {
+public:
+  const_iterator(const uint8_t* array, size_t array_slze, size_t index, target_hll_type hll_type, const AuxHashMap<A>* exceptions, uint8_t offset, bool all);
+  //const_iterator(const uint8_t* array, size_t array_slze, size_t index, target_hll_type hll_type, const AuxHashMap<A>* exceptions, uint8_t offset);
+  const_iterator& operator++();
+  bool operator!=(const const_iterator& other) const;
+  uint32_t operator*() const;
+private:
+  const uint8_t* array;
+  size_t array_size;
+  size_t index;
+  target_hll_type hll_type;
+  const AuxHashMap<A>* exceptions;
+  uint8_t offset;
+  bool all;
+  uint8_t value; // cached value to avoid computing in operator++ and in operator*()
+  static inline uint8_t get_value(const uint8_t* array, size_t index, target_hll_type hll_type);
 };
 
 }

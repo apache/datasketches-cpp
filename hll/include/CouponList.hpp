@@ -21,7 +21,9 @@
 #define _COUPONLIST_HPP_
 
 #include "HllSketchImpl.hpp"
-#include "PairIterator.hpp"
+#include "coupon_iterator.hpp"
+
+#include <iostream>
 
 namespace datasketches {
 
@@ -55,7 +57,9 @@ class CouponList : public HllSketchImpl<A> {
 
     virtual bool isEmpty() const;
     virtual int getCouponCount() const;
-    virtual pair_iterator_with_deleter<A> getIterator() const;
+
+    coupon_iterator<A> begin(bool all = false) const;
+    coupon_iterator<A> end() const;
 
   protected:
     typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;

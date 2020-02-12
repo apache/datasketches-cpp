@@ -31,6 +31,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 namespace datasketches {
 
@@ -270,49 +271,77 @@ std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
        << "  LB             : " << get_lower_bound(1) << std::endl
        << "  Estimate       : " << get_estimate() << std::endl
        << "  UB             : " << get_upper_bound(1) << std::endl
-       << "  OutOfOrder flag: " << is_out_of_order_flag() << std::endl;
+       << "  OutOfOrder flag: " << (is_out_of_order_flag() ? "true" : "false") << std::endl;
     if (get_current_mode() == HLL) {
       HllArray<A>* hllArray = (HllArray<A>*) sketch_impl;
-      os << "  CurMin       : " << hllArray->getCurMin() << std::endl
-         << "  NumAtCurMin  : " << hllArray->getNumAtCurMin() << std::endl
-         << "  HipAccum     : " << hllArray->getHipAccum() << std::endl
-         << "  KxQ0         : " << hllArray->getKxQ0() << std::endl
-         << "  KxQ1         : " << hllArray->getKxQ1() << std::endl;
+      os << "  CurMin         : " << hllArray->getCurMin() << std::endl
+         << "  NumAtCurMin    : " << hllArray->getNumAtCurMin() << std::endl
+         << "  HipAccum       : " << hllArray->getHipAccum() << std::endl
+         << "  KxQ0           : " << hllArray->getKxQ0() << std::endl
+         << "  KxQ1           : " << hllArray->getKxQ1() << std::endl;
     } else {
-      os << "  Coupon count : "
+      os << "  Coupon count   : "
          << std::to_string(((CouponList<A>*) sketch_impl)->getCouponCount()) << std::endl;
     }
   }
 
   if (detail) {
     os << "### HLL SKETCH DATA DETAIL: " << std::endl;
-    pair_iterator_with_deleter<A> pitr = get_iterator();
-    os << pitr->getHeader() << std::endl;
-    if (all) {
-      while (pitr->nextAll()) {
-        os << pitr->getString() << std::endl;
+    if (get_current_mode() == HLL) {
+      const HllArray<A>* hll_ptr = static_cast<const HllArray<A>*>(sketch_impl);
+      os << std::left << std::setw(10) << "Slot" << std::setw(6) << "Value" << std::endl;
+      auto it = hll_ptr->begin(all);
+      while (it != hll_ptr->end()) {
+        os << std::setw(10) << HllUtil<A>::getLow26(*it);
+        os << std::setw(6) << HllUtil<A>::getValue(*it);
+        os << std::endl;
+        ++it;
       }
     } else {
-      while (pitr->nextValid()) {
-        os << pitr->getString() << std::endl;
+      const CouponList<A>* list_ptr = static_cast<const CouponList<A>*>(sketch_impl);
+      os << std::left;
+      os << std::setw(10) << "Index";
+      os << std::setw(10) << "Key";
+      os << std::setw(10) << "Slot";
+      os << std::setw(6) << "Value";
+      os << std::endl;
+      auto it = list_ptr->begin(all);
+      int i = 0;
+      int mask = (1 << get_lg_config_k()) - 1;
+      while (it != list_ptr->end()) {
+        os << std::setw(10) << i;
+        os << std::setw(10) << HllUtil<A>::getLow26(*it);
+        os << std::setw(10) << (HllUtil<A>::getLow26(*it) & mask);
+        os << std::setw(6) << HllUtil<A>::getValue(*it);
+        os << std::endl;
+        ++it;
+        ++i;
       }
     }
   }
   if (aux_detail) {
     if ((get_current_mode() == HLL) && (get_target_type() == HLL_4)) {
-      HllArray<A>* hllArray = (HllArray<A>*) sketch_impl;
-      pair_iterator_with_deleter<A> auxItr = hllArray->getAuxIterator();
-      if (auxItr != nullptr) {
-        os << "### HLL SKETCH AUX DETAIL: " << std::endl
-           << auxItr->getHeader() << std::endl;
-        if (all) {
-          while (auxItr->nextAll()) {
-            os << auxItr->getString() << std::endl;
-          }
-        } else {
-          while (auxItr->nextValid()) {
-            os << auxItr->getString() << std::endl;
-          }
+      const Hll4Array<A>* hll4_ptr = static_cast<const Hll4Array<A>*>(sketch_impl);
+      const AuxHashMap<A>* aux_ptr = hll4_ptr->getAuxHashMap();
+      if (aux_ptr != nullptr) {
+        os << "### HLL SKETCH AUX DETAIL: " << std::endl;
+        os << std::left;
+        os << std::setw(10) << "Index";
+        os << std::setw(10) << "Key";
+        os << std::setw(10) << "Slot";
+        os << std::setw(6) << "Value";
+        os << std::endl;
+        auto it = aux_ptr->begin(all);
+        int i = 0;
+        int mask = (1 << get_lg_config_k()) - 1;
+        while (it != aux_ptr->end()) {
+          os << std::setw(10) << i;
+          os << std::setw(10) << HllUtil<A>::getLow26(*it);
+          os << std::setw(10) << (HllUtil<A>::getLow26(*it) & mask);
+          os << std::setw(6) << HllUtil<A>::getValue(*it);
+          os << std::endl;
+          ++it;
+          ++i;
         }
       }
     }
@@ -384,11 +413,6 @@ bool hll_sketch_alloc<A>::is_compact() const {
 template<typename A>
 bool hll_sketch_alloc<A>::is_empty() const {
   return sketch_impl->isEmpty();
-}
-
-template<typename A>
-pair_iterator_with_deleter<A> hll_sketch_alloc<A>::get_iterator() const {
-  return sketch_impl->getIterator();
 }
 
 template<typename A>

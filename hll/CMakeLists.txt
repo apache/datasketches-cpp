@@ -40,17 +40,17 @@ list(APPEND hll_HEADERS "include/hll.hpp;include/AuxHashMap.hpp;include/Composit
 list(APPEND hll_HEADERS "include/CouponHashSet.hpp;include/CouponList.hpp")
 list(APPEND hll_HEADERS "include/CubicInterpolation.hpp;include/HarmonicNumbers.hpp;include/Hll4Array.hpp")
 list(APPEND hll_HEADERS "include/Hll6Array.hpp;include/Hll8Array.hpp;include/HllArray.hpp")
-list(APPEND hll_HEADERS "include/HllPairIterator.hpp;include/HllSketchImpl.hpp")
-list(APPEND hll_HEADERS "include/HllUtil.hpp;include/IntArrayPairIterator.hpp")
-list(APPEND hll_HEADERS "include/PairIterator.hpp;include/RelativeErrorTables.hpp;include/AuxHashMap-internal.hpp")
+list(APPEND hll_HEADERS "include/HllSketchImpl.hpp")
+list(APPEND hll_HEADERS "include/HllUtil.hpp;include/coupon_iterator.hpp")
+list(APPEND hll_HEADERS "include/RelativeErrorTables.hpp;include/AuxHashMap-internal.hpp")
 list(APPEND hll_HEADERS "include/CompositeInterpolationXTable-internal.hpp")
 list(APPEND hll_HEADERS "include/CouponHashSet-internal.hpp;include/CouponList-internal.hpp")
 list(APPEND hll_HEADERS "include/CubicInterpolation-internal.hpp;include/HarmonicNumbers-internal.hpp")
 list(APPEND hll_HEADERS "include/Hll4Array-internal.hpp;include/Hll6Array-internal.hpp")
 list(APPEND hll_HEADERS "include/Hll8Array-internal.hpp;include/HllArray-internal.hpp")
-list(APPEND hll_HEADERS "include/HllPairIterator-internal.hpp;include/HllSketch-internal.hpp")
+list(APPEND hll_HEADERS "include/HllSketch-internal.hpp")
 list(APPEND hll_HEADERS "include/HllSketchImpl-internal.hpp;include/HllUnion-internal.hpp")
-list(APPEND hll_HEADERS "include/IntArrayPairIterator-internal.hpp;include/RelativeErrorTables-internal.hpp")
+list(APPEND hll_HEADERS "include/coupon_iterator-internal.hpp;include/RelativeErrorTables-internal.hpp")
 
 install(TARGETS hll
   EXPORT ${PROJECT_NAME}
@@ -72,12 +72,10 @@ target_sources(hll
     ${CMAKE_CURRENT_SOURCE_DIR}/include/Hll6Array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/Hll8Array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllArray.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/HllPairIterator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllSketchImpl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllUtil.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/IntArrayPairIterator.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/PairIterator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/RelativeErrorTables.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/coupon_iterator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/AuxHashMap-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CompositeInterpolationXTable-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CouponHashSet-internal.hpp
@@ -88,10 +86,9 @@ target_sources(hll
     ${CMAKE_CURRENT_SOURCE_DIR}/include/Hll6Array-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/Hll8Array-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllArray-internal.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/HllPairIterator-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllSketch-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllSketchImpl-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllUnion-internal.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/IntArrayPairIterator-internal.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/RelativeErrorTables-internal.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/coupon_iterator-internal.hpp
 )

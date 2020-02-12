@@ -26,11 +26,11 @@
 #include "CubicInterpolation.hpp"
 #include "CompositeInterpolationXTable.hpp"
 #include "CouponList.hpp"
-
 #include <cstring>
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include "../../common/include/inv_pow2_table.hpp"
 
 namespace datasketches {
 
@@ -47,16 +47,16 @@ HllArray<A>::HllArray(const int lgConfigK, const target_hll_type tgtHllType, boo
 }
 
 template<typename A>
-HllArray<A>::HllArray(const HllArray<A>& that)
-  : HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, hll_mode::HLL, that.startFullSize) {
-  hipAccum = that.getHipAccum();
-  kxq0 = that.getKxQ0();
-  kxq1 = that.getKxQ1();
-  curMin = that.getCurMin();
-  numAtCurMin = that.getNumAtCurMin();
-  oooFlag = that.isOutOfOrderFlag();
-
-  // can determine length, so allocate here
+HllArray<A>::HllArray(const HllArray<A>& that):
+HllSketchImpl<A>(that.lgConfigK, that.tgtHllType, hll_mode::HLL, that.startFullSize),
+hipAccum(that.hipAccum),
+kxq0(that.kxq0),
+kxq1(that.kxq1),
+hllByteArr(nullptr),
+curMin(that.curMin),
+numAtCurMin(that.numAtCurMin),
+oooFlag(that.oooFlag)
+{
   const int arrayLen = that.getHllByteArrBytes();
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   hllByteArr = uint8Alloc().allocate(arrayLen);
@@ -74,7 +74,6 @@ HllArray<A>::~HllArray() {
   } else { // tgtHllType == HLL_8
     hllArrBytes = hll8ArrBytes(this->lgConfigK);
   }
-
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> uint8Alloc;
   uint8Alloc().deallocate(hllByteArr, hllArrBytes);
 }
@@ -249,11 +248,9 @@ vector_u8<A> HllArray<A>::serialize(bool compact, unsigned header_size_bytes) co
     bytes += getMemDataStart() + hllByteArrBytes; // start of auxHashMap
     if (auxHashMap != nullptr) {
       if (compact) {
-        pair_iterator_with_deleter<A> itr = auxHashMap->getIterator();
-        while (itr->nextValid()) {
-          const int pairValue = itr->getPair();
-          std::memcpy(bytes, &pairValue, sizeof(pairValue));
-          bytes += sizeof(pairValue);
+        for (uint32_t coupon: *auxHashMap) {
+          std::memcpy(bytes, &coupon, sizeof(coupon));
+          bytes += sizeof(coupon);
         }
       } else {
         std::memcpy(bytes, auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
@@ -310,10 +307,8 @@ void HllArray<A>::serialize(std::ostream& os, const bool compact) const {
   if (this->tgtHllType == HLL_4) {
     if (auxHashMap != nullptr) {
       if (compact) {
-        pair_iterator_with_deleter<A> itr = auxHashMap->getIterator();
-        while (itr->nextValid()) {
-          const int pairValue = itr->getPair();
-          os.write((char*)&pairValue, sizeof(pairValue));
+        for (uint32_t coupon: *auxHashMap) {
+          os.write((char*)&coupon, sizeof(coupon));
         }
       } else {
         os.write((char*)auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
@@ -431,8 +426,6 @@ double HllArray<A>::getCompositeEstimate() const {
   // Empirical evidence suggests that the threshold 3*k will keep us safe if 2^4 <= k <= 2^21.
 
   if (adjEst > (3 << this->lgConfigK)) { return adjEst; }
-  //Alternate call
-  //if ((adjEst > (3 << this->lgConfigK)) || ((curMin != 0) || (numAtCurMin == 0)) ) { return adjEst; }
 
   const double linEst =
       getHllBitMapEstimate(this->lgConfigK, curMin, numAtCurMin);
@@ -587,32 +580,20 @@ int HllArray<A>::getPreInts() const {
 }
 
 template<typename A>
-pair_iterator_with_deleter<A> HllArray<A>::getAuxIterator() const {
-  return nullptr;
-}
-
-template<typename A>
 AuxHashMap<A>* HllArray<A>::getAuxHashMap() const {
   return nullptr;
 }
 
 template<typename A>
-void HllArray<A>::hipAndKxQIncrementalUpdate(HllArray<A>& host, const int oldValue, const int newValue) {
-  if (newValue <= oldValue) {
-    throw std::invalid_argument("newValue must be greater than oldValue: " + std::to_string(newValue)
-                                + " vs " + std::to_string(oldValue));
-  }
-
-  const int configK = 1 << host.getLgConfigK();
-  // update hipAccum BEFORE updating kxq0 and kxq1
-  double kxq0 = host.getKxQ0();
-  double kxq1 = host.getKxQ1();
-  host.addToHipAccum(configK / (kxq0 + kxq1));
+void HllArray<A>::hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue) {
+  const int configK = 1 << this->getLgConfigK();
+  // update hip BEFORE updating kxq
+  hipAccum += configK / (kxq0 + kxq1);
   // update kxq0 and kxq1; subtract first, then add
-  if (oldValue < 32) { host.putKxQ0(kxq0 -= HllUtil<A>::invPow2(oldValue)); }
-  else               { host.putKxQ1(kxq1 -= HllUtil<A>::invPow2(oldValue)); }
-  if (newValue < 32) { host.putKxQ0(kxq0 += HllUtil<A>::invPow2(newValue)); }
-  else               { host.putKxQ1(kxq1 += HllUtil<A>::invPow2(newValue)); }
+  if (oldValue < 32) { kxq0 -= INVERSE_POWERS_OF_2[oldValue]; }
+  else               { kxq1 -= INVERSE_POWERS_OF_2[oldValue]; }
+  if (newValue < 32) { kxq0 += INVERSE_POWERS_OF_2[newValue]; }
+  else               { kxq1 += INVERSE_POWERS_OF_2[newValue]; }
 }
 
 /**
@@ -646,6 +627,71 @@ double HllArray<A>::getHllRawEstimate(const int lgConfigK, const double kxqSum) 
   else { correctionFactor = 0.7213 / (1.0 + (1.079 / configK)); }
   const double hyperEst = (correctionFactor * configK * configK) / kxqSum;
   return hyperEst;
+}
+
+template<typename A>
+typename HllArray<A>::const_iterator HllArray<A>::begin(bool all) const {
+  return const_iterator(hllByteArr, 1 << this->lgConfigK, 0, this->tgtHllType, nullptr, 0, all);
+}
+
+template<typename A>
+typename HllArray<A>::const_iterator HllArray<A>::end() const {
+  return const_iterator(hllByteArr, 1 << this->lgConfigK, 1 << this->lgConfigK, this->tgtHllType, nullptr, 0, false);
+}
+
+template<typename A>
+HllArray<A>::const_iterator::const_iterator(const uint8_t* array, size_t array_size, size_t index, target_hll_type hll_type, const AuxHashMap<A>* exceptions, uint8_t offset, bool all):
+array(array), array_size(array_size), index(index), hll_type(hll_type), exceptions(exceptions), offset(offset), all(all)
+{
+  while (this->index < array_size) {
+    value = get_value(array, this->index, hll_type);
+    if (all || value != HllUtil<A>::EMPTY) break;
+    this->index++;
+  }
+}
+
+template<typename A>
+typename HllArray<A>::const_iterator& HllArray<A>::const_iterator::operator++() {
+  while (++index < array_size) {
+    value = get_value(array, index, hll_type);
+    if (all || value != HllUtil<A>::EMPTY) break;
+  }
+  return *this;
+}
+
+template<typename A>
+bool HllArray<A>::const_iterator::operator!=(const const_iterator& other) const {
+  return index != other.index;
+}
+
+template<typename A>
+uint32_t HllArray<A>::const_iterator::operator*() const {
+  if (hll_type == target_hll_type::HLL_4) {
+    if (value == HllUtil<A>::AUX_TOKEN) { // exception
+      return HllUtil<A>::pair(index, exceptions->mustFindValueFor(index));
+    }
+    return HllUtil<A>::pair(index, value + offset);
+  }
+  return HllUtil<A>::pair(index, value);
+}
+
+template<typename A>
+uint8_t HllArray<A>::const_iterator::get_value(const uint8_t* array, size_t index, target_hll_type hll_type) {
+  if (hll_type == target_hll_type::HLL_4) {
+    const uint8_t value = array[index >> 1];
+    if ((index & 1) > 0) { // odd
+        return value >> 4;
+    }
+    return value & HllUtil<A>::loNibbleMask;
+  } else if (hll_type == target_hll_type::HLL_6) {
+    const int start_bit = index * 6;
+    const int shift = start_bit & 0x7;
+    const int byte_idx = start_bit >> 3;
+    const uint16_t two_byte_val = (array[byte_idx + 1] << 8) | array[byte_idx];
+    return (two_byte_val >> shift) & HllUtil<A>::VAL_MASK_6;
+  }
+  // HLL_8
+  return array[index];
 }
 
 }

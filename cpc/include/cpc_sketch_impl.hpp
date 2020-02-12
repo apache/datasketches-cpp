@@ -26,7 +26,7 @@
 
 #include "cpc_confidence.hpp"
 #include "kxp_byte_lookup.hpp"
-#include "inv_pow_2_tab.hpp"
+#include "inv_pow2_table.hpp"
 #include "cpc_util.hpp"
 #include "icon_estimator.hpp"
 #include "serde.hpp"

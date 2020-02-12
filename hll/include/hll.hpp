@@ -21,7 +21,6 @@
 #define _HLL_HPP_
 
 #include "HllUtil.hpp"
-#include "PairIterator.hpp"
 
 #include <memory>
 #include <iostream>
@@ -96,7 +95,7 @@ namespace datasketches {
 enum target_hll_type {
     HLL_4, ///< 4 bits per entry (most compact, size may vary)
     HLL_6, ///< 6 bits per entry (fixed size)
-    HLL_8  ///< 8 bits per entry (fastst, fixed size)
+    HLL_8  ///< 8 bits per entry (fastest, fixed size)
 };
 
 template<typename A>
@@ -115,7 +114,7 @@ class hll_sketch_alloc final {
      * Constructs a new HLL sketch.
      * @param lg_config_k Sketch can hold 2^lg_config_k rows
      * @param tgt_type The HLL mode to use, if/when the sketch reaches that state
-     * @param start_full_size Indicates whetehr to start in HLL mode,
+     * @param start_full_size Indicates whether to start in HLL mode,
      *        keeping memory use constant (if HLL_6 or HLL_8) at the cost of
      *        starting out using much more memory
      */
@@ -219,7 +218,7 @@ class hll_sketch_alloc final {
     std::string to_string(bool summary = true,
                           bool detail = false,
                           bool aux_detail = false,
-                          bool all = false) const;                                    
+                          bool all = false) const;
 
     /**
      * Present the given std::string as a potential unique item.
@@ -393,9 +392,6 @@ class hll_sketch_alloc final {
     static double get_rel_err(bool upper_bound, bool unioned,
                               int lg_config_k, int num_std_dev);
 
-    //! Returns an iterator over the sketch, intended for debug use
-    pair_iterator_with_deleter<A> get_iterator() const;
-
   private:
     explicit hll_sketch_alloc(HllSketchImpl<A>* that);
 
@@ -410,7 +406,6 @@ class hll_sketch_alloc final {
     bool is_estimation_mode() const;
 
     typedef typename std::allocator_traits<A>::template rebind_alloc<hll_sketch_alloc> AllocHllSketch;
-    friend AllocHllSketch;
 
     HllSketchImpl<A>* sketch_impl;
     friend hll_union_alloc<A>;
@@ -454,14 +449,14 @@ class hll_union_alloc {
 
     /**
      * Construct an hll_union operator from the given std::istream, which
-     * must be a avlid serialized image of an hll_union.
+     * must be a valid serialized image of an hll_union.
      * @param is The input stream from which to read.
      */
     static hll_union_alloc deserialize(std::istream& is);
 
   /**
      * Construct an hll_union operator from the given byte array, which
-     * must be a avlid serialized image of an hll_union.
+     * must be a valid serialized image of an hll_union.
      * @param bytes The byte array to read.
      * @param len Byte array length in bytes.
      */
@@ -715,17 +710,17 @@ class hll_union_alloc {
   private:
 
    /**
-    * Union the given source and destination sketches. This static method examines the state of
-    * the current internal gadget and the incoming sketch and determines the optimum way to
+    * Union the given source and destination sketches. This method examines the state of
+    * the current internal gadget and the incoming sketch and determines the optimal way to
     * perform the union. This may involve swapping, down-sampling, transforming, and / or
     * copying one of the arguments and may completely replace the internals of the union.
     *
     * @param incoming_impl the given incoming sketch, which may not be modified.
     * @param lg_max_k the maximum value of log2 K for this union.
     */
-    void union_impl(HllSketchImpl<A>* incoming_impl, int lg_max_k);
+    inline void union_impl(const hll_sketch_alloc<A>& sketch, int lg_max_k);
 
-    static HllSketchImpl<A>* copy_or_downsample(HllSketchImpl<A>* src_impl, int tgt_lg_k);
+    static HllSketchImpl<A>* copy_or_downsample(const HllSketchImpl<A>* src_impl, int tgt_lg_k);
 
     void coupon_update(int coupon);
 
