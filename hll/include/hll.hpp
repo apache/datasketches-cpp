@@ -605,10 +605,16 @@ class hll_union_alloc {
                           bool all = false) const;
 
     /**
-     * Update this union operator iwth the given sketch.
+     * Update this union operator with the given sketch.
      * @param The given sketch.
      */
     void update(const hll_sketch_alloc<A>& sketch);
+
+    /**
+     * Update this union operator with the given temporary sketch.
+     * @param The given sketch.
+     */
+    void update(hll_sketch_alloc<A>&& sketch);
   
     /**
      * Present the given std::string as a potential unique item.

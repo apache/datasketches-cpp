@@ -113,39 +113,39 @@ void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
   // duplication below is to avoid a virtual method call in a loop
   if (src.getTgtHllType() == target_hll_type::HLL_8) {
     for (int i = 0; i < src_k; i++) {
-      const uint8_t src_v = static_cast<const Hll8Array<A>&>(src).getSlot(i);
+      const uint8_t new_v = static_cast<const Hll8Array<A>&>(src).getSlot(i);
       const int j = i & dst_mask;
-      const uint8_t dst_v = this->hllByteArr[j];
-      this->hllByteArr[j] = src_v > dst_v ? src_v : dst_v;
-      if (src_v > dst_v) {
-        this->hipAndKxQIncrementalUpdate(dst_v, src_v);
-        if (dst_v == 0) {
+      const uint8_t old_v = this->hllByteArr[j];
+      if (new_v > old_v) {
+        this->hllByteArr[j] = new_v;
+        this->hipAndKxQIncrementalUpdate(old_v, new_v);
+        if (old_v == 0) {
           this->numAtCurMin--;
         }
       }
     }
   } else if (src.getTgtHllType() == target_hll_type::HLL_6) {
     for (int i = 0; i < src_k; i++) {
-      const uint8_t src_v = static_cast<const Hll6Array<A>&>(src).getSlot(i);
+      const uint8_t new_v = static_cast<const Hll6Array<A>&>(src).getSlot(i);
       const int j = i & dst_mask;
-      const uint8_t dst_v = this->hllByteArr[j];
-      this->hllByteArr[j] = src_v > dst_v ? src_v : dst_v;
-      if (src_v > dst_v) {
-        this->hipAndKxQIncrementalUpdate(dst_v, src_v);
-        if (dst_v == 0) {
+      const uint8_t old_v = this->hllByteArr[j];
+      if (new_v > old_v) {
+        this->hllByteArr[j] = new_v;
+        this->hipAndKxQIncrementalUpdate(old_v, new_v);
+        if (old_v == 0) {
           this->numAtCurMin--;
         }
       }
     }
   } else { // HLL_4
     for (int i = 0; i < src_k; i++) {
-      const uint8_t src_v = static_cast<const Hll4Array<A>&>(src).get_value(i);
+      const uint8_t new_v = static_cast<const Hll4Array<A>&>(src).get_value(i);
       const int j = i & dst_mask;
-      const uint8_t dst_v = this->hllByteArr[j];
-      this->hllByteArr[j] = src_v > dst_v ? src_v : dst_v;
-      if (src_v > dst_v) {
-        this->hipAndKxQIncrementalUpdate(dst_v, src_v);
-        if (dst_v == 0) {
+      const uint8_t old_v = this->hllByteArr[j];
+      if (new_v > old_v) {
+        this->hllByteArr[j] = new_v;
+        this->hipAndKxQIncrementalUpdate(old_v, new_v);
+        if (old_v == 0) {
           this->numAtCurMin--;
         }
       }

@@ -77,6 +77,18 @@ hll_sketch_alloc<A> hll_union_alloc<A>::get_result(target_hll_type target_type) 
 
 template<typename A>
 void hll_union_alloc<A>::update(const hll_sketch_alloc<A>& sketch) {
+  if (sketch.is_empty()) return;
+  union_impl(sketch, lg_max_k);
+}
+
+template<typename A>
+void hll_union_alloc<A>::update(hll_sketch_alloc<A>&& sketch) {
+  if (sketch.is_empty()) return;
+  if (gadget.is_empty() and sketch.get_target_type() == HLL_8 and sketch.get_lg_config_k() <= lg_max_k) {
+    if (sketch.get_current_mode() == HLL or sketch.get_lg_config_k() == lg_max_k) {
+      gadget = std::move(sketch);
+    }
+  }
   union_impl(sketch, lg_max_k);
 }
 
@@ -276,11 +288,10 @@ HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(const HllSketchImpl<A>*
   const HllArray<A>* src = static_cast<const HllArray<A>*>(src_impl);
   const int src_lg_k = src->getLgConfigK();
   if (src_lg_k <= tgt_lg_k) {
-    return src->copyAs(target_hll_type::HLL_8);
+    return src->copyAs(HLL_8);
   }
-  const int minLgK = ((src_lg_k < tgt_lg_k) ? src_lg_k : tgt_lg_k);
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>> hll8Alloc;
-  Hll8Array<A>* tgtHllArr = new (hll8Alloc().allocate(1)) Hll8Array<A>(minLgK, false);
+  Hll8Array<A>* tgtHllArr = new (hll8Alloc().allocate(1)) Hll8Array<A>(tgt_lg_k, false);
   tgtHllArr->mergeHll(*src);
   //both of these are required for isomorphism
   tgtHllArr->putHipAccum(src->getHipAccum());
@@ -299,64 +310,37 @@ inline HllSketchImpl<A>* hll_union_alloc<A>::leak_free_coupon_update(HllSketchIm
 
 template<typename A>
 void hll_union_alloc<A>::union_impl(const hll_sketch_alloc<A>& sketch, const int lg_max_k) {
-  if (sketch.is_empty()) return;
   const HllSketchImpl<A>* src_impl = sketch.sketch_impl; //default
   HllSketchImpl<A>* dst_impl = gadget.sketch_impl; //default
-
-  const int lo2bits = src_impl->getCurMode();
-  const int hi2bits = (dst_impl->isEmpty()) ? 3 : dst_impl->getCurMode();
-
-  const int sw = (hi2bits << 2) | lo2bits;
-  switch (sw) {
-    case 0: // src: LIST, gadget: LIST
-    case 1: // src: SET, gadget: LIST
-    case 4: // src: LIST, gadget: SET
-    case 5: // src: SET, gadget: SET
-    case 8: // src: LIST, gadget: HLL
-    case 9: // src: SET, gadget: HLL
-    case 12: // src: LIST, gadget: empty
-    case 13: // src: SET, gadget: empty
-    {
-      if (dst_impl->isEmpty() and src_impl->getLgConfigK() == dst_impl->getLgConfigK()) {
-        dst_impl = src_impl->copyAs(target_hll_type::HLL_8);
-        gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
-      }
+  if (src_impl->getCurMode() == LIST or src_impl->getCurMode() == SET) {
+    if (dst_impl->isEmpty() and src_impl->getLgConfigK() == dst_impl->getLgConfigK()) {
+      dst_impl = src_impl->copyAs(HLL_8);
+      gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
+    } else {
       const CouponList<A>* src = static_cast<const CouponList<A>*>(src_impl);
       for (auto coupon: *src) {
         dst_impl = leak_free_coupon_update(dst_impl, coupon); //assignment required
       }
-      break;
     }
-    case 2: // src: HLL, gadget: LIST
-    case 6: // src: HLL, gadget: SET
-    {
+  } else if (!dst_impl->isEmpty()) { // src is HLL
+    if (dst_impl->getCurMode() == LIST or dst_impl->getCurMode() == SET) {
       // swap so that src is LIST or SET, tgt is HLL
       // use lg_max_k because LIST has effective K of 2^26
+      const CouponList<A>* src = static_cast<const CouponList<A>*>(dst_impl);
       dst_impl = copy_or_downsample(src_impl, lg_max_k);
-      src_impl = gadget.sketch_impl;
-      const CouponList<A>* src = static_cast<const CouponList<A>*>(src_impl);
-      Hll8Array<A>* dst = static_cast<Hll8Array<A>*>(dst_impl);
-      dst->mergeList(*src);
+      static_cast<Hll8Array<A>*>(dst_impl)->mergeList(*src);
       gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
-      break;
-    }
-    case 10: { // src: HLL, gadget: HLL
-      const int src_lg_k = src_impl->getLgConfigK();
-      const int dst_lg_k = dst_impl->getLgConfigK();
-      if (src_lg_k < dst_lg_k) {
-        dst_impl = copy_or_downsample(dst_impl, src_lg_k);
+    } else { // gadget is HLL
+      if (src_impl->getLgConfigK() < dst_impl->getLgConfigK()) {
+        dst_impl = copy_or_downsample(dst_impl, sketch.get_lg_config_k());
         gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
       }
       const HllArray<A>* src = static_cast<const HllArray<A>*>(src_impl);
-      Hll8Array<A>* dst = static_cast<Hll8Array<A>*>(dst_impl);
-      dst->mergeHll(*src);
-      break;
+      static_cast<Hll8Array<A>*>(dst_impl)->mergeHll(*src);
     }
-    case 14: { //src: HLL, gadget: empty
-      dst_impl = copy_or_downsample(src_impl, lg_max_k);
-      gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
-      break;
-    }
+  } else { // src is HLL, gadget is empty
+    dst_impl = copy_or_downsample(src_impl, lg_max_k);
+    gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
   }
   dst_impl->putOutOfOrderFlag(dst_impl->isOutOfOrderFlag() | src_impl->isOutOfOrderFlag());
   gadget.sketch_impl = dst_impl;

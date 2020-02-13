@@ -35,7 +35,6 @@ class HllUnionTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkCompositeEstimate);
   CPPUNIT_TEST(checkConfigKLimits);
   CPPUNIT_TEST(checkUbLb);
-  //CPPUNIT_TEST(checkEmptyCoupon);
   CPPUNIT_TEST(checkConversions);
   CPPUNIT_TEST(checkMisc);
   CPPUNIT_TEST(checkInputTypes);
@@ -167,7 +166,7 @@ class HllUnionTest : public CppUnit::TestFixture {
     v += n2;
 
     hll_union u(lgMaxK);
-    u.update(h1);
+    u.update(std::move(h1));
     u.update(h2);
 
     hll_sketch result = u.get_result(resultType);
