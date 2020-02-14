@@ -513,7 +513,7 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
   void deserialize_exact_from_java() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "varopt_string_exact.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "varopt_sketch_string_exact.bin", std::ios::binary);
     var_opt_sketch<std::string> sketch = var_opt_sketch<std::string>::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL((uint32_t) 1024, sketch.get_k());
@@ -529,7 +529,7 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
   void deserialize_sampling_from_java() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "varopt_long_sampling.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "varopt_sketch_long_sampling.bin", std::ios::binary);
     var_opt_sketch<int64_t> sketch = var_opt_sketch<int64_t>::deserialize(is);
     CPPUNIT_ASSERT(!sketch.is_empty());
     CPPUNIT_ASSERT_EQUAL((uint32_t) 1024, sketch.get_k());

@@ -54,8 +54,7 @@ class var_opt_union_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(serialize_empty);
   CPPUNIT_TEST(serialize_exact);
   CPPUNIT_TEST(serialize_sampling);
-  // CPPUNIT_TEST(deserialize_exact_from_java);
-  // CPPUNIT_TEST(deserialize_sampling_from_java);
+  CPPUNIT_TEST(deserialize_from_java);
   CPPUNIT_TEST_SUITE_END();
 
   var_opt_sketch<int> create_unweighted_sketch(uint32_t k, uint64_t n) {
@@ -316,7 +315,7 @@ class var_opt_union_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt + (n1 * n1), ss.total_sketch_weight, EPS);
     CPPUNIT_ASSERT_LESS(k_max, result.get_k());
 
-    // check tha tmark information is preserved as expected
+    // check that mark information is preserved as expected
     compare_serialization_deserialization(u, false);
   }
 
@@ -344,54 +343,22 @@ class var_opt_union_test: public CppUnit::TestFixture {
     compare_serialization_deserialization(u);
   }
 
-/**********************************************************/
-
-
-  void test_union() {
-    var_opt_union<int> u(10);
-
-    var_opt_sketch<int> sk = create_unweighted_sketch(9, 100);
-    u.update(sk);
-    std::cout << u.to_string() << std::endl;
-
-    auto vec = u.serialize();
-    std::cout << vec.size() << "\t" << vec.capacity() << "\t" << vec.empty() << std::endl;
-  }
-
-  void deserialize_exact_from_java() {
+  void deserialize_from_java() {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "varopt_string_exact.bin", std::ios::binary);
-    var_opt_sketch<std::string> sketch = var_opt_sketch<std::string>::deserialize(is);
-    CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL((uint32_t) 1024, sketch.get_k());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) 200, sketch.get_n());
-    CPPUNIT_ASSERT_EQUAL((uint32_t) 200, sketch.get_num_samples());
-    subset_summary ss = sketch.estimate_subset_sum([](std::string x){ return true; });
-
-    double tgt_wt = 0.0;
-    for (int i = 1; i <= 200; ++i) { tgt_wt += 1000.0 / i; }
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(tgt_wt, ss.total_sketch_weight, EPS);
-  }
-
-  void deserialize_sampling_from_java() {
-    std::ifstream is;
-    is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "varopt_long_sampling.bin", std::ios::binary);
-    var_opt_sketch<int64_t> sketch = var_opt_sketch<int64_t>::deserialize(is);
-    CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT_EQUAL((uint32_t) 1024, sketch.get_k());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) 2003, sketch.get_n());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_k(), sketch.get_num_samples());
-    subset_summary ss = sketch.estimate_subset_sum([](int64_t x){ return true; });
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(332000.0, ss.estimate, EPS);
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(332000.0, ss.total_sketch_weight, EPS);
-
-    ss = sketch.estimate_subset_sum([](int64_t x){ return x < 0; });
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(330000.0, ss.estimate, 0.0);
-
-    ss = sketch.estimate_subset_sum([](int64_t x){ return x >= 0; });
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(2000.0, ss.estimate, EPS);
+    is.open(testBinaryInputPath + "varopt_union_double_sampling.bin", std::ios::binary);
+    var_opt_union<double> u = var_opt_union<double>::deserialize(is);
+    
+    // must reduce k in the process, like in small_sampling_sketch()
+    var_opt_sketch<double> result = u.get_result();
+    CPPUNIT_ASSERT(!result.is_empty());
+    CPPUNIT_ASSERT_EQUAL((uint64_t) 97, result.get_n());
+  
+    double expected_wt = 96.0;// light items -- ignoring the heavy one
+    subset_summary ss = result.estimate_subset_sum([](float x){return x >= 0;});
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt, ss.estimate, EPS);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt + 1024.0, ss.total_sketch_weight, EPS);
+    CPPUNIT_ASSERT_LESS((uint32_t) 128, result.get_k());
   }
 
 };
