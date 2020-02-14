@@ -59,9 +59,20 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other) :
   marks_(nullptr)
   {
     data_ = A().allocate(curr_items_alloc_);
-    std::copy(&other.data_[0], &other.data_[curr_items_alloc_], data_);
+    if (other.filled_data_) {
+      // copy everything
+      for (size_t i = 0; i < curr_items_alloc_; ++i)
+        data_[i] = other.data_[i];
+    } else {
+      // skip gap or anything unused at the end
+      for (size_t i = 0; i < h_; ++i)
+        data_[i] = other.data_[i];
+      for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
+        data_[i] = other.data_[i];
+    }
     
     weights_ = AllocDouble().allocate(curr_items_alloc_);
+    // doubles so can successfully copy regardless of the internal state
     std::copy(&other.weights_[0], &other.weights_[curr_items_alloc_], weights_);
     
     if (other.marks_ != nullptr) {
@@ -87,9 +98,20 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other, bool as_sketc
   marks_(nullptr)
   {
     data_ = A().allocate(curr_items_alloc_);
-    std::copy(&other.data_[0], &other.data_[curr_items_alloc_], data_);
+    if (other.filled_data_) {
+      // copy everything
+      for (size_t i = 0; i < curr_items_alloc_; ++i)
+        data_[i] = other.data_[i];
+    } else {
+      // skip gap or anything unused at the end
+      for (size_t i = 0; i < h_; ++i)
+        data_[i] = other.data_[i];
+      for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
+        data_[i] = other.data_[i];
+    }
     
     weights_ = AllocDouble().allocate(curr_items_alloc_);
+    // doubles so can successfully copy regardless of the internal state
     std::copy(&other.weights_[0], &other.weights_[curr_items_alloc_], weights_);
     
     if (!as_sketch && other.marks_ != nullptr) {
@@ -240,6 +262,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
       throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
        "Found r = " + std::to_string(r_) + ", R region weight = " + std::to_string(total_wt_r_));
     }
+  } else {
+    total_wt_r_ = 0.0;
   }
 
   allocate_data_arrays(curr_items_alloc_, is_gadget);
@@ -255,15 +279,15 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   std::fill(&weights_[h_], &weights_[curr_items_alloc_], -1.0);
 
   // read the first h_ marks as packed bytes iff we have a gadget
+  num_marks_in_h_ = 0;
   if (is_gadget) {
-    uint32_t num_bytes = (h_ >> 3) + ((h_ & 0x7) > 0 ? 1 : 0);
-
     uint8_t val = 0;
-    for (int i = 0; i < num_bytes; ++i) {
-     if ((i & 0x7) == 0x0) { // should trigger on first iteration
+    for (int i = 0; i < h_; ++i) {
+      if ((i & 0x7) == 0x0) { // should trigger on first iteration
         is.read((char*)&val, sizeof(val));
       }
       marks_[i] = ((val >> (i & 0x7)) & 0x1) == 1;
+      num_marks_in_h_ += (marks_[i] ? 1 : 0);
     }
   }
 
@@ -292,6 +316,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
       throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
        "Found r = " + std::to_string(r_) + ", R region weight = " + std::to_string(total_wt_r_));
     }
+  } else {
+    total_wt_r_ = 0.0;
   }
 
   allocate_data_arrays(curr_items_alloc_, is_gadget);
@@ -304,17 +330,17 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
     }
   }
   std::fill(&weights_[h_], &weights_[curr_items_alloc_], -1.0);
-
+  
   // read the first h_ marks as packed bytes iff we have a gadget
+  num_marks_in_h_ = 0;
   if (is_gadget) {
-    uint32_t num_bytes = (h_ >> 3) + ((h_ & 0x7) > 0 ? 1 : 0);
-
     uint8_t val = 0;
-    for (int i = 0; i < num_bytes; ++i) {
+    for (int i = 0; i < h_; ++i) {
      if ((i & 0x7) == 0x0) { // should trigger on first iteration
         ptr += copy_from_mem(ptr, &val, sizeof(val));
       }
       marks_[i] = ((val >> (i & 0x7)) & 0x1) == 1;
+      num_marks_in_h_ += (marks_[i] ? 1 : 0);
     }
   }
 
@@ -410,7 +436,7 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
 
   // first prelong
   uint8_t ser_ver(SER_VER);
-  uint8_t family(FAMILY);
+  uint8_t family(FAMILY_ID);
   ptr += copy_to_mem(&first_byte, ptr, sizeof(uint8_t));
   ptr += copy_to_mem(&ser_ver, ptr, sizeof(uint8_t));
   ptr += copy_to_mem(&family, ptr, sizeof(uint8_t));
@@ -479,7 +505,7 @@ void var_opt_sketch<T,S,A>::serialize(std::ostream& os) const {
 
   // first prelong
   uint8_t ser_ver(SER_VER);
-  uint8_t family(FAMILY);
+  uint8_t family(FAMILY_ID);
   os.write((char*)&first_byte, sizeof(uint8_t));
   os.write((char*)&ser_ver, sizeof(uint8_t));
   os.write((char*)&family, sizeof(uint8_t));
@@ -900,7 +926,7 @@ void var_opt_sketch<T,S,A>::grow_data_arrays() {
     for (int i = 0; i < prev_size; ++i) {
       A().construct(&tmp_data[i], std::move(data_[i]));
       A().destroy(data_ + i);
-      tmp_weights[i] = std::move(weights_[i]); // primitive double, but for consistency
+      tmp_weights[i] = weights_[i];
     }
 
     A().deallocate(data_, prev_size);
@@ -912,7 +938,7 @@ void var_opt_sketch<T,S,A>::grow_data_arrays() {
     if (marks_ != nullptr) {
       bool* tmp_marks = AllocBool().allocate(curr_items_alloc_);
       for (int i = 0; i < prev_size; ++i) {
-        tmp_marks[i] = std::move(marks_ + i); // primitive bool, again for consisntency
+        tmp_marks[i] = marks_[i];
       }
       AllocBool().deallocate(marks_, prev_size);
       marks_ = std::move(tmp_marks);
@@ -1236,7 +1262,7 @@ void var_opt_sketch<T,S,A>::check_preamble_longs(uint8_t preamble_longs, uint8_t
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver) {
-  if (family_id == FAMILY) {
+  if (family_id == FAMILY_ID) {
     if (ser_ver != SER_VER) {
       throw std::invalid_argument("Possible corruption: VarOpt serialization version must be "
         + std::to_string(SER_VER) + ". Found: " + std::to_string(ser_ver));
@@ -1246,7 +1272,7 @@ void var_opt_sketch<T,S,A>::check_family_and_serialization_version(uint8_t famil
   // TODO: extend to handle reservoir sampling
 
   throw std::invalid_argument("Possible corruption: VarOpt family id must be "
-    + std::to_string(FAMILY) + ". Found: " + std::to_string(family_id));
+    + std::to_string(FAMILY_ID) + ". Found: " + std::to_string(family_id));
 }
 
 template<typename T, typename S, typename A>

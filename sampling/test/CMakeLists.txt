@@ -37,7 +37,8 @@ add_test(
 
 target_sources(sampling_test
   PRIVATE
-    var_opt_sketch_test.cpp
+  var_opt_sketch_test.cpp
+  var_opt_union_test.cpp
 )
 
 target_include_directories(sampling_test

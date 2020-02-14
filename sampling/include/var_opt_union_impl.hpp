@@ -42,7 +42,7 @@ var_opt_union<T,S,A>::var_opt_union(const var_opt_union& other) :
   outer_tau_numer_(other.outer_tau_numer_),
   outer_tau_denom_(other.outer_tau_denom_),
   max_k_(other.max_k_),
-  gadget_(other.gadget)
+  gadget_(other.gadget_)
 {}
 
 template<typename T, typename S, typename A>
@@ -50,10 +50,19 @@ var_opt_union<T,S,A>::var_opt_union(var_opt_union&& other) noexcept :
   n_(other.n_),
   outer_tau_numer_(other.outer_tau_numer_),
   outer_tau_denom_(other.outer_tau_denom_),
-  max_k_(other.max_k_)
-{
-  gadget_ = std::move(other.gadget_);
-}
+  max_k_(other.max_k_),
+  gadget_(std::move(other.gadget_))
+{}
+
+template<typename T, typename S, typename A>
+var_opt_union<T,S,A>::var_opt_union(uint64_t n, double outer_tau_numer, uint64_t outer_tau_denom,
+                                    uint32_t max_k, var_opt_sketch<T,S,A>&& gadget) :
+  n_(n),
+  outer_tau_numer_(outer_tau_numer),
+  outer_tau_denom_(outer_tau_denom),
+  max_k_(max_k),
+  gadget_(gadget)
+{}
 
 template<typename T, typename S, typename A>
 var_opt_union<T,S,A>::~var_opt_union() {}
@@ -63,7 +72,7 @@ var_opt_union<T,S,A>& var_opt_union<T,S,A>::operator=(const var_opt_union& other
   var_opt_union<T,S,A> union_copy(other);
   std::swap(n_, union_copy.n_);
   std::swap(outer_tau_numer_, union_copy.outer_tau_numer_);
-  std::swap(outer_tau_numer_, union_copy.outer_tau_denom_);
+  std::swap(outer_tau_denom_, union_copy.outer_tau_denom_);
   std::swap(max_k_, union_copy.max_k_);
   std::swap(gadget_, union_copy.gadget_);
   return *this;
@@ -73,16 +82,216 @@ template<typename T, typename S, typename A>
 var_opt_union<T,S,A>& var_opt_union<T,S,A>::operator=(var_opt_union&& other) {
   std::swap(n_, other.n_);
   std::swap(outer_tau_numer_, other.outer_tau_numer_);
-  std::swap(outer_tau_numer_, other.outer_tau_denom_);
+  std::swap(outer_tau_denom_, other.outer_tau_denom_);
   std::swap(max_k_, other.max_k_);
   std::swap(gadget_, other.gadget_);
   return *this;
 }
 
+/*
+ * An empty union requires 8 bytes.
+ *
+ * <pre>
+ * Long || Start Byte Adr:
+ * Adr:
+ *      ||       0        |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+ *  0   || Preamble_Longs | SerVer | FamID  |  Flags |---------Max Res. Size (K)---------|
+ * </pre>
+ *
+ * A non-empty sketch requires 24 bytes of preamble for an under-full sample; once there are
+ * at least k items the sketch uses 32 bytes of preamble.
+ *
+ * The count of items seen is limited to 48 bits (~256 trillion) even though there are adjacent
+ * unused preamble bits. The acceptance probability for an item is a double in the range [0,1),
+ * limiting us to 53 bits of randomness due to details of the IEEE floating point format. To
+ * ensure meaningful probabilities as the items seen count approaches capacity, we intentionally
+ * use slightly fewer bits.
+ * 
+ * Following the header are weights for the heavy items, then marks in the event this is a gadget.
+ * The serialized items come last.
+ * 
+ * <pre>
+ * Long || Start Byte Adr:
+ * Adr:
+ *      ||       0        |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+ *  0   || Preamble_Longs | SerVer | FamID  |  Flags |---------Max Res. Size (K)---------|
+ *
+ *      ||       8        |    9   |   10   |   11   |   12   |   13   |   14   |   15   |
+ *  1   ||---------------------------Items Seen Count (N)--------------------------------|
+ *
+ *      ||      16        |   17   |   18   |   19   |   20   |   21   |   22   |   23   |
+ *  2   ||------------------------Outer Tau Numerator (double)---------------------------|
+ *
+ *      ||      24        |   25   |   26   |   27   |   28   |   29   |   30   |   31   |
+ *  3   ||----------------------Outer Tau Denominator (uint64_t)-------------------------|
+ * </pre>
+ */
+
+template<typename T, typename S, typename A>
+var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is) {
+  uint8_t preamble_longs;
+  is.read((char*)&preamble_longs, sizeof(preamble_longs));
+  uint8_t serial_version;
+  is.read((char*)&serial_version, sizeof(serial_version));
+  uint8_t family_id;
+  is.read((char*)&family_id, sizeof(family_id));
+  uint8_t flags;
+  is.read((char*)&flags, sizeof(flags));
+  uint32_t max_k;
+  is.read((char*)&max_k, sizeof(max_k));
+
+  check_preamble_longs(preamble_longs, flags);
+  check_family_and_serialization_version(family_id, serial_version);
+
+  if (max_k == 0 || max_k > MAX_K) {
+    throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");
+  }
+
+  bool is_empty = flags & EMPTY_FLAG_MASK;
+  
+  if (is_empty) {
+    return var_opt_union<T,S,A>(max_k);
+  }
+
+  uint64_t items_seen;
+  is.read((char*)&items_seen, sizeof(items_seen));
+  double outer_tau_numer;
+  is.read((char*)&outer_tau_numer, sizeof(outer_tau_numer));
+  uint64_t outer_tau_denom;
+  is.read((char*)&outer_tau_denom, sizeof(outer_tau_denom));
+
+  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(is);
+
+  return var_opt_union<T,S,A>(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
+}
+
+template<typename T, typename S, typename A>
+var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t size) {
+  const char* ptr = static_cast<const char*>(bytes);
+  uint8_t preamble_longs;
+  ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
+  uint8_t serial_version;
+  ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+  uint8_t family_id;
+  ptr += copy_from_mem(ptr, &family_id, sizeof(family_id));
+  uint8_t flags;
+  ptr += copy_from_mem(ptr, &flags, sizeof(flags));
+  uint32_t max_k;
+  ptr += copy_from_mem(ptr, &max_k, sizeof(max_k));
+
+  check_preamble_longs(preamble_longs, flags);
+  check_family_and_serialization_version(family_id, serial_version);
+
+  if (max_k == 0 || max_k > MAX_K) {
+    throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");
+  }
+
+  bool is_empty = flags & EMPTY_FLAG_MASK;
+
+  if (is_empty) {
+    return var_opt_union<T,S,A>(max_k);
+  }
+
+  uint64_t items_seen;
+  ptr += copy_from_mem(ptr, &items_seen, sizeof(items_seen));
+  double outer_tau_numer;
+  ptr += copy_from_mem(ptr, &outer_tau_numer, sizeof(outer_tau_numer));
+  uint64_t outer_tau_denom;
+  ptr += copy_from_mem(ptr, &outer_tau_denom, sizeof(outer_tau_denom));
+
+  size_t gadget_size = size - (PREAMBLE_LONGS_NON_EMPTY << 3);
+  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(ptr, gadget_size);
+
+  return var_opt_union<T,S,A>(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
+}
+
+template<typename T, typename S, typename A>
+size_t var_opt_union<T,S,A>::get_serialized_size_bytes() const {
+  if (n_ == 0) {
+    return PREAMBLE_LONGS_EMPTY << 3;
+  } else {
+    return (PREAMBLE_LONGS_NON_EMPTY << 3) + gadget_.get_serialized_size_bytes();
+  }
+}
+
+template<typename T, typename S, typename A>
+void var_opt_union<T,S,A>::serialize(std::ostream& os) const {
+  bool empty = (n_ == 0);
+
+  uint8_t serialization_version(SER_VER);
+  uint8_t family_id(FAMILY_ID);
+
+  uint8_t preamble_longs;
+  uint8_t flags;
+  if (empty) {
+    preamble_longs = PREAMBLE_LONGS_EMPTY;
+    flags = EMPTY_FLAG_MASK;
+  } else {
+    preamble_longs = PREAMBLE_LONGS_NON_EMPTY;
+    flags = 0;
+  }
+
+  os.write((char*) &preamble_longs, sizeof(uint8_t));
+  os.write((char*) &serialization_version, sizeof(uint8_t));
+  os.write((char*) &family_id, sizeof(uint8_t));
+  os.write((char*) &flags, sizeof(uint8_t));
+  os.write((char*) &max_k_, sizeof(uint32_t));
+
+  if (!empty) {
+    os.write((char*) &n_, sizeof(uint64_t));
+    os.write((char*) &outer_tau_numer_, sizeof(double));
+    os.write((char*) &outer_tau_denom_, sizeof(uint64_t));
+    gadget_.serialize(os);
+  }
+}
+
+template<typename T, typename S, typename A>
+std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header_size_bytes) const {
+  const size_t size = header_size_bytes + get_serialized_size_bytes();
+  std::vector<uint8_t, AllocU8<A>> bytes(size);
+  uint8_t* ptr = bytes.data() + header_size_bytes;
+
+  bool empty = n_ == 0;
+
+  uint8_t serialization_version(SER_VER);
+  uint8_t family_id(FAMILY_ID);
+
+  uint8_t preamble_longs;
+  uint8_t flags;
+
+  if (empty) {
+    preamble_longs = PREAMBLE_LONGS_EMPTY;
+    flags = EMPTY_FLAG_MASK;
+  } else {
+    preamble_longs = PREAMBLE_LONGS_NON_EMPTY;
+    flags = 0;
+  }
+
+  // first prelong
+  ptr += copy_to_mem(&preamble_longs, ptr, sizeof(uint8_t));
+  ptr += copy_to_mem(&serialization_version, ptr, sizeof(uint8_t));
+  ptr += copy_to_mem(&family_id, ptr, sizeof(uint8_t));
+  ptr += copy_to_mem(&flags, ptr, sizeof(uint8_t));
+  ptr += copy_to_mem(&max_k_, ptr, sizeof(uint32_t));
+
+  if (!empty) {
+    ptr += copy_to_mem(&n_, ptr, sizeof(uint64_t));
+    ptr += copy_to_mem(&outer_tau_numer_, ptr, sizeof(double));
+    ptr += copy_to_mem(&outer_tau_denom_, ptr, sizeof(uint64_t));
+
+    auto gadget_bytes = gadget_.serialize();
+    ptr += copy_to_mem(gadget_bytes.data(), ptr, gadget_bytes.size() * sizeof(uint8_t));
+  }
+
+  return bytes;
+}
+
 template<typename T, typename S, typename A>
 void var_opt_union<T,S,A>::reset() {
-  if (gadget_ != nullptr)
-    gadget_.reset();
+  n_ = 0;
+  outer_tau_numer_ = 0.0;
+  outer_tau_denom_ = 0;
+  gadget_.reset();
 }
 
 template<typename T, typename S, typename A>
@@ -103,6 +312,7 @@ std::string var_opt_union<T,S,A>::to_string() const {
   to_stream(ss);
   return ss.str();
 }
+
 
 template<typename T, typename S, typename A>
 void var_opt_union<T,S,A>::update(var_opt_sketch<T,S,A>& sk) {
@@ -361,6 +571,39 @@ void var_opt_union<T,S,A>::migrate_marked_items_by_decreasing_k(var_opt_sketch<T
   gcopy.strip_marks();
 }
 
+template<typename T, typename S, typename A>
+void var_opt_union<T,S,A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags) {
+  bool is_empty(flags & EMPTY_FLAG_MASK);
+  
+  if (is_empty) {
+    if (preamble_longs != PREAMBLE_LONGS_EMPTY) {
+      throw std::invalid_argument("Possible corruption: Preamble longs must be "
+        + std::to_string(PREAMBLE_LONGS_EMPTY) + " for an empty sketch. Found: "
+        + std::to_string(preamble_longs));
+    }
+  } else {
+    if (preamble_longs != PREAMBLE_LONGS_NON_EMPTY) {
+      throw std::invalid_argument("Possible corruption: Preamble longs must be "
+        + std::to_string(PREAMBLE_LONGS_NON_EMPTY)
+        + " for a non-empty sketch. Found: " + std::to_string(preamble_longs));
+    }
+  }
+}
+
+template<typename T, typename S, typename A>
+void var_opt_union<T,S,A>::check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver) {
+  if (family_id == FAMILY_ID) {
+    if (ser_ver != SER_VER) {
+      throw std::invalid_argument("Possible corruption: VarOpt Union serialization version must be "
+        + std::to_string(SER_VER) + ". Found: " + std::to_string(ser_ver));
+    }
+    return;
+  }
+  // TODO: extend to handle reservoir sampling
+
+  throw std::invalid_argument("Possible corruption: VarOpt Union family id must be "
+    + std::to_string(FAMILY_ID) + ". Found: " + std::to_string(family_id));
+}
 
 } // namespace datasketches
 

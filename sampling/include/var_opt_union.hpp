@@ -38,11 +38,13 @@ template <typename T, typename S = serde<T>, typename A = std::allocator<T>>
 class var_opt_union {
 
 public:
+  static const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2;
+
   explicit var_opt_union(uint32_t max_k);
   var_opt_union(const var_opt_union& other);
   var_opt_union(var_opt_union&& other) noexcept;
-  //static var_opt_union deserialize(std::istream& is);
-  //static var_opt_union deserialize(const void* bytes, size_t size);
+  static var_opt_union deserialize(std::istream& is);
+  static var_opt_union deserialize(const void* bytes, size_t size);
     
   ~var_opt_union();
 
@@ -50,7 +52,7 @@ public:
   var_opt_union& operator=(var_opt_union&& other);
 
   void update(var_opt_sketch<T,S,A>& sk);
-  //void update(var_opt_sketch<T,S,A>>& sk);
+  //void update(var_opt_sketch<T,S,A>&& sk);
 
   void reset();
 
@@ -61,8 +63,9 @@ public:
    */
   var_opt_sketch<T,S,A> get_result() const;
   
-  //std::vector<uint8_t, AllocU8<A>> serialize(unsigned header_size_bytes = 0) const;
-  //void serialize(std::ostream& os) const;
+  size_t get_serialized_size_bytes() const;
+  void serialize(std::ostream& os) const;
+  std::vector<uint8_t, AllocU8<A>> serialize(unsigned header_size_bytes = 0) const;
 
   std::ostream& to_stream(std::ostream& os) const;
   std::string to_string() const;
@@ -70,6 +73,12 @@ public:
 
 private:
   typedef typename std::allocator_traits<A>::template rebind_alloc<var_opt_sketch<T,S,A>> AllocSketch;
+
+  static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
+  static const uint8_t PREAMBLE_LONGS_NON_EMPTY = 4;
+  static const uint8_t SER_VER = 2;
+  static const uint8_t FAMILY_ID = 14;
+  static const uint8_t EMPTY_FLAG_MASK  = 4;
 
   uint64_t n_; // cumulative over all input sketches
 
@@ -79,9 +88,12 @@ private:
   // total cardinality of the same R-zones, or zero if no input sketch was in estimation mode
   uint64_t outer_tau_denom_;
 
-  const uint32_t max_k_;
+  uint32_t max_k_;
 
   var_opt_sketch<T,S,A> gadget_;
+
+  var_opt_union(uint64_t n, double outer_tau_numer, uint64_t outer_tau_denom,
+                uint32_t max_k, var_opt_sketch<T,S,A>&& gadget);
 
   /*
    IMPORTANT NOTE: the "gadget" in the union object appears to be a varopt sketch,
@@ -147,6 +159,9 @@ private:
   bool detect_and_handle_subcase_of_pseudo_exact(var_opt_sketch<T,S,A>& sk) const;
   void mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk) const;
   void migrate_marked_items_by_decreasing_k(var_opt_sketch<T,S,A>& sk) const;
+
+  static void check_preamble_longs(uint8_t preamble_longs, uint8_t flags);
+  static void check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);
 };
 
 }

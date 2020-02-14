@@ -106,7 +106,7 @@ class var_opt_sketch {
     static const uint8_t PREAMBLE_LONGS_WARMUP = 3;
     static const uint8_t PREAMBLE_LONGS_FULL   = 4;
     static const uint8_t SER_VER = 2;
-    static const uint8_t FAMILY  = 13;
+    static const uint8_t FAMILY_ID  = 13;
     static const uint8_t EMPTY_FLAG_MASK  = 4;
     static const uint8_t GADGET_FLAG_MASK = 128;
 
@@ -205,34 +205,6 @@ class var_opt_sketch {
     static uint32_t next_int(uint32_t max_value);
     static double next_double_exclude_zero();
 };
-
-/*
-template<typename T, typename S, typename A>
-class var_opt_sketch<T, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
-public:
-  friend class var_opt_sketch<T, S, A>;
-  const_iterator(const const_iterator& other);
-  const_iterator& operator++();
-  const_iterator& operator++(int);
-  bool operator==(const const_iterator& other) const;
-  bool operator!=(const const_iterator& other) const;
-  const std::pair<const T&, const double> operator*() const;
-private:
-  const T* items;
-  const double* weights;
-  const bool* marks;
-  const uint32_t h_count;
-  const uint32_t r_count;
-  const double total_wt_r;
-  const double r_item_wt;
-  double cum_weight; // used for weight correction in R
-  uint32_t final_idx;
-  uint32_t index;
-  const bool get_mark() const;
-  const_iterator(const T* items, const double* weights, const bool* marks_,
-                 const uint32_t h_count, const uint32_t r_count, const double total_wt_r, bool use_end=false);
-};
-*/
 
 template<typename T, typename S, typename A>
 class var_opt_sketch<T, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {

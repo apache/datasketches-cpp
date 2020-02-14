@@ -18,7 +18,6 @@
  */
 
 #include <var_opt_sketch.hpp>
-#include <var_opt_union.hpp>
 
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
