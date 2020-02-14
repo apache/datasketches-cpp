@@ -66,8 +66,10 @@ class var_opt_union_test: public CppUnit::TestFixture {
     return sk;
   }
 
+  // if exact_compare = false, checks for equivalence -- specific R region values may differ but
+  // R region weights must match
   template<typename T, typename S, typename A>
-  void check_if_equal(var_opt_sketch<T,S,A>& sk1, var_opt_sketch<T,S,A>& sk2) {
+  void check_if_equal(var_opt_sketch<T,S,A>& sk1, var_opt_sketch<T,S,A>& sk2, bool exact_compare = true) {
     CPPUNIT_ASSERT_EQUAL_MESSAGE("sketches have different values of k",
       sk1.get_k(), sk2.get_k());
     CPPUNIT_ASSERT_EQUAL_MESSAGE("sketches have different values of n",
@@ -82,8 +84,10 @@ class var_opt_union_test: public CppUnit::TestFixture {
     while ((it1 != sk1.end()) && (it2 != sk2.end())) {
       const std::pair<const T&, const double> p1 = *it1;
       const std::pair<const T&, const double> p2 = *it2;
-      CPPUNIT_ASSERT_EQUAL_MESSAGE("data values differ at sample " + std::to_string(i),
-        p1.first, p2.first); 
+      if (exact_compare) {
+        CPPUNIT_ASSERT_EQUAL_MESSAGE("data values differ at sample " + std::to_string(i),
+          p1.first, p2.first); 
+      }
       CPPUNIT_ASSERT_EQUAL_MESSAGE("weight values differ at sample " + std::to_string(i),
         p1.second, p2.second);
       ++i;
@@ -93,6 +97,39 @@ class var_opt_union_test: public CppUnit::TestFixture {
 
     CPPUNIT_ASSERT_MESSAGE("iterators did not end at the same time",
       (it1 == sk1.end()) && (it2 == sk2.end()));
+  }
+
+  // compare serialization and deserializationi results, crossing methods to ensure that
+  // the resulting binary images are compatible.
+  // if exact_compare = false, checks for equivalence -- specific R region values may differ but
+  // R region weights must match
+  template<typename T, typename S, typename A>
+  void compare_serialization_deserialization(var_opt_union<T,S,A>& vo_union, bool exact_compare = true) {
+    std::vector<uint8_t> bytes = vo_union.serialize();
+
+    var_opt_union<T> u_from_bytes = var_opt_union<T>::deserialize(bytes.data(), bytes.size());
+    var_opt_sketch<T> sk1 = vo_union.get_result();
+    var_opt_sketch<T> sk2 = u_from_bytes.get_result();
+    check_if_equal(sk1, sk2, exact_compare);
+
+    std::string str(bytes.begin(), bytes.end());
+    std::stringstream ss;
+    ss.str(str);
+
+    var_opt_union<T> u_from_stream = var_opt_union<T>::deserialize(ss);
+    sk2 = u_from_stream.get_result();
+    check_if_equal(sk1, sk2, exact_compare);
+
+    ss.seekg(0); // didn't put anything so only reset read position
+    vo_union.serialize(ss);
+    u_from_stream = var_opt_union<T>::deserialize(ss);
+    sk2 = u_from_stream.get_result();
+    check_if_equal(sk1, sk2, exact_compare);
+
+    std::string str_from_stream = ss.str();
+    var_opt_union<T> u_from_str = var_opt_union<T>::deserialize(str_from_stream.c_str(), str_from_stream.size());
+    sk2 = u_from_str.get_result();
+    check_if_equal(sk1, sk2, exact_compare);
   }
 
   void bad_prelongs() {
@@ -196,7 +233,7 @@ class var_opt_union_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(k, result.get_k());
   }
 
-void heavy_sampling_sketch() {
+  void heavy_sampling_sketch() {
     uint64_t n1 = 20;
     uint32_t k1 = 10;
     uint64_t n2 = 6;
@@ -224,142 +261,88 @@ void heavy_sampling_sketch() {
     result = u.get_result();
     CPPUNIT_ASSERT_EQUAL((uint64_t) 0, result.get_n());
     CPPUNIT_ASSERT_EQUAL(k1, result.get_k()); // union reset so empty result reflects max_k
-}
+  }
 
-void identical_sampling_sketches() {
-  uint32_t k = 20;
-  uint64_t n = 50;
-  var_opt_sketch<int> sk = create_unweighted_sketch(k, n);
+  void identical_sampling_sketches() {
+    uint32_t k = 20;
+    uint64_t n = 50;
+    var_opt_sketch<int> sk = create_unweighted_sketch(k, n);
 
-  var_opt_union<int> u(k);
-  u.update(sk);
-  u.update(sk);
+    var_opt_union<int> u(k);
+    u.update(sk);
+    u.update(sk);
 
-  var_opt_sketch<int> result = u.get_result();
-  double expected_wt = 2.0 * n;
-  subset_summary ss = result.estimate_subset_sum([](int x){return true;});
-  CPPUNIT_ASSERT_EQUAL(2 * n, result.get_n());
-  CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt, ss.total_sketch_weight, EPS);
+    var_opt_sketch<int> result = u.get_result();
+    double expected_wt = 2.0 * n;
+    subset_summary ss = result.estimate_subset_sum([](int x){return true;});
+    CPPUNIT_ASSERT_EQUAL(2 * n, result.get_n());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt, ss.total_sketch_weight, EPS);
 
-  // add another sketch, such that sketch_tau < outer_tau
-  sk = create_unweighted_sketch(k, k + 1); // tau = (k + 1) / k
-  u.update(sk);
-  result = u.get_result();
-  expected_wt = (2.0 * n) + k + 1;
-  ss = result.estimate_subset_sum([](int x){return true;});
-  CPPUNIT_ASSERT_EQUAL((2 * n) + k + 1, result.get_n());
-  CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt, ss.total_sketch_weight, EPS);
-}
+    // add another sketch, such that sketch_tau < outer_tau
+    sk = create_unweighted_sketch(k, k + 1); // tau = (k + 1) / k
+    u.update(sk);
+    result = u.get_result();
+    expected_wt = (2.0 * n) + k + 1;
+    ss = result.estimate_subset_sum([](int x){return true;});
+    CPPUNIT_ASSERT_EQUAL((2 * n) + k + 1, result.get_n());
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt, ss.total_sketch_weight, EPS);
+  }
 
-void small_sampling_sketch() {
-  uint32_t k_small = 16;
-  uint32_t k_max = 128;
-  uint64_t n1 = 32;
-  uint64_t n2 = 64;
+  void small_sampling_sketch() {
+    uint32_t k_small = 16;
+    uint32_t k_max = 128;
+    uint64_t n1 = 32;
+    uint64_t n2 = 64;
 
-  var_opt_sketch<float> sk(k_small);
-  for (int i = 0; i < n1; ++i) { sk.update(i); }
-  sk.update(-1, n1 * n1); // add a heavy item
+    var_opt_sketch<float> sk(k_small);
+    for (int i = 0; i < n1; ++i) { sk.update(i); }
+    sk.update(-1, n1 * n1); // add a heavy item
 
-  var_opt_union<float> u(k_max);
-  u.update(sk);
+    var_opt_union<float> u(k_max);
+    u.update(sk);
 
-  // another one, but different n to get a different per-item weight
-  var_opt_sketch<float> sk2(k_small);
-  for (int i = 0; i < n2; ++i) { sk2.update(i); }
-  u.update(sk2);
+    // another one, but different n to get a different per-item weight
+    var_opt_sketch<float> sk2(k_small);
+    for (int i = 0; i < n2; ++i) { sk2.update(i); }
+    u.update(sk2);
 
-  // should trigger migrate_marked_items_by_decreasing_k()
-  var_opt_sketch<float> result = u.get_result();
-  CPPUNIT_ASSERT_EQUAL(n1 + n2 + 1, result.get_n());
+    // should trigger migrate_marked_items_by_decreasing_k()
+    var_opt_sketch<float> result = u.get_result();
+    CPPUNIT_ASSERT_EQUAL(n1 + n2 + 1, result.get_n());
   
-  double expected_wt = 1.0 * (n1 + n2); // n1 + n2 light items, ignore the heavy one
-  subset_summary ss = result.estimate_subset_sum([](float x){return x >= 0;});
-  CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt, ss.estimate, EPS);
-  CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt + (n1 * n1), ss.total_sketch_weight, EPS);
-  CPPUNIT_ASSERT_LESS(k_max, result.get_k());
-}
+    double expected_wt = 1.0 * (n1 + n2); // n1 + n2 light items, ignore the heavy one
+    subset_summary ss = result.estimate_subset_sum([](float x){return x >= 0;});
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt, ss.estimate, EPS);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(expected_wt + (n1 * n1), ss.total_sketch_weight, EPS);
+    CPPUNIT_ASSERT_LESS(k_max, result.get_k());
 
-void serialize_empty() {
-  var_opt_union<std::string> u(100);
+    // check tha tmark information is preserved as expected
+    compare_serialization_deserialization(u, false);
+  }
 
-  std::vector<uint8_t> bytes = u.serialize();
+  void serialize_empty() {
+    var_opt_union<std::string> u(100);
 
-  var_opt_union<std::string> u_from_bytes = var_opt_union<std::string>::deserialize(bytes.data(), bytes.size());
-  var_opt_sketch<std::string> sk1 = u.get_result();
-  var_opt_sketch<std::string> sk2 = u_from_bytes.get_result();
-  check_if_equal(sk1, sk2);
+    compare_serialization_deserialization(u);
+  }
 
-  std::string str(bytes.begin(), bytes.end());
-  std::stringstream ss;
-  ss.str(str);
+  void serialize_exact() {
+    uint32_t k = 100;
+    var_opt_union<int> u(k);
+    var_opt_sketch<int> sk = create_unweighted_sketch(k, k / 2);
+    u.update(sk);
 
-  var_opt_union<std::string> u_from_stream = var_opt_union<std::string>::deserialize(ss);
-  sk2 = u_from_stream.get_result();
-  check_if_equal(sk1, sk2);
+    compare_serialization_deserialization(u);
+  }
 
-  ss.seekg(0); // didn't put anything so only reset read position
-  u.serialize(ss);
-  u_from_stream = var_opt_union<std::string>::deserialize(ss);
-  sk2 = u_from_stream.get_result();
-  check_if_equal(sk1, sk2); 
-}
+  void serialize_sampling() {
+    uint32_t k = 100;
+    var_opt_union<int> u(k);
+    var_opt_sketch<int> sk = create_unweighted_sketch(k, 2 * k);
+    u.update(sk);
 
-void serialize_exact() {
-  uint32_t k = 100;
-  var_opt_union<int> u(k);
-  var_opt_sketch<int> sk = create_unweighted_sketch(k, k / 2);
-  u.update(sk);
-
-  std::vector<uint8_t> bytes = u.serialize();
-
-  var_opt_union<int> u_from_bytes = var_opt_union<int>::deserialize(bytes.data(), bytes.size());
-  var_opt_sketch<int> sk1 = u.get_result();
-  var_opt_sketch<int> sk2 = u_from_bytes.get_result();
-  check_if_equal(sk1, sk2);
-
-  std::string str(bytes.begin(), bytes.end());
-  std::stringstream ss;
-  ss.str(str);
-
-  var_opt_union<int> u_from_stream = var_opt_union<int>::deserialize(ss);
-  sk2 = u_from_stream.get_result();
-  check_if_equal(sk1, sk2);
-
-  ss.seekg(0); // didn't put anything so only reset read position
-  u.serialize(ss);
-  u_from_stream = var_opt_union<int>::deserialize(ss);
-  sk2 = u_from_stream.get_result();
-  check_if_equal(sk1, sk2); 
-}
-
-void serialize_sampling() {
-  uint32_t k = 100;
-  var_opt_union<int> u(k);
-  var_opt_sketch<int> sk = create_unweighted_sketch(k, 2 * k);
-  u.update(sk);
-
-  std::vector<uint8_t> bytes = u.serialize();
-
-  var_opt_union<int> u_from_bytes = var_opt_union<int>::deserialize(bytes.data(), bytes.size());
-  var_opt_sketch<int> sk1 = u.get_result();
-  var_opt_sketch<int> sk2 = u_from_bytes.get_result();
-  check_if_equal(sk1, sk2);
-
-  std::string str(bytes.begin(), bytes.end());
-  std::stringstream ss;
-  ss.str(str);
-
-  var_opt_union<int> u_from_stream = var_opt_union<int>::deserialize(ss);
-  sk2 = u_from_stream.get_result();
-  check_if_equal(sk1, sk2);
-
-  ss.seekg(0); // didn't put anything so only reset read position
-  u.serialize(ss);
-  u_from_stream = var_opt_union<int>::deserialize(ss);
-  sk2 = u_from_stream.get_result();
-  check_if_equal(sk1, sk2); 
-}
+    compare_serialization_deserialization(u);
+  }
 
 /**********************************************************/
 
