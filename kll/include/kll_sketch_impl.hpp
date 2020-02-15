@@ -932,11 +932,6 @@ items(items), levels(levels), num_levels(num_levels), index(levels == nullptr ? 
 {}
 
 template<typename T, typename C, typename S, typename A>
-kll_sketch<T, C, S, A>::const_iterator::const_iterator(const const_iterator& other):
-items(other.items), levels(other.levels), num_levels(other.num_levels), index(other.index), level(other.level), weight(other.weight)
-{}
-
-template<typename T, typename C, typename S, typename A>
 typename kll_sketch<T, C, S, A>::const_iterator& kll_sketch<T, C, S, A>::const_iterator::operator++() {
   ++index;
   if (index == levels[level + 1]) { // go to the next non-empty level
