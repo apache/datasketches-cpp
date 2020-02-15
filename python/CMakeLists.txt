@@ -34,6 +34,7 @@ target_link_libraries(python
     cpc
     fi
     theta
+    sampling
     pybind11::module
 )
 
@@ -55,4 +56,5 @@ target_sources(python
     src/cpc_wrapper.cpp
     src/fi_wrapper.cpp
     src/theta_wrapper.cpp
+    src/vo_wrapper.cpp
 )

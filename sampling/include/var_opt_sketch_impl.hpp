@@ -687,6 +687,13 @@ std::ostream& var_opt_sketch<T,S,A>::to_stream(std::ostream& os) const {
   os << "   weight_r     : " << total_wt_r_ << std::endl;
   os << "   Current size : " << curr_items_alloc_ << std::endl;
   os << "   Resize factor: " << (1 << rf_) << std::endl;
+  os << "### END SKETCH SUMMARY" << std::endl;
+
+  return os;
+}
+
+template<typename T, typename S, typename A>
+std::ostream& var_opt_sketch<T,S,A>::items_to_stream(std::ostream& os) const {
   os << "### Sketch Items" << std::endl;
 
   uint32_t print_length = (n_ < k_ ? n_ : k_ + 1);
@@ -697,8 +704,6 @@ std::ostream& var_opt_sketch<T,S,A>::to_stream(std::ostream& os) const {
       os << i << ": " << data_[i] << "\twt = " << weights_[i] << std::endl;
     }
   }
-  
-  os << "### END SKETCH SUMMARY" << std::endl;
 
   return os;
 }
@@ -707,6 +712,13 @@ template <typename T, typename S, typename A>
 std::string var_opt_sketch<T,S,A>::to_string() const {
   std::ostringstream ss;
   to_stream(ss);
+  return ss.str();
+}
+
+template <typename T, typename S, typename A>
+std::string var_opt_sketch<T,S,A>::items_to_string() const {
+  std::ostringstream ss;
+  items_to_stream(ss);
   return ss.str();
 }
 

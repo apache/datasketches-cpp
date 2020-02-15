@@ -313,7 +313,6 @@ std::string var_opt_union<T,S,A>::to_string() const {
   return ss.str();
 }
 
-
 template<typename T, typename S, typename A>
 void var_opt_union<T,S,A>::update(var_opt_sketch<T,S,A>& sk) {
   merge_into(sk);

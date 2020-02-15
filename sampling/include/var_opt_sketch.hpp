@@ -90,6 +90,11 @@ class var_opt_sketch {
     std::ostream& to_stream(std::ostream& os) const;
     std::string to_string() const;
 
+    // These will only work for T with a defined operator<<()
+    // Kept separate to allow to_string() to compile for all types T
+    std::ostream& items_to_stream(std::ostream& os) const;
+    std::string items_to_string() const;
+
     subset_summary estimate_subset_sum(std::function<bool(T)> predicate) const;
 
     class const_iterator;
