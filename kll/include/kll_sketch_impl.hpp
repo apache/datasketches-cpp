@@ -153,18 +153,20 @@ kll_sketch<T, C, S, A>::~kll_sketch() {
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::update(const T& value) {
-  const uint32_t index = internal_update(value);
+  update_min_max(value);
+  const uint32_t index = internal_update();
   new (&items_[index]) T(value);
 }
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::update(T&& value) {
-  const uint32_t index = internal_update(value);
+  update_min_max(value);
+  const uint32_t index = internal_update();
   new (&items_[index]) T(std::move(value));
 }
 
 template<typename T, typename C, typename S, typename A>
-uint32_t kll_sketch<T, C, S, A>::internal_update(const T& value) {
+void kll_sketch<T, C, S, A>::update_min_max(const T& value) {
   if (is_empty()) {
     min_value_ = new (A().allocate(1)) T(value);
     max_value_ = new (A().allocate(1)) T(value);
@@ -172,6 +174,10 @@ uint32_t kll_sketch<T, C, S, A>::internal_update(const T& value) {
     if (C()(value, *min_value_)) *min_value_ = value;
     if (C()(*max_value_, value)) *max_value_ = value;
   }
+}
+
+template<typename T, typename C, typename S, typename A>
+uint32_t kll_sketch<T, C, S, A>::internal_update() {
   if (levels_[0] == 0) compress_while_updating();
   n_++;
   is_level_zero_sorted_ = false;
@@ -184,10 +190,6 @@ void kll_sketch<T, C, S, A>::merge(const kll_sketch& other) {
   if (m_ != other.m_) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
   }
-  const uint64_t final_n = n_ + other.n_;
-  for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
-    update(other.items_[i]);
-  }
   if (is_empty()) {
     min_value_ = new (A().allocate(1)) T(*other.min_value_);
     max_value_ = new (A().allocate(1)) T(*other.max_value_);
@@ -195,7 +197,36 @@ void kll_sketch<T, C, S, A>::merge(const kll_sketch& other) {
     if (C()(*other.min_value_, *min_value_)) *min_value_ = *other.min_value_;
     if (C()(*max_value_, *other.max_value_)) *max_value_ = *other.max_value_;
   }
+  const uint64_t final_n = n_ + other.n_;
+  for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
+    const uint32_t index = internal_update();
+    new (&items_[index]) T(other.items_[i]);
+  }
   if (other.num_levels_ >= 2) merge_higher_levels(other, final_n);
+  n_ = final_n;
+  if (other.is_estimation_mode()) min_k_ = std::min(min_k_, other.min_k_);
+  assert_correct_total_weight();
+}
+
+template<typename T, typename C, typename S, typename A>
+void kll_sketch<T, C, S, A>::merge(kll_sketch&& other) {
+  if (other.is_empty()) return;
+  if (m_ != other.m_) {
+    throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
+  }
+  if (is_empty()) {
+    min_value_ = new (A().allocate(1)) T(std::move(*other.min_value_));
+    max_value_ = new (A().allocate(1)) T(std::move(*other.max_value_));
+  } else {
+    if (C()(*other.min_value_, *min_value_)) *min_value_ = std::move(*other.min_value_);
+    if (C()(*max_value_, *other.max_value_)) *max_value_ = std::move(*other.max_value_);
+  }
+  const uint64_t final_n = n_ + other.n_;
+  for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
+    const uint32_t index = internal_update();
+    new (&items_[index]) T(std::move(other.items_[i]));
+  }
+  if (other.num_levels_ >= 2) merge_higher_levels(std::forward<kll_sketch>(other), final_n);
   n_ = final_n;
   if (other.is_estimation_mode()) min_k_ = std::min(min_k_, other.min_k_);
   assert_correct_total_weight();
@@ -734,7 +765,8 @@ void kll_sketch<T, C, S, A>::increment_buckets_sorted_level(uint32_t from_index,
 }
 
 template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::merge_higher_levels(const kll_sketch& other, uint64_t final_n) {
+template<typename O>
+void kll_sketch<T, C, S, A>::merge_higher_levels(O&& other, uint64_t final_n) {
   const uint32_t tmp_num_items = get_num_retained() + other.get_num_retained_above_level_zero();
   auto tmp_items_deleter = [tmp_num_items](T* ptr) { A().deallocate(ptr, tmp_num_items); }; // no destructor needed
   const std::unique_ptr<T, decltype(tmp_items_deleter)> workbuf(A().allocate(tmp_num_items), tmp_items_deleter);
@@ -746,7 +778,7 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(const kll_sketch& other, uint64
 
   const uint8_t provisional_num_levels = std::max(num_levels_, other.num_levels_);
 
-  populate_work_arrays(other, workbuf.get(), worklevels.get(), provisional_num_levels);
+  populate_work_arrays(std::forward<O>(other), workbuf.get(), worklevels.get(), provisional_num_levels);
 
   const kll_helper::compress_result result = kll_helper::general_compress<T, C>(k_, m_, provisional_num_levels, workbuf.get(),
       worklevels.get(), outlevels.get(), is_level_zero_sorted_);
@@ -776,6 +808,7 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(const kll_sketch& other, uint64
 }
 
 // this leaves items_ uninitialized (all objects moved out and destroyed)
+// this version copies objects from the incoming sketch
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {
   worklevels[0] = 0;
@@ -793,6 +826,31 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
       kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], true);
     } else if ((self_pop == 0) and (other_pop > 0)) {
       kll_helper::copy_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl]);
+    } else if ((self_pop > 0) and (other_pop > 0)) {
+      kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
+    }
+  }
+}
+
+// this leaves items_ uninitialized (all objects moved out and destroyed)
+// this version moves objects from the incoming sketch
+template<typename T, typename C, typename S, typename A>
+void kll_sketch<T, C, S, A>::populate_work_arrays(kll_sketch&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {
+  worklevels[0] = 0;
+
+  // the level zero data from "other" was already inserted into "this"
+  kll_helper::move_construct<T>(items_, levels_[0], levels_[1], workbuf, 0, true);
+  worklevels[1] = safe_level_size(0);
+
+  for (uint8_t lvl = 1; lvl < provisional_num_levels; lvl++) {
+    const uint32_t self_pop = safe_level_size(lvl);
+    const uint32_t other_pop = other.safe_level_size(lvl);
+    worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;
+
+    if ((self_pop > 0) and (other_pop == 0)) {
+      kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], true);
+    } else if ((self_pop == 0) and (other_pop > 0)) {
+      kll_helper::move_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl], false);
     } else if ((self_pop > 0) and (other_pop > 0)) {
       kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
     }

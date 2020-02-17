@@ -169,6 +169,7 @@ class kll_sketch {
     void update(const T& value);
     void update(T&& value);
     void merge(const kll_sketch& other);
+    void merge(kll_sketch&& other);
     bool is_empty() const;
     uint64_t get_n() const;
     uint32_t get_num_retained() const;
@@ -207,12 +208,6 @@ class kll_sketch {
       for (auto& it: *this) size += S().size_of_item(it.first);
       return size;
     }
-
-    // this may need to be specialized to return correct size if sizeof(T) does not match the actual serialized size of an item
-    // this method is for the user's convenience to predict the sketch size before serialization
-    // and is not used in the serialization and deserialization code
-    // predicting the size before serialization may not make sense if the item type is not of a fixed size (like string)
-    static size_t get_max_serialized_size_bytes(uint16_t k, uint64_t n);
 
     void serialize(std::ostream& os) const;
     typedef vector_u8<A> vector_bytes; // alias for users
@@ -287,7 +282,8 @@ class kll_sketch {
     kll_sketch(uint16_t k, uint8_t flags_byte, const void* bytes, size_t size);
 
     // common update code
-    inline uint32_t internal_update(const T& value);
+    inline void update_min_max(const T& value);
+    inline uint32_t internal_update();
 
     // The following code is only valid in the special case of exactly reaching capacity while updating.
     // It cannot be used while merging, while reducing k, or anything else.
@@ -302,8 +298,9 @@ class kll_sketch {
         const T* split_points, uint32_t size, double* buckets) const;
     void increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
         const T* split_points, uint32_t size, double* buckets) const;
-    void merge_higher_levels(const kll_sketch& other, uint64_t final_n);
+    template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);
     void populate_work_arrays(const kll_sketch& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
+    void populate_work_arrays(kll_sketch&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
     void assert_correct_total_weight() const;
     uint32_t safe_level_size(uint8_t level) const;
     uint32_t get_num_retained_above_level_zero() const;
