@@ -21,6 +21,7 @@
 #include "var_opt_union.hpp"
 
 #include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
 #include <sstream>
 
 namespace py = pybind11;
@@ -36,6 +37,17 @@ py::list vo_sketch_get_samples(const var_opt_sketch<T>& sk) {
     list.append(t);
   }
   return list;
+}
+
+template<typename T>
+py::dict vo_sketch_estimate_subset_sum(const var_opt_sketch<T>& sk, const std::function<bool(T)> func) {
+  subset_summary summary = sk.estimate_subset_sum(func);
+  py::dict d;
+  d["estimate"] = summary.estimate;
+  d["lower_bound"] = summary.lower_bound;
+  d["upper_bound"] = summary.upper_bound;
+  d["total_sketch_weight"] = summary.total_sketch_weight;
+  return d;
 }
 
 template<typename T>
@@ -78,14 +90,15 @@ void bind_vo_sketch(py::module &m, const char* name) {
 
   py::class_<var_opt_sketch<T>>(m, name)
     .def(py::init<uint32_t>(), py::arg("k"))
-    .def("__str__", &dspy::vo_sketch_to_string<T>, py::arg("print_items"))
-    .def("to_string", &dspy::vo_sketch_to_string<T>, py::arg("print_items"))
+    .def("__str__", &dspy::vo_sketch_to_string<T>, py::arg("print_items")=false)
+    .def("to_string", &dspy::vo_sketch_to_string<T>, py::arg("print_items")=false)
     .def("update", (void (var_opt_sketch<T>::*)(const T&, double)) &var_opt_sketch<T>::update, py::arg("item"), py::arg("weight")=1.0)
     .def_property_readonly("k", &var_opt_sketch<T>::get_k)
     .def_property_readonly("n", &var_opt_sketch<T>::get_n)
     .def_property_readonly("num_samples", &var_opt_sketch<T>::get_num_samples)
     .def("get_samples", &dspy::vo_sketch_get_samples<T>)
     .def("is_empty", &var_opt_sketch<T>::is_empty)
+    .def("estimate_subset_sum", &dspy::vo_sketch_estimate_subset_sum<T>)
     // As of writing, not yet clear how to serialize arbitrary python objects,
     // especially in any sort of language-portable way
     //.def("get_serialized_size_bytes", &var_opt_sketch<T>::get_serialized_size_bytes)
@@ -115,6 +128,6 @@ void bind_vo_union(py::module &m, const char* name) {
 
 
 void init_vo(py::module &m) {
-  bind_vo_sketch<py::object>(m, "varopt_object_sketch");
-  bind_vo_union<py::object>(m, "varopt_object_uunion");
+  bind_vo_sketch<py::object>(m, "var_opt_sketch");
+  bind_vo_union<py::object>(m, "var_opt_union");
 }

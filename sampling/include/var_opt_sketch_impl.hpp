@@ -62,13 +62,13 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other) :
     if (other.filled_data_) {
       // copy everything
       for (size_t i = 0; i < curr_items_alloc_; ++i)
-        data_[i] = other.data_[i];
+        A().construct(&data_[i], T(other.data_[i]));
     } else {
       // skip gap or anything unused at the end
       for (size_t i = 0; i < h_; ++i)
-        data_[i] = other.data_[i];
+        A().construct(&data_[i], T(other.data_[i]));
       for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
-        data_[i] = other.data_[i];
+        A().construct(&data_[i], T(other.data_[i]));
     }
     
     weights_ = AllocDouble().allocate(curr_items_alloc_);
@@ -101,19 +101,19 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other, bool as_sketc
     if (other.filled_data_) {
       // copy everything
       for (size_t i = 0; i < curr_items_alloc_; ++i)
-        data_[i] = other.data_[i];
+        A().construct(&data_[i], T(other.data_[i]));
     } else {
       // skip gap or anything unused at the end
       for (size_t i = 0; i < h_; ++i)
-        data_[i] = other.data_[i];
+        A().construct(&data_[i], T(other.data_[i]));
       for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
-        data_[i] = other.data_[i];
+        A().construct(&data_[i], T(other.data_[i]));
     }
-    
+
     weights_ = AllocDouble().allocate(curr_items_alloc_);
     // doubles so can successfully copy regardless of the internal state
     std::copy(&other.weights_[0], &other.weights_[curr_items_alloc_], weights_);
-    
+
     if (!as_sketch && other.marks_ != nullptr) {
       marks_ = AllocBool().allocate(curr_items_alloc_);
       std::copy(&other.marks_[0], &other.marks_[curr_items_alloc_], marks_);

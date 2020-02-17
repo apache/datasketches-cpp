@@ -483,7 +483,7 @@ void var_opt_union<T,S,A>::mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk)
   // Addedndum (Jan 2020): Cleanup at end of method assumes R count is 0
   size_t final_idx = gadget_.get_num_samples();
   for (size_t idx = gadget_.h_ + 1; idx <= final_idx; ++idx) {
-    data[next_r_pos] = gadget_.data_[idx];
+    A().construct(&data[next_r_pos], T(gadget_.data_[idx]));
     wts[next_r_pos]  = gadget_.weights_[idx];
     ++result_r;
     --next_r_pos;
@@ -494,13 +494,13 @@ void var_opt_union<T,S,A>::mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk)
   // insert H region items
   for (size_t idx = 0; idx < gadget_.h_; ++idx) {
     if (gadget_.marks_[idx]) {
-      data[next_r_pos] = gadget_.data_[idx];
+      A().construct(&data[next_r_pos], T(gadget_.data_[idx]));
       wts[next_r_pos] = -1.0;
       transferred_weight += gadget_.weights_[idx];
       ++result_r;
       --next_r_pos;
     } else {
-      data[result_h] = gadget_.data_[idx];
+      A().construct(&data[result_h], T(gadget_.data_[idx]));
       wts[result_h] = gadget_.weights_[idx];
       ++result_h;
     }
