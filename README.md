@@ -35,3 +35,14 @@ Building and running unit tests using cmake:
 	$ cmake ..
 	$ make
 	$ make test
+
+## How to Contact Us
+* We have two ASF [the-ASF.slack.com](http://the-ASF.slack.com) slack channels:
+    * datasketches -- general user questions
+    * datasketches-dev -- similar to our Apache [Developers Mail list](https://lists.apache.org/list.html?dev@datasketches.apache.org), except more interactive, but not as easily searchable.
+
+* For bugs and performance issues please subscribe: [Issues for datasketches-cpp](https://github.com/apache/incubator-datasketches-cpp/issues) 
+
+* For general questions about using the library please subscribe: [Users Mail List](https://lists.apache.org/list.html?users@datasketches.apache.org)
+
+* If you are interested in contributing please subscribe: [Developers Mail list](https://lists.apache.org/list.html?dev@datasketches.apache.org)
