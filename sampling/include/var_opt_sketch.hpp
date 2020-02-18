@@ -55,7 +55,7 @@ class var_opt_sketch {
     static const resize_factor DEFAULT_RESIZE_FACTOR = X8;
     static const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2;
 
-    var_opt_sketch(uint32_t k, resize_factor rf = DEFAULT_RESIZE_FACTOR);
+    explicit var_opt_sketch(uint32_t k, resize_factor rf = DEFAULT_RESIZE_FACTOR);
     var_opt_sketch(const var_opt_sketch& other);
     var_opt_sketch(var_opt_sketch&& other) noexcept;
     static var_opt_sketch deserialize(std::istream& is);
@@ -238,7 +238,7 @@ private:
   double cum_r_weight_; // used for weight correction
   double r_item_wt_;
   size_t idx_;
-  size_t final_idx_;
+  const size_t final_idx_;
   bool weight_correction_;
 };
 

@@ -314,7 +314,7 @@ std::string var_opt_union<T,S,A>::to_string() const {
 }
 
 template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::update(var_opt_sketch<T,S,A>& sk) {
+void var_opt_union<T,S,A>::update(const var_opt_sketch<T,S,A>& sk) {
   merge_into(sk);
 }
 
@@ -481,7 +481,7 @@ void var_opt_union<T,S,A>::mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk)
   // pseudo-exact case in which case there are no items natively in R, only marked items in H
   // that will be moved into R as part of the coercion process.
   // Addedndum (Jan 2020): Cleanup at end of method assumes R count is 0
-  size_t final_idx = gadget_.get_num_samples();
+  const size_t final_idx = gadget_.get_num_samples();
   for (size_t idx = gadget_.h_ + 1; idx <= final_idx; ++idx) {
     A().construct(&data[next_r_pos], T(gadget_.data_[idx]));
     wts[next_r_pos]  = gadget_.weights_[idx];

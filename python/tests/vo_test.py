@@ -87,13 +87,13 @@ class VoTest(unittest.TestCase):
 
     # we can compare what information is available from both
     # the union and a sketch.
-    print(union)
+    union_str = union.to_string()
 
     # if we want to print the list of itmes, there must be a
     # __str__() method for each item (which need not be the same
     # type; they're all generic python objects when used from
     # pythoh), otherwise you may trigger an exception
-    print(result.to_string(True))
+    result_str = result.to_string(True)
 
 if __name__ == '__main__':
   unittest.main()

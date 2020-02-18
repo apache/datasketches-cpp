@@ -881,7 +881,7 @@ void var_opt_sketch<T,S,A>::decrease_k_by_1() {
     // the push() of the item that will probably happen later will be cheap.
 
     uint32_t pulled_idx = h_ - 1;
-    T pulled_item = data_[pulled_idx];
+    T&& pulled_item = std::move(data_[pulled_idx]);
     double pulled_weight = weights_[pulled_idx];
     bool pulled_mark = marks_[pulled_idx];
 
@@ -944,8 +944,8 @@ void var_opt_sketch<T,S,A>::grow_data_arrays() {
     A().deallocate(data_, prev_size);
     AllocDouble().deallocate(weights_, prev_size);
 
-    data_ = std::move(tmp_data);
-    weights_ = std::move(tmp_weights);
+    data_ = tmp_data;
+    weights_ = tmp_weights;
 
     if (marks_ != nullptr) {
       bool* tmp_marks = AllocBool().allocate(curr_items_alloc_);
@@ -953,7 +953,7 @@ void var_opt_sketch<T,S,A>::grow_data_arrays() {
         tmp_marks[i] = marks_[i];
       }
       AllocBool().deallocate(marks_, prev_size);
-      marks_ = std::move(tmp_marks);
+      marks_ = tmp_marks;
     }
   }
 }
@@ -1014,7 +1014,7 @@ void var_opt_sketch<T,S,A>::restore_towards_leaves(int slot_in) {
   while (child <= last_slot) {
     int child2 = child + 1; // might also be invalid
     if ((child2 <= last_slot) && (weights_[child2] < weights_[child])) {
-      // siwtch to otehr vhild if it's both valid and smaller
+      // siwtch to other child if it's both valid and smaller
       child = child2;
     }
 
@@ -1087,18 +1087,11 @@ void var_opt_sketch<T,S,A>::pop_min_to_m_region() {
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::swap_values(int src, int dst) {
-  T item = std::move(data_[src]);
-  data_[src] = std::move(data_[dst]);
-  data_[dst] = std::move(item);
-
-  double wt = weights_[src];
-  weights_[src] = weights_[dst];
-  weights_[dst] = wt;
+  std::swap(data_[src], data_[dst]);
+  std::swap(weights_[src], weights_[dst]);
 
   if (marks_ != nullptr) {
-    bool mark = marks_[src];
-    marks_[src] = marks_[dst];
-    marks_[dst] = mark;
+    std::swap(marks_[src], marks_[dst]);
   }
 }
 
@@ -1393,10 +1386,10 @@ var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),
+  final_idx_(sk.r_ > 0 ? sk.h_ + sk.r_ + 1 : sk.h_),
   weight_correction_(false)
 {
   // index logic easier to read if not inline
-  final_idx_ = (sk.r_ > 0 ? sk.h_ + sk.r_ + 1 : sk.h_);
   if (is_end) {
     idx_ = final_idx_;
     sk_ = nullptr;
@@ -1413,15 +1406,14 @@ var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),
+  final_idx_(sk.h_ + (use_r_region ? 1 + sk.r_ : 0)),
   weight_correction_(weight_corr)
 {
   if (use_r_region) {
     idx_ = sk.h_ + 1 + (is_end ? sk.r_ : 0);
-    final_idx_ = sk.h_ + 1 + sk.r_;
   } else { // H region
     // gap at start only if h_ == 0, so index always starts at 0
     idx_ = (is_end ? sk.h_ : 0);
-    final_idx_ = sk.h_;
   }
   
   // unlike in full iterator case, may happen even if sketch is not empty

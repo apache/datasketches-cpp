@@ -51,7 +51,7 @@ public:
   var_opt_union& operator=(const var_opt_union& other);
   var_opt_union& operator=(var_opt_union&& other);
 
-  void update(var_opt_sketch<T,S,A>& sk);
+  void update(const var_opt_sketch<T,S,A>& sk);
   //void update(var_opt_sketch<T,S,A>&& sk);
 
   void reset();
