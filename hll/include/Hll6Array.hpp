@@ -21,7 +21,6 @@
 #define _HLL6ARRAY_HPP_
 
 #include "HllArray.hpp"
-#include "HllPairIterator.hpp"
 
 namespace datasketches {
 
@@ -39,30 +38,16 @@ class Hll6Array final : public HllArray<A> {
 
     virtual Hll6Array* copy() const;
 
-    virtual pair_iterator_with_deleter<A> getIterator() const;
-
-    virtual int getSlot(int slotNo) const final;
-    virtual void putSlot(int slotNo, int value) final;
+    inline uint8_t getSlot(int slotNo) const;
+    inline void putSlot(int slotNo, uint8_t value);
 
     virtual HllSketchImpl<A>* couponUpdate(int coupon) final;
+    void mergeHll(const HllArray<A>& src);
 
     virtual int getHllByteArrBytes() const;
 
-  protected:
-    friend class Hll6Iterator<A>;
-};
-
-template<typename A>
-class Hll6Iterator : public HllPairIterator<A> {
-  public:
-    Hll6Iterator(const Hll6Array<A>& array, int lengthPairs);
-    virtual int value();
-
-    virtual ~Hll6Iterator();
-
   private:
-    const Hll6Array<A>& hllArray;
-    int bitOffset;
+    void internalCouponUpdate(int coupon);
 };
 
 }

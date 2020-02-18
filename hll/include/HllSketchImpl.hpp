@@ -22,7 +22,6 @@
 
 #include "HllUtil.hpp"
 #include "hll.hpp" // for TgtHllType
-#include "PairIterator.hpp"
 
 #include <memory>
 
@@ -52,9 +51,7 @@ class HllSketchImpl {
     virtual double getUpperBound(int numStdDev) const = 0;
     virtual double getLowerBound(int numStdDev) const = 0;
 
-    virtual pair_iterator_with_deleter<A> getIterator() const = 0;
-
-    int getLgConfigK() const;
+    inline int getLgConfigK() const;
 
     virtual int getMemDataStart() const = 0;
 

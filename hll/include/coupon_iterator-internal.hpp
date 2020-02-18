@@ -17,39 +17,40 @@
  * under the License.
  */
 
-#ifndef _HLLPAIRITERATOR_HPP_
-#define _HLLPAIRITERATOR_HPP_
+#ifndef _INTARRAYPAIRITERATOR_INTERNAL_HPP_
+#define _INTARRAYPAIRITERATOR_INTERNAL_HPP_
 
-#include "PairIterator.hpp"
-#include "HllArray.hpp"
+#include "HllUtil.hpp"
 
 namespace datasketches {
 
 template<typename A>
-class HllPairIterator : public PairIterator<A> {
-  public:
-    HllPairIterator(const int lengthPairs);
-    virtual ~HllPairIterator() = default;
-    virtual std::string getHeader();
-    virtual int getIndex();
-    virtual int getKey();
-    virtual int getPair();
-    virtual int getSlot();
-    virtual std::string getString();
-    virtual int getValue();
-    virtual bool nextAll();
-    virtual bool nextValid();
+coupon_iterator<A>::coupon_iterator(const int* array, size_t array_size, size_t index, bool all):
+array(array), array_size(array_size), index(index), all(all) {
+  while (this->index < array_size) {
+    if (all || array[this->index] != HllUtil<A>::EMPTY) break;
+    this->index++;
+  }
+}
 
-  protected:
-    virtual int value() = 0;
+template<typename A>
+coupon_iterator<A>& coupon_iterator<A>::operator++() {
+  while (++index < array_size) {
+    if (all || array[index] != HllUtil<A>::EMPTY) break;
+  }
+  return *this;
+}
 
-    const int lengthPairs;
-    int index;
-    int val;
-};
+template<typename A>
+bool coupon_iterator<A>::operator!=(const coupon_iterator& other) const {
+  return index != other.index;
+}
+
+template<typename A>
+uint32_t coupon_iterator<A>::operator*() const {
+  return array[index];
+}
 
 }
 
-#include "HllPairIterator-internal.hpp"
-
-#endif /* _HLLPAIRITERATOR_HPP_ */
+#endif // _INTARRAYPAIRITERATOR_INTERNAL_HPP_

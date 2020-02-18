@@ -22,7 +22,6 @@
 
 #include "CouponHashSet.hpp"
 
-#include <string>
 #include <cstring>
 #include <exception>
 

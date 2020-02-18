@@ -22,12 +22,6 @@
 
 #include "HllUtil.hpp"
 #include "AuxHashMap.hpp"
-#include "PairIterator.hpp"
-#include "IntArrayPairIterator.hpp"
-
-#include <cstring>
-#include <sstream>
-#include <memory>
 
 namespace datasketches {
 
@@ -202,20 +196,6 @@ int AuxHashMap<A>::getUpdatableSizeBytes() const {
 }
 
 template<typename A>
-std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>> AuxHashMap<A>::getIterator() const {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<IntArrayPairIterator<A>> iapiAlloc;
-  IntArrayPairIterator<A>* itr = new (iapiAlloc().allocate(1)) IntArrayPairIterator<A>(auxIntArr, 1 << lgAuxArrInts, lgConfigK);
-  return std::unique_ptr<PairIterator<A>, std::function<void(PairIterator<A>*)>>(
-    itr,
-    [](PairIterator<A>* ptr) {
-      IntArrayPairIterator<A>* itr = static_cast<IntArrayPairIterator<A>*>(ptr);
-      itr->~IntArrayPairIterator();
-      iapiAlloc().deallocate(itr, 1);
-    }
-    );
-}
-
-template<typename A>
 void AuxHashMap<A>::mustAdd(const int slotNo, const int value) {
   const int index = find(auxIntArr, lgAuxArrInts, lgConfigK, slotNo);
   const int entry_pair = HllUtil<A>::pair(slotNo, value);
@@ -231,7 +211,7 @@ void AuxHashMap<A>::mustAdd(const int slotNo, const int value) {
 }
 
 template<typename A>
-int AuxHashMap<A>::mustFindValueFor(const int slotNo) {
+int AuxHashMap<A>::mustFindValueFor(const int slotNo) const {
   const int index = find(auxIntArr, lgAuxArrInts, lgConfigK, slotNo);
   if (index >= 0) {
     return HllUtil<A>::getValue(auxIntArr[index]);
@@ -304,6 +284,16 @@ int AuxHashMap<A>::find(const int* auxArr, const int lgAuxArrInts, const int lgC
     probe = (probe + stride) & auxArrMask;
   } while (probe != loopIndex);
   throw std::runtime_error("Key not found and no empty slots!");
+}
+
+template<typename A>
+coupon_iterator<A> AuxHashMap<A>::begin(bool all) const {
+  return coupon_iterator<A>(auxIntArr, 1 << lgAuxArrInts, 0, all);
+}
+
+template<typename A>
+coupon_iterator<A> AuxHashMap<A>::end() const {
+  return coupon_iterator<A>(auxIntArr, 1 << lgAuxArrInts, 1 << lgAuxArrInts, false);
 }
 
 }

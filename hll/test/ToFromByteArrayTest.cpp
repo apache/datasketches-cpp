@@ -32,7 +32,7 @@ class ToFromByteArrayTest : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(ToFromByteArrayTest);
   CPPUNIT_TEST(deserializeFromJava);
   CPPUNIT_TEST(toFromSketch);
-  //CPPUNIT_TEST(doubleSerialize);
+  CPPUNIT_TEST(doubleSerialize);
   CPPUNIT_TEST_SUITE_END();
 
   void doubleSerialize() {
