@@ -36,6 +36,7 @@ class kll_sketch_custom_type_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(merge_small);
   CPPUNIT_TEST(merge_higher_levels);
   CPPUNIT_TEST(serialize_deserialize);
+  CPPUNIT_TEST(moving_merge);
   CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -148,6 +149,17 @@ public:
     CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(0), sketch2.get_rank(0));
     CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(n), sketch2.get_rank(n));
     CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(n / 2), sketch2.get_rank(n / 2));
+  }
+
+  void moving_merge() {
+    kll_test_type_sketch sketch1(8);
+    for (int i = 0; i < 10; i++) sketch1.update(i);
+    kll_test_type_sketch sketch2(8);
+    sketch2.update(10);
+    sketch2.merge(std::move(sketch1));
+    CPPUNIT_ASSERT_EQUAL(0, sketch2.get_min_value().get_value());
+    CPPUNIT_ASSERT_EQUAL(10, sketch2.get_max_value().get_value());
+    CPPUNIT_ASSERT_EQUAL(11, (int) sketch2.get_n());
   }
 
 };

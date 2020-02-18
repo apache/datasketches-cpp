@@ -29,25 +29,25 @@ class test_type {
 public:
   // no default constructor should be required
   test_type(int value): value(value) {
-    if (DEBUG) std::cerr << "A constructor" << std::endl;
+    if (DEBUG) std::cerr << "test_type constructor" << std::endl;
   }
   ~test_type() {
-    if (DEBUG) std::cerr << "A destructor" << std::endl;
+    if (DEBUG) std::cerr << "test_type destructor" << std::endl;
   }
   test_type(const test_type& other): value(other.value) {
-    if (DEBUG) std::cerr << "A copy constructor" << std::endl;
+    if (DEBUG) std::cerr << "test_type copy constructor" << std::endl;
   }
   // noexcept is important here so that, for instance, std::vector could move this type
   test_type(test_type&& other) noexcept : value(other.value) {
-    if (DEBUG) std::cerr << "A move constructor" << std::endl;
+    if (DEBUG) std::cerr << "test_type move constructor" << std::endl;
   }
   test_type& operator=(const test_type& other) {
-    if (DEBUG) std::cerr << "A copy assignment" << std::endl;
+    if (DEBUG) std::cerr << "test_type copy assignment" << std::endl;
     value = other.value;
     return *this;
   }
   test_type& operator=(test_type&& other) {
-    if (DEBUG) std::cerr << "A move assignment" << std::endl;
+    if (DEBUG) std::cerr << "test_type move assignment" << std::endl;
     value = other.value;
     return *this;
   }
