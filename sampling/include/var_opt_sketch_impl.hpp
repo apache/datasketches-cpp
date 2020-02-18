@@ -492,11 +492,11 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::serialize(std::ostream& os) const {
-  bool empty = (h_ == 0) && (r_ == 0);
+  const bool empty = (h_ == 0) && (r_ == 0);
 
-  uint8_t preLongs = (empty ? PREAMBLE_LONGS_EMPTY
+  const uint8_t preLongs = (empty ? PREAMBLE_LONGS_EMPTY
                                   : (r_ == 0 ? PREAMBLE_LONGS_WARMUP : PREAMBLE_LONGS_FULL));
-  uint8_t first_byte = (preLongs & 0x3F) | ((static_cast<uint8_t>(rf_)) << 6);
+  const uint8_t first_byte = (preLongs & 0x3F) | ((static_cast<uint8_t>(rf_)) << 6);
   uint8_t flags = (marks_ != nullptr ? GADGET_FLAG_MASK : 0);
 
   if (empty) {
@@ -504,8 +504,8 @@ void var_opt_sketch<T,S,A>::serialize(std::ostream& os) const {
   }
 
   // first prelong
-  uint8_t ser_ver(SER_VER);
-  uint8_t family(FAMILY_ID);
+  const uint8_t ser_ver(SER_VER);
+  const uint8_t family(FAMILY_ID);
   os.write((char*)&first_byte, sizeof(uint8_t));
   os.write((char*)&ser_ver, sizeof(uint8_t));
   os.write((char*)&family, sizeof(uint8_t));
@@ -571,8 +571,8 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
 
-  bool is_empty = flags & EMPTY_FLAG_MASK;
-  bool is_gadget = flags & GADGET_FLAG_MASK;
+  const bool is_empty = flags & EMPTY_FLAG_MASK;
+  const bool is_gadget = flags & GADGET_FLAG_MASK;
 
   return is_empty ? var_opt_sketch<T,S,A>(k, rf, is_gadget) : var_opt_sketch<T,S,A>(k, rf, is_gadget, preamble_longs, bytes, size);
 }
@@ -595,8 +595,8 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is) {
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
 
-  bool is_empty = flags & EMPTY_FLAG_MASK;
-  bool is_gadget = flags & GADGET_FLAG_MASK;
+  const bool is_empty = flags & EMPTY_FLAG_MASK;
+  const bool is_gadget = flags & GADGET_FLAG_MASK;
 
   return is_empty ? var_opt_sketch<T,S,A>(k, rf, is_gadget) : var_opt_sketch<T,S,A>(k, rf, is_gadget, preamble_longs, is);
 }
@@ -608,10 +608,10 @@ bool var_opt_sketch<T,S,A>::is_empty() const {
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::reset() {
-  uint32_t prev_alloc = curr_items_alloc_;
+  const uint32_t prev_alloc = curr_items_alloc_;
 
-  uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
-  int initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, MIN_LG_ARR_ITEMS);
+  const uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
+  const int initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, MIN_LG_ARR_ITEMS);
   curr_items_alloc_ = get_adjusted_size(k_, 1 << initial_lg_size);
   if (curr_items_alloc_ == k_) { // if full size, need to leave 1 for the gap
     ++curr_items_alloc_;
@@ -631,7 +631,7 @@ void var_opt_sketch<T,S,A>::reset() {
   }
 
   if (curr_items_alloc_ < prev_alloc) {
-    bool is_gadget = (marks_ != nullptr);
+    const bool is_gadget = (marks_ != nullptr);
   
     A().deallocate(data_, curr_items_alloc_);
     AllocDouble().deallocate(weights_, curr_items_alloc_);
@@ -663,7 +663,7 @@ uint32_t var_opt_sketch<T,S,A>::get_k() const {
 
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::get_num_samples() const {
-  uint32_t num_in_sketch = h_ + r_;
+  const uint32_t num_in_sketch = h_ + r_;
   return (num_in_sketch < k_ ? num_in_sketch : k_);
 }
 
@@ -696,7 +696,7 @@ template<typename T, typename S, typename A>
 std::ostream& var_opt_sketch<T,S,A>::items_to_stream(std::ostream& os) const {
   os << "### Sketch Items" << std::endl;
 
-  uint32_t print_length = (n_ < k_ ? n_ : k_ + 1);
+  const uint32_t print_length = (n_ < k_ ? n_ : k_ + 1);
   for (int i = 0; i < print_length; ++i) {
     if (i == h_) {
       os << i << ": GAP" << std::endl;
@@ -739,13 +739,13 @@ void var_opt_sketch<T,S,A>::update(const T& item, double weight, bool mark) {
 
     // what tau would be if deletion candidates turn out to be R plus the new item
     // note: (r_ + 1) - 1 is intentional
-    double hypothetical_tau = (weight + total_wt_r_) / ((r_ + 1) - 1);
+    const double hypothetical_tau = (weight + total_wt_r_) / ((r_ + 1) - 1);
 
     // is new item's turn to be considered for reservoir?
-    double condition1 = (h_ == 0) || (weight <= peek_min());
+    const double condition1 = (h_ == 0) || (weight <= peek_min());
 
     // is new item light enough for reservoir?
-    double condition2 = weight < hypothetical_tau;
+    const double condition2 = weight < hypothetical_tau;
   
     if (condition1 && condition2) {
       update_light(item, weight, mark);
@@ -791,7 +791,7 @@ void var_opt_sketch<T,S,A>::update_light(const T& item, double weight, bool mark
   assert(r_ >= 1);
   assert((r_ + h_) == k_);
 
-  int m_slot = h_; // index of the gap, which becomes the M region
+  const int m_slot = h_; // index of the gap, which becomes the M region
   if (filled_data_) {
     data_[m_slot] = item;
   } else {
@@ -839,7 +839,7 @@ void var_opt_sketch<T,S,A>::update_heavy_r_eq1(const T& item, double weight, boo
 
   // Any set of two items is downsample-able to one item,
   // so the two lightest items are a valid starting point for the following
-  int m_slot = k_ - 1; // array is k+1, 1 in R, so slot before is M
+  const int m_slot = k_ - 1; // array is k+1, 1 in R, so slot before is M
   grow_candidate_set(weights_[m_slot] + total_wt_r_, 2);
 }
 
@@ -870,8 +870,8 @@ void var_opt_sketch<T,S,A>::decrease_k_by_1() {
     // still just data), reduce k, and then re-insert the item
 
     // first, slide the R zone to the left by 1, temporarily filling the gap
-    uint32_t old_gap_idx = h_;
-    uint32_t old_final_r_idx = (h_ + 1 + r_) - 1;
+    const uint32_t old_gap_idx = h_;
+    const uint32_t old_final_r_idx = (h_ + 1 + r_) - 1;
 
     assert(old_final_r_idx == k_);
     swap_values(old_final_r_idx, old_gap_idx);
@@ -880,10 +880,10 @@ void var_opt_sketch<T,S,A>::decrease_k_by_1() {
     // reduce h_, the heap invariant will be preserved (and the gap will be restored), plus
     // the push() of the item that will probably happen later will be cheap.
 
-    uint32_t pulled_idx = h_ - 1;
-    T&& pulled_item = std::move(data_[pulled_idx]);
+    const uint32_t pulled_idx = h_ - 1;
     double pulled_weight = weights_[pulled_idx];
     bool pulled_mark = marks_[pulled_idx];
+    // will move the pulled item below; don't do antying to it here
 
     if (pulled_mark) { --num_marks_in_h_; }
     weights_[pulled_idx] = -1.0; // to make bugs easier to spot
@@ -892,13 +892,13 @@ void var_opt_sketch<T,S,A>::decrease_k_by_1() {
     --k_;
     --n_; // will be re-incremented with the update
 
-    update(pulled_item, pulled_weight, pulled_mark);
+    update(std::move(data_[pulled_idx]), pulled_weight, pulled_mark);
   } else if ((h_ == 0) && (r_ > 0)) {
     // pure reservoir mode, so can simply eject a randomly chosen sample from the reservoir
     assert(r_ >= 2);
 
-    uint32_t r_idx_to_delete = 1 + next_int(r_); // 1 for the gap
-    uint32_t rightmost_r_idx = (1 + r_) - 1;
+    const uint32_t r_idx_to_delete = 1 + next_int(r_); // 1 for the gap
+    const uint32_t rightmost_r_idx = (1 + r_) - 1;
     swap_values(r_idx_to_delete, rightmost_r_idx);
     weights_[rightmost_r_idx] = -1.0;
 
@@ -923,7 +923,7 @@ void var_opt_sketch<T,S,A>::allocate_data_arrays(uint32_t tgt_size, bool use_mar
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::grow_data_arrays() {
-  uint32_t prev_size = curr_items_alloc_;
+  const uint32_t prev_size = curr_items_alloc_;
   curr_items_alloc_ = get_adjusted_size(k_, curr_items_alloc_ << rf_);
   if (curr_items_alloc_ == k_) {
     ++curr_items_alloc_;
@@ -988,8 +988,8 @@ void var_opt_sketch<T,S,A>::convert_to_heap() {
     return; // nothing to do
   }
 
-  int last_slot = h_ - 1;
-  int last_non_leaf = ((last_slot + 1) / 2) - 1;
+  const int last_slot = h_ - 1;
+  const int last_non_leaf = ((last_slot + 1) / 2) - 1;
   
   for (int j = last_non_leaf; j >= 0; --j) {
     restore_towards_leaves(j);
@@ -1111,8 +1111,8 @@ void var_opt_sketch<T,S,A>::grow_candidate_set(double wt_cands, int num_cands) {
   assert(m_ == 0 || m_ == 1);
 
   while (h_ > 0) {
-    double next_wt = peek_min();
-    double next_tot_wt = wt_cands + next_wt;
+    const double next_wt = peek_min();
+    const double next_tot_wt = wt_cands + next_wt;
 
     // test for strict lightness of next prospect (denominator multiplied through)
     // ideally: (next_wt * (next_num_cands-1) < next_tot_wt)
@@ -1135,15 +1135,15 @@ void var_opt_sketch<T,S,A>::downsample_candidate_set(double wt_cands, int num_ca
   assert(h_ + num_cands == k_ + 1);
 
   // need this before overwriting anything
-  int delete_slot = choose_delete_slot(wt_cands, num_cands);
-  int leftmost_cand_slot = h_;
+  const int delete_slot = choose_delete_slot(wt_cands, num_cands);
+  const int leftmost_cand_slot = h_;
   assert(delete_slot >= leftmost_cand_slot);
   assert(delete_slot <= k_);
 
   // Overwrite weights for items from M moving into R,
   // to make bugs more obvious. Also needed so anyone reading the
   // weight knows if it's invalid without checking h_ and m_
-  int stop_idx = leftmost_cand_slot + m_;
+  const int stop_idx = leftmost_cand_slot + m_;
   for (int j = leftmost_cand_slot; j < stop_idx; ++j) {
     weights_[j] = -1.0;
   }
@@ -1175,8 +1175,8 @@ uint32_t var_opt_sketch<T,S,A>::choose_delete_slot(double wt_cands, int num_cand
     }
   } else {
     // general case
-    int delete_slot = choose_weighted_delete_slot(wt_cands, num_cands);
-    int first_r_slot = h_ + m_;
+    const int delete_slot = choose_weighted_delete_slot(wt_cands, num_cands);
+    const int first_r_slot = h_ + m_;
     if (delete_slot == first_r_slot) {
       return pick_random_slot_in_r();
     } else {
@@ -1189,9 +1189,9 @@ template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::choose_weighted_delete_slot(double wt_cands, int num_cands) const {
   assert(m_ >= 1);
 
-  int offset = h_;
-  int final_m = (offset + m_) - 1;
-  int num_to_keep = num_cands - 1;
+  const int offset = h_;
+  const int final_m = (offset + m_) - 1;
+  const int num_to_keep = num_cands - 1;
 
   double left_subtotal = 0.0;
   double right_subtotal = -1.0 * wt_cands * next_double_exclude_zero();
@@ -1212,7 +1212,7 @@ uint32_t var_opt_sketch<T,S,A>::choose_weighted_delete_slot(double wt_cands, int
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::pick_random_slot_in_r() const {
   assert(r_ > 0);
-  int offset = h_ + m_;
+  const int offset = h_ + m_;
   if (r_ == 1) {
     return offset;
   } else {
@@ -1246,7 +1246,7 @@ void var_opt_sketch<T,S,A>::strip_marks() {
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags) {
-  bool is_empty(flags & EMPTY_FLAG_MASK);
+  const bool is_empty(flags & EMPTY_FLAG_MASK);
   
   if (is_empty) {
     if (preamble_longs != PREAMBLE_LONGS_EMPTY) {
@@ -1300,9 +1300,9 @@ void var_opt_sketch<T, S, A>::validate_and_set_current_size(int preamble_longs) 
        "Found r = " + std::to_string(r_));
     }
 
-    uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
-    uint32_t min_lg_size = to_log_2(ceiling_power_of_2(h_));
-    int initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, min_lg_size);
+    const uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
+    const uint32_t min_lg_size = to_log_2(ceiling_power_of_2(h_));
+    const int initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, min_lg_size);
     curr_items_alloc_ = get_adjusted_size(k_, 1 << initial_lg_size);
     if (curr_items_alloc_ == k_) { // if full size, need to leave 1 for the gap
       ++curr_items_alloc_;
@@ -1344,7 +1344,7 @@ subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(std::function<bool(T
     return {h_true_wt, h_true_wt, h_true_wt, h_true_wt};
   }
 
-  uint64_t num_samples = n_ - h_;
+  const uint64_t num_samples = n_ - h_;
   assert(num_samples > 0);
   double effective_sampling_rate = r_ / static_cast<double>(num_samples);
   assert(effective_sampling_rate >= 0.0);
@@ -1512,13 +1512,13 @@ uint32_t var_opt_sketch<T,S,A>::starting_sub_multiple(int lg_target, int lg_rf, 
 
 template<typename T, typename S, typename A>
 double var_opt_sketch<T,S,A>::pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, double sampling_rate) {
-  double adjusted_kappa = DEFAULT_KAPPA * sqrt(1 - sampling_rate);
+  const double adjusted_kappa = DEFAULT_KAPPA * sqrt(1 - sampling_rate);
   return bounds_binomial_proportions::approximate_upper_bound_on_p(n, k, adjusted_kappa);
 }
 
 template<typename T, typename S, typename A>
 double var_opt_sketch<T,S,A>::pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, double sampling_rate) {
-  double adjusted_kappa = DEFAULT_KAPPA * sqrt(1 - sampling_rate);
+  const double adjusted_kappa = DEFAULT_KAPPA * sqrt(1 - sampling_rate);
   return bounds_binomial_proportions::approximate_lower_bound_on_p(n, k, adjusted_kappa);
 }
 
@@ -1556,7 +1556,7 @@ template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::count_trailing_zeros(uint32_t v) {
   static const uint8_t ctz_byte_count[256] = {8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,7,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0};
 
-  uint32_t tmp  =v;
+  uint32_t tmp = v;
   for (int j = 0; j < 4; ++j) {
     const int byte = (tmp & 0xFFUL);
     if (byte != 0) return (j << 3) + ctz_byte_count[byte];

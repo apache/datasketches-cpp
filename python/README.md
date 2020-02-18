@@ -39,6 +39,9 @@ Having installed the library, loading the Datasketches library in Python is simp
 - CPC
     - `cpc_sketch`
     - `cpc_union`
+- VarOpt Sampling
+    - `var_opt_sketch`
+    - `var_opt_union`
 
 ## Known Differences from C++
 
