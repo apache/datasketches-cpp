@@ -25,6 +25,7 @@
 #include "HllUtil.hpp"
 
 #include <algorithm>
+#include <cmath>
 
 namespace datasketches {
 
@@ -272,11 +273,6 @@ void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
       break;
     }
     case 1: { // src updatable, dst compact
-//      pair_iterator_with_deleter<A> itr = getIterator();
-//      while (itr->nextValid()) {
-//        const int pairValue = itr->getPair();
-//        os.write((char*)&pairValue, sizeof(pairValue));
-//      }
       for (uint32_t coupon: *this) {
         os.write((char*)&coupon, sizeof(coupon));
       }
