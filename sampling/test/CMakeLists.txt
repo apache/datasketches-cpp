@@ -15,46 +15,33 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# TODO: Can we force python version >= 3.0?
-if (MSVC)
-  set(PYBIND11_CPP_STANDARD /std:c++11)
-else()
-  set(PYBIND11_CPP_STANDARD -std=c++11)
-endif()
+add_executable(sampling_test)
 
-add_subdirectory(pybind11)
+target_link_libraries(sampling_test sampling common_test)
 
-pybind11_add_module(python MODULE EXCLUDE_FROM_ALL SYSTEM THIN_LTO)
-
-target_link_libraries(python
-  PRIVATE
-    common
-    hll
-    kll
-    cpc
-    fi
-    theta
-    sampling
-    pybind11::module
+set_target_properties(sampling_test PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
 )
 
-set_target_properties(python PROPERTIES
-  PREFIX ""
-  OUTPUT_NAME datasketches
+file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/" SAMPLING_TEST_BINARY_PATH)
+target_compile_definitions(sampling_test
+  PRIVATE
+    TEST_BINARY_INPUT_PATH="${SAMPLING_TEST_BINARY_PATH}"
 )
 
-# ensure we make a .so on Mac rather than .dylib
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set_target_properties(python PROPERTIES SUFFIX ".so")
-endif()
+add_test(
+  NAME sampling_test
+  COMMAND sampling_test
+)
 
-target_sources(python
+target_sources(sampling_test
   PRIVATE
-    src/datasketches.cpp
-    src/hll_wrapper.cpp
-    src/kll_wrapper.cpp
-    src/cpc_wrapper.cpp
-    src/fi_wrapper.cpp
-    src/theta_wrapper.cpp
-    src/vo_wrapper.cpp
+  var_opt_sketch_test.cpp
+  var_opt_union_test.cpp
+)
+
+target_include_directories(sampling_test
+  PRIVATE
+    ../../common/test
 )

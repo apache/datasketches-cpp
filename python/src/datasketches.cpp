@@ -26,6 +26,7 @@ void init_kll(py::module& m);
 void init_fi(py::module& m);
 void init_cpc(py::module& m);
 void init_theta(py::module& m);
+void init_vo(py::module& m);
 
 PYBIND11_MODULE(datasketches, m) {
   init_hll(m);
@@ -33,4 +34,5 @@ PYBIND11_MODULE(datasketches, m) {
   init_fi(m);
   init_cpc(m);
   init_theta(m);
+  init_vo(m);
 }
