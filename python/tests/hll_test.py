@@ -34,9 +34,6 @@ class HllTest(unittest.TestCase):
             hll.update(i)
             hll2.update(i + offset)
         
-        # although we provide get_composite_estimate() and get_estimate(),
-        # the latter will always give the best available estimate.  we
-        # recommend using get_estimate().
         # we can check that the upper and lower bounds bracket the
         # estimate, without needing to know the exact value.
         self.assertLessEqual(hll.get_lower_bound(1), hll.get_estimate())
@@ -78,9 +75,7 @@ class HllTest(unittest.TestCase):
         hll.update(3.14159) # double data
 
         self.assertLessEqual(hll.get_lower_bound(1), hll.get_estimate())
-        self.assertLessEqual(hll.get_lower_bound(1), hll.get_composite_estimate())
         self.assertGreaterEqual(hll.get_upper_bound(1), hll.get_estimate())
-        self.assertGreaterEqual(hll.get_upper_bound(1), hll.get_composite_estimate())
 
         self.assertEqual(hll.lg_config_k, k)
         self.assertEqual(hll.tgt_type, tgt_hll_type.HLL_6)
@@ -115,9 +110,7 @@ class HllTest(unittest.TestCase):
         union.update(1.4142136)
 
         self.assertLessEqual(union.get_lower_bound(1), union.get_estimate())
-        self.assertLessEqual(union.get_lower_bound(1), union.get_composite_estimate())
         self.assertGreaterEqual(union.get_upper_bound(1), union.get_estimate())
-        self.assertGreaterEqual(union.get_upper_bound(1), union.get_composite_estimate())
 
         self.assertEqual(union.lg_config_k, k)
         self.assertFalse(union.is_compact())
