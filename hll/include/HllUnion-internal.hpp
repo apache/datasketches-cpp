@@ -337,12 +337,12 @@ void hll_union_alloc<A>::union_impl(const hll_sketch_alloc<A>& sketch, const int
       }
       const HllArray<A>* src = static_cast<const HllArray<A>*>(src_impl);
       static_cast<Hll8Array<A>*>(dst_impl)->mergeHll(*src);
+      dst_impl->putOutOfOrderFlag(true);
     }
   } else { // src is HLL, gadget is empty
     dst_impl = copy_or_downsample(src_impl, lg_max_k);
     gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
   }
-  dst_impl->putOutOfOrderFlag(dst_impl->isOutOfOrderFlag() | src_impl->isOutOfOrderFlag());
   gadget.sketch_impl = dst_impl;
 }
 
