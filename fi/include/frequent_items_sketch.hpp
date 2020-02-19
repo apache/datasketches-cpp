@@ -55,6 +55,7 @@ public:
   void update(const T& item, uint64_t weight = 1);
   void update(T&& item, uint64_t weight = 1);
   void merge(const frequent_items_sketch& other);
+  void merge(frequent_items_sketch&& other);
   bool is_empty() const;
   uint32_t get_num_active_items() const;
   uint64_t get_total_weight() const;
@@ -131,6 +132,17 @@ void frequent_items_sketch<T, H, E, S, A>::merge(const frequent_items_sketch& ot
   const uint64_t merged_total_weight = total_weight + other.get_total_weight(); // for correction at the end
   for (auto &it: other.map) {
     update(it.first, it.second);
+  }
+  offset += other.offset;
+  total_weight = merged_total_weight;
+}
+
+template<typename T, typename H, typename E, typename S, typename A>
+void frequent_items_sketch<T, H, E, S, A>::merge(frequent_items_sketch&& other) {
+  if (other.is_empty()) return;
+  const uint64_t merged_total_weight = total_weight + other.get_total_weight(); // for correction at the end
+  for (auto &it: other.map) {
+    update(std::move(it.first), it.second);
   }
   offset += other.offset;
   total_weight = merged_total_weight;
