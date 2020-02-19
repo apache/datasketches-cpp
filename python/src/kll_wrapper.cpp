@@ -110,7 +110,7 @@ void bind_kll_sketch(py::module &m, const char* name) {
     .def(py::init<uint16_t>(), py::arg("k"))
     .def(py::init<const kll_sketch<T>&>())
     .def("update", (void (kll_sketch<T>::*)(const T&)) &kll_sketch<T>::update, py::arg("item"))
-    .def("merge", &kll_sketch<T>::merge, py::arg("sketch"))
+    .def("merge", (void (kll_sketch<T>::*)(const kll_sketch<T>&)) &kll_sketch<T>::merge, py::arg("sketch"))
     .def("__str__", &dspy::kll_sketch_to_string<T>)
     .def("is_empty", &kll_sketch<T>::is_empty)
     .def("get_n", &kll_sketch<T>::get_n)
@@ -127,8 +127,6 @@ void bind_kll_sketch(py::module &m, const char* name) {
          py::arg("as_pmf"))
     .def_static("get_normalized_rank_error", &dspy::kll_sketch_generic_normalized_rank_error<T>,
          py::arg("k"), py::arg("as_pmf"))
-    // can't yet get this one to work
-    //.def("get_serialized_size_bytes", &kll_sketch<T>::get_serialized_size_bytes)
     .def("serialize", &dspy::kll_sketch_serialize<T>)
     .def_static("deserialize", &dspy::kll_sketch_deserialize<T>)
     ;

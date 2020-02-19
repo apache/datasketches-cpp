@@ -199,7 +199,7 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t
   uint64_t outer_tau_denom;
   ptr += copy_from_mem(ptr, &outer_tau_denom, sizeof(outer_tau_denom));
 
-  size_t gadget_size = size - (PREAMBLE_LONGS_NON_EMPTY << 3);
+  const size_t gadget_size = size - (PREAMBLE_LONGS_NON_EMPTY << 3);
   var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(ptr, gadget_size);
 
   return var_opt_union<T,S,A>(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
@@ -218,8 +218,8 @@ template<typename T, typename S, typename A>
 void var_opt_union<T,S,A>::serialize(std::ostream& os) const {
   bool empty = (n_ == 0);
 
-  uint8_t serialization_version(SER_VER);
-  uint8_t family_id(FAMILY_ID);
+  const uint8_t serialization_version(SER_VER);
+  const uint8_t family_id(FAMILY_ID);
 
   uint8_t preamble_longs;
   uint8_t flags;
@@ -251,10 +251,10 @@ std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header
   std::vector<uint8_t, AllocU8<A>> bytes(size);
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
-  bool empty = n_ == 0;
+  const bool empty = n_ == 0;
 
-  uint8_t serialization_version(SER_VER);
-  uint8_t family_id(FAMILY_ID);
+  const uint8_t serialization_version(SER_VER);
+  const uint8_t family_id(FAMILY_ID);
 
   uint8_t preamble_longs;
   uint8_t flags;
@@ -355,8 +355,8 @@ void var_opt_union<T,S,A>::merge_into(const var_opt_sketch<T,S,A>& sketch) {
 
   // resolve tau
   if (sketch.r_ > 0) {
-    double sketch_tau = sketch.get_tau();
-    double outer_tau = get_outer_tau();
+    const double sketch_tau = sketch.get_tau();
+    const double outer_tau = get_outer_tau();
 
     if (outer_tau_denom_ == 0) {
       // detect first estimation mode sketch and grab its tau
@@ -394,7 +394,7 @@ var_opt_sketch<T,S,A> var_opt_union<T,S,A>::get_result() const {
     // At this point, we know that marked items are present in H. So:
     //   1. Result will necessarily be in estimation mode
     //   2. Marked items currently in H need to be absorbed into reservoir (R)
-    bool is_pseudo_exact = detect_and_handle_subcase_of_pseudo_exact(gcopy);
+    const bool is_pseudo_exact = detect_and_handle_subcase_of_pseudo_exact(gcopy);
     if (!is_pseudo_exact) {
       // continue with main logic
       migrate_marked_items_by_decreasing_k(gcopy);
@@ -430,22 +430,22 @@ bool var_opt_union<T,S,A>::there_exist_unmarked_h_items_lighter_than_target(doub
 template<typename T, typename S, typename A>
 bool var_opt_union<T,S,A>::detect_and_handle_subcase_of_pseudo_exact(var_opt_sketch<T,S,A>& sk) const {
   // gadget is seemingly exact
-  bool condition1 = gadget_.r_ == 0;
+  const bool condition1 = gadget_.r_ == 0;
 
   // but there are marked items in H, so only _pseudo_ exact
-  bool condition2 = gadget_.num_marks_in_h_ > 0;
+  const bool condition2 = gadget_.num_marks_in_h_ > 0;
 
   // if gadget is pseudo-exact and the number of marks equals outer_tau_denom, then we can deduce
   // from the bookkeeping logic of mergeInto() that all estimation mode input sketches must
   // have had the same tau, so we can throw all of the marked items into a common reservoir.
-  bool condition3 = gadget_.num_marks_in_h_ == outer_tau_denom_;
+  const bool condition3 = gadget_.num_marks_in_h_ == outer_tau_denom_;
 
   if (!(condition1 && condition2 && condition3)) {
     return false;
   } else {
 
     // explicitly enforce rule that items in H should not be lighter than the sketch's tau
-    bool anti_condition4 = there_exist_unmarked_h_items_lighter_than_target(gadget_.get_tau());
+    const bool anti_condition4 = there_exist_unmarked_h_items_lighter_than_target(gadget_.get_tau());
     if (anti_condition4) {
       return false;
     } else {
@@ -466,7 +466,7 @@ bool var_opt_union<T,S,A>::detect_and_handle_subcase_of_pseudo_exact(var_opt_ske
  */
 template<typename T, typename S, typename A>
 void var_opt_union<T,S,A>::mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk) const {
-  uint32_t result_k = gadget_.h_ + gadget_.r_;
+  const uint32_t result_k = gadget_.h_ + gadget_.r_;
 
   uint32_t result_h = 0;
   uint32_t result_r = 0;
@@ -509,11 +509,10 @@ void var_opt_union<T,S,A>::mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk)
   assert((result_h + result_r) == result_k);
   assert(fabs(transferred_weight - outer_tau_numer_) < 1e-10);
 
-  double result_r_weight = gadget_.total_wt_r_ + transferred_weight;
-  uint64_t result_n = n_;
+  const double result_r_weight = gadget_.total_wt_r_ + transferred_weight;
+  const uint64_t result_n = n_;
     
   // explicitly set weight value for the gap
-  //data[result_h] = nullptr;  invalid not a pointer
   wts[result_h] = -1.0;
 
   // clean up arrays in input sketch, replace with new values
@@ -538,9 +537,9 @@ void var_opt_union<T,S,A>::mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk)
 // this is basically a continuation of get_result(), but modifying the input gadget copy
 template<typename T, typename S, typename A>
 void var_opt_union<T,S,A>::migrate_marked_items_by_decreasing_k(var_opt_sketch<T,S,A>& gcopy) const {
-  uint32_t r_count = gcopy.r_;
-  uint32_t h_count = gcopy.h_;
-  uint32_t k = gcopy.k_;
+  const uint32_t r_count = gcopy.r_;
+  const uint32_t h_count = gcopy.h_;
+  const uint32_t k = gcopy.k_;
 
   assert(gcopy.num_marks_in_h_ > 0); // ensured by caller
   // either full (of samples), or in pseudo-exact mode, or both
