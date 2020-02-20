@@ -87,7 +87,7 @@ void bind_fi_sketch(py::module &m, const char* name) {
     .def("to_string", &dspy::fi_sketch_to_string<T>, py::arg("print_items")=false)
     .def("update", (void (frequent_items_sketch<T>::*)(const T&, uint64_t)) &frequent_items_sketch<T>::update, py::arg("item"), py::arg("weight")=1)
     .def("get_frequent_items", &dspy::fi_sketch_get_frequent_items<T>, py::arg("err_type"), py::arg("threshold")=0)
-    .def("merge", &frequent_items_sketch<T>::merge)
+    .def("merge", (void (frequent_items_sketch<T>::*)(const frequent_items_sketch<T>&)) &frequent_items_sketch<T>::merge)
     .def("is_empty", &frequent_items_sketch<T>::is_empty)
     .def("get_num_active_items", &frequent_items_sketch<T>::get_num_active_items)
     .def("get_total_weight", &frequent_items_sketch<T>::get_total_weight)
