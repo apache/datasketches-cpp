@@ -37,6 +37,7 @@ class cpc_union_test: public CppUnit::TestFixture {
   CPPUNIT_TEST(reduce_k_empty);
   CPPUNIT_TEST(reduce_k_sparse);
   CPPUNIT_TEST(reduce_k_window);
+  CPPUNIT_TEST(moving_update);
   CPPUNIT_TEST_SUITE_END();
 
   void lg_k_limits() {
@@ -147,6 +148,15 @@ class cpc_union_test: public CppUnit::TestFixture {
     cpc_sketch r = u.get_result();
     CPPUNIT_ASSERT_EQUAL(11, (int) r.get_lg_k());
     CPPUNIT_ASSERT_DOUBLES_EQUAL(1000, r.get_estimate(), 1000 * RELATIVE_ERROR_FOR_LG_K_11);
+  }
+
+  void moving_update() {
+    cpc_union u(11);
+    cpc_sketch s(11);
+    for (int i = 0; i < 100; i++) s.update(i); // sparse
+    u.update(std::move(s));
+    cpc_sketch r = u.get_result();
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(100, r.get_estimate(), 100 * RELATIVE_ERROR_FOR_LG_K_11);
   }
 
 };

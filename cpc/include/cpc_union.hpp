@@ -53,6 +53,7 @@ class cpc_union_alloc {
     cpc_union_alloc<A>& operator=(cpc_union_alloc<A>&& other) noexcept;
 
     void update(const cpc_sketch_alloc<A>& sketch);
+    void update(cpc_sketch_alloc<A>&& sketch);
     cpc_sketch_alloc<A> get_result() const;
 
   private:
@@ -64,6 +65,8 @@ class cpc_union_alloc {
     uint64_t seed;
     cpc_sketch_alloc<A>* accumulator;
     vector_u64<A> bit_matrix;
+
+    template<typename S> void internal_update(S&& sketch); // to support both rvalue and lvalue
 
     cpc_sketch_alloc<A> get_result_from_accumulator() const;
     cpc_sketch_alloc<A> get_result_from_bit_matrix() const;

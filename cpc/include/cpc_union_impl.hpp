@@ -85,6 +85,17 @@ cpc_union_alloc<A>& cpc_union_alloc<A>::operator=(cpc_union_alloc<A>&& other) no
 
 template<typename A>
 void cpc_union_alloc<A>::update(const cpc_sketch_alloc<A>& sketch) {
+  internal_update(sketch);
+}
+
+template<typename A>
+void cpc_union_alloc<A>::update(cpc_sketch_alloc<A>&& sketch) {
+  internal_update(std::forward<cpc_sketch_alloc<A>>(sketch));
+}
+
+template<typename A>
+template<typename S>
+void cpc_union_alloc<A>::internal_update(S&& sketch) {
   const uint16_t seed_hash_union = compute_seed_hash(seed);
   const uint16_t seed_hash_sketch = compute_seed_hash(sketch.seed);
   if (seed_hash_union != seed_hash_sketch) {
@@ -106,9 +117,9 @@ void cpc_union_alloc<A>::update(const cpc_sketch_alloc<A>& sketch) {
         cpc_sketch_alloc<A>::flavor::SPARSE != initial_dest_flavor) throw std::logic_error("wrong flavor");
 
     // The following partially fixes the snowplow problem provided that the K's are equal.
-    // A complete fix is coming soon.
     if (cpc_sketch_alloc<A>::flavor::EMPTY == initial_dest_flavor and lg_k == sketch.get_lg_k()) {
-      *accumulator = sketch;
+      *accumulator = std::forward<S>(sketch);
+      return;
     }
 
     walk_table_updating_sketch(sketch.surprising_value_table);
