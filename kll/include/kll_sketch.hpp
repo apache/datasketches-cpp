@@ -183,31 +183,13 @@ class kll_sketch {
     vector_d<A> get_CDF(const T* split_points, uint32_t size) const;
     double get_normalized_rank_error(bool pmf) const;
 
-    // implementation for fixed-size arithmetic types (integral and floating point)
+    // version for fixed-size arithmetic types (integral and floating point)
     template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-    size_t get_serialized_size_bytes() const {
-      if (is_empty()) { return EMPTY_SIZE_BYTES; }
-      if (num_levels_ == 1 and get_num_retained() == 1) {
-        return DATA_START_SINGLE_ITEM + sizeof(TT);
-      }
-      // the last integer in the levels_ array is not serialized because it can be derived
-      return DATA_START + num_levels_ * sizeof(uint32_t) + (get_num_retained() + 2) * sizeof(TT);
-    }
+    size_t get_serialized_size_bytes() const;
 
-    // implementation for all other types
+    // version for all other types
     template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-    size_t get_serialized_size_bytes() const {
-      if (is_empty()) { return EMPTY_SIZE_BYTES; }
-      if (num_levels_ == 1 and get_num_retained() == 1) {
-        return DATA_START_SINGLE_ITEM + S().size_of_item(items_[levels_[0]]);
-      }
-      // the last integer in the levels_ array is not serialized because it can be derived
-      size_t size = DATA_START + num_levels_ * sizeof(uint32_t);
-      size += S().size_of_item(*min_value_);
-      size += S().size_of_item(*max_value_);
-      for (auto& it: *this) size += S().size_of_item(it.first);
-      return size;
-    }
+    size_t get_serialized_size_bytes() const;
 
     void serialize(std::ostream& os) const;
     typedef vector_u8<A> vector_bytes; // alias for users
