@@ -76,7 +76,7 @@ void init_cpc(py::module &m) {
   py::class_<cpc_union>(m, "cpc_union")
     .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k"), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_union&>())
-    .def("update", &cpc_union::update, py::arg("sketch"))
+    .def("update", (void (cpc_union::*)(const cpc_sketch&)) &cpc_union::update, py::arg("sketch"))
     .def("get_result", &dspy::cpc_union_get_result)
     ;
 }
