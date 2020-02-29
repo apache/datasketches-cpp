@@ -23,11 +23,6 @@
 #include <algorithm>
 #include <cmath>
 
-#if defined(_MSC_VER)
-#include <iso646.h> // for and/or keywords
-#endif // _MSC_VER
-
-
 /*
  * This class enables the estimation of error bounds given a sample set size, the sampling
  * probability theta, the number of standard deviations and a simple noDataSeen flag. This can
@@ -445,13 +440,13 @@ private:
   }
 
   static void check_theta(double theta) {
-    if (theta < 0 or theta > 1) {
+    if (theta < 0 || theta > 1) {
       throw std::invalid_argument("theta must be in [0, 1]");
     }
   }
 
   static void check_num_std_devs(unsigned num_std_devs) {
-    if (num_std_devs < 1 or num_std_devs > 3) {
+    if (num_std_devs < 1 || num_std_devs > 3) {
       throw std::invalid_argument("num_std_devs must be 1, 2 or 3");
     }
   }

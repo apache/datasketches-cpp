@@ -53,15 +53,15 @@ compact_theta_sketch_alloc<A> theta_a_not_b_alloc<A>::compute(const theta_sketch
     keys_size = count;
     keys = AllocU64().allocate(keys_size);
     std::copy_if(a.begin(), a.end(), keys, [theta](uint64_t key) { return key < theta; });
-    if (ordered and !a.is_ordered()) std::sort(keys, &keys[keys_size]);
-    if (count == 0 and theta == theta_sketch_alloc<A>::MAX_THETA) is_empty = true;
+    if (ordered && !a.is_ordered()) std::sort(keys, &keys[keys_size]);
+    if (count == 0 && theta == theta_sketch_alloc<A>::MAX_THETA) is_empty = true;
     return compact_theta_sketch_alloc<A>(is_empty, theta, keys, count, seed_hash_, a.is_ordered() or ordered);
   }
 
   keys_size = a.get_num_retained();
   keys = AllocU64().allocate(keys_size);
 
-  if (a.is_ordered() and b.is_ordered()) { // sort-based
+  if (a.is_ordered() && b.is_ordered()) { // sort-based
     const auto end = std::set_difference(a.begin(), a.end(), b.begin(), b.end(), keys);
     count = end - keys;
   } else { // hash-based
@@ -97,7 +97,7 @@ compact_theta_sketch_alloc<A> theta_a_not_b_alloc<A>::compute(const theta_sketch
     std::copy(keys, &keys[count], keys_copy);
     AllocU64().deallocate(keys, keys_size);
     keys = keys_copy;
-    if (ordered and !a.is_ordered()) std::sort(keys, &keys[count]);
+    if (ordered && !a.is_ordered()) std::sort(keys, &keys[count]);
   }
 
   return compact_theta_sketch_alloc<A>(is_empty, theta, keys, count, seed_hash_, a.is_ordered() or ordered);

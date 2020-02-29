@@ -26,11 +26,11 @@
 #include "CubicInterpolation.hpp"
 #include "CompositeInterpolationXTable.hpp"
 #include "CouponList.hpp"
+#include "inv_pow2_table.hpp"
 #include <cstring>
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include "../../common/include/inv_pow2_table.hpp"
 
 namespace datasketches {
 

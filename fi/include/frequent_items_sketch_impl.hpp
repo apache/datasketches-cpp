@@ -160,7 +160,7 @@ frequent_items_sketch<T, H, E, S, A>::get_frequent_items(frequent_items_error_ty
   for (auto &it: map) {
     const uint64_t lb = it.second;
     const uint64_t ub = it.second + offset;
-    if ((err_type == NO_FALSE_NEGATIVES and ub > threshold) or (err_type == NO_FALSE_POSITIVES and lb > threshold)) {
+    if ((err_type == NO_FALSE_NEGATIVES && ub > threshold) || (err_type == NO_FALSE_POSITIVES && lb > threshold)) {
       items.push_back(row(&it.first, it.second, offset));
     }
   }

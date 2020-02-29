@@ -53,7 +53,7 @@ template<typename A>
 compact_theta_sketch_alloc<A> theta_union_alloc<A>::get_result(bool ordered) const {
   if (is_empty_) return state_.compact(ordered);
   const uint32_t nom_num_keys = 1 << state_.lg_nom_size_;
-  if (theta_ >= state_.theta_ and state_.get_num_retained() <= nom_num_keys) return state_.compact(ordered);
+  if (theta_ >= state_.theta_ && state_.get_num_retained() <= nom_num_keys) return state_.compact(ordered);
   uint64_t theta = std::min(theta_, state_.get_theta64());
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
   uint64_t* keys = AllocU64().allocate(state_.get_num_retained());

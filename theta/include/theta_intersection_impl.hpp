@@ -109,7 +109,7 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
   if (sketch.get_seed_hash() != seed_hash_) throw std::invalid_argument("seed hash mismatch");
   is_empty_ |= sketch.is_empty();
   theta_ = std::min(theta_, sketch.get_theta64());
-  if (is_valid_ and num_keys_ == 0) return;
+  if (is_valid_ && num_keys_ == 0) return;
   if (sketch.get_num_retained() == 0) {
     is_valid_ = true;
     if (keys_ != nullptr) {
@@ -150,7 +150,7 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
     }
     if (count > sketch.get_num_retained()) {
       throw std::invalid_argument(" more keys then expected, possibly corrupted input sketch");
-    } else if (!sketch.is_ordered() and count < sketch.get_num_retained()) {
+    } else if (!sketch.is_ordered() && count < sketch.get_num_retained()) {
       throw std::invalid_argument(" fewer keys then expected, possibly corrupted input sketch");
     }
     if (match_count == 0) {

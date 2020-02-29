@@ -25,10 +25,6 @@
 #include <iterator>
 #include <cmath>
 
-#if defined(_MSC_VER)
-#include <iso646.h> // for and/or keywords
-#endif // _MSC_VER
-
 namespace datasketches {
 
 // clang++ seems to require this declaration for CMAKE_BUILD_TYPE='Debug"
@@ -178,7 +174,7 @@ template<typename T, typename H, typename E, typename A>
 typename reverse_purge_hash_map<T, H, E, A>::iterator reverse_purge_hash_map<T, H, E, A>::begin() const {
   const uint32_t size = 1 << lg_cur_size;
   uint32_t i = 0;
-  while (i < size and !is_active(i)) i++;
+  while (i < size && !is_active(i)) i++;
   return reverse_purge_hash_map<T, H, E, A>::iterator(this, i, 0);
 }
 
