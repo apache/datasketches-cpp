@@ -23,10 +23,6 @@
 #include <iostream>
 #include <iomanip>
 
-#if defined(_MSC_VER)
-#include <iso646.h> // for and/or keywords
-#endif // _MSC_VER
-
 #include "kll_helper.hpp"
 
 namespace datasketches {
@@ -46,7 +42,7 @@ min_value_(nullptr),
 max_value_(nullptr),
 is_level_zero_sorted_(false)
 {
-  if (k < MIN_K or k > MAX_K) {
+  if (k < MIN_K || k > MAX_K) {
     throw std::invalid_argument("K must be >= " + std::to_string(MIN_K) + " and <= " + std::to_string(MAX_K) + ": " + std::to_string(k));
   }
   levels_ = new (AllocU32().allocate(2)) uint32_t[2] {k_, k_};
@@ -269,7 +265,7 @@ T kll_sketch<T, C, S, A>::get_quantile(double fraction) const {
   if (is_empty()) return get_invalid_value();
   if (fraction == 0.0) return *min_value_;
   if (fraction == 1.0) return *max_value_;
-  if ((fraction < 0.0) or (fraction > 1.0)) {
+  if ((fraction < 0.0) || (fraction > 1.0)) {
     throw std::invalid_argument("Fraction cannot be less than zero or greater than 1.0");
   }
   // has side effect of sorting level zero if needed
@@ -285,7 +281,7 @@ std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions,
   quantiles.reserve(size);
   for (uint32_t i = 0; i < size; i++) {
     const double fraction = fractions[i];
-    if ((fraction < 0.0) or (fraction > 1.0)) {
+    if ((fraction < 0.0) || (fraction > 1.0)) {
       throw std::invalid_argument("Fraction cannot be less than zero or greater than 1.0");
     }
     if      (fraction == 0.0) quantiles.push_back(*min_value_);
@@ -313,7 +309,7 @@ double kll_sketch<T, C, S, A>::get_rank(const T& value) const {
     for (uint32_t i = from_index; i < to_index; i++) {
       if (C()(items_[i], value)) {
         total += weight;
-      } else if ((level > 0) or is_level_zero_sorted_) {
+      } else if ((level > 0) || is_level_zero_sorted_) {
         break; // levels above 0 are sorted, no point comparing further
       }
     }
@@ -343,7 +339,7 @@ template<typename T, typename C, typename S, typename A>
 template<typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
 size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes() const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
-  if (num_levels_ == 1 and get_num_retained() == 1) {
+  if (num_levels_ == 1 && get_num_retained() == 1) {
     return DATA_START_SINGLE_ITEM + sizeof(TT);
   }
   // the last integer in the levels_ array is not serialized because it can be derived
@@ -355,7 +351,7 @@ template<typename T, typename C, typename S, typename A>
 template<typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
 size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes() const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
-  if (num_levels_ == 1 and get_num_retained() == 1) {
+  if (num_levels_ == 1 && get_num_retained() == 1) {
     return DATA_START_SINGLE_ITEM + S().size_of_item(items_[levels_[0]]);
   }
   // the last integer in the levels_ array is not serialized because it can be derived
@@ -369,7 +365,7 @@ size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes() const {
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::serialize(std::ostream& os) const {
   const bool is_single_item = n_ == 1;
-  const uint8_t preamble_ints(is_empty() or is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
+  const uint8_t preamble_ints(is_empty() || is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
   os.write((char*)&preamble_ints, sizeof(preamble_ints));
   const uint8_t serial_version(is_single_item ? SERIAL_VERSION_2 : SERIAL_VERSION_1);
   os.write((char*)&serial_version, sizeof(serial_version));
@@ -404,7 +400,7 @@ vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const
   const size_t size = header_size_bytes + get_serialized_size_bytes();
   vector_u8<A> bytes(size);
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  const uint8_t preamble_ints(is_empty() or is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
+  const uint8_t preamble_ints(is_empty() || is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
   ptr += copy_to_mem(&preamble_ints, ptr, sizeof(preamble_ints));
   const uint8_t serial_version(is_single_item ? SERIAL_VERSION_2 : SERIAL_VERSION_1);
   ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
@@ -620,7 +616,7 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
 
   // level zero might not be sorted, so we must sort it if we wish to compact it
   // sort_level_zero() is not used here because of the adjustment for odd number of items
-  if ((level == 0) and !is_level_zero_sorted_) {
+  if ((level == 0) && !is_level_zero_sorted_) {
     std::sort(&items_[adj_beg], &items_[adj_beg + adj_pop], C());
   }
   if (pop_above == 0) {
@@ -732,7 +728,7 @@ vector_d<A> kll_sketch<T, C, S, A>::get_PMF_or_CDF(const T* split_points, uint32
   while (level < num_levels_) {
     const auto from_index = levels_[level];
     const auto to_index = levels_[level + 1]; // exclusive
-    if ((level == 0) and !is_level_zero_sorted_) {
+    if ((level == 0) && !is_level_zero_sorted_) {
       increment_buckets_unsorted_level(from_index, to_index, weight, split_points, size, buckets.data());
     } else {
       increment_buckets_sorted_level(from_index, to_index, weight, split_points, size, buckets.data());
@@ -776,7 +772,7 @@ void kll_sketch<T, C, S, A>::increment_buckets_sorted_level(uint32_t from_index,
 {
   uint32_t i = from_index;
   uint32_t j = 0;
-  while ((i <  to_index) and (j < size)) {
+  while ((i <  to_index) && (j < size)) {
     if (C()(items_[i], split_points[j])) {
       buckets[j] += weight; // this sample goes into this bucket
       i++; // move on to next sample and see whether it also goes into this bucket
@@ -850,11 +846,11 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
     const uint32_t other_pop = other.safe_level_size(lvl);
     worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;
 
-    if ((self_pop > 0) and (other_pop == 0)) {
+    if ((self_pop > 0) && (other_pop == 0)) {
       kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], true);
-    } else if ((self_pop == 0) and (other_pop > 0)) {
+    } else if ((self_pop == 0) && (other_pop > 0)) {
       kll_helper::copy_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl]);
-    } else if ((self_pop > 0) and (other_pop > 0)) {
+    } else if ((self_pop > 0) && (other_pop > 0)) {
       kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
     }
   }
@@ -875,11 +871,11 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(kll_sketch&& other, T* workbuf
     const uint32_t other_pop = other.safe_level_size(lvl);
     worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;
 
-    if ((self_pop > 0) and (other_pop == 0)) {
+    if ((self_pop > 0) && (other_pop == 0)) {
       kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], true);
-    } else if ((self_pop == 0) and (other_pop > 0)) {
+    } else if ((self_pop == 0) && (other_pop > 0)) {
       kll_helper::move_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl], false);
-    } else if ((self_pop > 0) and (other_pop > 0)) {
+    } else if ((self_pop > 0) && (other_pop > 0)) {
       kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
     }
   }
@@ -917,7 +913,7 @@ template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::check_preamble_ints(uint8_t preamble_ints, uint8_t flags_byte) {
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
   const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM));
-  if (is_empty or is_single_item) {
+  if (is_empty || is_single_item) {
     if (preamble_ints != PREAMBLE_INTS_SHORT) {
       throw std::invalid_argument("Possible corruption: preamble ints must be "
           + std::to_string(PREAMBLE_INTS_SHORT) + " for an empty or single item sketch: " + std::to_string(preamble_ints));
@@ -932,7 +928,7 @@ void kll_sketch<T, C, S, A>::check_preamble_ints(uint8_t preamble_ints, uint8_t 
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::check_serial_version(uint8_t serial_version) {
-  if (serial_version != SERIAL_VERSION_1 and serial_version != SERIAL_VERSION_2) {
+  if (serial_version != SERIAL_VERSION_1 && serial_version != SERIAL_VERSION_2) {
     throw std::invalid_argument("Possible corruption: serial version mismatch: expected "
         + std::to_string(SERIAL_VERSION_1) + " or " + std::to_string(SERIAL_VERSION_2)
         + ", got " + std::to_string(serial_version));
@@ -1024,7 +1020,7 @@ typename kll_sketch<T, C, S, A>::const_iterator& kll_sketch<T, C, S, A>::const_i
     do {
       ++level;
       weight *= 2;
-    } while (level < num_levels and levels[level] == levels[level + 1]);
+    } while (level < num_levels && levels[level] == levels[level + 1]);
   }
   return *this;
 }

@@ -84,8 +84,8 @@ void hll_union_alloc<A>::update(const hll_sketch_alloc<A>& sketch) {
 template<typename A>
 void hll_union_alloc<A>::update(hll_sketch_alloc<A>&& sketch) {
   if (sketch.is_empty()) return;
-  if (gadget.is_empty() and sketch.get_target_type() == HLL_8 and sketch.get_lg_config_k() <= lg_max_k) {
-    if (sketch.get_current_mode() == HLL or sketch.get_lg_config_k() == lg_max_k) {
+  if (gadget.is_empty() && sketch.get_target_type() == HLL_8 && sketch.get_lg_config_k() <= lg_max_k) {
+    if (sketch.get_current_mode() == HLL || sketch.get_lg_config_k() == lg_max_k) {
       gadget = std::move(sketch);
     }
   }
@@ -312,8 +312,8 @@ template<typename A>
 void hll_union_alloc<A>::union_impl(const hll_sketch_alloc<A>& sketch, const int lg_max_k) {
   const HllSketchImpl<A>* src_impl = sketch.sketch_impl; //default
   HllSketchImpl<A>* dst_impl = gadget.sketch_impl; //default
-  if (src_impl->getCurMode() == LIST or src_impl->getCurMode() == SET) {
-    if (dst_impl->isEmpty() and src_impl->getLgConfigK() == dst_impl->getLgConfigK()) {
+  if (src_impl->getCurMode() == LIST || src_impl->getCurMode() == SET) {
+    if (dst_impl->isEmpty() && src_impl->getLgConfigK() == dst_impl->getLgConfigK()) {
       dst_impl = src_impl->copyAs(HLL_8);
       gadget.sketch_impl->get_deleter()(gadget.sketch_impl); // gadget replaced
     } else {
@@ -323,7 +323,7 @@ void hll_union_alloc<A>::union_impl(const hll_sketch_alloc<A>& sketch, const int
       }
     }
   } else if (!dst_impl->isEmpty()) { // src is HLL
-    if (dst_impl->getCurMode() == LIST or dst_impl->getCurMode() == SET) {
+    if (dst_impl->getCurMode() == LIST || dst_impl->getCurMode() == SET) {
       // swap so that src is LIST or SET, tgt is HLL
       // use lg_max_k because LIST has effective K of 2^26
       const CouponList<A>* src = static_cast<const CouponList<A>*>(dst_impl);

@@ -96,7 +96,7 @@ double theta_sketch_alloc<A>::get_upper_bound(uint8_t num_std_devs) const {
 
 template<typename A>
 bool theta_sketch_alloc<A>::is_estimation_mode() const {
-  return theta_ < MAX_THETA and !is_empty_;
+  return theta_ < MAX_THETA && !is_empty_;
 }
 
 template<typename A>
@@ -589,7 +589,7 @@ compact_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::compact(bool ordered
 template<typename A>
 void update_theta_sketch_alloc<A>::internal_update(uint64_t hash) {
   this->is_empty_ = false;
-  if (hash >= this->theta_ or hash == 0) return; // hash == 0 is reserved to mark empty slots in the table
+  if (hash >= this->theta_ || hash == 0) return; // hash == 0 is reserved to mark empty slots in the table
   if (hash_search_or_insert(hash, keys_, lg_cur_size_)) {
     num_keys_++;
     if (num_keys_ > capacity_) {
@@ -637,7 +637,7 @@ void update_theta_sketch_alloc<A>::rebuild() {
   std::fill(new_keys, &new_keys[cur_size], 0);
   num_keys_ = 0;
   for (uint32_t i = 0; i < cur_size; i++) {
-    if (keys_[i] != 0 and keys_[i] < this->theta_) {
+    if (keys_[i] != 0 && keys_[i] < this->theta_) {
       hash_search_or_insert(keys_[i], new_keys, lg_cur_size_); // TODO hash_insert
       num_keys_++;
     }
@@ -676,8 +676,6 @@ bool update_theta_sketch_alloc<A>::hash_search_or_insert(uint64_t hash, uint64_t
     }
     cur_probe = (cur_probe + stride) & mask;
   } while (cur_probe != loop_index);
-  //std::cerr << "hash_search_or_insert: lg=" << (int)lg_size << ", hash=" << hash << std::endl;
-  //std::cerr << "cur_probe=" << cur_probe << ", stride=" << stride << std::endl;
   throw std::logic_error("key not found and no empty slots!");
 }
 
@@ -696,8 +694,6 @@ bool update_theta_sketch_alloc<A>::hash_search(uint64_t hash, const uint64_t* ta
     }
     cur_probe = (cur_probe + stride) & mask;
   } while (cur_probe != loop_index);
-  //std::cerr << "hash_search: lg=" << (int)lg_size << ", hash=" << hash << std::endl;
-  //std::cerr << "cur_probe=" << cur_probe << ", stride=" << stride << std::endl;
   throw std::logic_error("key not found and search wrapped");
 }
 
@@ -739,10 +735,10 @@ theta_sketch_alloc<A>(other),
 keys_(AllocU64().allocate(other.get_num_retained())),
 num_keys_(other.get_num_retained()),
 seed_hash_(other.get_seed_hash()),
-is_ordered_(other.is_ordered() or ordered)
+is_ordered_(other.is_ordered() || ordered)
 {
   std::copy(other.begin(), other.end(), keys_);
-  if (ordered and !other.is_ordered()) std::sort(keys_, &keys_[num_keys_]);
+  if (ordered && !other.is_ordered()) std::sort(keys_, &keys_[num_keys_]);
 }
 
 template<typename A>
@@ -823,8 +819,8 @@ void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items
 
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
-  const bool is_single_item = num_keys_ == 1 and !this->is_estimation_mode();
-  const uint8_t preamble_longs = this->is_empty() or is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
+  const bool is_single_item = num_keys_ == 1 && !this->is_estimation_mode();
+  const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
   os.write((char*)&preamble_longs, sizeof(preamble_longs));
   const uint8_t serial_version = theta_sketch_alloc<A>::SERIAL_VERSION;
   os.write((char*)&serial_version, sizeof(serial_version));
@@ -856,8 +852,8 @@ void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
 
 template<typename A>
 vector_u8<A> compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const {
-  const bool is_single_item = num_keys_ == 1 and !this->is_estimation_mode();
-  const uint8_t preamble_longs = this->is_empty() or is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
+  const bool is_single_item = num_keys_ == 1 && !this->is_estimation_mode();
+  const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
   const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + sizeof(uint64_t) * num_keys_;
   vector_u8<A> bytes(size);
   uint8_t* ptr = bytes.data() + header_size_bytes;
@@ -1053,14 +1049,14 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::builder::build() cons
 template<typename A>
 theta_sketch_alloc<A>::const_iterator::const_iterator(const uint64_t* keys, uint32_t size, uint32_t index):
 keys_(keys), size_(size), index_(index) {
-  while (index_ < size_ and keys_[index_] == 0) ++index_;
+  while (index_ < size_ && keys_[index_] == 0) ++index_;
 }
 
 template<typename A>
 typename theta_sketch_alloc<A>::const_iterator& theta_sketch_alloc<A>::const_iterator::operator++() {
   do {
     ++index_;
-  } while (index_ < size_ and keys_[index_] == 0);
+  } while (index_ < size_ && keys_[index_] == 0);
   return *this;
 }
 
