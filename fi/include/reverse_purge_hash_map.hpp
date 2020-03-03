@@ -31,21 +31,21 @@ namespace datasketches {
  * author Alexander Saydakov
  */
 
-template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename A = std::allocator<T>>
+template<typename K, typename V = uint64_t, typename H = std::hash<K>, typename E = std::equal_to<K>, typename A = std::allocator<K>>
 class reverse_purge_hash_map {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint16_t> AllocU16;
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-
 public:
+  using AllocV = typename std::allocator_traits<A>::template rebind_alloc<V>;
+  using AllocU16 = typename std::allocator_traits<A>::template rebind_alloc<uint16_t>;
+
   reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size);
   reverse_purge_hash_map(const reverse_purge_hash_map& other);
   reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept;
   ~reverse_purge_hash_map();
   reverse_purge_hash_map& operator=(reverse_purge_hash_map other);
   reverse_purge_hash_map& operator=(reverse_purge_hash_map&& other);
-  uint64_t adjust_or_insert(const T& key, uint64_t value);
-  uint64_t adjust_or_insert(T&& key, uint64_t value);
-  uint64_t get(const T& key) const;
+  V adjust_or_insert(const K& key, V value);
+  V adjust_or_insert(K&& key, V value);
+  V get(const K& key) const;
   uint8_t get_lg_cur_size() const;
   uint8_t get_lg_max_size() const;
   uint32_t get_capacity() const;
@@ -61,24 +61,24 @@ private:
   uint8_t lg_cur_size;
   uint8_t lg_max_size;
   uint32_t num_active;
-  T* keys;
-  uint64_t* values;
+  K* keys;
+  V* values;
   uint16_t* states;
 
   inline bool is_active(uint32_t probe) const;
-  void subtract_and_keep_positive_only(uint64_t amount);
+  void subtract_and_keep_positive_only(V amount);
   void hash_delete(uint32_t probe);
-  uint32_t internal_adjust_or_insert(const T& key, uint64_t value);
-  uint64_t resize_or_purge_if_needed();
+  uint32_t internal_adjust_or_insert(const K& key, V value);
+  V resize_or_purge_if_needed();
   void resize(uint8_t lg_new_size);
-  uint64_t purge();
+  V purge();
 };
 
 // This iterator uses strides based on golden ratio to avoid clustering during merge
-template<typename T, typename H, typename E, typename A>
-class reverse_purge_hash_map<T, H, E, A>::iterator: public std::iterator<std::input_iterator_tag, T> {
+template<typename K, typename V, typename H, typename E, typename A>
+class reverse_purge_hash_map<K, V, H, E, A>::iterator: public std::iterator<std::input_iterator_tag, K> {
 public:
-  friend class reverse_purge_hash_map<T, H, E, A>;
+  friend class reverse_purge_hash_map<K, V, H, E, A>;
   iterator& operator++() {
     ++count;
     if (count < map->num_active) {
@@ -92,16 +92,16 @@ public:
   iterator operator++(int) { iterator tmp(*this); operator++(); return tmp; }
   bool operator==(const iterator& rhs) const { return count == rhs.count; }
   bool operator!=(const iterator& rhs) const { return count != rhs.count; }
-  const std::pair<T&, uint64_t> operator*() const {
-    return std::pair<T&, uint64_t>(map->keys[index], map->values[index]);
+  const std::pair<K&, V> operator*() const {
+    return std::pair<K&, V>(map->keys[index], map->values[index]);
   }
 private:
   static constexpr double GOLDEN_RATIO_RECIPROCAL = 0.6180339887498949; // = (sqrt(5) - 1) / 2
-  const reverse_purge_hash_map<T, H, E, A>* map;
+  const reverse_purge_hash_map<K, V, H, E, A>* map;
   uint32_t index;
   uint32_t count;
   uint32_t stride;
-  iterator(const reverse_purge_hash_map<T, H, E, A>* map, uint32_t index, uint32_t count):
+  iterator(const reverse_purge_hash_map<K, V, H, E, A>* map, uint32_t index, uint32_t count):
     map(map), index(index), count(count), stride(static_cast<uint32_t>((1 << map->lg_cur_size) * GOLDEN_RATIO_RECIPROCAL) | 1) {}
 };
 

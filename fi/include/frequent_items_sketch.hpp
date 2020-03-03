@@ -42,30 +42,30 @@ enum frequent_items_error_type { NO_FALSE_POSITIVES, NO_FALSE_NEGATIVES };
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
 
-template<typename T, typename H = std::hash<T>, typename E = std::equal_to<T>, typename S = serde<T>, typename A = std::allocator<T>>
+// type W for weight must be an arithmetic type (integral or floating point)
+template<typename T, typename W = uint64_t, typename H = std::hash<T>, typename E = std::equal_to<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class frequent_items_sketch {
 public:
-  static const uint64_t USE_MAX_ERROR = 0; // used in get_frequent_items
-
   explicit frequent_items_sketch(uint8_t lg_max_map_size);
   frequent_items_sketch(uint8_t lg_start_map_size, uint8_t lg_max_map_size);
   class row;
-  void update(const T& item, uint64_t weight = 1);
-  void update(T&& item, uint64_t weight = 1);
+  void update(const T& item, W weight = 1);
+  void update(T&& item, W weight = 1);
   void merge(const frequent_items_sketch& other);
   void merge(frequent_items_sketch&& other);
   bool is_empty() const;
   uint32_t get_num_active_items() const;
-  uint64_t get_total_weight() const;
-  uint64_t get_estimate(const T& item) const;
-  uint64_t get_lower_bound(const T& item) const;
-  uint64_t get_upper_bound(const T& item) const;
-  uint64_t get_maximum_error() const;
+  W get_total_weight() const;
+  W get_estimate(const T& item) const;
+  W get_lower_bound(const T& item) const;
+  W get_upper_bound(const T& item) const;
+  W get_maximum_error() const;
   double get_epsilon() const;
   static double get_epsilon(uint8_t lg_max_map_size);
-  static double get_apriori_error(uint8_t lg_max_map_size, uint64_t estimated_total_weight);
-  typedef typename std::allocator_traits<A>::template rebind_alloc<row> AllocRow;
-  std::vector<row, AllocRow> get_frequent_items(frequent_items_error_type err_type, uint64_t threshold = USE_MAX_ERROR) const;
+  static double get_apriori_error(uint8_t lg_max_map_size, W estimated_total_weight);
+  typedef typename std::vector<row, typename std::allocator_traits<A>::template rebind_alloc<row>> vector_row; // alias for users
+  vector_row get_frequent_items(frequent_items_error_type err_type) const;
+  vector_row get_frequent_items(frequent_items_error_type err_type, W threshold) const;
   size_t get_serialized_size_bytes() const;
   void serialize(std::ostream& os) const;
   typedef vector_u8<A> vector_bytes; // alias for users
@@ -81,13 +81,21 @@ private:
   static const uint8_t PREAMBLE_LONGS_NONEMPTY = 4;
   static constexpr double EPSILON_FACTOR = 3.5;
   enum flags { IS_EMPTY };
-  uint64_t total_weight;
-  uint64_t offset;
-  reverse_purge_hash_map<T, H, E, A> map;
+  W total_weight;
+  W offset;
+  reverse_purge_hash_map<T, W, H, E, A> map;
   static void check_preamble_longs(uint8_t preamble_longs, bool is_empty);
   static void check_serial_version(uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
   static void check_size(uint8_t lg_cur_size, uint8_t lg_max_size);
+
+  // version for signed type
+  template<typename WW = W, typename std::enable_if<std::is_signed<WW>::value, int>::type = 0>
+  static inline void check_weight(WW weight);
+
+  // version for unsigned type
+  template<typename WW = W, typename std::enable_if<std::is_unsigned<WW>::value, int>::type = 0>
+  static inline void check_weight(WW weight);
 };
 
 }
