@@ -26,6 +26,8 @@
 namespace datasketches {
 
 /*
+ * This is a specialized linear-probing hash map with a reverse purge operation
+ * that removes all entries in the map with values that are less than zero.
  * Based on Java implementation here:
  * https://github.com/DataSketches/sketches-core/blob/master/src/main/java/com/yahoo/sketches/frequencies/ReversePurgeItemHashMap.java
  * author Alexander Saydakov
@@ -109,4 +111,4 @@ private:
 
 #include "reverse_purge_hash_map_impl.hpp"
 
-# endif
+#endif
