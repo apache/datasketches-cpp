@@ -22,6 +22,7 @@
 
 #include <streambuf>
 #include <cstring>
+#include <limits>
 
 namespace datasketches {
 
@@ -445,18 +446,34 @@ void frequent_items_sketch<T, W, H, E, S, A>::to_stream(std::ostream& os, bool p
   }
 }
 
+// version for integral signed type
 template<typename T, typename W, typename H, typename E, typename S, typename A>
-template<typename WW, typename std::enable_if<std::is_signed<WW>::value, int>::type>
+template<typename WW, typename std::enable_if<std::is_integral<WW>::value && std::is_signed<WW>::value, int>::type>
 void frequent_items_sketch<T, W, H, E, S, A>::check_weight(WW weight) {
   if (weight < 0) {
     throw std::invalid_argument("weight must be non-negative");
   }
 }
 
-// no-op for unsigned types
+// version for integral unsigned type - no-op
 template<typename T, typename W, typename H, typename E, typename S, typename A>
-template<typename WW, typename std::enable_if<std::is_unsigned<WW>::value, int>::type>
+template<typename WW, typename std::enable_if<std::is_integral<WW>::value && std::is_unsigned<WW>::value, int>::type>
 void frequent_items_sketch<T, W, H, E, S, A>::check_weight(WW weight) {}
+
+// version for floating point type
+template<typename T, typename W, typename H, typename E, typename S, typename A>
+template<typename WW, typename std::enable_if<std::is_floating_point<WW>::value, int>::type>
+void frequent_items_sketch<T, W, H, E, S, A>::check_weight(WW weight) {
+  if (weight < 0) {
+    throw std::invalid_argument("weight must be non-negative");
+  }
+  if (std::isnan(weight)) {
+    throw std::invalid_argument("weight must be a valid number");
+  }
+  if (weight > std::numeric_limits<WW>::max()) {
+    throw std::invalid_argument("weight must be finite");
+  }
+}
 
 }
 

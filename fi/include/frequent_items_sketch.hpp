@@ -24,6 +24,7 @@
 #include <vector>
 #include <iostream>
 #include <functional>
+#include <type_traits>
 
 #include "reverse_purge_hash_map.hpp"
 #include "serde.hpp"
@@ -89,12 +90,16 @@ private:
   static void check_family_id(uint8_t family_id);
   static void check_size(uint8_t lg_cur_size, uint8_t lg_max_size);
 
-  // version for signed type
-  template<typename WW = W, typename std::enable_if<std::is_signed<WW>::value, int>::type = 0>
+  // version for integral signed type
+  template<typename WW = W, typename std::enable_if<std::is_integral<WW>::value && std::is_signed<WW>::value, int>::type = 0>
   static inline void check_weight(WW weight);
 
-  // version for unsigned type
-  template<typename WW = W, typename std::enable_if<std::is_unsigned<WW>::value, int>::type = 0>
+  // version for integral unsigned type
+  template<typename WW = W, typename std::enable_if<std::is_integral<WW>::value && std::is_unsigned<WW>::value, int>::type = 0>
+  static inline void check_weight(WW weight);
+
+  // version for floating point type
+  template<typename WW = W, typename std::enable_if<std::is_floating_point<WW>::value, int>::type = 0>
   static inline void check_weight(WW weight);
 };
 
