@@ -470,7 +470,7 @@ void frequent_items_sketch<T, W, H, E, S, A>::check_weight(WW weight) {
   if (std::isnan(weight)) {
     throw std::invalid_argument("weight must be a valid number");
   }
-  if (weight > std::numeric_limits<WW>::max()) {
+  if (std::isinf(weight)) {
     throw std::invalid_argument("weight must be finite");
   }
 }
