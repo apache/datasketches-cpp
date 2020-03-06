@@ -25,13 +25,14 @@
 
 namespace datasketches {
 
-typedef frequent_items_sketch<test_type, test_type_hash, test_type_equal, test_type_serde> frequent_test_type_sketch;
+typedef frequent_items_sketch<test_type, float, test_type_hash, test_type_equal, test_type_serde> frequent_test_type_sketch;
 
 class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
 
   CPPUNIT_TEST_SUITE(frequent_items_sketch_custom_type_test);
   CPPUNIT_TEST(custom_type);
   CPPUNIT_TEST(moving_merge);
+  CPPUNIT_TEST(negative_weight);
   CPPUNIT_TEST_SUITE_END();
 
   void custom_type() {
@@ -68,7 +69,7 @@ class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_EQUAL(sketch.get_maximum_error(), sketch2.get_maximum_error());
     //std::cerr << "end" << std::endl;
 
-    //sketch2.to_stream(std::cerr, true);
+    sketch2.to_stream(std::cerr, true);
   }
 
   // this is to see the debug print from test_type if enabled there to make sure items are moved
@@ -81,6 +82,11 @@ class frequent_items_sketch_custom_type_test: public CppUnit::TestFixture {
 
     sketch2.merge(std::move(sketch1));
     CPPUNIT_ASSERT_EQUAL(2, (int) sketch2.get_total_weight());
+  }
+
+  void negative_weight() {
+    frequent_test_type_sketch sketch(3);
+    CPPUNIT_ASSERT_THROW(sketch.update(1, -1), std::invalid_argument);
   }
 
 };

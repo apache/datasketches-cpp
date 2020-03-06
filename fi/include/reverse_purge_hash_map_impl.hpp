@@ -28,28 +28,28 @@
 namespace datasketches {
 
 // clang++ seems to require this declaration for CMAKE_BUILD_TYPE='Debug"
-template<typename T, typename H, typename E, typename A>
-constexpr uint32_t reverse_purge_hash_map<T, H, E, A>::MAX_SAMPLE_SIZE;
+template<typename K, typename V, typename H, typename E, typename A>
+constexpr uint32_t reverse_purge_hash_map<K, V, H, E, A>::MAX_SAMPLE_SIZE;
 
-template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(uint8_t lg_cur_size, uint8_t lg_max_size):
+template<typename K, typename V, typename H, typename E, typename A>
+reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(uint8_t lg_cur_size, uint8_t lg_max_size):
 lg_cur_size(lg_cur_size),
 lg_max_size(lg_max_size),
 num_active(0),
 keys(A().allocate(1 << lg_cur_size)),
-values(AllocU64().allocate(1 << lg_cur_size)),
+values(AllocV().allocate(1 << lg_cur_size)),
 states(AllocU16().allocate(1 << lg_cur_size))
 {
   std::fill(states, &states[1 << lg_cur_size], 0);
 }
 
-template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(const reverse_purge_hash_map<T, H, E, A>& other):
+template<typename K, typename V, typename H, typename E, typename A>
+reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(const reverse_purge_hash_map<K, V, H, E, A>& other):
 lg_cur_size(other.lg_cur_size),
 lg_max_size(other.lg_max_size),
 num_active(other.num_active),
 keys(A().allocate(1 << lg_cur_size)),
-values(AllocU64().allocate(1 << lg_cur_size)),
+values(AllocV().allocate(1 << lg_cur_size)),
 states(AllocU16().allocate(1 << lg_cur_size))
 {
   const uint32_t size = 1 << lg_cur_size;
@@ -57,7 +57,7 @@ states(AllocU16().allocate(1 << lg_cur_size))
     auto num = num_active;
     for (uint32_t i = 0; i < size; i++) {
       if (other.states[i] > 0) {
-        new (&keys[i]) T(other.keys[i]);
+        new (&keys[i]) K(other.keys[i]);
         values[i] = other.values[i];
       }
       if (--num == 0) break;
@@ -66,8 +66,8 @@ states(AllocU16().allocate(1 << lg_cur_size))
   std::copy(&other.states[0], &other.states[size], states);
 }
 
-template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map<T, H, E, A>&& other) noexcept:
+template<typename K, typename V, typename H, typename E, typename A>
+reverse_purge_hash_map<K, V, H, E, A>::reverse_purge_hash_map(reverse_purge_hash_map<K, V, H, E, A>&& other) noexcept:
 lg_cur_size(other.lg_cur_size),
 lg_max_size(other.lg_max_size),
 num_active(other.num_active),
@@ -81,22 +81,22 @@ states(nullptr)
   other.num_active = 0;
 }
 
-template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>::~reverse_purge_hash_map() {
+template<typename K, typename V, typename H, typename E, typename A>
+reverse_purge_hash_map<K, V, H, E, A>::~reverse_purge_hash_map() {
   const uint32_t size = 1 << lg_cur_size;
   if (num_active > 0) {
     for (uint32_t i = 0; i < size; i++) {
-      if (is_active(i)) keys[i].~T();
+      if (is_active(i)) keys[i].~K();
       if (--num_active == 0) break;
     }
   }
   A().deallocate(keys, size);
-  AllocU64().deallocate(values, size);
+  AllocV().deallocate(values, size);
   AllocU16().deallocate(states, size);
 }
 
-template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map<T, H, E, A> other) {
+template<typename K, typename V, typename H, typename E, typename A>
+reverse_purge_hash_map<K, V, H, E, A>& reverse_purge_hash_map<K, V, H, E, A>::operator=(reverse_purge_hash_map<K, V, H, E, A> other) {
   std::swap(lg_cur_size, other.lg_cur_size);
   std::swap(lg_max_size, other.lg_max_size);
   std::swap(num_active, other.num_active);
@@ -106,8 +106,8 @@ reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator
   return *this;
 }
 
-template<typename T, typename H, typename E, typename A>
-reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator=(reverse_purge_hash_map<T, H, E, A>&& other) {
+template<typename K, typename V, typename H, typename E, typename A>
+reverse_purge_hash_map<K, V, H, E, A>& reverse_purge_hash_map<K, V, H, E, A>::operator=(reverse_purge_hash_map<K, V, H, E, A>&& other) {
   std::swap(lg_cur_size, other.lg_cur_size);
   std::swap(lg_max_size, other.lg_max_size);
   std::swap(num_active, other.num_active);
@@ -117,30 +117,30 @@ reverse_purge_hash_map<T, H, E, A>& reverse_purge_hash_map<T, H, E, A>::operator
   return *this;
 }
 
-template<typename T, typename H, typename E, typename A>
-uint64_t reverse_purge_hash_map<T, H, E, A>::adjust_or_insert(const T& key, uint64_t value) {
+template<typename K, typename V, typename H, typename E, typename A>
+V reverse_purge_hash_map<K, V, H, E, A>::adjust_or_insert(const K& key, V value) {
   const uint32_t num_active_before = num_active;
   const uint32_t index = internal_adjust_or_insert(key, value);
   if (num_active > num_active_before) {
-    new (&keys[index]) T(key);
+    new (&keys[index]) K(key);
     return resize_or_purge_if_needed();
   }
   return 0;
 }
 
-template<typename T, typename H, typename E, typename A>
-uint64_t reverse_purge_hash_map<T, H, E, A>::adjust_or_insert(T&& key, uint64_t value) {
+template<typename K, typename V, typename H, typename E, typename A>
+V reverse_purge_hash_map<K, V, H, E, A>::adjust_or_insert(K&& key, V value) {
   const uint32_t num_active_before = num_active;
   const uint32_t index = internal_adjust_or_insert(key, value);
   if (num_active > num_active_before) {
-    new (&keys[index]) T(std::move(key));
+    new (&keys[index]) K(std::move(key));
     return resize_or_purge_if_needed();
   }
   return 0;
 }
 
-template<typename T, typename H, typename E, typename A>
-uint64_t reverse_purge_hash_map<T, H, E, A>::get(const T& key) const {
+template<typename K, typename V, typename H, typename E, typename A>
+V reverse_purge_hash_map<K, V, H, E, A>::get(const K& key) const {
   const uint32_t mask = (1 << lg_cur_size) - 1;
   uint32_t probe = H()(key) & mask;
   while (is_active(probe)) {
@@ -150,46 +150,46 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::get(const T& key) const {
   return 0;
 }
 
-template<typename T, typename H, typename E, typename A>
-uint8_t reverse_purge_hash_map<T, H, E, A>::get_lg_cur_size() const {
+template<typename K, typename V, typename H, typename E, typename A>
+uint8_t reverse_purge_hash_map<K, V, H, E, A>::get_lg_cur_size() const {
   return lg_cur_size;
 }
 
-template<typename T, typename H, typename E, typename A>
-uint8_t reverse_purge_hash_map<T, H, E, A>::get_lg_max_size() const {
+template<typename K, typename V, typename H, typename E, typename A>
+uint8_t reverse_purge_hash_map<K, V, H, E, A>::get_lg_max_size() const {
   return lg_max_size;
 }
 
-template<typename T, typename H, typename E, typename A>
-uint32_t reverse_purge_hash_map<T, H, E, A>::get_capacity() const {
+template<typename K, typename V, typename H, typename E, typename A>
+uint32_t reverse_purge_hash_map<K, V, H, E, A>::get_capacity() const {
   return (1 << lg_cur_size) * LOAD_FACTOR;
 }
 
-template<typename T, typename H, typename E, typename A>
-uint32_t reverse_purge_hash_map<T, H, E, A>::get_num_active() const {
+template<typename K, typename V, typename H, typename E, typename A>
+uint32_t reverse_purge_hash_map<K, V, H, E, A>::get_num_active() const {
   return num_active;
 }
 
-template<typename T, typename H, typename E, typename A>
-typename reverse_purge_hash_map<T, H, E, A>::iterator reverse_purge_hash_map<T, H, E, A>::begin() const {
+template<typename K, typename V, typename H, typename E, typename A>
+typename reverse_purge_hash_map<K, V, H, E, A>::iterator reverse_purge_hash_map<K, V, H, E, A>::begin() const {
   const uint32_t size = 1 << lg_cur_size;
   uint32_t i = 0;
   while (i < size && !is_active(i)) i++;
-  return reverse_purge_hash_map<T, H, E, A>::iterator(this, i, 0);
+  return reverse_purge_hash_map<K, V, H, E, A>::iterator(this, i, 0);
 }
 
-template<typename T, typename H, typename E, typename A>
-typename reverse_purge_hash_map<T, H, E, A>::iterator reverse_purge_hash_map<T, H, E, A>::end() const {
-  return reverse_purge_hash_map<T, H, E, A>::iterator(this, 1 << lg_cur_size, num_active);
+template<typename K, typename V, typename H, typename E, typename A>
+typename reverse_purge_hash_map<K, V, H, E, A>::iterator reverse_purge_hash_map<K, V, H, E, A>::end() const {
+  return reverse_purge_hash_map<K, V, H, E, A>::iterator(this, 1 << lg_cur_size, num_active);
 }
 
-template<typename T, typename H, typename E, typename A>
-bool reverse_purge_hash_map<T, H, E, A>::is_active(uint32_t index) const {
+template<typename K, typename V, typename H, typename E, typename A>
+bool reverse_purge_hash_map<K, V, H, E, A>::is_active(uint32_t index) const {
   return states[index] > 0;
 }
 
-template<typename T, typename H, typename E, typename A>
-void reverse_purge_hash_map<T, H, E, A>::subtract_and_keep_positive_only(uint64_t amount) {
+template<typename K, typename V, typename H, typename E, typename A>
+void reverse_purge_hash_map<K, V, H, E, A>::subtract_and_keep_positive_only(V amount) {
   // starting from the back, find the first empty cell,
   // which establishes the high end of a cluster.
   uint32_t first_probe = (1 << lg_cur_size) - 1;
@@ -219,13 +219,13 @@ void reverse_purge_hash_map<T, H, E, A>::subtract_and_keep_positive_only(uint64_
   }
 }
 
-template<typename T, typename H, typename E, typename A>
-void reverse_purge_hash_map<T, H, E, A>::hash_delete(uint32_t delete_index) {
+template<typename K, typename V, typename H, typename E, typename A>
+void reverse_purge_hash_map<K, V, H, E, A>::hash_delete(uint32_t delete_index) {
   // Looks ahead in the table to search for another
   // item to move to this location
   // if none are found, the status is changed
   states[delete_index] = 0; // mark as empty
-  keys[delete_index].~T();
+  keys[delete_index].~K();
   uint32_t drift = 1;
   const uint32_t mask = (1 << lg_cur_size) - 1;
   uint32_t probe = (delete_index + drift) & mask; // map length must be a power of 2
@@ -233,11 +233,11 @@ void reverse_purge_hash_map<T, H, E, A>::hash_delete(uint32_t delete_index) {
   while (is_active(probe)) {
     if (states[probe] > drift) {
       // move current element
-      new (&keys[delete_index]) T(std::move(keys[probe]));
+      new (&keys[delete_index]) K(std::move(keys[probe]));
       values[delete_index] = values[probe];
       states[delete_index] = states[probe] - drift;
       states[probe] = 0; // mark as empty
-      keys[probe].~T();
+      keys[probe].~K();
       drift = 0;
       delete_index = probe;
     }
@@ -248,8 +248,8 @@ void reverse_purge_hash_map<T, H, E, A>::hash_delete(uint32_t delete_index) {
   }
 }
 
-template<typename T, typename H, typename E, typename A>
-uint32_t reverse_purge_hash_map<T, H, E, A>::internal_adjust_or_insert(const T& key, uint64_t value) {
+template<typename K, typename V, typename H, typename E, typename A>
+uint32_t reverse_purge_hash_map<K, V, H, E, A>::internal_adjust_or_insert(const K& key, V value) {
   const uint32_t mask = (1 << lg_cur_size) - 1;
   uint32_t index = H()(key) & mask;
   uint16_t drift = 1;
@@ -274,13 +274,13 @@ uint32_t reverse_purge_hash_map<T, H, E, A>::internal_adjust_or_insert(const T& 
   return index;
 }
 
-template<typename T, typename H, typename E, typename A>
-uint64_t reverse_purge_hash_map<T, H, E, A>::resize_or_purge_if_needed() {
+template<typename K, typename V, typename H, typename E, typename A>
+V reverse_purge_hash_map<K, V, H, E, A>::resize_or_purge_if_needed() {
   if (num_active > get_capacity()) {
     if (lg_cur_size < lg_max_size) { // can grow
       resize(lg_cur_size + 1);
     } else { // at target size, must purge
-      const uint64_t offset = purge();
+      const V offset = purge();
       if (num_active > get_capacity()) {
         throw std::logic_error("purge did not reduce number of active items");
       }
@@ -290,15 +290,15 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::resize_or_purge_if_needed() {
   return 0;
 }
 
-template<typename T, typename H, typename E, typename A>
-void reverse_purge_hash_map<T, H, E, A>::resize(uint8_t lg_new_size) {
+template<typename K, typename V, typename H, typename E, typename A>
+void reverse_purge_hash_map<K, V, H, E, A>::resize(uint8_t lg_new_size) {
   const uint32_t old_size = 1 << lg_cur_size;
-  T* old_keys = keys;
-  uint64_t* old_values = values;
+  K* old_keys = keys;
+  V* old_values = values;
   uint16_t* old_states = states;
   const uint32_t new_size = 1 << lg_new_size;
   keys = A().allocate(new_size);
-  values = AllocU64().allocate(new_size);
+  values = AllocV().allocate(new_size);
   states = AllocU16().allocate(new_size);
   std::fill(states, &states[new_size], 0);
   num_active = 0;
@@ -306,20 +306,20 @@ void reverse_purge_hash_map<T, H, E, A>::resize(uint8_t lg_new_size) {
   for (uint32_t i = 0; i < old_size; i++) {
     if (old_states[i] > 0) {
       adjust_or_insert(std::move(old_keys[i]), old_values[i]);
-      old_keys[i].~T();
+      old_keys[i].~K();
     }
   }
   A().deallocate(old_keys, old_size);
-  AllocU64().deallocate(old_values, old_size);
+  AllocV().deallocate(old_values, old_size);
   AllocU16().deallocate(old_states, old_size);
 }
 
-template<typename T, typename H, typename E, typename A>
-uint64_t reverse_purge_hash_map<T, H, E, A>::purge() {
+template<typename K, typename V, typename H, typename E, typename A>
+V reverse_purge_hash_map<K, V, H, E, A>::purge() {
   const uint32_t limit = std::min(MAX_SAMPLE_SIZE, num_active);
   uint32_t num_samples = 0;
   uint32_t i = 0;
-  uint64_t* samples = AllocU64().allocate(limit);
+  V* samples = AllocV().allocate(limit);
   while (num_samples < limit) {
     if (is_active(i)) {
       samples[num_samples++] = values[i];
@@ -327,8 +327,8 @@ uint64_t reverse_purge_hash_map<T, H, E, A>::purge() {
     i++;
   }
   std::nth_element(&samples[0], &samples[num_samples / 2], &samples[num_samples - 1]);
-  const uint64_t median = samples[num_samples / 2];
-  AllocU64().deallocate(samples, limit);
+  const V median = samples[num_samples / 2];
+  AllocV().deallocate(samples, limit);
   subtract_and_keep_positive_only(median);
   return median;
 }
