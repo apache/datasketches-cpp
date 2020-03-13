@@ -115,7 +115,7 @@ uint8_t Hll4Array<A>::getSlot(int slotNo) const {
 template<typename A>
 uint8_t Hll4Array<A>::get_value(uint32_t index) const {
   const uint8_t value = getSlot(index);
-  if (value != HllUtil<A>::AUX_TOKEN) return value;
+  if (value != HllUtil<A>::AUX_TOKEN) return value + this->curMin;
   return auxHashMap->mustFindValueFor(index);
 }
 
@@ -164,7 +164,7 @@ void Hll4Array<A>::internalHll4Update(const int slotNo, const int newVal) {
        ? (lbOnOldValue) : (auxHashMap->mustFindValueFor(slotNo));
 
     if (newVal > actualOldValue) { // 848: actualOldValue could still be 0; newValue > 0
-      // we know that hte array will change, but we haven't actually updated yet
+      // we know that the array will change, but we haven't actually updated yet
       this->hipAndKxQIncrementalUpdate(actualOldValue, newVal);
 
       // newVal >= curMin

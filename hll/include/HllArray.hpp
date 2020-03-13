@@ -128,7 +128,7 @@ private:
   uint8_t offset;
   bool all;
   uint8_t value; // cached value to avoid computing in operator++ and in operator*()
-  static inline uint8_t get_value(const uint8_t* array, size_t index, target_hll_type hll_type);
+  static inline uint8_t get_value(const uint8_t* array, size_t index, target_hll_type hll_type, const AuxHashMap<A>* exceptions, uint8_t offset);
 };
 
 }

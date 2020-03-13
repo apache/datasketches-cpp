@@ -644,7 +644,7 @@ HllArray<A>::const_iterator::const_iterator(const uint8_t* array, size_t array_s
 array(array), array_size(array_size), index(index), hll_type(hll_type), exceptions(exceptions), offset(offset), all(all)
 {
   while (this->index < array_size) {
-    value = get_value(array, this->index, hll_type);
+    value = get_value(array, this->index, hll_type, exceptions, offset);
     if (all || value != HllUtil<A>::EMPTY) break;
     this->index++;
   }
@@ -653,7 +653,7 @@ array(array), array_size(array_size), index(index), hll_type(hll_type), exceptio
 template<typename A>
 typename HllArray<A>::const_iterator& HllArray<A>::const_iterator::operator++() {
   while (++index < array_size) {
-    value = get_value(array, index, hll_type);
+    value = get_value(array, index, hll_type, exceptions, offset);
     if (all || value != HllUtil<A>::EMPTY) break;
   }
   return *this;
@@ -666,23 +666,22 @@ bool HllArray<A>::const_iterator::operator!=(const const_iterator& other) const 
 
 template<typename A>
 uint32_t HllArray<A>::const_iterator::operator*() const {
-  if (hll_type == target_hll_type::HLL_4) {
-    if (value == HllUtil<A>::AUX_TOKEN) { // exception
-      return HllUtil<A>::pair(index, exceptions->mustFindValueFor(index));
-    }
-    return HllUtil<A>::pair(index, value + offset);
-  }
   return HllUtil<A>::pair(index, value);
 }
 
 template<typename A>
-uint8_t HllArray<A>::const_iterator::get_value(const uint8_t* array, size_t index, target_hll_type hll_type) {
+uint8_t HllArray<A>::const_iterator::get_value(const uint8_t* array, size_t index, target_hll_type hll_type, const AuxHashMap<A>* exceptions, uint8_t offset) {
   if (hll_type == target_hll_type::HLL_4) {
-    const uint8_t value = array[index >> 1];
+    uint8_t value = array[index >> 1];
     if ((index & 1) > 0) { // odd
-        return value >> 4;
+        value >>= 4;
+    } else {
+      value &= HllUtil<A>::loNibbleMask;
     }
-    return value & HllUtil<A>::loNibbleMask;
+    if (value == HllUtil<A>::AUX_TOKEN) { // exception
+      return exceptions->mustFindValueFor(index);
+    }
+    return value + offset;
   } else if (hll_type == target_hll_type::HLL_6) {
     const int start_bit = index * 6;
     const int shift = start_bit & 0x7;
