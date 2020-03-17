@@ -240,6 +240,10 @@ class var_opt_sketch_test: public CppUnit::TestFixture {
     CPPUNIT_ASSERT_THROW_MESSAGE("update() accepted a negative weight",
       sk.update("invalid_weight", -1.0),
       std::invalid_argument);
+
+    // should not throw but sketch shoulds till be empty
+    sk.update("zero weight", 0.0);
+    CPPUNIT_ASSERT(sk.is_empty());
   }
 
   void corrupt_serialized_weight() {
