@@ -724,9 +724,11 @@ std::string var_opt_sketch<T,S,A>::items_to_string() const {
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::update(const T& item, double weight, bool mark) {
-  if (weight <= 0.0) { 
-    throw std::invalid_argument("Item weights must be strictly positive. Found: "
+  if (weight < 0.0 || std::isnan(weight) || std::isinf(weight)) {
+    throw std::invalid_argument("Item weights must be nonnegativge and finite. Found: "
                                 + std::to_string(weight));
+  } else if (weight == 0.0) {
+    return;
   }
   ++n_;
 
