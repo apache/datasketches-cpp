@@ -103,6 +103,21 @@ private:
   static inline void check_weight(WW weight);
 };
 
+template<typename T, typename W, typename H, typename E, typename S, typename A>
+class frequent_items_sketch<T, W, H, E, S, A>::row {
+public:
+  row(const T* item, W weight, W offset):
+    item(item), weight(weight), offset(offset) {}
+  const T& get_item() const { return *item; }
+  W get_estimate() const { return weight + offset; }
+  W get_lower_bound() const { return weight; }
+  W get_upper_bound() const { return weight + offset; }
+private:
+  const T* item;
+  W weight;
+  W offset;
+};
+
 }
 
 #include "frequent_items_sketch_impl.hpp"
