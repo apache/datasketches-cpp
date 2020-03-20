@@ -62,6 +62,8 @@ class IsomorphicTest : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(IsomorphicTest);
   CPPUNIT_TEST(union_one_update_serialize_updatable);
   CPPUNIT_TEST(union_one_update_serialize_compact);
+  CPPUNIT_TEST(convert_back_and_forth_serialize_updatable);
+  CPPUNIT_TEST(convert_back_and_forth_serialize_compact);
   CPPUNIT_TEST_SUITE_END();
 
   // if lg_k >= 8, mode != SET!
