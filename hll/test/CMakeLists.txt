@@ -46,6 +46,5 @@ target_sources(hll_test
     HllUnionTest.cpp
     TablesTest.cpp
     ToFromByteArrayTest.cpp
-    UnionCaseTest.cpp
     IsomorphicTest.cpp
 )
