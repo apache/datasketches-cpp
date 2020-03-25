@@ -38,6 +38,7 @@ class HllUnionTest : public CppUnit::TestFixture {
   CPPUNIT_TEST(checkConversions);
   CPPUNIT_TEST(checkMisc);
   CPPUNIT_TEST(checkInputTypes);
+  CPPUNIT_TEST(check_hll_to_hll);
   CPPUNIT_TEST_SUITE_END();
 
   int min(int a, int b) {
@@ -380,6 +381,26 @@ class HllUnionTest : public CppUnit::TestFixture {
     u.update("");
     CPPUNIT_ASSERT(u.is_empty());
   }
+
+  void union_two_sketches_with_overlap(int num, uint8_t lg_k, target_hll_type type) {
+    hll_sketch sketch1(lg_k, type);
+    for (int key = 0; key < num; key++) sketch1.update(key);
+
+    const int overlap = num / 2;
+    hll_sketch sketch2(lg_k, type);
+    for (int key = overlap; key < num + overlap; key++) sketch2.update(key);
+
+    hll_union u(lg_k);
+    u.update(sketch1);
+    u.update(sketch2);
+    hll_sketch sketch = u.get_result(type);
+    CPPUNIT_ASSERT_DOUBLES_EQUAL(num * 1.5, sketch.get_estimate(), num * 1.5 * 0.02);
+  }
+
+  void check_hll_to_hll() {
+    union_two_sketches_with_overlap(1000000, 11, HLL_4);
+  }
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(HllUnionTest);

@@ -264,7 +264,7 @@ std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
                                       const bool aux_detail,
                                       const bool all) const {
   if (summary) {
-    os << "### HLL SKETCH SUMMARY: " << std::endl
+    os << "### HLL sketch summary:" << std::endl
        << "  Log Config K   : " << get_lg_config_k() << std::endl
        << "  Hll Target     : " << type_as_string() << std::endl
        << "  Current Mode   : " << mode_as_string() << std::endl
@@ -283,10 +283,11 @@ std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
       os << "  Coupon count   : "
          << std::to_string(((CouponList<A>*) sketch_impl)->getCouponCount()) << std::endl;
     }
+    os << "### End HLL sketch summary" << std::endl;
   }
 
   if (detail) {
-    os << "### HLL SKETCH DATA DETAIL: " << std::endl;
+    os << "### HLL sketch data detail:" << std::endl;
     if (get_current_mode() == HLL) {
       const HllArray<A>* hll_ptr = static_cast<const HllArray<A>*>(sketch_impl);
       os << std::left << std::setw(10) << "Slot" << std::setw(6) << "Value" << std::endl;
@@ -318,13 +319,14 @@ std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
         ++i;
       }
     }
+    os << "### End HLL sketch data detail" << std::endl;
   }
   if (aux_detail) {
     if ((get_current_mode() == HLL) && (get_target_type() == HLL_4)) {
       const Hll4Array<A>* hll4_ptr = static_cast<const Hll4Array<A>*>(sketch_impl);
       const AuxHashMap<A>* aux_ptr = hll4_ptr->getAuxHashMap();
       if (aux_ptr != nullptr) {
-        os << "### HLL SKETCH AUX DETAIL: " << std::endl;
+        os << "### HLL sketch aux detail:" << std::endl;
         os << std::left;
         os << std::setw(10) << "Index";
         os << std::setw(10) << "Key";
@@ -343,6 +345,7 @@ std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
           ++it;
           ++i;
         }
+        os << "### End HLL sketch aux detail" << std::endl;
       }
     }
   }
