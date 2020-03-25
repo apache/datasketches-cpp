@@ -1325,7 +1325,8 @@ void var_opt_sketch<T, S, A>::validate_and_set_current_size(int preamble_longs) 
 
 
 template<typename T, typename S, typename A>
-subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(std::function<bool(T)> predicate) const {
+template<typename P>
+subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(P predicate) const {
   if (n_ == 0) {
     return {0.0, 0.0, 0.0, 0.0};
   }
@@ -1363,7 +1364,7 @@ subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(std::function<bool(T
   double lb_true_fraction = pseudo_hypergeometric_lb_on_p(r_, r_true_count, effective_sampling_rate);
   double estimated_true_fraction = (1.0 * r_true_count) / r_;
   double ub_true_fraction = pseudo_hypergeometric_ub_on_p(r_, r_true_count, effective_sampling_rate);
-  
+
   return {  h_true_wt + (total_wt_r_ * lb_true_fraction),
             h_true_wt + (total_wt_r_ * estimated_true_fraction),
             h_true_wt + (total_wt_r_ * ub_true_fraction),

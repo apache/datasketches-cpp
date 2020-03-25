@@ -69,20 +69,20 @@ class var_opt_sketch {
     void update(const T& item, double weight=1.0);
     //void update(T&& item, double weight=1.0);
 
-    uint32_t get_k() const;
-    uint64_t get_n() const;
-    uint32_t get_num_samples() const;
+    inline uint32_t get_k() const;
+    inline uint64_t get_n() const;
+    inline uint32_t get_num_samples() const;
     
-    bool is_empty() const;
+    inline bool is_empty() const;
     void reset();
 
     // version for fixed-size arithmetic types (integer, floating point)
     template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-    size_t get_serialized_size_bytes() const;
+    inline size_t get_serialized_size_bytes() const;
 
     // version for all other types
     template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-    size_t get_serialized_size_bytes() const;
+    inline size_t get_serialized_size_bytes() const;
 
     std::vector<uint8_t, AllocU8<A>> serialize(unsigned header_size_bytes = 0) const;
     void serialize(std::ostream& os) const;
@@ -95,7 +95,8 @@ class var_opt_sketch {
     std::ostream& items_to_stream(std::ostream& os) const;
     std::string items_to_string() const;
 
-    subset_summary estimate_subset_sum(std::function<bool(T)> predicate) const;
+    template<typename P>
+    subset_summary estimate_subset_sum(P predicate) const;
 
     class const_iterator;
     const_iterator begin() const;
@@ -163,32 +164,32 @@ class var_opt_sketch {
     var_opt_sketch(T* data, double* weights, size_t len, uint32_t k, uint64_t n, uint32_t h_count, uint32_t r_count, double total_wt_r);
 
     // internal-use-only updates
-    void update(const T& item, double weight, bool mark);
-    void update_warmup_phase(const T& item, double weight, bool mark);
-    void update_light(const T& item, double weight, bool mark);
-    void update_heavy_r_eq1(const T& item, double weight, bool mark);
-    void update_heavy_general(const T& item, double weight, bool mark);
+    inline void update(const T& item, double weight, bool mark);
+    inline void update_warmup_phase(const T& item, double weight, bool mark);
+    inline void update_light(const T& item, double weight, bool mark);
+    inline void update_heavy_r_eq1(const T& item, double weight, bool mark);
+    inline void update_heavy_general(const T& item, double weight, bool mark);
 
-    double get_tau() const;
-    double peek_min() const;
-    bool is_marked(int idx) const;
+    inline double get_tau() const;
+    inline double peek_min() const;
+    inline bool is_marked(int idx) const;
     
-    uint32_t pick_random_slot_in_r() const;
-    uint32_t choose_delete_slot(double wt_cand, int num_cand) const;
-    uint32_t choose_weighted_delete_slot(double wt_cand, int num_cand) const;
+    inline uint32_t pick_random_slot_in_r() const;
+    inline uint32_t choose_delete_slot(double wt_cand, int num_cand) const;
+    inline uint32_t choose_weighted_delete_slot(double wt_cand, int num_cand) const;
 
-    void transition_from_warmup();
-    void convert_to_heap();
-    void restore_towards_leaves(int slot_in);
-    void restore_towards_root(int slot_in);
-    void push(const T& item, double wt, bool mark);
-    void pop_min_to_m_region();
+    inline void transition_from_warmup();
+    inline void convert_to_heap();
+    inline void restore_towards_leaves(int slot_in);
+    inline void restore_towards_root(int slot_in);
+    inline void push(const T& item, double wt, bool mark);
+    inline void pop_min_to_m_region();
     void grow_candidate_set(double wt_cands, int num_cands);    
     void decrease_k_by_1();
     void strip_marks();
     void force_set_k(int k); // used to resolve union gadget into sketch
     void downsample_candidate_set(double wt_cands, int num_cands);
-    void swap_values(int src, int dst);
+    inline void swap_values(int src, int dst);
     void grow_data_arrays();
     void allocate_data_arrays(uint32_t tgt_size, bool use_marks);
 
@@ -201,14 +202,14 @@ class var_opt_sketch {
     // things to move to common utils and share among sketches
     static uint32_t get_adjusted_size(int max_size, int resize_target);
     static uint32_t starting_sub_multiple(int lg_target, int lg_rf, int lg_min);
-    static double pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, double sampling_rate);
-    static double pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, double sampling_rate);
+    static inline double pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, double sampling_rate);
+    static inline double pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, double sampling_rate);
     static bool is_power_of_2(uint32_t v);
     static uint32_t to_log_2(uint32_t v);
     static uint32_t count_trailing_zeros(uint32_t v);
     static uint32_t ceiling_power_of_2(uint32_t n);
-    static uint32_t next_int(uint32_t max_value);
-    static double next_double_exclude_zero();
+    static inline uint32_t next_int(uint32_t max_value);
+    static inline double next_double_exclude_zero();
 };
 
 template<typename T, typename S, typename A>
