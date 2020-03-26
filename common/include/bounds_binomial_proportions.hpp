@@ -110,7 +110,7 @@ public:
    * @return the lower bound of the approximate Clopper-Pearson confidence interval for the
    * unknown success probability.
    */
-  static double approximate_lower_bound_on_p(long n, long k, double num_std_devs) {
+  static inline double approximate_lower_bound_on_p(long n, long k, double num_std_devs) {
     check_inputs(n, k);
     if (n == 0) { return 0.0; } // the coin was never flipped, so we know nothing
     else if (k == 0) { return 0.0; }
@@ -145,7 +145,7 @@ public:
    * @return the upper bound of the approximate Clopper-Pearson confidence interval for the
    * unknown success probability.
    */
-  static double approximate_upper_bound_on_p(long n, long k, double num_std_devs) {
+  static inline double approximate_upper_bound_on_p(long n, long k, double num_std_devs) {
     check_inputs(n, k);
     if (n == 0) { return 1.0; } // the coin was never flipped, so we know nothing
     else if (k == n) { return 1.0; }
@@ -167,7 +167,7 @@ public:
    * @param k is the number of successes. Must be non-negative, and cannot exceed n.
    * @return the estimate of the unknown binomial proportion.
    */
-  static double estimate_unknown_p(long n, long k) {
+  static inline double estimate_unknown_p(long n, long k) {
     check_inputs(n, k);
     if (n == 0) { return 0.5; } // the coin was never flipped, so we know nothing
     else { return ((double) k / (double) n); }
@@ -178,7 +178,7 @@ public:
    * @param x is the input to the erf function
    * @return returns erf(x), accurate to roughly 7 decimal digits.
    */
-  static double erf(double x) {
+  static inline double erf(double x) {
     if (x < 0.0) { return (-1.0 * (erf_of_nonneg(-1.0 * x))); }
     else { return (erf_of_nonneg(x)); }
   }
@@ -188,12 +188,12 @@ public:
    * @param x is the input to the normal_cdf function
    * @return returns the approximation to normalCDF(x).
    */
-   static double normal_cdf(double x) {
+   static inline double normal_cdf(double x) {
     return (0.5 * (1.0 + (erf(x / (sqrt(2.0))))));
   }
 
 private:
-  static void check_inputs(long n, long k) {
+  static inline void check_inputs(long n, long k) {
     if (n < 0) { throw std::invalid_argument("N must be non-negative"); }
     if (k < 0) { throw std::invalid_argument("K must be non-negative"); }
     if (k > n) { throw std::invalid_argument("K cannot exceed N"); }
@@ -201,7 +201,7 @@ private:
 
   //@formatter:off
   // Abramowitz and Stegun formula 7.1.28, p. 88; Claims accuracy of about 7 decimal digits */
-  static double erf_of_nonneg(double x) {
+  static inline double erf_of_nonneg(double x) {
     // The constants that appear below, formatted for easy checking against the book.
     //    a1 = 0.07052 30784
     //    a3 = 0.00927 05272
@@ -234,7 +234,7 @@ private:
     return (1.0 - (1.0 / sum16));
   }
 
-  static double delta_of_num_stdevs(double kappa) {
+  static inline double delta_of_num_stdevs(double kappa) {
     return (normal_cdf(-1.0 * kappa));
   }
 
@@ -251,7 +251,7 @@ private:
   // and it is worth keeping it that way so that it will always be easy to verify
   // that the formula was typed in correctly.
 
-  static double abramowitz_stegun_formula_26p5p22(double a, double b,
+  static inline double abramowitz_stegun_formula_26p5p22(double a, double b,
       double yp) {
     const double b2m1 = (2.0 * b) - 1.0;
     const double a2m1 = (2.0 * a) - 1.0;
@@ -268,19 +268,19 @@ private:
 
   // Formulas for some special cases.
 
-  static double exact_upper_bound_on_p_k_eq_zero(double n, double delta) {
+  static inline double exact_upper_bound_on_p_k_eq_zero(double n, double delta) {
     return (1.0 - pow(delta, (1.0 / n)));
   }
 
-  static double exact_lower_bound_on_p_k_eq_n(double n, double delta) {
+  static inline double exact_lower_bound_on_p_k_eq_n(double n, double delta) {
     return (pow(delta, (1.0 / n)));
   }
 
-  static double exact_lower_bound_on_p_k_eq_1(double n, double delta) {
+  static inline double exact_lower_bound_on_p_k_eq_1(double n, double delta) {
     return (1.0 - pow((1.0 - delta), (1.0 / n)));
   }
 
-  static double exactU_upper_bound_on_p_k_eq_minusone(double n, double delta) {
+  static inline double exactU_upper_bound_on_p_k_eq_minusone(double n, double delta) {
     return (pow((1.0 - delta), (1.0 / n)));
   }
 
