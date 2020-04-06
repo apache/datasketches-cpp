@@ -24,10 +24,6 @@
 #include <memory>
 #include <vector>
 
-#if defined(_MSC_VER)
-#include <iso646.h> // for and/or keywords
-#endif // _MSC_VER
-
 #include "kll_quantile_calculator.hpp"
 #include "serde.hpp"
 

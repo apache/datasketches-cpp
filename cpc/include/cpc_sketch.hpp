@@ -25,10 +25,6 @@
 #include <string>
 #include <vector>
 
-#if defined(_MSC_VER)
-#include <iso646.h> // for and/or keywords
-#endif // _MSC_VER
-
 #include "u32_table.hpp"
 #include "cpc_common.hpp"
 #include "cpc_compressor.hpp"
