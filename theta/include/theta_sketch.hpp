@@ -51,14 +51,6 @@ public:
   static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
   static const uint8_t SERIAL_VERSION = 3;
 
-  theta_sketch_alloc(bool is_empty, uint64_t theta);
-  theta_sketch_alloc(const theta_sketch_alloc<A>& other);
-  theta_sketch_alloc(theta_sketch_alloc<A>&& other) noexcept;
-  virtual ~theta_sketch_alloc();
-
-  theta_sketch_alloc<A>& operator=(const theta_sketch_alloc<A>& other);
-  theta_sketch_alloc<A>& operator=(theta_sketch_alloc<A>&& other);
-
   bool is_empty() const;
   double get_estimate() const;
   double get_lower_bound(uint8_t num_std_devs) const;
@@ -88,6 +80,14 @@ protected:
 
   bool is_empty_;
   uint64_t theta_;
+
+  theta_sketch_alloc(bool is_empty, uint64_t theta);
+  theta_sketch_alloc(const theta_sketch_alloc<A>& other);
+  theta_sketch_alloc(theta_sketch_alloc<A>&& other) noexcept;
+  virtual ~theta_sketch_alloc();
+
+  theta_sketch_alloc<A>& operator=(const theta_sketch_alloc<A>& other);
+  theta_sketch_alloc<A>& operator=(theta_sketch_alloc<A>&& other);
 
   static uint16_t get_seed_hash(uint64_t seed);
 
