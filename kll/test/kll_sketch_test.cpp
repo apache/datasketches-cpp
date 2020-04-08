@@ -176,6 +176,13 @@ public:
       const double trueRank = (double) i / n;
       CPPUNIT_ASSERT_EQUAL(trueRank, sketch.get_rank(i));
     }
+
+    // the alternative method must produce the same result
+    auto quantiles2 = sketch.get_quantiles(3);
+    CPPUNIT_ASSERT_EQUAL(3, (int) quantiles2.size());
+    CPPUNIT_ASSERT_EQUAL(quantiles[0], quantiles[0]);
+    CPPUNIT_ASSERT_EQUAL(quantiles[1], quantiles[1]);
+    CPPUNIT_ASSERT_EQUAL(quantiles[2], quantiles[2]);
   }
 
   void many_items_estimation_mode() {
