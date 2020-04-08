@@ -174,6 +174,22 @@ class kll_sketch {
     T get_max_value() const;
     T get_quantile(double fraction) const;
     std::vector<T, A> get_quantiles(const double* fractions, uint32_t size) const;
+
+    /**
+     * This is a multiple-query version of get_quantile() that allows the caller to
+     * specify the number of evenly-spaced fractional ranks.
+     *
+     * <p>If the sketch is empty this returns an empty vector.
+     *
+     * @param num an integer that specifies the number of evenly-spaced fractional ranks.
+     * This must be an integer greater than 0. A value of 1 will return the min value.
+     * A value of 2 will return the min and the max value. A value of 3 will return the min,
+     * the median and the max value, etc.
+     *
+     * @return array of approximations to the given number of evenly-spaced fractional ranks.
+     */
+    std::vector<T, A> get_quantiles(size_t num) const;
+
     double get_rank(const T& value) const;
     vector_d<A> get_PMF(const T* split_points, uint32_t size) const;
     vector_d<A> get_CDF(const T* split_points, uint32_t size) const;
