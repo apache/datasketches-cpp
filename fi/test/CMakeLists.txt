@@ -17,7 +17,7 @@
 
 add_executable(fi_test)
 
-target_link_libraries(fi_test fi common_test)
+target_link_libraries(fi_test fi catch_test)
 
 set_target_properties(fi_test PROPERTIES
   CXX_STANDARD 11

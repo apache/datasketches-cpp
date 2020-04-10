@@ -35,3 +35,17 @@ target_sources(common_test
     test_allocator.hpp
     test_allocator.cpp
 )
+
+
+add_library(catch_test OBJECT "")
+
+set_target_properties(catch_test PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
+)
+
+target_sources(catch_test
+  PRIVATE
+    catch.hpp
+    catch_runner.cpp
+)
