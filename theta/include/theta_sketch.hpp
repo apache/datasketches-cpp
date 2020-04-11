@@ -53,24 +53,102 @@ public:
 
   virtual ~theta_sketch_alloc();
 
+  /**
+   * @return true if this sketch is empty
+   */
   bool is_empty() const;
+
+  /**
+   * @return estimate of the distinct count of the input stream
+   */
   double get_estimate() const;
+
+  /**
+   * Returns the approximate lower error bound given a number of Standard Deviations.
+   * @param num_std_devs number of Standard Deviations (1, 2 or 3)
+   * @return the lower bound
+   */
   double get_lower_bound(uint8_t num_std_devs) const;
+
+  /**
+   * Returns the approximate upper error bound given a number of Standard Deviations.
+   * @param num_std_devs number of Standard Deviations (1, 2 or 3)
+   * @return the lower bound
+   */
   double get_upper_bound(uint8_t num_std_devs) const;
+
+  /**
+   * @return true if the sketch is in estimation mode (as opposed to exact mode)
+   */
   bool is_estimation_mode() const;
+
+  /**
+   * @return theta as a fraction from 0 to 1 (effective sampling rate)
+   */
   double get_theta() const;
+
+  /**
+   * @return theta as a positive integer bewteen 0 and LLONG_MAX
+   */
   uint64_t get_theta64() const;
 
+  /**
+   * @return the number of retained entries in the sketch
+   */
   virtual uint32_t get_num_retained() const = 0;
+
   virtual uint16_t get_seed_hash() const = 0;
+
+  /**
+   * @return true if retained entries are ordered
+   */
   virtual bool is_ordered() const = 0;
+
+  /**
+   * Writes a human readable summary of this sketch to a given stream
+   * @param os output stream
+   * @param print_items if true include the list of items retained by the sketch
+   */
   virtual void to_stream(std::ostream& os, bool print_items = false) const = 0;
+
+  /**
+   * This method serializes the sketch into a given stream in a binary form
+   * @param os output stream
+   */
   virtual void serialize(std::ostream& os) const = 0;
-  typedef vector_u8<A> vector_bytes; // alias for users
+
+  // This is a convenience alias for users
+  // The type returned by the following serialize method
+  typedef vector_u8<A> vector_bytes;
+
+  /**
+   * This method serializes the sketch as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is a blank space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * @param header_size_bytes space to reserve in front of the sketch
+   */
   virtual vector_bytes serialize(unsigned header_size_bytes = 0) const = 0;
 
+  // This is a convenience alias for users
+  // The type returned by the following deserialize methods
   typedef std::unique_ptr<theta_sketch_alloc<A>, std::function<void(theta_sketch_alloc<A>*)>> unique_ptr;
+
+  /**
+   * This method deserializes a sketch from a given stream.
+   * @param is input stream
+   * @param seed the seed for the hash function that was used to create the sketch
+   * @return an instance of a sketch
+   */
   static unique_ptr deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+
+  /**
+   * This method deserializes a sketch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param seed the seed for the hash function that was used to create the sketch
+   * @return an instance of the sketch
+   */
   static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
 
   class const_iterator;

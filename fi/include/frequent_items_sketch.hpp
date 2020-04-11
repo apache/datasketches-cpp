@@ -239,13 +239,14 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
+   * @return serialized sketch as a vector of bytes
    */
   vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
-   * @return an instance of a sketch
+   * @return an instance of the sketch
    */
   static frequent_items_sketch deserialize(std::istream& is);
 
@@ -253,7 +254,7 @@ public:
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @return an instance of a sketch
+   * @return an instance of the sketch
    */
   static frequent_items_sketch deserialize(const void* bytes, size_t size);
 
