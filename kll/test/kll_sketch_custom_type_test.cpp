@@ -17,45 +17,28 @@
  * under the License.
  */
 
-#include <cppunit/TestFixture.h>
-#include <cppunit/extensions/HelperMacros.h>
+#include <catch.hpp>
+#include <sstream>
 
 #include <kll_sketch.hpp>
 #include <test_allocator.hpp>
 #include <test_type.hpp>
 
-
 namespace datasketches {
 
 typedef kll_sketch<test_type, test_type_less, test_type_serde, test_allocator<test_type>> kll_test_type_sketch;
 
-class kll_sketch_custom_type_test: public CppUnit::TestFixture {
+TEST_CASE("kll sketch custom type", "[kll_sketch]") {
 
-  CPPUNIT_TEST_SUITE(kll_sketch_custom_type_test);
-  CPPUNIT_TEST(compact_level_zero);
-  CPPUNIT_TEST(merge_small);
-  CPPUNIT_TEST(merge_higher_levels);
-  CPPUNIT_TEST(serialize_deserialize);
-  CPPUNIT_TEST(moving_merge);
-  CPPUNIT_TEST_SUITE_END();
+  // setup section
+  test_allocator_total_bytes = 0;
 
-public:
-  void setUp() {
-    test_allocator_total_bytes = 0;
-  }
-
-  void tearDown() {
-    if (test_allocator_total_bytes != 0) {
-      CPPUNIT_ASSERT_EQUAL((long long) 0, test_allocator_total_bytes);
-    }
-  }
-
-  void compact_level_zero() {
+  SECTION("compact level zero") {
     kll_test_type_sketch sketch(8);
-    CPPUNIT_ASSERT_THROW(sketch.get_quantile(0), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch.get_min_value(), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch.get_max_value(), std::runtime_error);
-    CPPUNIT_ASSERT_EQUAL((size_t) 8, sketch.get_serialized_size_bytes());
+    REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_min_value(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_max_value(), std::runtime_error);
+    REQUIRE(sketch.get_serialized_size_bytes() == 8);
 
     sketch.update(1);
     sketch.update(2);
@@ -69,13 +52,13 @@ public:
 
     //sketch.to_stream(std::cout);
 
-    CPPUNIT_ASSERT(sketch.is_estimation_mode());
-    CPPUNIT_ASSERT(sketch.get_n() > sketch.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(1, sketch.get_min_value().get_value());
-    CPPUNIT_ASSERT_EQUAL(9, sketch.get_max_value().get_value());
+    REQUIRE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_n() > sketch.get_num_retained());
+    REQUIRE(sketch.get_min_value().get_value() == 1);
+    REQUIRE(sketch.get_max_value().get_value() == 9);
   }
 
-  void merge_small() {
+  SECTION("merge small") {
     kll_test_type_sketch sketch1(8);
     sketch1.update(1);
 
@@ -86,13 +69,13 @@ public:
 
     //sketch2.to_stream(std::cout);
 
-    CPPUNIT_ASSERT(!sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL((int) sketch2.get_n(), (int) sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(1, sketch2.get_min_value().get_value());
-    CPPUNIT_ASSERT_EQUAL(2, sketch2.get_max_value().get_value());
+    REQUIRE_FALSE(sketch2.is_estimation_mode());
+    REQUIRE(sketch2.get_num_retained() == sketch2.get_n());
+    REQUIRE(sketch2.get_min_value().get_value() == 1);
+    REQUIRE(sketch2.get_max_value().get_value() == 2);
   }
 
-  void merge_higher_levels() {
+  SECTION("merge higher levels") {
     kll_test_type_sketch sketch1(8);
     sketch1.update(1);
     sketch1.update(2);
@@ -119,13 +102,13 @@ public:
 
     //sketch2.to_stream(std::cout);
 
-    CPPUNIT_ASSERT(sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT(sketch2.get_n() > sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(1, sketch2.get_min_value().get_value());
-    CPPUNIT_ASSERT_EQUAL(18, sketch2.get_max_value().get_value());
+    REQUIRE(sketch2.is_estimation_mode());
+    REQUIRE(sketch2.get_n() > sketch2.get_num_retained());
+    REQUIRE(sketch2.get_min_value().get_value() == 1);
+    REQUIRE(sketch2.get_max_value().get_value() == 18);
   }
 
-  void serialize_deserialize() {
+  SECTION("serialize deserialize") {
     kll_test_type_sketch sketch1;
 
     const int n = 1000;
@@ -133,37 +116,39 @@ public:
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch1.serialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_serialized_size_bytes(), (size_t) s.tellp());
+    REQUIRE((size_t) s.tellp() == sketch1.get_serialized_size_bytes());
     auto sketch2 = kll_test_type_sketch::deserialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (size_t) s.tellg());
-    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
-    CPPUNIT_ASSERT_EQUAL(sketch1.is_empty(), sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(sketch1.is_estimation_mode(), sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_n(), sketch2.get_n());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_num_retained(), sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_min_value().get_value(), sketch2.get_min_value().get_value());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_max_value().get_value(), sketch2.get_max_value().get_value());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_quantile(0.5).get_value(), sketch2.get_quantile(0.5).get_value());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(0), sketch2.get_rank(0));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(n), sketch2.get_rank(n));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(n / 2), sketch2.get_rank(n / 2));
+    REQUIRE((size_t) s.tellg() == sketch2.get_serialized_size_bytes());
+    REQUIRE(s.tellg() == s.tellp());
+    REQUIRE(sketch2.is_empty() == sketch1.is_empty());
+    REQUIRE(sketch2.is_estimation_mode() == sketch1.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == sketch1.get_n());
+    REQUIRE(sketch2.get_num_retained() == sketch1.get_num_retained());
+    REQUIRE(sketch2.get_min_value().get_value() == sketch1.get_min_value().get_value());
+    REQUIRE(sketch2.get_max_value().get_value() == sketch1.get_max_value().get_value());
+    REQUIRE(sketch2.get_normalized_rank_error(false) == sketch1.get_normalized_rank_error(false));
+    REQUIRE(sketch2.get_normalized_rank_error(true) == sketch1.get_normalized_rank_error(true));
+    REQUIRE(sketch2.get_quantile(0.5).get_value() == sketch1.get_quantile(0.5).get_value());
+    REQUIRE(sketch2.get_rank(0) == sketch1.get_rank(0));
+    REQUIRE(sketch2.get_rank(n) == sketch1.get_rank(n));
+    REQUIRE(sketch2.get_rank(n / 2) == sketch1.get_rank(n / 2));
   }
 
-  void moving_merge() {
+  SECTION("moving merge") {
     kll_test_type_sketch sketch1(8);
     for (int i = 0; i < 10; i++) sketch1.update(i);
     kll_test_type_sketch sketch2(8);
     sketch2.update(10);
     sketch2.merge(std::move(sketch1));
-    CPPUNIT_ASSERT_EQUAL(0, sketch2.get_min_value().get_value());
-    CPPUNIT_ASSERT_EQUAL(10, sketch2.get_max_value().get_value());
-    CPPUNIT_ASSERT_EQUAL(11, (int) sketch2.get_n());
+    REQUIRE(sketch2.get_min_value().get_value() == 0);
+    REQUIRE(sketch2.get_max_value().get_value() == 10);
+    REQUIRE(sketch2.get_n() == 11);
   }
 
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(kll_sketch_custom_type_test);
+  // cleanup
+  if (test_allocator_total_bytes != 0) {
+    REQUIRE(test_allocator_total_bytes == 0);
+  }
+}
 
 } /* namespace datasketches */

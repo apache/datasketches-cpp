@@ -48,4 +48,7 @@ target_sources(catch_test
   PRIVATE
     catch.hpp
     catch_runner.cpp
+    test_type.hpp
+    test_allocator.hpp
+    test_allocator.cpp
 )
