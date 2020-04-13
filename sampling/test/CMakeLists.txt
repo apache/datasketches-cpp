@@ -17,7 +17,7 @@
 
 add_executable(sampling_test)
 
-target_link_libraries(sampling_test sampling catch_test)
+target_link_libraries(sampling_test sampling common_test)
 
 set_target_properties(sampling_test PROPERTIES
   CXX_STANDARD 11
@@ -39,9 +39,4 @@ target_sources(sampling_test
   PRIVATE
   var_opt_sketch_test.cpp
   var_opt_union_test.cpp
-)
-
-target_include_directories(sampling_test
-  PRIVATE
-    ../../common/test
 )

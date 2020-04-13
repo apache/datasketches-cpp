@@ -17,7 +17,7 @@
 
 add_executable(fi_test)
 
-target_link_libraries(fi_test fi catch_test)
+target_link_libraries(fi_test fi common_test)
 
 set_target_properties(fi_test PROPERTIES
   CXX_STANDARD 11
@@ -40,9 +40,4 @@ target_sources(fi_test
     reverse_purge_hash_map_test.cpp
     frequent_items_sketch_test.cpp
     frequent_items_sketch_custom_type_test.cpp
-)
-
-target_include_directories(fi_test
-  PRIVATE
-    ../../common/test
 )
