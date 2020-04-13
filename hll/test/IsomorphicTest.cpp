@@ -26,7 +26,11 @@
 
 namespace datasketches {
 
+/*
 // hex format for comparing serialized bytes
+// previously used with cppunit testing to display results upon mismatch.
+// catch2 testing framework provides such output, but this may be easier for debugging
+// with long vectors. keeping the code for now.
 static std::string toString(const datasketches::hll_sketch::vector_bytes& v) {
    std::ostringstream s;
    s << std::hex << std::setfill('0');
@@ -42,6 +46,7 @@ static std::string toString(const datasketches::hll_sketch::vector_bytes& v) {
    }
    return s.str();
 }
+*/
 
 // if lg_k >= 8, mode != SET!
 static int get_n(int lg_k, hll_mode mode) {
