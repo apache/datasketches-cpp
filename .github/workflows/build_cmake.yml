@@ -1,0 +1,44 @@
+name: C/C++ CI
+
+on: [push, pull_request]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "MaxOS Latest Clang", artifact: "macOS.tar.xz",
+            os: macos-latest,
+            cc: "clang", cxx: "clang++"
+          }
+        - {
+            name: "Ubuntu Latest GCC", artifact: "linux.tar.xz",
+            os: ubuntu-latest,
+            cc: "gcc", cxx: "g++"
+          }            
+            
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Checkout CppUnit
+        uses: actions/checkout@v2
+        with:
+          repository: Ultimaker/CppUnit
+          path: cppunit 
+
+      - name: configure
+        run: mkdir build && cd build && cmake ..
+      - name: build
+        run: cmake --build build --config Release
+      - name: test
+        run: cd build && make test
