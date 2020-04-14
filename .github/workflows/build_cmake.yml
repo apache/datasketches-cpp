@@ -14,15 +14,26 @@ jobs:
       matrix:
         config:
         - {
-            name: "MaxOS Latest Clang", artifact: "macOS.tar.xz",
+            name: "MaxOS Latest Clang", #artifact: "macOS.tar.xz",
             os: macos-latest,
             cc: "clang", cxx: "clang++"
           }
         - {
-            name: "Ubuntu Latest GCC", artifact: "linux.tar.xz",
+            name: "Ubuntu Latest GCC", #artifact: "linux.tar.xz",
             os: ubuntu-latest,
             cc: "gcc", cxx: "g++"
-          }            
+          }
+	      - {
+            name: "Windows Latest MSVC", #artifact: "Windows-MSVC.tar.xz",
+            os: windows-latest,
+            cc: "cl", cxx: "cl",
+            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+          }
+        - {
+            name: "Windows Latest MinGW", #artifact: "Windows-MinGW.tar.xz",
+            os: windows-latest,
+            cc: "gcc", cxx: "g++"
+          }
             
     steps:
       - name: Checkout
@@ -30,9 +41,11 @@ jobs:
         with:
           submodules: true
 
-      - name: configure
+      - name: Configure
         run: mkdir build && cd build && cmake ..
-      - name: build
+      - name: Build C++ unit tests
         run: cmake --build build --config Release
-      - name: test
-        run: cd build && make test
+      - name: Run C++ tests
+        run: cmake --build build --target test
+      - name: Build and run Python tests
+        run: python setup.py test
