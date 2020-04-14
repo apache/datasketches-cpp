@@ -29,6 +29,7 @@
 #include <cmath>
 #include <random>
 #include <algorithm>
+#include <cassert>
 
 namespace datasketches {
 

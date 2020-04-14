@@ -332,7 +332,7 @@ TEST_CASE("cpc sketch: serialize both ways", "[cpc_sketch]") {
   auto bytes = sketch.serialize(header_size_bytes);
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
-  REQUIRE(s.tellp() == bytes.size() - header_size_bytes);
+  REQUIRE(static_cast<size_t>(s.tellp()) == bytes.size() - header_size_bytes);
 
   char* pp = new char[s.tellp()];
   s.read(pp, s.tellp());

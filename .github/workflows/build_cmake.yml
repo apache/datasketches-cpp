@@ -30,12 +30,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Checkout CppUnit
-        uses: actions/checkout@v2
-        with:
-          repository: Ultimaker/CppUnit
-          path: cppunit 
-
       - name: configure
         run: mkdir build && cd build && cmake ..
       - name: build

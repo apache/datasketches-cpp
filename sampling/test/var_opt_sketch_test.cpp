@@ -325,7 +325,7 @@ TEST_CASE("varopt sketch: pseudo-heavy update", "[var_opt_sketch]") {
   // Next k-1 updates should be update_pseudo_heavy_general()
   // Last one should call update_pseudo_heavy_r_eq_1(), since we'll have
   // added k-1 heavy items, leaving only 1 item left in R
-  for (int i = 1; i <= k; ++i) {
+  for (uint32_t i = 1; i <= k; ++i) {
     sk.update(-i, k + (i * wt_scale));
   }
 
@@ -352,7 +352,7 @@ TEST_CASE("varopt sketch: reset", "[var_opt_sketch]") {
   var_opt_sketch<std::string> sk(k);
 
   // reset from sampling mode
-  for (int i = 0; i < n2; ++i) {
+  for (uint64_t i = 0; i < n2; ++i) {
     sk.update(std::to_string(i), 100.0 + i);
   }
   REQUIRE(sk.get_n() == n2);
@@ -363,7 +363,7 @@ TEST_CASE("varopt sketch: reset", "[var_opt_sketch]") {
   REQUIRE(sk.get_k() == k);
 
   // reset from exact mode
-  for (int i = 0; i < n1; ++i)
+  for (uint64_t i = 0; i < n1; ++i)
     sk.update(std::to_string(i));
   REQUIRE(sk.get_n() == n1);
   REQUIRE(sk.get_k() == k);
@@ -384,7 +384,7 @@ TEST_CASE("varopt sketch: estimate subset sum", "[var_opt_sketch]") {
 
   // add items, keeping in exact mode
   double total_weight = 0.0;
-  for (int i = 1; i <= (k - 1); ++i) {
+  for (uint32_t i = 1; i <= (k - 1); ++i) {
     sk.update(i, 1.0 * i);
     total_weight += 1.0 * i;
   }
@@ -396,7 +396,7 @@ TEST_CASE("varopt sketch: estimate subset sum", "[var_opt_sketch]") {
   REQUIRE(summary.total_sketch_weight == total_weight);
 
   // add a few more items, pushing to sampling mode
-  for (int i = k; i <= (k + 1); ++i) {
+  for (uint32_t i = k; i <= (k + 1); ++i) {
     sk.update(i, 1.0 * i);
     total_weight += 1.0 * i;
   }
@@ -417,8 +417,8 @@ TEST_CASE("varopt sketch: estimate subset sum", "[var_opt_sketch]") {
 
   // finally, a non-degenerate predicate
   // insert negative items with identical weights, filter for negative weights only
-  for (int i = 1; i <= (k + 1); ++i) {
-    sk.update(-i, 1.0 * i);
+  for (uint32_t i = 1; i <= (k + 1); ++i) {
+    sk.update(static_cast<int32_t>(-i), 1.0 * i);
     total_weight += 1.0 * i;
   }
 
@@ -434,7 +434,7 @@ TEST_CASE("varopt sketch: estimate subset sum", "[var_opt_sketch]") {
   // and another data type, keeping it in exact mode for simplicity
   var_opt_sketch<bool> sk2(k);
   total_weight = 0.0;
-  for (int i = 1; i <= (k - 1); ++i) {
+  for (uint32_t i = 1; i <= (k - 1); ++i) {
     sk2.update((i % 2) == 0, 1.0 * i);
     total_weight += i;
   }

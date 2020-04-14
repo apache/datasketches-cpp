@@ -317,7 +317,7 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalency", "[
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     update_sketch.serialize(s);
     auto bytes = update_sketch.serialize();
-    REQUIRE(bytes.size() == s.tellp());
+    REQUIRE(bytes.size() == static_cast<size_t>(s.tellp()));
     for (size_t i = 0; i < bytes.size(); ++i) {
       REQUIRE(((char*)bytes.data())[i] == (char)s.get());
     }
@@ -327,7 +327,7 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalency", "[
       s.seekg(0); // rewind
       auto deserialized_sketch_ptr1 = theta_sketch::deserialize(s);
       auto deserialized_sketch_ptr2 = theta_sketch::deserialize(bytes.data(), bytes.size());
-      REQUIRE(s.tellg() == bytes.size());
+      REQUIRE(bytes.size() == static_cast<size_t>(s.tellg()));
       REQUIRE(deserialized_sketch_ptr2->is_empty() == deserialized_sketch_ptr1->is_empty());
       REQUIRE(deserialized_sketch_ptr2->is_ordered() == deserialized_sketch_ptr1->is_ordered());
       REQUIRE(deserialized_sketch_ptr2->get_num_retained() == deserialized_sketch_ptr1->get_num_retained());
@@ -348,7 +348,7 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalency", "[
       s.seekg(0); // rewind
       update_theta_sketch deserialized_sketch1 = update_theta_sketch::deserialize(s);
       update_theta_sketch deserialized_sketch2 = update_theta_sketch::deserialize(bytes.data(), bytes.size());
-      REQUIRE(s.tellg() == bytes.size());
+      REQUIRE(bytes.size() == static_cast<size_t>(s.tellg()));
       REQUIRE(deserialized_sketch2.is_empty() == deserialized_sketch1.is_empty());
       REQUIRE(deserialized_sketch2.is_ordered() == deserialized_sketch1.is_ordered());
       REQUIRE(deserialized_sketch2.get_num_retained() == deserialized_sketch1.get_num_retained());
@@ -370,7 +370,7 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalency", "[
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     update_sketch.compact().serialize(s);
     auto bytes = update_sketch.compact().serialize();
-    REQUIRE(bytes.size() == s.tellp());
+    REQUIRE(bytes.size() == static_cast<size_t>(s.tellp()));
     for (size_t i = 0; i < bytes.size(); ++i) {
       REQUIRE(((char*)bytes.data())[i] == (char)s.get());
     }
@@ -380,7 +380,7 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalency", "[
       s.seekg(0); // rewind
       auto deserialized_sketch_ptr1 = theta_sketch::deserialize(s);
       auto deserialized_sketch_ptr2 = theta_sketch::deserialize(bytes.data(), bytes.size());
-      REQUIRE(s.tellg() == bytes.size());
+      REQUIRE(bytes.size() == static_cast<size_t>(s.tellg()));
       REQUIRE(deserialized_sketch_ptr2->is_empty() == deserialized_sketch_ptr1->is_empty());
       REQUIRE(deserialized_sketch_ptr2->is_ordered() == deserialized_sketch_ptr1->is_ordered());
       REQUIRE(deserialized_sketch_ptr2->get_num_retained() == deserialized_sketch_ptr1->get_num_retained());
@@ -401,7 +401,7 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalency", "[
       s.seekg(0); // rewind
       compact_theta_sketch deserialized_sketch1 = compact_theta_sketch::deserialize(s);
       compact_theta_sketch deserialized_sketch2 = compact_theta_sketch::deserialize(bytes.data(), bytes.size());
-      REQUIRE(s.tellg() == bytes.size());
+      REQUIRE(bytes.size() == static_cast<size_t>(s.tellg()));
       REQUIRE(deserialized_sketch2.is_empty() == deserialized_sketch1.is_empty());
       REQUIRE(deserialized_sketch2.is_ordered() == deserialized_sketch1.is_ordered());
       REQUIRE(deserialized_sketch2.get_num_retained() == deserialized_sketch1.get_num_retained());

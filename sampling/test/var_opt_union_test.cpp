@@ -157,9 +157,9 @@ TEST_CASE("varopt union: two exact sketches", "[var_opt_union]") {
   uint32_t k = 10;
   var_opt_sketch<int> sk1(k), sk2(k);
 
-  for (int i = 1; i <= n; ++i) {
+  for (uint64_t i = 1; i <= n; ++i) {
     sk1.update(i, i);
-    sk2.update(-i, i);
+    sk2.update(static_cast<int64_t>(-i), i);
   }
 
   var_opt_union<int> u(k);
@@ -177,12 +177,12 @@ TEST_CASE("varopt union: heavy sampling sketch", "[var_opt_union]") {
   uint64_t n2 = 6;
   uint32_t k2 = 5;
   var_opt_sketch<int64_t> sk1(k1), sk2(k2);
-  for (int i = 1; i <= n1; ++i) {
+  for (uint64_t i = 1; i <= n1; ++i) {
     sk1.update(i, i);
   }
 
-  for (int i = 1; i < n2; ++i) { // we'll add a very heavy one later
-    sk2.update(-i, i + 1000.0);
+  for (uint64_t i = 1; i < n2; ++i) { // we'll add a very heavy one later
+    sk2.update(static_cast<int64_t>(-i), i + 1000.0);
   }
   sk2.update(-n2, 1000000.0);
 
@@ -232,7 +232,7 @@ TEST_CASE("varopt union: small sampling sketch", "[var_opt_union]") {
   uint64_t n2 = 64;
 
   var_opt_sketch<float> sk(k_small);
-  for (int i = 0; i < n1; ++i) { sk.update(i); }
+  for (uint64_t i = 0; i < n1; ++i) { sk.update(i); }
   sk.update(-1, n1 * n1); // add a heavy item
 
   var_opt_union<float> u(k_max);
@@ -240,7 +240,7 @@ TEST_CASE("varopt union: small sampling sketch", "[var_opt_union]") {
 
   // another one, but different n to get a different per-item weight
   var_opt_sketch<float> sk2(k_small);
-  for (int i = 0; i < n2; ++i) { sk2.update(i); }
+  for (uint64_t i = 0; i < n2; ++i) { sk2.update(i); }
   u.update(sk2);
 
   // should trigger migrate_marked_items_by_decreasing_k()
