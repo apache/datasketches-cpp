@@ -23,7 +23,7 @@ jobs:
             os: ubuntu-latest,
             cc: "gcc", cxx: "g++"
           }
-	      - {
+        - {
             name: "Windows Latest MSVC", #artifact: "Windows-MSVC.tar.xz",
             os: windows-latest,
             cc: "cl", cxx: "cl",
