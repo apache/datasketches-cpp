@@ -22,7 +22,7 @@ set_target_properties(common_test PROPERTIES
   CXX_STANDARD_REQUIRED YES
 )
 
-target_include_directories(common
+target_include_directories(common_test
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
