@@ -14,7 +14,7 @@ jobs:
       matrix:
         config:
         - {
-            name: "MaxOS Latest Clang",
+            name: "MacOS Latest Clang",
             os: macos-latest,
             cc: "clang", cxx: "clang++"
           }
