@@ -38,6 +38,13 @@ template<typename A>
 class theta_union_alloc {
 public:
   class builder;
+
+  // No constructor here. Use builder instead.
+
+  /**
+   * This method is to update the union with a given sketch
+   * @param sketch to update the union with
+   */
   void update(const theta_sketch_alloc<A>& sketch);
   compact_theta_sketch_alloc<A> get_result(bool ordered = true) const;
 
@@ -56,10 +63,37 @@ template<typename A>
 class theta_union_alloc<A>::builder {
 public:
   typedef typename update_theta_sketch_alloc<A>::resize_factor resize_factor;
+
+  /**
+   * Set log2(k), where k is a nominal number of entries in the sketch
+   * @param lg_k base 2 logarithm of nominal number of entries
+   */
   builder& set_lg_k(uint8_t lg_k);
+
+  /**
+   * Set resize factor for the internal hash table (defaults to 8)
+   */
   builder& set_resize_factor(resize_factor rf);
+
+  /**
+   * Set sampling probability (initial theta). The default is 1, so the sketch retains
+   * all entries until it reaches the limit, at which point it goes into the estimation mode
+   * and reduces the effective sampling probability (theta) as necessary.
+   * @param p sampling probability
+   */
   builder& set_p(float p);
+
+  /**
+   * Set the seed for the hash function. Should be used carefully if needed.
+   * Sketches produced with different seed are not compatible
+   * and cannot be mixed in set operations.
+   * @param seed hash seed
+   */
   builder& set_seed(uint64_t seed);
+
+  /**
+   * This is to create an instance of the sketch with predefined parameters.
+   */
   theta_union_alloc<A> build() const;
 private:
   typename update_theta_sketch_alloc<A>::builder sketch_builder;
