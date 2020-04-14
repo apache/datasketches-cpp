@@ -46,6 +46,12 @@ public:
    * @param sketch to update the union with
    */
   void update(const theta_sketch_alloc<A>& sketch);
+
+  /**
+   * This method produces a copy of the current state of the union as a compact sketch.
+   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @return the result of the union
+   */
   compact_theta_sketch_alloc<A> get_result(bool ordered = true) const;
 
 private:
