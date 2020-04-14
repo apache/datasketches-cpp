@@ -124,7 +124,7 @@ public:
   /**
    * This method serializes the sketch as a vector of bytes.
    * An optional header can be reserved in front of the sketch.
-   * It is a blank space of a given size.
+   * It is an uninitialized space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
    */
@@ -132,13 +132,14 @@ public:
 
   // This is a convenience alias for users
   // The type returned by the following deserialize methods
+  // It is not possible to return instances of an abstract type, so this has to be a pointer
   typedef std::unique_ptr<theta_sketch_alloc<A>, std::function<void(theta_sketch_alloc<A>*)>> unique_ptr;
 
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
    * @param seed the seed for the hash function that was used to create the sketch
-   * @return an instance of a sketch
+   * @return an instance of a sketch as a unique_ptr
    */
   static unique_ptr deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
 
@@ -152,7 +153,18 @@ public:
   static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
 
   class const_iterator;
+
+  /**
+   * Iterator over hash values in this sketch.
+   * @return begin iterator
+   */
   virtual const_iterator begin() const = 0;
+
+  /**
+   * Iterator pointing past the valid range.
+   * Not to be incremented or dereferenced.
+   * @return end iterator
+   */
   virtual const_iterator end() const = 0;
 
 protected:
@@ -188,6 +200,8 @@ public:
   enum resize_factor { X1, X2, X4, X8 };
   static const uint8_t SKETCH_TYPE = 2;
 
+  // No constructor here. Use builder instead.
+
   update_theta_sketch_alloc(const update_theta_sketch_alloc<A>& other);
   update_theta_sketch_alloc(update_theta_sketch_alloc<A>&& other) noexcept;
   virtual ~update_theta_sketch_alloc();
@@ -204,37 +218,123 @@ public:
   // header space is reserved, but not initialized
   virtual vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
+  /**
+   * Update this sketch with a given string.
+   * @param value string to update the sketch with
+   */
   void update(const std::string& value);
+
+  /**
+   * Update this sketch with a given unsigned 64-bit integer.
+   * @param value uint64_t to update the sketch with
+   */
   void update(uint64_t value);
+
+  /**
+   * Update this sketch with a given signed 64-bit integer.
+   * @param value int64_t to update the sketch with
+   */
   void update(int64_t value);
 
-  // for compatibility with Java implementation
+  /**
+   * Update this sketch with a given unsigned 32-bit integer.
+   * For compatibility with Java implementation.
+   * @param value uint32_t to update the sketch with
+   */
   void update(uint32_t value);
+
+  /**
+   * Update this sketch with a given signed 32-bit integer.
+   * For compatibility with Java implementation.
+   * @param value int32_t to update the sketch with
+   */
   void update(int32_t value);
+
+  /**
+   * Update this sketch with a given unsigned 16-bit integer.
+   * For compatibility with Java implementation.
+   * @param value uint16_t to update the sketch with
+   */
   void update(uint16_t value);
+
+  /**
+   * Update this sketch with a given signed 16-bit integer.
+   * For compatibility with Java implementation.
+   * @param value int16_t to update the sketch with
+   */
   void update(int16_t value);
+
+  /**
+   * Update this sketch with a given unsigned 8-bit integer.
+   * For compatibility with Java implementation.
+   * @param value uint8_t to update the sketch with
+   */
   void update(uint8_t value);
+
+  /**
+   * Update this sketch with a given signed 8-bit integer.
+   * For compatibility with Java implementation.
+   * @param value int8_t to update the sketch with
+   */
   void update(int8_t value);
+
+  /**
+   * Update this sketch with a given double-precision floating point value.
+   * For compatibility with Java implementation.
+   * @param value double to update the sketch with
+   */
   void update(double value);
+
+  /**
+   * Update this sketch with a given floating point value.
+   * For compatibility with Java implementation.
+   * @param value float to update the sketch with
+   */
   void update(float value);
 
-  // Be very careful to hash input values consistently using the same approach
-  // either over time or on different platforms
-  // or while passing sketches from Java environment or to Java environment
-  // Otherwise two sketches that should represent overlapping sets will be disjoint
-  // For instance, for signed 32-bit values call update(int32_t) method above,
-  // which does widening conversion to int64_t, if compatibility with Java is expected
+  /**
+   * Update this sketch with given data of any type.
+   * Be very careful to hash input values consistently using the same approach
+   * either over time or on different platforms
+   * or while passing sketches from Java environment or to Java environment.
+   * Otherwise two sketches that should represent overlapping sets will be disjoint
+   * For instance, for signed 32-bit values call update(int32_t) method above,
+   * which does widening conversion to int64_t, if compatibility with Java is expected
+   * @param data pointer to the data
+   * @param length of the data in bytes
+   */
   void update(const void* data, unsigned length);
 
-  // remove retained entries in excess of the nominal size k (if any)
+  /**
+   * Remove retained entries in excess of the nominal size k (if any)
+   */
   void trim();
 
+  /**
+   * Converts this sketch to a compact sketch (ordered or unordered).
+   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @return compact sketch
+   */
   compact_theta_sketch_alloc<A> compact(bool ordered = true) const;
 
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;
 
+  /**
+   * This method deserializes a sketch from a given stream.
+   * @param is input stream
+   * @param seed the seed for the hash function that was used to create the sketch
+   * @return an instance of a sketch
+   */
   static update_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = builder::DEFAULT_SEED);
+
+  /**
+   * This method deserializes a sketch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param seed the seed for the hash function that was used to create the sketch
+   * @return an instance of the sketch
+   */
   static update_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
 
 private:
@@ -287,6 +387,12 @@ class compact_theta_sketch_alloc: public theta_sketch_alloc<A> {
 public:
   static const uint8_t SKETCH_TYPE = 3;
 
+  // No constructor here.
+  // Instances of this type can be obtained:
+  // - by compacting an update_theta_sketch
+  // - as a result of a set operation
+  // - by deserializing a previously serialized compact sketch
+
   compact_theta_sketch_alloc(const compact_theta_sketch_alloc<A>& other);
   compact_theta_sketch_alloc(const theta_sketch_alloc<A>& other, bool ordered);
   compact_theta_sketch_alloc(compact_theta_sketch_alloc<A>&& other) noexcept;
@@ -307,7 +413,21 @@ public:
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;
 
+  /**
+   * This method deserializes a sketch from a given stream.
+   * @param is input stream
+   * @param seed the seed for the hash function that was used to create the sketch
+   * @return an instance of a sketch
+   */
   static compact_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+
+  /**
+   * This method deserializes a sketch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param seed the seed for the hash function that was used to create the sketch
+   * @return an instance of the sketch
+   */
   static compact_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
 
 private:
