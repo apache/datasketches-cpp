@@ -40,12 +40,15 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
-
       - name: Configure
         run: mkdir build && cd build && cmake ..
       - name: Build C++ unit tests
         run: cmake --build build --config Release
       - name: Run C++ tests
         run: cmake --build build --target test
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.x' # grabs latest minor version of python3
       - name: Build and run Python tests
         run: python setup.py test
