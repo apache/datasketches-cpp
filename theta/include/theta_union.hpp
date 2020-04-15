@@ -73,11 +73,14 @@ public:
   /**
    * Set log2(k), where k is a nominal number of entries in the sketch
    * @param lg_k base 2 logarithm of nominal number of entries
+   * @return this builder
    */
   builder& set_lg_k(uint8_t lg_k);
 
   /**
    * Set resize factor for the internal hash table (defaults to 8)
+   * @param rf resize factor
+   * @return this builder
    */
   builder& set_resize_factor(resize_factor rf);
 
@@ -86,6 +89,7 @@ public:
    * all entries until it reaches the limit, at which point it goes into the estimation mode
    * and reduces the effective sampling probability (theta) as necessary.
    * @param p sampling probability
+   * @return this builder
    */
   builder& set_p(float p);
 
@@ -94,13 +98,16 @@ public:
    * Sketches produced with different seed are not compatible
    * and cannot be mixed in set operations.
    * @param seed hash seed
+   * @return this builder
    */
   builder& set_seed(uint64_t seed);
 
   /**
-   * This is to create an instance of the sketch with predefined parameters.
+   * This is to create an instance of the union with predefined parameters.
+   * @return and instance of the union
    */
   theta_union_alloc<A> build() const;
+
 private:
   typename update_theta_sketch_alloc<A>::builder sketch_builder;
 };
