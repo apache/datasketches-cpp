@@ -137,6 +137,13 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
       const double trueRank = (double) i / n;
       REQUIRE(sketch.get_rank(i) == trueRank);
     }
+
+    // the alternative method must produce the same result
+    auto quantiles2 = sketch.get_quantiles(3);
+    CPPUNIT_ASSERT_EQUAL(3, (int) quantiles2.size());
+    CPPUNIT_ASSERT_EQUAL(quantiles[0], quantiles[0]);
+    CPPUNIT_ASSERT_EQUAL(quantiles[1], quantiles[1]);
+    CPPUNIT_ASSERT_EQUAL(quantiles[2], quantiles[2]);
   }
 
   SECTION("many items, estimation mode") {

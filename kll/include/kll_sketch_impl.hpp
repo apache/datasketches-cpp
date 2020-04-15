@@ -298,6 +298,23 @@ std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions,
 }
 
 template<typename T, typename C, typename S, typename A>
+std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(size_t num) const {
+  if (is_empty()) return std::vector<T, A>();
+  if (num == 0) {
+    throw std::invalid_argument("num must be > 0");
+  }
+  std::vector<double> fractions(num);
+  fractions[0] = 0.0;
+  for (int i = 1; i < num; i++) {
+    fractions[i] = static_cast<double>(i) / (num - 1);
+  }
+  if (num > 1) {
+    fractions[num - 1] = 1.0;
+  }
+  return get_quantiles(fractions.data(), num);
+}
+
+template<typename T, typename C, typename S, typename A>
 double kll_sketch<T, C, S, A>::get_rank(const T& value) const {
   if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
   uint8_t level(0);
