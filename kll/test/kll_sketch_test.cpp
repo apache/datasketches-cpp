@@ -140,10 +140,10 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
     // the alternative method must produce the same result
     auto quantiles2 = sketch.get_quantiles(3);
-    CPPUNIT_ASSERT_EQUAL(3, (int) quantiles2.size());
-    CPPUNIT_ASSERT_EQUAL(quantiles[0], quantiles[0]);
-    CPPUNIT_ASSERT_EQUAL(quantiles[1], quantiles[1]);
-    CPPUNIT_ASSERT_EQUAL(quantiles[2], quantiles[2]);
+    REQUIRE(quantiles2.size() == 3);
+    REQUIRE(quantiles[0] == quantiles2[0]);
+    REQUIRE(quantiles[1] == quantiles2[1]);
+    REQUIRE(quantiles[2] == quantiles2[2]);
   }
 
   SECTION("many items, estimation mode") {
