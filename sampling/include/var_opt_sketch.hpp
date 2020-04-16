@@ -199,14 +199,13 @@ class var_opt_sketch {
     // next method sets current_items_alloc_
     void validate_and_set_current_size(int preamble_longs);
 
-    // things to move to common utils and share among sketches
+    // things to move to common and be shared among sketches
     static uint32_t get_adjusted_size(int max_size, int resize_target);
     static uint32_t starting_sub_multiple(int lg_target, int lg_rf, int lg_min);
     static inline double pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, double sampling_rate);
     static inline double pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, double sampling_rate);
     static bool is_power_of_2(uint32_t v);
     static uint32_t to_log_2(uint32_t v);
-    static uint32_t count_trailing_zeros(uint32_t v);
     static uint32_t ceiling_power_of_2(uint32_t n);
     static inline uint32_t next_int(uint32_t max_value);
     static inline double next_double_exclude_zero();

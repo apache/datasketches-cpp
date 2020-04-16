@@ -20,6 +20,8 @@
 #ifndef CPC_UNION_IMPL_HPP_
 #define CPC_UNION_IMPL_HPP_
 
+#include "count_zeros.hpp"
+
 namespace datasketches {
 
 template<typename A>

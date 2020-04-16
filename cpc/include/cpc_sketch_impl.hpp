@@ -30,6 +30,7 @@
 #include "cpc_util.hpp"
 #include "icon_estimator.hpp"
 #include "serde.hpp"
+#include "count_zeros.hpp"
 
 namespace datasketches {
 

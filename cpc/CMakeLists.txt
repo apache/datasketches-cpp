@@ -34,7 +34,6 @@ target_compile_features(cpc INTERFACE cxx_std_11)
 
 set(cpc_HEADERS "")
 list(APPEND cpc_HEADERS "include/compression_data.hpp")
-list(APPEND cpc_HEADERS "include/counter_of_zeros.hpp")
 list(APPEND cpc_HEADERS "include/cpc_common.hpp")
 list(APPEND cpc_HEADERS "include/cpc_compressor.hpp")
 list(APPEND cpc_HEADERS "include/cpc_compressor_impl.hpp")
@@ -59,7 +58,6 @@ install(FILES ${cpc_HEADERS}
 target_sources(cpc
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/compression_data.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/counter_of_zeros.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_common.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_compressor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/cpc_compressor_impl.hpp

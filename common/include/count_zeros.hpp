@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef COUNT_ZEROS_HPP_
-#define COUNT_ZEROS_HPP_
+#ifndef _COUNT_ZEROS_HPP_
+#define _COUNT_ZEROS_HPP_
 
 #include <cstdint>
 
@@ -91,6 +91,15 @@ static inline uint8_t count_leading_zeros_in_u64(uint64_t input) {
     return 56 + byte_leading_zeros_table[(input      ) & FCLZ_MASK_08];
 }
 
+static inline uint8_t count_trailing_zeros_in_u32(uint32_t input) {
+  for (int i = 0; i < 4; i++) {
+    const int byte = input & 0xff;
+    if (byte != 0) return (i << 3) + byte_trailing_zeros_table[byte];
+    input >>= 8;
+  }
+  return 32;
+}
+
 static inline uint8_t count_trailing_zeros_in_u64(uint64_t input) {
   for (int i = 0; i < 8; i++) {
     const int byte = input & 0xff;
@@ -102,4 +111,4 @@ static inline uint8_t count_trailing_zeros_in_u64(uint64_t input) {
 
 } /* namespace datasketches */
 
-#endif
+#endif // _COUNT_ZEROS_HPP_
