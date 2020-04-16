@@ -17,96 +17,81 @@
  * under the License.
  */
 
-#include <cppunit/TestFixture.h>
-#include <cppunit/extensions/HelperMacros.h>
+#include <catch.hpp>
 
 #include <theta_union.hpp>
 
 namespace datasketches {
 
-class theta_union_test: public CppUnit::TestFixture {
+TEST_CASE("theta union: empty", "[theta_union]") {
+  update_theta_sketch sketch1 = update_theta_sketch::builder().build();
+  theta_union u = theta_union::builder().build();
+  compact_theta_sketch sketch2 = u.get_result();
+  REQUIRE(sketch2.get_num_retained() == 0);
+  REQUIRE(sketch2.is_empty());
+  REQUIRE_FALSE(sketch2.is_estimation_mode());
 
-  CPPUNIT_TEST_SUITE(theta_union_test);
-  CPPUNIT_TEST(empty);
-  CPPUNIT_TEST(non_empty_no_retained_keys);
-  CPPUNIT_TEST(exact_mode_half_overlap);
-  CPPUNIT_TEST(estimation_mode_half_overlap);
-  CPPUNIT_TEST(seed_mismatch);
-  CPPUNIT_TEST_SUITE_END();
+  u.update(sketch1);
+  sketch2 = u.get_result();
+  REQUIRE(sketch2.get_num_retained() == 0);
+  REQUIRE(sketch2.is_empty());
+  REQUIRE_FALSE(sketch2.is_estimation_mode());
+}
 
-  void empty() {
-    update_theta_sketch sketch1 = update_theta_sketch::builder().build();
-    theta_union u = theta_union::builder().build();
-    compact_theta_sketch sketch2 = u.get_result();
-    CPPUNIT_ASSERT_EQUAL(0U, sketch2.get_num_retained());
-    CPPUNIT_ASSERT(sketch2.is_empty());
-    CPPUNIT_ASSERT(!sketch2.is_estimation_mode());
+TEST_CASE("theta union: non empty no retained keys", "[theta_union]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().set_p(0.001).build();
+  update_sketch.update(1);
+  theta_union u = theta_union::builder().build();
+  u.update(update_sketch);
+  compact_theta_sketch sketch = u.get_result();
+  REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_theta() == Approx(0.001).margin(1e-10));
+}
 
-    u.update(sketch1);
-    sketch2 = u.get_result();
-    CPPUNIT_ASSERT_EQUAL(0U, sketch2.get_num_retained());
-    CPPUNIT_ASSERT(sketch2.is_empty());
-    CPPUNIT_ASSERT(!sketch2.is_estimation_mode());
-  }
+TEST_CASE("theta union: exact mode half overlap", "[theta_union]") {
+  update_theta_sketch sketch1 = update_theta_sketch::builder().build();
+  int value = 0;
+  for (int i = 0; i < 1000; i++) sketch1.update(value++);
 
-  void non_empty_no_retained_keys() {
-    update_theta_sketch update_sketch = update_theta_sketch::builder().set_p(0.001).build();
-    update_sketch.update(1);
-    theta_union u = theta_union::builder().build();
-    u.update(update_sketch);
-    compact_theta_sketch sketch = u.get_result();
-    CPPUNIT_ASSERT_EQUAL(0U, sketch.get_num_retained());
-    CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT(sketch.is_estimation_mode());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(0.001, sketch.get_theta(), 1e-10);
-  }
+  update_theta_sketch sketch2 = update_theta_sketch::builder().build();
+  value = 500;
+  for (int i = 0; i < 1000; i++) sketch2.update(value++);
 
-  void exact_mode_half_overlap() {
-    update_theta_sketch sketch1 = update_theta_sketch::builder().build();
-    int value = 0;
-    for (int i = 0; i < 1000; i++) sketch1.update(value++);
+  theta_union u = theta_union::builder().build();
+  u.update(sketch1);
+  u.update(sketch2);
+  compact_theta_sketch sketch3 = u.get_result();
+  REQUIRE_FALSE(sketch3.is_empty());
+  REQUIRE_FALSE(sketch3.is_estimation_mode());
+  REQUIRE(sketch3.get_estimate() == Approx(1500).margin(1500 * 0.01));
+}
 
-    update_theta_sketch sketch2 = update_theta_sketch::builder().build();
-    value = 500;
-    for (int i = 0; i < 1000; i++) sketch2.update(value++);
+TEST_CASE("theta union: estimation mode half overlap", "[theta_union]") {
+  update_theta_sketch sketch1 = update_theta_sketch::builder().build();
+  int value = 0;
+  for (int i = 0; i < 10000; i++) sketch1.update(value++);
 
-    theta_union u = theta_union::builder().build();
-    u.update(sketch1);
-    u.update(sketch2);
-    compact_theta_sketch sketch3 = u.get_result();
-    CPPUNIT_ASSERT(!sketch3.is_empty());
-    CPPUNIT_ASSERT(!sketch3.is_estimation_mode());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(1500, sketch3.get_estimate(), 1500 * 0.01);
-  }
+  update_theta_sketch sketch2 = update_theta_sketch::builder().build();
+  value = 5000;
+  for (int i = 0; i < 10000; i++) sketch2.update(value++);
 
-  void estimation_mode_half_overlap() {
-    update_theta_sketch sketch1 = update_theta_sketch::builder().build();
-    int value = 0;
-    for (int i = 0; i < 10000; i++) sketch1.update(value++);
+  theta_union u = theta_union::builder().build();
+  u.update(sketch1);
+  u.update(sketch2);
+  compact_theta_sketch sketch3 = u.get_result();
+  REQUIRE_FALSE(sketch3.is_empty());
+  REQUIRE(sketch3.is_estimation_mode());
+  REQUIRE(sketch3.get_estimate() == Approx(15000).margin(15000 * 0.01));
+  //sketch3.to_stream(std::cerr, true);
+}
 
-    update_theta_sketch sketch2 = update_theta_sketch::builder().build();
-    value = 5000;
-    for (int i = 0; i < 10000; i++) sketch2.update(value++);
-
-    theta_union u = theta_union::builder().build();
-    u.update(sketch1);
-    u.update(sketch2);
-    compact_theta_sketch sketch3 = u.get_result();
-    CPPUNIT_ASSERT(!sketch3.is_empty());
-    CPPUNIT_ASSERT(sketch3.is_estimation_mode());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(15000, sketch3.get_estimate(), 15000 * 0.01);
-    //sketch3.to_stream(std::cerr, true);
-  }
-
-  void seed_mismatch() {
-    update_theta_sketch sketch = update_theta_sketch::builder().build();
-    sketch.update(1); // non-empty should not be ignored
-    theta_union u = theta_union::builder().set_seed(123).build();
-    CPPUNIT_ASSERT_THROW(u.update(sketch), std::invalid_argument);
-  }
-
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(theta_union_test);
+TEST_CASE("theta union: seed mismatch", "[theta_union]") {
+  update_theta_sketch sketch = update_theta_sketch::builder().build();
+  sketch.update(1); // non-empty should not be ignored
+  theta_union u = theta_union::builder().set_seed(123).build();
+  REQUIRE_THROWS_AS(u.update(sketch), std::invalid_argument);
+}
 
 } /* namespace datasketches */

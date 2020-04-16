@@ -3,3 +3,15 @@ requires = ["wheel",
             "setuptools >= 30.3.0",
             "setuptools_scm",
             "cmake >= 3.12"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py3
+
+[testenv]
+deps = pytest
+       numpy
+changedir = python/tests
+commands = pytest
+"""

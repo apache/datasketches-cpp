@@ -419,7 +419,7 @@ var_opt_sketch<T,S,A> var_opt_union<T,S,A>::simple_gadget_coercer() const {
 // this is a condition checked in detect_and_handle_subcase_of_pseudo_exact()
 template<typename T, typename S, typename A>
 bool var_opt_union<T,S,A>::there_exist_unmarked_h_items_lighter_than_target(double threshold) const {
-  for (int i = 0; i < gadget_.h_; ++i) {
+  for (uint32_t i = 0; i < gadget_.h_; ++i) {
     if ((gadget_.weights_[i] < threshold) && !gadget_.marks_[i]) {
       return true;
     }

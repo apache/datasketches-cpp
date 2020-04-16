@@ -30,10 +30,10 @@ class KllTest(unittest.TestCase):
         kll.update(randn())
 
       # 0 should be near the median
-      self.assertAlmostEqual(0.5, kll.get_rank(0.0), delta=0.02)
+      self.assertAlmostEqual(0.5, kll.get_rank(0.0), delta=0.025)
       
       # the median should be near 0
-      self.assertAlmostEqual(0.0, kll.get_quantile(0.5), delta=0.02)
+      self.assertAlmostEqual(0.0, kll.get_quantile(0.5), delta=0.025)
 
       # we also track the min/max independently from the rest of the data
       # which lets us know the full observed data range

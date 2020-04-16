@@ -17,21 +17,22 @@
 
 add_library(common_test OBJECT "")
 
-target_link_libraries(common_test ${CPPUNIT_LIBRARY})
-
 set_target_properties(common_test PROPERTIES
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
+
 target_include_directories(common_test
-  PUBLIC
-    ${CPPUNIT_INCLUDE_DIR}
+  INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_sources(common_test
+  INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/catch.hpp  
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_allocator.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_type.hpp
   PRIVATE
-    test_runner.cpp
-    test_type.hpp
-    test_allocator.hpp
-    test_allocator.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/catch_runner.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_allocator.cpp
 )

@@ -41,8 +41,3 @@ target_sources(kll_test
     kll_sketch_custom_type_test.cpp
     kll_sketch_validation.cpp
 )
-
-target_include_directories(kll_test
-  PRIVATE
-    ../../common/test
-)

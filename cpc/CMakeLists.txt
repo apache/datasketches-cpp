@@ -27,8 +27,6 @@ target_include_directories(cpc
   INTERFACE
     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  PRIVATE 
-    ${COMMON_INCLUDE_DIR}
 )
 
 target_link_libraries(cpc INTERFACE common)

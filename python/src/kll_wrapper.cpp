@@ -55,7 +55,7 @@ py::list kll_sketch_get_quantiles(const kll_sketch<T>& sk,
 
   // returning as std::vector<> would copy values to a list anyway
   py::list list(nQuantiles);
-  for (int i = 0; i < nQuantiles; ++i) {
+  for (size_t i = 0; i < nQuantiles; ++i) {
       list[i] = result[i];
   }
 
@@ -69,7 +69,7 @@ py::list kll_sketch_get_pmf(const kll_sketch<T>& sk,
   auto result = sk.get_PMF(&split_points[0], nPoints);
 
   py::list list(nPoints + 1);
-  for (int i = 0; i <= nPoints; ++i) {
+  for (size_t i = 0; i <= nPoints; ++i) {
     list[i] = result[i];
   }
 
@@ -83,7 +83,7 @@ py::list kll_sketch_get_cdf(const kll_sketch<T>& sk,
   auto result = sk.get_CDF(&split_points[0], nPoints);
 
   py::list list(nPoints + 1);
-  for (int i = 0; i <= nPoints; ++i) {
+  for (size_t i = 0; i <= nPoints; ++i) {
     list[i] = result[i];
   }
 
