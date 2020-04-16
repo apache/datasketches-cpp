@@ -24,7 +24,8 @@
 #include <functional>
 #include <climits>
 
-#include <theta_sketch.hpp>
+#include "theta_sketch.hpp"
+#include "common_defs.hpp"
 
 namespace datasketches {
 
@@ -41,7 +42,7 @@ public:
    * Creates an instance of the a-not-b operation (set difference) with a given has seed.
    * @param seed hash seed
    */
-  explicit theta_a_not_b_alloc(uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  explicit theta_a_not_b_alloc(uint64_t seed = DEFAULT_SEED);
 
   /**
    * Computes the a-not-b set operation given two sketches.

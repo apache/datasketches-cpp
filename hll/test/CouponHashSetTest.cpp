@@ -21,8 +21,7 @@
 #include "CouponHashSet.hpp"
 #include "HllUtil.hpp"
 
-#include <cppunit/TestFixture.h>
-#include <cppunit/extensions/HelperMacros.h>
+#include <catch.hpp>
 #include <ostream>
 #include <cmath>
 #include <string>
@@ -30,137 +29,102 @@
 
 namespace datasketches {
 
-class CouponHashSetTest : public CppUnit::TestFixture {
-
-  CPPUNIT_TEST_SUITE(CouponHashSetTest);
-  CPPUNIT_TEST(checkCorruptBytearray);
-  CPPUNIT_TEST(checkCorruptStream);
-  CPPUNIT_TEST_SUITE_END();
-
-  void checkCorruptBytearray() {
-    int lgK = 8;
-    hll_sketch sk1(lgK);
-    for (int i = 0; i < 24; ++i) {
-      sk1.update(i);
-    }
-    auto sketchBytes = sk1.serialize_updatable();
-    uint8_t* bytes = sketchBytes.data();
-    const size_t size = sketchBytes.size();
-
-    bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
-    // fail in HllSketchImpl
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 hll_sketch::deserialize(bytes, size),
-                                 std::invalid_argument);
-    // fail in CouponHashSet
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 CouponHashSet<>::newSet(bytes, size),
-                                 std::invalid_argument);
-    bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = HllUtil<>::HASH_SET_PREINTS;
-
-    bytes[HllUtil<>::SER_VER_BYTE] = 0;
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialization version byte",
-                                 hll_sketch::deserialize(bytes, size),
-                                 std::invalid_argument);
-    bytes[HllUtil<>::SER_VER_BYTE] = HllUtil<>::SER_VER;
-
-    bytes[HllUtil<>::FAMILY_BYTE] = 0;
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in family id byte",
-                                 hll_sketch::deserialize(bytes, size),
-                                 std::invalid_argument);
-    bytes[HllUtil<>::FAMILY_BYTE] = HllUtil<>::FAMILY_ID;
-
-    bytes[HllUtil<>::LG_K_BYTE] = 6;
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect too small a lgK for Set mode",
-                                 hll_sketch::deserialize(bytes, size),
-                                 std::invalid_argument);
-    bytes[HllUtil<>::LG_K_BYTE] = lgK;
-
-    uint8_t tmp = bytes[HllUtil<>::MODE_BYTE];
-    bytes[HllUtil<>::MODE_BYTE] = 0x10; // HLL_6, LIST
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in mode byte",
-                                 hll_sketch::deserialize(bytes, size),
-                                 std::invalid_argument);
-    bytes[HllUtil<>::MODE_BYTE] = tmp;
-
-    tmp = bytes[HllUtil<>::LG_ARR_BYTE];
-    bytes[HllUtil<>::LG_ARR_BYTE] = 0;
-    hll_sketch::deserialize(bytes, size);
-    // should work fine despite the corruption
-    bytes[HllUtil<>::LG_ARR_BYTE] = tmp;
-
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialized length",
-                                 hll_sketch::deserialize(bytes, size - 1),
-                                 std::invalid_argument);
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialized length",
-                                 hll_sketch::deserialize(bytes, 3),
-                                 std::invalid_argument);
+TEST_CASE("coupon hash set: check corrupt bytearray", "[coupon_hash_set]") {
+  int lgK = 8;
+  hll_sketch sk1(lgK);
+  for (int i = 0; i < 24; ++i) {
+    sk1.update(i);
   }
+  auto sketchBytes = sk1.serialize_updatable();
+  uint8_t* bytes = sketchBytes.data();
+  const size_t size = sketchBytes.size();
 
-  void checkCorruptStream() {
-    int lgK = 9;
-    hll_sketch sk1(lgK);
-    for (int i = 0; i < 24; ++i) {
-      sk1.update(i);
-    }
-    std::stringstream ss;
-    sk1.serialize_compact(ss);
+  bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
+  // fail in HllSketchImpl
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
+  // fail in CouponHashSet
+  REQUIRE_THROWS_AS(CouponHashSet<>::newSet(bytes, size), std::invalid_argument);
+  bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = HllUtil<>::HASH_SET_PREINTS;
 
-    ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
-    ss.put(0);
-    ss.seekg(0);
-    // fail in HllSketchImpl
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 hll_sketch::deserialize(ss),
-                                 std::invalid_argument);
-    // fail in CouponHashSet
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in preInts byte",
-                                 CouponHashSet<>::newSet(ss),
-                                 std::invalid_argument);
-    ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
-    ss.put(HllUtil<>::HASH_SET_PREINTS);
+  bytes[HllUtil<>::SER_VER_BYTE] = 0;
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
+  bytes[HllUtil<>::SER_VER_BYTE] = HllUtil<>::SER_VER;
 
-    ss.seekp(HllUtil<>::SER_VER_BYTE);
-    ss.put(0);
-    ss.seekg(0);
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in serialization version byte",
-                                 hll_sketch::deserialize(ss),
-                                 std::invalid_argument);
-    ss.seekp(HllUtil<>::SER_VER_BYTE);
-    ss.put(HllUtil<>::SER_VER);
+  bytes[HllUtil<>::FAMILY_BYTE] = 0;
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
+  bytes[HllUtil<>::FAMILY_BYTE] = HllUtil<>::FAMILY_ID;
 
-    ss.seekp(HllUtil<>::FAMILY_BYTE);
-    ss.put(0);
-    ss.seekg(0);
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in family id byte",
-                                 hll_sketch::deserialize(ss),
-                                 std::invalid_argument);
-    ss.seekp(HllUtil<>::FAMILY_BYTE);
-    ss.put(HllUtil<>::FAMILY_ID);
+  bytes[HllUtil<>::LG_K_BYTE] = 6;
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
+  bytes[HllUtil<>::LG_K_BYTE] = lgK;
 
-    ss.seekg(HllUtil<>::MODE_BYTE);
-    uint8_t tmp = ss.get();
-    ss.seekp(HllUtil<>::MODE_BYTE);
-    ss.put(0x22); // HLL_8, HLL
-    ss.seekg(0);
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to detect error in mode byte",
-                                 hll_sketch::deserialize(ss),
-                                 std::invalid_argument);
-    ss.seekp(HllUtil<>::MODE_BYTE);
-    ss.put(tmp);
+  uint8_t tmp = bytes[HllUtil<>::MODE_BYTE];
+  bytes[HllUtil<>::MODE_BYTE] = 0x10; // HLL_6, LIST
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
+  bytes[HllUtil<>::MODE_BYTE] = tmp;
 
-    ss.seekg(HllUtil<>::LG_ARR_BYTE);
-    tmp = ss.get();
-    ss.seekp(HllUtil<>::LG_ARR_BYTE);
-    ss.put(0);
-    ss.seekg(0);
-    hll_sketch::deserialize(ss);
-    // should work fine despite the corruption
-    ss.seekp(HllUtil<>::LG_ARR_BYTE);
-    ss.put(tmp);
+  tmp = bytes[HllUtil<>::LG_ARR_BYTE];
+  bytes[HllUtil<>::LG_ARR_BYTE] = 0;
+  hll_sketch::deserialize(bytes, size);
+  // should work fine despite the corruption
+  bytes[HllUtil<>::LG_ARR_BYTE] = tmp;
+
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size - 1), std::invalid_argument);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, 3), std::invalid_argument);
+}
+
+TEST_CASE("coupon hash set: check corrupt stream", "[coupon_hash_set]") {
+  int lgK = 9;
+  hll_sketch sk1(lgK);
+  for (int i = 0; i < 24; ++i) {
+    sk1.update(i);
   }
-};
+  std::stringstream ss;
+  sk1.serialize_compact(ss);
 
-CPPUNIT_TEST_SUITE_REGISTRATION(CouponHashSetTest);
+  ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
+  ss.put(0);
+  ss.seekg(0);
+  // fail in HllSketchImpl
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
+  // fail in CouponHashSet
+  REQUIRE_THROWS_AS(CouponHashSet<>::newSet(ss), std::invalid_argument);
+  ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
+  ss.put(HllUtil<>::HASH_SET_PREINTS);
+
+  ss.seekp(HllUtil<>::SER_VER_BYTE);
+  ss.put(0);
+  ss.seekg(0);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
+  ss.seekp(HllUtil<>::SER_VER_BYTE);
+  ss.put(HllUtil<>::SER_VER);
+
+  ss.seekp(HllUtil<>::FAMILY_BYTE);
+  ss.put(0);
+  ss.seekg(0);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
+  ss.seekp(HllUtil<>::FAMILY_BYTE);
+  ss.put(HllUtil<>::FAMILY_ID);
+
+  ss.seekg(HllUtil<>::MODE_BYTE);
+  uint8_t tmp = ss.get();
+  ss.seekp(HllUtil<>::MODE_BYTE);
+  ss.put(0x22); // HLL_8, HLL
+  ss.seekg(0);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
+  ss.seekp(HllUtil<>::MODE_BYTE);
+  ss.put(tmp);
+
+  ss.seekg(HllUtil<>::LG_ARR_BYTE);
+  tmp = ss.get();
+  ss.seekp(HllUtil<>::LG_ARR_BYTE);
+  ss.put(0);
+  ss.seekg(0);
+  hll_sketch::deserialize(ss);
+  // should work fine despite the corruption
+  ss.seekp(HllUtil<>::LG_ARR_BYTE);
+  ss.put(tmp);
+}
+
 
 } // namespace datasketches

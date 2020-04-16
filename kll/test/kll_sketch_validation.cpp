@@ -17,11 +17,10 @@
  * under the License.
  */
 
+#include <catch.hpp>
+
 #include <kll_sketch.hpp>
 #include <kll_helper.hpp>
-
-#include <cppunit/TestFixture.h>
-#include <cppunit/extensions/HelperMacros.h>
 
 #include <assert.h>
 
@@ -155,87 +154,75 @@ const int64_t correct_results[num_tests * 7] = {
     113, 200, 8311133, 6554171, 16, 637, 121111429906734123
 };
 
-class kll_sketch_validation: public CppUnit::TestFixture {
+static std::unique_ptr<int[]> make_input_array(unsigned n, unsigned stride) {
+  assert (kll_helper::is_odd(stride));
+  unsigned mask((1 << 23) - 1); // because library items are single-precision floats at the moment
+  unsigned cur(0);
+  std::unique_ptr<int[]> arr(new int[n]);
+  for (unsigned i = 0; i < n; i++) {
+    cur += stride;
+    cur &= mask;
+    arr[i] = cur;
+  }
+  return arr;
+}
 
-  CPPUNIT_TEST_SUITE(kll_sketch_validation);
-  CPPUNIT_TEST(test_hash);
-  CPPUNIT_TEST(test_make_input_array);
-  CPPUNIT_TEST(validation);
-  CPPUNIT_TEST_SUITE_END();
+static int64_t simple_hash_of_sub_array(const float* arr, unsigned start, unsigned length) {
+  int64_t multiplier(738219921); // an arbitrary odd 30-bit number
+  int64_t mask60((1ULL << 60) - 1ULL);
+  int64_t accum(0);
+  for (unsigned i = start; i < start + length; i++) {
+    accum += (int64_t) arr[i];
+    accum *= multiplier;
+    accum &= mask60;
+    accum ^= accum >> 30;
+  }
+  return accum;
+}
 
-  void validation() {
-    for (unsigned i = 0; i < num_tests; i++) {
-      assert (correct_results[7 * i] == i);
-      unsigned k(correct_results[7 * i + 1]);
-      unsigned n(correct_results[7 * i + 2]);
-      unsigned stride(correct_results[7 * i + 3]);
-      std::unique_ptr<int[]> input_array = make_input_array(n, stride);
-      kll_sketch<float> sketch(k);
-      kll_next_offset = 0;
-      for (unsigned j = 0; j < n; j++) {
-        sketch.update(input_array[j]);
-      }
-      unsigned num_levels = sketch.get_num_levels();
-      unsigned num_samples = sketch.get_num_retained();
-      int64_t hashed_samples = simple_hash_of_sub_array(sketch.get_items(), sketch.get_levels()[0], num_samples);
-      std::cout << i;
-      CPPUNIT_ASSERT(correct_results[7 * i + 4] == num_levels);
-      CPPUNIT_ASSERT(correct_results[7 * i + 5] == num_samples);
-      if (correct_results[7 * i + 6] == hashed_samples) {
-        std::cout << " pass" << std::endl;
-      } else {
-        std::cout << " " << (correct_results[7 * i + 6]) << " != " << hashed_samples;
-        sketch.to_stream(std::cout);
-        CPPUNIT_FAIL("fail");
-      }
+TEST_CASE("kll validation", "[kll_sketch][validation]") {
+  for (unsigned i = 0; i < num_tests; i++) {
+    assert (correct_results[7 * i] == i);
+    unsigned k(correct_results[7 * i + 1]);
+    unsigned n(correct_results[7 * i + 2]);
+    unsigned stride(correct_results[7 * i + 3]);
+    std::unique_ptr<int[]> input_array = make_input_array(n, stride);
+    kll_sketch<float> sketch(k);
+    kll_next_offset = 0;
+    for (unsigned j = 0; j < n; j++) {
+      sketch.update(input_array[j]);
+    }
+    unsigned num_levels = sketch.get_num_levels();
+    unsigned num_samples = sketch.get_num_retained();
+    int64_t hashed_samples = simple_hash_of_sub_array(sketch.get_items(), sketch.get_levels()[0], num_samples);
+    std::cout << i;
+    REQUIRE(correct_results[7 * i + 4] == num_levels);
+    REQUIRE(correct_results[7 * i + 5] == num_samples);
+    if (correct_results[7 * i + 6] == hashed_samples) {
+      std::cout << " pass" << std::endl;
+    } else {
+      std::cout << " " << (correct_results[7 * i + 6]) << " != " << hashed_samples;
+      sketch.to_stream(std::cout);
+      FAIL();
     }
   }
+}
 
-  static std::unique_ptr<int[]> make_input_array(unsigned n, unsigned stride) {
-    assert (kll_helper::is_odd(stride));
-    unsigned mask((1 << 23) - 1); // because library items are single-precision floats at the moment
-    unsigned cur(0);
-    std::unique_ptr<int[]> arr(new int[n]);
-    for (unsigned i = 0; i < n; i++) {
-      cur += stride;
-      cur &= mask;
-      arr[i] = cur;
-    }
-    return arr;
-  }
+TEST_CASE("kll validation: test hash", "[kll_sketch][validaiton]") {
+  float array[] = { 907500, 944104, 807020, 219921, 678370, 955217, 426885 };
+  REQUIRE(simple_hash_of_sub_array(array, 1, 5) == 1141543353991880193LL);
+}
 
-  static int64_t simple_hash_of_sub_array(const float* arr, unsigned start, unsigned length) {
-    int64_t multiplier(738219921); // an arbitrary odd 30-bit number
-    int64_t mask60((1ULL << 60) - 1ULL);
-    int64_t accum(0);
-    for (unsigned i = start; i < start + length; i++) {
-      accum += (int64_t) arr[i];
-      accum *= multiplier;
-      accum &= mask60;
-      accum ^= accum >> 30;
-    }
-    return accum;
-  }
-
-  void test_hash() {
-    float array[] = { 907500, 944104, 807020, 219921, 678370, 955217, 426885 };
-    CPPUNIT_ASSERT_EQUAL(1141543353991880193LL, simple_hash_of_sub_array(array, 1, 5));
-  }
-
-  void test_make_input_array() {
-    int expected_array[6] = { 3654721, 7309442, 2575555, 6230276, 1496389, 5151110 };
-    auto array(make_input_array(6, 3654721));
-    CPPUNIT_ASSERT_EQUAL(expected_array[0], array[0]);
-    CPPUNIT_ASSERT_EQUAL(expected_array[1], array[1]);
-    CPPUNIT_ASSERT_EQUAL(expected_array[2], array[2]);
-    CPPUNIT_ASSERT_EQUAL(expected_array[3], array[3]);
-    CPPUNIT_ASSERT_EQUAL(expected_array[4], array[4]);
-    CPPUNIT_ASSERT_EQUAL(expected_array[5], array[5]);
-  }
-
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(kll_sketch_validation);
+TEST_CASE("kll validation: make input array", "[kll_sketch][validaiton]") {
+  int expected_array[6] = { 3654721, 7309442, 2575555, 6230276, 1496389, 5151110 };
+  auto array(make_input_array(6, 3654721));
+  REQUIRE(array[0] == expected_array[0]);
+  REQUIRE(array[1] == expected_array[1]);
+  REQUIRE(array[2] == expected_array[2]);
+  REQUIRE(array[3] == expected_array[3]);
+  REQUIRE(array[4] == expected_array[4]);
+  REQUIRE(array[5] == expected_array[5]);
+}
 
 } /* namespace datasketches */
 

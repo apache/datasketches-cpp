@@ -25,10 +25,9 @@
 #include <memory>
 
 #include "compression_data.hpp"
-#include "counter_of_zeros.hpp"
 #include "cpc_util.hpp"
-
 #include "cpc_common.hpp"
+#include "count_zeros.hpp"
 
 namespace datasketches {
 

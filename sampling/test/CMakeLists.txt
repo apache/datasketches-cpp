@@ -40,8 +40,3 @@ target_sources(sampling_test
   var_opt_sketch_test.cpp
   var_opt_union_test.cpp
 )
-
-target_include_directories(sampling_test
-  PRIVATE
-    ../../common/test
-)

@@ -29,6 +29,7 @@
 #include "cpc_common.hpp"
 #include "cpc_compressor.hpp"
 #include "cpc_confidence.hpp"
+#include "common_defs.hpp"
 
 namespace datasketches {
 

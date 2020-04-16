@@ -17,10 +17,11 @@
  * under the License.
  */
 
-#include <cppunit/TestFixture.h>
-#include <cppunit/extensions/HelperMacros.h>
+#include <catch.hpp>
 #include <cmath>
 #include <cstring>
+#include <sstream>
+#include <fstream>
 
 #include <kll_sketch.hpp>
 #include <test_allocator.hpp>
@@ -41,168 +42,128 @@ typedef kll_sketch<float, std::less<float>, serde<float>, test_allocator<float>>
 // let std::string use the default allocator for simplicity, otherwise we need to define "less" and "serde"
 typedef kll_sketch<std::string, std::less<std::string>, serde<std::string>, test_allocator<std::string>> kll_string_sketch;
 
-class kll_sketch_test: public CppUnit::TestFixture {
+TEST_CASE("kll sketch", "[kll_sketch]") {
 
-  CPPUNIT_TEST_SUITE(kll_sketch_test);
-  CPPUNIT_TEST(k_limits);
-  CPPUNIT_TEST(empty);
-  CPPUNIT_TEST(bad_get_quantile);
-  CPPUNIT_TEST(one_item);
-  CPPUNIT_TEST(many_items_exact_mode);
-  CPPUNIT_TEST(many_items_estimation_mode);
-  CPPUNIT_TEST(consistency_between_get_rank_and_get_PMF_CDF);
-  CPPUNIT_TEST(deserialize_from_java);
-  CPPUNIT_TEST(serialize_deserialize_empty);
-  CPPUNIT_TEST(serialize_deserialize_one_item);
-  CPPUNIT_TEST(deserialize_one_item_v1);
-  CPPUNIT_TEST(serialize_deserialize_stream);
-  CPPUNIT_TEST(serialize_deserialize_bytes);
-  CPPUNIT_TEST(floor_of_log2_of_fraction);
-  CPPUNIT_TEST(out_of_order_split_points_float);
-  CPPUNIT_TEST(out_of_order_split_points_int);
-  CPPUNIT_TEST(nan_split_point);
-  CPPUNIT_TEST(merge);
-  CPPUNIT_TEST(merge_lower_k);
-  CPPUNIT_TEST(merge_exact_mode_lower_k);
-  CPPUNIT_TEST(merge_min_value_from_other);
-  CPPUNIT_TEST(merge_min_and_max_from_other);
-  CPPUNIT_TEST(sketch_of_ints);
-  CPPUNIT_TEST(sketch_of_strings_stream);
-  CPPUNIT_TEST(sketch_of_strings_bytes);
-  CPPUNIT_TEST(sketch_of_strings_single_item_bytes);
-  CPPUNIT_TEST(copy);
-  CPPUNIT_TEST(move);
-  CPPUNIT_TEST_SUITE_END();
+  // setup
+  test_allocator_total_bytes = 0;
 
-
-public:
-  void setUp() {
-    test_allocator_total_bytes = 0;
-  }
-
-  void tearDown() {
-    if (test_allocator_total_bytes != 0) {
-      CPPUNIT_ASSERT_EQUAL((long long) 0, test_allocator_total_bytes);
-    }
-  }
-
-  void k_limits() {
+  SECTION("k limits") {
     kll_float_sketch sketch1(kll_float_sketch::MIN_K); // this should work
     kll_float_sketch sketch2(kll_float_sketch::MAX_K); // this should work
-    CPPUNIT_ASSERT_THROW(new kll_float_sketch(kll_float_sketch::MIN_K - 1), std::invalid_argument);
+    REQUIRE_THROWS_AS(new kll_float_sketch(kll_float_sketch::MIN_K - 1), std::invalid_argument);
     // MAX_K + 1 makes no sense because k is uint16_t
   }
 
-  void empty() {
+  SECTION("empty") {
     kll_float_sketch sketch;
-    CPPUNIT_ASSERT(sketch.is_empty());
-    CPPUNIT_ASSERT(!sketch.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) 0, sketch.get_n());
-    CPPUNIT_ASSERT_EQUAL(0u, sketch.get_num_retained());
-    CPPUNIT_ASSERT(std::isnan(sketch.get_rank(0)));
-    CPPUNIT_ASSERT(std::isnan(sketch.get_min_value()));
-    CPPUNIT_ASSERT(std::isnan(sketch.get_max_value()));
-    CPPUNIT_ASSERT(std::isnan(sketch.get_quantile(0.5)));
+    REQUIRE(sketch.is_empty());
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_n() == 0);
+    REQUIRE(sketch.get_num_retained() == 0);
+    REQUIRE(std::isnan(sketch.get_rank(0)));
+    REQUIRE(std::isnan(sketch.get_min_value()));
+    REQUIRE(std::isnan(sketch.get_max_value()));
+    REQUIRE(std::isnan(sketch.get_quantile(0.5)));
     const double fractions[3] {0, 0.5, 1};
-    CPPUNIT_ASSERT_EQUAL(0, (int) sketch.get_quantiles(fractions, 3).size());
+    REQUIRE(sketch.get_quantiles(fractions, 3).size() == 0);
     const float split_points[1] {0};
-    CPPUNIT_ASSERT_EQUAL(0, (int) sketch.get_PMF(split_points, 1).size());
-    CPPUNIT_ASSERT_EQUAL(0, (int) sketch.get_CDF(split_points, 1).size());
+    REQUIRE(sketch.get_PMF(split_points, 1).size() == 0);
+    REQUIRE(sketch.get_CDF(split_points, 1).size() == 0);
 
     int count = 0;
     for (auto& it: sketch) {
       (void) it; // to suppress "unused" warning
       ++count;
     }
-    CPPUNIT_ASSERT_EQUAL(0, count);
+    REQUIRE(count == 0);
 }
 
-  void bad_get_quantile() {
+  SECTION("get bad quantile") {
     kll_float_sketch sketch;
     sketch.update(0); // has to be non-empty to reach the check
-    CPPUNIT_ASSERT_THROW(sketch.get_quantile(-1), std::invalid_argument);
+    REQUIRE_THROWS_AS(sketch.get_quantile(-1), std::invalid_argument);
   }
 
-  void one_item() {
+  SECTION("one item") {
     kll_float_sketch sketch;
     sketch.update(1);
-    CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT(!sketch.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) 1, sketch.get_n());
-    CPPUNIT_ASSERT_EQUAL(1u, sketch.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(0.0, sketch.get_rank(1));
-    CPPUNIT_ASSERT_EQUAL(1.0, sketch.get_rank(2));
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch.get_max_value());
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch.get_quantile(0.5));
+    REQUIRE_FALSE(sketch.is_empty());
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_n() == 1);
+    REQUIRE(sketch.get_num_retained() == 1);
+    REQUIRE(sketch.get_rank(1) == 0.0);
+    REQUIRE(sketch.get_rank(2) == 1.0);
+    REQUIRE(sketch.get_min_value() == 1.0);
+    REQUIRE(sketch.get_max_value() == 1.0);
+    REQUIRE(sketch.get_quantile(0.5) == 1.0);
     const double fractions[3] {0, 0.5, 1};
     auto quantiles = sketch.get_quantiles(fractions, 3);
-    CPPUNIT_ASSERT_EQUAL(3, (int) quantiles.size());
-    CPPUNIT_ASSERT_EQUAL(1.0f, quantiles[0]);
-    CPPUNIT_ASSERT_EQUAL(1.0f, quantiles[1]);
-    CPPUNIT_ASSERT_EQUAL(1.0f, quantiles[2]);
+    REQUIRE(quantiles.size() == 3);
+    REQUIRE(quantiles[0] == 1.0);
+    REQUIRE(quantiles[1] == 1.0);
+    REQUIRE(quantiles[2] == 1.0);
 
     int count = 0;
     for (auto& it: sketch) {
-      CPPUNIT_ASSERT_EQUAL(1, (int) it.second);
+      REQUIRE(it.second == 1);
       ++count;
     }
-    CPPUNIT_ASSERT_EQUAL(1, count);
+    REQUIRE(count == 1);
   }
 
-  void many_items_exact_mode() {
+  SECTION("many items, exact mode") {
     kll_float_sketch sketch;
     const uint32_t n(200);
     for (uint32_t i = 0; i < n; i++) {
       sketch.update(i);
-      CPPUNIT_ASSERT_EQUAL((uint64_t) i + 1, sketch.get_n());
+      REQUIRE(sketch.get_n() == i + 1);
     }
-    CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT(!sketch.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(n, sketch.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch.get_quantile(0));
-    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch.get_max_value());
-    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch.get_quantile(1));
+    REQUIRE_FALSE(sketch.is_empty());
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_num_retained() == n);
+    REQUIRE(sketch.get_min_value() == 0.0);
+    REQUIRE(sketch.get_quantile(0) == 0.0);
+    REQUIRE(sketch.get_max_value() == n - 1);
+    REQUIRE(sketch.get_quantile(1) == n - 1);
 
     const double fractions[3] {0, 0.5, 1};
     auto quantiles = sketch.get_quantiles(fractions, 3);
-    CPPUNIT_ASSERT_EQUAL(3, (int) quantiles.size());
-    CPPUNIT_ASSERT_EQUAL(0.0f, quantiles[0]);
-    CPPUNIT_ASSERT_EQUAL((float) n / 2, quantiles[1]);
-    CPPUNIT_ASSERT_EQUAL((float) n - 1 , quantiles[2]);
+    REQUIRE(quantiles.size() == 3);
+    REQUIRE(quantiles[0] == 0.0);
+    REQUIRE(quantiles[1] == n / 2);
+    REQUIRE(quantiles[2] == n - 1 );
 
     for (uint32_t i = 0; i < n; i++) {
       const double trueRank = (double) i / n;
-      CPPUNIT_ASSERT_EQUAL(trueRank, sketch.get_rank(i));
+      REQUIRE(sketch.get_rank(i) == trueRank);
     }
 
     // the alternative method must produce the same result
     auto quantiles2 = sketch.get_quantiles(3);
-    CPPUNIT_ASSERT_EQUAL(3, (int) quantiles2.size());
-    CPPUNIT_ASSERT_EQUAL(quantiles[0], quantiles[0]);
-    CPPUNIT_ASSERT_EQUAL(quantiles[1], quantiles[1]);
-    CPPUNIT_ASSERT_EQUAL(quantiles[2], quantiles[2]);
+    REQUIRE(quantiles2.size() == 3);
+    REQUIRE(quantiles[0] == quantiles2[0]);
+    REQUIRE(quantiles[1] == quantiles2[1]);
+    REQUIRE(quantiles[2] == quantiles2[2]);
   }
 
-  void many_items_estimation_mode() {
+  SECTION("many items, estimation mode") {
     kll_float_sketch sketch;
     const int n(1000000);
     for (int i = 0; i < n; i++) {
       sketch.update(i);
-      CPPUNIT_ASSERT_EQUAL((uint64_t) i + 1, sketch.get_n());
+      REQUIRE(sketch.get_n() == static_cast<uint64_t>(i + 1));
     }
-    CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT(sketch.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch.get_min_value()); // min value is exact
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch.get_quantile(0)); // min value is exact
-    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch.get_max_value()); // max value is exact
-    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch.get_quantile(1)); // max value is exact
+    REQUIRE_FALSE(sketch.is_empty());
+    REQUIRE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_min_value() == 0.0); // min value is exact
+    REQUIRE(sketch.get_quantile(0) == 0.0); // min value is exact
+    REQUIRE(sketch.get_max_value() == n - 1); // max value is exact
+    REQUIRE(sketch.get_quantile(1) == n - 1); // max value is exact
 
     // test rank
     for (int i = 0; i < n; i++) {
       const double trueRank = (double) i / n;
-      CPPUNIT_ASSERT_DOUBLES_EQUAL(trueRank, sketch.get_rank(i), RANK_EPS_FOR_K_200);
+      REQUIRE(sketch.get_rank(i) == Approx(trueRank).margin(RANK_EPS_FOR_K_200));
     }
 
     // test quantiles at every 0.1 percentage point
@@ -218,16 +179,16 @@ public:
     for (int i = 0; i < 1001; i++) {
       // expensive in a loop, just to check the equivalence here, not advised for real code
       const float quantile = sketch.get_quantile(fractions[i]);
-      CPPUNIT_ASSERT_EQUAL(quantile, quantiles[i]);
-      CPPUNIT_ASSERT_EQUAL(quantile, reverse_quantiles[1000 - i]);
-      CPPUNIT_ASSERT(previous_quantile <= quantile);
+      REQUIRE(quantiles[i] == quantile);
+      REQUIRE(reverse_quantiles[1000 - i] == quantile);
+      REQUIRE(previous_quantile <= quantile);
       previous_quantile = quantile;
     }
 
     //sketch.to_stream(std::cout);
   }
 
-  void consistency_between_get_rank_and_get_PMF_CDF() {
+  SECTION("consistency between get_rank adn get_PMF/CDF") {
     kll_float_sketch sketch;
     const int n = 1000;
     float values[n];
@@ -241,153 +202,159 @@ public:
 
     double subtotal_pmf(0);
     for (int i = 0; i < n; i++) {
-      CPPUNIT_ASSERT_EQUAL_MESSAGE("rank vs CDF for value " + std::to_string(i), ranks[i], sketch.get_rank(values[i]));
+      if (sketch.get_rank(values[i]) != ranks[i]) {
+        std::cerr << "checking rank vs CDF for value " << i << std::endl;
+        REQUIRE(sketch.get_rank(values[i]) == ranks[i]);
+      }
       subtotal_pmf += pmf[i];
-      CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE("CDF vs PMF for value " + std::to_string(i), ranks[i], subtotal_pmf, NUMERIC_NOISE_TOLERANCE);
+      if (abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
+        std::cerr << "CDF vs PMF for value " << i << std::endl;
+        REQUIRE(ranks[i] == Approx(subtotal_pmf).margin(NUMERIC_NOISE_TOLERANCE));
+      }
     }
   }
 
-  void deserialize_from_java() {
+  SECTION("deserialize from java") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_sketch_from_java.bin", std::ios::binary);
     auto sketch = kll_float_sketch::deserialize(is);
-    CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT(sketch.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) 1000000, sketch.get_n());
-    CPPUNIT_ASSERT_EQUAL(614u, sketch.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(999999.0f, sketch.get_max_value());
+    REQUIRE_FALSE(sketch.is_empty());
+    REQUIRE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_n() == 1000000);
+    REQUIRE(sketch.get_num_retained() == 614);
+    REQUIRE(sketch.get_min_value() == 0.0);
+    REQUIRE(sketch.get_max_value() == 999999.0);
   }
 
-  void serialize_deserialize_empty() {
+  SECTION("serialize deserialize empty") {
     kll_float_sketch sketch;
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (size_t) s.tellp());
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
     auto sketch2 = kll_float_sketch::deserialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (size_t) s.tellg());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_n(), sketch2.get_n());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_num_retained(), sketch2.get_num_retained());
-    CPPUNIT_ASSERT(std::isnan(sketch2.get_min_value()));
-    CPPUNIT_ASSERT(std::isnan(sketch2.get_max_value()));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
+    REQUIRE(sketch2.is_empty() == sketch.is_empty());
+    REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == sketch.get_n());
+    REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+    REQUIRE(std::isnan(sketch2.get_min_value()));
+    REQUIRE(std::isnan(sketch2.get_max_value()));
+    REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
+    REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }
 
-  void serialize_deserialize_one_item() {
+  SECTION("serialize deserialize one item") {
     kll_float_sketch sketch;
     sketch.update(1);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (size_t) s.tellp());
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
     auto sketch2 = kll_float_sketch::deserialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (size_t) s.tellg());
-    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
-    CPPUNIT_ASSERT(!sketch2.is_empty());
-    CPPUNIT_ASSERT(!sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) 1, sketch2.get_n());
-    CPPUNIT_ASSERT_EQUAL(1u, sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch2.get_max_value());
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch2.get_quantile(0.5));
-    CPPUNIT_ASSERT_EQUAL(0.0, sketch2.get_rank(1));
-    CPPUNIT_ASSERT_EQUAL(1.0, sketch2.get_rank(2));
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
+    REQUIRE(s.tellg() == s.tellp());
+    REQUIRE_FALSE(sketch2.is_empty());
+    REQUIRE_FALSE(sketch2.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == 1);
+    REQUIRE(sketch2.get_num_retained() == 1);
+    REQUIRE(sketch2.get_min_value() == 1.0);
+    REQUIRE(sketch2.get_max_value() == 1.0);
+    REQUIRE(sketch2.get_quantile(0.5) == 1.0);
+    REQUIRE(sketch2.get_rank(1) == 0.0);
+    REQUIRE(sketch2.get_rank(2) == 1.0);
   }
 
-  void deserialize_one_item_v1() {
+  SECTION("deserialize one item v1") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.bin", std::ios::binary);
     auto sketch = kll_float_sketch::deserialize(is);
-    CPPUNIT_ASSERT(!sketch.is_empty());
-    CPPUNIT_ASSERT(!sketch.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) 1, sketch.get_n());
-    CPPUNIT_ASSERT_EQUAL(1u, sketch.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch.get_max_value());
+    REQUIRE_FALSE(sketch.is_empty());
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_n() == 1);
+    REQUIRE(sketch.get_num_retained() == 1);
+    REQUIRE(sketch.get_min_value() == 1.0);
+    REQUIRE(sketch.get_max_value() == 1.0);
   }
 
-  void serialize_deserialize_stream() {
+  SECTION("serialize deserialize stream") {
     kll_float_sketch sketch;
     const int n(1000);
     for (int i = 0; i < n; i++) sketch.update(i);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (size_t) s.tellp());
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
     auto sketch2 = kll_float_sketch::deserialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (size_t) s.tellg());
-    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_n(), sketch2.get_n());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_num_retained(), sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_min_value(), sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_max_value(), sketch2.get_max_value());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch2.get_quantile(0.5));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(0), sketch2.get_rank(0));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(n), sketch2.get_rank(n));
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
+    REQUIRE(s.tellg() == s.tellp());
+    REQUIRE(sketch2.is_empty() == sketch.is_empty());
+    REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == sketch.get_n());
+    REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+    REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+    REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+    REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
+    REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
+    REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
+    REQUIRE(sketch2.get_rank(0) == sketch.get_rank(0));
+    REQUIRE(sketch2.get_rank(n) == sketch.get_rank(n));
   }
 
-  void serialize_deserialize_bytes() {
+  SECTION("serialize deserialize bytes") {
     kll_float_sketch sketch;
     const int n(1000);
     for (int i = 0; i < n; i++) sketch.update(i);
     auto bytes = sketch.serialize();
-    CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), bytes.size());
+    REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
     auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size());
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), bytes.size());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_n(), sketch2.get_n());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_num_retained(), sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_min_value(), sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_max_value(), sketch2.get_max_value());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch2.get_quantile(0.5));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(0), sketch2.get_rank(0));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(n), sketch2.get_rank(n));
+    REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
+    REQUIRE(sketch2.is_empty() == sketch.is_empty());
+    REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == sketch.get_n());
+    REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+    REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+    REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+    REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
+    REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
+    REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
+    REQUIRE(sketch2.get_rank(0) == sketch.get_rank(0));
+    REQUIRE(sketch2.get_rank(n) == sketch.get_rank(n));
   }
 
-  void floor_of_log2_of_fraction() {
-    CPPUNIT_ASSERT_EQUAL((uint8_t) 0, kll_helper::floor_of_log2_of_fraction(0, 1));
-    CPPUNIT_ASSERT_EQUAL((uint8_t) 0, kll_helper::floor_of_log2_of_fraction(1, 2));
-    CPPUNIT_ASSERT_EQUAL((uint8_t) 0, kll_helper::floor_of_log2_of_fraction(2, 2));
-    CPPUNIT_ASSERT_EQUAL((uint8_t) 0, kll_helper::floor_of_log2_of_fraction(3, 2));
-    CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(4, 2));
-    CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(5, 2));
-    CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(6, 2));
-    CPPUNIT_ASSERT_EQUAL((uint8_t) 1, kll_helper::floor_of_log2_of_fraction(7, 2));
-    CPPUNIT_ASSERT_EQUAL((uint8_t) 2, kll_helper::floor_of_log2_of_fraction(8, 2));
+  SECTION("floor of log2 of fraction") {
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(0, 1) == 0);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(1, 2) == 0);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(2, 2) == 0);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(3, 2) == 0);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(4, 2) == 1);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(5, 2) == 1);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(6, 2) == 1);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(7, 2) == 1);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(8, 2) == 2);
   }
 
-  void out_of_order_split_points_float() {
+  SECTION("out of order split points, float") {
     kll_float_sketch sketch;
     sketch.update(0); // has too be non-empty to reach the check
     float split_points[2] = {1, 0};
-    CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 2), std::invalid_argument);
+    REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 2), std::invalid_argument);
   }
 
-  void out_of_order_split_points_int() {
+  SECTION("out of order split points, int") {
     kll_sketch<int> sketch;
     sketch.update(0); // has too be non-empty to reach the check
     int split_points[2] = {1, 0};
-    CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 2), std::invalid_argument);
+    REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 2), std::invalid_argument);
   }
 
-  void nan_split_point() {
+  SECTION("NaN split point") {
     kll_float_sketch sketch;
     sketch.update(0); // has too be non-empty to reach the check
     float split_points[1] = {std::numeric_limits<float>::quiet_NaN()};
-    CPPUNIT_ASSERT_THROW(sketch.get_CDF(split_points, 1), std::invalid_argument);
+    REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::invalid_argument);
   }
 
-  void merge() {
+  SECTION("merge") {
     kll_float_sketch sketch1;
     kll_float_sketch sketch2;
     const int n = 10000;
@@ -396,21 +363,21 @@ public:
       sketch2.update((2 * n) - i - 1);
     }
 
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
-    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch1.get_max_value());
-    CPPUNIT_ASSERT_EQUAL((float) n, sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(2.0f * n - 1, sketch2.get_max_value());
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == n - 1);
+    REQUIRE(sketch2.get_min_value() == n);
+    REQUIRE(sketch2.get_max_value() == 2.0f * n - 1);
 
     sketch1.merge(sketch2);
 
-    CPPUNIT_ASSERT(!sketch1.is_empty());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) 2 * n, sketch1.get_n());
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(2.0f * n - 1, sketch1.get_max_value());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sketch1.get_quantile(0.5), n * RANK_EPS_FOR_K_200);
+    REQUIRE_FALSE(sketch1.is_empty());
+    REQUIRE(sketch1.get_n() == 2 * n);
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == 2.0f * n - 1);
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_200));
   }
 
-  void merge_lower_k() {
+  SECTION("merge lower k") {
     kll_float_sketch sketch1(256);
     kll_float_sketch sketch2(128);
     const int n = 10000;
@@ -419,28 +386,28 @@ public:
       sketch2.update((2 * n) - i - 1);
     }
 
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
-    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch1.get_max_value());
-    CPPUNIT_ASSERT_EQUAL((float) n, sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(2.0f * n - 1, sketch2.get_max_value());
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == n - 1);
+    REQUIRE(sketch2.get_min_value() == n);
+    REQUIRE(sketch2.get_max_value() == 2.0f * n - 1);
 
-    CPPUNIT_ASSERT(sketch1.get_normalized_rank_error(false) < sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT(sketch1.get_normalized_rank_error(true) < sketch2.get_normalized_rank_error(true));
+    REQUIRE(sketch1.get_normalized_rank_error(false) < sketch2.get_normalized_rank_error(false));
+    REQUIRE(sketch1.get_normalized_rank_error(true) < sketch2.get_normalized_rank_error(true));
 
     sketch1.merge(sketch2);
 
     // sketch1 must get "contaminated" by the lower K in sketch2
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
+    REQUIRE(sketch2.get_normalized_rank_error(false) == sketch1.get_normalized_rank_error(false));
+    REQUIRE(sketch2.get_normalized_rank_error(true) == sketch1.get_normalized_rank_error(true));
 
-    CPPUNIT_ASSERT(!sketch1.is_empty());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) 2 * n, sketch1.get_n());
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(2.0f * n - 1, sketch1.get_max_value());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(n, sketch1.get_quantile(0.5), n * RANK_EPS_FOR_K_200);
+    REQUIRE_FALSE(sketch1.is_empty());
+    REQUIRE(sketch1.get_n() == 2 * n);
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == 2.0f * n - 1);
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_200));
   }
 
-  void merge_exact_mode_lower_k() {
+  SECTION("merge exact mode, lower k") {
     kll_float_sketch sketch1(256);
     kll_float_sketch sketch2(128);
     const int n = 10000;
@@ -451,97 +418,97 @@ public:
     // rank error should not be affected by a merge with an empty sketch with lower k
     const double rank_error_before_merge = sketch1.get_normalized_rank_error(true);
     sketch1.merge(sketch2);
-    CPPUNIT_ASSERT_EQUAL(rank_error_before_merge, sketch1.get_normalized_rank_error(true));
+    REQUIRE(sketch1.get_normalized_rank_error(true) == rank_error_before_merge);
 
-    CPPUNIT_ASSERT(!sketch1.is_empty());
-    CPPUNIT_ASSERT_EQUAL((uint64_t) n, sketch1.get_n());
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch1.get_min_value());
-    CPPUNIT_ASSERT_EQUAL((float) n - 1, sketch1.get_max_value());
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(n / 2, sketch1.get_quantile(0.5), n / 2 * RANK_EPS_FOR_K_200);
+    REQUIRE_FALSE(sketch1.is_empty());
+    REQUIRE(sketch1.get_n() == n);
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == n - 1);
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(n / 2).margin(n / 2 * RANK_EPS_FOR_K_200));
 
     sketch2.update(0);
     sketch1.merge(sketch2);
     // rank error should not be affected by a merge with a sketch in exact mode with lower k
-    CPPUNIT_ASSERT_EQUAL(rank_error_before_merge, sketch1.get_normalized_rank_error(true));
+    REQUIRE(sketch1.get_normalized_rank_error(true) == rank_error_before_merge);
   }
 
-  void merge_min_value_from_other() {
+  SECTION("merge min value from other") {
     kll_float_sketch sketch1;
     kll_float_sketch sketch2;
     sketch1.update(1);
     sketch2.update(2);
     sketch2.merge(sketch1);
-    CPPUNIT_ASSERT_EQUAL(1.0f, sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(2.0f, sketch2.get_max_value());
+    REQUIRE(sketch2.get_min_value() == 1.0f);
+    REQUIRE(sketch2.get_max_value() == 2.0f);
   }
 
-  void merge_min_and_max_from_other() {
+  SECTION("merge min and max values from other") {
     kll_float_sketch sketch1;
     for (int i = 0; i < 1000000; i++) sketch1.update(i);
     kll_float_sketch sketch2;
     sketch2.merge(sketch1);
-    CPPUNIT_ASSERT_EQUAL(0.0f, sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(999999.0f, sketch2.get_max_value());
+    REQUIRE(sketch2.get_min_value() == 0.0f);
+    REQUIRE(sketch2.get_max_value() == 999999.0f);
   }
 
-  void sketch_of_ints() {
+  SECTION("sketch of ints") {
     kll_sketch<int> sketch;
-    CPPUNIT_ASSERT_THROW(sketch.get_quantile(0), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch.get_min_value(), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch.get_max_value(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_min_value(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_max_value(), std::runtime_error);
 
     const int n(1000);
     for (int i = 0; i < n; i++) sketch.update(i);
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch.get_serialized_size_bytes(), (size_t) s.tellp());
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
     auto sketch2 = kll_sketch<int>::deserialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (size_t) s.tellg());
-    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_empty(), sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(sketch.is_estimation_mode(), sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_n(), sketch2.get_n());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_num_retained(), sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_min_value(), sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_max_value(), sketch2.get_max_value());
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_quantile(0.5), sketch2.get_quantile(0.5));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(0), sketch2.get_rank(0));
-    CPPUNIT_ASSERT_EQUAL(sketch.get_rank(n), sketch2.get_rank(n));
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
+    REQUIRE(s.tellg() == s.tellp());
+    REQUIRE(sketch2.is_empty() == sketch.is_empty());
+    REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == sketch.get_n());
+    REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+    REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+    REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+    REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
+    REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
+    REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
+    REQUIRE(sketch2.get_rank(0) == sketch.get_rank(0));
+    REQUIRE(sketch2.get_rank(n) == sketch.get_rank(n));
   }
 
-  void sketch_of_strings_stream() {
+  SECTION("sketch of strings stream") {
     kll_string_sketch sketch1;
-    CPPUNIT_ASSERT_THROW(sketch1.get_quantile(0), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch1.get_min_value(), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch1.get_max_value(), std::runtime_error);
-    CPPUNIT_ASSERT_EQUAL((size_t) 8, sketch1.get_serialized_size_bytes());
+    REQUIRE_THROWS_AS(sketch1.get_quantile(0), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch1.get_min_value(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch1.get_max_value(), std::runtime_error);
+    REQUIRE(sketch1.get_serialized_size_bytes() == 8);
 
     const int n = 1000;
     for (int i = 0; i < n; i++) sketch1.update(std::to_string(i));
 
-    CPPUNIT_ASSERT_EQUAL(std::string("0"), sketch1.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(std::string("999"), sketch1.get_max_value());
+    REQUIRE(sketch1.get_min_value() == std::string("0"));
+    REQUIRE(sketch1.get_max_value() == std::string("999"));
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch1.serialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_serialized_size_bytes(), (size_t) s.tellp());
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch1.get_serialized_size_bytes());
     auto sketch2 = kll_string_sketch::deserialize(s);
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), (size_t) s.tellg());
-    CPPUNIT_ASSERT_EQUAL(s.tellp(), s.tellg());
-    CPPUNIT_ASSERT_EQUAL(sketch1.is_empty(), sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(sketch1.is_estimation_mode(), sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_n(), sketch2.get_n());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_num_retained(), sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_min_value(), sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_max_value(), sketch2.get_max_value());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_quantile(0.5), sketch2.get_quantile(0.5));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(std::to_string(0)), sketch2.get_rank(std::to_string(0)));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(std::to_string(n)), sketch2.get_rank(std::to_string(n)));
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
+    REQUIRE(s.tellg() == s.tellp());
+    REQUIRE(sketch2.is_empty() == sketch1.is_empty());
+    REQUIRE(sketch2.is_estimation_mode() == sketch1.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == sketch1.get_n());
+    REQUIRE(sketch2.get_num_retained() == sketch1.get_num_retained());
+    REQUIRE(sketch2.get_min_value() == sketch1.get_min_value());
+    REQUIRE(sketch2.get_max_value() == sketch1.get_max_value());
+    REQUIRE(sketch2.get_normalized_rank_error(false) == sketch1.get_normalized_rank_error(false));
+    REQUIRE(sketch2.get_normalized_rank_error(true) == sketch1.get_normalized_rank_error(true));
+    REQUIRE(sketch2.get_quantile(0.5) == sketch1.get_quantile(0.5));
+    REQUIRE(sketch2.get_rank(std::to_string(0)) == sketch1.get_rank(std::to_string(0)));
+    REQUIRE(sketch2.get_rank(std::to_string(n)) == sketch1.get_rank(std::to_string(n)));
 
     // to take a look using hexdump
     //std::ofstream os("kll-string.bin");
@@ -551,47 +518,47 @@ public:
     //sketch1.to_stream(std::cout);
   }
 
-  void sketch_of_strings_bytes() {
+  SECTION("sketch of strings bytes") {
     kll_string_sketch sketch1;
-    CPPUNIT_ASSERT_THROW(sketch1.get_quantile(0), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch1.get_min_value(), std::runtime_error);
-    CPPUNIT_ASSERT_THROW(sketch1.get_max_value(), std::runtime_error);
-    CPPUNIT_ASSERT_EQUAL((size_t) 8, sketch1.get_serialized_size_bytes());
+    REQUIRE_THROWS_AS(sketch1.get_quantile(0), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch1.get_min_value(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch1.get_max_value(), std::runtime_error);
+    REQUIRE(sketch1.get_serialized_size_bytes() == 8);
 
     const int n = 1000;
     for (int i = 0; i < n; i++) sketch1.update(std::to_string(i));
 
-    CPPUNIT_ASSERT_EQUAL(std::string("0"), sketch1.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(std::string("999"), sketch1.get_max_value());
+    REQUIRE(sketch1.get_min_value() == std::string("0"));
+    REQUIRE(sketch1.get_max_value() == std::string("999"));
 
     auto bytes = sketch1.serialize();
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_serialized_size_bytes(), bytes.size());
+    REQUIRE(bytes.size() == sketch1.get_serialized_size_bytes());
     auto sketch2 = kll_string_sketch::deserialize(bytes.data(), bytes.size());
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), bytes.size());
-    CPPUNIT_ASSERT_EQUAL(sketch1.is_empty(), sketch2.is_empty());
-    CPPUNIT_ASSERT_EQUAL(sketch1.is_estimation_mode(), sketch2.is_estimation_mode());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_n(), sketch2.get_n());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_num_retained(), sketch2.get_num_retained());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_min_value(), sketch2.get_min_value());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_max_value(), sketch2.get_max_value());
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(false), sketch2.get_normalized_rank_error(false));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_normalized_rank_error(true), sketch2.get_normalized_rank_error(true));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_quantile(0.5), sketch2.get_quantile(0.5));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(std::to_string(0)), sketch2.get_rank(std::to_string(0)));
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(std::to_string(n)), sketch2.get_rank(std::to_string(n)));
+    REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
+    REQUIRE(sketch2.is_empty() == sketch1.is_empty());
+    REQUIRE(sketch2.is_estimation_mode() == sketch1.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == sketch1.get_n());
+    REQUIRE(sketch2.get_num_retained() == sketch1.get_num_retained());
+    REQUIRE(sketch2.get_min_value() == sketch1.get_min_value());
+    REQUIRE(sketch2.get_max_value() == sketch1.get_max_value());
+    REQUIRE(sketch2.get_normalized_rank_error(false) == sketch1.get_normalized_rank_error(false));
+    REQUIRE(sketch2.get_normalized_rank_error(true) == sketch1.get_normalized_rank_error(true));
+    REQUIRE(sketch2.get_quantile(0.5) == sketch1.get_quantile(0.5));
+    REQUIRE(sketch2.get_rank(std::to_string(0)) == sketch1.get_rank(std::to_string(0)));
+    REQUIRE(sketch2.get_rank(std::to_string(n)) == sketch1.get_rank(std::to_string(n)));
   }
 
 
-  void sketch_of_strings_single_item_bytes() {
+  SECTION("sketch of strings, single item, bytes") {
     kll_string_sketch sketch1;
     sketch1.update("a");
     auto bytes = sketch1.serialize();
-    CPPUNIT_ASSERT_EQUAL(sketch1.get_serialized_size_bytes(), bytes.size());
+    REQUIRE(bytes.size() == sketch1.get_serialized_size_bytes());
     auto sketch2 = kll_string_sketch::deserialize(bytes.data(), bytes.size());
-    CPPUNIT_ASSERT_EQUAL(sketch2.get_serialized_size_bytes(), bytes.size());
+    REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
   }
 
-  void copy() {
+  SECTION("copy") {
     kll_sketch<int> sketch1;
     const int n(1000);
     for (int i = 0; i < n; i++) sketch1.update(i);
@@ -599,18 +566,18 @@ public:
     // copy constructor
     kll_sketch<int> sketch2(sketch1);
     for (int i = 0; i < n; i++) {
-      CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(i), sketch2.get_rank(i));
+      REQUIRE(sketch2.get_rank(i) == sketch1.get_rank(i));
     }
 
     // copy assignment
     kll_sketch<int> sketch3;
     sketch3 = sketch1;
     for (int i = 0; i < n; i++) {
-      CPPUNIT_ASSERT_EQUAL(sketch1.get_rank(i), sketch3.get_rank(i));
+      REQUIRE(sketch3.get_rank(i) == sketch1.get_rank(i));
     }
   }
 
-  void move() {
+  SECTION("move") {
     kll_sketch<int> sketch1;
     const int n(100);
     for (int i = 0; i < n; i++) sketch1.update(i);
@@ -618,19 +585,21 @@ public:
     // move constructor
     kll_sketch<int> sketch2(std::move(sketch1));
     for (int i = 0; i < n; i++) {
-      CPPUNIT_ASSERT_EQUAL((double) i / n, sketch2.get_rank(i));
+      REQUIRE(sketch2.get_rank(i) == (double) i / n);
     }
 
     // move assignment
     kll_sketch<int> sketch3;
     sketch3 = std::move(sketch2);
     for (int i = 0; i < n; i++) {
-      CPPUNIT_ASSERT_EQUAL((double) i / n, sketch3.get_rank(i));
+      REQUIRE(sketch3.get_rank(i) == (double) i / n);
     }
   }
 
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(kll_sketch_test);
+  // cleanup
+  if (test_allocator_total_bytes != 0) {
+    REQUIRE(test_allocator_total_bytes == 0);
+  }
+}
 
 } /* namespace datasketches */

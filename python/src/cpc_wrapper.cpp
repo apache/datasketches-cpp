@@ -17,13 +17,13 @@
  * under the License.
  */
 
+#include <sstream>
+#include <pybind11/pybind11.h>
 
 #include "cpc_sketch.hpp"
 #include "cpc_union.hpp"
 #include "cpc_common.hpp"
-
-#include <pybind11/pybind11.h>
-#include <sstream>
+#include "common_defs.hpp"
 
 namespace py = pybind11;
 

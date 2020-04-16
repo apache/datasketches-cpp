@@ -17,28 +17,15 @@
  * under the License.
  */
 
+#ifndef _COMMON_DEFS_HPP_
+#define _COMMON_DEFS_HPP_
 
-#include <catch.hpp>
-
-#include "CubicInterpolation.hpp"
+#include <cstdint>
 
 namespace datasketches {
 
-TEST_CASE("hll tables: interpolation exception", "[hll_tables]") {
-  REQUIRE_THROWS_AS(CubicInterpolation<>::usingXAndYTables(-1.0), std::invalid_argument);
+static const uint64_t DEFAULT_SEED = 9001;
 
-  REQUIRE_THROWS_AS(CubicInterpolation<>::usingXAndYTables(1e12), std::invalid_argument);
-}
+} // namespace
 
-TEST_CASE("hll tables: check corner case", "[hll_tables]") {
-  int len = 10;
-  double xArr[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0};
-  double yArr[] = {2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0};
-  double x = xArr[len - 1];
-  double y = CubicInterpolation<>::usingXAndYTables(xArr, yArr, len, x);
-  double yExp = yArr[len - 1];
-  REQUIRE(y == yExp);
-}
-
-} /* namespace datasketches */
-
+#endif // _COMMON_DEFS_HPP_

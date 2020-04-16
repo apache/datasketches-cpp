@@ -25,6 +25,8 @@
 #include <climits>
 #include <vector>
 
+#include "common_defs.hpp"
+
 namespace datasketches {
 
 /*
@@ -145,7 +147,7 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of a sketch as a unique_ptr
    */
-  static unique_ptr deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static unique_ptr deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
 
   /**
    * This method deserializes a sketch from a given array of bytes.
@@ -154,7 +156,7 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of the sketch
    */
-  static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
 
   class const_iterator;
 
@@ -332,7 +334,7 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of a sketch
    */
-  static update_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = builder::DEFAULT_SEED);
+  static update_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
 
   /**
    * This method deserializes a sketch from a given array of bytes.
@@ -341,7 +343,7 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of the sketch
    */
-  static update_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static update_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
 
 private:
   // resize threshold = 0.5 tuned for speed
@@ -425,7 +427,7 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of a sketch
    */
-  static compact_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static compact_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
 
   /**
    * This method deserializes a sketch from a given array of bytes.
@@ -434,7 +436,7 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of the sketch
    */
-  static compact_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static compact_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
 
 private:
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
@@ -462,7 +464,6 @@ public:
   static const uint8_t MIN_LG_K = 5;
   static const uint8_t DEFAULT_LG_K = 12;
   static const resize_factor DEFAULT_RESIZE_FACTOR = X8;
-  static const uint64_t DEFAULT_SEED = 9001;
 
   /**
    * Creates and instance of the builder with default parameters.

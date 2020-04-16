@@ -20,15 +20,17 @@
 #ifndef _VAR_OPT_SKETCH_IMPL_HPP_
 #define _VAR_OPT_SKETCH_IMPL_HPP_
 
-#include "var_opt_sketch.hpp"
-#include "serde.hpp"
-#include "bounds_binomial_proportions.hpp"
-
 #include <memory>
 #include <sstream>
 #include <cmath>
 #include <random>
 #include <algorithm>
+#include <cassert>
+
+#include "var_opt_sketch.hpp"
+#include "serde.hpp"
+#include "bounds_binomial_proportions.hpp"
+#include "count_zeros.hpp"
 
 namespace datasketches {
 
@@ -258,7 +260,7 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   // current_items_alloc_ is set but validate R region weight (4th prelong), if needed, before allocating
   if (preamble_longs == PREAMBLE_LONGS_FULL) { 
     is.read((char*)&total_wt_r_, sizeof(total_wt_r_));
-    if (isnan(total_wt_r_) || r_ == 0 || total_wt_r_ <= 0.0) {
+    if (std::isnan(total_wt_r_) || r_ == 0 || total_wt_r_ <= 0.0) {
       throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
        "Found r = " + std::to_string(r_) + ", R region weight = " + std::to_string(total_wt_r_));
     }
@@ -282,7 +284,7 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   num_marks_in_h_ = 0;
   if (is_gadget) {
     uint8_t val = 0;
-    for (int i = 0; i < h_; ++i) {
+    for (uint32_t i = 0; i < h_; ++i) {
       if ((i & 0x7) == 0x0) { // should trigger on first iteration
         is.read((char*)&val, sizeof(val));
       }
@@ -312,7 +314,7 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   // current_items_alloc_ is set but validate R region weight (4th prelong), if needed, before allocating
   if (preamble_longs == PREAMBLE_LONGS_FULL) {
     ptr += copy_from_mem(ptr, &total_wt_r_, sizeof(total_wt_r_));
-    if (isnan(total_wt_r_) || r_ == 0 || total_wt_r_ <= 0.0) {
+    if (std::isnan(total_wt_r_) || r_ == 0 || total_wt_r_ <= 0.0) {
       throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
        "Found r = " + std::to_string(r_) + ", R region weight = " + std::to_string(total_wt_r_));
     }
@@ -335,7 +337,7 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   num_marks_in_h_ = 0;
   if (is_gadget) {
     uint8_t val = 0;
-    for (int i = 0; i < h_; ++i) {
+    for (uint32_t i = 0; i < h_; ++i) {
      if ((i & 0x7) == 0x0) { // should trigger on first iteration
         ptr += copy_from_mem(ptr, &val, sizeof(val));
       }
@@ -460,7 +462,7 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
     // first h_ marks as packed bytes iff we have a gadget
     if (marks_ != nullptr) {
       uint8_t val = 0;
-      for (int i = 0; i < h_; ++i) {
+      for (uint32_t i = 0; i < h_; ++i) {
         if (marks_[i]) {
           val |= 0x1 << (i & 0x7);
         }
@@ -529,7 +531,7 @@ void var_opt_sketch<T,S,A>::serialize(std::ostream& os) const {
     // write the first h_ marks as packed bytes iff we have a gadget
     if (marks_ != nullptr) {
       uint8_t val = 0;
-      for (int i = 0; i < h_; ++i) {
+      for (uint32_t i = 0; i < h_; ++i) {
         if (marks_[i]) {
           val |= 0x1 << (i & 0x7);
         }
@@ -697,7 +699,7 @@ std::ostream& var_opt_sketch<T,S,A>::items_to_stream(std::ostream& os) const {
   os << "### Sketch Items" << std::endl;
 
   const uint32_t print_length = (n_ < k_ ? n_ : k_ + 1);
-  for (int i = 0; i < print_length; ++i) {
+  for (uint32_t i = 0; i < print_length; ++i) {
     if (i == h_) {
       os << i << ": GAP" << std::endl;
     } else {
@@ -937,7 +939,7 @@ void var_opt_sketch<T,S,A>::grow_data_arrays() {
     T* tmp_data = A().allocate(curr_items_alloc_);
     double* tmp_weights = AllocDouble().allocate(curr_items_alloc_);
 
-    for (int i = 0; i < prev_size; ++i) {
+    for (uint32_t i = 0; i < prev_size; ++i) {
       A().construct(&tmp_data[i], std::move(data_[i]));
       A().destroy(data_ + i);
       tmp_weights[i] = weights_[i];
@@ -951,7 +953,7 @@ void var_opt_sketch<T,S,A>::grow_data_arrays() {
 
     if (marks_ != nullptr) {
       bool* tmp_marks = AllocBool().allocate(curr_items_alloc_);
-      for (int i = 0; i < prev_size; ++i) {
+      for (uint32_t i = 0; i < prev_size; ++i) {
         tmp_marks[i] = marks_[i];
       }
       AllocBool().deallocate(marks_, prev_size);
@@ -1533,7 +1535,7 @@ bool var_opt_sketch<T,S,A>::is_power_of_2(uint32_t v) {
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::to_log_2(uint32_t v) {
   if (is_power_of_2(v)) {
-    return count_trailing_zeros(v);
+    return count_trailing_zeros_in_u32(v);
   } else {
     throw std::invalid_argument("Attempt to compute integer log2 of non-positive or non-power of 2");
   }
@@ -1553,19 +1555,6 @@ double var_opt_sketch<T,S,A>::next_double_exclude_zero() {
     r = random_utils::next_double(random_utils::rand);
   }
   return r;
-}
-
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::count_trailing_zeros(uint32_t v) {
-  static const uint8_t ctz_byte_count[256] = {8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,7,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0};
-
-  uint32_t tmp = v;
-  for (int j = 0; j < 4; ++j) {
-    const int byte = (tmp & 0xFFUL);
-    if (byte != 0) return (j << 3) + ctz_byte_count[byte];
-    tmp >>= 8;
-  }
-  return 64;
 }
 
 template<typename T, typename S, typename A>

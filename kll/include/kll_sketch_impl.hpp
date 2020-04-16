@@ -305,7 +305,7 @@ std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(size_t num) const {
   }
   std::vector<double> fractions(num);
   fractions[0] = 0.0;
-  for (int i = 1; i < num; i++) {
+  for (size_t i = 1; i < num; i++) {
     fractions[i] = static_cast<double>(i) / (num - 1);
   }
   if (num > 1) {

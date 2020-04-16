@@ -24,7 +24,8 @@
 #include <functional>
 #include <climits>
 
-#include <theta_sketch.hpp>
+#include "theta_sketch.hpp"
+#include "common_defs.hpp"
 
 namespace datasketches {
 
@@ -41,7 +42,7 @@ public:
    * Creates an instance of the intersection with a given hash seed.
    * @param seed hash seed
    */
-  explicit theta_intersection_alloc(uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  explicit theta_intersection_alloc(uint64_t seed = DEFAULT_SEED);
 
   theta_intersection_alloc(const theta_intersection_alloc<A>& other);
   theta_intersection_alloc(theta_intersection_alloc<A>&& other) noexcept;

@@ -17,83 +17,63 @@
  * under the License.
  */
 
-#include "AuxHashMap.hpp"
-
+#include <catch.hpp>
 #include <memory>
-#include <cppunit/TestFixture.h>
-#include <cppunit/extensions/HelperMacros.h>
+
+#include "AuxHashMap.hpp"
 
 namespace datasketches {
 
-class AuxHashMapTest : public CppUnit::TestFixture {
+TEST_CASE("aux hash map: check must replace", "[aux_hash_map]") {
+  AuxHashMap<>* map = new AuxHashMap<>(3, 7);
+  map->mustAdd(100, 5);
+  int val = map->mustFindValueFor(100);
+  REQUIRE(val == 5);
 
-  // list of values defined at bottom of file
-  static const int nArr[]; // = {1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000};
+  map->mustReplace(100, 10);
+  val = map->mustFindValueFor(100);
+  REQUIRE(val == 10);
 
-  CPPUNIT_TEST_SUITE(AuxHashMapTest);
-  CPPUNIT_TEST(checkMustReplace);
-  CPPUNIT_TEST(checkGrowSpace);
-  CPPUNIT_TEST(checkExceptionMustFindValueFor);
-  CPPUNIT_TEST(checkExceptionMustAdd);
-  CPPUNIT_TEST_SUITE_END();
+  REQUIRE_THROWS_AS(map->mustReplace(101, 5), std::invalid_argument);
 
-  void checkMustReplace() {
-    AuxHashMap<>* map = new AuxHashMap<>(3, 7);
-    map->mustAdd(100, 5);
-    int val = map->mustFindValueFor(100);
-    CPPUNIT_ASSERT_EQUAL(val, 5);
+  delete map;
+}
 
-    map->mustReplace(100, 10);
-    val = map->mustFindValueFor(100);
-    CPPUNIT_ASSERT_EQUAL(val, 10);
-
-    CPPUNIT_ASSERT_THROW_MESSAGE("map->mustReplace() should fail",
-                                 map->mustReplace(101, 5), std::invalid_argument);
-
-    delete map;
+TEST_CASE("aux hash map: check grow space", "[aux_hash_map]") {
+  auto map = std::unique_ptr<AuxHashMap<>, std::function<void(AuxHashMap<>*)>>(
+      AuxHashMap<>::newAuxHashMap(3, 7),
+      AuxHashMap<>::make_deleter()
+      );
+  REQUIRE(map->getLgAuxArrInts() == 3);
+  for (int i = 1; i <= 7; ++i) {
+    map->mustAdd(i, i);
   }
-
-  void checkGrowSpace() {
-    auto map = std::unique_ptr<AuxHashMap<>, std::function<void(AuxHashMap<>*)>>(
-        AuxHashMap<>::newAuxHashMap(3, 7),
-        AuxHashMap<>::make_deleter()
-        );
-    CPPUNIT_ASSERT_EQUAL(map->getLgAuxArrInts(), 3);
-    for (int i = 1; i <= 7; ++i) {
-      map->mustAdd(i, i);
-    }
-    CPPUNIT_ASSERT_EQUAL(map->getLgAuxArrInts(), 4);
-    auto itr = map->begin(true);
-    int count1 = 0;
-    int count2 = 0;
-    while (itr != map->end()) {
-      ++count2;
-      int pair = *itr;
-      if (pair != 0) { ++count1; }
-      ++itr;
-    }
-    CPPUNIT_ASSERT_EQUAL(count1, 7);
-    CPPUNIT_ASSERT_EQUAL(count2, 16);
+  REQUIRE(map->getLgAuxArrInts() == 4);
+  auto itr = map->begin(true);
+  int count1 = 0;
+  int count2 = 0;
+  while (itr != map->end()) {
+    ++count2;
+    int pair = *itr;
+    if (pair != 0) { ++count1; }
+    ++itr;
   }
+  REQUIRE(count1 == 7);
+  REQUIRE(count2 == 16);
+}
 
-  void checkExceptionMustFindValueFor() {
-    AuxHashMap<> map(3, 7);
-    map.mustAdd(100, 5);
-    CPPUNIT_ASSERT_THROW_MESSAGE("map.mustFindValueFor() should fail",
-                                 map.mustFindValueFor(101), std::invalid_argument);
-  }
+TEST_CASE("aux hash map: check exception must find value for", "[aux_hash_map]") {
+  AuxHashMap<> map(3, 7);
+  map.mustAdd(100, 5);
+  REQUIRE_THROWS_AS(map.mustFindValueFor(101), std::invalid_argument);
+}
 
-  void checkExceptionMustAdd() {
-    AuxHashMap<>* map = AuxHashMap<>::newAuxHashMap(3, 7);
-    map->mustAdd(100, 5);
-    CPPUNIT_ASSERT_THROW_MESSAGE("map->mustAdd() should fail",
-                                 map->mustAdd(100, 6), std::invalid_argument);
-    
-    AuxHashMap<>::make_deleter()(map);
-  }
-
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(AuxHashMapTest);
+TEST_CASE("aux hash map: check exception must add", "[aux_hash_map]") {
+  AuxHashMap<>* map = AuxHashMap<>::newAuxHashMap(3, 7);
+  map->mustAdd(100, 5);
+  REQUIRE_THROWS_AS(map->mustAdd(100, 6), std::invalid_argument);
+  
+  AuxHashMap<>::make_deleter()(map);
+}
 
 } /* namespace datasketches */
