@@ -20,16 +20,17 @@
 #ifndef _VAR_OPT_SKETCH_IMPL_HPP_
 #define _VAR_OPT_SKETCH_IMPL_HPP_
 
-#include "var_opt_sketch.hpp"
-#include "serde.hpp"
-#include "bounds_binomial_proportions.hpp"
-
 #include <memory>
 #include <sstream>
 #include <cmath>
 #include <random>
 #include <algorithm>
 #include <cassert>
+
+#include "var_opt_sketch.hpp"
+#include "serde.hpp"
+#include "bounds_binomial_proportions.hpp"
+#include "count_zeros.hpp"
 
 namespace datasketches {
 
@@ -1534,7 +1535,7 @@ bool var_opt_sketch<T,S,A>::is_power_of_2(uint32_t v) {
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::to_log_2(uint32_t v) {
   if (is_power_of_2(v)) {
-    return count_trailing_zeros(v);
+    return count_trailing_zeros_in_u32(v);
   } else {
     throw std::invalid_argument("Attempt to compute integer log2 of non-positive or non-power of 2");
   }
@@ -1554,19 +1555,6 @@ double var_opt_sketch<T,S,A>::next_double_exclude_zero() {
     r = random_utils::next_double(random_utils::rand);
   }
   return r;
-}
-
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::count_trailing_zeros(uint32_t v) {
-  static const uint8_t ctz_byte_count[256] = {8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,7,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0};
-
-  uint32_t tmp = v;
-  for (int j = 0; j < 4; ++j) {
-    const int byte = (tmp & 0xFFUL);
-    if (byte != 0) return (j << 3) + ctz_byte_count[byte];
-    tmp >>= 8;
-  }
-  return 64;
 }
 
 template<typename T, typename S, typename A>

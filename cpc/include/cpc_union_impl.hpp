@@ -20,6 +20,8 @@
 #ifndef CPC_UNION_IMPL_HPP_
 #define CPC_UNION_IMPL_HPP_
 
+#include "count_zeros.hpp"
+
 namespace datasketches {
 
 template<typename A>
@@ -113,7 +115,7 @@ void cpc_union_alloc<A>::internal_update(S&& sketch) {
   if (cpc_sketch_alloc<A>::flavor::SPARSE == src_flavor && accumulator != nullptr)  { // Case A
     if (bit_matrix.size() > 0) throw std::logic_error("union bit_matrix is not expected");
     const auto initial_dest_flavor = accumulator->determine_flavor();
-    if (cpc_sketch_alloc<A>::flavor::EMPTY != initial_dest_flavor and
+    if (cpc_sketch_alloc<A>::flavor::EMPTY != initial_dest_flavor &&
         cpc_sketch_alloc<A>::flavor::SPARSE != initial_dest_flavor) throw std::logic_error("wrong flavor");
 
     // The following partially fixes the snowplow problem provided that the K's are equal.
@@ -328,7 +330,7 @@ void cpc_union_alloc<A>::reduce_k(uint8_t new_lg_k) {
 
     const auto final_new_flavor = accumulator->determine_flavor();
     // if the new sketch has graduated beyond sparse, convert to bit_matrix
-    if (final_new_flavor != cpc_sketch_alloc<A>::flavor::EMPTY and
+    if (final_new_flavor != cpc_sketch_alloc<A>::flavor::EMPTY &&
         final_new_flavor != cpc_sketch_alloc<A>::flavor::SPARSE) {
       switch_to_bit_matrix();
     }

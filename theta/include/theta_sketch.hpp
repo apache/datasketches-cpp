@@ -25,6 +25,8 @@
 #include <climits>
 #include <vector>
 
+#include "common_defs.hpp"
+
 namespace datasketches {
 
 /*
@@ -76,8 +78,8 @@ public:
   virtual vector_bytes serialize(unsigned header_size_bytes = 0) const = 0;
 
   typedef std::unique_ptr<theta_sketch_alloc<A>, std::function<void(theta_sketch_alloc<A>*)>> unique_ptr;
-  static unique_ptr deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
-  static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static unique_ptr deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
+  static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
 
   class const_iterator;
   virtual const_iterator begin() const = 0;
@@ -155,8 +157,8 @@ public:
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;
 
-  static update_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = builder::DEFAULT_SEED);
-  static update_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static update_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
+  static update_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
 
 private:
   // resize threshold = 0.5 tuned for speed
@@ -228,8 +230,8 @@ public:
   virtual typename theta_sketch_alloc<A>::const_iterator begin() const;
   virtual typename theta_sketch_alloc<A>::const_iterator end() const;
 
-  static compact_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
-  static compact_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  static compact_theta_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
+  static compact_theta_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
 
 private:
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
@@ -257,7 +259,6 @@ public:
   static const uint8_t MIN_LG_K = 5;
   static const uint8_t DEFAULT_LG_K = 12;
   static const resize_factor DEFAULT_RESIZE_FACTOR = X8;
-  static const uint64_t DEFAULT_SEED = 9001;
 
   builder();
   builder& set_lg_k(uint8_t lg_k);

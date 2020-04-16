@@ -23,6 +23,7 @@
 #include <string>
 
 #include "cpc_sketch.hpp"
+#include "common_defs.hpp"
 
 namespace datasketches {
 
