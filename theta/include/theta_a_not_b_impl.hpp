@@ -55,7 +55,7 @@ compact_theta_sketch_alloc<A> theta_a_not_b_alloc<A>::compute(const theta_sketch
     std::copy_if(a.begin(), a.end(), keys, [theta](uint64_t key) { return key < theta; });
     if (ordered && !a.is_ordered()) std::sort(keys, &keys[keys_size]);
     if (count == 0 && theta == theta_sketch_alloc<A>::MAX_THETA) is_empty = true;
-    return compact_theta_sketch_alloc<A>(is_empty, theta, keys, count, seed_hash_, a.is_ordered() or ordered);
+    return compact_theta_sketch_alloc<A>(is_empty, theta, keys, count, seed_hash_, a.is_ordered() || ordered);
   }
 
   keys_size = a.get_num_retained();
@@ -100,7 +100,7 @@ compact_theta_sketch_alloc<A> theta_a_not_b_alloc<A>::compute(const theta_sketch
     if (ordered && !a.is_ordered()) std::sort(keys, &keys[count]);
   }
 
-  return compact_theta_sketch_alloc<A>(is_empty, theta, keys, count, seed_hash_, a.is_ordered() or ordered);
+  return compact_theta_sketch_alloc<A>(is_empty, theta, keys, count, seed_hash_, a.is_ordered() || ordered);
 }
 
 } /* namespace datasketches */
