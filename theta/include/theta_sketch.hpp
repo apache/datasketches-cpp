@@ -54,7 +54,7 @@ public:
   virtual ~theta_sketch_alloc();
 
   /**
-   * @return true if this sketch is empty
+   * @return true if this sketch represents an empty set (not the same as no retained entries!)
    */
   bool is_empty() const;
 
@@ -64,16 +64,20 @@ public:
   double get_estimate() const;
 
   /**
-   * Returns the approximate lower error bound given a number of Standard Deviations.
+   * Returns the approximate lower error bound given a number of standard deviations.
+   * This parameter is similar to the number of standard deviations of the normal distribution
+   * and corresponds to approximately 67%, 95% and 99% confidence intervals.
    * @param num_std_devs number of Standard Deviations (1, 2 or 3)
    * @return the lower bound
    */
   double get_lower_bound(uint8_t num_std_devs) const;
 
   /**
-   * Returns the approximate upper error bound given a number of Standard Deviations.
+   * Returns the approximate upper error bound given a number of standard deviations.
+   * This parameter is similar to the number of standard deviations of the normal distribution
+   * and corresponds to approximately 67%, 95% and 99% confidence intervals.
    * @param num_std_devs number of Standard Deviations (1, 2 or 3)
-   * @return the lower bound
+   * @return the upper bound
    */
   double get_upper_bound(uint8_t num_std_devs) const;
 
@@ -88,7 +92,7 @@ public:
   double get_theta() const;
 
   /**
-   * @return theta as a positive integer bewteen 0 and LLONG_MAX
+   * @return theta as a positive integer between 0 and LLONG_MAX
    */
   uint64_t get_theta64() const;
 
@@ -105,7 +109,7 @@ public:
   virtual bool is_ordered() const = 0;
 
   /**
-   * Writes a human readable summary of this sketch to a given stream
+   * Writes a human-readable summary of this sketch to a given stream
    * @param os output stream
    * @param print_items if true include the list of items retained by the sketch
    */
@@ -294,9 +298,11 @@ public:
 
   /**
    * Update this sketch with given data of any type.
+   * This is a "universal" update that covers all cases above,
+   * but may produce different hashes.
    * Be very careful to hash input values consistently using the same approach
-   * either over time or on different platforms
-   * or while passing sketches from Java environment or to Java environment.
+   * both over time and on different platforms
+   * and while passing sketches between C++ environment and Java environment.
    * Otherwise two sketches that should represent overlapping sets will be disjoint
    * For instance, for signed 32-bit values call update(int32_t) method above,
    * which does widening conversion to int64_t, if compatibility with Java is expected
