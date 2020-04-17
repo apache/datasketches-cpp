@@ -14,27 +14,27 @@ jobs:
       matrix:
         config:
         - {
-            name: "MacOS Latest Clang",
+            name: "MacOS Latest, Clang",
             os: macos-latest,
             cc: "clang", cxx: "clang++"
           }
         - {
-            name: "Ubuntu Latest GCC",
+            name: "Ubuntu Latest, GCC",
             os: ubuntu-latest,
             cc: "gcc", cxx: "g++"
           }
         # need to debug compiler errors with windows still
         #- {
-        #    name: "Windows Latest MSVC",
+        #    name: "Windows Latest, MSVC",
         #    os: windows-latest,
         #    cc: "cl", cxx: "cl",
         #    environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
         #  }
-        #- {
-        #    name: "Windows Latest MinGW",
-        #    os: windows-latest,
-        #    cc: "gcc", cxx: "g++"
-        #  }
+        - {
+            name: "Windows Latest, MinGW+gcc",
+            os: windows-latest,
+            cc: "gcc", cxx: "g++"
+          }
             
     steps:
       - name: Checkout
