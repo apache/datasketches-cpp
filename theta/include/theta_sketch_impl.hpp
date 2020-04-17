@@ -358,10 +358,11 @@ void update_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items)
   os << "   resize factor        : " << (1 << rf_) << std::endl;
   os << "   sampling probability : " << p_ << std::endl;
   os << "   seed hash            : " << this->get_seed_hash() << std::endl;
+  os << "   empty?               : " << (this->is_empty() ? "true" : "false") << std::endl;
   os << "   ordered?             : " << (this->is_ordered() ? "true" : "false") << std::endl;
+  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   theta (fraction)     : " << this->get_theta() << std::endl;
   os << "   theta (raw 64-bit)   : " << this->theta_ << std::endl;
-  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   estimate             : " << this->get_estimate() << std::endl;
   os << "   lower bound 95% conf : " << this->get_lower_bound(2) << std::endl;
   os << "   upper bound 95% conf : " << this->get_upper_bound(2) << std::endl;
@@ -802,10 +803,11 @@ void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items
   os << "### Compact Theta sketch summary:" << std::endl;
   os << "   num retained keys    : " << num_keys_ << std::endl;
   os << "   seed hash            : " << this->get_seed_hash() << std::endl;
+  os << "   empty?               : " << (this->is_empty() ? "true" : "false") << std::endl;
   os << "   ordered?             : " << (this->is_ordered() ? "true" : "false") << std::endl;
+  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   theta (fraction)     : " << this->get_theta() << std::endl;
   os << "   theta (raw 64-bit)   : " << this->theta_ << std::endl;
-  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   estimate             : " << this->get_estimate() << std::endl;
   os << "   lower bound 95% conf : " << this->get_lower_bound(2) << std::endl;
   os << "   upper bound 95% conf : " << this->get_upper_bound(2) << std::endl;
