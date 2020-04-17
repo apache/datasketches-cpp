@@ -40,7 +40,7 @@ compact_theta_sketch_alloc<A> theta_a_not_b_alloc<A>::compute(const theta_sketch
   if (a.is_empty()) return compact_theta_sketch_alloc<A>(a, ordered);
   if (a.get_seed_hash() != seed_hash_) throw std::invalid_argument("A seed hash mismatch");
   if (b.get_seed_hash() != seed_hash_) throw std::invalid_argument("B seed hash mismatch");
-  if (a.get_num_retained() == 0 or b.is_empty()) return compact_theta_sketch_alloc<A>(a, ordered);
+  if (a.get_num_retained() == 0 || b.is_empty()) return compact_theta_sketch_alloc<A>(a, ordered);
 
   const uint64_t theta = std::min(a.get_theta64(), b.get_theta64());
   uint64_t* keys = nullptr;
