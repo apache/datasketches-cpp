@@ -16,20 +16,23 @@ jobs:
         - {
             name: "MacOS Latest, Clang",
             os: macos-latest,
+            test_target: test,
             cc: "clang", cxx: "clang++"
           }
         - {
             name: "Ubuntu Latest, GCC",
             os: ubuntu-latest,
+            test_target: test,
             cc: "gcc", cxx: "g++"
           }
         # need to debug compiler errors with windows still
-        #- {
-        #    name: "Windows Latest, MSVC",
-        #    os: windows-latest,
-        #    cc: "cl", cxx: "cl",
-        #    environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-        #  }
+        - {
+            name: "Windows Latest, MSVC",
+            os: windows-latest,
+            test_target: RUN_TESTS,
+            cc: "cl", cxx: "cl",
+            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+          }
         #- {
         #    name: "Windows Latest, MinGW+gcc",
         #    os: windows-latest,
@@ -46,7 +49,7 @@ jobs:
       - name: Build C++ unit tests
         run: cmake --build build --config Release
       - name: Run C++ tests
-        run: cmake --build build --target test
+        run: cmake --build build --target ${{ matrix.config.test_target }}
       - name: Set up Python 3.x
         uses: actions/setup-python@v1
         with:
