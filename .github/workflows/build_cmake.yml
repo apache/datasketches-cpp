@@ -49,7 +49,7 @@ jobs:
       - name: Build C++ unit tests
         run: cmake --build build --config Release
       - name: Run C++ tests
-        run: cmake --build build --target ${{ matrix.config.test_target }}
+        run: cmake --build build --config Release --target ${{ matrix.config.test_target }}
       - name: Set up Python 3.x
         uses: actions/setup-python@v1
         with:
