@@ -274,7 +274,11 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   is.read((char*)weights_, h_ * sizeof(double));
   for (size_t i = 0; i < h_; ++i) {
     if (!(weights_[i] > 0.0)) {
-      throw std::invalid_argument("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
+      const std::string msg("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
+      A().deallocate(data_, curr_items_alloc_);
+      AllocDouble().deallocate(weights_, curr_items_alloc_);
+      if (marks_ != nullptr) { AllocBool().deallocate(marks_, curr_items_alloc_); }
+      throw std::invalid_argument(msg);
     }
   }
 
@@ -328,7 +332,11 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   ptr += copy_from_mem(ptr, weights_, h_ * sizeof(double));
   for (size_t i = 0; i < h_; ++i) {
     if (!(weights_[i] > 0.0)) {
-      throw std::invalid_argument("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
+      const std::string msg("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
+      A().deallocate(data_, curr_items_alloc_);
+      AllocDouble().deallocate(weights_, curr_items_alloc_);
+      if (marks_ != nullptr) { AllocBool().deallocate(marks_, curr_items_alloc_); }
+      throw std::invalid_argument(msg);
     }
   }
   std::fill(&weights_[h_], &weights_[curr_items_alloc_], -1.0);
