@@ -789,6 +789,7 @@ void var_opt_sketch<T,S,A>::update_warmup_phase(const T& item, double weight, bo
 
   // check if need to heapify
   if (h_ > k_) {
+    filled_data_ = true;
     transition_from_warmup();
   }
 }
