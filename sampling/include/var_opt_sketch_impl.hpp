@@ -274,7 +274,11 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   is.read((char*)weights_, h_ * sizeof(double));
   for (size_t i = 0; i < h_; ++i) {
     if (!(weights_[i] > 0.0)) {
-      throw std::invalid_argument("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
+      const std::string msg("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
+      A().deallocate(data_, curr_items_alloc_);
+      AllocDouble().deallocate(weights_, curr_items_alloc_);
+      if (marks_ != nullptr) { AllocBool().deallocate(marks_, curr_items_alloc_); }
+      throw std::invalid_argument(msg);
     }
   }
 
@@ -328,7 +332,11 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   ptr += copy_from_mem(ptr, weights_, h_ * sizeof(double));
   for (size_t i = 0; i < h_; ++i) {
     if (!(weights_[i] > 0.0)) {
-      throw std::invalid_argument("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
+      const std::string msg("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
+      A().deallocate(data_, curr_items_alloc_);
+      AllocDouble().deallocate(weights_, curr_items_alloc_);
+      if (marks_ != nullptr) { AllocBool().deallocate(marks_, curr_items_alloc_); }
+      throw std::invalid_argument(msg);
     }
   }
   std::fill(&weights_[h_], &weights_[curr_items_alloc_], -1.0);
@@ -611,35 +619,34 @@ bool var_opt_sketch<T,S,A>::is_empty() const {
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::reset() {
   const uint32_t prev_alloc = curr_items_alloc_;
-
   const uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
   const int initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, MIN_LG_ARR_ITEMS);
   curr_items_alloc_ = get_adjusted_size(k_, 1 << initial_lg_size);
   if (curr_items_alloc_ == k_) { // if full size, need to leave 1 for the gap
     ++curr_items_alloc_;
   }
-  
+
   if (filled_data_) {
     // destroy everything
-    for (size_t i = 0; i < curr_items_alloc_; ++i) 
+    for (size_t i = 0; i < prev_alloc; ++i) 
       A().destroy(data_ + i);      
   } else {
     // skip gap or anything unused at the end
     for (size_t i = 0; i < h_; ++i)
       A().destroy(data_+ i);
     
-    for (size_t i = h_ + 1; i < curr_items_alloc_; ++i)
+    for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
       A().destroy(data_ + i);
   }
 
   if (curr_items_alloc_ < prev_alloc) {
     const bool is_gadget = (marks_ != nullptr);
   
-    A().deallocate(data_, curr_items_alloc_);
-    AllocDouble().deallocate(weights_, curr_items_alloc_);
+    A().deallocate(data_, prev_alloc);
+    AllocDouble().deallocate(weights_, prev_alloc);
   
     if (marks_ != nullptr)
-      AllocBool().deallocate(marks_, curr_items_alloc_);
+      AllocBool().deallocate(marks_, prev_alloc);
 
     allocate_data_arrays(curr_items_alloc_, is_gadget);
   }
@@ -782,6 +789,7 @@ void var_opt_sketch<T,S,A>::update_warmup_phase(const T& item, double weight, bo
 
   // check if need to heapify
   if (h_ > k_) {
+    filled_data_ = true;
     transition_from_warmup();
   }
 }
