@@ -299,7 +299,8 @@ capacity_(other.capacity_)
 
 template<typename A>
 update_theta_sketch_alloc<A>::~update_theta_sketch_alloc() {
-  AllocU64().deallocate(keys_, 1 << lg_cur_size_);
+  if (keys_ != nullptr)
+    AllocU64().deallocate(keys_, 1 << lg_cur_size_);
 }
 
 template<typename A>
@@ -756,7 +757,8 @@ is_ordered_(other.is_ordered_)
 template<typename A>
 compact_theta_sketch_alloc<A>::~compact_theta_sketch_alloc() {
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-  AllocU64().deallocate(keys_, num_keys_);
+  if (keys_ != nullptr)
+    AllocU64().deallocate(keys_, num_keys_);
 }
 
 template<typename A>
