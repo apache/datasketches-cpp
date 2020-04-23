@@ -37,10 +37,10 @@ void println_string(std::string str) {
 TEST_CASE("coupon list: check iterator", "[coupon_list]") {
   int lgConfigK = 8;
   CouponList<> cl(lgConfigK, HLL_4, LIST);
-  for (int i = 1; i <= 8; ++i) { cl.couponUpdate(HllUtil<>::pair(i, i)); } // not hashes but distinct values
+  for (int i = 1; i <= 7; ++i) { cl.couponUpdate(HllUtil<>::pair(i, i)); } // not hashes but distinct values
   const int mask = (1 << lgConfigK) - 1;
   int idx = 0;
-  auto itr = cl.begin(true);
+  auto itr = cl.begin(false);
   while (itr != cl.end()) {
     int key = HllUtil<>::getLow26(*itr);
     int val = HllUtil<>::getValue(*itr);

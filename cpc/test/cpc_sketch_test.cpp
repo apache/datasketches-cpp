@@ -337,6 +337,7 @@ TEST_CASE("cpc sketch: serialize both ways", "[cpc_sketch]") {
   char* pp = new char[s.tellp()];
   s.read(pp, s.tellp());
   REQUIRE(std::memcmp(pp, bytes.data() + header_size_bytes, bytes.size() - header_size_bytes) == 0);
+  delete [] pp;
 }
 
 TEST_CASE("cpc sketch: update int equivalence", "[cpc_sketch]") {

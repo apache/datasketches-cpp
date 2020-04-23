@@ -86,13 +86,18 @@ reverse_purge_hash_map<K, V, H, E, A>::~reverse_purge_hash_map() {
   const uint32_t size = 1 << lg_cur_size;
   if (num_active > 0) {
     for (uint32_t i = 0; i < size; i++) {
-      if (is_active(i)) keys[i].~K();
-      if (--num_active == 0) break;
+      if (is_active(i)) {
+        keys[i].~K();
+        if (--num_active == 0) break;
+      }
     }
   }
-  A().deallocate(keys, size);
-  AllocV().deallocate(values, size);
-  AllocU16().deallocate(states, size);
+  if (keys != nullptr)
+    A().deallocate(keys, size);
+  if (values != nullptr)
+    AllocV().deallocate(values, size);
+  if (states != nullptr)
+    AllocU16().deallocate(states, size);
 }
 
 template<typename K, typename V, typename H, typename E, typename A>
