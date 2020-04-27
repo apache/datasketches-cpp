@@ -24,8 +24,6 @@
 
 namespace datasketches {
 
-static const int nArr[] = {1, 3, 10, 30, 100, 300, 1000, 3000, 10000, 30000};
-
 static int min(int a, int b) {
   return (a < b) ? a : b;
 }
@@ -175,55 +173,6 @@ TEST_CASE("hll union: check unions", "[hll_union]") {
   }
 }
 
-static void checkUnionEquality(hll_union& u1, hll_union& u2) {
-  hll_sketch sk1 = u1.get_result();
-  hll_sketch sk2 = u2.get_result();
-
-  REQUIRE(sk2.get_lg_config_k() == sk1.get_lg_config_k());
-  REQUIRE(sk1.get_lower_bound(1) == sk2.get_lower_bound(1));
-  REQUIRE(sk1.get_estimate() == sk2.get_estimate());
-  REQUIRE(sk1.get_upper_bound(1) == sk2.get_upper_bound(1));
-  REQUIRE(sk2.get_target_type() == sk1.get_target_type());
-}
-
-static void toFrom(const int lgConfigK, const target_hll_type tgtHllType, const int n) {
-  hll_union srcU(lgConfigK);
-  hll_sketch srcSk(lgConfigK, tgtHllType);
-  for (int i = 0; i < n; ++i) {
-    srcSk.update(i);
-  }
-  srcU.update(srcSk);
-
-  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
-  srcU.serialize_compact(ss);
-  hll_union dstU = hll_union::deserialize(ss);
-  checkUnionEquality(srcU, dstU);
-
-  auto bytes1 = srcU.serialize_compact();
-  dstU = hll_union::deserialize(bytes1.data(), bytes1.size());
-  checkUnionEquality(srcU, dstU);
-
-  ss.clear();
-  srcU.serialize_updatable(ss);
-  dstU = hll_union::deserialize(ss);
-  checkUnionEquality(srcU, dstU);
-
-  auto bytes2 = srcU.serialize_updatable();
-  dstU = hll_union::deserialize(bytes2.data(), bytes2.size());
-  checkUnionEquality(srcU, dstU);
-} 
-
-TEST_CASE("hll union: check to from", "[hll_union]") {
-  for (int i = 0; i < 10; ++i) {
-    int n = nArr[i];
-    for (int lgK = 4; lgK <= 13; ++lgK) {
-      toFrom(lgK, HLL_4, n);
-      toFrom(lgK, HLL_6, n);
-      toFrom(lgK, HLL_8, n);
-    }
-  }
-}
-
 TEST_CASE("hll union: check composite estimate", "[hll_union]") {
   hll_union u(12);
   REQUIRE(u.is_empty());
@@ -294,27 +243,6 @@ TEST_CASE("hll union: check conversions", "[hll_union]") {
   double est3 = rsk3.get_estimate();
   REQUIRE(est1 == est2);
   REQUIRE(est1 == est3);
-}
-
-// moved from UnionCaseTest in java
-TEST_CASE("hll union: check misc", "[hll_union]") {
-  hll_union u(12);
-  int bytes = u.get_compact_serialization_bytes();
-  REQUIRE(bytes == 8);
-  bytes = hll_union::get_max_serialization_bytes(7);
-  REQUIRE(bytes == 40 + 128);
-  double v = u.get_estimate();
-  REQUIRE(0.0 == v);
-  v = u.get_lower_bound(1);
-  REQUIRE(0.0 == v);
-  v = u.get_upper_bound(1);
-  REQUIRE(0.0 == v);
-  REQUIRE(u.is_empty());
-  u.reset();
-  REQUIRE(u.is_empty());
-  std::ostringstream oss(std::ios::binary);
-  u.serialize_compact(oss);
-  REQUIRE(static_cast<int>(oss.tellp()) == 8);
 }
 
 TEST_CASE("hll union: check input types", "[hll_union]") {

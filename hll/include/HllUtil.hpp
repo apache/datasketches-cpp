@@ -155,7 +155,7 @@ inline int HllUtil<A>::coupon(const HashState& hashState) {
 
 template<typename A>
 inline void HllUtil<A>::hash(const void* key, const int keyLen, const uint64_t seed, HashState& result) {
-  MurmurHash3_x64_128(key, keyLen, DEFAULT_SEED, result);
+  MurmurHash3_x64_128(key, keyLen, seed, result);
 }
 
 template<typename A>
