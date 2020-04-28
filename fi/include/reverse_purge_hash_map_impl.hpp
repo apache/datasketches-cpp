@@ -25,6 +25,8 @@
 #include <iterator>
 #include <cmath>
 
+#include "MurmurHash3.h"
+
 namespace datasketches {
 
 // clang++ seems to require this declaration for CMAKE_BUILD_TYPE='Debug"
@@ -147,7 +149,7 @@ V reverse_purge_hash_map<K, V, H, E, A>::adjust_or_insert(K&& key, V value) {
 template<typename K, typename V, typename H, typename E, typename A>
 V reverse_purge_hash_map<K, V, H, E, A>::get(const K& key) const {
   const uint32_t mask = (1 << lg_cur_size) - 1;
-  uint32_t probe = H()(key) & mask;
+  uint32_t probe = fmix64(H()(key)) & mask;
   while (is_active(probe)) {
     if (E()(keys[probe], key)) return values[probe];
     probe = (probe + 1) & mask;
@@ -256,7 +258,7 @@ void reverse_purge_hash_map<K, V, H, E, A>::hash_delete(uint32_t delete_index) {
 template<typename K, typename V, typename H, typename E, typename A>
 uint32_t reverse_purge_hash_map<K, V, H, E, A>::internal_adjust_or_insert(const K& key, V value) {
   const uint32_t mask = (1 << lg_cur_size) - 1;
-  uint32_t index = H()(key) & mask;
+  uint32_t index = fmix64(H()(key)) & mask;
   uint16_t drift = 1;
   while (is_active(index)) {
     if (E()(keys[index], key)) {
@@ -331,7 +333,7 @@ V reverse_purge_hash_map<K, V, H, E, A>::purge() {
     }
     i++;
   }
-  std::nth_element(&samples[0], &samples[num_samples / 2], &samples[num_samples - 1]);
+  std::nth_element(&samples[0], &samples[num_samples / 2], &samples[num_samples]);
   const V median = samples[num_samples / 2];
   AllocV().deallocate(samples, limit);
   subtract_and_keep_positive_only(median);
