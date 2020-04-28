@@ -32,6 +32,7 @@ target_compile_features(common INTERFACE cxx_std_11)
 target_sources(common
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/common_defs.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/memory_operations.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/MurmurHash3.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/serde.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/count_zeros.hpp
