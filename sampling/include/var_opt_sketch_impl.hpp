@@ -363,7 +363,7 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
 
   // read the sample items, skipping the gap. Either h_ or r_ may be 0
   size_t bytes_remaining = end_ptr - ptr;
-  ptr += S().deserialize(ptr, bytes_remaining, data_, h_); // ala data_[0]
+  ptr += S().deserialize(ptr, bytes_remaining, data_, h_);
   bytes_remaining = end_ptr - ptr;
   ptr += S().deserialize(ptr, bytes_remaining, &data_[h_ + 1], r_);
 }
