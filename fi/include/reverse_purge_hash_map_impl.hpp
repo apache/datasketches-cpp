@@ -333,7 +333,7 @@ V reverse_purge_hash_map<K, V, H, E, A>::purge() {
     }
     i++;
   }
-  std::nth_element(&samples[0], &samples[num_samples / 2], &samples[num_samples - 1]);
+  std::nth_element(&samples[0], &samples[num_samples / 2], &samples[num_samples]);
   const V median = samples[num_samples / 2];
   AllocV().deallocate(samples, limit);
   subtract_and_keep_positive_only(median);
