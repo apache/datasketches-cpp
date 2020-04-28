@@ -29,6 +29,7 @@
 
 #include "var_opt_sketch.hpp"
 #include "serde.hpp"
+#include "memory_operations.hpp"
 #include "bounds_binomial_proportions.hpp"
 #include "count_zeros.hpp"
 
@@ -169,7 +170,7 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   }
 
   uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
-  int initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, MIN_LG_ARR_ITEMS);
+  uint32_t initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, MIN_LG_ARR_ITEMS);
   curr_items_alloc_ = get_adjusted_size(k_, 1 << initial_lg_size);
   if (curr_items_alloc_ == k_) { // if full size, need to leave 1 for the gap
     ++curr_items_alloc_;
@@ -306,6 +307,9 @@ template<typename T, typename S, typename A>
 var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs,
                                       const void* bytes, size_t size) : k_(k), m_(0), rf_(rf) {
   // private constructor so we assume not called if sketch is empty
+  // and already checked that the array can hold the preamble
+  const char* base = static_cast<const char*>(bytes);
+  const char* end_ptr = base + size;
   const char* ptr = static_cast<const char*>(bytes) + sizeof(uint64_t);
 
   // second and third prelongs
@@ -329,6 +333,7 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   allocate_data_arrays(curr_items_alloc_, is_gadget);
 
   // read the first h_ weights, fill in rest of array with -1.0
+  check_memory_size(ptr - base + (h_ * sizeof(double)), size);
   ptr += copy_from_mem(ptr, weights_, h_ * sizeof(double));
   for (size_t i = 0; i < h_; ++i) {
     if (!(weights_[i] > 0.0)) {
@@ -345,6 +350,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   num_marks_in_h_ = 0;
   if (is_gadget) {
     uint8_t val = 0;
+    const size_t size_marks = h_ / 8 + (h_ % 8 > 0 ? 1 : 0);
+    check_memory_size(ptr - base + size_marks, size);
     for (uint32_t i = 0; i < h_; ++i) {
      if ((i & 0x7) == 0x0) { // should trigger on first iteration
         ptr += copy_from_mem(ptr, &val, sizeof(val));
@@ -355,8 +362,10 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   }
 
   // read the sample items, skipping the gap. Either h_ or r_ may be 0
-  ptr += S().deserialize(ptr, data_, h_); // ala data_[0]
-  ptr += S().deserialize(ptr, &data_[h_ + 1], r_);
+  size_t bytes_remaining = end_ptr - ptr;
+  ptr += S().deserialize(ptr, bytes_remaining, data_, h_); // ala data_[0]
+  bytes_remaining = end_ptr - ptr;
+  ptr += S().deserialize(ptr, bytes_remaining, &data_[h_ + 1], r_);
 }
 
 /*
@@ -433,6 +442,7 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
   const size_t size = header_size_bytes + get_serialized_size_bytes();
   std::vector<uint8_t, AllocU8<A>> bytes(size);
   uint8_t* ptr = bytes.data() + header_size_bytes;
+  uint8_t* end_ptr = ptr + size;
 
   bool empty = is_empty();
   uint8_t preLongs = (empty ? PREAMBLE_LONGS_EMPTY
@@ -488,11 +498,13 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
     }
 
     // write the sample items, skipping the gap. Either h_ or r_ may be 0
-    ptr += S().serialize(ptr, data_, h_);
-    ptr += S().serialize(ptr, &data_[h_ + 1], r_);
+    size_t bytes_remaining = end_ptr - ptr;
+    ptr += S().serialize(ptr, bytes_remaining, data_, h_);
+    bytes_remaining = end_ptr - ptr;
+    ptr += S().serialize(ptr, bytes_remaining, &data_[h_ + 1], r_);
   }
   
-  size_t bytes_written = ptr - bytes.data();
+  size_t bytes_written = ptr - bytes.data() + header_size_bytes;
   if (bytes_written != size) {
     throw std::logic_error("serialized size mismatch: " + std::to_string(bytes_written) + " != " + std::to_string(size));
   }
@@ -564,6 +576,7 @@ void var_opt_sketch<T,S,A>::serialize(std::ostream& os) const {
 
 template<typename T, typename S, typename A>
 var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size_t size) {
+  ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t first_byte;
   ptr += copy_from_mem(ptr, &first_byte, sizeof(first_byte));
@@ -580,6 +593,7 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
 
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
+  ensure_minimum_memory(size, (size_t) (preamble_longs << 3));
 
   const bool is_empty = flags & EMPTY_FLAG_MASK;
   const bool is_gadget = flags & GADGET_FLAG_MASK;
@@ -620,7 +634,7 @@ template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::reset() {
   const uint32_t prev_alloc = curr_items_alloc_;
   const uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
-  const int initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, MIN_LG_ARR_ITEMS);
+  const uint32_t initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, MIN_LG_ARR_ITEMS);
   curr_items_alloc_ = get_adjusted_size(k_, 1 << initial_lg_size);
   if (curr_items_alloc_ == k_) { // if full size, need to leave 1 for the gap
     ++curr_items_alloc_;
@@ -789,7 +803,7 @@ void var_opt_sketch<T,S,A>::update_warmup_phase(const T& item, double weight, bo
 
   // check if need to heapify
   if (h_ > k_) {
-    filled_data_ = true;
+    if (h_ == curr_items_alloc_) { filled_data_ = true; }
     transition_from_warmup();
   }
 }
@@ -803,7 +817,7 @@ void var_opt_sketch<T,S,A>::update_light(const T& item, double weight, bool mark
   assert(r_ >= 1);
   assert((r_ + h_) == k_);
 
-  const int m_slot = h_; // index of the gap, which becomes the M region
+  const uint32_t m_slot = h_; // index of the gap, which becomes the M region
   if (filled_data_) {
     data_[m_slot] = item;
   } else {
@@ -851,7 +865,7 @@ void var_opt_sketch<T,S,A>::update_heavy_r_eq1(const T& item, double weight, boo
 
   // Any set of two items is downsample-able to one item,
   // so the two lightest items are a valid starting point for the following
-  const int m_slot = k_ - 1; // array is k+1, 1 in R, so slot before is M
+  const uint32_t m_slot = k_ - 1; // array is k+1, 1 in R, so slot before is M
   grow_candidate_set(weights_[m_slot] + total_wt_r_, 2);
 }
 
@@ -1000,31 +1014,31 @@ void var_opt_sketch<T,S,A>::convert_to_heap() {
     return; // nothing to do
   }
 
-  const int last_slot = h_ - 1;
-  const int last_non_leaf = ((last_slot + 1) / 2) - 1;
+  const uint32_t last_slot = h_ - 1;
+  const uint32_t last_non_leaf = ((last_slot + 1) / 2) - 1;
   
   for (int j = last_non_leaf; j >= 0; --j) {
-    restore_towards_leaves(j);
+    restore_towards_leaves(static_cast<uint32_t>(j));
   }
 
   // validates heap, used for initial debugging
-  //for (int j = h_ - 1; j >= 1; --j) {
+  //for (uint32_t j = h_ - 1; j > 0; --j) {
   //  int p = ((j + 1) / 2) - 1;
   //  assert(weights_[p] <= weights_[j]);
   //}
 }
 
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::restore_towards_leaves(int slot_in) {
+void var_opt_sketch<T,S,A>::restore_towards_leaves(uint32_t slot_in) {
   assert(h_ > 0);
-  const int last_slot = h_ - 1;
+  const uint32_t last_slot = h_ - 1;
   assert(slot_in <= last_slot);
 
-  int slot = slot_in;
-  int child = (2 * slot_in) + 1; // might be invalid, need to check
+  uint32_t slot = slot_in;
+  uint32_t child = (2 * slot_in) + 1; // might be invalid, need to check
 
   while (child <= last_slot) {
-    int child2 = child + 1; // might also be invalid
+    uint32_t child2 = child + 1; // might also be invalid
     if ((child2 <= last_slot) && (weights_[child2] < weights_[child])) {
       // siwtch to other child if it's both valid and smaller
       child = child2;
@@ -1044,9 +1058,9 @@ void var_opt_sketch<T,S,A>::restore_towards_leaves(int slot_in) {
 }
 
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::restore_towards_root(int slot_in) {
-  int slot = slot_in;
-  int p = (((slot + 1) / 2) - 1); // valid if slot >= 1
+void var_opt_sketch<T,S,A>::restore_towards_root(uint32_t slot_in) {
+  uint32_t slot = slot_in;
+  uint32_t p = (((slot + 1) / 2) - 1); // valid if slot >= 1
   while ((slot > 0) && (weights_[slot] < weights_[p])) {
     swap_values(slot, p);
     slot = p;
@@ -1083,7 +1097,7 @@ void var_opt_sketch<T,S,A>::pop_min_to_m_region() {
     --h_;
   } else {
     // main case
-    int tgt = h_ - 1; // last slot, will swap with root
+    uint32_t tgt = h_ - 1; // last slot, will swap with root
     swap_values(0, tgt);
     ++m_;
     --h_;
@@ -1098,7 +1112,7 @@ void var_opt_sketch<T,S,A>::pop_min_to_m_region() {
 
 
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::swap_values(int src, int dst) {
+void var_opt_sketch<T,S,A>::swap_values(uint32_t src, uint32_t dst) {
   std::swap(data_[src], data_[dst]);
   std::swap(weights_[src], weights_[dst]);
 
@@ -1116,7 +1130,7 @@ void var_opt_sketch<T,S,A>::swap_values(int src, int dst) {
    by pulling sufficiently light items from h to m.
 */
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::grow_candidate_set(double wt_cands, int num_cands) {
+void var_opt_sketch<T,S,A>::grow_candidate_set(double wt_cands, uint32_t num_cands) {
   assert(h_ + m_ + r_ == k_ + 1);
   assert(num_cands >= 2);
   assert(num_cands == m_ + r_);
@@ -1142,21 +1156,21 @@ void var_opt_sketch<T,S,A>::grow_candidate_set(double wt_cands, int num_cands) {
 }
 
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::downsample_candidate_set(double wt_cands, int num_cands) {
+void var_opt_sketch<T,S,A>::downsample_candidate_set(double wt_cands, uint32_t num_cands) {
   assert(num_cands >= 2);
   assert(h_ + num_cands == k_ + 1);
 
   // need this before overwriting anything
-  const int delete_slot = choose_delete_slot(wt_cands, num_cands);
-  const int leftmost_cand_slot = h_;
+  const uint32_t delete_slot = choose_delete_slot(wt_cands, num_cands);
+  const uint32_t leftmost_cand_slot = h_;
   assert(delete_slot >= leftmost_cand_slot);
   assert(delete_slot <= k_);
 
   // Overwrite weights for items from M moving into R,
   // to make bugs more obvious. Also needed so anyone reading the
   // weight knows if it's invalid without checking h_ and m_
-  const int stop_idx = leftmost_cand_slot + m_;
-  for (int j = leftmost_cand_slot; j < stop_idx; ++j) {
+  const uint32_t stop_idx = leftmost_cand_slot + m_;
+  for (uint32_t j = leftmost_cand_slot; j < stop_idx; ++j) {
     weights_[j] = -1.0;
   }
 
@@ -1170,7 +1184,7 @@ void var_opt_sketch<T,S,A>::downsample_candidate_set(double wt_cands, int num_ca
 }
 
 template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::choose_delete_slot(double wt_cands, int num_cands) const {
+uint32_t var_opt_sketch<T,S,A>::choose_delete_slot(double wt_cands, uint32_t num_cands) const {
   assert(r_ > 0);
 
   if (m_ == 0) {
@@ -1187,8 +1201,8 @@ uint32_t var_opt_sketch<T,S,A>::choose_delete_slot(double wt_cands, int num_cand
     }
   } else {
     // general case
-    const int delete_slot = choose_weighted_delete_slot(wt_cands, num_cands);
-    const int first_r_slot = h_ + m_;
+    const uint32_t delete_slot = choose_weighted_delete_slot(wt_cands, num_cands);
+    const uint32_t first_r_slot = h_ + m_;
     if (delete_slot == first_r_slot) {
       return pick_random_slot_in_r();
     } else {
@@ -1198,17 +1212,17 @@ uint32_t var_opt_sketch<T,S,A>::choose_delete_slot(double wt_cands, int num_cand
 }
 
 template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::choose_weighted_delete_slot(double wt_cands, int num_cands) const {
+uint32_t var_opt_sketch<T,S,A>::choose_weighted_delete_slot(double wt_cands, uint32_t num_cands) const {
   assert(m_ >= 1);
 
-  const int offset = h_;
-  const int final_m = (offset + m_) - 1;
-  const int num_to_keep = num_cands - 1;
+  const uint32_t offset = h_;
+  const uint32_t final_m = (offset + m_) - 1;
+  const uint32_t num_to_keep = num_cands - 1;
 
   double left_subtotal = 0.0;
   double right_subtotal = -1.0 * wt_cands * next_double_exclude_zero();
 
-  for (int i = offset; i <= final_m; ++i) {
+  for (uint32_t i = offset; i <= final_m; ++i) {
     left_subtotal += num_to_keep * weights_[i];
     right_subtotal += wt_cands;
 
@@ -1224,7 +1238,7 @@ uint32_t var_opt_sketch<T,S,A>::choose_weighted_delete_slot(double wt_cands, int
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::pick_random_slot_in_r() const {
   assert(r_ > 0);
-  const int offset = h_ + m_;
+  const uint32_t offset = h_ + m_;
   if (r_ == 1) {
     return offset;
   } else {
@@ -1239,7 +1253,7 @@ double var_opt_sketch<T,S,A>::peek_min() const {
 }
 
 template<typename T, typename S, typename A>
-inline bool var_opt_sketch<T,S,A>::is_marked(int idx) const {
+inline bool var_opt_sketch<T,S,A>::is_marked(uint32_t idx) const {
   return marks_ == nullptr ? false : marks_[idx];
 }
 
@@ -1293,7 +1307,7 @@ void var_opt_sketch<T,S,A>::check_family_and_serialization_version(uint8_t famil
 }
 
 template<typename T, typename S, typename A>
-void var_opt_sketch<T, S, A>::validate_and_set_current_size(int preamble_longs) {
+void var_opt_sketch<T, S, A>::validate_and_set_current_size(uint32_t preamble_longs) {
   if (k_ == 0 || k_ > MAX_K) {
     throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");
   }
@@ -1314,7 +1328,7 @@ void var_opt_sketch<T, S, A>::validate_and_set_current_size(int preamble_longs) 
 
     const uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
     const uint32_t min_lg_size = to_log_2(ceiling_power_of_2(h_));
-    const int initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, min_lg_size);
+    const uint32_t initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, min_lg_size);
     curr_items_alloc_ = get_adjusted_size(k_, 1 << initial_lg_size);
     if (curr_items_alloc_ == k_) { // if full size, need to leave 1 for the gap
       ++curr_items_alloc_;
@@ -1491,7 +1505,7 @@ const std::pair<const T&, const double> var_opt_sketch<T, S, A>::const_iterator:
 }
 
 template<typename T, typename S, typename A>
-const bool var_opt_sketch<T, S, A>::const_iterator::get_mark() const {
+bool var_opt_sketch<T, S, A>::const_iterator::get_mark() const {
   return sk_->marks_ == nullptr ? false : sk_->marks_[idx_];
 }
 
@@ -1509,15 +1523,15 @@ namespace random_utils {
  * If so, returns max sampling size, otherwise passes through target size.
  */
 template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::get_adjusted_size(int max_size, int resize_target) {
-  if (max_size - (resize_target << 1) < 0L) {
+uint32_t var_opt_sketch<T,S,A>::get_adjusted_size(uint32_t max_size, uint32_t resize_target) {
+  if (static_cast<int32_t>(max_size) - (resize_target << 1) < 0L) {
     return max_size;
   }
   return resize_target;
 }
 
 template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::starting_sub_multiple(int lg_target, int lg_rf, int lg_min) {
+uint32_t var_opt_sketch<T,S,A>::starting_sub_multiple(uint32_t lg_target, uint32_t lg_rf, uint32_t lg_min) {
   return (lg_target <= lg_min)
           ? lg_min : (lg_rf == 0) ? lg_target
           : (lg_target - lg_min) % lg_rf + lg_min;

@@ -20,10 +20,11 @@
 #ifndef _VAR_OPT_UNION_IMPL_HPP_
 #define _VAR_OPT_UNION_IMPL_HPP_
 
-#include "var_opt_union.hpp"
-
 #include <cmath>
 #include <sstream>
+
+#include "var_opt_union.hpp"
+#include "memory_operations.hpp"
 
 namespace datasketches {
 
@@ -167,6 +168,7 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is) {
 
 template<typename T, typename S, typename A>
 var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t size) {
+  ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
@@ -181,6 +183,7 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t
 
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
+  ensure_minimum_memory(size, (size_t) (preamble_longs << 3));
 
   if (max_k == 0 || max_k > MAX_K) {
     throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");

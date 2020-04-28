@@ -144,7 +144,7 @@ class var_opt_sketch {
     // purpose is storing the state of the unioning algorithm) but for reasons of programming
     // convenience we are currently declaring them here. However, that could change in the future.
 
-    // Following int is:
+    // Following value is:
     //  1. Zero (for a varopt sketch)
     //  2. Count of marked items in H region, if part of a unioning algo's gadget
     uint32_t num_marks_in_h_;
@@ -172,24 +172,24 @@ class var_opt_sketch {
 
     inline double get_tau() const;
     inline double peek_min() const;
-    inline bool is_marked(int idx) const;
+    inline bool is_marked(uint32_t idx) const;
     
     inline uint32_t pick_random_slot_in_r() const;
-    inline uint32_t choose_delete_slot(double wt_cand, int num_cand) const;
-    inline uint32_t choose_weighted_delete_slot(double wt_cand, int num_cand) const;
+    inline uint32_t choose_delete_slot(double wt_cand, uint32_t num_cand) const;
+    inline uint32_t choose_weighted_delete_slot(double wt_cand, uint32_t num_cand) const;
 
     inline void transition_from_warmup();
     inline void convert_to_heap();
-    inline void restore_towards_leaves(int slot_in);
-    inline void restore_towards_root(int slot_in);
+    inline void restore_towards_leaves(uint32_t slot_in);
+    inline void restore_towards_root(uint32_t slot_in);
     inline void push(const T& item, double wt, bool mark);
     inline void pop_min_to_m_region();
-    void grow_candidate_set(double wt_cands, int num_cands);    
+    void grow_candidate_set(double wt_cands, uint32_t num_cands);    
     void decrease_k_by_1();
     void strip_marks();
-    void force_set_k(int k); // used to resolve union gadget into sketch
-    void downsample_candidate_set(double wt_cands, int num_cands);
-    inline void swap_values(int src, int dst);
+    void force_set_k(uint32_t k); // used to resolve union gadget into sketch
+    void downsample_candidate_set(double wt_cands, uint32_t num_cands);
+    inline void swap_values(uint32_t src, uint32_t dst);
     void grow_data_arrays();
     void allocate_data_arrays(uint32_t tgt_size, bool use_marks);
 
@@ -197,11 +197,11 @@ class var_opt_sketch {
     static void check_preamble_longs(uint8_t preamble_longs, uint8_t flags);
     static void check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);
     // next method sets current_items_alloc_
-    void validate_and_set_current_size(int preamble_longs);
+    void validate_and_set_current_size(uint32_t preamble_longs);
 
     // things to move to common and be shared among sketches
-    static uint32_t get_adjusted_size(int max_size, int resize_target);
-    static uint32_t starting_sub_multiple(int lg_target, int lg_rf, int lg_min);
+    static uint32_t get_adjusted_size(uint32_t max_size, uint32_t resize_target);
+    static uint32_t starting_sub_multiple(uint32_t lg_target, uint32_t lg_rf, uint32_t lg_min);
     static inline double pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, double sampling_rate);
     static inline double pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, double sampling_rate);
     static bool is_power_of_2(uint32_t v);
@@ -232,7 +232,7 @@ private:
   // to R region (can correct for numerical precision issues)
   const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region, bool weight_corr);
 
-  const bool get_mark() const;
+  bool get_mark() const;
 
   const var_opt_sketch<T,S,A>* sk_;
   double cum_r_weight_; // used for weight correction
