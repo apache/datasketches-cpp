@@ -276,7 +276,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
 
-  frequent_items_sketch<T, W, H, E, S, A> sketch(lg_cur_size, lg_max_size);
+  frequent_items_sketch<T, W, H, E, S, A> sketch(lg_max_size, lg_cur_size);
   if (!is_empty) {
     uint32_t num_items;
     is.read((char*)&num_items, sizeof(num_items));
@@ -331,7 +331,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
 
-  frequent_items_sketch<T, W, H, E, S, A> sketch(lg_cur_size, lg_max_size);
+  frequent_items_sketch<T, W, H, E, S, A> sketch(lg_max_size, lg_cur_size);
   if (!is_empty) {
     uint32_t num_items;
     ptr += copy_from_mem(ptr, &num_items, sizeof(uint32_t));

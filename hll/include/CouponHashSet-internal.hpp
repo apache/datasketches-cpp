@@ -107,7 +107,6 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len) {
   }
 
   CouponHashSet<A>* sketch = new (chsAlloc().allocate(1)) CouponHashSet<A>(lgK, tgtHllType);
-  sketch->putOutOfOrderFlag(true);
 
   if (compactFlag) {
     const uint8_t* curPos = data + HllUtil<A>::HASH_SET_INT_ARR_START;
@@ -170,7 +169,6 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
   }
 
   CouponHashSet<A>* sketch = new (chsAlloc().allocate(1)) CouponHashSet<A>(lgK, tgtHllType);
-  sketch->putOutOfOrderFlag(true);
 
   // Don't set couponCount here;
   // we'll set later if updatable, and increment with updates if compact

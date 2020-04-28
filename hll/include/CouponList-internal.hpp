@@ -34,11 +34,10 @@ CouponList<A>::CouponList(const int lgConfigK, const target_hll_type tgtHllType,
   : HllSketchImpl<A>(lgConfigK, tgtHllType, mode, false) {
     if (mode == hll_mode::LIST) {
       lgCouponArrInts = HllUtil<A>::LG_INIT_LIST_SIZE;
-      oooFlag = false;
     } else { // mode == SET
       lgCouponArrInts = HllUtil<A>::LG_INIT_SET_SIZE;
-      oooFlag = true;
     }
+    oooFlag = false;
     const int arrayLen = 1 << lgCouponArrInts;
     typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
     couponIntArr = intAlloc().allocate(arrayLen);
@@ -296,9 +295,9 @@ HllSketchImpl<A>* CouponList<A>::couponUpdate(int coupon) {
       ++couponCount;
       if (couponCount >= len) { // array full
         if (this->lgConfigK < 8) {
-          return promoteHeapListOrSetToHll(*this); // oooFlag = false
+          return promoteHeapListOrSetToHll(*this);
         }
-        return promoteHeapListToSet(*this); // oooFlag = true;
+        return promoteHeapListToSet(*this);
       }
       return this;
     }
