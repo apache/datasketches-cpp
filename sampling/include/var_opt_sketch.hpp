@@ -111,7 +111,7 @@ class var_opt_sketch {
     typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocDouble;
     typedef typename std::allocator_traits<A>::template rebind_alloc<bool> AllocBool;
 
-    static const uint32_t MIN_LG_ARR_ITEMS = 4;
+    static const uint32_t MIN_LG_ARR_ITEMS = 3;
 
     static const uint8_t PREAMBLE_LONGS_EMPTY  = 1;
     static const uint8_t PREAMBLE_LONGS_WARMUP = 3;

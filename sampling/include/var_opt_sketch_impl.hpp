@@ -185,8 +185,9 @@ var_opt_sketch<T,S,A>::~var_opt_sketch() {
   if (data_ != nullptr) {
     if (filled_data_) {
       // destroy everything
-      for (size_t i = 0; i < curr_items_alloc_; ++i) {
-        A().destroy(data_ + i);      
+      const size_t num_to_destroy = std::min(k_ + 1, curr_items_alloc_);
+      for (size_t i = 0; i < num_to_destroy; ++i) {
+        A().destroy(data_ + i);
       }
     } else {
       // skip gap or anything unused at the end
