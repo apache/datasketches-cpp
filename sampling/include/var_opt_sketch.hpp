@@ -28,6 +28,7 @@
 namespace datasketches {
 
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
+template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
 
 /**
  * author Kevin Lang 
@@ -84,7 +85,11 @@ class var_opt_sketch {
     template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
     inline size_t get_serialized_size_bytes() const;
 
-    std::vector<uint8_t, AllocU8<A>> serialize(unsigned header_size_bytes = 0) const;
+    // This is a convenience alias for users
+    // The type returned by the following serialize method
+    typedef vector_u8<A> vector_bytes;
+
+    vector_bytes serialize(unsigned header_size_bytes = 0) const;
     void serialize(std::ostream& os) const;
  
     std::ostream& to_stream(std::ostream& os) const;

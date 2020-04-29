@@ -65,7 +65,11 @@ public:
   
   size_t get_serialized_size_bytes() const;
   void serialize(std::ostream& os) const;
-  std::vector<uint8_t, AllocU8<A>> serialize(unsigned header_size_bytes = 0) const;
+
+  // This is a convenience alias for users
+  // The type returned by the following serialize method
+  typedef vector_u8<A> vector_bytes;
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
   std::ostream& to_stream(std::ostream& os) const;
   std::string to_string() const;
