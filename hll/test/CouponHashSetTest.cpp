@@ -69,8 +69,8 @@ TEST_CASE("coupon hash set: check corrupt bytearray", "[coupon_hash_set]") {
   // should work fine despite the corruption
   bytes[HllUtil<>::LG_ARR_BYTE] = tmp;
 
-  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size - 1), std::invalid_argument);
-  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, 3), std::invalid_argument);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size - 1), std::out_of_range);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, 3), std::out_of_range);
 }
 
 TEST_CASE("coupon hash set: check corrupt stream", "[coupon_hash_set]") {

@@ -137,9 +137,9 @@ TEST_CASE("coupon list: check corrupt bytearray data", "[coupon_list]") {
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
   bytes[HllUtil<>::MODE_BYTE] = tmp;
 
-  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size - 1), std::invalid_argument);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size - 1), std::out_of_range);
 
-  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, 3), std::invalid_argument);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, 3), std::out_of_range);
 }
 
 TEST_CASE("coupon list: check corrupt stream data", "[coupon_list]") {
