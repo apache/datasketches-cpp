@@ -41,21 +41,6 @@ py::object hll_sketch_serialize_updatable(const hll_sketch& sk) {
   return py::bytes((char*)serResult.data(), serResult.size());
 }
 
-hll_union hll_union_deserialize(py::bytes uBytes) {
-  std::string uStr = uBytes; // implicit cast
-  return hll_union::deserialize(uStr.c_str(), uStr.length());
-}
-
-py::object hll_union_serialize_compact(const hll_union& u) {
-  auto serResult = u.serialize_compact();
-  return py::bytes((char*)serResult.data(), serResult.size());
-}
-
-py::object hll_union_serialize_updatable(const hll_union& u) {
-  auto serResult = u.serialize_updatable();
-  return py::bytes((char*)serResult.data(), serResult.size());
-}
-
 }
 }
 
@@ -102,9 +87,6 @@ void init_hll(py::module &m) {
 
   py::class_<hll_union>(m, "hll_union")
     .def(py::init<int>(), py::arg("lg_max_k"))
-    .def_static("deserialize", &dspy::hll_union_deserialize)
-    .def("serialize_compact", &dspy::hll_union_serialize_compact)
-    .def("serialize_updatable", &dspy::hll_union_serialize_updatable)
     .def("to_string", (std::string (hll_union::*)(bool,bool,bool,bool) const) &hll_union::to_string,
          py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
     .def("__str__", (std::string (hll_union::*)(bool,bool,bool,bool) const) &hll_union::to_string,

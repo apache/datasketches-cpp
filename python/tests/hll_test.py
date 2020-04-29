@@ -119,15 +119,6 @@ class HllTest(unittest.TestCase):
         sk = union.get_result()
         self.assertTrue(isinstance(sk, hll_sketch))
         self.assertEqual(sk.tgt_type, tgt_hll_type.HLL_4)
-
-        bytes_compact = union.serialize_compact()
-        bytes_update = union.serialize_updatable()
-        self.assertEqual(len(bytes_compact), union.get_compact_serialization_bytes())
-        self.assertEqual(len(bytes_update), union.get_updatable_serialization_bytes())
-
-        self.assertTrue(isinstance(hll_union.deserialize(bytes_compact), hll_union))
-        self.assertTrue(isinstance(hll_union.deserialize(bytes_update), hll_union))
-
         
     def generate_sketch(self, n, k, sk_type=tgt_hll_type.HLL_4, st_idx=0):
         sk = hll_sketch(k, sk_type)
