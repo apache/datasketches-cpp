@@ -95,7 +95,7 @@ HllArray<A>* HllArray<A>::copyAs(const target_hll_type tgtHllType) const {
 template<typename A>
 HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   if (len < HllUtil<A>::HLL_BYTE_ARR_START) {
-    throw std::invalid_argument("Input data length insufficient to hold HLL array");
+    throw std::out_of_range("Input data length insufficient to hold HLL array");
   }
 
   const uint8_t* data = static_cast<const uint8_t*>(bytes);
@@ -124,7 +124,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
 
   const int arrayBytes = hllArrBytes(tgtHllType, lgK);
   if (len < static_cast<size_t>(HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes)) {
-    throw std::invalid_argument("Input array too small to hold sketch image");
+    throw std::out_of_range("Input array too small to hold sketch image");
   }
 
   double hip, kxq0, kxq1;

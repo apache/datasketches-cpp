@@ -75,7 +75,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
   const int* auxPtr = static_cast<const int*>(bytes);
   if (srcCompact) {
     if (len < auxCount * sizeof(int)) {
-      throw std::invalid_argument("Input array too small to hold AuxHashMap image");
+      throw std::out_of_range("Input array too small to hold AuxHashMap image");
     }
     auxHashMap = new (ahmAlloc().allocate(1)) AuxHashMap<A>(lgArrInts, lgConfigK);
     for (int i = 0; i < auxCount; ++i) {
@@ -87,7 +87,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
   } else { // updatable
     int itemsToRead = 1 << lgAuxArrInts;
     if (len < itemsToRead * sizeof(int)) {
-      throw std::invalid_argument("Input array too small to hold AuxHashMap image");
+      throw std::out_of_range("Input array too small to hold AuxHashMap image");
     }
     auxHashMap = new (ahmAlloc().allocate(1)) AuxHashMap<A>(lgArrInts, lgConfigK);
     for (int i = 0; i < itemsToRead; ++i) {
