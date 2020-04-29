@@ -1491,7 +1491,7 @@ const std::pair<const T&, const double> var_opt_sketch<T, S, A>::const_iterator:
 }
 
 template<typename T, typename S, typename A>
-const bool var_opt_sketch<T, S, A>::const_iterator::get_mark() const {
+bool var_opt_sketch<T, S, A>::const_iterator::get_mark() const {
   return sk_->marks_ == nullptr ? false : sk_->marks_[idx_];
 }
 
