@@ -232,7 +232,7 @@ private:
   // to R region (can correct for numerical precision issues)
   const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region, bool weight_corr);
 
-  const bool get_mark() const;
+  bool get_mark() const;
 
   const var_opt_sketch<T,S,A>* sk_;
   double cum_r_weight_; // used for weight correction

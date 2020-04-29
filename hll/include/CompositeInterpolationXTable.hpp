@@ -27,10 +27,10 @@ namespace datasketches {
 template<typename A = std::allocator<char>>
 class CompositeInterpolationXTable {
   public:
-    static const int get_y_stride(int logK);
+    static int get_y_stride(int logK);
 
-    static const double* const get_x_arr(int logK);
-    static const int get_x_arr_length(int logK);
+    static const double* get_x_arr(int logK);
+    static int get_x_arr_length();
 };
 
 }

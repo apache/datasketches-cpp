@@ -30,6 +30,7 @@
 #include "MurmurHash3.h"
 #include "serde.hpp"
 #include "binomial_bounds.hpp"
+#include "memory_operations.hpp"
 
 namespace datasketches {
 
@@ -154,7 +155,7 @@ typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(st
 
 template<typename A>
 typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
-  check_size(size, static_cast<size_t>(8));
+  ensure_minimum_memory(size, static_cast<size_t>(8));
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
@@ -226,13 +227,6 @@ template<typename A>
 void theta_sketch_alloc<A>::check_seed_hash(uint16_t actual, uint16_t expected) {
   if (actual != expected) {
     throw std::invalid_argument("Sketch seed hash mismatch: expected " + std::to_string(expected) + ", actual " + std::to_string(actual));
-  }
-}
-
-template<typename A>
-void theta_sketch_alloc<A>::check_size(size_t actual, size_t expected) {
-  if (actual < expected) {
-    throw std::invalid_argument("Given memory is smaller than expected: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int) actual));
   }
 }
 
@@ -466,7 +460,7 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(
 
 template<typename A>
 update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
-  theta_sketch_alloc<A>::check_size(size, 8);
+  ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
@@ -493,7 +487,7 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::deserialize(const voi
 template<typename A>
 update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(const void* bytes, size_t size, resize_factor rf, uint8_t lg_cur_size, uint8_t lg_nom_size, uint8_t flags_byte, uint64_t seed) {
   const uint32_t table_size = 1 << lg_cur_size;
-  theta_sketch_alloc<A>::check_size(size, 16 + sizeof(uint64_t) * table_size);
+  ensure_minimum_memory(size, 16 + sizeof(uint64_t) * table_size);
   const char* ptr = static_cast<const char*>(bytes);
   uint32_t num_keys;
   ptr += copy_from_mem(ptr, &num_keys, sizeof(num_keys));
@@ -942,7 +936,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
 
 template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
-  theta_sketch_alloc<A>::check_size(size, 8);
+  ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
@@ -975,17 +969,17 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
     if (preamble_longs == 1) {
       num_keys = 1;
     } else {
-      theta_sketch_alloc<A>::check_size(size, 8);
+      ensure_minimum_memory(size, 8);
       ptr += copy_from_mem(ptr, &num_keys, sizeof(num_keys));
       uint32_t unused32;
       ptr += copy_from_mem(ptr, &unused32, sizeof(unused32));
       if (preamble_longs > 2) {
-        theta_sketch_alloc<A>::check_size(size - (ptr - static_cast<const char*>(bytes)), 8);
+        ensure_minimum_memory(size - (ptr - static_cast<const char*>(bytes)), 8);
         ptr += copy_from_mem(ptr, &theta, sizeof(theta));
       }
     }
     const size_t keys_size_bytes = sizeof(uint64_t) * num_keys;
-    theta_sketch_alloc<A>::check_size(size - (ptr - static_cast<const char*>(bytes)), keys_size_bytes);
+    check_memory_size(size - (ptr - static_cast<const char*>(bytes)), keys_size_bytes);
     typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
     keys = AllocU64().allocate(num_keys);
     ptr += copy_from_mem(ptr, keys, keys_size_bytes);

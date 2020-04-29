@@ -211,7 +211,7 @@ TEST_CASE("varopt union: identical sampling sketches", "[var_opt_union]") {
 
   var_opt_sketch<int> result = u.get_result();
   double expected_wt = 2.0 * n;
-  subset_summary ss = result.estimate_subset_sum([](int x){return true;});
+  subset_summary ss = result.estimate_subset_sum([](int){return true;});
   REQUIRE(result.get_n() == 2 * n);
   REQUIRE(ss.total_sketch_weight == Approx(expected_wt).margin(EPS));
 
@@ -220,7 +220,7 @@ TEST_CASE("varopt union: identical sampling sketches", "[var_opt_union]") {
   u.update(sk);
   result = u.get_result();
   expected_wt = (2.0 * n) + k + 1;
-  ss = result.estimate_subset_sum([](int x){return true;});
+  ss = result.estimate_subset_sum([](int){return true;});
   REQUIRE(result.get_n() == (2 * n) + k + 1);
   REQUIRE(ss.total_sketch_weight == Approx(expected_wt).margin(EPS));
 }
@@ -292,7 +292,7 @@ TEST_CASE("varopt union: deserialize from java", "[var_opt_union]") {
   REQUIRE(result.get_n() == 97);
   
   double expected_wt = 96.0;// light items -- ignoring the heavy one
-  subset_summary ss = result.estimate_subset_sum([](float x){return x >= 0;});
+  subset_summary ss = result.estimate_subset_sum([](double x){return x >= 0;});
   REQUIRE(ss.estimate == Approx(expected_wt).margin(EPS));
   REQUIRE(ss.total_sketch_weight == Approx(expected_wt + 1024.0).margin(EPS));
   REQUIRE(result.get_k() < 128);

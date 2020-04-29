@@ -163,26 +163,6 @@ void hll_union_alloc<A>::coupon_update(const int coupon) {
 }
 
 template<typename A>
-vector_u8<A> hll_union_alloc<A>::serialize_compact() const {
-  return gadget.serialize_compact();
-}
-
-template<typename A>
-vector_u8<A> hll_union_alloc<A>::serialize_updatable() const {
-  return gadget.serialize_updatable();
-}
-
-template<typename A>
-void hll_union_alloc<A>::serialize_compact(std::ostream& os) const {
-  return gadget.serialize_compact(os);
-}
-
-template<typename A>
-void hll_union_alloc<A>::serialize_updatable(std::ostream& os) const {
-  return gadget.serialize_updatable(os);
-}
-
-template<typename A>
 std::ostream& hll_union_alloc<A>::to_string(std::ostream& os, const bool summary,
                                   const bool detail, const bool aux_detail, const bool all) const {
   return gadget.to_string(os, summary, detail, aux_detail, all);

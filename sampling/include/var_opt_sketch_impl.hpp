@@ -31,6 +31,7 @@
 #include "serde.hpp"
 #include "bounds_binomial_proportions.hpp"
 #include "count_zeros.hpp"
+#include "memory_operations.hpp"
 
 namespace datasketches {
 
@@ -305,8 +306,11 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
 template<typename T, typename S, typename A>
 var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs,
                                       const void* bytes, size_t size) : k_(k), m_(0), rf_(rf) {
-  // private constructor so we assume not called if sketch is empty
+  // private constructor so we assume not called if sketch is empty,
+  // and that the array is large enough to hold the preamble
+  const char* base = static_cast<const char*>(bytes);
   const char* ptr = static_cast<const char*>(bytes) + sizeof(uint64_t);
+  const char* end_ptr = static_cast<const char*>(bytes) + size;
 
   // second and third prelongs
   ptr += copy_from_mem(ptr, &n_, sizeof(n_));
@@ -329,6 +333,7 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   allocate_data_arrays(curr_items_alloc_, is_gadget);
 
   // read the first h_ weights, fill in rest of array with -1.0
+  check_memory_size(ptr - base + (h_ * sizeof(double)), size);
   ptr += copy_from_mem(ptr, weights_, h_ * sizeof(double));
   for (size_t i = 0; i < h_; ++i) {
     if (!(weights_[i] > 0.0)) {
@@ -345,6 +350,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   num_marks_in_h_ = 0;
   if (is_gadget) {
     uint8_t val = 0;
+    const size_t size_marks = (h_ / 8) + (h_ % 8 > 0 ? 1 : 0);
+    check_memory_size(ptr - base + size_marks, size);
     for (uint32_t i = 0; i < h_; ++i) {
      if ((i & 0x7) == 0x0) { // should trigger on first iteration
         ptr += copy_from_mem(ptr, &val, sizeof(val));
@@ -355,8 +362,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   }
 
   // read the sample items, skipping the gap. Either h_ or r_ may be 0
-  ptr += S().deserialize(ptr, data_, h_); // ala data_[0]
-  ptr += S().deserialize(ptr, &data_[h_ + 1], r_);
+  ptr += S().deserialize(ptr, end_ptr - ptr, data_, h_);
+  ptr += S().deserialize(ptr, end_ptr - ptr, &data_[h_ + 1], r_);
 }
 
 /*
@@ -433,6 +440,7 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
   const size_t size = header_size_bytes + get_serialized_size_bytes();
   std::vector<uint8_t, AllocU8<A>> bytes(size);
   uint8_t* ptr = bytes.data() + header_size_bytes;
+  uint8_t* end_ptr = ptr + size;
 
   bool empty = is_empty();
   uint8_t preLongs = (empty ? PREAMBLE_LONGS_EMPTY
@@ -488,8 +496,8 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
     }
 
     // write the sample items, skipping the gap. Either h_ or r_ may be 0
-    ptr += S().serialize(ptr, data_, h_);
-    ptr += S().serialize(ptr, &data_[h_ + 1], r_);
+    ptr += S().serialize(ptr, end_ptr - ptr, data_, h_);
+    ptr += S().serialize(ptr, end_ptr - ptr, &data_[h_ + 1], r_);
   }
   
   size_t bytes_written = ptr - bytes.data();
@@ -564,6 +572,7 @@ void var_opt_sketch<T,S,A>::serialize(std::ostream& os) const {
 
 template<typename T, typename S, typename A>
 var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size_t size) {
+  ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t first_byte;
   ptr += copy_from_mem(ptr, &first_byte, sizeof(first_byte));
@@ -580,6 +589,7 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
 
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
+  ensure_minimum_memory(size, preamble_longs << 3);
 
   const bool is_empty = flags & EMPTY_FLAG_MASK;
   const bool is_gadget = flags & GADGET_FLAG_MASK;
@@ -1491,7 +1501,7 @@ const std::pair<const T&, const double> var_opt_sketch<T, S, A>::const_iterator:
 }
 
 template<typename T, typename S, typename A>
-const bool var_opt_sketch<T, S, A>::const_iterator::get_mark() const {
+bool var_opt_sketch<T, S, A>::const_iterator::get_mark() const {
   return sk_->marks_ == nullptr ? false : sk_->marks_[idx_];
 }
 

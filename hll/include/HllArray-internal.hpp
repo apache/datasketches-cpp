@@ -405,7 +405,7 @@ double HllArray<A>::getCompositeEstimate() const {
   const double rawEst = getHllRawEstimate(this->lgConfigK, kxq0 + kxq1);
 
   const double* xArr = CompositeInterpolationXTable<A>::get_x_arr(this->lgConfigK);
-  const int xArrLen = CompositeInterpolationXTable<A>::get_x_arr_length(this->lgConfigK);
+  const int xArrLen = CompositeInterpolationXTable<A>::get_x_arr_length();
   const double yStride = CompositeInterpolationXTable<A>::get_y_stride(this->lgConfigK);
 
   if (rawEst < xArr[0]) {

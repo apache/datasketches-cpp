@@ -454,7 +454,7 @@ TEST_CASE("varopt sketch: deserialize exact from java", "[var_opt_sketch]") {
   REQUIRE(sketch.get_k() == 1024);
   REQUIRE(sketch.get_n() == 200);
   REQUIRE(sketch.get_num_samples() == 200);
-  subset_summary ss = sketch.estimate_subset_sum([](std::string x){ return true; });
+  subset_summary ss = sketch.estimate_subset_sum([](std::string){ return true; });
 
   double tgt_wt = 0.0;
   for (int i = 1; i <= 200; ++i) { tgt_wt += 1000.0 / i; }
@@ -471,7 +471,7 @@ TEST_CASE("varopt sketch: deserialize sampling from java", "[var_opt_sketch]") {
   REQUIRE(sketch.get_k() == 1024);
   REQUIRE(sketch.get_n() == 2003);
   REQUIRE(sketch.get_num_samples() == sketch.get_k());
-  subset_summary ss = sketch.estimate_subset_sum([](int64_t x){ return true; });
+  subset_summary ss = sketch.estimate_subset_sum([](int64_t){ return true; });
   REQUIRE(ss.estimate == Approx(332000.0).margin(EPS));
   REQUIRE(ss.total_sketch_weight == Approx(332000.0).margin(EPS));
 
