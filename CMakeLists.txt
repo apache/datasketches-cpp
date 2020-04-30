@@ -54,7 +54,7 @@ if (MSVC)
   add_compile_options(/W4)
   set(CMAKE_DEBUG_POSTFIX "d")
 else()
-  add_compile_options(-Wall -pedantic)
+  add_compile_options(-Wall -pedantic -W -Wextra)
 endif()
 
 # Code generation options, to ensure shaerd libraries work and are portable
