@@ -62,18 +62,15 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other) :
   marks_(nullptr)
   {
     data_ = A().allocate(curr_items_alloc_);
-    if (other.filled_data_) {
-      // copy everything
-      for (size_t i = 0; i < curr_items_alloc_; ++i)
-        A().construct(&data_[i], T(other.data_[i]));
-    } else {
-      // skip gap or anything unused at the end
-      for (size_t i = 0; i < h_; ++i)
-        A().construct(&data_[i], T(other.data_[i]));
-      for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
-        A().construct(&data_[i], T(other.data_[i]));
-    }
-    
+    // skip gap or anything unused at the end
+    for (size_t i = 0; i < h_; ++i)
+      A().construct(&data_[i], T(other.data_[i]));
+    for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
+      A().construct(&data_[i], T(other.data_[i]));
+
+    // we skipped the gap
+    filled_data_ = false;
+
     weights_ = AllocDouble().allocate(curr_items_alloc_);
     // doubles so can successfully copy regardless of the internal state
     std::copy(&other.weights_[0], &other.weights_[curr_items_alloc_], weights_);
@@ -101,17 +98,14 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other, bool as_sketc
   marks_(nullptr)
   {
     data_ = A().allocate(curr_items_alloc_);
-    if (other.filled_data_) {
-      // copy everything
-      for (size_t i = 0; i < curr_items_alloc_; ++i)
-        A().construct(&data_[i], T(other.data_[i]));
-    } else {
-      // skip gap or anything unused at the end
-      for (size_t i = 0; i < h_; ++i)
-        A().construct(&data_[i], T(other.data_[i]));
-      for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
-        A().construct(&data_[i], T(other.data_[i]));
-    }
+    // skip gap or anything unused at the end
+    for (size_t i = 0; i < h_; ++i)
+      A().construct(&data_[i], T(other.data_[i]));
+    for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
+      A().construct(&data_[i], T(other.data_[i]));
+    
+    // we skipped the gap
+    filled_data_ = false;
 
     weights_ = AllocDouble().allocate(curr_items_alloc_);
     // doubles so can successfully copy regardless of the internal state
@@ -639,7 +633,8 @@ void var_opt_sketch<T,S,A>::reset() {
 
   if (filled_data_) {
     // destroy everything
-    for (size_t i = 0; i < prev_alloc; ++i) 
+    const size_t num_to_destroy = std::min(k_ + 1, prev_alloc);
+    for (size_t i = 0; i < num_to_destroy; ++i) 
       A().destroy(data_ + i);      
   } else {
     // skip gap or anything unused at the end
