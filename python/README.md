@@ -14,6 +14,8 @@ pip install .
 
 In the event you do not have `pip` installed, you can invoke the setup script directly by replacing the last line above with `python3 setup.py install`.
 
+Python tests are run with `tox`.
+
 ## Usage
 
 Having installed the library, loading the Datasketches library in Python is simple: `from datasketches import *`.

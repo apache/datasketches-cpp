@@ -6,35 +6,28 @@ This code requires C++11. It was tested with GCC 4.8.5 (standard in RedHat at th
 
 This includes Python bindings. For the Python interface, see the README notes in [the python subdirectory](https://github.com/apache/incubator-datasketches-cpp/tree/master/python).
 
-This library was intended to be header-only, but this goal was not fully
-achieved yet with CPC sketch code. This work is in progress.
+This library is header-only. The build process provided is only for building unit tests and the python library.
 
-Building and running unit tests requires CppUnit.
-
-Installing CppUnit on OSX: brew install cppunit
-
-Installing CppUnit on RHEL: yum install cppunit-devel
-
-There are currently two ways of building: using existing make files and generating
-make files using cmake. Exsisting make files might not work on all platforms
-or with all C++ compilers. Generating make files using cmake should solve
-this problem, but it currently requires cmake version 3.12.0 or later that might not
-be readily available as a package on all platforms.
+Building the unit tests requires cmake 3.12.0 or higher.
 
 Installing the latest cmake on OSX: brew install cmake
 
-Building and running unit tests using existing make files:
-
-	$ make
-	$ make test
-
-Building and running unit tests using cmake:
+Building and running unit tests using cmake for OSX and Linux:
 
 	$ mkdir build
 	$ cd build
 	$ cmake ..
 	$ make
 	$ make test
+
+Building and running unit tests using cmake for Windows from the command line:
+
+  $ mkdir build
+	$ cd build
+	$ cmake ..
+	$ cd ..
+	$ cmake --build build --config Release
+	$ cmake --build build --config Release --target RUN_TESTS
 
 ## How to Contact Us
 * We have two ASF [the-ASF.slack.com](http://the-ASF.slack.com) slack channels:

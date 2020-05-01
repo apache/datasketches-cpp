@@ -25,15 +25,20 @@
 #include <iterator>
 #include <vector>
 
+
+/**
+ * This sketch samples data from a stream of items, designed for optimal (minimum) variance when
+ * querying the sketch to estimate subset sums of items matchng a provided predicate. Variance
+ * optimal (varopt) sampling is related to reservoir sampling, with improved error bounds for
+ * subset sum estimation.
+ * 
+ * author Kevin Lang 
+ * author Jon Malkin
+ */
 namespace datasketches {
 
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
-
-/**
- * author Kevin Lang 
- * author Jon Malkin
- */
 
 /**
  * A struct to hold the result of subset sum queries
@@ -59,29 +64,82 @@ class var_opt_sketch {
     explicit var_opt_sketch(uint32_t k, resize_factor rf = DEFAULT_RESIZE_FACTOR);
     var_opt_sketch(const var_opt_sketch& other);
     var_opt_sketch(var_opt_sketch&& other) noexcept;
-    static var_opt_sketch deserialize(std::istream& is);
-    static var_opt_sketch deserialize(const void* bytes, size_t size);
 
     ~var_opt_sketch();
 
     var_opt_sketch& operator=(const var_opt_sketch& other);
     var_opt_sketch& operator=(var_opt_sketch&& other);
 
+    /**
+     * Updates this sketch with the given data item with the given weight.
+     * This method takes an lvalue.
+     * @param item an item from a stream of items
+     * @param weight the weight of the item
+     */
     void update(const T& item, double weight=1.0);
+
+    /**
+     * Not yet implemented
+     * Updates this sketch with the given data item with the given weight.
+     * This method takes an rvalue.
+     * @param item an item from a stream of items
+     * @param weight the weight of the item
+     */
     //void update(T&& item, double weight=1.0);
 
+    /**
+     * Returns the configured maximum sample size.
+     * @return configured maximum sample size
+     */
     inline uint32_t get_k() const;
+
+    /**
+     * Returns the length of the input stream.
+     * @return stream length
+     */
     inline uint64_t get_n() const;
+
+    /**
+     * Returns the number of samples currently in the sketch
+     * @return stream length
+     */
     inline uint32_t get_num_samples() const;
     
+    /**
+     * Computes an estimated subset sum from the entire stream for objects matching a given
+     * predicate. Provides a lower bound, estimate, and upper bound using a target of 2 standard
+     * deviations. This is technically a heuristic method and tries to err on the conservative side.
+     * @param P a predicate function
+     * @return a subset_summary item with estimate, upper and lower bounds,
+     *         and total sketch weight
+     */
+    template<typename P>
+    subset_summary estimate_subset_sum(P predicate) const;
+
+    /**
+     * Returns true if the sketch is empty.
+     * @return empty flag
+     */
     inline bool is_empty() const;
+    
+    /**
+     * Resets the sketch to its default, empty state.
+     */
     void reset();
 
-    // version for fixed-size arithmetic types (integer, floating point)
+    /**
+     * Computes size needed to serialize the current state of the sketch.
+     * This version is for fixed-size arithmetic types (integral and floating point).
+     * @return size in bytes needed to serialize this sketch
+     */
     template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
     inline size_t get_serialized_size_bytes() const;
 
-    // version for all other types
+    /**
+     * Computes size needed to serialize the current state of the sketch.
+     * This version is for all other types and can be expensive since every item needs to be looked at.
+     * @return size in bytes needed to serialize this sketch
+     */
     template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
     inline size_t get_serialized_size_bytes() const;
 
@@ -89,19 +147,67 @@ class var_opt_sketch {
     // The type returned by the following serialize method
     typedef vector_u8<A> vector_bytes;
 
+    /**
+     * This method serializes the sketch as a vector of bytes.
+     * An optional header can be reserved in front of the sketch.
+     * It is a blank space of a given size.
+     * This header is used in Datasketches PostgreSQL extension.
+     * @param header_size_bytes space to reserve in front of the sketch
+     */
     vector_bytes serialize(unsigned header_size_bytes = 0) const;
+
+    /**
+     * This method serializes the sketch into a given stream in a binary form
+     * @param os output stream
+     */
     void serialize(std::ostream& os) const;
- 
+
+    /**
+     * This method deserializes a sketch from a given stream.
+     * @param is input stream
+     * @return an instance of a sketch
+     */
+    static var_opt_sketch deserialize(std::istream& is);
+
+    /**
+     * This method deserializes a sketch from a given array of bytes.
+     * @param bytes pointer to the array of bytes
+     * @param size the size of the array
+     * @return an instance of a sketch
+     */
+    static var_opt_sketch deserialize(const void* bytes, size_t size);
+
+    /**
+     * Prints a summary of the sketch to a given stream.
+     * @param os the provided ostream
+     * @return the ostream
+     */
     std::ostream& to_stream(std::ostream& os) const;
+  
+    /**
+     * Prints a summary of the sketch as a string.
+     * @return the summary as a string
+     */
     std::string to_string() const;
 
-    // These will only work for T with a defined operator<<()
-    // Kept separate to allow to_string() to compile for all types T
+    /**
+     * Prints the raw sketch items to a given ostream.
+     * Only works for type T with a defined operator<<() and
+     * kept separate from to_stream() to allow compilation even if
+     * T does not have such an operator defined.
+     * @param os the provided ostream
+     * @return the provided ostream
+     */
     std::ostream& items_to_stream(std::ostream& os) const;
-    std::string items_to_string() const;
 
-    template<typename P>
-    subset_summary estimate_subset_sum(P predicate) const;
+    /**
+     * Prints the raw sketch items to a string. Calls items_to_stream() internally.
+     * Only works for type T with a defined operator<<() and
+     * kept separate from to_stream() to allow compilation even if
+     * T does not have such an operator defined.
+     * @return a string with the sketch items
+     */
+    std::string items_to_string() const;
 
     class const_iterator;
     const_iterator begin() const;
