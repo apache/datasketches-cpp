@@ -643,12 +643,12 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
     }
     if (has_window) {
       compressed.window_data.resize(compressed.window_data_words);
-      check_memory_size(ptr - base + sizeof(compressed.window_data_words) + sizeof(uint32_t), size);
+      check_memory_size(ptr - base + (compressed.window_data_words * sizeof(uint32_t)), size);
       ptr += copy_from_mem(ptr, compressed.window_data.data(), compressed.window_data_words * sizeof(uint32_t));
     }
     if (has_table) {
       compressed.table_data.resize(compressed.table_data_words);
-      check_memory_size(ptr - base + sizeof(compressed.table_data_words), size);
+      check_memory_size(ptr - base + (compressed.table_data_words * sizeof(uint32_t)), size);
       ptr += copy_from_mem(ptr, compressed.table_data.data(), compressed.table_data_words * sizeof(uint32_t));
     }
     if (!has_window) compressed.table_num_entries = num_coupons;

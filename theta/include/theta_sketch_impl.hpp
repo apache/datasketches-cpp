@@ -959,6 +959,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const v
 template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserialize(const void* bytes, size_t size, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash) {
   const char* ptr = static_cast<const char*>(bytes);
+  const char* base = ptr;
 
   uint64_t theta = theta_sketch_alloc<A>::MAX_THETA;
   uint64_t* keys = nullptr;
@@ -969,17 +970,17 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
     if (preamble_longs == 1) {
       num_keys = 1;
     } else {
-      ensure_minimum_memory(size, 8);
+      ensure_minimum_memory(size, 8); // read the first prelong before this method
       ptr += copy_from_mem(ptr, &num_keys, sizeof(num_keys));
       uint32_t unused32;
       ptr += copy_from_mem(ptr, &unused32, sizeof(unused32));
       if (preamble_longs > 2) {
-        ensure_minimum_memory(size - (ptr - static_cast<const char*>(bytes)), 8);
+        ensure_minimum_memory(size, (preamble_longs - 1) << 3);
         ptr += copy_from_mem(ptr, &theta, sizeof(theta));
       }
     }
     const size_t keys_size_bytes = sizeof(uint64_t) * num_keys;
-    check_memory_size(size - (ptr - static_cast<const char*>(bytes)), keys_size_bytes);
+    check_memory_size(ptr - base + keys_size_bytes, size);
     typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
     keys = AllocU64().allocate(num_keys);
     ptr += copy_from_mem(ptr, keys, keys_size_bytes);
