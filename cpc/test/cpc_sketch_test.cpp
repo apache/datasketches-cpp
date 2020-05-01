@@ -210,23 +210,6 @@ TEST_CASE("cpc sketch: serialize deserialize empty, bytes", "[cpc_sketch]") {
   sketch.serialize(os);
 }
 
-TEST_CASE("cpc sketch: serialize deserialize hybrid, bytes", "[cpc_sketch]") {
-  cpc_sketch sketch(11);
-  const int n(200);
-  for (int i = 0; i < n; i++) sketch.update(i);
-  auto bytes = sketch.serialize();
-  cpc_sketch deserialized = cpc_sketch::deserialize(bytes.data(), bytes.size());
-  REQUIRE(deserialized.is_empty() == sketch.is_empty());
-  REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
-  REQUIRE(deserialized.validate());
-  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
-
-  // updating again with the same values should not change the sketch
-  for (int i = 0; i < n; i++) deserialized.update(i);
-  REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
-  REQUIRE(deserialized.validate());
-}
-
 TEST_CASE("cpc sketch: serialize deserialize sparse, bytes", "[cpc_sketch]") {
   cpc_sketch sketch(11);
   const int n(100);
@@ -236,6 +219,27 @@ TEST_CASE("cpc sketch: serialize deserialize sparse, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 7), std::out_of_range);
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 15), std::out_of_range);
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+
+  // updating again with the same values should not change the sketch
+  for (int i = 0; i < n; i++) deserialized.update(i);
+  REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
+  REQUIRE(deserialized.validate());
+}
+
+TEST_CASE("cpc sketch: serialize deserialize hybrid, bytes", "[cpc_sketch]") {
+  cpc_sketch sketch(11);
+  const int n(200);
+  for (int i = 0; i < n; i++) sketch.update(i);
+  auto bytes = sketch.serialize();
+  cpc_sketch deserialized = cpc_sketch::deserialize(bytes.data(), bytes.size());
+  REQUIRE(deserialized.is_empty() == sketch.is_empty());
+  REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
+  REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 7), std::out_of_range);
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 15), std::out_of_range);
   REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 
   // updating again with the same values should not change the sketch
@@ -253,6 +257,8 @@ TEST_CASE("cpc sketch: serialize deserialize pinned, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 7), std::out_of_range);
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 15), std::out_of_range);
   REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 
   // updating again with the same values should not change the sketch
@@ -272,6 +278,8 @@ TEST_CASE("cpc sketch: serialize deserialize sliding, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 7), std::out_of_range);
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 15), std::out_of_range);
   REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 
   // updating again with the same values should not change the sketch

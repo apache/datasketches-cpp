@@ -262,6 +262,12 @@ TEST_CASE("hll sketch: check input types", "[hll_sketch]") {
   REQUIRE(sk.is_empty());
 }
 
-
+TEST_CASE("hll sketch: deserialize buffer overrun", "[hll_sketch]") {
+  hll_sketch sketch(10);
+  sketch.update(1);
+  auto bytes = sketch.serialize_compact();
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes.data(), 7), std::out_of_range);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+}
 
 } /* namespace datasketches */

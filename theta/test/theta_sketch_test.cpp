@@ -423,6 +423,7 @@ TEST_CASE("theta sketch: deserialize update single item buffer overrun", "[theta
   update_theta_sketch update_sketch = update_theta_sketch::builder().build();
   update_sketch.update(1);
   theta_sketch::vector_bytes bytes = update_sketch.serialize();
+  REQUIRE_THROWS_AS(update_theta_sketch::deserialize(bytes.data(), 7), std::out_of_range);
   REQUIRE_THROWS_AS(update_theta_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 }
 
@@ -430,6 +431,7 @@ TEST_CASE("theta sketch: deserialize compact single item buffer overrun", "[thet
   update_theta_sketch update_sketch = update_theta_sketch::builder().build();
   update_sketch.update(1);
   theta_sketch::vector_bytes bytes = update_sketch.compact().serialize();
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), 7), std::out_of_range);
   REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 }
 
