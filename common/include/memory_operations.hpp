@@ -29,14 +29,14 @@ namespace datasketches {
 static inline void ensure_minimum_memory(size_t bytes_available, size_t min_needed) {
   if (bytes_available < min_needed) {
     throw std::out_of_range("Insufficient buffer size detected: bytes available "
-    + std::to_string((int) bytes_available) + ", minimum needed " + std::to_string((int) min_needed));
+    + std::to_string(bytes_available) + ", minimum needed " + std::to_string(min_needed));
   }  
 }
 
 static inline void check_memory_size(size_t requested_index, size_t capacity) {
   if (requested_index > capacity) {
     throw std::out_of_range("Attempt to access memory beyond limits: requested index "
-    + std::to_string((int) requested_index) + ", capacity " + std::to_string((int) capacity));
+    + std::to_string(requested_index) + ", capacity " + std::to_string(capacity));
   }
 }
 

@@ -417,6 +417,7 @@ class kll_sketch {
 
     /**
      * Prints a summary of the sketch to a given stream.
+     * @param os the provided ostream
      * @param print_levels if true include information about levels
      * @param print_items if true include sketch data
      */

@@ -20,17 +20,6 @@ This product contains code published by Sean Eron Anderson and placed in the pub
 The original: https://graphics.stanford.edu/~seander/bithacks.html
   * common/include/CommonUtil.h
 
-Apache 2.0 License
-==================
-
-This product contains code by Marco Clemencic:
-https://github.com/apache/incubator-datasketches-cpp/blob/master/cmake/FindCppUnit.cmake
-adapted from:
-https://gitlab.cern.ch/gaudi/Gaudi/blob/master/cmake/modules/FindCppUnit.cmake
-License discussed here:
-https://gitlab.cern.ch/gaudi/Gaudi/issues/80
-Copyright (C) 1998-2019 CERN for the benefit of the LHCb and ATLAS collaborations
-
 MIT License
 ===========
 
@@ -39,3 +28,13 @@ https://github.com/apache/incubator-datasketches-cpp/blob/master/setup.py
 adapted from:
 https://github.com/benjaminjack/python_cpp_example
 Copyright (c) 2017 Benjamin R. Jack
+
+Boost License
+=============
+
+This product contains code copyright by Two Blue Cubes Ltd.:
+https://github.com/apache/incubator-datasketches-cpp/blob/master/common/test/catch.hpp
+borrowed from:
+https://github.com/catchorg/Catch2/blob/master/single_include/catch2/catch.hpp
+using the Boost 1.0 License
+https://github.com/catchorg/Catch2/blob/master/LICENSE.txt
