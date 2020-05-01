@@ -204,6 +204,7 @@ TEST_CASE("cpc sketch: serialize deserialize empty, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 
   std::ofstream os("cpc-empty.bin");
   sketch.serialize(os);
@@ -218,6 +219,7 @@ TEST_CASE("cpc sketch: serialize deserialize hybrid, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 
   // updating again with the same values should not change the sketch
   for (int i = 0; i < n; i++) deserialized.update(i);
@@ -234,6 +236,7 @@ TEST_CASE("cpc sketch: serialize deserialize sparse, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 
   // updating again with the same values should not change the sketch
   for (int i = 0; i < n; i++) deserialized.update(i);
@@ -250,6 +253,7 @@ TEST_CASE("cpc sketch: serialize deserialize pinned, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 
   // updating again with the same values should not change the sketch
   for (int i = 0; i < n; i++) deserialized.update(i);
@@ -268,6 +272,7 @@ TEST_CASE("cpc sketch: serialize deserialize sliding, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 
   // updating again with the same values should not change the sketch
   for (int i = 0; i < n; i++) deserialized.update(i);
