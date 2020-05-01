@@ -343,4 +343,18 @@ TEST_CASE("frequent items: serialize deserialize string, utf-8 stream", "[freque
   REQUIRE(sketch2.get_estimate("уфхцч") == 5);
 }
 
+TEST_CASE("frequent items: int64 deserialize single item buffer overrun", "[frequent_items_sketch]") {
+  frequent_items_sketch<int64_t> sketch(3);
+  sketch.update(1);
+  auto bytes = sketch.serialize();
+  REQUIRE_THROWS_AS(frequent_items_sketch<int64_t>::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+}
+
+TEST_CASE("frequent items: string deserialize single item buffer overrun", "[frequent_items_sketch]") {
+  frequent_items_sketch<std::string> sketch(3);
+  sketch.update("a");
+  auto bytes = sketch.serialize();
+  REQUIRE_THROWS_AS(frequent_items_sketch<std::string>::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+}
+
 } /* namespace datasketches */
