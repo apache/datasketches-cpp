@@ -471,12 +471,8 @@ class kll_sketch {
     bool is_level_zero_sorted_;
 
     // for deserialization
-    // the common part of the preamble was read and compatibility checks were done
-    kll_sketch(uint16_t k, uint8_t flags_byte, std::istream& is);
-
-    // for deserialization
-    // the common part of the preamble was read and compatibility checks were done
-    kll_sketch(uint16_t k, uint8_t flags_byte, const void* bytes, size_t size);
+    kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, uint32_t* levels,
+        T* items, uint32_t items_size, T* min_value, T* max_value, bool is_level_zero_sorted);
 
     // common update code
     inline void update_min_max(const T& value);

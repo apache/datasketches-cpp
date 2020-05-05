@@ -476,7 +476,46 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is) {
   check_family_id(family_id);
 
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
-  return is_empty ? kll_sketch<T, C, S, A>(k) : kll_sketch<T, C, S, A>(k, flags_byte, is);
+  if (is_empty) return kll_sketch<T, C, S, A>(k);
+
+  uint64_t n;
+  uint16_t min_k;
+  uint8_t num_levels;
+  const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
+  if (is_single_item) {
+    n = 1;
+    min_k = k;
+    num_levels = 1;
+  } else {
+    is.read((char*)&n, sizeof(n_));
+    is.read((char*)&min_k, sizeof(min_k_));
+    is.read((char*)&num_levels, sizeof(num_levels));
+    is.read((char*)&unused, sizeof(unused));
+  }
+  uint32_t* levels = AllocU32().allocate(num_levels + 1);
+  const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));
+  if (is_single_item) {
+    levels[0] = capacity - 1;
+  } else {
+    // the last integer in levels_ is not serialized because it can be derived
+    is.read((char*)levels, sizeof(levels[0]) * num_levels);
+  }
+  levels[num_levels] = capacity;
+  T* min_value = A().allocate(1);
+  T* max_value = A().allocate(1);
+  if (!is_single_item) {
+    S().deserialize(is, min_value, 1);
+    S().deserialize(is, max_value, 1);
+  }
+  T* items = A().allocate(capacity);
+  const auto num_items = levels[num_levels] - levels[0];
+  S().deserialize(is, &items[levels[0]], num_items);
+  if (is_single_item) {
+    new (min_value) T(items[levels[0]]);
+    new (max_value) T(items[levels[0]]);
+  }
+  const bool is_level_zero_sorted = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
+  return kll_sketch(k, min_k, n, num_levels, levels, items, capacity, min_value, max_value, is_level_zero_sorted);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -495,6 +534,7 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
   ptr += copy_from_mem(ptr, &k, sizeof(k));
   uint8_t m;
   ptr += copy_from_mem(ptr, &m, sizeof(m));
+  ptr++; // skip unused byte
 
   check_m(m);
   check_preamble_ints(preamble_ints, flags_byte);
@@ -503,7 +543,49 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
   ensure_minimum_memory(size, 1 << preamble_ints);
 
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
-  return is_empty ? kll_sketch<T, C, S, A>(k) : kll_sketch<T, C, S, A>(k, flags_byte, bytes, size);
+  if (is_empty) return kll_sketch<T, C, S, A>(k);
+
+  uint64_t n;
+  uint16_t min_k;
+  uint8_t num_levels;
+  const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
+  const char* end_ptr = static_cast<const char*>(bytes) + size;
+  if (is_single_item) {
+    n = 1;
+    min_k = k;
+    num_levels = 1;
+  } else {
+    ptr += copy_from_mem(ptr, &n, sizeof(n));
+    ptr += copy_from_mem(ptr, &min_k, sizeof(min_k));
+    ptr += copy_from_mem(ptr, &num_levels, sizeof(num_levels));
+    ptr++; // skip unused byte
+  }
+  uint32_t* levels = AllocU32().allocate(num_levels + 1);
+  const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));
+  if (is_single_item) {
+    levels[0] = capacity - 1;
+  } else {
+    // the last integer in levels_ is not serialized because it can be derived
+    ptr += copy_from_mem(ptr, levels, sizeof(levels[0]) * num_levels);
+  }
+  levels[num_levels] = capacity;
+  T* min_value = A().allocate(1);
+  T* max_value = A().allocate(1);
+  if (!is_single_item) {
+    ptr += S().deserialize(ptr, end_ptr - ptr, min_value, 1);
+    ptr += S().deserialize(ptr, end_ptr - ptr, max_value, 1);
+  }
+  T* items = A().allocate(capacity);
+  const auto num_items(levels[num_levels] - levels[0]);
+  ptr += S().deserialize(ptr, end_ptr - ptr, &items[levels[0]], num_items);
+  if (is_single_item) {
+    new (min_value) T(items[levels[0]]);
+    new (max_value) T(items[levels[0]]);
+  }
+  const bool is_level_zero_sorted = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
+  const size_t delta = ptr - static_cast<const char*>(bytes);
+  if (delta != size) throw std::logic_error("deserialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
+  return kll_sketch(k, min_k, n, num_levels, levels, items, capacity, min_value, max_value, is_level_zero_sorted);
 }
 
 /*
@@ -521,98 +603,22 @@ double kll_sketch<T, C, S, A>::get_normalized_rank_error(uint16_t k, bool pmf) {
 }
 
 // for deserialization
-// the common part of the preamble was read and compatibility checks were done
 template<typename T, typename C, typename S, typename A>
-kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, std::istream& is) {
-  k_ = k;
-  m_ = DEFAULT_M;
-  const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
-  if (is_single_item) {
-    n_ = 1;
-    min_k_ = k_;
-    num_levels_ = 1;
-  } else {
-    is.read((char*)&n_, sizeof(n_));
-    is.read((char*)&min_k_, sizeof(min_k_));
-    is.read((char*)&num_levels_, sizeof(num_levels_));
-    uint8_t unused;
-    is.read((char*)&unused, sizeof(unused));
-  }
-  levels_ = AllocU32().allocate(num_levels_ + 1);
-  levels_size_ = num_levels_ + 1;
-  const uint32_t capacity(kll_helper::compute_total_capacity(k_, m_, num_levels_));
-  if (is_single_item) {
-    levels_[0] = capacity - 1;
-  } else {
-    // the last integer in levels_ is not serialized because it can be derived
-    is.read((char*)levels_, sizeof(levels_[0]) * num_levels_);
-  }
-  levels_[num_levels_] = capacity;
-  min_value_ = A().allocate(1);
-  max_value_ = A().allocate(1);
-  if (!is_single_item) {
-    S().deserialize(is, min_value_, 1);
-    S().deserialize(is, max_value_, 1);
-  }
-  items_ = A().allocate(capacity);
-  items_size_ = capacity;
-  const auto num_items = levels_[num_levels_] - levels_[0];
-  S().deserialize(is, &items_[levels_[0]], num_items);
-  if (is_single_item) {
-    new (min_value_) T(items_[levels_[0]]);
-    new (max_value_) T(items_[levels_[0]]);
-  }
-  is_level_zero_sorted_ = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
-}
-
-// for deserialization
-// the common part of the preamble was read and compatibility checks were done
-// we also assume we have already checked that the preamble information fits within the buffer
-template<typename T, typename C, typename S, typename A>
-kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, const void* bytes, size_t size) {
-  k_ = k;
-  m_ = DEFAULT_M;
-  const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
-  const char* ptr = static_cast<const char*>(bytes) + DATA_START_SINGLE_ITEM;
-  const char* end_ptr = static_cast<const char*>(bytes) + size;
-  if (is_single_item) {
-    n_ = 1;
-    min_k_ = k_;
-    num_levels_ = 1;
-  } else {
-    ptr += copy_from_mem(ptr, &n_, sizeof(n_));
-    ptr += copy_from_mem(ptr, &min_k_, sizeof(min_k_));
-    ptr += copy_from_mem(ptr, &num_levels_, sizeof(num_levels_));
-    ptr++; // skip unused byte
-  }
-  levels_ = AllocU32().allocate(num_levels_ + 1);
-  levels_size_ = num_levels_ + 1;
-  const uint32_t capacity(kll_helper::compute_total_capacity(k_, m_, num_levels_));
-  if (is_single_item) {
-    levels_[0] = capacity - 1;
-  } else {
-    // the last integer in levels_ is not serialized because it can be derived
-    ptr += copy_from_mem(ptr, levels_, sizeof(levels_[0]) * num_levels_);
-  }
-  levels_[num_levels_] = capacity;
-  min_value_ = A().allocate(1);
-  max_value_ = A().allocate(1);
-  if (!is_single_item) {
-    ptr += S().deserialize(ptr, end_ptr - ptr, min_value_, 1);
-    ptr += S().deserialize(ptr, end_ptr - ptr, max_value_, 1);
-  }
-  items_ = A().allocate(capacity);
-  items_size_ = capacity;
-  const auto num_items(levels_[num_levels_] - levels_[0]);
-  ptr += S().deserialize(ptr, end_ptr - ptr, &items_[levels_[0]], num_items);
-  if (is_single_item) {
-    new (min_value_) T(items_[levels_[0]]);
-    new (max_value_) T(items_[levels_[0]]);
-  }
-  is_level_zero_sorted_ = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
-  const size_t delta = ptr - static_cast<const char*>(bytes);
-  if (delta != size) throw std::logic_error("deserialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
-}
+kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, uint32_t* levels,
+    T* items, uint32_t items_size, T* min_value, T* max_value, bool is_level_zero_sorted):
+k_(k),
+m_(DEFAULT_M),
+min_k_(min_k),
+n_(n),
+num_levels_(num_levels),
+levels_(levels),
+levels_size_(num_levels + 1),
+items_(items),
+items_size_(items_size),
+min_value_(min_value),
+max_value_(max_value),
+is_level_zero_sorted_(is_level_zero_sorted)
+{}
 
 // The following code is only valid in the special case of exactly reaching capacity while updating.
 // It cannot be used while merging, while reducing k, or anything else.
