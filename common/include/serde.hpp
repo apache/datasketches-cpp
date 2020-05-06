@@ -24,6 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <exception>
 
 #include "memory_operations.hpp"
 
@@ -33,12 +34,12 @@ namespace datasketches {
 template<typename T, typename Enable = void> struct serde {
   // stream serialization
   void serialize(std::ostream& os, const T* items, unsigned num);
-  void deserialize(std::istream& is, T* items, unsigned num); // items are not initialized
+  void deserialize(std::istream& is, T* items, unsigned num); // items allocated but not initialized
 
   // raw bytes serialization
   size_t size_of_item(const T& item);
   size_t serialize(void* ptr, size_t capacity, const T* items, unsigned num);
-  size_t deserialize(const void* ptr, size_t capacity, T* items, unsigned num); // items are not initialized
+  size_t deserialize(const void* ptr, size_t capacity, T* items, unsigned num); // items allocated but not initialized
 };
 
 // serde for all fixed-size arithmetic types (int and float of different sizes)
@@ -47,11 +48,28 @@ template<typename T, typename Enable = void> struct serde {
 template<typename T>
 struct serde<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
   void serialize(std::ostream& os, const T* items, unsigned num) {
-    os.write((char*)items, sizeof(T) * num);
+    bool failure = false;
+    try {
+      os.write((char*)items, sizeof(T) * num);
+    } catch (std::ostream::failure& e) {
+      failure = true;
+    }
+    if (failure || !os.good()) {
+      throw std::runtime_error("error writing to std::ostream with " + std::to_string(num) + " items");
+    }
   }
   void deserialize(std::istream& is, T* items, unsigned num) {
-    is.read((char*)items, sizeof(T) * num);
+    bool failure = false;
+    try {
+      is.read((char*)items, sizeof(T) * num);
+    } catch (std::istream::failure& e) {
+      failure = true;
+    }
+    if (failure || !is.good()) {
+      throw std::runtime_error("error reading from std::istream with " + std::to_string(num) + " items");
+    }
   }
+
   size_t size_of_item(const T&) {
     return sizeof(T);
   }
@@ -77,23 +95,47 @@ struct serde<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
 template<>
 struct serde<std::string> {
   void serialize(std::ostream& os, const std::string* items, unsigned num) {
-    for (unsigned i = 0; i < num; i++) {
-      uint32_t length = items[i].size();
-      os.write((char*)&length, sizeof(length));
-      os.write(items[i].c_str(), length);
+    unsigned i = 0;
+    bool failure = false;
+    try {
+      for (; i < num && os.good(); i++) {
+        uint32_t length = items[i].size();
+        os.write((char*)&length, sizeof(length));
+        os.write(items[i].c_str(), length);
+      }
+    } catch (std::ostream::failure& e) {
+      failure = true;
+    }
+    if (failure || !os.good()) {
+      throw std::runtime_error("error writing to std::ostream at item " + std::to_string(i));
     }
   }
   void deserialize(std::istream& is, std::string* items, unsigned num) {
-    for (unsigned i = 0; i < num; i++) {
-      uint32_t length;
-      is.read((char*)&length, sizeof(length));
-      new (&items[i]) std::string;
-      items[i].reserve(length);
-      auto it = std::istreambuf_iterator<char>(is);
-      for (uint32_t j = 0; j < length; j++) {
-        items[i].push_back(*it);
-        ++it;
+    unsigned i = 0;
+    bool failure = false;
+    try {
+      for (; i < num && is.good(); i++) {
+        uint32_t length;
+        is.read((char*)&length, sizeof(length));
+        if (!is.good()) { break; }
+        std::string str;
+        str.reserve(length);
+        auto it = std::istreambuf_iterator<char>(is);
+        for (uint32_t j = 0; j < length; j++) {
+          str.push_back(*it);
+          ++it;
+        }
+        new (&items[i]) std::string(std::move(str));
       }
+    } catch (std::istream::failure& e) {
+      failure = true;
+    }
+    if (failure || !is.good()) {
+      // clean up what we've already allocated
+      for (unsigned j = 0; j < i; ++j) {
+        items[i].~basic_string();
+      }
+      throw std::runtime_error("error reading from std::istream at item " + std::to_string(i)); 
     }
   }
   size_t size_of_item(const std::string& item) {
