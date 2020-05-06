@@ -470,8 +470,11 @@ class kll_sketch {
     bool is_level_zero_sorted_;
 
     // for deserialization
+    class item_deleter;
+    class items_deleter;
     kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, vector_u32<A>&& levels,
-        T* items, uint32_t items_size, T* min_value, T* max_value, bool is_level_zero_sorted);
+        std::unique_ptr<T, items_deleter> items, uint32_t items_size, std::unique_ptr<T, item_deleter> min_value,
+        std::unique_ptr<T, item_deleter> max_value, bool is_level_zero_sorted);
 
     // common update code
     inline void update_min_max(const T& value);
@@ -513,7 +516,6 @@ class kll_sketch {
     static TT get_invalid_value() {
       throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
     }
-
 };
 
 template<typename T, typename C, typename S, typename A>

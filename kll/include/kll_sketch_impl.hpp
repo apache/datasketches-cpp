@@ -492,21 +492,36 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is) {
     is.read((char*)levels.data(), sizeof(levels[0]) * num_levels);
   }
   levels[num_levels] = capacity;
-  T* min_value = A().allocate(1);
-  T* max_value = A().allocate(1);
+  auto item_buffer_deleter = [](T* ptr) { A().deallocate(ptr, 1); };
+  std::unique_ptr<T, decltype(item_buffer_deleter)> min_value_buffer(A().allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> max_value_buffer(A().allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, item_deleter> min_value;
+  std::unique_ptr<T, item_deleter> max_value;
   if (!is_single_item) {
-    S().deserialize(is, min_value, 1);
-    S().deserialize(is, max_value, 1);
+    S().deserialize(is, min_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter());
+    S().deserialize(is, max_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter());
   }
-  T* items = A().allocate(capacity);
+  auto items_buffer_deleter = [capacity](T* ptr) { A().deallocate(ptr, capacity); };
+  std::unique_ptr<T, decltype(items_buffer_deleter)> items_buffer(A().allocate(capacity), items_buffer_deleter);
   const auto num_items = levels[num_levels] - levels[0];
-  S().deserialize(is, &items[levels[0]], num_items);
-  if (is_single_item) {
-    new (min_value) T(items[levels[0]]);
-    new (max_value) T(items[levels[0]]);
-  }
+  S().deserialize(is, &items_buffer.get()[levels[0]], num_items);
+  // serde call did not throw, repackage with destrtuctors
+  std::unique_ptr<T, items_deleter> items(items_buffer.release(), items_deleter(levels[0], capacity));
   const bool is_level_zero_sorted = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
-  return kll_sketch(k, min_k, n, num_levels, std::move(levels), items, capacity, min_value, max_value, is_level_zero_sorted);
+  if (is_single_item) {
+    new (min_value_buffer.get()) T(items.get()[levels[0]]);
+    // copy did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter());
+    new (max_value_buffer.get()) T(items.get()[levels[0]]);
+    // copy did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter());
+  }
+  return kll_sketch(k, min_k, n, num_levels, std::move(levels), std::move(items), capacity,
+      std::move(min_value), std::move(max_value), is_level_zero_sorted);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -560,23 +575,38 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
     ptr += copy_from_mem(ptr, levels.data(), sizeof(levels[0]) * num_levels);
   }
   levels[num_levels] = capacity;
-  T* min_value = A().allocate(1);
-  T* max_value = A().allocate(1);
+  auto item_buffer_deleter = [](T* ptr) { A().deallocate(ptr, 1); };
+  std::unique_ptr<T, decltype(item_buffer_deleter)> min_value_buffer(A().allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> max_value_buffer(A().allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, item_deleter> min_value;
+  std::unique_ptr<T, item_deleter> max_value;
   if (!is_single_item) {
-    ptr += S().deserialize(ptr, end_ptr - ptr, min_value, 1);
-    ptr += S().deserialize(ptr, end_ptr - ptr, max_value, 1);
+    ptr += S().deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter());
+    ptr += S().deserialize(ptr, end_ptr - ptr, max_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter());
   }
-  T* items = A().allocate(capacity);
-  const auto num_items(levels[num_levels] - levels[0]);
-  ptr += S().deserialize(ptr, end_ptr - ptr, &items[levels[0]], num_items);
-  if (is_single_item) {
-    new (min_value) T(items[levels[0]]);
-    new (max_value) T(items[levels[0]]);
-  }
-  const bool is_level_zero_sorted = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
+  auto items_buffer_deleter = [capacity](T* ptr) { A().deallocate(ptr, capacity); };
+  std::unique_ptr<T, decltype(items_buffer_deleter)> items_buffer(A().allocate(capacity), items_buffer_deleter);
+  const auto num_items = levels[num_levels] - levels[0];
+  ptr += S().deserialize(ptr, end_ptr - ptr, &items_buffer.get()[levels[0]], num_items);
+  // serde call did not throw, repackage with destrtuctors
+  std::unique_ptr<T, items_deleter> items(items_buffer.release(), items_deleter(levels[0], capacity));
   const size_t delta = ptr - static_cast<const char*>(bytes);
   if (delta != size) throw std::logic_error("deserialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
-  return kll_sketch(k, min_k, n, num_levels, std::move(levels), items, capacity, min_value, max_value, is_level_zero_sorted);
+  const bool is_level_zero_sorted = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
+  if (is_single_item) {
+    new (min_value_buffer.get()) T(items.get()[levels[0]]);
+    // copy did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter());
+    new (max_value_buffer.get()) T(items.get()[levels[0]]);
+    // copy did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter());
+  }
+  return kll_sketch(k, min_k, n, num_levels, std::move(levels), std::move(items), capacity,
+      std::move(min_value), std::move(max_value), is_level_zero_sorted);
 }
 
 /*
@@ -596,17 +626,18 @@ double kll_sketch<T, C, S, A>::get_normalized_rank_error(uint16_t k, bool pmf) {
 // for deserialization
 template<typename T, typename C, typename S, typename A>
 kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, vector_u32<A>&& levels,
-    T* items, uint32_t items_size, T* min_value, T* max_value, bool is_level_zero_sorted):
+    std::unique_ptr<T, items_deleter> items, uint32_t items_size, std::unique_ptr<T, item_deleter> min_value,
+    std::unique_ptr<T, item_deleter> max_value, bool is_level_zero_sorted):
 k_(k),
 m_(DEFAULT_M),
 min_k_(min_k),
 n_(n),
 num_levels_(num_levels),
 levels_(std::move(levels)),
-items_(items),
+items_(items.release()),
 items_size_(items_size),
-min_value_(min_value),
-max_value_(max_value),
+min_value_(min_value.release()),
+max_value_(max_value.release()),
 is_level_zero_sorted_(is_level_zero_sorted)
 {}
 
@@ -1057,6 +1088,34 @@ template<typename T, typename C, typename S, typename A>
 const std::pair<const T&, const uint64_t> kll_sketch<T, C, S, A>::const_iterator::operator*() const {
   return std::pair<const T&, const uint64_t>(items[index], weight);
 }
+
+template<typename T, typename C, typename S, typename A>
+class kll_sketch<T, C, S, A>::item_deleter {
+  public:
+  void operator() (T* ptr) const {
+    if (ptr != nullptr) {
+      ptr->~T();
+      A().deallocate(ptr, 1);
+    }
+  }
+};
+
+template<typename T, typename C, typename S, typename A>
+class kll_sketch<T, C, S, A>::items_deleter {
+  public:
+  items_deleter(uint32_t start, uint32_t num): start(start), num(num) {}
+  void operator() (T* ptr) const {
+    if (ptr != nullptr) {
+      for (uint32_t i = start; i < num; ++i) {
+        ptr[i].~T();
+      }
+      A().deallocate(ptr, num);
+    }
+  }
+  private:
+  uint32_t start;
+  uint32_t num;
+};
 
 } /* namespace datasketches */
 
