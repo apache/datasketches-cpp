@@ -978,11 +978,7 @@ void kll_sketch<T, C, S, A>::to_stream(std::ostream& os, bool print_levels, bool
   }
   os << "### End sketch summary" << std::endl;
 
-  // for debugging
-  const bool with_levels(false);
-  const bool with_data(false);
-
-  if (with_levels) {
+  if (print_levels) {
     os << "### KLL sketch levels:" << std::endl;
     os << "   index: nominal capacity, actual size" << std::endl;
     for (uint8_t i = 0; i < num_levels_; i++) {
@@ -991,7 +987,7 @@ void kll_sketch<T, C, S, A>::to_stream(std::ostream& os, bool print_levels, bool
     os << "### End sketch levels" << std::endl;
   }
 
-  if (with_data) {
+  if (print_items) {
     os << "### KLL sketch data:" << std::endl;
     uint8_t level(0);
     while (level < num_levels_) {
