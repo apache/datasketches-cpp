@@ -143,13 +143,13 @@ namespace datasketches {
 
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
+template<typename A> using AllocU32 = typename std::allocator_traits<A>::template rebind_alloc<uint32_t>;
+template<typename A> using vector_u32 = std::vector<uint32_t, AllocU32<A>>;
 template<typename A> using AllocD = typename std::allocator_traits<A>::template rebind_alloc<double>;
 template<typename A> using vector_d = std::vector<double, AllocD<A>>;
 
 template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class kll_sketch {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint32_t> AllocU32;
-
   public:
     static const uint8_t DEFAULT_M = 8;
     static const uint16_t DEFAULT_K = 200;
@@ -462,8 +462,7 @@ class kll_sketch {
     uint16_t min_k_; // for error estimation after merging with different k
     uint64_t n_;
     uint8_t num_levels_;
-    uint32_t* levels_;
-    uint8_t levels_size_;
+    vector_u32<A> levels_;
     T* items_;
     uint32_t items_size_;
     T* min_value_;
@@ -471,7 +470,7 @@ class kll_sketch {
     bool is_level_zero_sorted_;
 
     // for deserialization
-    kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, uint32_t* levels,
+    kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, vector_u32<A>&& levels,
         T* items, uint32_t items_size, T* min_value, T* max_value, bool is_level_zero_sorted);
 
     // common update code
