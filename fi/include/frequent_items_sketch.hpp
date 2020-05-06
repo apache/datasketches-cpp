@@ -292,6 +292,9 @@ private:
   // version for floating point type
   template<typename WW = W, typename std::enable_if<std::is_floating_point<WW>::value, int>::type = 0>
   static inline void check_weight(WW weight);
+
+  // for deserialize
+  class items_deleter;
 };
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>

@@ -257,6 +257,24 @@ vector_u8<A> frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_
 }
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
+class frequent_items_sketch<T, W, H, E, S, A>::items_deleter {
+public:
+  items_deleter(uint32_t num, bool destroy): num(num), destroy(destroy) {}
+  void set_destroy(bool destroy) { this->destroy = destroy; }
+  void operator() (T* ptr) const {
+    if (ptr != nullptr) {
+      if (destroy) {
+        for (uint32_t i = 0; i < num; ++i) ptr[i].~T();
+      }
+      A().deallocate(ptr, num);
+    }
+  }
+private:
+  uint32_t num;
+  bool destroy;
+};
+
+template<typename T, typename W, typename H, typename E, typename S, typename A>
 frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>::deserialize(std::istream& is) {
   uint8_t preamble_longs;
   is.read((char*)&preamble_longs, sizeof(preamble_longs));
@@ -293,17 +311,15 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
 
     // batch deserialization with intermediate array of items and weights
     typedef typename std::allocator_traits<A>::template rebind_alloc<W> AllocW;
-    W* weights = AllocW().allocate(num_items);
-    is.read((char*)weights, sizeof(W) * num_items);
-    T* items = A().allocate(num_items); // rely on serde to construct items
-    S().deserialize(is, items, num_items);
+    std::vector<W, AllocW> weights(num_items);
+    is.read((char*)weights.data(), sizeof(W) * num_items);
+    items_deleter deleter(num_items, false);
+    std::unique_ptr<T, items_deleter> items(A().allocate(num_items), deleter);
+    S().deserialize(is, items.get(), num_items);
+    deleter.set_destroy(true); // serde did not throw, so the items must be constructed
     for (uint32_t i = 0; i < num_items; i++) {
-      sketch.update(std::move(items[i]), weights[i]);
-      items[i].~T();
+      sketch.update(std::move(items.get()[i]), weights[i]);
     }
-    AllocW().deallocate(weights, num_items);
-    A().deallocate(items, num_items);
-
     sketch.total_weight = total_weight;
     sketch.offset = offset;
   }
@@ -349,20 +365,19 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     W offset;
     ptr += copy_from_mem(ptr, &offset, sizeof(offset));
 
+    ensure_minimum_memory(size, ptr - base + (sizeof(W) * num_items));
     // batch deserialization with intermediate array of items and weights
     typedef typename std::allocator_traits<A>::template rebind_alloc<W> AllocW;
-    W* weights = AllocW().allocate(num_items);
-    ensure_minimum_memory(size, ptr - base + (sizeof(W) * num_items));
-    ptr += copy_from_mem(ptr, weights, sizeof(W) * num_items);
-    T* items = A().allocate(num_items);
+    std::vector<W, AllocW> weights(num_items);
+    ptr += copy_from_mem(ptr, weights.data(), sizeof(W) * num_items);
+    items_deleter deleter(num_items, false);
+    std::unique_ptr<T, items_deleter> items(A().allocate(num_items), deleter);
     const size_t bytes_remaining = size - (ptr - base);
-    ptr += S().deserialize(ptr, bytes_remaining, items, num_items);
+    ptr += S().deserialize(ptr, bytes_remaining, items.get(), num_items);
+    deleter.set_destroy(true); // serde did not throw, so the items must be constructed
     for (uint32_t i = 0; i < num_items; i++) {
-      sketch.update(std::move(items[i]), weights[i]);
-      items[i].~T();
+      sketch.update(std::move(items.get()[i]), weights[i]);
     }
-    AllocW().deallocate(weights, num_items);
-    A().deallocate(items, num_items);
 
     sketch.total_weight = total_weight;
     sketch.offset = offset;
