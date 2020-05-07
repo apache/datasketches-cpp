@@ -198,6 +198,9 @@ protected:
 
 // update sketch
 
+template<typename A> using AllocU64 = typename std::allocator_traits<A>::template rebind_alloc<uint64_t>;
+template<typename A> using vector_u64 = std::vector<uint64_t, AllocU64<A>>;
+
 template<typename A>
 class update_theta_sketch_alloc: public theta_sketch_alloc<A> {
 public:
@@ -207,12 +210,7 @@ public:
 
   // No constructor here. Use builder instead.
 
-  update_theta_sketch_alloc(const update_theta_sketch_alloc<A>& other);
-  update_theta_sketch_alloc(update_theta_sketch_alloc<A>&& other) noexcept;
-  virtual ~update_theta_sketch_alloc();
-
-  update_theta_sketch_alloc<A>& operator=(const update_theta_sketch_alloc<A>& other);
-  update_theta_sketch_alloc<A>& operator=(update_theta_sketch_alloc<A>&& other);
+  virtual ~update_theta_sketch_alloc() = default;
 
   virtual uint32_t get_num_retained() const;
   virtual uint16_t get_seed_hash() const;
@@ -355,7 +353,7 @@ private:
 
   uint8_t lg_cur_size_;
   uint8_t lg_nom_size_;
-  uint64_t* keys_;
+  vector_u64<A> keys_;
   uint32_t num_keys_;
   resize_factor rf_;
   float p_;
@@ -367,7 +365,7 @@ private:
   // for builder
   update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);
   // for deserialize
-  update_theta_sketch_alloc(bool is_empty, uint64_t theta, uint8_t lg_cur_size, uint8_t lg_nom_size, uint64_t* keys, uint32_t num_keys, resize_factor rf, float p, uint64_t seed);
+  update_theta_sketch_alloc(bool is_empty, uint64_t theta, uint8_t lg_cur_size, uint8_t lg_nom_size, vector_u64<A>&& keys, uint32_t num_keys, resize_factor rf, float p, uint64_t seed);
 
   void resize();
   void rebuild();
@@ -400,13 +398,8 @@ public:
   // - as a result of a set operation
   // - by deserializing a previously serialized compact sketch
 
-  compact_theta_sketch_alloc(const compact_theta_sketch_alloc<A>& other);
   compact_theta_sketch_alloc(const theta_sketch_alloc<A>& other, bool ordered);
-  compact_theta_sketch_alloc(compact_theta_sketch_alloc<A>&& other) noexcept;
-  virtual ~compact_theta_sketch_alloc();
-
-  compact_theta_sketch_alloc<A>& operator=(const compact_theta_sketch_alloc<A>& other);
-  compact_theta_sketch_alloc<A>& operator=(compact_theta_sketch_alloc<A>&& other);
+  virtual ~compact_theta_sketch_alloc() = default;
 
   virtual uint32_t get_num_retained() const;
   virtual uint16_t get_seed_hash() const;
@@ -440,8 +433,7 @@ public:
 private:
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
 
-  uint64_t* keys_;
-  uint32_t num_keys_;
+  vector_u64<A> keys_;
   uint16_t seed_hash_;
   bool is_ordered_;
 
@@ -450,7 +442,7 @@ private:
   friend theta_union_alloc<A>;
   friend theta_intersection_alloc<A>;
   friend theta_a_not_b_alloc<A>;
-  compact_theta_sketch_alloc(bool is_empty, uint64_t theta, uint64_t* keys, uint32_t num_keys, uint16_t seed_hash, bool is_ordered);
+  compact_theta_sketch_alloc(bool is_empty, uint64_t theta, vector_u64<A>&& keys, uint16_t seed_hash, bool is_ordered);
   static compact_theta_sketch_alloc<A> internal_deserialize(std::istream& is, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash);
   static compact_theta_sketch_alloc<A> internal_deserialize(const void* bytes, size_t size, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash);
 };

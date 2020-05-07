@@ -36,72 +36,10 @@ is_valid_(false),
 is_empty_(false),
 theta_(theta_sketch_alloc<A>::MAX_THETA),
 lg_size_(0),
-keys_(nullptr),
+keys_(),
 num_keys_(0),
 seed_hash_(theta_sketch_alloc<A>::get_seed_hash(seed))
 {}
-
-template<typename A>
-theta_intersection_alloc<A>::theta_intersection_alloc(const theta_intersection_alloc<A>& other):
-is_valid_(other.is_valid_),
-is_empty_(other.is_empty_),
-theta_(other.theta_),
-lg_size_(other.lg_size_),
-keys_(other.keys_ == nullptr ? nullptr : AllocU64().allocate(1 << lg_size_)),
-num_keys_(other.num_keys_),
-seed_hash_(other.seed_hash_)
-{
-  if (keys_ != nullptr) std::copy(other.keys_, &other.keys_[1 << lg_size_], keys_);
-}
-
-template<typename A>
-theta_intersection_alloc<A>::theta_intersection_alloc(theta_intersection_alloc<A>&& other) noexcept:
-is_valid_(false),
-is_empty_(false),
-theta_(theta_sketch_alloc<A>::MAX_THETA),
-lg_size_(0),
-keys_(nullptr),
-num_keys_(0),
-seed_hash_(other.seed_hash_)
-{
-  std::swap(is_valid_, other.is_valid_);
-  std::swap(is_empty_, other.is_empty_);
-  std::swap(theta_, other.theta_);
-  std::swap(lg_size_, other.lg_size_);
-  std::swap(keys_, other.keys_);
-  std::swap(num_keys_, other.num_keys_);
-}
-
-template<typename A>
-theta_intersection_alloc<A>::~theta_intersection_alloc() {
-  if (keys_ != nullptr) {
-    AllocU64().deallocate(keys_, 1 << lg_size_);
-  }
-}
-
-template<typename A>
-theta_intersection_alloc<A>& theta_intersection_alloc<A>::operator=(theta_intersection_alloc<A> other) {
-  std::swap(is_valid_, other.is_valid_);
-  std::swap(is_empty_, other.is_empty_);
-  std::swap(theta_, other.theta_);
-  std::swap(lg_size_, other.lg_size_);
-  std::swap(keys_, other.keys_);
-  std::swap(num_keys_, other.num_keys_);
-  std::swap(seed_hash_, other.seed_hash_);
-  return *this;
-}
-
-template<typename A>
-theta_intersection_alloc<A>& theta_intersection_alloc<A>::operator=(theta_intersection_alloc<A>&& other) {
-  std::swap(is_valid_, other.is_valid_);
-  std::swap(is_empty_, other.is_empty_);
-  std::swap(theta_, other.theta_);
-  std::swap(lg_size_, other.lg_size_);
-  std::swap(keys_, other.keys_);
-  std::swap(num_keys_, other.num_keys_);
-  std::swap(seed_hash_, other.seed_hash_);
-  return *this;
-}
 
 template<typename A>
 void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
@@ -112,9 +50,8 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
   if (is_valid_ && num_keys_ == 0) return;
   if (sketch.get_num_retained() == 0) {
     is_valid_ = true;
-    if (keys_ != nullptr) {
-      AllocU64().deallocate(keys_, 1 << lg_size_);
-      keys_ = nullptr;
+    if (keys_.size() > 0) {
+      keys_.resize(0);
       lg_size_ = 0;
       num_keys_ = 0;
     }
@@ -123,10 +60,9 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
   if (!is_valid_) { // first update, clone incoming sketch
     is_valid_ = true;
     lg_size_ = lg_size_from_count(sketch.get_num_retained(), update_theta_sketch_alloc<A>::REBUILD_THRESHOLD);
-    keys_ = AllocU64().allocate(1 << lg_size_);
-    std::fill(keys_, &keys_[1 << lg_size_], 0);
+    keys_.resize(1 << lg_size_, 0);
     for (auto key: sketch) {
-      if (!update_theta_sketch_alloc<A>::hash_search_or_insert(key, keys_, lg_size_)) {
+      if (!update_theta_sketch_alloc<A>::hash_search_or_insert(key, keys_.data(), lg_size_)) {
         throw std::invalid_argument("duplicate key, possibly corrupted input sketch");
       }
       ++num_keys_;
@@ -134,12 +70,12 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
     if (num_keys_ != sketch.get_num_retained()) throw std::invalid_argument("num keys mismatch, possibly corrupted input sketch");
   } else { // intersection
     const uint32_t max_matches = std::min(num_keys_, sketch.get_num_retained());
-    uint64_t* matched_keys = AllocU64().allocate(max_matches);
+    vector_u64<A> matched_keys(max_matches);
     uint32_t match_count = 0;
     uint32_t count = 0;
     for (auto key: sketch) {
       if (key < theta_) {
-        if (update_theta_sketch_alloc<A>::hash_search(key, keys_, lg_size_)) {
+        if (update_theta_sketch_alloc<A>::hash_search(key, keys_.data(), lg_size_)) {
           if (match_count == max_matches) throw std::invalid_argument("max matches exceeded, possibly corrupted input sketch");
           matched_keys[match_count++] = key;
         }
@@ -154,36 +90,34 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
       throw std::invalid_argument(" fewer keys then expected, possibly corrupted input sketch");
     }
     if (match_count == 0) {
-      AllocU64().deallocate(keys_, 1 << lg_size_);
-      keys_ = nullptr;
+      keys_.resize(0);
       lg_size_ = 0;
       num_keys_ = 0;
       if (theta_ == theta_sketch_alloc<A>::MAX_THETA) is_empty_ = true;
     } else {
       const uint8_t lg_size = lg_size_from_count(match_count, update_theta_sketch_alloc<A>::REBUILD_THRESHOLD);
       if (lg_size != lg_size_) {
-        AllocU64().deallocate(keys_, 1 << lg_size_);
         lg_size_ = lg_size;
-        keys_ = AllocU64().allocate(1 << lg_size_);
+        keys_.resize(1 << lg_size_);
       }
-      std::fill(keys_, &keys_[1 << lg_size_], 0);
+      std::fill(&keys_[0], &keys_[1 << lg_size_], 0);
       for (uint32_t i = 0; i < match_count; i++) {
-        update_theta_sketch_alloc<A>::hash_search_or_insert(matched_keys[i], keys_, lg_size_);
+        update_theta_sketch_alloc<A>::hash_search_or_insert(matched_keys[i], keys_.data(), lg_size_);
       }
       num_keys_ = match_count;
     }
-    AllocU64().deallocate(matched_keys, max_matches);
   }
 }
 
 template<typename A>
 compact_theta_sketch_alloc<A> theta_intersection_alloc<A>::get_result(bool ordered) const {
   if (!is_valid_) throw std::invalid_argument("calling get_result() before calling update() is undefined");
-  if (num_keys_ == 0) return compact_theta_sketch_alloc<A>(is_empty_, theta_, nullptr, 0, seed_hash_, ordered);
-  uint64_t* keys = AllocU64().allocate(num_keys_);
-  std::copy_if(keys_, &keys_[1 << lg_size_], keys, [](uint64_t key) { return key != 0; });
-  if (ordered) std::sort(keys, &keys[num_keys_]);
-  return compact_theta_sketch_alloc<A>(false, this->theta_, keys, num_keys_, seed_hash_, ordered);
+  vector_u64<A> keys(num_keys_);
+  if (num_keys_ > 0) {
+    std::copy_if(&keys_[0], &keys_[1 << lg_size_], &keys[0], [](uint64_t key) { return key != 0; });
+    if (ordered) std::sort(keys.begin(), keys.end());
+  }
+  return compact_theta_sketch_alloc<A>(is_empty_, theta_, std::move(keys), seed_hash_, ordered);
 }
 
 template<typename A>

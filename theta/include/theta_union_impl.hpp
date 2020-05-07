@@ -55,29 +55,21 @@ compact_theta_sketch_alloc<A> theta_union_alloc<A>::get_result(bool ordered) con
   const uint32_t nom_num_keys = 1 << state_.lg_nom_size_;
   if (theta_ >= state_.theta_ && state_.get_num_retained() <= nom_num_keys) return state_.compact(ordered);
   uint64_t theta = std::min(theta_, state_.get_theta64());
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-  uint64_t* keys = AllocU64().allocate(state_.get_num_retained());
+  vector_u64<A> keys(state_.get_num_retained());
   uint32_t num_keys = 0;
   for (auto key: state_) {
     if (key < theta) keys[num_keys++] = key;
   }
-  if (num_keys == 0) {
-    AllocU64().deallocate(keys, state_.get_num_retained());
-    return compact_theta_sketch_alloc<A>(is_empty_, theta, nullptr, 0, state_.get_seed_hash(), ordered);
-  }
   if (num_keys > nom_num_keys) {
-    std::nth_element(keys, &keys[nom_num_keys], &keys[num_keys]);
+    std::nth_element(&keys[0], &keys[nom_num_keys], &keys[num_keys]);
     theta = keys[nom_num_keys];
     num_keys = nom_num_keys;
   }
   if (num_keys != state_.get_num_retained()) {
-    uint64_t* new_keys = AllocU64().allocate(num_keys);
-    std::copy(keys, &keys[num_keys], new_keys);
-    AllocU64().deallocate(keys, state_.get_num_retained());
-    keys = new_keys;
+    keys.resize(num_keys);
   }
-  if (ordered) std::sort(keys, &keys[num_keys]);
-  return compact_theta_sketch_alloc<A>(false, theta, keys, num_keys, state_.get_seed_hash(), ordered);
+  if (ordered) std::sort(keys.begin(), keys.end());
+  return compact_theta_sketch_alloc<A>(false, theta, std::move(keys), state_.get_seed_hash(), ordered);
 }
 
 // builder
