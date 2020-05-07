@@ -46,34 +46,6 @@ is_empty_(is_empty), theta_(theta)
 {}
 
 template<typename A>
-theta_sketch_alloc<A>::theta_sketch_alloc(const theta_sketch_alloc<A>& other):
-is_empty_(other.is_empty_), theta_(other.theta_)
-{}
-
-template<typename A>
-theta_sketch_alloc<A>::theta_sketch_alloc(theta_sketch_alloc<A>&& other) noexcept:
-is_empty_(other.is_empty_), theta_(other.theta_)
-{}
-
-template<typename A>
-theta_sketch_alloc<A>& theta_sketch_alloc<A>::operator=(const theta_sketch_alloc<A>& other) {
-  is_empty_ = other.is_empty_;
-  theta_ = other.theta_;
-  return *this;
-}
-
-template<typename A>
-theta_sketch_alloc<A>& theta_sketch_alloc<A>::operator=(theta_sketch_alloc<A>&& other) {
-  std::swap(is_empty_, other.is_empty_);
-  std::swap(theta_, other.theta_);
-  return *this;
-}
-
-template<typename A>
-theta_sketch_alloc<A>::~theta_sketch_alloc() {
-}
-
-template<typename A>
 bool theta_sketch_alloc<A>::is_empty() const {
   return is_empty_;
 }

@@ -53,7 +53,7 @@ public:
   static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
   static const uint8_t SERIAL_VERSION = 3;
 
-  virtual ~theta_sketch_alloc();
+  virtual ~theta_sketch_alloc() = default;
 
   /**
    * @return true if this sketch represents an empty set (not the same as no retained entries!)
@@ -180,11 +180,6 @@ protected:
   uint64_t theta_;
 
   theta_sketch_alloc(bool is_empty, uint64_t theta);
-  theta_sketch_alloc(const theta_sketch_alloc<A>& other);
-  theta_sketch_alloc(theta_sketch_alloc<A>&& other) noexcept;
-
-  theta_sketch_alloc<A>& operator=(const theta_sketch_alloc<A>& other);
-  theta_sketch_alloc<A>& operator=(theta_sketch_alloc<A>&& other);
 
   static uint16_t get_seed_hash(uint64_t seed);
 
@@ -360,10 +355,9 @@ private:
   uint64_t seed_;
   uint32_t capacity_;
 
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-
   // for builder
   update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);
+
   // for deserialize
   update_theta_sketch_alloc(bool is_empty, uint64_t theta, uint8_t lg_cur_size, uint8_t lg_nom_size, vector_u64<A>&& keys, uint32_t num_keys, resize_factor rf, float p, uint64_t seed);
 
