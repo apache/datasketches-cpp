@@ -133,7 +133,7 @@ struct serde<std::string> {
     if (failure || !is.good()) {
       // clean up what we've already allocated
       for (unsigned j = 0; j < i; ++j) {
-        items[i].~basic_string();
+        items[j].~basic_string();
       }
       throw std::runtime_error("error reading from std::istream at item " + std::to_string(i)); 
     }
