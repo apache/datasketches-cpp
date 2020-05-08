@@ -1,40 +1,11 @@
 Apache DataSketches-cpp (incubating)
-Copyright 2019 The Apache Software Foundation
+Copyright 2020 The Apache Software Foundation
+
+Copyright 2015-2018 Yahoo
+Copyright 2019 Verizon Media
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 
 Prior to moving to ASF, the software for this project was developed at
 Yahoo (now Verizon Media) (https://developer.yahoo.com).
-
-This product contains 3rd party code under the following licenses:
-
-Public Domain
-=============
-
-This product contains code written by Austin Appleby and placed in the public domain.
-The original: https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
-  * common/include/MurmurHash3.h
-
-This product contains code published by Sean Eron Anderson and placed in the public domain.
-The original: https://graphics.stanford.edu/~seander/bithacks.html
-  * common/include/CommonUtil.h
-
-MIT License
-===========
-
-This product contains code by Benjamin R. Jack:
-https://github.com/apache/incubator-datasketches-cpp/blob/master/setup.py
-adapted from:
-https://github.com/benjaminjack/python_cpp_example
-Copyright (c) 2017 Benjamin R. Jack
-
-Boost License
-=============
-
-This product contains code copyright by Two Blue Cubes Ltd.:
-https://github.com/apache/incubator-datasketches-cpp/blob/master/common/test/catch.hpp
-borrowed from:
-https://github.com/catchorg/Catch2/blob/master/single_include/catch2/catch.hpp
-using the Boost 1.0 License
-https://github.com/catchorg/Catch2/blob/master/LICENSE.txt
