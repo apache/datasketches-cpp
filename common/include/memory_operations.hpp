@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef _MEMORY_CHECKS_HPP_
-#define _MEMORY_CHECKS_HPP_
+#ifndef _MEMORY_OPERATIONS_HPP_
+#define _MEMORY_OPERATIONS_HPP_
 
 #include <memory>
 #include <exception>
@@ -54,4 +54,4 @@ static inline size_t copy_to_mem(const void* src, void* dst, size_t size) {
 
 } // namespace
 
-#endif // _MEMORY_CHECKS_HPP_
+#endif // _MEMORY_OPERATIONS_HPP_
