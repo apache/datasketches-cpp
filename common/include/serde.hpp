@@ -143,7 +143,7 @@ struct serde<std::string> {
   }
   size_t serialize(void* ptr, size_t capacity, const std::string* items, unsigned num) {
     size_t bytes_written = 0;
-    for (unsigned i = 0; i < num; i++) {
+    for (unsigned i = 0; i < num; ++i) {
       const uint32_t length = items[i].size();
       const size_t new_bytes = length + sizeof(length);
       check_memory_size(bytes_written + new_bytes, capacity);
@@ -157,18 +157,37 @@ struct serde<std::string> {
   }
   size_t deserialize(const void* ptr, size_t capacity, std::string* items, unsigned num) {
     size_t bytes_read = 0;
-    for (unsigned i = 0; i < num; i++) {
+    unsigned i = 0;
+    bool failure = false;
+    for (; i < num && !failure; ++i) {
       uint32_t length;
-      check_memory_size(bytes_read + sizeof(length), capacity);
+      if (bytes_read + sizeof(length) > capacity) {
+        bytes_read += sizeof(length); // we'll use this to report the error
+        failure = true;
+        break;
+      }
       memcpy(&length, ptr, sizeof(length));
       ptr = static_cast<const char*>(ptr) + sizeof(uint32_t);
       bytes_read += sizeof(length);
 
-      check_memory_size(bytes_read + length, capacity);
+      if (bytes_read + length > capacity) {
+        bytes_read += length; // we'll use this to report the error
+        failure = true;
+        break;
+      }
       new (&items[i]) std::string(static_cast<const char*>(ptr), length);
       ptr = static_cast<const char*>(ptr) + length;
       bytes_read += length;
     }
+
+    if (failure) {
+      // clean up what we've already allocated
+      for (unsigned j = 0; j < i; ++j)
+        items[j].~basic_string();
+      // using this for a consistent error message
+      check_memory_size(bytes_read, capacity);
+    }
+
     return bytes_read;
   }
 };
