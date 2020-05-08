@@ -61,7 +61,10 @@ compact_theta_sketch_alloc<A> theta_union_alloc<A>::get_result(bool ordered) con
   for (auto key: state_) {
     if (key < theta) keys[num_keys++] = key;
   }
-  if (num_keys == 0) return compact_theta_sketch_alloc<A>(is_empty_, theta, nullptr, 0, state_.get_seed_hash(), ordered);
+  if (num_keys == 0) {
+    AllocU64().deallocate(keys, state_.get_num_retained());
+    return compact_theta_sketch_alloc<A>(is_empty_, theta, nullptr, 0, state_.get_seed_hash(), ordered);
+  }
   if (num_keys > nom_num_keys) {
     std::nth_element(keys, &keys[nom_num_keys], &keys[num_keys]);
     theta = keys[nom_num_keys];

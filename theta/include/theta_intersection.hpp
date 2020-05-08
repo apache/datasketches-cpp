@@ -24,7 +24,8 @@
 #include <functional>
 #include <climits>
 
-#include <theta_sketch.hpp>
+#include "theta_sketch.hpp"
+#include "common_defs.hpp"
 
 namespace datasketches {
 
@@ -37,7 +38,12 @@ namespace datasketches {
 template<typename A>
 class theta_intersection_alloc {
 public:
-  explicit theta_intersection_alloc(uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  /**
+   * Creates an instance of the intersection with a given hash seed.
+   * @param seed hash seed
+   */
+  explicit theta_intersection_alloc(uint64_t seed = DEFAULT_SEED);
+
   theta_intersection_alloc(const theta_intersection_alloc<A>& other);
   theta_intersection_alloc(theta_intersection_alloc<A>&& other) noexcept;
   ~theta_intersection_alloc();
@@ -45,8 +51,27 @@ public:
   theta_intersection_alloc<A>& operator=(theta_intersection_alloc<A> other);
   theta_intersection_alloc<A>& operator=(theta_intersection_alloc<A>&& other);
 
+  /**
+   * Updates the intersection with a given sketch.
+   * The intersection can be viewed as starting from the "universe" set, and every update
+   * can reduce the current set to leave the overlapping subset only.
+   * @param sketch represents input set for the intersection
+   */
   void update(const theta_sketch_alloc<A>& sketch);
+
+  /**
+   * Produces a copy of the current state of the intersection.
+   * If update() was not called, the state is the infinite "universe",
+   * which is considered an undefined state, and throws an exception.
+   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @returnthe  result of the intersection
+   */
   compact_theta_sketch_alloc<A> get_result(bool ordered = true) const;
+
+  /**
+   * Returns true if the state of the intersection is defined (not infinite "universe").
+   * @return true if the state is valid
+   */
   bool has_result() const;
 
 private:

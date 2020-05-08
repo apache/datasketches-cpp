@@ -547,39 +547,10 @@ class hll_union_alloc {
      */
     hll_sketch_alloc<A> get_result(target_hll_type tgt_type = HLL_4) const;
 
-    typedef vector_u8<A> vector_bytes; // alias for users
-
-    /**
-     * Serializes the sketch to a byte array, compacting data structures
-     * where feasible to eliminate unused storage in the serialized image.
-     * @param header_size_bytes Allows for PostgreSQL integration
-     */
-    vector_bytes serialize_compact() const;
-  
-    /**
-     * Serializes the sketch to a byte array, retaining all internal 
-     * data structures in their current form.
-     */
-    vector_bytes serialize_updatable() const;
-
-    /**
-     * Serializes the sketch to an ostream, compacting data structures
-     * where feasible to eliminate unused storage in the serialized image.
-     * @param os std::ostream to use for output.
-     */
-    void serialize_compact(std::ostream& os) const;
-
-    /**
-     * Serializes the sketch to an ostream, retaining all internal data
-     * structures in their current form.
-     * @param os std::ostream to use for output.
-     */
-    void serialize_updatable(std::ostream& os) const;
-
     /**
      * Human readable summary with optional detail
      * @param os std::ostram to which the summary is written
-     * @param summary if true, output the sketch summary
+     * @param summary if true, output the union summary
      * @param detail if true, output the internal data array
      * @param auxDetail if true, output the internal Aux array, if it exists.
      * @param all if true, outputs all entries including empty ones

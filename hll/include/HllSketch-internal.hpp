@@ -25,6 +25,7 @@
 #include "HllSketchImplFactory.hpp"
 #include "CouponList.hpp"
 #include "HllArray.hpp"
+#include "common_defs.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -123,7 +124,7 @@ template<typename A>
 void hll_sketch_alloc<A>::update(const std::string& datum) {
   if (datum.empty()) { return; }
   HashState hashResult;
-  HllUtil<A>::hash(datum.c_str(), datum.length(), HllUtil<A>::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil<A>::hash(datum.c_str(), datum.length(), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
@@ -131,7 +132,7 @@ template<typename A>
 void hll_sketch_alloc<A>::update(const uint64_t datum) {
   // no sign extension with 64 bits so no need to cast to signed value
   HashState hashResult;
-  HllUtil<A>::hash(&datum, sizeof(uint64_t), HllUtil<A>::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil<A>::hash(&datum, sizeof(uint64_t), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
@@ -153,7 +154,7 @@ void hll_sketch_alloc<A>::update(const uint8_t datum) {
 template<typename A>
 void hll_sketch_alloc<A>::update(const int64_t datum) {
   HashState hashResult;
-  HllUtil<A>::hash(&datum, sizeof(int64_t), HllUtil<A>::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil<A>::hash(&datum, sizeof(int64_t), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
@@ -161,7 +162,7 @@ template<typename A>
 void hll_sketch_alloc<A>::update(const int32_t datum) {
   int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
-  HllUtil<A>::hash(&val, sizeof(int64_t), HllUtil<A>::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil<A>::hash(&val, sizeof(int64_t), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
@@ -169,7 +170,7 @@ template<typename A>
 void hll_sketch_alloc<A>::update(const int16_t datum) {
   int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
-  HllUtil<A>::hash(&val, sizeof(int64_t), HllUtil<A>::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil<A>::hash(&val, sizeof(int64_t), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
@@ -177,7 +178,7 @@ template<typename A>
 void hll_sketch_alloc<A>::update(const int8_t datum) {
   int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
-  HllUtil<A>::hash(&val, sizeof(int64_t), HllUtil<A>::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil<A>::hash(&val, sizeof(int64_t), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
@@ -191,7 +192,7 @@ void hll_sketch_alloc<A>::update(const double datum) {
     d.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
   }
   HashState hashResult;
-  HllUtil<A>::hash(&d, sizeof(double), HllUtil<A>::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil<A>::hash(&d, sizeof(double), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
@@ -205,7 +206,7 @@ void hll_sketch_alloc<A>::update(const float datum) {
     d.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
   }
   HashState hashResult;
-  HllUtil<A>::hash(&d, sizeof(double), HllUtil<A>::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil<A>::hash(&d, sizeof(double), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
@@ -213,7 +214,7 @@ template<typename A>
 void hll_sketch_alloc<A>::update(const void* data, const size_t lengthBytes) {
   if (data == nullptr) { return; }
   HashState hashResult;
-  HllUtil<A>::hash(data, lengthBytes, HllUtil<A>::DEFAULT_UPDATE_SEED, hashResult);
+  HllUtil<A>::hash(data, lengthBytes, DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 

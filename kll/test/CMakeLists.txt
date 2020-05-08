@@ -24,7 +24,8 @@ set_target_properties(kll_test PROPERTIES
   CXX_STANDARD_REQUIRED YES
 )
 
-file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/" KLL_TEST_BINARY_PATH)
+file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" KLL_TEST_BINARY_PATH)
+string(APPEND KLL_TEST_BINARY_PATH "/")
 target_compile_definitions(kll_test
   PRIVATE
     TEST_BINARY_INPUT_PATH="${KLL_TEST_BINARY_PATH}"
@@ -40,9 +41,4 @@ target_sources(kll_test
     kll_sketch_test.cpp
     kll_sketch_custom_type_test.cpp
     kll_sketch_validation.cpp
-)
-
-target_include_directories(kll_test
-  PRIVATE
-    ../../common/test
 )

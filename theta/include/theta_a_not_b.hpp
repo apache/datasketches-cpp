@@ -24,7 +24,8 @@
 #include <functional>
 #include <climits>
 
-#include <theta_sketch.hpp>
+#include "theta_sketch.hpp"
+#include "common_defs.hpp"
 
 namespace datasketches {
 
@@ -37,8 +38,16 @@ namespace datasketches {
 template<typename A>
 class theta_a_not_b_alloc {
 public:
-  explicit theta_a_not_b_alloc(uint64_t seed = update_theta_sketch_alloc<A>::builder::DEFAULT_SEED);
+  /**
+   * Creates an instance of the a-not-b operation (set difference) with a given has seed.
+   * @param seed hash seed
+   */
+  explicit theta_a_not_b_alloc(uint64_t seed = DEFAULT_SEED);
 
+  /**
+   * Computes the a-not-b set operation given two sketches.
+   * @return the result of a-not-b
+   */
   compact_theta_sketch_alloc<A> compute(const theta_sketch_alloc<A>& a, const theta_sketch_alloc<A>& b, bool ordered = true) const;
 
 private:

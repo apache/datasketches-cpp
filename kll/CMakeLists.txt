@@ -27,8 +27,6 @@ target_include_directories(kll
   INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
-  PRIVATE 
-    ${COMMON_INCLUDE_DIR}
 )
 
 target_link_libraries(kll INTERFACE common)

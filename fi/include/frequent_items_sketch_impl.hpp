@@ -24,6 +24,8 @@
 #include <cstring>
 #include <limits>
 
+#include "memory_operations.hpp"
+
 namespace datasketches {
 
 // clang++ seems to require this declaration for CMAKE_BUILD_TYPE='Debug"
@@ -31,19 +33,12 @@ template<typename T, typename W, typename H, typename E, typename S, typename A>
 const uint8_t frequent_items_sketch<T, W, H, E, S, A>::LG_MIN_MAP_SIZE;
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
-frequent_items_sketch<T, W, H, E, S, A>::frequent_items_sketch(uint8_t lg_max_map_size):
-total_weight(0),
-offset(0),
-map(frequent_items_sketch::LG_MIN_MAP_SIZE, std::max(lg_max_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE))
-{
-}
-
-template<typename T, typename W, typename H, typename E, typename S, typename A>
-frequent_items_sketch<T, W, H, E, S, A>::frequent_items_sketch(uint8_t lg_start_map_size, uint8_t lg_max_map_size):
+frequent_items_sketch<T, W, H, E, S, A>::frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size):
 total_weight(0),
 offset(0),
 map(std::max(lg_start_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE), std::max(lg_max_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE))
 {
+  if (lg_start_map_size > lg_max_map_size) throw std::invalid_argument("starting size must not be greater than maximum size");
 }
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
@@ -216,6 +211,7 @@ vector_u8<A> frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_
   const size_t size = header_size_bytes + get_serialized_size_bytes();
   vector_u8<A> bytes(size);
   uint8_t* ptr = bytes.data() + header_size_bytes;
+  uint8_t* end_ptr = ptr + size;
 
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NONEMPTY;
   ptr += copy_to_mem(&preamble_longs, ptr, sizeof(uint8_t));
@@ -252,12 +248,31 @@ vector_u8<A> frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_
     }
     ptr += copy_to_mem(weights, ptr, sizeof(W) * num_items);
     AllocW().deallocate(weights, num_items);
-    ptr += S().serialize(ptr, items, num_items);
+    const size_t bytes_remaining = end_ptr - ptr;
+    ptr += S().serialize(ptr, bytes_remaining, items, num_items);
     for (unsigned i = 0; i < num_items; i++) items[i].~T();
     A().deallocate(items, num_items);
   }
   return bytes;
 }
+
+template<typename T, typename W, typename H, typename E, typename S, typename A>
+class frequent_items_sketch<T, W, H, E, S, A>::items_deleter {
+public:
+  items_deleter(uint32_t num, bool destroy): num(num), destroy(destroy) {}
+  void set_destroy(bool destroy) { this->destroy = destroy; }
+  void operator() (T* ptr) const {
+    if (ptr != nullptr) {
+      if (destroy) {
+        for (uint32_t i = 0; i < num; ++i) ptr[i].~T();
+      }
+      A().deallocate(ptr, num);
+    }
+  }
+private:
+  uint32_t num;
+  bool destroy;
+};
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
 frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>::deserialize(std::istream& is) {
@@ -283,7 +298,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
 
-  frequent_items_sketch<T, W, H, E, S, A> sketch(lg_cur_size, lg_max_size);
+  frequent_items_sketch<T, W, H, E, S, A> sketch(lg_max_size, lg_cur_size);
   if (!is_empty) {
     uint32_t num_items;
     is.read((char*)&num_items, sizeof(num_items));
@@ -296,17 +311,15 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
 
     // batch deserialization with intermediate array of items and weights
     typedef typename std::allocator_traits<A>::template rebind_alloc<W> AllocW;
-    W* weights = AllocW().allocate(num_items);
-    is.read((char*)weights, sizeof(W) * num_items);
-    T* items = A().allocate(num_items); // rely on serde to construct items
-    S().deserialize(is, items, num_items);
+    std::vector<W, AllocW> weights(num_items);
+    is.read((char*)weights.data(), sizeof(W) * num_items);
+    items_deleter deleter(num_items, false);
+    std::unique_ptr<T, items_deleter> items(A().allocate(num_items), deleter);
+    S().deserialize(is, items.get(), num_items);
+    deleter.set_destroy(true); // serde did not throw, so the items must be constructed
     for (uint32_t i = 0; i < num_items; i++) {
-      sketch.update(std::move(items[i]), weights[i]);
-      items[i].~T();
+      sketch.update(std::move(items.get()[i]), weights[i]);
     }
-    AllocW().deallocate(weights, num_items);
-    A().deallocate(items, num_items);
-
     sketch.total_weight = total_weight;
     sketch.offset = offset;
   }
@@ -315,7 +328,9 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
 frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>::deserialize(const void* bytes, size_t size) {
+  ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
+  const char* base = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(uint8_t));
   uint8_t serial_version;
@@ -337,8 +352,9 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
   check_serial_version(serial_version);
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
+  ensure_minimum_memory(size, 1 << preamble_longs);
 
-  frequent_items_sketch<T, W, H, E, S, A> sketch(lg_cur_size, lg_max_size);
+  frequent_items_sketch<T, W, H, E, S, A> sketch(lg_max_size, lg_cur_size);
   if (!is_empty) {
     uint32_t num_items;
     ptr += copy_from_mem(ptr, &num_items, sizeof(uint32_t));
@@ -349,18 +365,19 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     W offset;
     ptr += copy_from_mem(ptr, &offset, sizeof(offset));
 
+    ensure_minimum_memory(size, ptr - base + (sizeof(W) * num_items));
     // batch deserialization with intermediate array of items and weights
     typedef typename std::allocator_traits<A>::template rebind_alloc<W> AllocW;
-    W* weights = AllocW().allocate(num_items);
-    ptr += copy_from_mem(ptr, weights, sizeof(W) * num_items);
-    T* items = A().allocate(num_items);
-    ptr += S().deserialize(ptr, items, num_items);
+    std::vector<W, AllocW> weights(num_items);
+    ptr += copy_from_mem(ptr, weights.data(), sizeof(W) * num_items);
+    items_deleter deleter(num_items, false);
+    std::unique_ptr<T, items_deleter> items(A().allocate(num_items), deleter);
+    const size_t bytes_remaining = size - (ptr - base);
+    ptr += S().deserialize(ptr, bytes_remaining, items.get(), num_items);
+    deleter.set_destroy(true); // serde did not throw, so the items must be constructed
     for (uint32_t i = 0; i < num_items; i++) {
-      sketch.update(std::move(items[i]), weights[i]);
-      items[i].~T();
+      sketch.update(std::move(items.get()[i]), weights[i]);
     }
-    AllocW().deallocate(weights, num_items);
-    A().deallocate(items, num_items);
 
     sketch.total_weight = total_weight;
     sketch.offset = offset;
@@ -443,7 +460,7 @@ void frequent_items_sketch<T, W, H, E, S, A>::check_weight(WW weight) {
 // version for integral unsigned type - no-op
 template<typename T, typename W, typename H, typename E, typename S, typename A>
 template<typename WW, typename std::enable_if<std::is_integral<WW>::value && std::is_unsigned<WW>::value, int>::type>
-void frequent_items_sketch<T, W, H, E, S, A>::check_weight(WW weight) {}
+void frequent_items_sketch<T, W, H, E, S, A>::check_weight(WW) {}
 
 // version for floating point type
 template<typename T, typename W, typename H, typename E, typename S, typename A>

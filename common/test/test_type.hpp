@@ -88,7 +88,7 @@ struct test_type_serde {
       new (&items[i]) test_type(value);
     }
   }
-  size_t size_of_item(const test_type& item) {
+  size_t size_of_item(const test_type&) {
     return sizeof(int);
   }
 };

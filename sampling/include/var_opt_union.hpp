@@ -30,10 +30,20 @@ namespace datasketches {
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 
 /**
+ * Provides a unioning operation over var_opt_sketch objects. This union allows
+ * the sample size k to float, possibly increasing or decreasing as warranted by
+ * the available data.
+ * 
+ * The union currently allows serialization and deserialization, even though transporting
+ * union objects seems to be an anti-pattern with most sketches. We currently provide it here
+ * because the get_result() call may need to discard samples and decrease k in order to
+ * return a valid sketch, even if future calls to update() would allow k to remain larger.
+ * 
+ * The (de)serialization methods may be deprecated and subsequently removed in future versions.
+ *
  * author Kevin Lang 
  * author Jon Malkin
  */
-
 template <typename T, typename S = serde<T>, typename A = std::allocator<T>>
 class var_opt_union {
 
@@ -43,31 +53,94 @@ public:
   explicit var_opt_union(uint32_t max_k);
   var_opt_union(const var_opt_union& other);
   var_opt_union(var_opt_union&& other) noexcept;
-  static var_opt_union deserialize(std::istream& is);
-  static var_opt_union deserialize(const void* bytes, size_t size);
     
   ~var_opt_union();
 
   var_opt_union& operator=(const var_opt_union& other);
   var_opt_union& operator=(var_opt_union&& other);
 
+  /**
+   * Updates this union with the given sketch
+   * This method takes an lvalue.
+   * @param sk a sketch to add to the union
+   */
   void update(const var_opt_sketch<T,S,A>& sk);
+  
+  /**
+   * Not yet implemented
+   * Updates this union with the given sketch
+   * This method takes an rvalue.
+   * @param sk a sketch to add to the union
+   */
   //void update(var_opt_sketch<T,S,A>&& sk);
-
-  void reset();
 
   /**
    * Gets the varopt sketch resulting from the union of any input sketches.
-   *
-   * @return A varopt sketch
+   * @return a varopt sketch
    */
   var_opt_sketch<T,S,A> get_result() const;
   
-  size_t get_serialized_size_bytes() const;
-  void serialize(std::ostream& os) const;
-  std::vector<uint8_t, AllocU8<A>> serialize(unsigned header_size_bytes = 0) const;
+  /**
+   * Resets the union to its default, empty state.
+   */
+  void reset();
 
+  /**
+   * Computes size needed to serialize the current state of the union.
+   * This version is for all other types and can be expensive since every item needs to be looked at.
+   * @return size in bytes needed to serialize this sketch
+   */
+  size_t get_serialized_size_bytes() const;
+  
+  // This is a convenience alias for users
+  // The type returned by the following serialize method
+  typedef vector_u8<A> vector_bytes;
+  
+  /**
+   * NOTE: This method may be deprecated in a future version.
+   * This method serializes the sketch as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is a blank space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * @param header_size_bytes space to reserve in front of the sketch
+   */
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+
+  /**
+   * NOTE: This method may be deprecated in a future version.
+   * This method serializes the sketch into a given stream in a binary form
+   * @param os output stream
+   */
+  void serialize(std::ostream& os) const;
+
+  /**
+   * NOTE: This method may be deprecated in a future version.
+   * This method deserializes a union from a given stream.
+   * @param is input stream
+   * @return an instance of a union
+   */
+  static var_opt_union deserialize(std::istream& is);
+
+  /**
+   * NOTE: This method may be deprecated in a future version.
+   * This method deserializes a skeuniontch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @return an instance of a union
+   */
+  static var_opt_union deserialize(const void* bytes, size_t size);
+
+  /**
+   * Prints a summary of the union to a given stream.
+   * @param os the provided ostream
+   * @return the ostream
+   */
   std::ostream& to_stream(std::ostream& os) const;
+
+  /**
+   * Prints a summary of the union as a string.
+   * @return the summary as a string
+   */
   std::string to_string() const;
 
 

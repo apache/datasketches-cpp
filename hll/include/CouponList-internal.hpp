@@ -34,11 +34,10 @@ CouponList<A>::CouponList(const int lgConfigK, const target_hll_type tgtHllType,
   : HllSketchImpl<A>(lgConfigK, tgtHllType, mode, false) {
     if (mode == hll_mode::LIST) {
       lgCouponArrInts = HllUtil<A>::LG_INIT_LIST_SIZE;
-      oooFlag = false;
     } else { // mode == SET
       lgCouponArrInts = HllUtil<A>::LG_INIT_SET_SIZE;
-      oooFlag = true;
     }
+    oooFlag = false;
     const int arrayLen = 1 << lgCouponArrInts;
     typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
     couponIntArr = intAlloc().allocate(arrayLen);
@@ -100,7 +99,7 @@ CouponList<A>* CouponList<A>::copyAs(target_hll_type tgtHllType) const {
 template<typename A>
 CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
   if (len < HllUtil<A>::LIST_INT_ARR_START) {
-    throw std::invalid_argument("Input data length insufficient to hold CouponHashSet");
+    throw std::out_of_range("Input data length insufficient to hold CouponHashSet");
   }
 
   const uint8_t* data = static_cast<const uint8_t*>(bytes);
@@ -130,7 +129,7 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len) {
   const int couponsInArray = (compact ? couponCount : (1 << HllUtil<A>::computeLgArrInts(LIST, couponCount, lgK)));
   const size_t expectedLength = HllUtil<A>::LIST_INT_ARR_START + (couponsInArray * sizeof(int));
   if (len < expectedLength) {
-    throw std::invalid_argument("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
+    throw std::out_of_range("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
                                 + ", found: " + std::to_string(len));
   }
 
@@ -296,9 +295,9 @@ HllSketchImpl<A>* CouponList<A>::couponUpdate(int coupon) {
       ++couponCount;
       if (couponCount >= len) { // array full
         if (this->lgConfigK < 8) {
-          return promoteHeapListOrSetToHll(*this); // oooFlag = false
+          return promoteHeapListOrSetToHll(*this);
         }
-        return promoteHeapListToSet(*this); // oooFlag = true;
+        return promoteHeapListToSet(*this);
       }
       return this;
     }

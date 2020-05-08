@@ -30,6 +30,7 @@
 #include "MurmurHash3.h"
 #include "serde.hpp"
 #include "binomial_bounds.hpp"
+#include "memory_operations.hpp"
 
 namespace datasketches {
 
@@ -154,7 +155,7 @@ typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(st
 
 template<typename A>
 typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
-  check_size(size, static_cast<size_t>(8));
+  ensure_minimum_memory(size, static_cast<size_t>(8));
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
@@ -229,13 +230,6 @@ void theta_sketch_alloc<A>::check_seed_hash(uint16_t actual, uint16_t expected) 
   }
 }
 
-template<typename A>
-void theta_sketch_alloc<A>::check_size(size_t actual, size_t expected) {
-  if (actual < expected) {
-    throw std::invalid_argument("Given memory is smaller than expected: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int) actual));
-  }
-}
-
 // update sketch
 
 template<typename A>
@@ -299,7 +293,8 @@ capacity_(other.capacity_)
 
 template<typename A>
 update_theta_sketch_alloc<A>::~update_theta_sketch_alloc() {
-  AllocU64().deallocate(keys_, 1 << lg_cur_size_);
+  if (keys_ != nullptr)
+    AllocU64().deallocate(keys_, 1 << lg_cur_size_);
 }
 
 template<typename A>
@@ -358,10 +353,11 @@ void update_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items)
   os << "   resize factor        : " << (1 << rf_) << std::endl;
   os << "   sampling probability : " << p_ << std::endl;
   os << "   seed hash            : " << this->get_seed_hash() << std::endl;
+  os << "   empty?               : " << (this->is_empty() ? "true" : "false") << std::endl;
   os << "   ordered?             : " << (this->is_ordered() ? "true" : "false") << std::endl;
+  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   theta (fraction)     : " << this->get_theta() << std::endl;
   os << "   theta (raw 64-bit)   : " << this->theta_ << std::endl;
-  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   estimate             : " << this->get_estimate() << std::endl;
   os << "   lower bound 95% conf : " << this->get_lower_bound(2) << std::endl;
   os << "   upper bound 95% conf : " << this->get_upper_bound(2) << std::endl;
@@ -464,7 +460,7 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(
 
 template<typename A>
 update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
-  theta_sketch_alloc<A>::check_size(size, 8);
+  ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
@@ -491,7 +487,7 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::deserialize(const voi
 template<typename A>
 update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(const void* bytes, size_t size, resize_factor rf, uint8_t lg_cur_size, uint8_t lg_nom_size, uint8_t flags_byte, uint64_t seed) {
   const uint32_t table_size = 1 << lg_cur_size;
-  theta_sketch_alloc<A>::check_size(size, 16 + sizeof(uint64_t) * table_size);
+  ensure_minimum_memory(size, 16 + sizeof(uint64_t) * table_size);
   const char* ptr = static_cast<const char*>(bytes);
   uint32_t num_keys;
   ptr += copy_from_mem(ptr, &num_keys, sizeof(num_keys));
@@ -755,7 +751,8 @@ is_ordered_(other.is_ordered_)
 template<typename A>
 compact_theta_sketch_alloc<A>::~compact_theta_sketch_alloc() {
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-  AllocU64().deallocate(keys_, num_keys_);
+  if (keys_ != nullptr)
+    AllocU64().deallocate(keys_, num_keys_);
 }
 
 template<typename A>
@@ -802,10 +799,11 @@ void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items
   os << "### Compact Theta sketch summary:" << std::endl;
   os << "   num retained keys    : " << num_keys_ << std::endl;
   os << "   seed hash            : " << this->get_seed_hash() << std::endl;
+  os << "   empty?               : " << (this->is_empty() ? "true" : "false") << std::endl;
   os << "   ordered?             : " << (this->is_ordered() ? "true" : "false") << std::endl;
+  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   theta (fraction)     : " << this->get_theta() << std::endl;
   os << "   theta (raw 64-bit)   : " << this->theta_ << std::endl;
-  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   estimate             : " << this->get_estimate() << std::endl;
   os << "   lower bound 95% conf : " << this->get_lower_bound(2) << std::endl;
   os << "   upper bound 95% conf : " << this->get_upper_bound(2) << std::endl;
@@ -938,7 +936,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
 
 template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed) {
-  theta_sketch_alloc<A>::check_size(size, 8);
+  ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
@@ -961,6 +959,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const v
 template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserialize(const void* bytes, size_t size, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash) {
   const char* ptr = static_cast<const char*>(bytes);
+  const char* base = ptr;
 
   uint64_t theta = theta_sketch_alloc<A>::MAX_THETA;
   uint64_t* keys = nullptr;
@@ -971,17 +970,17 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
     if (preamble_longs == 1) {
       num_keys = 1;
     } else {
-      theta_sketch_alloc<A>::check_size(size, 8);
+      ensure_minimum_memory(size, 8); // read the first prelong before this method
       ptr += copy_from_mem(ptr, &num_keys, sizeof(num_keys));
       uint32_t unused32;
       ptr += copy_from_mem(ptr, &unused32, sizeof(unused32));
       if (preamble_longs > 2) {
-        theta_sketch_alloc<A>::check_size(size - (ptr - static_cast<const char*>(bytes)), 8);
+        ensure_minimum_memory(size, (preamble_longs - 1) << 3);
         ptr += copy_from_mem(ptr, &theta, sizeof(theta));
       }
     }
     const size_t keys_size_bytes = sizeof(uint64_t) * num_keys;
-    theta_sketch_alloc<A>::check_size(size - (ptr - static_cast<const char*>(bytes)), keys_size_bytes);
+    check_memory_size(ptr - base + keys_size_bytes, size);
     typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
     keys = AllocU64().allocate(num_keys);
     ptr += copy_from_mem(ptr, keys, keys_size_bytes);

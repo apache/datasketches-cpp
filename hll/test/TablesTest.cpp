@@ -17,43 +17,28 @@
  * under the License.
  */
 
-#include "CubicInterpolation.hpp"
 
-#include <cppunit/TestFixture.h>
-#include <cppunit/extensions/HelperMacros.h>
+#include <catch.hpp>
+
+#include "CubicInterpolation.hpp"
 
 namespace datasketches {
 
-class TablesTest : public CppUnit::TestFixture {
+TEST_CASE("hll tables: interpolation exception", "[hll_tables]") {
+  REQUIRE_THROWS_AS(CubicInterpolation<>::usingXAndYTables(-1.0), std::invalid_argument);
 
-  CPPUNIT_TEST_SUITE(TablesTest);
-  CPPUNIT_TEST(interpolationException);
-  CPPUNIT_TEST(checkCornerCase);
-  CPPUNIT_TEST_SUITE_END();
+  REQUIRE_THROWS_AS(CubicInterpolation<>::usingXAndYTables(1e12), std::invalid_argument);
+}
 
-  void interpolationException() {
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with x = -1.0",
-                                 CubicInterpolation<>::usingXAndYTables(-1.0),
-                                 std::invalid_argument);
-
-    CPPUNIT_ASSERT_THROW_MESSAGE("Failed to throw with x = 1e12",
-                                 CubicInterpolation<>::usingXAndYTables(1e12),
-                                 std::invalid_argument);
-  }
-
-  void checkCornerCase() {
-    int len = 10;
-    double xArr[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0};
-    double yArr[] = {2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0};
-    double x = xArr[len - 1];
-    double y = CubicInterpolation<>::usingXAndYTables(xArr, yArr, len, x);
-    double yExp = yArr[len - 1];
-    CPPUNIT_ASSERT_DOUBLES_EQUAL(yExp, y, 0.0);
-  }
-
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(TablesTest);
+TEST_CASE("hll tables: check corner case", "[hll_tables]") {
+  int len = 10;
+  double xArr[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0};
+  double yArr[] = {2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0};
+  double x = xArr[len - 1];
+  double y = CubicInterpolation<>::usingXAndYTables(xArr, yArr, len, x);
+  double yExp = yArr[len - 1];
+  REQUIRE(y == yExp);
+}
 
 } /* namespace datasketches */
 

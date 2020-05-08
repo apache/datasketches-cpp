@@ -95,7 +95,7 @@ HllArray<A>* HllArray<A>::copyAs(const target_hll_type tgtHllType) const {
 template<typename A>
 HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   if (len < HllUtil<A>::HLL_BYTE_ARR_START) {
-    throw std::invalid_argument("Input data length insufficient to hold HLL array");
+    throw std::out_of_range("Input data length insufficient to hold HLL array");
   }
 
   const uint8_t* data = static_cast<const uint8_t*>(bytes);
@@ -124,7 +124,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
 
   const int arrayBytes = hllArrBytes(tgtHllType, lgK);
   if (len < static_cast<size_t>(HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes)) {
-    throw std::invalid_argument("Input array too small to hold sketch image");
+    throw std::out_of_range("Input array too small to hold sketch image");
   }
 
   double hip, kxq0, kxq1;
@@ -147,7 +147,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, startFullSizeFlag);
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
-  sketch->putHipAccum(hip);
+  if (!oooFlag) sketch->putHipAccum(hip);
   sketch->putKxQ0(kxq0);
   sketch->putKxQ1(kxq1);
   sketch->putNumAtCurMin(numAtCurMin);
@@ -197,7 +197,7 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
   is.read((char*)&hip, sizeof(hip));
   is.read((char*)&kxq0, sizeof(kxq0));
   is.read((char*)&kxq1, sizeof(kxq1));
-  sketch->putHipAccum(hip);
+  if (!oooFlag) sketch->putHipAccum(hip);
   sketch->putKxQ0(kxq0);
   sketch->putKxQ1(kxq1);
 
@@ -405,7 +405,7 @@ double HllArray<A>::getCompositeEstimate() const {
   const double rawEst = getHllRawEstimate(this->lgConfigK, kxq0 + kxq1);
 
   const double* xArr = CompositeInterpolationXTable<A>::get_x_arr(this->lgConfigK);
-  const int xArrLen = CompositeInterpolationXTable<A>::get_x_arr_length(this->lgConfigK);
+  const int xArrLen = CompositeInterpolationXTable<A>::get_x_arr_length();
   const double yStride = CompositeInterpolationXTable<A>::get_y_stride(this->lgConfigK);
 
   if (rawEst < xArr[0]) {
@@ -588,7 +588,7 @@ template<typename A>
 void HllArray<A>::hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue) {
   const int configK = 1 << this->getLgConfigK();
   // update hip BEFORE updating kxq
-  hipAccum += configK / (kxq0 + kxq1);
+  if (!oooFlag) hipAccum += configK / (kxq0 + kxq1);
   // update kxq0 and kxq1; subtract first, then add
   if (oldValue < 32) { kxq0 -= INVERSE_POWERS_OF_2[oldValue]; }
   else               { kxq1 -= INVERSE_POWERS_OF_2[oldValue]; }

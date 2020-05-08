@@ -24,7 +24,8 @@ set_target_properties(sampling_test PROPERTIES
   CXX_STANDARD_REQUIRED YES
 )
 
-file(TO_NATIVE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/" SAMPLING_TEST_BINARY_PATH)
+file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" SAMPLING_TEST_BINARY_PATH)
+string(APPEND SAMPLING_TEST_BINARY_PATH "/")
 target_compile_definitions(sampling_test
   PRIVATE
     TEST_BINARY_INPUT_PATH="${SAMPLING_TEST_BINARY_PATH}"
@@ -39,9 +40,4 @@ target_sources(sampling_test
   PRIVATE
   var_opt_sketch_test.cpp
   var_opt_union_test.cpp
-)
-
-target_include_directories(sampling_test
-  PRIVATE
-    ../../common/test
 )
