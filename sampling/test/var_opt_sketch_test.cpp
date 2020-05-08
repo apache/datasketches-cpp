@@ -69,6 +69,13 @@ static void check_if_equal(var_opt_sketch<T,S,A>& sk1, var_opt_sketch<T,S,A>& sk
   REQUIRE((it1 == sk1.end() && it2 == sk2.end())); // iterators must end at the same time
 }
 
+static std::stringstream create_stringstream_with_length(std::vector<uint8_t> bytes, size_t length) {
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  std::string str((char*)&bytes[0], length);
+  ss.str(str);
+  return ss;
+}
+
 TEST_CASE("varopt sketch: invalid k", "[var_opt_sketch]") {
   REQUIRE_THROWS_AS(var_opt_sketch<int>(0), std::invalid_argument);
   REQUIRE_THROWS_AS(var_opt_sketch<int>(1 << 31), std::invalid_argument); // aka k < 0
@@ -239,6 +246,11 @@ TEST_CASE("varopt sketch: under-full sketch serialization", "[var_opt_sketch]") 
   sk.serialize(ss);
   var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
   check_if_equal(sk, sk_from_stream);
+
+  // ensure we unroll properly
+  REQUIRE_THROWS_AS(var_opt_sketch<int>::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+  std::stringstream ss_trunc = create_stringstream_with_length(bytes, bytes.size() - 1);
+  REQUIRE_THROWS_AS(var_opt_sketch<int>::deserialize(ss_trunc), std::runtime_error);
 }
 
 TEST_CASE("varopt sketch: end-of-warmup sketch serialization", "[var_opt_sketch]") {
@@ -255,6 +267,11 @@ TEST_CASE("varopt sketch: end-of-warmup sketch serialization", "[var_opt_sketch]
   sk.serialize(ss);
   var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
   check_if_equal(sk, sk_from_stream);
+
+  // ensure we unroll properly
+  REQUIRE_THROWS_AS(var_opt_sketch<int>::deserialize(bytes.data(), bytes.size() - 1000), std::out_of_range);
+  std::stringstream ss_trunc = create_stringstream_with_length(bytes, bytes.size() - 1000);
+  REQUIRE_THROWS_AS(var_opt_sketch<int>::deserialize(ss_trunc), std::runtime_error);
 }
 
 TEST_CASE("varopt sketch: full sketch serialization", "[var_opt_sketch]") {
@@ -283,6 +300,11 @@ TEST_CASE("varopt sketch: full sketch serialization", "[var_opt_sketch]") {
   sk.serialize(ss);
   var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
   check_if_equal(sk, sk_from_stream);
+
+  // ensure we unroll properly
+  REQUIRE_THROWS_AS(var_opt_sketch<int>::deserialize(bytes.data(), bytes.size() - 100), std::out_of_range);
+  std::stringstream ss_trunc = create_stringstream_with_length(bytes, bytes.size() - 100);
+  REQUIRE_THROWS_AS(var_opt_sketch<int>::deserialize(ss_trunc), std::runtime_error);
 }
 
 TEST_CASE("varopt sketch: string serialization", "[var_opt_sketch]") {
@@ -302,6 +324,11 @@ TEST_CASE("varopt sketch: string serialization", "[var_opt_sketch]") {
   sk.serialize(ss);
   var_opt_sketch<std::string> sk_from_stream = var_opt_sketch<std::string>::deserialize(ss);
   check_if_equal(sk, sk_from_stream);
+
+  // ensure we unroll properly
+  REQUIRE_THROWS_AS(var_opt_sketch<std::string>::deserialize(bytes.data(), bytes.size() - 12), std::out_of_range);
+  std::stringstream ss_trunc = create_stringstream_with_length(bytes, bytes.size() - 12);
+  REQUIRE_THROWS_AS(var_opt_sketch<std::string>::deserialize(ss_trunc), std::runtime_error);
 }
 
 TEST_CASE("varopt sketch: pseudo-light update", "[var_opt_sketch]") {

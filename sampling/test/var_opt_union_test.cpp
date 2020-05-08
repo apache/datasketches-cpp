@@ -54,6 +54,13 @@ static void check_if_equal(var_opt_sketch<T,S,A>& sk1, var_opt_sketch<T,S,A>& sk
   REQUIRE((it1 == sk1.end() && it2 == sk2.end())); // iterators must end at the same time
 }
 
+static std::stringstream create_stringstream_with_length(std::vector<uint8_t> bytes, size_t length) {
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  std::string str((char*)&bytes[0], length);
+  ss.str(str);
+  return ss;
+}
+
 // compare serialization and deserialization results, checking string and stream methods to
 // ensure that the resulting binary images are compatible.
 // if exact_compare = false, checks for equivalence -- specific R region values may differ but
@@ -85,9 +92,15 @@ static void compare_serialization_deserialization(var_opt_union<T,S,A>& vo_union
   var_opt_union<T> u_from_str = var_opt_union<T>::deserialize(str_from_stream.c_str(), str_from_stream.size());
   sk2 = u_from_str.get_result();
   check_if_equal(sk1, sk2, exact_compare);
+
+  // check truncated input, too
+  REQUIRE_THROWS_AS(var_opt_union<T>::deserialize(bytes.data(), bytes.size() - 5), std::out_of_range);
+  std::stringstream ss_trunc = create_stringstream_with_length(bytes, bytes.size() - 5);
+  // next line may throw either std::illegal_argument or std::runtime_exception
+  REQUIRE_THROWS_AS(var_opt_union<T>::deserialize(ss_trunc), std::exception);
 }
 
-TEST_CASE("varopt union: bad predlongs", "[var_opt_union]") {
+TEST_CASE("varopt union: bad prelongs", "[var_opt_union]") {
   var_opt_sketch<int> sk = create_unweighted_sketch(32, 33);
   var_opt_union<int> u(32);
   u.update(sk);
