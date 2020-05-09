@@ -22,7 +22,6 @@
 
 #include <memory>
 #include <cmath>
-#include <assert.h>
 
 #include "kll_helper.hpp"
 
@@ -80,7 +79,7 @@ void kll_quantile_calculator<T, C, A>::populate_from_sketch(const T* items, uint
 
 template <typename T, typename C, typename A>
 T kll_quantile_calculator<T, C, A>::approximately_answer_positional_query(uint64_t pos) const {
-  assert (pos < n_);
+  if (pos >= n_) throw std::logic_error("position out of range");
   const uint32_t weights_size(levels_[num_levels_] + 1);
   const uint32_t index = chunk_containing_pos(weights_, weights_size, pos);
   return items_[index];
@@ -104,10 +103,10 @@ uint64_t kll_quantile_calculator<T, C, A>::pos_of_phi(double phi, uint64_t n) {
 
 template <typename T, typename C, typename A>
 uint32_t kll_quantile_calculator<T, C, A>::chunk_containing_pos(uint64_t* weights, uint32_t weights_size, uint64_t pos) {
-  assert (weights_size > 1); // remember, weights_ contains an "extra" position
+  if (weights_size <= 1) throw std::logic_error("weights array too short"); // weights_ contains an "extra" position
   const uint32_t nominal_length(weights_size - 1);
-  assert (weights[0] <= pos);
-  assert (pos < weights[nominal_length]);
+  if (pos < weights[0]) throw std::logic_error("position too small");
+  if (pos >= weights[nominal_length]) throw std::logic_error("position too large");
   return search_for_chunk_containing_pos(weights, pos, 0, nominal_length);
 }
 
@@ -145,8 +144,8 @@ void kll_quantile_calculator<T, C, A>::blocky_tandem_merge_sort_recursion(T* ite
   if (num_levels == 1) return;
   const uint8_t num_levels_1 = num_levels / 2;
   const uint8_t num_levels_2 = num_levels - num_levels_1;
-  assert (num_levels_1 >= 1);
-  assert (num_levels_2 >= num_levels_1);
+  if (num_levels_1 < 1) throw std::logic_error("level above 0 expected");
+  if (num_levels_2 < num_levels_1) throw std::logic_error("wrong order of levels");
   const uint8_t starting_level_1 = starting_level;
   const uint8_t starting_level_2 = starting_level + num_levels_1;
   // swap roles of src and dst

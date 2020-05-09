@@ -685,7 +685,7 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
   }
 
   // verify that we freed up half_adj_pop array slots just below the current level
-  assert (levels_[level] == (raw_beg + half_adj_pop));
+  if (levels_[level] != (raw_beg + half_adj_pop)) throw std::logic_error("compaction error");
 
   // finally, we need to shift up the data in the levels below
   // so that the freed-up space can be used by level zero
@@ -701,7 +701,7 @@ template<typename T, typename C, typename S, typename A>
 uint8_t kll_sketch<T, C, S, A>::find_level_to_compact() const {
   uint8_t level = 0;
   while (true) {
-    assert (level < num_levels_);
+    if (level >= num_levels_) throw std::logic_error("capacity calculation error");
     const uint32_t pop = levels_[level + 1] - levels_[level];
     const uint32_t cap = kll_helper::level_capacity(k_, num_levels_, level, m_);
     if (pop >= cap) {
@@ -716,8 +716,8 @@ void kll_sketch<T, C, S, A>::add_empty_top_level_to_completely_full_sketch() {
   const uint32_t cur_total_cap = levels_[num_levels_];
 
   // make sure that we are following a certain growth scheme
-  assert (levels_[0] == 0);
-  assert (items_size_ == cur_total_cap);
+  if (levels_[0] != 0) throw std::logic_error("full sketch expected");
+  if (items_size_ != cur_total_cap) throw std::logic_error("current capacity mismatch");
 
   // note that merging MIGHT over-grow levels_, in which case we might not have to grow it here
   const uint8_t new_levels_size = num_levels_ + 2;
@@ -740,7 +740,7 @@ void kll_sketch<T, C, S, A>::add_empty_top_level_to_completely_full_sketch() {
     levels_[i] += delta_cap;
   }
 
-  assert (levels_[num_levels_] == new_total_cap);
+  if (levels_[num_levels_] != new_total_cap) throw std::logic_error("new capacity mismatch");
 
   num_levels_++;
   levels_[num_levels_] = new_total_cap; // initialize the new "extra" index at the top
