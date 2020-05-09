@@ -167,6 +167,7 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is) {
 
 template<typename T, typename S, typename A>
 var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t size) {
+  ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));

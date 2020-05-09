@@ -175,6 +175,27 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
 }
 
 template<typename T, typename S, typename A>
+var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, uint32_t h, uint32_t m, uint32_t r, uint64_t n, double total_wt_r, resize_factor rf,
+                                      uint32_t curr_items_alloc, bool filled_data, std::unique_ptr<T, items_deleter> items,
+                                      std::unique_ptr<double, weights_deleter> weights, uint32_t num_marks_in_h,
+                                      std::unique_ptr<bool, marks_deleter> marks) :
+  k_(k),
+  h_(h),
+  m_(m),
+  r_(r),
+  n_(n),
+  total_wt_r_(total_wt_r),
+  rf_(rf),
+  curr_items_alloc_(curr_items_alloc),
+  filled_data_(filled_data),
+  data_(items.release()),
+  weights_(weights.release()),
+  num_marks_in_h_(num_marks_in_h),
+  marks_(marks.release())
+{}
+
+
+template<typename T, typename S, typename A>
 var_opt_sketch<T,S,A>::~var_opt_sketch() {
   if (data_ != nullptr) {
     if (filled_data_) {
@@ -240,125 +261,6 @@ var_opt_sketch<T,S,A>& var_opt_sketch<T,S,A>::operator=(var_opt_sketch&& other) 
   std::swap(num_marks_in_h_, other.num_marks_in_h_);
   std::swap(marks_, other.marks_);
   return *this;
-}
-
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs, std::istream& is) :
-  k_(k), m_(0), rf_(rf) {
-
-  // second and third prelongs
-  is.read((char*)&n_, sizeof(uint64_t));
-  is.read((char*)&h_, sizeof(uint32_t));
-  is.read((char*)&r_, sizeof(uint32_t));
-
-  validate_and_set_current_size(preamble_longs);
-
-  // current_items_alloc_ is set but validate R region weight (4th prelong), if needed, before allocating
-  if (preamble_longs == PREAMBLE_LONGS_FULL) { 
-    is.read((char*)&total_wt_r_, sizeof(total_wt_r_));
-    if (std::isnan(total_wt_r_) || r_ == 0 || total_wt_r_ <= 0.0) {
-      throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
-       "Found r = " + std::to_string(r_) + ", R region weight = " + std::to_string(total_wt_r_));
-    }
-  } else {
-    total_wt_r_ = 0.0;
-  }
-
-  allocate_data_arrays(curr_items_alloc_, is_gadget);
-
-  // read the first h_ weights
-  is.read((char*)weights_, h_ * sizeof(double));
-  for (size_t i = 0; i < h_; ++i) {
-    if (!(weights_[i] > 0.0)) {
-      const std::string msg("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
-      A().deallocate(data_, curr_items_alloc_);
-      AllocDouble().deallocate(weights_, curr_items_alloc_);
-      if (marks_ != nullptr) { AllocBool().deallocate(marks_, curr_items_alloc_); }
-      throw std::invalid_argument(msg);
-    }
-  }
-
-  std::fill(&weights_[h_], &weights_[curr_items_alloc_], -1.0);
-
-  // read the first h_ marks as packed bytes iff we have a gadget
-  num_marks_in_h_ = 0;
-  if (is_gadget) {
-    uint8_t val = 0;
-    for (uint32_t i = 0; i < h_; ++i) {
-      if ((i & 0x7) == 0x0) { // should trigger on first iteration
-        is.read((char*)&val, sizeof(val));
-      }
-      marks_[i] = ((val >> (i & 0x7)) & 0x1) == 1;
-      num_marks_in_h_ += (marks_[i] ? 1 : 0);
-    }
-  }
-
-  // read the sample items, skipping the gap. Either h_ or r_ may be 0
-  S().deserialize(is, data_, h_); // aka &data_[0]
-  S().deserialize(is, &data_[h_ + 1], r_);
-}
-
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs,
-                                      const void* bytes, size_t size) : k_(k), m_(0), rf_(rf) {
-  // private constructor so we assume not called if sketch is empty,
-  // and that the array is large enough to hold the preamble
-  const char* base = static_cast<const char*>(bytes);
-  const char* ptr = static_cast<const char*>(bytes) + sizeof(uint64_t);
-  const char* end_ptr = static_cast<const char*>(bytes) + size;
-
-  // second and third prelongs
-  ptr += copy_from_mem(ptr, &n_, sizeof(n_));
-  ptr += copy_from_mem(ptr, &h_, sizeof(h_));
-  ptr += copy_from_mem(ptr, &r_, sizeof(r_));
-
-  validate_and_set_current_size(preamble_longs);
-  
-  // current_items_alloc_ is set but validate R region weight (4th prelong), if needed, before allocating
-  if (preamble_longs == PREAMBLE_LONGS_FULL) {
-    ptr += copy_from_mem(ptr, &total_wt_r_, sizeof(total_wt_r_));
-    if (std::isnan(total_wt_r_) || r_ == 0 || total_wt_r_ <= 0.0) {
-      throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
-       "Found r = " + std::to_string(r_) + ", R region weight = " + std::to_string(total_wt_r_));
-    }
-  } else {
-    total_wt_r_ = 0.0;
-  }
-
-  allocate_data_arrays(curr_items_alloc_, is_gadget);
-
-  // read the first h_ weights, fill in rest of array with -1.0
-  check_memory_size(ptr - base + (h_ * sizeof(double)), size);
-  ptr += copy_from_mem(ptr, weights_, h_ * sizeof(double));
-  for (size_t i = 0; i < h_; ++i) {
-    if (!(weights_[i] > 0.0)) {
-      const std::string msg("Possible corruption: Non-positive weight when deserializing: " + std::to_string(weights_[i]));
-      A().deallocate(data_, curr_items_alloc_);
-      AllocDouble().deallocate(weights_, curr_items_alloc_);
-      if (marks_ != nullptr) { AllocBool().deallocate(marks_, curr_items_alloc_); }
-      throw std::invalid_argument(msg);
-    }
-  }
-  std::fill(&weights_[h_], &weights_[curr_items_alloc_], -1.0);
-  
-  // read the first h_ marks as packed bytes iff we have a gadget
-  num_marks_in_h_ = 0;
-  if (is_gadget) {
-    uint8_t val = 0;
-    const size_t size_marks = (h_ / 8) + (h_ % 8 > 0 ? 1 : 0);
-    check_memory_size(ptr - base + size_marks, size);
-    for (uint32_t i = 0; i < h_; ++i) {
-     if ((i & 0x7) == 0x0) { // should trigger on first iteration
-        ptr += copy_from_mem(ptr, &val, sizeof(val));
-      }
-      marks_[i] = ((val >> (i & 0x7)) & 0x1) == 1;
-      num_marks_in_h_ += (marks_[i] ? 1 : 0);
-    }
-  }
-
-  // read the sample items, skipping the gap. Either h_ or r_ may be 0
-  ptr += S().deserialize(ptr, end_ptr - ptr, data_, h_);
-  ptr += S().deserialize(ptr, end_ptr - ptr, &data_[h_ + 1], r_);
 }
 
 /*
@@ -569,6 +471,8 @@ template<typename T, typename S, typename A>
 var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size_t size) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
+  const char* base = ptr;
+  const char* end_ptr = ptr + size;
   uint8_t first_byte;
   ptr += copy_from_mem(ptr, &first_byte, sizeof(first_byte));
   uint8_t preamble_longs = first_byte & 0x3f;
@@ -589,7 +493,72 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
   const bool is_empty = flags & EMPTY_FLAG_MASK;
   const bool is_gadget = flags & GADGET_FLAG_MASK;
 
-  return is_empty ? var_opt_sketch<T,S,A>(k, rf, is_gadget) : var_opt_sketch<T,S,A>(k, rf, is_gadget, preamble_longs, bytes, size);
+  if (is_empty) {
+    return var_opt_sketch<T,S,A>(k, rf, is_gadget);
+  }
+
+  // second and third prelongs
+  uint64_t n;
+  uint32_t h, r;
+  ptr += copy_from_mem(ptr, &n, sizeof(n));
+  ptr += copy_from_mem(ptr, &h, sizeof(h));
+  ptr += copy_from_mem(ptr, &r, sizeof(r));
+
+  const uint32_t array_size = validate_and_get_target_size(preamble_longs, k, n, h, r, rf);
+  
+  // current_items_alloc_ is set but validate R region weight (4th prelong), if needed, before allocating
+  double total_wt_r = 0.0;
+  if (preamble_longs == PREAMBLE_LONGS_FULL) {
+    ptr += copy_from_mem(ptr, &total_wt_r, sizeof(total_wt_r));
+    if (std::isnan(total_wt_r) || r == 0 || total_wt_r <= 0.0) {
+      throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
+       "Found r = " + std::to_string(r) + ", R region weight = " + std::to_string(total_wt_r));
+    }
+  } else {
+    total_wt_r = 0.0;
+  }
+
+  // read the first h_ weights, fill in rest of array with -1.0
+  check_memory_size(ptr - base + (h * sizeof(double)), size);
+  std::unique_ptr<double, weights_deleter> weights(AllocDouble().allocate(array_size), weights_deleter(array_size));
+  double* wts = weights.get(); // to avoid lots of .get() calls -- do not delete
+  ptr += copy_from_mem(ptr, wts, h * sizeof(double));
+  for (size_t i = 0; i < h; ++i) {
+    if (!(wts[i] > 0.0)) {
+      throw std::invalid_argument("Possible corruption: Non-positive weight when deserializing: " + std::to_string(wts[i]));
+    }
+  }
+  std::fill(&wts[h], &wts[array_size], -1.0);
+  
+  // read the first h_ marks as packed bytes iff we have a gadget
+  uint32_t num_marks_in_h = 0;
+  std::unique_ptr<bool, marks_deleter> marks(nullptr, marks_deleter(array_size));
+  if (is_gadget) {
+    uint8_t val = 0;
+    marks = std::unique_ptr<bool, marks_deleter>(AllocBool().allocate(array_size), marks_deleter(array_size));
+    const size_t size_marks = (h / 8) + (h % 8 > 0 ? 1 : 0);
+    check_memory_size(ptr - base + size_marks, size);
+    for (uint32_t i = 0; i < h; ++i) {
+     if ((i & 0x7) == 0x0) { // should trigger on first iteration
+        ptr += copy_from_mem(ptr, &val, sizeof(val));
+      }
+      marks.get()[i] = ((val >> (i & 0x7)) & 0x1) == 1;
+      num_marks_in_h += (marks.get()[i] ? 1 : 0);
+    }
+  }
+
+  // read the sample items, skipping the gap. Either h_ or r_ may be 0
+  items_deleter deleter(array_size);
+  std::unique_ptr<T, items_deleter> items(A().allocate(array_size), deleter);
+  
+  ptr += S().deserialize(ptr, end_ptr - ptr, items.get(), h);
+  items.get_deleter().set_h(h); // serde didn't throw, so the items are now valid
+  
+  ptr += S().deserialize(ptr, end_ptr - ptr, &(items.get()[h + 1]), r);
+  items.get_deleter().set_r(r); // serde didn't throw, so the items are now valid
+
+  return var_opt_sketch(k, h, (r > 0 ? 1 : 0), r, n, total_wt_r, rf, array_size, false,
+                        std::move(items), std::move(weights), num_marks_in_h, std::move(marks));
 }
 
 template<typename T, typename S, typename A>
@@ -613,7 +582,69 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is) {
   const bool is_empty = flags & EMPTY_FLAG_MASK;
   const bool is_gadget = flags & GADGET_FLAG_MASK;
 
-  return is_empty ? var_opt_sketch<T,S,A>(k, rf, is_gadget) : var_opt_sketch<T,S,A>(k, rf, is_gadget, preamble_longs, is);
+  if (is_empty) {
+    return var_opt_sketch<T,S,A>(k, rf, is_gadget);
+  }
+
+  // second and third prelongs
+  uint64_t n;
+  uint32_t h, r;
+  is.read((char*)&n, sizeof(n));
+  is.read((char*)&h, sizeof(h));
+  is.read((char*)&r, sizeof(r));
+
+  const uint32_t array_size = validate_and_get_target_size(preamble_longs, k, n, h, r, rf);
+
+  // current_items_alloc_ is set but validate R region weight (4th prelong), if needed, before allocating
+  double total_wt_r = 0.0;
+  if (preamble_longs == PREAMBLE_LONGS_FULL) { 
+    is.read((char*)&total_wt_r, sizeof(total_wt_r));
+    if (std::isnan(total_wt_r) || r == 0 || total_wt_r <= 0.0) {
+      throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
+       "Found r = " + std::to_string(r) + ", R region weight = " + std::to_string(total_wt_r));
+    }
+  } else {
+    total_wt_r = 0.0;
+  }
+
+  // read the first h weights, fill remainder with -1.0
+  std::unique_ptr<double, weights_deleter> weights(AllocDouble().allocate(array_size), weights_deleter(array_size));
+  double* wts = weights.get(); // to avoid lots of .get() calls -- do not delete
+  is.read((char*)wts, h * sizeof(double));
+  for (size_t i = 0; i < h; ++i) {
+    if (!(wts[i] > 0.0)) {
+      throw std::invalid_argument("Possible corruption: Non-positive weight when deserializing: " + std::to_string(wts[i]));
+    }
+  }
+  std::fill(&wts[h], &wts[array_size], -1.0);
+
+  // read the first h_ marks as packed bytes iff we have a gadget
+  uint32_t num_marks_in_h = 0;
+  std::unique_ptr<bool, marks_deleter> marks(nullptr, marks_deleter(array_size));
+  if (is_gadget) {
+    marks = std::unique_ptr<bool, marks_deleter>(AllocBool().allocate(array_size), marks_deleter(array_size));
+    uint8_t val = 0;
+    for (uint32_t i = 0; i < h; ++i) {
+      if ((i & 0x7) == 0x0) { // should trigger on first iteration
+        is.read((char*)&val, sizeof(val));
+      }
+      marks.get()[i] = ((val >> (i & 0x7)) & 0x1) == 1;
+      num_marks_in_h += (marks.get()[i] ? 1 : 0);
+    }
+  }
+
+  // read the sample items, skipping the gap. Either h or r may be 0
+  items_deleter deleter(array_size);
+  std::unique_ptr<T, items_deleter> items(A().allocate(array_size), deleter);
+  
+  S().deserialize(is, items.get(), h); // aka &data_[0]
+  items.get_deleter().set_h(h); // serde didn't throw, so the items are now valid
+  
+  S().deserialize(is, &(items.get()[h + 1]), r);
+  items.get_deleter().set_r(r); // serde didn't throw, so the items are now valid
+
+  return var_opt_sketch(k, h, (r > 0 ? 1 : 0), r, n, total_wt_r, rf, array_size, false,
+                        std::move(items), std::move(weights), num_marks_in_h, std::move(marks));
 }
 
 template<typename T, typename S, typename A>
@@ -1299,46 +1330,50 @@ void var_opt_sketch<T,S,A>::check_family_and_serialization_version(uint8_t famil
 }
 
 template<typename T, typename S, typename A>
-void var_opt_sketch<T, S, A>::validate_and_set_current_size(uint32_t preamble_longs) {
-  if (k_ == 0 || k_ > MAX_K) {
+uint32_t var_opt_sketch<T, S, A>::validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n,
+                                                               uint32_t h, uint32_t r, resize_factor rf) {
+  if (k == 0 || k > MAX_K) {
     throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");
   }
 
-  if (n_ <= k_) {
+  uint32_t array_size;
+
+  if (n <= k) {
     if (preamble_longs != PREAMBLE_LONGS_WARMUP) {
       throw std::invalid_argument("Possible corruption: deserializing with n <= k but not in warmup mode. "
-       "Found n = " + std::to_string(n_) + ", k = " + std::to_string(k_));
+       "Found n = " + std::to_string(n) + ", k = " + std::to_string(k));
     }
-    if (n_ != h_) {
+    if (n != h) {
       throw std::invalid_argument("Possible corruption: deserializing in warmup mode but n != h. "
-       "Found n = " + std::to_string(n_) + ", h = " + std::to_string(h_));
+       "Found n = " + std::to_string(n) + ", h = " + std::to_string(h));
     }
-    if (r_ > 0) {
+    if (r > 0) {
       throw std::invalid_argument("Possible corruption: deserializing in warmup mode but r > 0. "
-       "Found r = " + std::to_string(r_));
+       "Found r = " + std::to_string(r));
     }
 
-    const uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
-    const uint32_t min_lg_size = to_log_2(ceiling_power_of_2(h_));
-    const uint32_t initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, min_lg_size);
-    curr_items_alloc_ = get_adjusted_size(k_, 1 << initial_lg_size);
-    if (curr_items_alloc_ == k_) { // if full size, need to leave 1 for the gap
-      ++curr_items_alloc_;
+    const uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k));
+    const uint32_t min_lg_size = to_log_2(ceiling_power_of_2(h));
+    const uint32_t initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf, min_lg_size);
+    array_size = get_adjusted_size(k, 1 << initial_lg_size);
+    if (array_size == k) { // if full size, need to leave 1 for the gap
+      ++array_size;
     }
-  } else { // n_ > k_
+  } else { // n > k
     if (preamble_longs != PREAMBLE_LONGS_FULL) { 
       throw std::invalid_argument("Possible corruption: deserializing with n > k but not in full mode. "
-       "Found n = " + std::to_string(n_) + ", k = " + std::to_string(k_));
+       "Found n = " + std::to_string(n) + ", k = " + std::to_string(k));
     }
-    if (h_ + r_ != k_) {
+    if (h + r != k) {
       throw std::invalid_argument("Possible corruption: deserializing in full mode but h + r != n. "
-       "Found h = " + std::to_string(h_) + ", r = " + std::to_string(r_) + ", n = " + std::to_string(n_));
+       "Found h = " + std::to_string(h) + ", r = " + std::to_string(r) + ", n = " + std::to_string(n));
     }
 
-    curr_items_alloc_ = k_ + 1;
+    array_size = k + 1;
   }
-}
 
+  return array_size;
+}
 
 template<typename T, typename S, typename A>
 template<typename P>
@@ -1387,6 +1422,61 @@ subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(P predicate) const {
             total_wt_h + total_wt_r_
          };
 }
+
+template<typename T, typename S, typename A>
+class var_opt_sketch<T, S, A>::items_deleter {
+  public:
+  items_deleter(uint32_t num) : num(num), h_count(0), r_count(0) {}
+  void set_h(uint32_t h) { h_count = h; }
+  void set_r(uint32_t r) { r_count = r; }  
+  void operator() (T* ptr) const {
+    if (h_count > 0) {
+      for (size_t i = 0; i < h_count; ++i) {
+        ptr[i].~T();
+      }
+    }
+    if (r_count > 0) {
+      uint32_t end = h_count + r_count + 1;
+      for (size_t i = h_count + 1; i < end; ++i) {
+        ptr[i].~T();
+      }
+    }
+    if (ptr != nullptr) {
+      A().deallocate(ptr, num);
+    }
+  }
+  private:
+  uint32_t num;
+  uint32_t h_count;
+  uint32_t r_count;
+};
+
+template<typename T, typename S, typename A>
+class var_opt_sketch<T, S, A>::weights_deleter {
+  public:
+  weights_deleter(uint32_t num) : num(num) {}
+  void operator() (double* ptr) const {
+    if (ptr != nullptr) {
+      AllocDouble().deallocate(ptr, num);
+    }
+  }
+  private:
+  uint32_t num;
+};
+
+template<typename T, typename S, typename A>
+class var_opt_sketch<T, S, A>::marks_deleter {
+  public:
+  marks_deleter(uint32_t num) : num(num) {}
+  void operator() (bool* ptr) const {
+    if (ptr != nullptr) {
+      AllocBool().deallocate(ptr, 1);
+    }
+  }
+  private:
+  uint32_t num;
+};
+
 
 template<typename T, typename S, typename A>
 typename var_opt_sketch<T, S, A>::const_iterator var_opt_sketch<T, S, A>::begin() const {

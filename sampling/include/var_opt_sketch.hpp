@@ -266,9 +266,18 @@ class var_opt_sketch {
     // occurs and is properly tracked.
     bool* marks_;
 
+    // used during deserialization to avoid memork leaks upon errors
+    class items_deleter;
+    class weights_deleter;
+    class marks_deleter;
+
     var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget);
-    var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs, std::istream& is);
-    var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs, const void* bytes, size_t size);
+    var_opt_sketch(uint32_t k, uint32_t h, uint32_t m, uint32_t r, uint64_t n, double total_wt_r, resize_factor rf,
+                   uint32_t curr_items_alloc, bool filled_data, std::unique_ptr<T, items_deleter> items,
+                   std::unique_ptr<double, weights_deleter> weights, uint32_t num_marks_in_h,
+                   std::unique_ptr<bool, marks_deleter> marks);
+    //var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs, std::istream& is);
+    //var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs, const void* bytes, size_t size);
 
     friend class var_opt_union<T,S,A>;
     var_opt_sketch(const var_opt_sketch& other, bool as_sketch, uint64_t adjusted_n);
@@ -307,8 +316,8 @@ class var_opt_sketch {
     // validation
     static void check_preamble_longs(uint8_t preamble_longs, uint8_t flags);
     static void check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);
-    // next method sets current_items_alloc_
-    void validate_and_set_current_size(uint32_t preamble_longs);
+    static uint32_t validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n,
+                                                 uint32_t h, uint32_t r, resize_factor rf);
 
     // things to move to common and be shared among sketches
     static uint32_t get_adjusted_size(uint32_t max_size, uint32_t resize_target);
