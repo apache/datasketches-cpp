@@ -46,34 +46,6 @@ is_empty_(is_empty), theta_(theta)
 {}
 
 template<typename A>
-theta_sketch_alloc<A>::theta_sketch_alloc(const theta_sketch_alloc<A>& other):
-is_empty_(other.is_empty_), theta_(other.theta_)
-{}
-
-template<typename A>
-theta_sketch_alloc<A>::theta_sketch_alloc(theta_sketch_alloc<A>&& other) noexcept:
-is_empty_(other.is_empty_), theta_(other.theta_)
-{}
-
-template<typename A>
-theta_sketch_alloc<A>& theta_sketch_alloc<A>::operator=(const theta_sketch_alloc<A>& other) {
-  is_empty_ = other.is_empty_;
-  theta_ = other.theta_;
-  return *this;
-}
-
-template<typename A>
-theta_sketch_alloc<A>& theta_sketch_alloc<A>::operator=(theta_sketch_alloc<A>&& other) {
-  std::swap(is_empty_, other.is_empty_);
-  std::swap(theta_, other.theta_);
-  return *this;
-}
-
-template<typename A>
-theta_sketch_alloc<A>::~theta_sketch_alloc() {
-}
-
-template<typename A>
 bool theta_sketch_alloc<A>::is_empty() const {
   return is_empty_;
 }
@@ -237,7 +209,7 @@ update_theta_sketch_alloc<A>::update_theta_sketch_alloc(uint8_t lg_cur_size, uin
 theta_sketch_alloc<A>(true, theta_sketch_alloc<A>::MAX_THETA),
 lg_cur_size_(lg_cur_size),
 lg_nom_size_(lg_nom_size),
-keys_(AllocU64().allocate(1 << lg_cur_size_)),
+keys_(1 << lg_cur_size_, 0),
 num_keys_(0),
 rf_(rf),
 p_(p),
@@ -245,89 +217,20 @@ seed_(seed),
 capacity_(get_capacity(lg_cur_size, lg_nom_size))
 {
   if (p < 1) this->theta_ *= p;
-  std::fill(keys_, &keys_[1 << lg_cur_size_], 0);
 }
 
 template<typename A>
-update_theta_sketch_alloc<A>::update_theta_sketch_alloc(bool is_empty, uint64_t theta, uint8_t lg_cur_size, uint8_t lg_nom_size, uint64_t* keys, uint32_t num_keys, resize_factor rf, float p, uint64_t seed):
+update_theta_sketch_alloc<A>::update_theta_sketch_alloc(bool is_empty, uint64_t theta, uint8_t lg_cur_size, uint8_t lg_nom_size, vector_u64<A>&& keys, uint32_t num_keys, resize_factor rf, float p, uint64_t seed):
 theta_sketch_alloc<A>(is_empty, theta),
 lg_cur_size_(lg_cur_size),
 lg_nom_size_(lg_nom_size),
-keys_(keys),
+keys_(std::move(keys)),
 num_keys_(num_keys),
 rf_(rf),
 p_(p),
 seed_(seed),
 capacity_(get_capacity(lg_cur_size, lg_nom_size))
 {}
-
-template<typename A>
-update_theta_sketch_alloc<A>::update_theta_sketch_alloc(const update_theta_sketch_alloc<A>& other):
-theta_sketch_alloc<A>(other),
-lg_cur_size_(other.lg_cur_size_),
-lg_nom_size_(other.lg_nom_size_),
-keys_(AllocU64().allocate(1 << lg_cur_size_)),
-num_keys_(other.num_keys_),
-rf_(other.rf_),
-p_(other.p_),
-seed_(other.seed_),
-capacity_(other.capacity_)
-{
-  std::copy(other.keys_, &other.keys_[1 << lg_cur_size_], keys_);
-}
-
-template<typename A>
-update_theta_sketch_alloc<A>::update_theta_sketch_alloc(update_theta_sketch_alloc<A>&& other) noexcept:
-theta_sketch_alloc<A>(std::move(other)),
-lg_cur_size_(other.lg_cur_size_),
-lg_nom_size_(other.lg_nom_size_),
-keys_(nullptr),
-num_keys_(other.num_keys_),
-rf_(other.rf_),
-p_(other.p_),
-seed_(other.seed_),
-capacity_(other.capacity_)
-{
-  std::swap(keys_, other.keys_);
-}
-
-template<typename A>
-update_theta_sketch_alloc<A>::~update_theta_sketch_alloc() {
-  if (keys_ != nullptr)
-    AllocU64().deallocate(keys_, 1 << lg_cur_size_);
-}
-
-template<typename A>
-update_theta_sketch_alloc<A>& update_theta_sketch_alloc<A>::operator=(const update_theta_sketch_alloc<A>& other) {
-  theta_sketch_alloc<A>::operator=(other);
-  if (lg_cur_size_ != other.lg_cur_size_) {
-    AllocU64().deallocate(keys_, 1 << lg_cur_size_);
-    lg_cur_size_ = other.lg_cur_size_;
-    keys_ = AllocU64().allocate(1 << lg_cur_size_);
-  }
-  lg_nom_size_ = other.lg_nom_size_;
-  std::copy(other.keys_, &other.keys_[1 << lg_cur_size_], keys_);
-  num_keys_ = other.num_keys_;
-  rf_ = other.rf_;
-  p_ = other.p_;
-  seed_ = other.seed_;
-  capacity_ = other.capacity_;
-  return *this;
-}
-
-template<typename A>
-update_theta_sketch_alloc<A>& update_theta_sketch_alloc<A>::operator=(update_theta_sketch_alloc<A>&& other) {
-  theta_sketch_alloc<A>::operator=(std::move(other));
-  std::swap(lg_cur_size_, other.lg_cur_size_);
-  lg_nom_size_ = other.lg_nom_size_;
-  std::swap(keys_, other.keys_);
-  num_keys_ = other.num_keys_;
-  rf_ = other.rf_;
-  p_ = other.p_;
-  seed_ = other.seed_;
-  capacity_ = other.capacity_;
-  return *this;
-}
 
 template<typename A>
 uint32_t update_theta_sketch_alloc<A>::get_num_retained() const {
@@ -388,13 +291,13 @@ void update_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
   os.write((char*)&num_keys_, sizeof(num_keys_));
   os.write((char*)&p_, sizeof(p_));
   os.write((char*)&(this->theta_), sizeof(uint64_t));
-  os.write((char*)keys_, sizeof(uint64_t) * (1 << lg_cur_size_));
+  os.write((char*)keys_.data(), sizeof(uint64_t) * keys_.size());
 }
 
 template<typename A>
 vector_u8<A> update_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const {
   const uint8_t preamble_longs = 3;
-  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + sizeof(uint64_t) * (1 << lg_cur_size_);
+  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + sizeof(uint64_t) * keys_.size();
   vector_u8<A> bytes(size);
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
@@ -415,7 +318,7 @@ vector_u8<A> update_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes)
   ptr += copy_to_mem(&num_keys_, ptr, sizeof(num_keys_));
   ptr += copy_to_mem(&p_, ptr, sizeof(p_));
   ptr += copy_to_mem(&(this->theta_), ptr, sizeof(uint64_t));
-  ptr += copy_to_mem(keys_, ptr, sizeof(uint64_t) * (1 << lg_cur_size_));
+  ptr += copy_to_mem(keys_.data(), ptr, sizeof(uint64_t) * keys_.size());
 
   return bytes;
 }
@@ -452,10 +355,10 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(
   is.read((char*)&p, sizeof(p));
   uint64_t theta;
   is.read((char*)&theta, sizeof(theta));
-  uint64_t* keys = AllocU64().allocate(1 << lg_cur_size);
-  is.read((char*)keys, sizeof(uint64_t) * (1 << lg_cur_size));
+  vector_u64<A> keys(1 << lg_cur_size);
+  is.read((char*)keys.data(), sizeof(uint64_t) * keys.size());
   const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
-  return update_theta_sketch_alloc<A>(is_empty, theta, lg_cur_size, lg_nom_size, keys, num_keys, rf, p, seed);
+  return update_theta_sketch_alloc<A>(is_empty, theta, lg_cur_size, lg_nom_size, std::move(keys), num_keys, rf, p, seed);
 }
 
 template<typename A>
@@ -495,10 +398,10 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(
   ptr += copy_from_mem(ptr, &p, sizeof(p));
   uint64_t theta;
   ptr += copy_from_mem(ptr, &theta, sizeof(theta));
-  uint64_t* keys = AllocU64().allocate(table_size);
-  ptr += copy_from_mem(ptr, keys, sizeof(uint64_t) * table_size);
+  vector_u64<A> keys(table_size);
+  ptr += copy_from_mem(ptr, keys.data(), sizeof(uint64_t) * table_size);
   const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
-  return update_theta_sketch_alloc<A>(is_empty, theta, lg_cur_size, lg_nom_size, keys, num_keys, rf, p, seed);
+  return update_theta_sketch_alloc<A>(is_empty, theta, lg_cur_size, lg_nom_size, std::move(keys), num_keys, rf, p, seed);
 }
 
 template<typename A>
@@ -586,7 +489,7 @@ template<typename A>
 void update_theta_sketch_alloc<A>::internal_update(uint64_t hash) {
   this->is_empty_ = false;
   if (hash >= this->theta_ || hash == 0) return; // hash == 0 is reserved to mark empty slots in the table
-  if (hash_search_or_insert(hash, keys_, lg_cur_size_)) {
+  if (hash_search_or_insert(hash, keys_.data(), lg_cur_size_)) {
     num_keys_++;
     if (num_keys_ > capacity_) {
       if (lg_cur_size_ <= lg_nom_size_) {
@@ -605,41 +508,35 @@ void update_theta_sketch_alloc<A>::trim() {
 
 template<typename A>
 void update_theta_sketch_alloc<A>::resize() {
-  const uint32_t cur_size = 1 << lg_cur_size_;
   const uint8_t lg_tgt_size = lg_nom_size_ + 1;
   const uint8_t factor = std::max(1, std::min(static_cast<int>(rf_), lg_tgt_size - lg_cur_size_));
   const uint8_t lg_new_size = lg_cur_size_ + factor;
   const uint32_t new_size = 1 << lg_new_size;
-  uint64_t* new_keys = AllocU64().allocate(new_size);
-  std::fill(new_keys, &new_keys[new_size], 0);
-  for (uint32_t i = 0; i < cur_size; i++) {
+  vector_u64<A> new_keys(new_size, 0);
+  for (uint32_t i = 0; i < keys_.size(); i++) {
     if (keys_[i] != 0) {
-      hash_search_or_insert(keys_[i], new_keys, lg_new_size); // TODO hash_insert
+      hash_search_or_insert(keys_[i], new_keys.data(), lg_new_size); // TODO hash_insert
     }
   }
-  AllocU64().deallocate(keys_, cur_size);
-  keys_ = new_keys;
+  keys_ = std::move(new_keys);
   lg_cur_size_ += factor;
   capacity_ = get_capacity(lg_cur_size_, lg_nom_size_);
 }
 
 template<typename A>
 void update_theta_sketch_alloc<A>::rebuild() {
-  const uint32_t cur_size = 1 << lg_cur_size_;
-  const uint32_t pivot = (1 << lg_nom_size_) + cur_size - num_keys_;
-  std::nth_element(&keys_[0], &keys_[pivot], &keys_[cur_size]);
+  const uint32_t pivot = (1 << lg_nom_size_) + keys_.size() - num_keys_;
+  std::nth_element(&keys_[0], &keys_[pivot], &keys_[keys_.size()]);
   this->theta_ = keys_[pivot];
-  uint64_t* new_keys = AllocU64().allocate(cur_size);
-  std::fill(new_keys, &new_keys[cur_size], 0);
+  vector_u64<A> new_keys(keys_.size(), 0);
   num_keys_ = 0;
-  for (uint32_t i = 0; i < cur_size; i++) {
+  for (uint32_t i = 0; i < keys_.size(); i++) {
     if (keys_[i] != 0 && keys_[i] < this->theta_) {
-      hash_search_or_insert(keys_[i], new_keys, lg_cur_size_); // TODO hash_insert
+      hash_search_or_insert(keys_[i], new_keys.data(), lg_cur_size_); // TODO hash_insert
       num_keys_++;
     }
   }
-  AllocU64().deallocate(keys_, cur_size);
-  keys_ = new_keys;
+  keys_ = std::move(new_keys);
 }
 
 template<typename A>
@@ -695,93 +592,38 @@ bool update_theta_sketch_alloc<A>::hash_search(uint64_t hash, const uint64_t* ta
 
 template<typename A>
 typename theta_sketch_alloc<A>::const_iterator update_theta_sketch_alloc<A>::begin() const {
-  return typename theta_sketch_alloc<A>::const_iterator(keys_, 1 << lg_cur_size_, 0);
+  return typename theta_sketch_alloc<A>::const_iterator(keys_.data(), keys_.size(), 0);
 }
 
 template<typename A>
 typename theta_sketch_alloc<A>::const_iterator update_theta_sketch_alloc<A>::end() const {
-  return typename theta_sketch_alloc<A>::const_iterator(keys_, 1 << lg_cur_size_, 1 << lg_cur_size_);
+  return typename theta_sketch_alloc<A>::const_iterator(keys_.data(), keys_.size(), keys_.size());
 }
 
 // compact sketch
 
 template<typename A>
-compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(bool is_empty, uint64_t theta, uint64_t* keys, uint32_t num_keys, uint16_t seed_hash, bool is_ordered):
+compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(bool is_empty, uint64_t theta, vector_u64<A>&& keys, uint16_t seed_hash, bool is_ordered):
 theta_sketch_alloc<A>(is_empty, theta),
-keys_(keys),
-num_keys_(num_keys),
+keys_(std::move(keys)),
 seed_hash_(seed_hash),
 is_ordered_(is_ordered)
 {}
 
 template<typename A>
-compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(const compact_theta_sketch_alloc<A>& other):
-theta_sketch_alloc<A>(other),
-keys_(AllocU64().allocate(other.num_keys_)),
-num_keys_(other.num_keys_),
-seed_hash_(other.seed_hash_),
-is_ordered_(other.is_ordered_)
-{
-  std::copy(other.keys_, &other.keys_[num_keys_], keys_);
-}
-
-template<typename A>
 compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(const theta_sketch_alloc<A>& other, bool ordered):
 theta_sketch_alloc<A>(other),
-keys_(AllocU64().allocate(other.get_num_retained())),
-num_keys_(other.get_num_retained()),
+keys_(other.get_num_retained()),
 seed_hash_(other.get_seed_hash()),
 is_ordered_(other.is_ordered() || ordered)
 {
-  std::copy(other.begin(), other.end(), keys_);
-  if (ordered && !other.is_ordered()) std::sort(keys_, &keys_[num_keys_]);
-}
-
-template<typename A>
-compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(compact_theta_sketch_alloc<A>&& other) noexcept:
-theta_sketch_alloc<A>(std::move(other)),
-keys_(nullptr),
-num_keys_(other.num_keys_),
-seed_hash_(other.seed_hash_),
-is_ordered_(other.is_ordered_)
-{
-  std::swap(keys_, other.keys_);
-}
-
-template<typename A>
-compact_theta_sketch_alloc<A>::~compact_theta_sketch_alloc() {
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-  if (keys_ != nullptr)
-    AllocU64().deallocate(keys_, num_keys_);
-}
-
-template<typename A>
-compact_theta_sketch_alloc<A>& compact_theta_sketch_alloc<A>::operator=(const compact_theta_sketch_alloc<A>& other) {
-  theta_sketch_alloc<A>::operator=(other);
-  if (num_keys_ != other.num_keys_) {
-    AllocU64().deallocate(keys_, num_keys_);
-    num_keys_ = other.num_keys_;
-    keys_ = AllocU64().allocate(num_keys_);
-  }
-  seed_hash_ = other.seed_hash_;
-  is_ordered_ = other.is_ordered_;
-  std::copy(other.keys_, &other.keys_[num_keys_], keys_);
-  return *this;
-}
-
-template<typename A>
-compact_theta_sketch_alloc<A>& compact_theta_sketch_alloc<A>::operator=(compact_theta_sketch_alloc<A>&& other) {
-  theta_sketch_alloc<A>::operator=(std::move(other));
-  std::swap(keys_, other.keys_);
-  std::swap(num_keys_, other.num_keys_);
-  std::swap(seed_hash_, other.seed_hash_);
-  std::swap(is_ordered_, other.is_ordered_);
-  return *this;
+  std::copy(other.begin(), other.end(), keys_.begin());
+  if (ordered && !other.is_ordered()) std::sort(keys_.begin(), keys_.end());
 }
 
 template<typename A>
 uint32_t compact_theta_sketch_alloc<A>::get_num_retained() const {
-  return num_keys_;
+  return keys_.size();
 }
 
 template<typename A>
@@ -797,7 +639,7 @@ bool compact_theta_sketch_alloc<A>::is_ordered() const {
 template<typename A>
 void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items) const {
   os << "### Compact Theta sketch summary:" << std::endl;
-  os << "   num retained keys    : " << num_keys_ << std::endl;
+  os << "   num retained keys    : " << keys_.size() << std::endl;
   os << "   seed hash            : " << this->get_seed_hash() << std::endl;
   os << "   empty?               : " << (this->is_empty() ? "true" : "false") << std::endl;
   os << "   ordered?             : " << (this->is_ordered() ? "true" : "false") << std::endl;
@@ -817,7 +659,7 @@ void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items
 
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
-  const bool is_single_item = num_keys_ == 1 && !this->is_estimation_mode();
+  const bool is_single_item = keys_.size() == 1 && !this->is_estimation_mode();
   const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
   os.write((char*)&preamble_longs, sizeof(preamble_longs));
   const uint8_t serial_version = theta_sketch_alloc<A>::SERIAL_VERSION;
@@ -837,22 +679,23 @@ void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
   os.write((char*)&seed_hash, sizeof(seed_hash));
   if (!this->is_empty()) {
     if (!is_single_item) {
-      os.write((char*)&num_keys_, sizeof(num_keys_));
+      const uint32_t num_keys = keys_.size();
+      os.write((char*)&num_keys, sizeof(num_keys));
       const uint32_t unused32 = 0;
       os.write((char*)&unused32, sizeof(unused32));
       if (this->is_estimation_mode()) {
         os.write((char*)&(this->theta_), sizeof(uint64_t));
       }
     }
-    os.write((char*)keys_, sizeof(uint64_t) * num_keys_);
+    os.write((char*)keys_.data(), sizeof(uint64_t) * keys_.size());
   }
 }
 
 template<typename A>
 vector_u8<A> compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const {
-  const bool is_single_item = num_keys_ == 1 && !this->is_estimation_mode();
+  const bool is_single_item = keys_.size() == 1 && !this->is_estimation_mode();
   const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
-  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + sizeof(uint64_t) * num_keys_;
+  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + sizeof(uint64_t) * keys_.size();
   vector_u8<A> bytes(size);
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
@@ -874,14 +717,15 @@ vector_u8<A> compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes
   ptr += copy_to_mem(&seed_hash, ptr, sizeof(seed_hash));
   if (!this->is_empty()) {
     if (!is_single_item) {
-      ptr += copy_to_mem(&num_keys_, ptr, sizeof(num_keys_));
+      const uint32_t num_keys = keys_.size();
+      ptr += copy_to_mem(&num_keys, ptr, sizeof(num_keys));
       const uint32_t unused32 = 0;
       ptr += copy_to_mem(&unused32, ptr, sizeof(unused32));
       if (this->is_estimation_mode()) {
         ptr += copy_to_mem(&(this->theta_), ptr, sizeof(uint64_t));
       }
     }
-    ptr += copy_to_mem(keys_, ptr, sizeof(uint64_t) * num_keys_);
+    ptr += copy_to_mem(keys_.data(), ptr, sizeof(uint64_t) * keys_.size());
   }
 
   return bytes;
@@ -910,7 +754,6 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
 template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserialize(std::istream& is, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash) {
   uint64_t theta = theta_sketch_alloc<A>::MAX_THETA;
-  uint64_t* keys = nullptr;
   uint32_t num_keys = 0;
 
   const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
@@ -925,13 +768,12 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
         is.read((char*)&theta, sizeof(theta));
       }
     }
-    typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-    keys = AllocU64().allocate(num_keys);
-    is.read((char*)keys, sizeof(uint64_t) * num_keys);
   }
+  vector_u64<A> keys(num_keys);
+  if (!is_empty) is.read((char*)keys.data(), sizeof(uint64_t) * keys.size());
 
   const bool is_ordered = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_ORDERED);
-  return compact_theta_sketch_alloc<A>(is_empty, theta, keys, num_keys, seed_hash, is_ordered);
+  return compact_theta_sketch_alloc<A>(is_empty, theta, std::move(keys), seed_hash, is_ordered);
 }
 
 template<typename A>
@@ -962,7 +804,6 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
   const char* base = ptr;
 
   uint64_t theta = theta_sketch_alloc<A>::MAX_THETA;
-  uint64_t* keys = nullptr;
   uint32_t num_keys = 0;
 
   const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
@@ -979,25 +820,24 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
         ptr += copy_from_mem(ptr, &theta, sizeof(theta));
       }
     }
-    const size_t keys_size_bytes = sizeof(uint64_t) * num_keys;
-    check_memory_size(ptr - base + keys_size_bytes, size);
-    typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-    keys = AllocU64().allocate(num_keys);
-    ptr += copy_from_mem(ptr, keys, keys_size_bytes);
   }
+  const size_t keys_size_bytes = sizeof(uint64_t) * num_keys;
+  check_memory_size(ptr - base + keys_size_bytes, size);
+  vector_u64<A> keys(num_keys);
+  if (!is_empty) ptr += copy_from_mem(ptr, keys.data(), keys_size_bytes);
 
   const bool is_ordered = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_ORDERED);
-  return compact_theta_sketch_alloc<A>(is_empty, theta, keys, num_keys, seed_hash, is_ordered);
+  return compact_theta_sketch_alloc<A>(is_empty, theta, std::move(keys), seed_hash, is_ordered);
 }
 
 template<typename A>
 typename theta_sketch_alloc<A>::const_iterator compact_theta_sketch_alloc<A>::begin() const {
-  return typename theta_sketch_alloc<A>::const_iterator(keys_, num_keys_, 0);
+  return typename theta_sketch_alloc<A>::const_iterator(keys_.data(), keys_.size(), 0);
 }
 
 template<typename A>
 typename theta_sketch_alloc<A>::const_iterator compact_theta_sketch_alloc<A>::end() const {
-  return typename theta_sketch_alloc<A>::const_iterator(keys_, num_keys_, num_keys_);
+  return typename theta_sketch_alloc<A>::const_iterator(keys_.data(), keys_.size(), keys_.size());
 }
 
 // builder

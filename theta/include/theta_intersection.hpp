@@ -44,13 +44,6 @@ public:
    */
   explicit theta_intersection_alloc(uint64_t seed = DEFAULT_SEED);
 
-  theta_intersection_alloc(const theta_intersection_alloc<A>& other);
-  theta_intersection_alloc(theta_intersection_alloc<A>&& other) noexcept;
-  ~theta_intersection_alloc();
-
-  theta_intersection_alloc<A>& operator=(theta_intersection_alloc<A> other);
-  theta_intersection_alloc<A>& operator=(theta_intersection_alloc<A>&& other);
-
   /**
    * Updates the intersection with a given sketch.
    * The intersection can be viewed as starting from the "universe" set, and every update
@@ -80,7 +73,7 @@ private:
   bool is_empty_;
   uint64_t theta_;
   uint8_t lg_size_;
-  uint64_t* keys_;
+  vector_u64<A> keys_;
   uint32_t num_keys_;
   uint16_t seed_hash_;
 };
