@@ -143,13 +143,13 @@ namespace datasketches {
 
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
-template<typename A> using AllocU32 = typename std::allocator_traits<A>::template rebind_alloc<uint32_t>;
-template<typename A> using vector_u32 = std::vector<uint32_t, AllocU32<A>>;
 template<typename A> using AllocD = typename std::allocator_traits<A>::template rebind_alloc<double>;
 template<typename A> using vector_d = std::vector<double, AllocD<A>>;
 
 template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class kll_sketch {
+  typedef typename std::allocator_traits<A>::template rebind_alloc<uint32_t> AllocU32;
+
   public:
     static const uint8_t DEFAULT_M = 8;
     static const uint16_t DEFAULT_K = 200;
@@ -462,7 +462,8 @@ class kll_sketch {
     uint16_t min_k_; // for error estimation after merging with different k
     uint64_t n_;
     uint8_t num_levels_;
-    vector_u32<A> levels_;
+    uint32_t* levels_;
+    uint8_t levels_size_;
     T* items_;
     uint32_t items_size_;
     T* min_value_;
@@ -470,11 +471,12 @@ class kll_sketch {
     bool is_level_zero_sorted_;
 
     // for deserialization
-    class item_deleter;
-    class items_deleter;
-    kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, vector_u32<A>&& levels,
-        std::unique_ptr<T, items_deleter> items, uint32_t items_size, std::unique_ptr<T, item_deleter> min_value,
-        std::unique_ptr<T, item_deleter> max_value, bool is_level_zero_sorted);
+    // the common part of the preamble was read and compatibility checks were done
+    kll_sketch(uint16_t k, uint8_t flags_byte, std::istream& is);
+
+    // for deserialization
+    // the common part of the preamble was read and compatibility checks were done
+    kll_sketch(uint16_t k, uint8_t flags_byte, const void* bytes, size_t size);
 
     // common update code
     inline void update_min_max(const T& value);
@@ -516,6 +518,18 @@ class kll_sketch {
     static TT get_invalid_value() {
       throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
     }
+
+};
+
+template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
+class kll_sketches {
+  public:
+    uint16_t k, d;
+    std::vector <kll_sketch<T, C, S, A>> sketches;
+    static const uint16_t DEFAULT_K = kll_sketch<T, C, S, A>::DEFAULT_K;
+    static const uint16_t DEFAULT_D = 1;
+
+    explicit kll_sketches(uint16_t k = DEFAULT_K, uint16_t d = DEFAULT_D);
 };
 
 template<typename T, typename C, typename S, typename A>
