@@ -27,6 +27,35 @@
 namespace py = pybind11;
 
 namespace datasketches {
+
+// Wrapper class for Numpy compatibility
+template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
+class kll_sketches {
+  public:
+    uint16_t k, d;
+    std::vector <kll_sketch<T, C, S, A>> sketches;
+    static const uint16_t DEFAULT_K = kll_sketch<T, C, S, A>::DEFAULT_K;
+    static const uint16_t DEFAULT_D = 1;
+
+    explicit kll_sketches(uint16_t k = DEFAULT_K, uint16_t d = DEFAULT_D);
+};
+
+template<typename T, typename C, typename S, typename A>
+kll_sketches<T, C, S, A>::kll_sketches(uint16_t kval, uint16_t dval):
+k(kval), 
+d(dval)
+{
+  // check d is valid (k is checked by kll_sketch)
+  if (d < 1) {
+    throw std::invalid_argument("D must be >= 1: " + std::to_string(d));
+  }
+
+  // spawn the sketches
+  for (uint16_t i; i < d; i++) {
+    sketches.emplace_back(k);
+  }
+}
+
 namespace python {
 
 template<typename T>

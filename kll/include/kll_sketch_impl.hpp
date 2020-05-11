@@ -1073,22 +1073,6 @@ const std::pair<const T&, const uint64_t> kll_sketch<T, C, S, A>::const_iterator
   return std::pair<const T&, const uint64_t>(items[index], weight);
 }
 
-template<typename T, typename C, typename S, typename A>
-kll_sketches<T, C, S, A>::kll_sketches(uint16_t kval, uint16_t dval):
-k(kval), 
-d(dval)
-{
-  // check d is valid (k is checked by kll_sketch)
-  if (d < 1) {
-    throw std::invalid_argument("D must be >= 1: " + std::to_string(d));
-  }
-
-  // spawn the sketches
-  for (uint16_t i; i < d; i++) {
-    sketches.emplace_back(k);
-  }
-}
-
 } /* namespace datasketches */
 
 #endif

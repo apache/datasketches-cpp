@@ -521,17 +521,6 @@ class kll_sketch {
 
 };
 
-template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
-class kll_sketches {
-  public:
-    uint16_t k, d;
-    std::vector <kll_sketch<T, C, S, A>> sketches;
-    static const uint16_t DEFAULT_K = kll_sketch<T, C, S, A>::DEFAULT_K;
-    static const uint16_t DEFAULT_D = 1;
-
-    explicit kll_sketches(uint16_t k = DEFAULT_K, uint16_t d = DEFAULT_D);
-};
-
 template<typename T, typename C, typename S, typename A>
 class kll_sketch<T, C, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
 public:
