@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <assert.h>
 
 #include "memory_operations.hpp"
 #include "kll_helper.hpp"
