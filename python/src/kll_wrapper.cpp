@@ -186,11 +186,23 @@ py::array kll_sketches_is_empty(const kll_sketches<T>& sks) {
 template<typename T, typename A>
 void kll_sketches_update(kll_sketches<T>& sks, py::array_t<A>& items) {
   auto buf = items.request();
-  int  dim = buf.size;
   double *ptr = (double *) buf.ptr;
 
-  for (int i = 0; i < dim; ++i) {
-    sks.sketches[i].update(ptr[i]);
+  size_t ndim = buf.ndim;
+
+  if (ndim == 1) {
+    // 1D case: single value to update per sketch
+    for (int i = 0; i < buf.size; ++i) {
+      sks.sketches[i].update(ptr[i]);
+    }
+  }
+  else {
+    // 2D case: multiple values to update per sketch
+    for (int i = 0; i < buf.shape[0]; ++i) {
+      for (int j = 0; j < buf.shape[1]; ++j) {
+        sks.sketches[j].update(ptr[i*buf.shape[1] + j]);
+      }
+    }
   }
 }
 
