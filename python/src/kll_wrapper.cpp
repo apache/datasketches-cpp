@@ -347,9 +347,7 @@ py::array kll_sketches_get_ranks(const kll_sketches<T>& sks,
   return result;
 }
 
-// PMF of 1 sketch
-// TODO: allow multiple at once? 
-//       could lead to memory issues depending on # of sketches
+// PMF(s) of sketch(es)
 template<typename T>
 py::array kll_sketches_get_pmf(const kll_sketches<T>& sks, 
                                std::vector<T>& split_points, 
@@ -358,20 +356,21 @@ py::array kll_sketches_get_pmf(const kll_sketches<T>& sks,
   std::vector<uint16_t> inds = kll_sketches_get_inds(isk, nSketches);
 
   size_t nPoints = split_points.size();
-  auto pmf = sks.sketches[inds[0]].get_PMF(&split_points[0], nPoints);
 
-  std::vector<T> vals(nPoints + 1);
-  for (size_t i = 0; i <= nPoints; ++i) {
-    vals[i] = pmf[i];
+  std::vector<std::vector<T>> pmfs(nSketches, std::vector<T> (nPoints + 1));
+
+  for (uint16_t i = 0; i < nSketches; ++i) {
+    auto pmf = sks.sketches[inds[i]].get_PMF(&split_points[0], nPoints);
+    for (size_t j = 0; j <= nPoints; ++j) {
+      pmfs[i][j] = pmf[j];
+    }
   }
 
-  py::array result = py::cast(vals);
+  py::array result = py::cast(pmfs);
   return result;
 }
 
-// CDF of 1 sketch
-// TODO: allow multiple at once? 
-//       could lead to memory issues depending on # of sketches
+// CDF(s) of sketch(es)
 template<typename T>
 py::array kll_sketches_get_cdf(const kll_sketches<T>& sks, 
                                std::vector<T>& split_points, 
@@ -380,15 +379,40 @@ py::array kll_sketches_get_cdf(const kll_sketches<T>& sks,
   std::vector<uint16_t> inds = kll_sketches_get_inds(isk, nSketches);
 
   size_t nPoints = split_points.size();
-  auto cdf = sks.sketches[inds[0]].get_CDF(&split_points[0], nPoints);
 
-  std::vector<T> vals(nPoints + 1);
-  for (size_t i = 0; i <= nPoints; ++i) {
-    vals[i] = cdf[i];
+  std::vector<std::vector<T>> cdfs(nSketches, std::vector<T> (nPoints + 1));
+
+  for (uint16_t i = 0; i < nSketches; ++i) {
+    auto cdf = sks.sketches[inds[0]].get_CDF(&split_points[0], nPoints);
+    for (size_t j = 0; j <= nPoints; ++j) {
+      cdfs[i][j] = cdf[j];
+    }
   }
 
-  py::array result = py::cast(vals);
+  py::array result = py::cast(cdfs);
   return result;
+}
+
+template<typename T>
+void kll_sketches_deserialize(kll_sketches<T>& sks, py::bytes skBytes, uint16_t isk) {
+  std::string skStr = skBytes; // implicit cast
+  // load the sketch into the proper index
+  sks.sketches[isk] = kll_sketch<T>::deserialize(skStr.c_str(), skStr.length());
+}
+
+template<typename T>
+py::list kll_sketches_serialize(const kll_sketches<T>& sks, 
+                                  py::array_t<int>& isk) {
+  uint16_t nSketches = kll_sketches_get_num_inds(sks, isk);
+  std::vector<uint16_t> inds = kll_sketches_get_inds(isk, nSketches);
+
+  py::list list(nSketches);
+  for (uint16_t i = 0; i < nSketches; ++i) {
+    auto serResult = sks.sketches[inds[i]].serialize();
+    list[i] = py::bytes((char*)serResult.data(), serResult.size());
+  }
+
+  return list;
 }
 
 // Helper functions to return value of k or d, in case user creates the object 
@@ -465,12 +489,11 @@ void bind_kll_sketches(py::module &m, const char* name) {
     .def("get_cdf", &dspy::kll_sketches_get_cdf<T>, py::arg("split_points"), py::arg("isk")=-1)
     .def_static("get_normalized_rank_error", &dspy::kll_sketch_generic_normalized_rank_error<T>,
          py::arg("k"), py::arg("as_pmf"))
-    ;
+    .def("serialize", &dspy::kll_sketches_serialize<T>, py::arg("isk")=-1)
+    .def("deserialize", &dspy::kll_sketches_deserialize<T>, py::arg("skBytes"), py::arg("isk"))
     // FINDME The following have not yet been implemented:
     //.def("merge", (void (kll_sketch<T>::*)(const kll_sketch<T>&)) &kll_sketch<T>::merge, py::arg("sketch"))
-    //.def("serialize", &dspy::kll_sketch_serialize<T>)
-    //.def_static("deserialize", &dspy::kll_sketch_deserialize<T>)
-    //;
+    ;
 }
 
 
