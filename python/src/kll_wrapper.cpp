@@ -128,7 +128,7 @@ std::string kll_sketch_to_string(const kll_sketch<T>& sk) {
 }
 
 // Updates: allow parallel sketches via Numpy
-// Helper function to allow subsets of sketches to be selected
+// Helper functions to allow subsets of sketches to be selected
 template<typename T>
 uint16_t kll_sketches_get_num_inds(const kll_sketches<T>& sks, 
                                    py::array_t<int>& isk) {
@@ -146,10 +146,7 @@ uint16_t kll_sketches_get_num_inds(const kll_sketches<T>& sks,
   return nSketches;
 }
 
-// Helper function to allow subsets of sketches to be selected
-template<typename T>
-std::vector<uint16_t> kll_sketches_get_inds(const kll_sketches<T>& sks, 
-                                            py::array_t<int>& isk, 
+std::vector<uint16_t> kll_sketches_get_inds(py::array_t<int>& isk, 
                                             uint16_t nSketches) {
   std::vector<uint16_t> inds(nSketches);
 
@@ -297,7 +294,7 @@ py::array kll_sketches_get_quantiles(const kll_sketches<T>& sks,
                                      py::array_t<A>& fractions, 
                                      py::array_t<int>& isk) {
   uint16_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  std::vector<uint16_t> inds = kll_sketches_get_inds(sks, isk, nSketches);
+  std::vector<uint16_t> inds = kll_sketches_get_inds(isk, nSketches);
 
   auto buf = fractions.request();
   int nQuantiles = buf.size;
@@ -321,7 +318,7 @@ py::array kll_sketches_get_ranks(const kll_sketches<T>& sks,
                                  py::array_t<A>& values, 
                                  py::array_t<int>& isk) {
   uint16_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  std::vector<uint16_t> inds = kll_sketches_get_inds(sks, isk, nSketches);
+  std::vector<uint16_t> inds = kll_sketches_get_inds(isk, nSketches);
 
   auto buf = values.request();
   int nRanks = buf.size;
@@ -346,7 +343,7 @@ py::array kll_sketches_get_pmf(const kll_sketches<T>& sks,
                                std::vector<T>& split_points, 
                                py::array_t<int>& isk) {
   uint16_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  std::vector<uint16_t> inds = kll_sketches_get_inds(sks, isk, nSketches);
+  std::vector<uint16_t> inds = kll_sketches_get_inds(isk, nSketches);
 
   size_t nPoints = split_points.size();
   auto pmf = sks.sketches[inds[0]].get_PMF(&split_points[0], nPoints);
@@ -368,7 +365,7 @@ py::array kll_sketches_get_cdf(const kll_sketches<T>& sks,
                                std::vector<T>& split_points, 
                                py::array_t<int>& isk) {
   uint16_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  std::vector<uint16_t> inds = kll_sketches_get_inds(sks, isk, nSketches);
+  std::vector<uint16_t> inds = kll_sketches_get_inds(isk, nSketches);
 
   size_t nPoints = split_points.size();
   auto cdf = sks.sketches[inds[0]].get_CDF(&split_points[0], nPoints);
