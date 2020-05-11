@@ -111,6 +111,16 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(count == 1);
   }
 
+  SECTION("NaN") {
+    kll_float_sketch sketch;
+    sketch.update(std::numeric_limits<float>::quiet_NaN());
+    REQUIRE(sketch.is_empty());
+
+    sketch.update(0.0);
+    sketch.update(std::numeric_limits<float>::quiet_NaN());
+    REQUIRE(sketch.get_n() == 1);
+  }
+
   SECTION("many items, exact mode") {
     kll_float_sketch sketch;
     const uint32_t n(200);
