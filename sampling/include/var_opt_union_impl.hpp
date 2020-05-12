@@ -413,7 +413,7 @@ var_opt_sketch<T,S,A> var_opt_union<T,S,A>::get_result() const {
  */
 template<typename T, typename S, typename A>
 var_opt_sketch<T,S,A> var_opt_union<T,S,A>::simple_gadget_coercer() const {
-  assert(gadget_.num_marks_in_h_ == 0);
+  if (gadget_.num_marks_in_h_ != 0) throw std::logic_error("simple gadget coercer only applies if no marks");
   return var_opt_sketch<T,S,A>(gadget_, true, n_);
 }
 
@@ -437,7 +437,7 @@ bool var_opt_union<T,S,A>::detect_and_handle_subcase_of_pseudo_exact(var_opt_ske
   const bool condition2 = gadget_.num_marks_in_h_ > 0;
 
   // if gadget is pseudo-exact and the number of marks equals outer_tau_denom, then we can deduce
-  // from the bookkeeping logic of mergeInto() that all estimation mode input sketches must
+  // from the bookkeeping logic of merge_into() that all estimation mode input sketches must
   // have had the same tau, so we can throw all of the marked items into a common reservoir.
   const bool condition3 = gadget_.num_marks_in_h_ == outer_tau_denom_;
 
@@ -507,8 +507,10 @@ void var_opt_union<T,S,A>::mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk)
     }
   }
 
-  assert((result_h + result_r) == result_k);
-  assert(fabs(transferred_weight - outer_tau_numer_) < 1e-10);
+  if (result_h + result_r != result_k) throw std::logic_error("H + R counts must equal k");
+  if (fabs(transferred_weight - outer_tau_numer_) > 1e-10) {
+    throw std::logic_error("uexpected mismatch in transferred weight");
+  }
 
   const double result_r_weight = gadget_.total_wt_r_ + transferred_weight;
   const uint64_t result_n = n_;
@@ -542,9 +544,10 @@ void var_opt_union<T,S,A>::migrate_marked_items_by_decreasing_k(var_opt_sketch<T
   const uint32_t h_count = gcopy.h_;
   const uint32_t k = gcopy.k_;
 
-  assert(gcopy.num_marks_in_h_ > 0); // ensured by caller
-  // either full (of samples), or in pseudo-exact mode, or both
-  assert((r_count == 0) || (k == (h_count + r_count)));
+  // should be ensured by caller
+  if (gcopy.num_marks_in_h_ == 0) throw std::logic_error("unexpectedly found no marked items to migrate");
+  // either full (of samples), in pseudo-exact mode, or both
+  if ((r_count != 0) && ((h_count + r_count) != k)) throw std::logic_error("invalid gadget state");
 
   // if non-full and pseudo-exact, change k so that gcopy is full
   if ((r_count == 0) && (h_count < k)) {
@@ -554,16 +557,14 @@ void var_opt_union<T,S,A>::migrate_marked_items_by_decreasing_k(var_opt_sketch<T
   // Now k equals the number of samples, so reducing k will increase tau.
   // Also, we know that there are at least 2 samples because 0 or 1 would have been handled
   // by the earlier logic in get_result()
-  assert(gcopy.k_ >= 2);
   gcopy.decrease_k_by_1();
 
   // gcopy is now in estimation mode, just like the final result must be (due to marked items)
-  assert(gcopy.r_ > 0);
-  assert(gcopy.get_tau() > 0.0);
+  if (gcopy.get_tau() == 0.0) throw std::logic_error("gadget must be in sampling mode");
 
   // keep reducing k until all marked items have been absorbed into the reservoir
   while (gcopy.num_marks_in_h_ > 0) {
-    assert(gcopy.k_ >= 2); // because h_ and r_ are both at least 1
+    // gcopy.k_ >= 2 because h_ and r_ are both at least 1, but checked in next method anyway
     gcopy.decrease_k_by_1();
   }
 
