@@ -195,7 +195,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
       previous_quantile = quantile;
     }
 
-    //sketch.to_stream(std::cout);
+    //std::cout << sketch.to_string();
   }
 
   SECTION("consistency between get_rank adn get_PMF/CDF") {

@@ -84,7 +84,7 @@ TEST_CASE("theta union: estimation mode half overlap", "[theta_union]") {
   REQUIRE_FALSE(sketch3.is_empty());
   REQUIRE(sketch3.is_estimation_mode());
   REQUIRE(sketch3.get_estimate() == Approx(15000).margin(15000 * 0.01));
-  //sketch3.to_stream(std::cerr, true);
+  //std::cerr << sketch3.to_string(true);
 }
 
 TEST_CASE("theta union: seed mismatch", "[theta_union]") {

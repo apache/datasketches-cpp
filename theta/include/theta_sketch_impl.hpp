@@ -26,6 +26,7 @@
 #include <functional>
 #include <istream>
 #include <ostream>
+#include <sstream>
 
 #include "MurmurHash3.h"
 #include "serde.hpp"
@@ -248,7 +249,8 @@ bool update_theta_sketch_alloc<A>::is_ordered() const {
 }
 
 template<typename A>
-void update_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items) const {
+string<A> update_theta_sketch_alloc<A>::to_string(bool print_items) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Update Theta sketch summary:" << std::endl;
   os << "   lg nominal size      : " << (int) lg_nom_size_ << std::endl;
   os << "   lg current size      : " << (int) lg_cur_size_ << std::endl;
@@ -270,6 +272,7 @@ void update_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items)
     for (auto key: *this) os << "   " << key << std::endl;
     os << "### End retained keys" << std::endl;
   }
+  return os.str();
 }
 
 template<typename A>
@@ -637,7 +640,8 @@ bool compact_theta_sketch_alloc<A>::is_ordered() const {
 }
 
 template<typename A>
-void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items) const {
+string<A> compact_theta_sketch_alloc<A>::to_string(bool print_items) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Compact Theta sketch summary:" << std::endl;
   os << "   num retained keys    : " << keys_.size() << std::endl;
   os << "   seed hash            : " << this->get_seed_hash() << std::endl;
@@ -655,6 +659,7 @@ void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items
     for (auto key: *this) os << "   " << key << std::endl;
     os << "### End retained keys" << std::endl;
   }
+  return os.str();
 }
 
 template<typename A>

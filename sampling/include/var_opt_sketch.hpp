@@ -21,6 +21,7 @@
 #define _VAR_OPT_SKETCH_HPP_
 
 #include "serde.hpp"
+#include "common_defs.hpp"
 
 #include <iterator>
 #include <vector>
@@ -178,36 +179,19 @@ class var_opt_sketch {
     static var_opt_sketch deserialize(const void* bytes, size_t size);
 
     /**
-     * Prints a summary of the sketch to a given stream.
-     * @param os the provided ostream
-     * @return the ostream
-     */
-    std::ostream& to_stream(std::ostream& os) const;
-  
-    /**
-     * Prints a summary of the sketch as a string.
+     * Prints a summary of the sketch.
      * @return the summary as a string
      */
-    std::string to_string() const;
-
-    /**
-     * Prints the raw sketch items to a given ostream.
-     * Only works for type T with a defined operator<<() and
-     * kept separate from to_stream() to allow compilation even if
-     * T does not have such an operator defined.
-     * @param os the provided ostream
-     * @return the provided ostream
-     */
-    std::ostream& items_to_stream(std::ostream& os) const;
+    string<A> to_string() const;
 
     /**
      * Prints the raw sketch items to a string. Calls items_to_stream() internally.
      * Only works for type T with a defined operator<<() and
-     * kept separate from to_stream() to allow compilation even if
+     * kept separate from to_string() to allow compilation even if
      * T does not have such an operator defined.
      * @return a string with the sketch items
      */
-    std::string items_to_string() const;
+    string<A> items_to_string() const;
 
     class const_iterator;
     const_iterator begin() const;

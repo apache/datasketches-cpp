@@ -61,7 +61,7 @@ TEST_CASE("frequent items: custom type", "[frequent_items_sketch]") {
   REQUIRE(sketch.get_maximum_error() == sketch2.get_maximum_error());
   //std::cerr << "end" << std::endl;
 
-  sketch2.to_stream(std::cerr, true);
+  std::cout << sketch2.to_string(true);
 }
 
 // this is to see the debug print from test_type if enabled there to make sure items are moved

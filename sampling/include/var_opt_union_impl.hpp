@@ -296,22 +296,15 @@ void var_opt_union<T,S,A>::reset() {
 }
 
 template<typename T, typename S, typename A>
-std::ostream& var_opt_union<T,S,A>::to_stream(std::ostream& os) const {
+string<A> var_opt_union<T,S,A>::to_string() const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### VarOpt Union SUMMARY: " << std::endl;
   os << " . n             : " << n_ << std::endl;
   os << "   Max k         : " << max_k_ << std::endl;
   os << "   Gadget Summary: " << std::endl;
-  gadget_.to_stream(os);
+  os << gadget_.to_string();
   os << "### END VarOpt Union SUMMARY: " << std::endl;
-
-  return os;
-}
-
-template<typename T, typename S, typename A>
-std::string var_opt_union<T,S,A>::to_string() const {
-  std::ostringstream ss;
-  to_stream(ss);
-  return ss.str();
+  return os.str();
 }
 
 template<typename T, typename S, typename A>

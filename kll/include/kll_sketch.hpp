@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "kll_quantile_calculator.hpp"
+#include "common_defs.hpp"
 #include "serde.hpp"
 
 namespace datasketches {
@@ -416,12 +417,11 @@ class kll_sketch {
     static double get_normalized_rank_error(uint16_t k, bool pmf);
 
     /**
-     * Prints a summary of the sketch to a given stream.
-     * @param os the provided ostream
+     * Prints a summary of the sketch.
      * @param print_levels if true include information about levels
      * @param print_items if true include sketch data
      */
-    void to_stream(std::ostream& os, bool print_levels = false, bool print_items = false) const;
+    string<A> to_string(bool print_levels = false, bool print_items = false) const;
 
     class const_iterator;
     const_iterator begin() const;

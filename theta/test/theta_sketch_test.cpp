@@ -52,7 +52,7 @@ TEST_CASE("theta sketch: empty", "[theta_sketch]") {
 TEST_CASE("theta sketch: non empty no retained keys", "[theta_sketch]") {
   update_theta_sketch update_sketch = update_theta_sketch::builder().set_p(0.001).build();
   update_sketch.update(1);
-  //update_sketch.to_stream(std::cerr);
+  //std::cerr << update_sketch.to_string();
   REQUIRE(update_sketch.get_num_retained() == 0);
   REQUIRE_FALSE(update_sketch.is_empty());
   REQUIRE(update_sketch.is_estimation_mode());
@@ -111,7 +111,7 @@ TEST_CASE("theta sketch: estimation", "[theta_sketch]") {
   update_theta_sketch update_sketch = update_theta_sketch::builder().set_resize_factor(update_theta_sketch::resize_factor::X1).build();
   const int n = 8000;
   for (int i = 0; i < n; i++) update_sketch.update(i);
-  //update_sketch.to_stream(std::cerr);
+  //std::cerr << update_sketch.to_string();
   REQUIRE_FALSE(update_sketch.is_empty());
   REQUIRE(update_sketch.is_estimation_mode());
   REQUIRE(update_sketch.get_theta() < 1.0);

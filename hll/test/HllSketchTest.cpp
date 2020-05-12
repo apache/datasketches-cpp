@@ -167,14 +167,14 @@ TEST_CASE("hll sketch: exercise to string", "[hll_sketch]") {
     hll_sketch_test_alloc sk(15, HLL_4);
     for (int i = 0; i < 25; ++i) { sk.update(i); }
     std::ostringstream oss(std::ios::binary);
-    sk.to_string(oss, false, true, true, true);
+    oss << sk.to_string(false, true, true, true);
     for (int i = 25; i < (1 << 20); ++i) { sk.update(i); }
-    sk.to_string(oss, false, true, true, true);
-    sk.to_string(oss, false, true, true, false);
+    oss << sk.to_string(false, true, true, true);
+    oss << sk.to_string(false, true, true, false);
 
     sk = hll_sketch_test_alloc(8, HLL_8);
     for (int i = 0; i < 25; ++i) { sk.update(i); }
-    sk.to_string(oss, false, true, true, true);
+    oss << sk.to_string(false, true, true, true);
   }
   REQUIRE(test_allocator_total_bytes == 0);
 }
@@ -322,7 +322,7 @@ TEST_CASE("hll sketch: deserialize set mode buffer overrun", "[hll_sketch]") {
   {
     hll_sketch_test_alloc sketch(10);
     for (int i = 0; i < 10; ++i) sketch.update(i);
-    //sketch.to_string(std::cout);
+    //std::cout << sketch.to_string();
     auto bytes = sketch.serialize_updatable();
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 7), std::out_of_range);
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
@@ -350,7 +350,7 @@ TEST_CASE("hll sketch: deserialize HLL mode buffer overrun", "[hll_sketch]") {
     // this sketch should have aux table
     hll_sketch_test_alloc sketch(15);
     for (int i = 0; i < 14444; ++i) sketch.update(i);
-    //sketch.to_string(std::cout);
+    //std::cout << sketch.to_string();
     auto bytes = sketch.serialize_compact();
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 7), std::out_of_range);
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 15), std::out_of_range);
