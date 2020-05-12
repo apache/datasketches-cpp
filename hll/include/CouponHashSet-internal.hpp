@@ -169,6 +169,8 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
   }
 
   CouponHashSet<A>* sketch = new (chsAlloc().allocate(1)) CouponHashSet<A>(lgK, tgtHllType);
+  typedef std::unique_ptr<CouponHashSet<A>, std::function<void(HllSketchImpl<A>*)>> coupon_hash_set_ptr;
+  coupon_hash_set_ptr ptr(sketch, sketch->get_deleter());
 
   // Don't set couponCount here;
   // we'll set later if updatable, and increment with updates if compact
@@ -179,18 +181,16 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
       sketch->couponUpdate(coupon);
     }
   } else {
-    int* oldArr = sketch->couponIntArr;
-    const size_t oldArrLen = 1 << sketch->lgCouponArrInts;
-    sketch->lgCouponArrInts = lgArrInts;
     typedef typename std::allocator_traits<A>::template rebind_alloc<int> intAlloc;
+    intAlloc().deallocate(sketch->couponIntArr, 1 << sketch->lgCouponArrInts);
+    sketch->lgCouponArrInts = lgArrInts;
     sketch->couponIntArr = intAlloc().allocate(1 << lgArrInts);
     sketch->couponCount = couponCount;
     // for stream processing, read entire list so read pointer ends up set correctly
     is.read((char*)sketch->couponIntArr, (1 << sketch->lgCouponArrInts) * sizeof(int));
-    intAlloc().deallocate(oldArr, oldArrLen);
   } 
 
-  return sketch;
+  return ptr.release();
 }
 
 template<typename A>

@@ -280,6 +280,10 @@ std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
          << "  HipAccum       : " << hllArray->getHipAccum() << std::endl
          << "  KxQ0           : " << hllArray->getKxQ0() << std::endl
          << "  KxQ1           : " << hllArray->getKxQ1() << std::endl;
+      if (get_target_type() == HLL_4) {
+        const Hll4Array<A>* hll4_ptr = static_cast<const Hll4Array<A>*>(sketch_impl);
+        os << "  Aux table?     : " << (hll4_ptr->getAuxHashMap() != nullptr ? "true" : "false") << std::endl;
+      }
     } else {
       os << "  Coupon count   : "
          << std::to_string(((CouponList<A>*) sketch_impl)->getCouponCount()) << std::endl;
