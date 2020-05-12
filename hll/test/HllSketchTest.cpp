@@ -291,7 +291,7 @@ TEST_CASE("hll sketch: check input types", "[hll_sketch]") {
   REQUIRE(test_allocator_total_bytes == 0);
 }
 
-TEST_CASE("hll sketch: deserialize buffer overrun", "[hll_sketch]") {
+TEST_CASE("hll sketch: deserialize list mode buffer overrun", "[hll_sketch]") {
   test_allocator_total_bytes = 0;
   {
     hll_sketch_test_alloc sketch(10);
@@ -299,6 +299,89 @@ TEST_CASE("hll sketch: deserialize buffer overrun", "[hll_sketch]") {
     auto bytes = sketch.serialize_compact();
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 7), std::out_of_range);
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+
+    // ckeck for leaks on stream exceptions
+    {
+      std::stringstream ss;
+      ss.exceptions(std::ios::failbit | std::ios::badbit);
+      ss.str(std::string((char*)bytes.data(), 7));
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss), std::ios_base::failure);
+    }
+    {
+      std::stringstream ss;
+      ss.exceptions(std::ios::failbit | std::ios::badbit);
+      ss.str(std::string((char*)bytes.data(), bytes.size() - 1));
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss), std::ios_base::failure);
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+}
+
+TEST_CASE("hll sketch: deserialize set mode buffer overrun", "[hll_sketch]") {
+  test_allocator_total_bytes = 0;
+  {
+    hll_sketch_test_alloc sketch(10);
+    for (int i = 0; i < 10; ++i) sketch.update(i);
+    //sketch.to_string(std::cout);
+    auto bytes = sketch.serialize_updatable();
+    REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 7), std::out_of_range);
+    REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+
+    // ckeck for leaks on stream exceptions
+    {
+      std::stringstream ss;
+      ss.exceptions(std::ios::failbit | std::ios::badbit);
+      ss.str(std::string((char*)bytes.data(), 7));
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss), std::ios_base::failure);
+    }
+    {
+      std::stringstream ss;
+      ss.exceptions(std::ios::failbit | std::ios::badbit);
+      ss.str(std::string((char*)bytes.data(), bytes.size() - 1));
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss), std::ios_base::failure);
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+}
+
+TEST_CASE("hll sketch: deserialize HLL mode buffer overrun", "[hll_sketch]") {
+  test_allocator_total_bytes = 0;
+  {
+    // this sketch should have aux table
+    hll_sketch_test_alloc sketch(15);
+    for (int i = 0; i < 14444; ++i) sketch.update(i);
+    //sketch.to_string(std::cout);
+    auto bytes = sketch.serialize_compact();
+    REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 7), std::out_of_range);
+    REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 15), std::out_of_range);
+    REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 16420), std::out_of_range); // before aux table
+    REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+
+    // ckeck for leaks on stream exceptions
+    {
+      std::stringstream ss;
+      ss.exceptions(std::ios::failbit | std::ios::badbit);
+      ss.str(std::string((char*)bytes.data(), 7));
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss), std::ios_base::failure);
+    }
+    {
+      std::stringstream ss;
+      ss.exceptions(std::ios::failbit | std::ios::badbit);
+      ss.str(std::string((char*)bytes.data(), 15));
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss), std::ios_base::failure);
+    }
+    {
+      std::stringstream ss;
+      ss.exceptions(std::ios::failbit | std::ios::badbit);
+      ss.str(std::string((char*)bytes.data(), 16420)); // before aux table
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss), std::ios_base::failure);
+    }
+    {
+      std::stringstream ss;
+      ss.exceptions(std::ios::failbit | std::ios::badbit);
+      ss.str(std::string((char*)bytes.data(), bytes.size() - 1));
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss), std::ios_base::failure);
+    }
   }
   REQUIRE(test_allocator_total_bytes == 0);
 }
