@@ -437,7 +437,7 @@ bool var_opt_union<T,S,A>::detect_and_handle_subcase_of_pseudo_exact(var_opt_ske
   const bool condition2 = gadget_.num_marks_in_h_ > 0;
 
   // if gadget is pseudo-exact and the number of marks equals outer_tau_denom, then we can deduce
-  // from the bookkeeping logic of merge_nto() that all estimation mode input sketches must
+  // from the bookkeeping logic of merge_into() that all estimation mode input sketches must
   // have had the same tau, so we can throw all of the marked items into a common reservoir.
   const bool condition3 = gadget_.num_marks_in_h_ == outer_tau_denom_;
 
