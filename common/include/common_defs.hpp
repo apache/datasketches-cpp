@@ -21,10 +21,14 @@
 #define _COMMON_DEFS_HPP_
 
 #include <cstdint>
+#include <string>
 
 namespace datasketches {
 
 static const uint64_t DEFAULT_SEED = 9001;
+
+template<typename A> using AllocChar = typename std::allocator_traits<A>::template rebind_alloc<char>;
+template<typename A> using string = std::basic_string<char, std::char_traits<char>, AllocChar<A>>;
 
 } // namespace
 

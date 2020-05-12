@@ -72,7 +72,6 @@ TEST_CASE("cpc sketch: overflow bug", "[cpc_sketch]") {
   const int n = 100000000;
   uint64_t key = 15200000000; // problem happened with this sequence
   for (int i = 0; i < n; i++) sketch.update(key++);
-  //sketch.to_stream(std::cout);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.1));
   REQUIRE(sketch.get_estimate() >= sketch.get_lower_bound(1));
@@ -97,11 +96,9 @@ TEST_CASE("cpc sketch: serialize deserialize sparse", "[cpc_sketch]") {
   cpc_sketch sketch(11);
   const int n(100);
   for (int i = 0; i < n; i++) sketch.update(i);
-  //sketch.to_stream(std::cerr);
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
   cpc_sketch deserialized = cpc_sketch::deserialize(s);
-  //deserialized.to_stream(std::cerr);
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
@@ -119,11 +116,9 @@ TEST_CASE("cpc sketch: serialize deserialize hybrid", "[cpc_sketch]") {
   cpc_sketch sketch(11);
   const int n(200);
   for (int i = 0; i < n; i++) sketch.update(i);
-  //sketch.to_stream(std::cerr);
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
   cpc_sketch deserialized = cpc_sketch::deserialize(s);
-  //deserialized.to_stream(std::cerr);
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
@@ -266,7 +261,7 @@ TEST_CASE("cpc sketch: serialize deserialize pinned, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
 
-  //sketch.to_stream(std::cout);
+  std::cout << sketch.to_string();
 }
 
 TEST_CASE("cpc sketch: serialize deserialize sliding, bytes", "[cpc_sketch]") {
