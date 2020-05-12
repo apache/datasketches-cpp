@@ -42,6 +42,10 @@ namespace datasketches {
  * inverse functions get_rank(), get_PMF() (Probability Mass Function), and get_CDF()
  * (Cumulative Distribution Function).
  *
+ * <p>As of May 2020, this implementation produces serialized sketches which are binary-compatible
+ * with the equivalent Java implementation only when template parameter T = float
+ * (32-bit single precision values).
+ * 
  * <p>Given an input stream of <i>N</i> numeric values, the <i>absolute rank</i> of any specific
  * value is defined as its index <i>(0 to N-1)</i> in the hypothetical sorted stream of all
  * <i>N</i> input values.
