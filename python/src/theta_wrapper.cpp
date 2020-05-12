@@ -58,13 +58,6 @@ py::object theta_sketch_serialize(const theta_sketch& sk) {
   return py::bytes((char*)serResult.data(), serResult.size());
 }
 
-std::string theta_sketch_to_string(const theta_sketch& sk,
-                                   bool print_items = false) {
-  std::ostringstream ss;
-  sk.to_stream(ss, print_items);
-  return ss.str();
-}
-
 uint16_t theta_sketch_get_seed_hash(const theta_sketch& sk) {
   return sk.get_seed_hash();
 }
@@ -90,8 +83,8 @@ void init_theta(py::module &m) {
   py::class_<theta_sketch>(m, "theta_sketch")
     .def("serialize", &dspy::theta_sketch_serialize)
     .def_static("deserialize", &dspy::theta_sketch_deserialize, py::arg("bytes"), py::arg("seed")=DEFAULT_SEED)
-    .def("__str__", &dspy::theta_sketch_to_string, py::arg("print_items")=false)
-    .def("to_string", &dspy::theta_sketch_to_string, py::arg("print_items")=false)
+    .def("__str__", &theta_sketch::to_string, py::arg("print_items")=false)
+    .def("to_string", &theta_sketch::to_string, py::arg("print_items")=false)
     .def("is_empty", &theta_sketch::is_empty)
     .def("get_estimate", &theta_sketch::get_estimate)
     .def("get_upper_bound", &theta_sketch::get_upper_bound, py::arg("num_std_devs"))

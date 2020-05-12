@@ -40,12 +40,6 @@ py::object cpc_sketch_serialize(const cpc_sketch& sk) {
   return py::bytes((char*)serResult.data(), serResult.size());
 }
 
-std::string cpc_sketch_to_string(const cpc_sketch& sk) {
-  std::ostringstream ss;
-  sk.to_stream(ss);
-  return ss.str();
-}
-
 cpc_sketch* cpc_union_get_result(const cpc_union& u) {
   return new cpc_sketch(u.get_result());
 }
@@ -61,7 +55,8 @@ void init_cpc(py::module &m) {
   py::class_<cpc_sketch>(m, "cpc_sketch")
     .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k"), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_sketch&>())
-    .def("__str__", &dspy::cpc_sketch_to_string)
+    .def("__str__", &cpc_sketch::to_string)
+    .def("to_string", &cpc_sketch::to_string)
     .def("serialize", &dspy::cpc_sketch_serialize)
     .def_static("deserialize", &dspy::cpc_sketch_deserialize)
     .def<void (cpc_sketch::*)(uint64_t)>("update", &cpc_sketch::update, py::arg("datum"))
