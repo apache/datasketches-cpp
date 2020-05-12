@@ -141,6 +141,7 @@ kll_sketch<T, C, S, A>::~kll_sketch() {
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::update(const T& value) {
+  if (!check_update_value(value)) { return; }
   update_min_max(value);
   const uint32_t index = internal_update();
   new (&items_[index]) T(value);
@@ -148,6 +149,7 @@ void kll_sketch<T, C, S, A>::update(const T& value) {
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::update(T&& value) {
+  if (!check_update_value(value)) { return; }
   update_min_max(value);
   const uint32_t index = internal_update();
   new (&items_[index]) T(std::move(value));

@@ -505,17 +505,28 @@ class kll_sketch {
     static void check_serial_version(uint8_t serial_version);
     static void check_family_id(uint8_t family_id);
 
-    // implementation for floating point types
+    // implementations for floating point types
     template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
     static TT get_invalid_value() {
       return std::numeric_limits<TT>::quiet_NaN();
     }
 
-    // implementation for all other types
+    template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
+    static inline bool check_update_value(TT value) {
+      return !std::isnan(value);
+    }
+
+    // implementations for all other types
     template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
     static TT get_invalid_value() {
       throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
     }
+
+    template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
+    static inline bool check_update_value(TT) {
+      return true;
+    }
+
 };
 
 template<typename T, typename C, typename S, typename A>
