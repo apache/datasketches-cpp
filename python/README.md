@@ -2,7 +2,7 @@
 
 ## Installation
 
-The release files do not include the needed python binding librayr ([pybind11](https://github.com/pybind/pybind11)). If building
+The release files do not include the needed python binding library ([pybind11](https://github.com/pybind/pybind11)). If building
 from a relase package, you must ensure that the pybind11 directory points to a local copy of pybind11.
 
 An official pypi build is eventually planned but not yet available.
