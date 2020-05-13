@@ -187,6 +187,9 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
     is.read((char*)sketch->couponIntArr, numToRead * sizeof(int));
   }
 
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
+
   return ptr.release();
 }
 

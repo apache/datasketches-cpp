@@ -361,6 +361,7 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(
   vector_u64<A> keys(1 << lg_cur_size);
   is.read((char*)keys.data(), sizeof(uint64_t) * keys.size());
   const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+  if (!is.good()) throw std::runtime_error("error reading from std::istream"); 
   return update_theta_sketch_alloc<A>(is_empty, theta, lg_cur_size, lg_nom_size, std::move(keys), num_keys, rf, p, seed);
 }
 
@@ -778,6 +779,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
   if (!is_empty) is.read((char*)keys.data(), sizeof(uint64_t) * keys.size());
 
   const bool is_ordered = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_ORDERED);
+  if (!is.good()) throw std::runtime_error("error reading from std::istream"); 
   return compact_theta_sketch_alloc<A>(is_empty, theta, std::move(keys), seed_hash, is_ordered);
 }
 

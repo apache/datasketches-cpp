@@ -150,7 +150,10 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is) {
   bool is_empty = flags & EMPTY_FLAG_MASK;
   
   if (is_empty) {
-    return var_opt_union<T,S,A>(max_k);
+    if (!is.good())
+      throw std::runtime_error("error reading from std::istream"); 
+    else
+      return var_opt_union<T,S,A>(max_k);
   }
 
   uint64_t items_seen;
@@ -161,6 +164,9 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is) {
   is.read((char*)&outer_tau_denom, sizeof(outer_tau_denom));
 
   var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(is);
+
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
 
   return var_opt_union<T,S,A>(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
 }

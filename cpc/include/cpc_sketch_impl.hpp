@@ -585,6 +585,8 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t 
   }
   uncompressed_state<A> uncompressed;
   get_compressor<A>().uncompress(compressed, uncompressed, lg_k, num_coupons);
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
   return cpc_sketch_alloc(lg_k, num_coupons, first_interesting_column, std::move(uncompressed.table),
       std::move(uncompressed.window), has_hip, kxp, hip_est_accum, seed);
 }

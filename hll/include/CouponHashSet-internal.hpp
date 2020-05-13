@@ -190,6 +190,9 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is) {
     is.read((char*)sketch->couponIntArr, (1 << sketch->lgCouponArrInts) * sizeof(int));
   } 
 
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
+
   return ptr.release();
 }
 

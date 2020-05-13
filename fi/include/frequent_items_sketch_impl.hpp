@@ -323,6 +323,8 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     sketch.total_weight = total_weight;
     sketch.offset = offset;
   }
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
   return sketch;
 }
 
