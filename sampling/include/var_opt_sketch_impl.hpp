@@ -582,7 +582,10 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is) {
   const bool is_gadget = flags & GADGET_FLAG_MASK;
 
   if (is_empty) {
-    return var_opt_sketch<T,S,A>(k, rf, is_gadget);
+    if (!is.good())
+      throw std::runtime_error("error reading from std::istream"); 
+    else
+      return var_opt_sketch<T,S,A>(k, rf, is_gadget);
   }
 
   // second and third prelongs
@@ -641,6 +644,9 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is) {
   
   S().deserialize(is, &(items.get()[h + 1]), r);
   items.get_deleter().set_r(r); // serde didn't throw, so the items are now valid
+
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
 
   return var_opt_sketch(k, h, (r > 0 ? 1 : 0), r, n, total_wt_r, rf, array_size, false,
                         std::move(items), std::move(weights), num_marks_in_h, std::move(marks));

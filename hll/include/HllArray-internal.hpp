@@ -219,6 +219,9 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
     ((Hll4Array<A>*)sketch)->putAuxHashMap(auxHashMap);
   }
 
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
+
   return sketch_ptr.release();
 }
 

@@ -469,6 +469,7 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is) {
   check_family_id(family_id);
 
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
+  if (!is.good()) throw std::runtime_error("error reading from std::istream"); 
   if (is_empty) return kll_sketch<T, C, S, A>(k);
 
   uint64_t n;
@@ -522,6 +523,8 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is) {
     // copy did not throw, repackage with destrtuctor
     max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter());
   }
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream");
   return kll_sketch(k, min_k, n, num_levels, std::move(levels), std::move(items), capacity,
       std::move(min_value), std::move(max_value), is_level_zero_sorted);
 }
