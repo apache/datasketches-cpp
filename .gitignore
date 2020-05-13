@@ -24,7 +24,7 @@ Default/
 .eggs/
 .tox/
 dist/
-python/dataskethces.egg-info
+python/datasketches.egg-info/
 
 # Log file
 
