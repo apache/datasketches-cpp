@@ -20,6 +20,12 @@ build/
 lib/
 Default/
 
+# Python files
+.eggs/
+.tox/
+dist/
+python/datasketches.egg-info/
+
 # Log file
 
 # Package Files #
