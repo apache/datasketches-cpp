@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include <string>
+#include <memory>
 
 namespace datasketches {
 
