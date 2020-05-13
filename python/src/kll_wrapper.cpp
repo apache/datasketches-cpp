@@ -90,13 +90,6 @@ py::list kll_sketch_get_cdf(const kll_sketch<T>& sk,
   return list;
 }
 
-template<typename T>
-std::string kll_sketch_to_string(const kll_sketch<T>& sk) {
-  std::ostringstream ss;
-  sk.to_stream(ss);
-  return ss.str();
-}
-
 }
 }
 
@@ -111,7 +104,8 @@ void bind_kll_sketch(py::module &m, const char* name) {
     .def(py::init<const kll_sketch<T>&>())
     .def("update", (void (kll_sketch<T>::*)(const T&)) &kll_sketch<T>::update, py::arg("item"))
     .def("merge", (void (kll_sketch<T>::*)(const kll_sketch<T>&)) &kll_sketch<T>::merge, py::arg("sketch"))
-    .def("__str__", &dspy::kll_sketch_to_string<T>)
+    .def("__str__", &kll_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false)
+    .def("to_string", &kll_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false)
     .def("is_empty", &kll_sketch<T>::is_empty)
     .def("get_n", &kll_sketch<T>::get_n)
     .def("get_num_retained", &kll_sketch<T>::get_num_retained)

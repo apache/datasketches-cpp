@@ -62,9 +62,9 @@ void init_hll(py::module &m) {
     .def_static("deserialize", &dspy::hll_sketch_deserialize)
     .def("serialize_compact", &dspy::hll_sketch_serialize_compact)
     .def("serialize_updatable", &dspy::hll_sketch_serialize_updatable)
-    .def("to_string", (std::string (hll_sketch::*)(bool,bool,bool,bool) const) &hll_sketch::to_string,
-         py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
     .def("__str__", (std::string (hll_sketch::*)(bool,bool,bool,bool) const) &hll_sketch::to_string,
+         py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
+    .def("to_string", (std::string (hll_sketch::*)(bool,bool,bool,bool) const) &hll_sketch::to_string,
          py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
     .def_property_readonly("lg_config_k", &hll_sketch::get_lg_config_k)
     .def_property_readonly("tgt_type", &hll_sketch::get_target_type)
@@ -87,10 +87,6 @@ void init_hll(py::module &m) {
 
   py::class_<hll_union>(m, "hll_union")
     .def(py::init<int>(), py::arg("lg_max_k"))
-    .def("to_string", (std::string (hll_union::*)(bool,bool,bool,bool) const) &hll_union::to_string,
-         py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
-    .def("__str__", (std::string (hll_union::*)(bool,bool,bool,bool) const) &hll_union::to_string,
-         py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false)
     .def_property_readonly("lg_config_k", &hll_union::get_lg_config_k)
     .def_property_readonly("tgt_type", &hll_union::get_target_type)
     .def("get_estimate", &hll_union::get_estimate)

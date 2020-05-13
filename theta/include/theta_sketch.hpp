@@ -112,10 +112,9 @@ public:
 
   /**
    * Writes a human-readable summary of this sketch to a given stream
-   * @param os output stream
    * @param print_items if true include the list of items retained by the sketch
    */
-  virtual void to_stream(std::ostream& os, bool print_items = false) const = 0;
+  virtual string<A> to_string(bool print_items = false) const = 0;
 
   /**
    * This method serializes the sketch into a given stream in a binary form
@@ -210,7 +209,7 @@ public:
   virtual uint32_t get_num_retained() const;
   virtual uint16_t get_seed_hash() const;
   virtual bool is_ordered() const;
-  virtual void to_stream(std::ostream& os, bool print_items = false) const;
+  virtual string<A> to_string(bool print_items = false) const;
   virtual void serialize(std::ostream& os) const;
   typedef vector_u8<A> vector_bytes; // alias for users
   // header space is reserved, but not initialized
@@ -398,7 +397,7 @@ public:
   virtual uint32_t get_num_retained() const;
   virtual uint16_t get_seed_hash() const;
   virtual bool is_ordered() const;
-  virtual void to_stream(std::ostream& os, bool print_items = false) const;
+  virtual string<A> to_string(bool print_items = false) const;
   virtual void serialize(std::ostream& os) const;
   typedef vector_u8<A> vector_bytes; // alias for users
   // header space is reserved, but not initialized

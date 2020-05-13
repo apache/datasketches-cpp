@@ -990,7 +990,8 @@ void kll_sketch<T, C, S, A>::check_family_id(uint8_t family_id) {
 }
 
 template <typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::to_stream(std::ostream& os, bool print_levels, bool print_items) const {
+string<A> kll_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### KLL sketch summary:" << std::endl;
   os << "   K              : " << k_ << std::endl;
   os << "   min K          : " << min_k_ << std::endl;
@@ -1036,6 +1037,7 @@ void kll_sketch<T, C, S, A>::to_stream(std::ostream& os, bool print_levels, bool
     }
     os << "### End sketch data" << std::endl;
   }
+  return os.str();
 }
 
 template <typename T, typename C, typename S, typename A>

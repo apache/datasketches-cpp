@@ -724,7 +724,8 @@ void var_opt_sketch<T,S,A>::update(T&& item, double weight) {
 */
 
 template<typename T, typename S, typename A>
-std::ostream& var_opt_sketch<T,S,A>::to_stream(std::ostream& os) const {
+string<A> var_opt_sketch<T,S,A>::to_string() const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### VarOpt SUMMARY: " << std::endl;
   os << "   k            : " << k_ << std::endl;
   os << "   h            : " << h_ << std::endl;
@@ -733,14 +734,13 @@ std::ostream& var_opt_sketch<T,S,A>::to_stream(std::ostream& os) const {
   os << "   Current size : " << curr_items_alloc_ << std::endl;
   os << "   Resize factor: " << (1 << rf_) << std::endl;
   os << "### END SKETCH SUMMARY" << std::endl;
-
-  return os;
+  return os.str();
 }
 
 template<typename T, typename S, typename A>
-std::ostream& var_opt_sketch<T,S,A>::items_to_stream(std::ostream& os) const {
+string<A> var_opt_sketch<T,S,A>::items_to_string() const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Sketch Items" << std::endl;
-
   const uint32_t print_length = (n_ < k_ ? n_ : k_ + 1);
   for (uint32_t i = 0; i < print_length; ++i) {
     if (i == h_) {
@@ -749,22 +749,7 @@ std::ostream& var_opt_sketch<T,S,A>::items_to_stream(std::ostream& os) const {
       os << i << ": " << data_[i] << "\twt = " << weights_[i] << std::endl;
     }
   }
-
-  return os;
-}
-
-template <typename T, typename S, typename A>
-std::string var_opt_sketch<T,S,A>::to_string() const {
-  std::ostringstream ss;
-  to_stream(ss);
-  return ss.str();
-}
-
-template <typename T, typename S, typename A>
-std::string var_opt_sketch<T,S,A>::items_to_string() const {
-  std::ostringstream ss;
-  items_to_stream(ss);
-  return ss.str();
+  return os.str();
 }
 
 template<typename T, typename S, typename A>

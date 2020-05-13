@@ -192,11 +192,9 @@ public:
   void update(const void* value, int size);
 
   /**
-   * Writes a human-readable summary of this sketch to a given stream
-   * @param os output stream
-   * @param print_items if true include the list of items retained by the sketch
+   * Returns a human-readable summary of this sketch
    */
-  void to_stream(std::ostream& os) const;
+  string<A> to_string() const;
 
   /**
    * This method serializes the sketch into a given stream in a binary form

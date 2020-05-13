@@ -66,11 +66,6 @@ hll_union_alloc<A> hll_union_alloc<A>::deserialize(std::istream& is) {
 }
 
 template<typename A>
-static std::ostream& operator<<(std::ostream& os, const hll_union_alloc<A>& hllUnion) {
-  return hllUnion.to_string(os, true, true, false, false);
-}
-
-template<typename A>
 hll_sketch_alloc<A> hll_union_alloc<A>::get_result(target_hll_type target_type) const {
   return hll_sketch_alloc<A>(gadget, target_type);
 }
@@ -160,18 +155,6 @@ void hll_union_alloc<A>::coupon_update(const int coupon) {
     if (gadget.sketch_impl != nullptr) { gadget.sketch_impl->get_deleter()(gadget.sketch_impl); }
     gadget.sketch_impl = result;
   }
-}
-
-template<typename A>
-std::ostream& hll_union_alloc<A>::to_string(std::ostream& os, const bool summary,
-                                  const bool detail, const bool aux_detail, const bool all) const {
-  return gadget.to_string(os, summary, detail, aux_detail, all);
-}
-
-template<typename A>
-std::string hll_union_alloc<A>::to_string(const bool summary, const bool detail,
-                                   const bool aux_detail, const bool all) const {
-  return gadget.to_string(summary, detail, aux_detail, all);
 }
 
 template<typename A>

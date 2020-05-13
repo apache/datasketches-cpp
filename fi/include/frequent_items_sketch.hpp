@@ -27,6 +27,7 @@
 #include <type_traits>
 
 #include "reverse_purge_hash_map.hpp"
+#include "common_defs.hpp"
 #include "serde.hpp"
 
 namespace datasketches {
@@ -259,11 +260,10 @@ public:
   static frequent_items_sketch deserialize(const void* bytes, size_t size);
 
   /**
-   * Writes a human readable summary of this sketch to a given stream
-   * @param os output stream
+   * Returns a human readable summary of this sketch
    * @param print_items if true include the list of items retained by the sketch
    */
-  void to_stream(std::ostream& os, bool print_items = false) const;
+  string<A> to_string(bool print_items = false) const;
 
 private:
   static const uint8_t LG_MIN_MAP_SIZE = 3;

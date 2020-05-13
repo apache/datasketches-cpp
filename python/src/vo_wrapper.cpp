@@ -54,7 +54,7 @@ template<typename T>
 std::string vo_sketch_to_string(const var_opt_sketch<T>& sk, bool print_items) {
   if (print_items) {
     std::ostringstream ss;
-    sk.to_stream(ss);
+    ss << sk.to_string();
     ss << "### VarOpt Sketch Items" << std::endl;
     int i = 0;
     for (auto& item : sk) {
@@ -70,13 +70,6 @@ std::string vo_sketch_to_string(const var_opt_sketch<T>& sk, bool print_items) {
   } else {
     return sk.to_string();
   }
-}
-
-template<typename T>
-std::string vo_union_to_string(const var_opt_union<T>& u) {
-  // no direct access to gadget so we can't easily print the item list
-  // for arbitrary python objects
-  return u.to_string();
 }
 
 }
@@ -113,8 +106,8 @@ void bind_vo_union(py::module &m, const char* name) {
 
   py::class_<var_opt_union<T>>(m, name)
     .def(py::init<uint32_t>(), py::arg("max_k"))
-    .def("__str__", &dspy::vo_union_to_string<T>)
-    .def("to_string", &dspy::vo_union_to_string<T>)
+    .def("__str__", &var_opt_union<T>::to_string)
+    .def("to_string", &var_opt_union<T>::to_string)
     .def("update", (void (var_opt_union<T>::*)(const var_opt_sketch<T>& sk)) &var_opt_union<T>::update, py::arg("sketch"))
     .def("get_result", &var_opt_union<T>::get_result)
     .def("reset", &var_opt_union<T>::reset)

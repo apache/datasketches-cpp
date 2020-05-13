@@ -64,14 +64,6 @@ py::list fi_sketch_get_frequent_items(const frequent_items_sketch<T>& sk,
   return list;
 }
 
-template<typename T>
-std::string fi_sketch_to_string(const frequent_items_sketch<T>& sk,
-                              bool print_items = false) {
-  std::ostringstream ss;
-  sk.to_stream(ss, print_items);
-  return ss.str();
-}
-
 }
 }
 
@@ -83,8 +75,8 @@ void bind_fi_sketch(py::module &m, const char* name) {
 
   py::class_<frequent_items_sketch<T>>(m, name)
     .def(py::init<uint8_t>(), py::arg("lg_max_k"))
-    .def("__str__", &dspy::fi_sketch_to_string<T>, py::arg("print_items")=false)
-    .def("to_string", &dspy::fi_sketch_to_string<T>, py::arg("print_items")=false)
+    .def("__str__", &frequent_items_sketch<T>::to_string, py::arg("print_items")=false)
+    .def("to_string", &frequent_items_sketch<T>::to_string, py::arg("print_items")=false)
     .def("update", (void (frequent_items_sketch<T>::*)(const T&, uint64_t)) &frequent_items_sketch<T>::update, py::arg("item"), py::arg("weight")=1)
     .def("get_frequent_items", &dspy::fi_sketch_get_frequent_items<T>, py::arg("err_type"), py::arg("threshold")=0)
     .def("merge", (void (frequent_items_sketch<T>::*)(const frequent_items_sketch<T>&)) &frequent_items_sketch<T>::merge)
