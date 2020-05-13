@@ -137,7 +137,7 @@ TEST_CASE("theta sketch: estimation", "[theta_sketch]") {
 TEST_CASE("theta sketch: deserialize update empty from java as base", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_update_empty_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_update_empty_from_java.sk", std::ios::binary);
   auto sketchptr = theta_sketch::deserialize(is);
   REQUIRE(sketchptr->is_empty());
   REQUIRE_FALSE(sketchptr->is_estimation_mode());
@@ -151,7 +151,7 @@ TEST_CASE("theta sketch: deserialize update empty from java as base", "[theta_sk
 TEST_CASE("theta sketch: deserialize update empty from java as subclass", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_update_empty_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_update_empty_from_java.sk", std::ios::binary);
   auto sketch = update_theta_sketch::deserialize(is);
   REQUIRE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
@@ -165,7 +165,7 @@ TEST_CASE("theta sketch: deserialize update empty from java as subclass", "[thet
 TEST_CASE("theta sketch: deserialize update estimation from java as base", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_update_estimation_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_update_estimation_from_java.sk", std::ios::binary);
   auto sketchptr = theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketchptr->is_empty());
   REQUIRE(sketchptr->is_estimation_mode());
@@ -178,7 +178,7 @@ TEST_CASE("theta sketch: deserialize update estimation from java as base", "[the
 TEST_CASE("theta sketch: deserialize update estimation from java as subclass", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_update_estimation_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_update_estimation_from_java.sk", std::ios::binary);
   auto sketch = update_theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.is_estimation_mode());
@@ -191,7 +191,7 @@ TEST_CASE("theta sketch: deserialize update estimation from java as subclass", "
 TEST_CASE("theta sketch: deserialize compact empty from java as base", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_compact_empty_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_compact_empty_from_java.sk", std::ios::binary);
   auto sketchptr = theta_sketch::deserialize(is);
   REQUIRE(sketchptr->is_empty());
   REQUIRE_FALSE(sketchptr->is_estimation_mode());
@@ -205,7 +205,7 @@ TEST_CASE("theta sketch: deserialize compact empty from java as base", "[theta_s
 TEST_CASE("theta sketch: deserialize compact empty from java as subclass", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_compact_empty_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_compact_empty_from_java.sk", std::ios::binary);
   auto sketch = compact_theta_sketch::deserialize(is);
   REQUIRE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
@@ -219,7 +219,7 @@ TEST_CASE("theta sketch: deserialize compact empty from java as subclass", "[the
 TEST_CASE("theta sketch: deserialize single item from java as base", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_compact_single_item_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_compact_single_item_from_java.sk", std::ios::binary);
   auto sketchptr = theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketchptr->is_empty());
   REQUIRE_FALSE(sketchptr->is_estimation_mode());
@@ -233,7 +233,7 @@ TEST_CASE("theta sketch: deserialize single item from java as base", "[theta_ske
 TEST_CASE("theta sketch: deserialize single item from java as subclass", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_compact_single_item_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_compact_single_item_from_java.sk", std::ios::binary);
   auto sketch = compact_theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
@@ -247,7 +247,7 @@ TEST_CASE("theta sketch: deserialize single item from java as subclass", "[theta
 TEST_CASE("theta sketch: deserialize compact estimation from java as base", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_compact_estimation_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_compact_estimation_from_java.sk", std::ios::binary);
   auto sketchptr = theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketchptr->is_empty());
   REQUIRE(sketchptr->is_estimation_mode());
@@ -283,7 +283,7 @@ TEST_CASE("theta sketch: deserialize compact estimation from java as base", "[th
 TEST_CASE("theta sketch: deserialize compact estimation from java as subclass", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(inputPath + "theta_compact_estimation_from_java.bin", std::ios::binary);
+  is.open(inputPath + "theta_compact_estimation_from_java.sk", std::ios::binary);
   auto sketch = compact_theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.is_estimation_mode());
