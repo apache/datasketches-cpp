@@ -472,7 +472,7 @@ TEST_CASE("varopt sketch: estimate subset sum", "[var_opt_sketch]") {
 TEST_CASE("varopt sketch: deserialize exact from java", "[var_opt_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "varopt_sketch_string_exact.bin", std::ios::binary);
+  is.open(testBinaryInputPath + "varopt_sketch_string_exact.sk", std::ios::binary);
   var_opt_sketch<std::string> sketch = var_opt_sketch<std::string>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_k() == 1024);
@@ -489,7 +489,7 @@ TEST_CASE("varopt sketch: deserialize exact from java", "[var_opt_sketch]") {
 TEST_CASE("varopt sketch: deserialize sampling from java", "[var_opt_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "varopt_sketch_long_sampling.bin", std::ios::binary);
+  is.open(testBinaryInputPath + "varopt_sketch_long_sampling.sk", std::ios::binary);
   var_opt_sketch<int64_t> sketch = var_opt_sketch<int64_t>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_k() == 1024);

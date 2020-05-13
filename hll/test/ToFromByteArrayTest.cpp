@@ -62,7 +62,7 @@ TEST_CASE("hll to/from byte array: deserialize from java", "[hll_byte_array]") {
 #endif
 
   std::ifstream ifs;
-  ifs.open(inputPath + "list_from_java.bin", std::ios::binary);
+  ifs.open(inputPath + "list_from_java.sk", std::ios::binary);
   hll_sketch sk = hll_sketch::deserialize(ifs);
   REQUIRE(sk.is_empty() == false);
   REQUIRE(sk.get_lg_config_k() == 8);
@@ -71,7 +71,7 @@ TEST_CASE("hll to/from byte array: deserialize from java", "[hll_byte_array]") {
   REQUIRE(sk.get_upper_bound(1) == Approx(7.000350).margin(1e-5));
   ifs.close();
 
-  ifs.open(inputPath + "compact_set_from_java.bin", std::ios::binary);
+  ifs.open(inputPath + "compact_set_from_java.sk", std::ios::binary);
   sk = hll_sketch::deserialize(ifs);
   REQUIRE(sk.is_empty() == false);
   REQUIRE(sk.get_lg_config_k() == 8);
@@ -80,7 +80,7 @@ TEST_CASE("hll to/from byte array: deserialize from java", "[hll_byte_array]") {
   REQUIRE(sk.get_upper_bound(1) == Approx(24.001200).margin(1e-5));
   ifs.close();
 
-  ifs.open(inputPath + "updatable_set_from_java.bin", std::ios::binary);
+  ifs.open(inputPath + "updatable_set_from_java.sk", std::ios::binary);
   sk = hll_sketch::deserialize(ifs);
   REQUIRE(sk.is_empty() == false);
   REQUIRE(sk.get_lg_config_k() == 8);
@@ -90,7 +90,7 @@ TEST_CASE("hll to/from byte array: deserialize from java", "[hll_byte_array]") {
   ifs.close();
 
 
-  ifs.open(inputPath + "array6_from_java.bin", std::ios::binary);
+  ifs.open(inputPath + "array6_from_java.sk", std::ios::binary);
   sk = hll_sketch::deserialize(ifs);
   REQUIRE(sk.is_empty() == false);
   REQUIRE(sk.get_lg_config_k() == 8);
@@ -100,7 +100,7 @@ TEST_CASE("hll to/from byte array: deserialize from java", "[hll_byte_array]") {
   ifs.close();
 
 
-  ifs.open(inputPath + "compact_array4_from_java.bin", std::ios::binary);
+  ifs.open(inputPath + "compact_array4_from_java.sk", std::ios::binary);
   sk = hll_sketch::deserialize(ifs);
   REQUIRE(sk.is_empty() == false);
   REQUIRE(sk.get_lg_config_k() == 8);
@@ -111,7 +111,7 @@ TEST_CASE("hll to/from byte array: deserialize from java", "[hll_byte_array]") {
   ifs.close();
 
 
-  ifs.open(inputPath + "updatable_array4_from_java.bin", std::ios::binary);
+  ifs.open(inputPath + "updatable_array4_from_java.sk", std::ios::binary);
   sk = hll_sketch::deserialize(ifs);
   REQUIRE(sk.is_empty() == false);
   REQUIRE(sk.get_lg_config_k() == 8);

@@ -227,7 +227,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   SECTION("deserialize from java") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "kll_sketch_from_java.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "kll_sketch_from_java.sk", std::ios::binary);
     auto sketch = kll_float_sketch::deserialize(is);
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE(sketch.is_estimation_mode());
@@ -292,7 +292,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   SECTION("deserialize one item v1") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.sk", std::ios::binary);
     auto sketch = kll_float_sketch::deserialize(is);
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE_FALSE(sketch.is_estimation_mode());
@@ -563,7 +563,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_rank(std::to_string(n)) == sketch1.get_rank(std::to_string(n)));
 
     // to take a look using hexdump
-    //std::ofstream os("kll-string.bin");
+    //std::ofstream os("kll-string.sk");
     //sketch1.serialize(os);
 
     // debug print
