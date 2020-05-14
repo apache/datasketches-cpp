@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 
 #include "memory_operations.hpp"
 #include "kll_helper.hpp"

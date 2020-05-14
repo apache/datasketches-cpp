@@ -20,9 +20,9 @@
 #ifndef FREQUENT_ITEMS_SKETCH_IMPL_HPP_
 #define FREQUENT_ITEMS_SKETCH_IMPL_HPP_
 
-#include <streambuf>
 #include <cstring>
 #include <limits>
+#include <sstream>
 
 #include "memory_operations.hpp"
 
