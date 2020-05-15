@@ -26,6 +26,7 @@
 #include <functional>
 #include <istream>
 #include <ostream>
+#include <sstream>
 
 #include "MurmurHash3.h"
 #include "serde.hpp"
@@ -248,7 +249,8 @@ bool update_theta_sketch_alloc<A>::is_ordered() const {
 }
 
 template<typename A>
-void update_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items) const {
+string<A> update_theta_sketch_alloc<A>::to_string(bool print_items) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Update Theta sketch summary:" << std::endl;
   os << "   lg nominal size      : " << (int) lg_nom_size_ << std::endl;
   os << "   lg current size      : " << (int) lg_cur_size_ << std::endl;
@@ -270,6 +272,7 @@ void update_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items)
     for (auto key: *this) os << "   " << key << std::endl;
     os << "### End retained keys" << std::endl;
   }
+  return os.str();
 }
 
 template<typename A>
@@ -358,6 +361,7 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::internal_deserialize(
   vector_u64<A> keys(1 << lg_cur_size);
   is.read((char*)keys.data(), sizeof(uint64_t) * keys.size());
   const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+  if (!is.good()) throw std::runtime_error("error reading from std::istream"); 
   return update_theta_sketch_alloc<A>(is_empty, theta, lg_cur_size, lg_nom_size, std::move(keys), num_keys, rf, p, seed);
 }
 
@@ -637,7 +641,8 @@ bool compact_theta_sketch_alloc<A>::is_ordered() const {
 }
 
 template<typename A>
-void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items) const {
+string<A> compact_theta_sketch_alloc<A>::to_string(bool print_items) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Compact Theta sketch summary:" << std::endl;
   os << "   num retained keys    : " << keys_.size() << std::endl;
   os << "   seed hash            : " << this->get_seed_hash() << std::endl;
@@ -655,6 +660,7 @@ void compact_theta_sketch_alloc<A>::to_stream(std::ostream& os, bool print_items
     for (auto key: *this) os << "   " << key << std::endl;
     os << "### End retained keys" << std::endl;
   }
+  return os.str();
 }
 
 template<typename A>
@@ -773,6 +779,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::internal_deserializ
   if (!is_empty) is.read((char*)keys.data(), sizeof(uint64_t) * keys.size());
 
   const bool is_ordered = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_ORDERED);
+  if (!is.good()) throw std::runtime_error("error reading from std::istream"); 
   return compact_theta_sketch_alloc<A>(is_empty, theta, std::move(keys), seed_hash, is_ordered);
 }
 

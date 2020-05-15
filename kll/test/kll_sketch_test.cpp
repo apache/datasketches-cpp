@@ -111,6 +111,16 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(count == 1);
   }
 
+  SECTION("NaN") {
+    kll_float_sketch sketch;
+    sketch.update(std::numeric_limits<float>::quiet_NaN());
+    REQUIRE(sketch.is_empty());
+
+    sketch.update(0.0);
+    sketch.update(std::numeric_limits<float>::quiet_NaN());
+    REQUIRE(sketch.get_n() == 1);
+  }
+
   SECTION("many items, exact mode") {
     kll_float_sketch sketch;
     const uint32_t n(200);
@@ -185,7 +195,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
       previous_quantile = quantile;
     }
 
-    //sketch.to_stream(std::cout);
+    //std::cout << sketch.to_string();
   }
 
   SECTION("consistency between get_rank adn get_PMF/CDF") {
@@ -217,7 +227,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   SECTION("deserialize from java") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "kll_sketch_from_java.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "kll_sketch_from_java.sk", std::ios::binary);
     auto sketch = kll_float_sketch::deserialize(is);
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE(sketch.is_estimation_mode());
@@ -282,7 +292,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   SECTION("deserialize one item v1") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.bin", std::ios::binary);
+    is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.sk", std::ios::binary);
     auto sketch = kll_float_sketch::deserialize(is);
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE_FALSE(sketch.is_estimation_mode());
@@ -553,7 +563,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_rank(std::to_string(n)) == sketch1.get_rank(std::to_string(n)));
 
     // to take a look using hexdump
-    //std::ofstream os("kll-string.bin");
+    //std::ofstream os("kll-string.sk");
     //sketch1.serialize(os);
 
     // debug print

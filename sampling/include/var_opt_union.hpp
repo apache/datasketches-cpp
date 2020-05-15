@@ -21,6 +21,7 @@
 #define _VAR_OPT_UNION_HPP_
 
 #include "var_opt_sketch.hpp"
+#include "common_defs.hpp"
 #include "serde.hpp"
 
 #include <vector>
@@ -131,17 +132,10 @@ public:
   static var_opt_union deserialize(const void* bytes, size_t size);
 
   /**
-   * Prints a summary of the union to a given stream.
-   * @param os the provided ostream
-   * @return the ostream
-   */
-  std::ostream& to_stream(std::ostream& os) const;
-
-  /**
    * Prints a summary of the union as a string.
    * @return the summary as a string
    */
-  std::string to_string() const;
+  string<A> to_string() const;
 
 
 private:

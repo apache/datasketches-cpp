@@ -74,11 +74,6 @@ hll_sketch_alloc<A>::~hll_sketch_alloc() {
 }
 
 template<typename A>
-std::ostream& operator<<(std::ostream& os, const hll_sketch_alloc<A>& sketch) {
-  return sketch.to_string(os, true, true, false, false);
-}
-
-template<typename A>
 hll_sketch_alloc<A>::hll_sketch_alloc(const hll_sketch_alloc<A>& that) :
   sketch_impl(that.sketch_impl->copy())
 {}
@@ -249,21 +244,11 @@ vector_u8<A> hll_sketch_alloc<A>::serialize_updatable() const {
 }
 
 template<typename A>
-std::string hll_sketch_alloc<A>::to_string(const bool summary,
-                                    const bool detail,
-                                    const bool aux_detail,
-                                    const bool all) const {
-  std::ostringstream oss;
-  to_string(oss, summary, detail, aux_detail, all);
-  return oss.str();
-}
-
-template<typename A>
-std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
-                                      const bool summary,
-                                      const bool detail,
-                                      const bool aux_detail,
-                                      const bool all) const {
+string<A> hll_sketch_alloc<A>::to_string(const bool summary,
+                                         const bool detail,
+                                         const bool aux_detail,
+                                         const bool all) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   if (summary) {
     os << "### HLL sketch summary:" << std::endl
        << "  Log Config K   : " << get_lg_config_k() << std::endl
@@ -280,6 +265,10 @@ std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
          << "  HipAccum       : " << hllArray->getHipAccum() << std::endl
          << "  KxQ0           : " << hllArray->getKxQ0() << std::endl
          << "  KxQ1           : " << hllArray->getKxQ1() << std::endl;
+      if (get_target_type() == HLL_4) {
+        const Hll4Array<A>* hll4_ptr = static_cast<const Hll4Array<A>*>(sketch_impl);
+        os << "  Aux table?     : " << (hll4_ptr->getAuxHashMap() != nullptr ? "true" : "false") << std::endl;
+      }
     } else {
       os << "  Coupon count   : "
          << std::to_string(((CouponList<A>*) sketch_impl)->getCouponCount()) << std::endl;
@@ -351,7 +340,7 @@ std::ostream& hll_sketch_alloc<A>::to_string(std::ostream& os,
     }
   }
 
-  return os;
+  return os.str();
 }
 
 template<typename A>

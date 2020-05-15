@@ -290,7 +290,7 @@ TEST_CASE("varopt union: serialize sampling", "[var_opt_union]") {
 TEST_CASE("varopt union: deserialize from java", "[var_opt_union]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "varopt_union_double_sampling.bin", std::ios::binary);
+  is.open(testBinaryInputPath + "varopt_union_double_sampling.sk", std::ios::binary);
   var_opt_union<double> u = var_opt_union<double>::deserialize(is);
     
   // must reduce k in the process, like in small_sampling_sketch()

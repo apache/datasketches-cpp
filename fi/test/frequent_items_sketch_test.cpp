@@ -201,7 +201,7 @@ TEST_CASE("frequent items: merge estimation mode", "[frequent_items_sketch]") {
 TEST_CASE("frequent items: deserialize from java long", "[frequent_items_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "longs_sketch_from_java.bin", std::ios::binary);
+  is.open(testBinaryInputPath + "longs_sketch_from_java.sk", std::ios::binary);
   auto sketch = frequent_items_sketch<long long>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_total_weight() == 4);
@@ -215,7 +215,7 @@ TEST_CASE("frequent items: deserialize from java long", "[frequent_items_sketch]
 TEST_CASE("frequent items: deserialize from java string", "[frequent_items_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "items_sketch_string_from_java.bin", std::ios::binary);
+  is.open(testBinaryInputPath + "items_sketch_string_from_java.sk", std::ios::binary);
   auto sketch = frequent_items_sketch<std::string>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_total_weight() == 4);
@@ -229,7 +229,7 @@ TEST_CASE("frequent items: deserialize from java string", "[frequent_items_sketc
 TEST_CASE("frequent items: deserialize from java string, utf-8", "[frequent_items_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "items_sketch_string_utf8_from_java.bin", std::ios::binary);
+  is.open(testBinaryInputPath + "items_sketch_string_utf8_from_java.sk", std::ios::binary);
   auto sketch = frequent_items_sketch<std::string>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_total_weight() == 10);

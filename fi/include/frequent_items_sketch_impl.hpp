@@ -20,9 +20,9 @@
 #ifndef FREQUENT_ITEMS_SKETCH_IMPL_HPP_
 #define FREQUENT_ITEMS_SKETCH_IMPL_HPP_
 
-#include <streambuf>
 #include <cstring>
 #include <limits>
+#include <sstream>
 
 #include "memory_operations.hpp"
 
@@ -323,6 +323,8 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     sketch.total_weight = total_weight;
     sketch.offset = offset;
   }
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
   return sketch;
 }
 
@@ -423,7 +425,8 @@ void frequent_items_sketch<T, W, H, E, S, A>::check_size(uint8_t lg_cur_size, ui
 }
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
-void frequent_items_sketch<T, W, H, E, S, A>::to_stream(std::ostream& os, bool print_items) const {
+string<A> frequent_items_sketch<T, W, H, E, S, A>::to_string(bool print_items) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Frequent items sketch summary:" << std::endl;
   os << "   lg cur map size  : " << (int) map.get_lg_cur_size() << std::endl;
   os << "   lg max map size  : " << (int) map.get_lg_max_size() << std::endl;
@@ -446,6 +449,7 @@ void frequent_items_sketch<T, W, H, E, S, A>::to_stream(std::ostream& os, bool p
     }
     os << "### End items" << std::endl;
   }
+  return os.str();
 }
 
 // version for integral signed type

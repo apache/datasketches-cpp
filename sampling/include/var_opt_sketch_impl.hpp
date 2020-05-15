@@ -25,7 +25,6 @@
 #include <cmath>
 #include <random>
 #include <algorithm>
-#include <cassert>
 
 #include "var_opt_sketch.hpp"
 #include "serde.hpp"
@@ -583,7 +582,10 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is) {
   const bool is_gadget = flags & GADGET_FLAG_MASK;
 
   if (is_empty) {
-    return var_opt_sketch<T,S,A>(k, rf, is_gadget);
+    if (!is.good())
+      throw std::runtime_error("error reading from std::istream"); 
+    else
+      return var_opt_sketch<T,S,A>(k, rf, is_gadget);
   }
 
   // second and third prelongs
@@ -642,6 +644,9 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is) {
   
   S().deserialize(is, &(items.get()[h + 1]), r);
   items.get_deleter().set_r(r); // serde didn't throw, so the items are now valid
+
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
 
   return var_opt_sketch(k, h, (r > 0 ? 1 : 0), r, n, total_wt_r, rf, array_size, false,
                         std::move(items), std::move(weights), num_marks_in_h, std::move(marks));
@@ -725,7 +730,8 @@ void var_opt_sketch<T,S,A>::update(T&& item, double weight) {
 */
 
 template<typename T, typename S, typename A>
-std::ostream& var_opt_sketch<T,S,A>::to_stream(std::ostream& os) const {
+string<A> var_opt_sketch<T,S,A>::to_string() const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### VarOpt SUMMARY: " << std::endl;
   os << "   k            : " << k_ << std::endl;
   os << "   h            : " << h_ << std::endl;
@@ -734,14 +740,13 @@ std::ostream& var_opt_sketch<T,S,A>::to_stream(std::ostream& os) const {
   os << "   Current size : " << curr_items_alloc_ << std::endl;
   os << "   Resize factor: " << (1 << rf_) << std::endl;
   os << "### END SKETCH SUMMARY" << std::endl;
-
-  return os;
+  return os.str();
 }
 
 template<typename T, typename S, typename A>
-std::ostream& var_opt_sketch<T,S,A>::items_to_stream(std::ostream& os) const {
+string<A> var_opt_sketch<T,S,A>::items_to_string() const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Sketch Items" << std::endl;
-
   const uint32_t print_length = (n_ < k_ ? n_ : k_ + 1);
   for (uint32_t i = 0; i < print_length; ++i) {
     if (i == h_) {
@@ -750,22 +755,7 @@ std::ostream& var_opt_sketch<T,S,A>::items_to_stream(std::ostream& os) const {
       os << i << ": " << data_[i] << "\twt = " << weights_[i] << std::endl;
     }
   }
-
-  return os;
-}
-
-template <typename T, typename S, typename A>
-std::string var_opt_sketch<T,S,A>::to_string() const {
-  std::ostringstream ss;
-  to_stream(ss);
-  return ss.str();
-}
-
-template <typename T, typename S, typename A>
-std::string var_opt_sketch<T,S,A>::items_to_string() const {
-  std::ostringstream ss;
-  items_to_stream(ss);
-  return ss.str();
+  return os.str();
 }
 
 template<typename T, typename S, typename A>
@@ -782,8 +772,10 @@ void var_opt_sketch<T,S,A>::update(const T& item, double weight, bool mark) {
     // exact mode
     update_warmup_phase(item, weight, mark);
   } else {
-    // sketch is in estimation mode so we can make the following check
-    assert(h_ == 0 || (peek_min() >= get_tau()));
+    // sketch is in estimation mode so we can make the following check,
+    // although very conservative to check every time
+    if ((h_ != 0) && (peek_min() < get_tau()))
+      throw std::logic_error("sketch not in valid estimation mode");
 
     // what tau would be if deletion candidates turn out to be R plus the new item
     // note: (r_ + 1) - 1 is intentional
@@ -807,9 +799,8 @@ void var_opt_sketch<T,S,A>::update(const T& item, double weight, bool mark) {
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::update_warmup_phase(const T& item, double weight, bool mark) {
-  assert(r_ == 0);
-  assert(m_ == 0);
-  assert(h_ <= k_);
+  // seems overly cautious
+  if (r_ > 0 || m_ != 0 || h_ > k_) throw std::logic_error("invalid sketch state during warmup");
 
   if (h_ >= curr_items_alloc_) {
     grow_data_arrays();
@@ -837,8 +828,7 @@ void var_opt_sketch<T,S,A>::update_warmup_phase(const T& item, double weight, bo
    round's downsampling */
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::update_light(const T& item, double weight, bool mark) {
-  assert(r_ >= 1);
-  assert((r_ + h_) == k_);
+  if (r_ == 0 || (r_ + h_) != k_) throw std::logic_error("invalid sketch state during light warmup");
 
   const uint32_t m_slot = h_; // index of the gap, which becomes the M region
   if (filled_data_) {
@@ -864,9 +854,7 @@ void var_opt_sketch<T,S,A>::update_light(const T& item, double weight, bool mark
    in long streams unless (max wt) / (min wt) > o(exp(N)) */
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::update_heavy_general(const T& item, double weight, bool mark) {
-  assert(m_ == 0);
-  assert(r_ >= 2);
-  assert((r_ + h_) == k_);
+  if (r_ < 2 || m_ != 0 || (r_ + h_) != k_) throw std::logic_error("invalid sketch state during heavy general update");
 
   // put into H, although may come back out momentarily
   push(item, weight, mark);
@@ -879,9 +867,7 @@ void var_opt_sketch<T,S,A>::update_heavy_general(const T& item, double weight, b
    to have a valid starting point for continue_by_growing_candidate_set () */
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::update_heavy_r_eq1(const T& item, double weight, bool mark) {
-  assert(m_ == 0);
-  assert(r_ == 1);
-  assert((r_ + h_) == k_);
+  if (r_ != 1 || m_ != 0 || (r_ + h_) != k_) throw std::logic_error("invalid sketch state during heavy r=1 update");
 
   push(item, weight, mark);  // new item into H
   pop_min_to_m_region();     // pop lightest back into M
@@ -921,8 +907,8 @@ void var_opt_sketch<T,S,A>::decrease_k_by_1() {
     // first, slide the R zone to the left by 1, temporarily filling the gap
     const uint32_t old_gap_idx = h_;
     const uint32_t old_final_r_idx = (h_ + 1 + r_) - 1;
-
-    assert(old_final_r_idx == k_);
+    //if (old_final_r_idx != k_) throw std::logic_error("gadget in invalid state");
+    
     swap_values(old_final_r_idx, old_gap_idx);
 
     // now we pull an item out of H; any item is ok, but if we grab the rightmost and then
@@ -944,7 +930,7 @@ void var_opt_sketch<T,S,A>::decrease_k_by_1() {
     update(std::move(data_[pulled_idx]), pulled_weight, pulled_mark);
   } else if ((h_ == 0) && (r_ > 0)) {
     // pure reservoir mode, so can simply eject a randomly chosen sample from the reservoir
-    assert(r_ >= 2);
+    if (r_ < 2) throw std::logic_error("r_ too small for pure reservoir mode");
 
     const uint32_t r_idx_to_delete = 1 + next_int(r_); // 1 for the gap
     const uint32_t rightmost_r_idx = (1 + r_) - 1;
@@ -1017,9 +1003,8 @@ void var_opt_sketch<T,S,A>::transition_from_warmup() {
   --m_;
   ++r_;
 
-  assert(h_ == (k_ - 1));
-  assert(m_ == 1);
-  assert(r_ == 1);
+  if (h_ != (k_ -1) || m_ != 1 || r_ != 1)
+    throw std::logic_error("invalid state for transitioning from warmup");
 
   // Update total weight in R and then, having grabbed the value, overwrite
   // in weight_ array to help make bugs more obvious
@@ -1047,15 +1032,14 @@ void var_opt_sketch<T,S,A>::convert_to_heap() {
   // validates heap, used for initial debugging
   //for (uint32_t j = h_ - 1; j >= 1; --j) {
   //  uint32_t p = ((j + 1) / 2) - 1;
-  //  assert(weights_[p] <= weights_[j]);
+  //  if (weights_[p] > weights_[j]) throw std::logic_error("invalid heap");
   //}
 }
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::restore_towards_leaves(uint32_t slot_in) {
-  assert(h_ > 0);
   const uint32_t last_slot = h_ - 1;
-  assert(slot_in <= last_slot);
+  if (h_ == 0 || slot_in > last_slot) throw std::logic_error("invalid heap state");
 
   uint32_t slot = slot_in;
   uint32_t child = (2 * slot_in) + 1; // might be invalid, need to check
@@ -1111,8 +1095,8 @@ void var_opt_sketch<T,S,A>::push(const T& item, double wt, bool mark) {
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::pop_min_to_m_region() {
-  assert(h_ > 0);
-  assert(h_ + m_ + r_ == k_ + 1);
+  if (h_ == 0 || (h_ + m_ + r_ != k_ + 1))
+    throw std::logic_error("invalid heap state popping min to M region");
 
   if (h_ == 1) {
     // just update bookkeeping
@@ -1154,10 +1138,8 @@ void var_opt_sketch<T,S,A>::swap_values(uint32_t src, uint32_t dst) {
 */
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::grow_candidate_set(double wt_cands, uint32_t num_cands) {
-  assert(h_ + m_ + r_ == k_ + 1);
-  assert(num_cands >= 2);
-  assert(num_cands == m_ + r_);
-  assert(m_ == 0 || m_ == 1);
+  if ((h_ + m_ + r_ != k_ + 1) || (num_cands < 1) || (num_cands != m_ + r_) || (m_ >= 2))
+    throw std::logic_error("invariant violated when growing candidate set");
 
   while (h_ > 0) {
     const double next_wt = peek_min();
@@ -1180,14 +1162,14 @@ void var_opt_sketch<T,S,A>::grow_candidate_set(double wt_cands, uint32_t num_can
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::downsample_candidate_set(double wt_cands, uint32_t num_cands) {
-  assert(num_cands >= 2);
-  assert(h_ + num_cands == k_ + 1);
+  if (num_cands < 2 || h_ + num_cands != k_ + 1)
+    throw std::logic_error("invalid num_cands when downsampling");
 
   // need this before overwriting anything
   const uint32_t delete_slot = choose_delete_slot(wt_cands, num_cands);
   const uint32_t leftmost_cand_slot = h_;
-  assert(delete_slot >= leftmost_cand_slot);
-  assert(delete_slot <= k_);
+  if (delete_slot < leftmost_cand_slot || delete_slot > k_)
+    throw std::logic_error("invalid delete slot index when downsampling");
 
   // Overwrite weights for items from M moving into R,
   // to make bugs more obvious. Also needed so anyone reading the
@@ -1208,10 +1190,10 @@ void var_opt_sketch<T,S,A>::downsample_candidate_set(double wt_cands, uint32_t n
 
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::choose_delete_slot(double wt_cands, uint32_t num_cands) const {
-  assert(r_ > 0);
+  if (r_ == 0) throw std::logic_error("choosing delete slot while in exact mode");
 
   if (m_ == 0) {
-    // this happens if we insert a really have item
+    // this happens if we insert a really heavy item
     return pick_random_slot_in_r();
   } else if (m_ == 1) {
     // check if we keep th item in M or pick oen from R
@@ -1236,7 +1218,7 @@ uint32_t var_opt_sketch<T,S,A>::choose_delete_slot(double wt_cands, uint32_t num
 
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::choose_weighted_delete_slot(double wt_cands, uint32_t num_cands) const {
-  assert(m_ >= 1);
+  if (m_ < 1) throw std::logic_error("must have weighted delete slot");
 
   const uint32_t offset = h_;
   const uint32_t final_m = (offset + m_) - 1;
@@ -1260,7 +1242,7 @@ uint32_t var_opt_sketch<T,S,A>::choose_weighted_delete_slot(double wt_cands, uin
 
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::pick_random_slot_in_r() const {
-  assert(r_ > 0);
+  if (r_ == 0) throw std::logic_error("r_ = 0 when picking slot in R region");
   const uint32_t offset = h_ + m_;
   if (r_ == 1) {
     return offset;
@@ -1271,7 +1253,7 @@ uint32_t var_opt_sketch<T,S,A>::pick_random_slot_in_r() const {
 
 template<typename T, typename S, typename A>
 double var_opt_sketch<T,S,A>::peek_min() const {
-  assert(h_ > 0);
+  if (h_ == 0) throw std::logic_error("h_ = 0 when checking min in H region");
   return weights_[0];
 }
 
@@ -1287,7 +1269,7 @@ double var_opt_sketch<T,S,A>::get_tau() const {
 
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::strip_marks() {
-  assert(marks_ != nullptr);
+  if (marks_ == nullptr) throw std::logic_error("request to strip marks from non-gadget");
   num_marks_in_h_ = 0;
   AllocBool().deallocate(marks_, curr_items_alloc_);
   marks_ = nullptr;
@@ -1393,16 +1375,16 @@ subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(P predicate) const {
     }
   }
 
-  // if only heavy items, we have an exact answre
+  // if only heavy items, we have an exact answer
   if (r_ == 0) {
     return {h_true_wt, h_true_wt, h_true_wt, h_true_wt};
   }
 
+  // since r_ > 0, we know we have samples
   const uint64_t num_samples = n_ - h_;
-  assert(num_samples > 0);
   double effective_sampling_rate = r_ / static_cast<double>(num_samples);
-  assert(effective_sampling_rate >= 0.0);
-  assert(effective_sampling_rate <= 1.0);
+  if (effective_sampling_rate < 0.0 || effective_sampling_rate > 1.0)
+    throw std::logic_error("invalid sampling rate outside [0.0, 1.0]");
 
   size_t r_true_count = 0;
   ++idx; // skip the gap

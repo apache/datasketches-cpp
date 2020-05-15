@@ -137,11 +137,14 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   std::memcpy(&auxCount, data + HllUtil<A>::AUX_COUNT_INT, sizeof(int));
 
   AuxHashMap<A>* auxHashMap = nullptr;
+  typedef std::unique_ptr<AuxHashMap<A>, std::function<void(AuxHashMap<A>*)>> aux_hash_map_ptr;
+  aux_hash_map_ptr aux_ptr;
   if (auxCount > 0) { // necessarily TgtHllType == HLL_4
     int auxLgIntArrSize = (int) data[4];
     const size_t offset = HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes;
     const uint8_t* auxDataStart = data + offset;
     auxHashMap = AuxHashMap<A>::deserialize(auxDataStart, len - offset, lgK, auxCount, auxLgIntArrSize, comapctFlag);
+    aux_ptr = aux_hash_map_ptr(auxHashMap, auxHashMap->make_deleter());
   }
 
   HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, startFullSizeFlag);
@@ -157,6 +160,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len) {
   if (auxHashMap != nullptr)
     ((Hll4Array<A>*)sketch)->putAuxHashMap(auxHashMap);
 
+  aux_ptr.release();
   return sketch;
 }
 
@@ -188,8 +192,9 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
   const int lgK = (int) listHeader[HllUtil<A>::LG_K_BYTE];
   const int curMin = (int) listHeader[HllUtil<A>::HLL_CUR_MIN_BYTE];
 
-  // TODO: truncated stream will throw exception without freeing memory
   HllArray* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, startFullSizeFlag);
+  typedef std::unique_ptr<HllArray<A>, std::function<void(HllSketchImpl<A>*)>> hll_array_ptr;
+  hll_array_ptr sketch_ptr(sketch, sketch->get_deleter());
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
 
@@ -214,7 +219,10 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is) {
     ((Hll4Array<A>*)sketch)->putAuxHashMap(auxHashMap);
   }
 
-  return sketch;
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
+
+  return sketch_ptr.release();
 }
 
 template<typename A>

@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <cstring>
+#include <sstream>
 
 #include "cpc_confidence.hpp"
 #include "kxp_byte_lookup.hpp"
@@ -376,7 +377,8 @@ void cpc_sketch_alloc<A>::refresh_kxp(const uint64_t* bit_matrix) {
 }
 
 template<typename A>
-void cpc_sketch_alloc<A>::to_stream(std::ostream& os) const {
+string<A> cpc_sketch_alloc<A>::to_string() const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### CPC sketch summary:" << std::endl;
   os << "   lg_k           : " << std::to_string(lg_k) << std::endl;
   os << "   seed hash      : " << std::hex << compute_seed_hash(seed) << std::dec << std::endl;
@@ -394,6 +396,7 @@ void cpc_sketch_alloc<A>::to_stream(std::ostream& os) const {
     os << "   window offset  : " << std::to_string(window_offset) << std::endl;
   }
   os << "### End sketch summary" << std::endl;
+  return os.str();
 }
 
 template<typename A>
@@ -582,6 +585,8 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t 
   }
   uncompressed_state<A> uncompressed;
   get_compressor<A>().uncompress(compressed, uncompressed, lg_k, num_coupons);
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
   return cpc_sketch_alloc(lg_k, num_coupons, first_interesting_column, std::move(uncompressed.table),
       std::move(uncompressed.window), has_hip, kxp, hip_est_accum, seed);
 }

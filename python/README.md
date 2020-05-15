@@ -2,23 +2,44 @@
 
 ## Installation
 
-The easiest way to install the python wrapper is to run
+The release files do not include the needed python binding library ([pybind11](https://github.com/pybind/pybind11)). If building
+from a relase package, you must ensure that the pybind11 directory points to a local copy of pybind11.
+
+An official pypi build is eventually planned but not yet available.
+
+If you instead want to take a (possibly ill-advised) gamble on the current state of the master branch being useable, you can run:
 ```pip install git+https://github.com/apache/incubator-datasketches-cpp.git```
 
-If you prefer to downlioad the source first, be sure to clone the repo with `--recursive` to ensure you get the python binding library ([pybind11](https://github.com/pybind/pybind11)):
+## Developer Instructions
+
+### Building
+
+When cloning the source repository, you should include the pybind11 submodule with the `--recursive` option to the clone command:
 ```
 git clone --recursive https://github.com/apache/incubator-datasketches-cpp.git
 cd incubator-datasketches-cpp
-pip install .
+python -m pip install --upgrade pip setuptools wheel numpy
+python setup.py build
 ```
 
-In the event you do not have `pip` installed, you can invoke the setup script directly by replacing the last line above with `python3 setup.py install`.
+If you cloned without `--recursive`, you can add the submodule post-checkout using `git submodule update --init --recursive`.
 
-Python tests are run with `tox`.
+### Installing
+
+Assuming you have already checked out the library and any dependent submodules, install by simply replacing the lsat
+line of the build command with `python setup.py install`.
+
+### Unit tests
+
+The python tests are run with `tox`. To ensure you have all the needed packages, from the package base directory run:
+```
+python -m pip install --upgrade pip setuptools wheel numpy tox
+tox
+```
 
 ## Usage
 
-Having installed the library, loading the Datasketches library in Python is simple: `from datasketches import *`.
+Having installed the library, loading the Datasketches library in Python is simple: `import datasketches`.
 
 ## Available Sketch Classes
 

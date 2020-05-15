@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "kll_quantile_calculator.hpp"
+#include "common_defs.hpp"
 #include "serde.hpp"
 
 namespace datasketches {
@@ -41,6 +42,10 @@ namespace datasketches {
  * inverse functions get_rank(), get_PMF() (Probability Mass Function), and get_CDF()
  * (Cumulative Distribution Function).
  *
+ * <p>As of May 2020, this implementation produces serialized sketches which are binary-compatible
+ * with the equivalent Java implementation only when template parameter T = float
+ * (32-bit single precision values).
+ * 
  * <p>Given an input stream of <i>N</i> numeric values, the <i>absolute rank</i> of any specific
  * value is defined as its index <i>(0 to N-1)</i> in the hypothetical sorted stream of all
  * <i>N</i> input values.
@@ -416,12 +421,11 @@ class kll_sketch {
     static double get_normalized_rank_error(uint16_t k, bool pmf);
 
     /**
-     * Prints a summary of the sketch to a given stream.
-     * @param os the provided ostream
+     * Prints a summary of the sketch.
      * @param print_levels if true include information about levels
      * @param print_items if true include sketch data
      */
-    void to_stream(std::ostream& os, bool print_levels = false, bool print_items = false) const;
+    string<A> to_string(bool print_levels = false, bool print_items = false) const;
 
     class const_iterator;
     const_iterator begin() const;
@@ -507,16 +511,26 @@ class kll_sketch {
     static void check_serial_version(uint8_t serial_version);
     static void check_family_id(uint8_t family_id);
 
-    // implementation for floating point types
+    // implementations for floating point types
     template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
     static TT get_invalid_value() {
       return std::numeric_limits<TT>::quiet_NaN();
     }
 
-    // implementation for all other types
+    template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
+    static inline bool check_update_value(TT value) {
+      return !std::isnan(value);
+    }
+
+    // implementations for all other types
     template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
     static TT get_invalid_value() {
       throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
+    }
+
+    template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
+    static inline bool check_update_value(TT) {
+      return true;
     }
 
 };

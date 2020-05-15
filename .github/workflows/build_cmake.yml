@@ -25,7 +25,6 @@ jobs:
             test_target: test,
             cc: "gcc", cxx: "g++"
           }
-        # need to debug compiler errors with windows still
         - {
             name: "Windows Latest, MSVC",
             os: windows-latest,

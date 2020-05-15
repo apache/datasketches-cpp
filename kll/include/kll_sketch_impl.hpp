@@ -22,7 +22,7 @@
 
 #include <iostream>
 #include <iomanip>
-#include <assert.h>
+#include <sstream>
 
 #include "memory_operations.hpp"
 #include "kll_helper.hpp"
@@ -151,6 +151,7 @@ kll_sketch<T, C, S, A>::~kll_sketch() {
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::update(const T& value) {
+  if (!check_update_value(value)) { return; }
   update_min_max(value);
   const uint32_t index = internal_update();
   new (&items_[index]) T(value);
@@ -158,6 +159,7 @@ void kll_sketch<T, C, S, A>::update(const T& value) {
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::update(T&& value) {
+  if (!check_update_value(value)) { return; }
   update_min_max(value);
   const uint32_t index = internal_update();
   new (&items_[index]) T(std::move(value));
@@ -477,7 +479,65 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is) {
   check_family_id(family_id);
 
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
-  return is_empty ? kll_sketch<T, C, S, A>(k) : kll_sketch<T, C, S, A>(k, flags_byte, is);
+
+  if (!is.good()) throw std::runtime_error("error reading from std::istream"); 
+  if (is_empty) return kll_sketch<T, C, S, A>(k);
+
+  uint64_t n;
+  uint16_t min_k;
+  uint8_t num_levels;
+  const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
+  if (is_single_item) {
+    n = 1;
+    min_k = k;
+    num_levels = 1;
+  } else {
+    is.read((char*)&n, sizeof(n_));
+    is.read((char*)&min_k, sizeof(min_k_));
+    is.read((char*)&num_levels, sizeof(num_levels));
+    is.read((char*)&unused, sizeof(unused));
+  }
+  vector_u32<A> levels(num_levels + 1);
+  const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));
+  if (is_single_item) {
+    levels[0] = capacity - 1;
+  } else {
+    // the last integer in levels_ is not serialized because it can be derived
+    is.read((char*)levels.data(), sizeof(levels[0]) * num_levels);
+  }
+  levels[num_levels] = capacity;
+  auto item_buffer_deleter = [](T* ptr) { A().deallocate(ptr, 1); };
+  std::unique_ptr<T, decltype(item_buffer_deleter)> min_value_buffer(A().allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> max_value_buffer(A().allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, item_deleter> min_value;
+  std::unique_ptr<T, item_deleter> max_value;
+  if (!is_single_item) {
+    S().deserialize(is, min_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter());
+    S().deserialize(is, max_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter());
+  }
+  auto items_buffer_deleter = [capacity](T* ptr) { A().deallocate(ptr, capacity); };
+  std::unique_ptr<T, decltype(items_buffer_deleter)> items_buffer(A().allocate(capacity), items_buffer_deleter);
+  const auto num_items = levels[num_levels] - levels[0];
+  S().deserialize(is, &items_buffer.get()[levels[0]], num_items);
+  // serde call did not throw, repackage with destrtuctors
+  std::unique_ptr<T, items_deleter> items(items_buffer.release(), items_deleter(levels[0], capacity));
+  const bool is_level_zero_sorted = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
+  if (is_single_item) {
+    new (min_value_buffer.get()) T(items.get()[levels[0]]);
+    // copy did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter());
+    new (max_value_buffer.get()) T(items.get()[levels[0]]);
+    // copy did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter());
+  }
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream");
+  return kll_sketch(k, min_k, n, num_levels, std::move(levels), std::move(items), capacity,
+      std::move(min_value), std::move(max_value), is_level_zero_sorted);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -969,7 +1029,8 @@ void kll_sketch<T, C, S, A>::check_family_id(uint8_t family_id) {
 }
 
 template <typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::to_stream(std::ostream& os, bool print_levels, bool print_items) const {
+string<A> kll_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### KLL sketch summary:" << std::endl;
   os << "   K              : " << k_ << std::endl;
   os << "   min K          : " << min_k_ << std::endl;
@@ -1019,6 +1080,7 @@ void kll_sketch<T, C, S, A>::to_stream(std::ostream& os, bool print_levels, bool
     }
     os << "### End sketch data" << std::endl;
   }
+  return os.str();
 }
 
 template <typename T, typename C, typename S, typename A>

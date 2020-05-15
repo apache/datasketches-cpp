@@ -173,6 +173,8 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
   const bool emptyFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::EMPTY_FLAG_MASK) ? true : false);
 
   CouponList<A>* sketch = new (clAlloc().allocate(1)) CouponList<A>(lgK, tgtHllType, mode);
+  typedef std::unique_ptr<CouponList<A>, std::function<void(HllSketchImpl<A>*)>> coupon_list_ptr;
+  coupon_list_ptr ptr(sketch, sketch->get_deleter());
   const int couponCount = listHeader[HllUtil<A>::LIST_COUNT_BYTE];
   sketch->couponCount = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
@@ -185,7 +187,10 @@ CouponList<A>* CouponList<A>::newList(std::istream& is) {
     is.read((char*)sketch->couponIntArr, numToRead * sizeof(int));
   }
 
-  return sketch;
+  if (!is.good())
+    throw std::runtime_error("error reading from std::istream"); 
+
+  return ptr.release();
 }
 
 template<typename A>
