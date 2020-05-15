@@ -474,26 +474,42 @@ void bind_kll_sketches(py::module &m, const char* name) {
                                          py::arg("d")=kll_sketches<T>::DEFAULT_D)
     .def(py::init<const kll_sketches<T>&>())
     // allow user to retrieve k or d, in case it's instantiated w/ defaults
-    .def("get_k", &dspy::kll_sketches_get_k<T>)
-    .def("get_d", &dspy::kll_sketches_get_d<T>)
-    .def("update", &dspy::kll_sketches_update<T, A>, py::arg("items"))
-    .def("__str__", &dspy::kll_sketches_to_strings<T>)
-    .def("is_empty", &dspy::kll_sketches_is_empty<T>)
-    .def("get_n", &dspy::kll_sketches_get_n<T>)
-    .def("get_num_retained", &dspy::kll_sketches_get_num_retained<T>)
-    .def("is_estimation_mode", &dspy::kll_sketches_is_estimation_mode<T>)
-    .def("get_min_values", &dspy::kll_sketches_get_min_values<T>)
-    .def("get_max_values", &dspy::kll_sketches_get_max_values<T>)
+    .def("get_k", &dspy::kll_sketches_get_k<T>, 
+         "Returns the value of `k` of the sketch(es)")
+    .def("get_d", &dspy::kll_sketches_get_d<T>, 
+         "Returns the number of sketches")
+    .def("update", &dspy::kll_sketches_update<T, A>, py::arg("items"), 
+         "Updates the sketch(es) with value(s).  Must be a 1D array of size equal to the number of sketches.  Can also be 2D array of shape (n_updates, n_sketches).  If a sketch does not have a value to update, use np.nan")
+    .def("__str__", &dspy::kll_sketches_to_strings<T>, 
+         "Produces a string summary of all sketches. Users should split the returned string by '\n\n'")
+    .def("is_empty", &dspy::kll_sketches_is_empty<T>, 
+         "Returns whether the sketch(es) is(are) empty of not")
+    .def("get_n", &dspy::kll_sketches_get_n<T>, 
+         "Returns the number of values seen by the sketch(es)")
+    .def("get_num_retained", &dspy::kll_sketches_get_num_retained<T>, 
+         "Returns the number of values retained by the sketch(es)")
+    .def("is_estimation_mode", &dspy::kll_sketches_is_estimation_mode<T>, 
+         "Returns whether the sketch(es) is(are) in estimation mode")
+    .def("get_min_values", &dspy::kll_sketches_get_min_values<T>, 
+         "Returns the minimum value(s) of the sketch(es)")
+    .def("get_max_values", &dspy::kll_sketches_get_max_values<T>, 
+         "Returns the maximum value(s) of the sketch(es)")
     .def("get_quantiles", &dspy::kll_sketches_get_quantiles<T, A>, py::arg("fractions"), 
-                                                                   py::arg("isk")=-1)
+                                                                   py::arg("isk")=-1, 
+         "Returns the value(s) associated with the specified quantile(s) for the specified sketch(es). `fractions` can be a float between 0 and 1 (inclusive), or a list/array of values. `isk` specifies which sketch(es) to return the value(s) for (default: all sketches)")
     .def("get_ranks", &dspy::kll_sketches_get_ranks<T, A>, py::arg("values"), 
-                                                           py::arg("isk")=-1)
-    .def("get_pmf", &dspy::kll_sketches_get_pmf<T>, py::arg("split_points"), py::arg("isk")=-1)
-    .def("get_cdf", &dspy::kll_sketches_get_cdf<T>, py::arg("split_points"), py::arg("isk")=-1)
+                                                           py::arg("isk")=-1, 
+         "Returns the value(s) associated with the specified ranks(s) for the specified sketch(es). `values` can be an int between 0 and the number of values retained, or a list/array of values. `isk` specifies which sketch(es) to return the value(s) for (default: all sketches)")
+    .def("get_pmf", &dspy::kll_sketches_get_pmf<T>, py::arg("split_points"), py::arg("isk")=-1, 
+         "Returns the probability mass function (PMF) at `split_points` of the specified sketch(es).  `split_points` should be a list/array of floats between 0 and 1 (inclusive). `isk` specifies which sketch(es) to return the PMF for (default: all sketches)")
+    .def("get_cdf", &dspy::kll_sketches_get_cdf<T>, py::arg("split_points"), py::arg("isk")=-1, 
+         "Returns the cumulative distribution function (CDF) at `split_points` of the specified sketch(es).  `split_points` should be a list/array of floats between 0 and 1 (inclusive). `isk` specifies which sketch(es) to return the CDF for (default: all sketches)")
     .def_static("get_normalized_rank_error", &dspy::kll_sketch_generic_normalized_rank_error<T>,
-         py::arg("k"), py::arg("as_pmf"))
-    .def("serialize", &dspy::kll_sketches_serialize<T>, py::arg("isk")=-1)
-    .def("deserialize", &dspy::kll_sketches_deserialize<T>, py::arg("skBytes"), py::arg("isk"))
+         py::arg("k"), py::arg("as_pmf"), "Returns the normalized rank error")
+    .def("serialize", &dspy::kll_sketches_serialize<T>, py::arg("isk")=-1, 
+         "Serializes the specified sketch(es). `isk` can be an int or a list/array of ints (default: all sketches)")
+    .def("deserialize", &dspy::kll_sketches_deserialize<T>, py::arg("skBytes"), py::arg("isk"), 
+         "Deserializes the specified sketch.  `isk` must be an int.")
     // FINDME The following have not yet been implemented:
     //.def("merge", (void (kll_sketch<T>::*)(const kll_sketch<T>&)) &kll_sketch<T>::merge, py::arg("sketch"))
     ;
