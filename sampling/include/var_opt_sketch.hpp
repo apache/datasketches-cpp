@@ -80,13 +80,12 @@ class var_opt_sketch {
     void update(const T& item, double weight=1.0);
 
     /**
-     * Not yet implemented
      * Updates this sketch with the given data item with the given weight.
      * This method takes an rvalue.
      * @param item an item from a stream of items
      * @param weight the weight of the item
      */
-    //void update(T&& item, double weight=1.0);
+    void update(T&& item, double weight=1.0);
 
     /**
      * Returns the configured maximum sample size.
@@ -267,12 +266,21 @@ class var_opt_sketch {
     var_opt_sketch(const var_opt_sketch& other, bool as_sketch, uint64_t adjusted_n);
     var_opt_sketch(T* data, double* weights, size_t len, uint32_t k, uint64_t n, uint32_t h_count, uint32_t r_count, double total_wt_r);
 
-    // internal-use-only updates
-    inline void update(const T& item, double weight, bool mark);
-    inline void update_warmup_phase(const T& item, double weight, bool mark);
-    inline void update_light(const T& item, double weight, bool mark);
-    inline void update_heavy_r_eq1(const T& item, double weight, bool mark);
-    inline void update_heavy_general(const T& item, double weight, bool mark);
+    // internal-use-only update
+    template<typename O>
+    inline void update(O&& item, double weight, bool mark);
+    
+    template<typename O>
+    inline void update_warmup_phase(O&& item, double weight, bool mark);
+    
+    template<typename O>
+    inline void update_light(O&& item, double weight, bool mark);
+    
+    template<typename O>
+    inline void update_heavy_r_eq1(O&& item, double weight, bool mark);
+    
+    template<typename O>
+    inline void update_heavy_general(O&& item, double weight, bool mark);
 
     inline double get_tau() const;
     inline double peek_min() const;
@@ -282,11 +290,12 @@ class var_opt_sketch {
     inline uint32_t choose_delete_slot(double wt_cand, uint32_t num_cand) const;
     inline uint32_t choose_weighted_delete_slot(double wt_cand, uint32_t num_cand) const;
 
+    template<typename O>
+    inline void push(O&& item, double wt, bool mark);
     inline void transition_from_warmup();
     inline void convert_to_heap();
     inline void restore_towards_leaves(uint32_t slot_in);
     inline void restore_towards_root(uint32_t slot_in);
-    inline void push(const T& item, double wt, bool mark);
     inline void pop_min_to_m_region();
     void grow_candidate_set(double wt_cands, uint32_t num_cands);    
     void decrease_k_by_1();
@@ -313,10 +322,12 @@ class var_opt_sketch {
     static uint32_t ceiling_power_of_2(uint32_t n);
     static inline uint32_t next_int(uint32_t max_value);
     static inline double next_double_exclude_zero();
+
+    class iterator;
 };
 
 template<typename T, typename S, typename A>
-class var_opt_sketch<T, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+class var_opt_sketch<T, S, A>::const_iterator : public std::iterator<std::input_iterator_tag, T> {
 public:
   const_iterator(const const_iterator& other);
   const_iterator& operator++();
@@ -345,6 +356,35 @@ private:
   const size_t final_idx_;
   bool weight_correction_;
 };
+
+// non-const iterator for internal use
+template<typename T, typename S, typename A>
+class var_opt_sketch<T, S, A>::iterator : public std::iterator<std::input_iterator_tag, T> {
+public:
+  iterator(const iterator& other);
+  iterator& operator++();
+  iterator& operator++(int);
+  bool operator==(const iterator& other) const;
+  bool operator!=(const iterator& other) const;
+  std::pair<T&, double> operator*();
+
+private:
+  friend class var_opt_sketch<T,S,A>;
+  friend class var_opt_union<T,S,A>;
+  
+  // iterates over only one of the H or R region, applying weight correction
+  // if iterating over R region (can correct for numerical precision issues)
+  iterator(var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region);
+
+  bool get_mark() const;
+
+  const var_opt_sketch<T,S,A>* sk_;
+  double cum_r_weight_; // used for weight correction
+  double r_item_wt_;
+  size_t idx_;
+  const size_t final_idx_;
+};
+
 
 } // namespace datasketches
 

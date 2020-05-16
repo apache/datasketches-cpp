@@ -68,12 +68,11 @@ public:
   void update(const var_opt_sketch<T,S,A>& sk);
   
   /**
-   * Not yet implemented
    * Updates this union with the given sketch
    * This method takes an rvalue.
    * @param sk a sketch to add to the union
    */
-  //void update(var_opt_sketch<T,S,A>&& sk);
+  void update(var_opt_sketch<T,S,A>&& sk);
 
   /**
    * Gets the varopt sketch resulting from the union of any input sketches.
@@ -216,7 +215,9 @@ private:
    more importantly, this design choice allows us to exactly re-construct the input sketch
    when there is only one of them.
    */
-  void merge_into(const var_opt_sketch<T,S,A>& sk);
+  inline void merge_items(const var_opt_sketch<T,S,A>& sk);
+  inline void merge_items(var_opt_sketch<T,S,A>&& sk);
+  inline void resolve_tau(const var_opt_sketch<T,S,A>& sketch);
 
   double get_outer_tau() const;
 
