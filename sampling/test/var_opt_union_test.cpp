@@ -1,4 +1,24 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 #include <var_opt_union.hpp>
+#include "test_type.hpp"
 
 #include <catch.hpp>
 
@@ -303,6 +323,31 @@ TEST_CASE("varopt union: deserialize from java", "[var_opt_union]") {
   REQUIRE(ss.estimate == Approx(expected_wt).margin(EPS));
   REQUIRE(ss.total_sketch_weight == Approx(expected_wt + 1024.0).margin(EPS));
   REQUIRE(result.get_k() < 128);
+}
+
+TEST_CASE( "varopt union: move", "[var_opt_union][test_type]") {
+  int n = 20;
+  uint32_t k = 5;
+  var_opt_union<test_type> u(k);
+  var_opt_sketch<test_type> sk1(k);
+  var_opt_sketch<test_type> sk2(k);
+
+  // move udpates
+  for (int i = 0; i < n; ++i) {
+    sk1.update(i);
+    sk2.update(-i);
+  }
+
+  // move unions
+  u.update(std::move(sk2));
+  u.update(std::move(sk1));
+
+  // move constructor
+  var_opt_union<test_type> u2(std::move(u));
+
+  // move assignment
+  var_opt_union<test_type> u3(k);
+  u3 = std::move(u2);
 }
 
 }

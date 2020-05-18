@@ -744,14 +744,34 @@ string<A> var_opt_sketch<T,S,A>::to_string() const {
 
 template<typename T, typename S, typename A>
 string<A> var_opt_sketch<T,S,A>::items_to_string() const {
+  return items_to_string(true);
   std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Sketch Items" << std::endl;
-  const uint32_t print_length = (n_ < k_ ? n_ : k_ + 1);
-  for (uint32_t i = 0; i < print_length; ++i) {
-    if (i == h_) {
+  int idx = 0;
+  for (auto record : *this) {
+    os << idx << ": " << record.first << "\twt = " << record.second << std::endl;
+    ++idx;
+  }
+  return os.str();
+}
+
+template<typename T, typename S, typename A>
+string<A> var_opt_sketch<T,S,A>::items_to_string(bool print_gap) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  os << "### Sketch Items" << std::endl;
+  const uint32_t array_length = (n_ < k_ ? n_ : k_ + 1);
+  for (uint32_t i = 0, display_idx = 0; i < array_length; ++i) {
+    if (i == h_ && print_gap) {
       os << i << ": GAP" << std::endl;
+      ++display_idx;
     } else {
-      os << i << ": " << data_[i] << "\twt = " << weights_[i] << std::endl;
+      os << i << ": " << data_[i] << "\twt = ";
+      if (weights_[i] == -1.0) {
+        os << get_tau() << "\t(-1.0)" << std::endl;
+      } else {
+        os << weights_[i] << std::endl;
+      }
+      ++display_idx;
     }
   }
   return os.str();
@@ -761,7 +781,7 @@ template<typename T, typename S, typename A>
 template<typename O>
 void var_opt_sketch<T,S,A>::update(O&& item, double weight, bool mark) {
   if (weight < 0.0 || std::isnan(weight) || std::isinf(weight)) {
-    throw std::invalid_argument("Item weights must be nonnegativge and finite. Found: "
+    throw std::invalid_argument("Item weights must be nonnegative and finite. Found: "
                                 + std::to_string(weight));
   } else if (weight == 0.0) {
     return;

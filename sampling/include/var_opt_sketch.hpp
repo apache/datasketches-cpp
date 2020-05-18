@@ -259,12 +259,12 @@ class var_opt_sketch {
                    uint32_t curr_items_alloc, bool filled_data, std::unique_ptr<T, items_deleter> items,
                    std::unique_ptr<double, weights_deleter> weights, uint32_t num_marks_in_h,
                    std::unique_ptr<bool, marks_deleter> marks);
-    //var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs, std::istream& is);
-    //var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, uint8_t preamble_longs, const void* bytes, size_t size);
 
     friend class var_opt_union<T,S,A>;
     var_opt_sketch(const var_opt_sketch& other, bool as_sketch, uint64_t adjusted_n);
     var_opt_sketch(T* data, double* weights, size_t len, uint32_t k, uint64_t n, uint32_t h_count, uint32_t r_count, double total_wt_r);
+
+    string<A> items_to_string(bool print_gap) const;
 
     // internal-use-only update
     template<typename O>
