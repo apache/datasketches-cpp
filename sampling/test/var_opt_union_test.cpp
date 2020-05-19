@@ -337,22 +337,22 @@ TEST_CASE( "varopt union: move", "[var_opt_union][test_type]") {
     sk1.update(i);
     sk2.update(-i);
   }
-  REQUIRE(sk1.get_num_samples() == n);
-  REQUIRE(sk2.get_num_samples() == n);
+  REQUIRE(sk1.get_n() == n);
+  REQUIRE(sk2.get_n() == n);
 
   // move unions
   u.update(std::move(sk2));
   u.update(std::move(sk1));
-  REQUIRE(u.get_result().get_num_samples() == 2 * n);
+  REQUIRE(u.get_result().get_n() == 2 * n);
 
   // move constructor
   var_opt_union<test_type> u2(std::move(u));
-  REQUIRE(u2.get_result().get_num_samples() == 2 * n);
+  REQUIRE(u2.get_result().get_n() == 2 * n);
 
   // move assignment
   var_opt_union<test_type> u3(k);
   u3 = std::move(u2);
-  REQUIRE(u3.get_result().get_num_samples() == 2 * n);
+  REQUIRE(u3.get_result().get_n() == 2 * n);
 }
 
 }
