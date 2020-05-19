@@ -744,7 +744,6 @@ string<A> var_opt_sketch<T,S,A>::to_string() const {
 
 template<typename T, typename S, typename A>
 string<A> var_opt_sketch<T,S,A>::items_to_string() const {
-  return items_to_string(true);
   std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Sketch Items" << std::endl;
   int idx = 0;
