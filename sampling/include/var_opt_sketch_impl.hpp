@@ -1502,8 +1502,7 @@ var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),
-  final_idx_(sk.r_ > 0 ? sk.h_ + sk.r_ + 1 : sk.h_),
-  weight_correction_(false)
+  final_idx_(sk.r_ > 0 ? sk.h_ + sk.r_ + 1 : sk.h_)
 {
   // index logic easier to read if not inline
   if (is_end) {
@@ -1518,12 +1517,11 @@ var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A
 }
 
 template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region, bool weight_corr) :
+var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region) :
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),
-  final_idx_(sk.h_ + (use_r_region ? 1 + sk.r_ : 0)),
-  weight_correction_(weight_corr)
+  final_idx_(sk.h_ + (use_r_region ? 1 + sk.r_ : 0))
 {
   if (use_r_region) {
     idx_ = sk.h_ + 1 + (is_end ? sk.r_ : 0);
@@ -1543,8 +1541,7 @@ var_opt_sketch<T, S, A>::const_iterator::const_iterator(const const_iterator& ot
   cum_r_weight_(other.cum_r_weight_),
   r_item_wt_(other.r_item_wt_),
   idx_(other.idx_),
-  final_idx_(other.final_idx_),
-  weight_correction_(other.weight_correction_)
+  final_idx_(other.final_idx_)
 {}
 
 template<typename T,  typename S, typename A>
@@ -1585,8 +1582,6 @@ const std::pair<const T&, const double> var_opt_sketch<T, S, A>::const_iterator:
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
-  } else if (weight_correction_ && idx_ == final_idx_ - 1) {
-    wt = sk_->total_wt_r_ - cum_r_weight_;
   } else {
     wt = r_item_wt_;
   }
@@ -1602,7 +1597,7 @@ bool var_opt_sketch<T, S, A>::const_iterator::get_mark() const {
 // -------- var_opt_sketch::iterator implementation ---------
 
 template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::iterator::iterator(var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region) :
+var_opt_sketch<T,S,A>::iterator::iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region) :
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),

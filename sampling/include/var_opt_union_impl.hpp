@@ -342,18 +342,18 @@ void var_opt_union<T,S,A>::merge_items(const var_opt_sketch<T,S,A>& sketch) {
 
   n_ += sketch.n_;
 
-  // H region iterator
-  typename var_opt_sketch<T,S,A>::const_iterator h_itr(sketch, false, false, false);
-  typename var_opt_sketch<T,S,A>::const_iterator h_end(sketch, true, false, false);
+  // H region const_iterator
+  typename var_opt_sketch<T,S,A>::const_iterator h_itr(sketch, false, false);
+  typename var_opt_sketch<T,S,A>::const_iterator h_end(sketch, true, false);
   while (h_itr != h_end) {
     std::pair<const T&, const double> sample = *h_itr;
     gadget_.update(sample.first, sample.second, false);
     ++h_itr;
   }
 
-  // Weight-correcitng R region iterator
-  typename var_opt_sketch<T,S,A>::const_iterator r_itr(sketch, false, true, true);
-  typename var_opt_sketch<T,S,A>::const_iterator r_end(sketch, true, true, true);
+  // Weight-correcting R region iterator (const_iterator doesn't do the correction)
+  typename var_opt_sketch<T,S,A>::iterator r_itr(sketch, false, true);
+  typename var_opt_sketch<T,S,A>::iterator r_end(sketch, true, true);
   while (r_itr != r_end) {
     std::pair<const T&, const double> sample = *r_itr;
     gadget_.update(sample.first, sample.second, true);
@@ -378,7 +378,7 @@ void var_opt_union<T,S,A>::merge_items(var_opt_sketch<T,S,A>&& sketch) {
     ++h_itr;
   }
 
-  // Weight-correcitng R region iterator
+  // Weight-correcting R region iterator
   typename var_opt_sketch<T,S,A>::iterator r_itr(sketch, false, true);
   typename var_opt_sketch<T,S,A>::iterator r_end(sketch, true, true);
   while (r_itr != r_end) {

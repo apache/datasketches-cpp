@@ -326,28 +326,33 @@ TEST_CASE("varopt union: deserialize from java", "[var_opt_union]") {
 }
 
 TEST_CASE( "varopt union: move", "[var_opt_union][test_type]") {
-  int n = 20;
+  uint32_t n = 20;
   uint32_t k = 5;
   var_opt_union<test_type> u(k);
   var_opt_sketch<test_type> sk1(k);
   var_opt_sketch<test_type> sk2(k);
 
   // move udpates
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < (int) n; ++i) {
     sk1.update(i);
     sk2.update(-i);
   }
+  REQUIRE(sk1.get_num_samples() == n);
+  REQUIRE(sk2.get_num_samples() == n);
 
   // move unions
   u.update(std::move(sk2));
   u.update(std::move(sk1));
+  REQUIRE(u.get_result().get_num_samples() == 2 * n);
 
   // move constructor
   var_opt_union<test_type> u2(std::move(u));
+  REQUIRE(u2.get_result().get_num_samples() == 2 * n);
 
   // move assignment
   var_opt_union<test_type> u3(k);
   u3 = std::move(u2);
+  REQUIRE(u3.get_result().get_num_samples() == 2 * n);
 }
 
 }

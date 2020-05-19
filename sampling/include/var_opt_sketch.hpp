@@ -345,7 +345,7 @@ private:
   
   // iterates over only one of the H or R region, optionally applying weight correction
   // to R region (can correct for numerical precision issues)
-  const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region, bool weight_corr);
+  const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region);
 
   bool get_mark() const;
 
@@ -374,7 +374,7 @@ private:
   
   // iterates over only one of the H or R region, applying weight correction
   // if iterating over R region (can correct for numerical precision issues)
-  iterator(var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region);
+  iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region);
 
   bool get_mark() const;
 
