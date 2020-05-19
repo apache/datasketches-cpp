@@ -51,7 +51,7 @@ d(dval)
   }
 
   // spawn the sketches
-  for (uint32_t i; i < d; i++) {
+  for (uint32_t i = 0; i < d; i++) {
     sketches.emplace_back(k);
   }
 }
@@ -118,13 +118,6 @@ py::list kll_sketch_get_cdf(const kll_sketch<T>& sk,
   }
 
   return list;
-}
-
-template<typename T>
-std::string kll_sketch_to_string(const kll_sketch<T>& sk) {
-  std::ostringstream ss;
-  sk.to_stream(ss);
-  return ss.str();
 }
 
 // Updates: allow parallel sketches via Numpy
@@ -278,9 +271,8 @@ std::string kll_sketches_to_strings(const kll_sketches<T>& sks) {
 
   for (uint32_t i = 0; i < nSketches; ++i) {
     // all streams into 1 string, for compatibility with Python's str() behavior
-    sks.sketches[i].to_stream(ss);
     // users will need to split by \n\n, e.g., str(kll).split('\n\n')
-    ss << "\n";
+    ss << sks.sketches[i].to_string() << "\n";
   }
 
   // remove the last 2 \n characters so that (1) there isn't an extra blank 
