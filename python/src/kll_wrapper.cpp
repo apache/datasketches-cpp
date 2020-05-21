@@ -234,14 +234,7 @@ py::array kll_sketches<T,C,S>::is_estimation_mode() const {
 template<typename T, typename C, typename S>
 py::array kll_sketches<T,C,S>::get_quantiles(const std::vector<double>& fractions, 
                                              const py::array_t<int>& isk) const {
-  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
   std::vector<uint32_t> inds = get_indices(isk);
-
-  //auto buf = fractions.request();
-  //int nQuantiles = buf.size;
-  //double *ptr = (double *) buf.ptr;
-
   size_t num_sketches = inds.size();
   size_t num_quantiles = fractions.size();
 
@@ -260,14 +253,7 @@ py::array kll_sketches<T,C,S>::get_quantiles(const std::vector<double>& fraction
 template<typename T, typename C, typename S>
 py::array kll_sketches<T,C,S>::get_ranks(const std::vector<T>& values, 
                                          const py::array_t<int>& isk) const {
-  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
   std::vector<uint32_t> inds = get_indices(isk);
-
-  //auto buf = values.request();
-  //int nRanks = buf.size;
-  //double *ptr = (double *) buf.ptr;
-
   size_t num_sketches = inds.size();
   size_t num_ranks = values.size();
 
@@ -285,15 +271,11 @@ py::array kll_sketches<T,C,S>::get_ranks(const std::vector<T>& values,
 template<typename T, typename C, typename S>
 py::array kll_sketches<T,C,S>::get_pmf(const py::array_t<T>& split_points, 
                                        const py::array_t<int>& isk) const {
-  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
   std::vector<uint32_t> inds = get_indices(isk);
-
   size_t num_sketches = inds.size();
   size_t num_splits = split_points.size();
   
   std::vector<std::vector<T>> pmfs(num_sketches, std::vector<T>(num_splits + 1));
-
   for (uint32_t i = 0; i < num_sketches; ++i) {
     auto pmf = sketches_[inds[i]].get_PMF(split_points.data(), num_splits);
     for (size_t j = 0; j <= num_splits; ++j) {
@@ -308,15 +290,11 @@ py::array kll_sketches<T,C,S>::get_pmf(const py::array_t<T>& split_points,
 template<typename T, typename C, typename S>
 py::array kll_sketches<T,C,S>::get_cdf(const py::array_t<T>& split_points, 
                                        const py::array_t<int>& isk) const {
-  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
   std::vector<uint32_t> inds = get_indices(isk);
-
   size_t num_sketches = inds.size();
   size_t num_splits = split_points.size();
   
   std::vector<std::vector<T>> cdfs(num_sketches, std::vector<T>(num_splits + 1));
-
   for (uint32_t i = 0; i < num_sketches; ++i) {
     auto cdf = sketches_[inds[i]].get_CDF(split_points.data(), num_splits);
     for (size_t j = 0; j <= num_splits; ++j) {
@@ -341,10 +319,7 @@ void kll_sketches<T,C,S>::deserialize(const py::bytes& sk_bytes,
 
 template<typename T, typename C, typename S>
 py::list kll_sketches<T,C,S>::serialize(py::array_t<uint32_t>& isk) {
-  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
   std::vector<uint32_t> inds = get_indices(isk);
-
   const size_t num_sketches = inds.size();
 
   py::list list(num_sketches);
