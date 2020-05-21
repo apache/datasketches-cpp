@@ -1,6 +1,16 @@
-This is a C++ version of the DataSketches core library. See [Apache DataSketches home](http://datasketches.apache.org/)
+# DataSketches Core C++ Library Component
+This is the core C++ component of the DataSketches library.  It contains nearkt all of the sketching algorithms and can be accessed directly from user applications. 
 
-Apache DataSketches is an open source, high-performance library of stochastic streaming algorithms commonly called "sketches" in the data sciences. Sketches are small, stateful programs that process massive data as a stream and can provide approximate answers, with mathematical guarantees, to computationally difficult queries orders-of-magnitude faster than traditional, exact methods.
+This component is also a dependency of other components of the library that create adaptors for target systems, such as PostgreSQL.
+
+Note that we have a parallel core component for Java implementations of the same sketch algorithms, 
+[incubator-datasketches-java](https://github.com/apache/incubator-datasketches-java).
+
+Please visit the main [DataSketches website](https://datasketches.apache.org) for more information. 
+
+If you are interested in making contributions to this site please see our [Community](https://datasketches.apache.org/docs/Community/) page for how to contact us.
+
+---
 
 This code requires C++11. It was tested with GCC 4.8.5 (standard in RedHat at the time of this writing), GCC 8.2.0 and Apple LLVM version 10.0.1 (clang-1001.0.46.4)
 
@@ -29,13 +39,6 @@ Building and running unit tests using cmake for Windows from the command line:
 	$ cmake --build build --config Release
 	$ cmake --build build --config Release --target RUN_TESTS
 
-## How to Contact Us
-* We have two ASF [the-ASF.slack.com](http://the-ASF.slack.com) slack channels:
-    * datasketches -- general user questions
-    * datasketches-dev -- similar to our Apache [Developers Mail list](https://lists.apache.org/list.html?dev@datasketches.apache.org), except more interactive, but not as easily searchable.
+----
 
-* For bugs and performance issues please subscribe: [Issues for datasketches-cpp](https://github.com/apache/incubator-datasketches-cpp/issues) 
-
-* For general questions about using the library please subscribe: [Users Mail List](https://lists.apache.org/list.html?users@datasketches.apache.org)
-
-* If you are interested in contributing please subscribe: [Developers Mail list](https://lists.apache.org/list.html?dev@datasketches.apache.org)
+Disclaimer: Apache DataSketches is an effort undergoing incubation at The Apache Software Foundation (ASF), sponsored by the Apache Incubator. Incubation is required of all newly accepted projects until a further review indicates that the infrastructure, communications, and decision making process have stabilized in a manner consistent with other successful ASF projects. While incubation status is not necessarily a reflection of the completeness or stability of the code, it does indicate that the project has yet to be fully endorsed by the ASF.
