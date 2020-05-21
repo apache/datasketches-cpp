@@ -23,38 +23,339 @@
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <sstream>
+#include <vector>
 
 namespace py = pybind11;
 
 namespace datasketches {
 
 // Wrapper class for Numpy compatibility
-template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
+template <typename T, typename C = std::less<T>, typename S = serde<T>>
 class kll_sketches {
   public:
-    uint32_t k, d;
-    std::vector <kll_sketch<T, C, S, A>> sketches;
-    static const uint32_t DEFAULT_K = kll_sketch<T, C, S, A>::DEFAULT_K;
+    static const uint32_t DEFAULT_K = kll_sketch<T, C, S>::DEFAULT_K;
     static const uint32_t DEFAULT_D = 1;
 
     explicit kll_sketches(uint32_t k = DEFAULT_K, uint32_t d = DEFAULT_D);
+
+    // container parameters
+    inline uint32_t get_k() const;
+    inline uint32_t get_d() const;
+
+    // sketch updates
+    void update(const py::array_t<T>& items);
+
+    // sketch queries returning an array of results
+    py::array is_empty() const;
+    py::array get_n() const;
+    py::array is_estimation_mode() const;
+    py::array get_min_values() const;
+    py::array get_max_values() const;
+    py::array get_num_retained() const;
+    py::array get_quantiles(const std::vector<double>& fractions, const py::array_t<int>& isk) const;
+    py::array get_ranks(const std::vector<T>& values, const py::array_t<int>& isk) const;
+    py::array get_pmf(const py::array_t<T>& split_points, const py::array_t<int>& isk) const;
+    py::array get_cdf(const py::array_t<T>& split_points, const py::array_t<int>& isk) const;
+
+    // human-readable output
+    std::string to_string(bool print_levels = false, bool print_items = false) const;
+
+    // binary output/input
+    py::list serialize(py::array_t<uint32_t>& isk);
+    // note: deserialize() replaces the sketch at the specified
+    //       index. Not a static method.
+    void deserialize(const py::bytes& sk_bytes, uint32_t idx);
+
+  private:
+    std::vector<uint32_t> get_indices(const py::array_t<int>& isk) const;
+
+    const uint32_t k_; // kll sketch k parameter
+    const uint32_t d_; // number of dimensions (here: sketches) to hold
+    std::vector<kll_sketch<T,C,S>> sketches_;
 };
 
-template<typename T, typename C, typename S, typename A>
-kll_sketches<T, C, S, A>::kll_sketches(uint32_t kval, uint32_t dval):
-k(kval), 
-d(dval)
+template<typename T, typename C, typename S>
+kll_sketches<T,C,S>::kll_sketches(uint32_t k, uint32_t d):
+k_(k), 
+d_(d)
 {
   // check d is valid (k is checked by kll_sketch)
   if (d < 1) {
     throw std::invalid_argument("D must be >= 1: " + std::to_string(d));
   }
 
+  sketches_.reserve(d);
   // spawn the sketches
   for (uint32_t i = 0; i < d; i++) {
-    sketches.emplace_back(k);
+    sketches_.emplace_back(k);
   }
 }
+
+template<typename T, typename C, typename S>
+uint32_t kll_sketches<T,C,S>::get_k() const {
+  return k_;
+}
+
+template<typename T, typename C, typename S>
+uint32_t kll_sketches<T,C,S>::get_d() const {
+  return d_;
+}
+
+template<typename T, typename C, typename S>
+std::vector<uint32_t> kll_sketches<T,C,S>::get_indices(const py::array_t<int>& isk) const {
+  std::vector<uint32_t> indices;
+  
+  if (isk.size() == 1 && isk.at(0) == -1) {
+    indices.reserve(d_);
+    for (uint32_t i = 0; i < d_; ++i) {
+      indices.push_back(i);
+    }
+  } else {
+    indices.reserve(isk.size());
+    for (uint32_t i = 0; i < isk.size(); ++i) {
+      const uint32_t idx = static_cast<uint32_t>(isk.at(i));
+      if (idx < d_) {
+        indices.push_back(static_cast<uint32_t>(isk.at(i)));
+      } else {
+        throw std::invalid_argument("request for invalid dimenions >= d ("
+                 + std::to_string(d_) +"): "+ std::to_string(idx));
+      }
+    }
+  }
+  return indices;
+}
+
+// Checks if each sketch is empty or not
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::is_empty() const {
+  std::vector<bool> vals(d_);
+  for (uint32_t i = 0; i < d_; ++i) {
+    vals[i] = sketches_[i].is_empty();
+  }
+
+  return py::cast(vals);
+}
+
+// Updates each sketch with values
+// Currently: all values must be present
+// TODO: allow subsets of sketches to be updated
+template<typename T, typename C, typename S>
+void kll_sketches<T,C,S>::update(const py::array_t<T>& items) {
+  size_t ndim = items.ndim();
+
+  if (ndim == 1) {
+    // 1D case: single value to update per sketch
+    const T* ptr = items.data();
+    for (int i = 0; i < items.size(); ++i) {
+      sketches_.at(i).update(ptr[i]);
+    }
+  }
+  else if (ndim == 2) {
+    // 2D case: multiple values to update per sketch
+    for (int i = 0; i < items.shape(0); ++i) {
+      const T* ptr = items.data(i * items.shape(1));
+      for (int j = 0; j < items.shape(1); ++j) {
+        sketches_.at(j).update(ptr[j]);
+      }
+    }
+  }
+  else {
+    throw std::invalid_argument("Update input must be 2 or fewer dimensions : " + std::to_string(ndim));
+  }
+}
+
+// Number of updates for each sketch
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::get_n() const {
+  std::vector<uint64_t> vals(d_);
+  for (uint32_t i = 0; i < d_; ++i) {
+    vals[i] = sketches_[i].get_n();
+  }
+  return py::cast(vals);
+}
+
+// Number of retained values for each sketch
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::get_num_retained() const {
+  std::vector<uint32_t> vals(d_);
+  for (uint32_t i = 0; i < d_; ++i) {
+    vals[i] = sketches_[i].get_num_retained();
+  }
+  return py::cast(vals);
+}
+
+// Gets the minimum value of each sketch
+// TODO: allow subsets of sketches
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::get_min_values() const {
+  std::vector<T> vals(d_);
+  for (uint32_t i = 0; i < d_; ++i) {
+    vals[i] = sketches_[i].get_min_value();
+  }
+  return py::cast(vals);
+}
+
+// Gets the maximum value of each sketch
+// TODO: allow subsets of sketches
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::get_max_values() const {
+  std::vector<T> vals(d_);
+  for (uint32_t i = 0; i < d_; ++i) {
+    vals[i] = sketches_[i].get_max_value();
+  }
+  return py::cast(vals);
+}
+
+// Summary of each sketch as one long string
+// Users should use .split('\n\n') when calling it to build a list of each 
+// sketch's summary
+template<typename T, typename C, typename S>
+std::string kll_sketches<T,C,S>::to_string(bool print_levels, bool print_items) const {
+  std::ostringstream ss;
+  for (uint32_t i = 0; i < d_; ++i) {
+    // all streams into 1 string, for compatibility with Python's str() behavior
+    // users will need to split by \n\n, e.g., str(kll).split('\n\n')
+    if (i > 0) ss << "\n";
+    ss << sketches_[i].to_string(print_levels, print_items);
+  }
+  return ss.str();
+}
+
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::is_estimation_mode() const {
+  std::vector<bool> vals(d_);
+  for (uint32_t i = 0; i < d_; ++i) {
+    vals[i] = sketches_[i].is_estimation_mode();
+  }
+  return py::cast(vals);
+}
+
+// Value of sketch(es) corresponding to some quantile(s)
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::get_quantiles(const std::vector<double>& fractions, 
+                                             const py::array_t<int>& isk) const {
+  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
+  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
+  std::vector<uint32_t> inds = get_indices(isk);
+
+  //auto buf = fractions.request();
+  //int nQuantiles = buf.size;
+  //double *ptr = (double *) buf.ptr;
+
+  size_t num_sketches = inds.size();
+  size_t num_quantiles = fractions.size();
+
+  std::vector<std::vector<T>> quants(num_sketches, std::vector<T>(num_quantiles));
+  for (uint32_t i = 0; i < num_sketches; ++i) {
+    auto quant = sketches_[inds[i]].get_quantiles(fractions.data(), num_quantiles);
+    for (int j = 0; j < num_quantiles; ++j) {
+      quants[i][j] = quant[j];
+    }
+  }
+
+  return py::cast(quants);
+}
+
+// Value of sketch(es) corresponding to some rank(s)
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::get_ranks(const std::vector<T>& values, 
+                                         const py::array_t<int>& isk) const {
+  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
+  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
+  std::vector<uint32_t> inds = get_indices(isk);
+
+  //auto buf = values.request();
+  //int nRanks = buf.size;
+  //double *ptr = (double *) buf.ptr;
+
+  size_t num_sketches = inds.size();
+  size_t num_ranks = values.size();
+
+  std::vector<std::vector<T>> ranks(num_sketches, std::vector<T>(num_ranks));
+  for (uint32_t i = 0; i < num_sketches; ++i) {
+    for (int j = 0; j < num_ranks; ++j) {
+      ranks[i][j] = sketches_[inds[i]].get_rank(values[j]);
+    }
+  }
+
+  return py::cast(ranks);
+}
+
+// PMF(s) of sketch(es)
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::get_pmf(const py::array_t<T>& split_points, 
+                                       const py::array_t<int>& isk) const {
+  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
+  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
+  std::vector<uint32_t> inds = get_indices(isk);
+
+  size_t num_sketches = inds.size();
+  size_t num_splits = split_points.size();
+  
+  std::vector<std::vector<T>> pmfs(num_sketches, std::vector<T>(num_splits + 1));
+
+  for (uint32_t i = 0; i < num_sketches; ++i) {
+    auto pmf = sketches_[inds[i]].get_PMF(split_points.data(), num_splits);
+    for (size_t j = 0; j <= num_splits; ++j) {
+      pmfs[i][j] = pmf[j];
+    }
+  }
+
+  return py::cast(pmfs);
+}
+
+// CDF(s) of sketch(es)
+template<typename T, typename C, typename S>
+py::array kll_sketches<T,C,S>::get_cdf(const py::array_t<T>& split_points, 
+                                       const py::array_t<int>& isk) const {
+  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
+  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
+  std::vector<uint32_t> inds = get_indices(isk);
+
+  size_t num_sketches = inds.size();
+  size_t num_splits = split_points.size();
+  
+  std::vector<std::vector<T>> cdfs(num_sketches, std::vector<T>(num_splits + 1));
+
+  for (uint32_t i = 0; i < num_sketches; ++i) {
+    auto cdf = sketches_[inds[i]].get_CDF(split_points.data(), num_splits);
+    for (size_t j = 0; j <= num_splits; ++j) {
+      cdfs[i][j] = cdf[j];
+    }
+  }
+
+  return py::cast(cdfs);
+}
+
+template<typename T, typename C, typename S>
+void kll_sketches<T,C,S>::deserialize(const py::bytes& sk_bytes,
+                                      uint32_t idx) {
+  if (idx >= d_) {
+    throw std::invalid_argument("request for invalid dimenions >= d ("
+             + std::to_string(d_) +"): "+ std::to_string(idx));
+  }
+  std::string skStr = sk_bytes; // implicit cast
+  // load the sketch into the proper index
+  sketches_[idx] = std::move(kll_sketch<T>::deserialize(skStr.c_str(), skStr.length()));
+}
+
+template<typename T, typename C, typename S>
+py::list kll_sketches<T,C,S>::serialize(py::array_t<uint32_t>& isk) {
+  //uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
+  //std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
+  std::vector<uint32_t> inds = get_indices(isk);
+
+  const size_t num_sketches = inds.size();
+
+  py::list list(num_sketches);
+  for (uint32_t i = 0; i < num_sketches; ++i) {
+    auto serResult = sketches_[inds[i]].serialize();
+    list[i] = py::bytes((char*)serResult.data(), serResult.size());
+  }
+
+  return list;
+}
+
 
 namespace python {
 
@@ -120,307 +421,6 @@ py::list kll_sketch_get_cdf(const kll_sketch<T>& sk,
   return list;
 }
 
-// Updates: allow parallel sketches via Numpy
-// Helper functions to allow subsets of sketches to be selected
-template<typename T>
-uint32_t kll_sketches_get_num_inds(const kll_sketches<T>& sks, 
-                                   py::array_t<int>& isk) {
-  uint32_t nSketches;
-
-  auto ibuf = isk.request();
-  int *iptr = (int *) ibuf.ptr;
-  if ((ibuf.size == 1) && (iptr[0] == -1)) {
-    nSketches = sks.d;
-  }
-  else {
-    nSketches = (uint32_t)ibuf.size;
-  }
-
-  return nSketches;
-}
-
-std::vector<uint32_t> kll_sketches_get_inds(py::array_t<int>& isk, 
-                                            uint32_t nSketches) {
-  std::vector<uint32_t> inds(nSketches);
-
-  auto ibuf = isk.request();
-  int *iptr = (int *) ibuf.ptr;
-  if ((ibuf.size == 1) && (iptr[0] == -1)) {
-    for (uint32_t n = 0; n < nSketches; ++n) {
-      inds[n] = n;
-    }
-  }
-  else {
-    for (uint32_t n = 0; n < nSketches; ++n) {
-      inds[n] = iptr[n];
-    }
-  }
-
-  return inds;
-}
-
-// Checks if each sketch is empty or not
-template<typename T>
-py::array kll_sketches_is_empty(const kll_sketches<T>& sks) {
-  uint32_t nSketches = sks.d;
-
-  std::vector<bool> vals(nSketches);
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    vals[i] = sks.sketches[i].is_empty();
-  }
-
-  py::array result = py::cast(vals);
-  return result;
-}
-
-// Updates each sketch with values
-// Currently: all values must be present
-// TODO: allow subsets of sketches to be updated
-template<typename T, typename A>
-void kll_sketches_update(kll_sketches<T>& sks, py::array_t<A>& items) {
-  auto buf = items.request();
-  double *ptr = (double *) buf.ptr;
-
-  size_t ndim = buf.ndim;
-
-  if (ndim == 1) {
-    // 1D case: single value to update per sketch
-    for (int i = 0; i < buf.size; ++i) {
-      sks.sketches[i].update(ptr[i]);
-    }
-  }
-  else if (ndim == 2) {
-    // 2D case: multiple values to update per sketch
-    for (int i = 0; i < buf.shape[0]; ++i) {
-      for (int j = 0; j < buf.shape[1]; ++j) {
-        sks.sketches[j].update(ptr[i*buf.shape[1] + j]);
-      }
-    }
-  }
-  else {
-    throw std::invalid_argument("Update input must be 2 or fewer dimensions : " + std::to_string(ndim));
-  }
-}
-
-// Number of updates for each sketch
-template<typename T>
-py::array kll_sketches_get_n(const kll_sketches<T>& sks) {
-  uint32_t nSketches = sks.d;
-
-  std::vector<uint32_t> vals(nSketches);
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    vals[i] = sks.sketches[i].get_n();
-  }
-
-  py::array result = py::cast(vals);
-  return result;
-}
-
-// Number of retained values for each sketch
-template<typename T>
-py::array kll_sketches_get_num_retained(const kll_sketches<T>& sks) {
-  uint32_t nSketches = sks.d;
-
-  std::vector<uint32_t> vals(nSketches);
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    vals[i] = sks.sketches[i].get_num_retained();
-  }
-
-  py::array result = py::cast(vals);
-  return result;
-}
-
-// Gets the minimum value of each sketch
-// TODO: allow subsets of sketches
-template<typename T>
-py::array kll_sketches_get_min_values(const kll_sketches<T>& sks) {
-  uint32_t nSketches = sks.d;
-
-  std::vector<T> vals(nSketches);
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    vals[i] = sks.sketches[i].get_min_value();
-  }
-
-  py::array result = py::cast(vals);
-  return result;
-}
-
-// Gets the maximum value of each sketch
-// TODO: allow subsets of sketches
-template<typename T>
-py::array kll_sketches_get_max_values(const kll_sketches<T>& sks) {
-  uint32_t nSketches = sks.d;
-
-  std::vector<T> vals(nSketches);
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    vals[i] = sks.sketches[i].get_max_value();
-  }
-
-  py::array result = py::cast(vals);
-  return result;
-}
-
-// Summary of each sketch as one long string
-// Users should use .split('\n\n') when calling it to build a list of each 
-// sketch's summary
-template<typename T>
-std::string kll_sketches_to_strings(const kll_sketches<T>& sks) {
-  std::ostringstream ss;
-  std::string rs;
-  uint32_t nSketches = sks.d;
-
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    // all streams into 1 string, for compatibility with Python's str() behavior
-    // users will need to split by \n\n, e.g., str(kll).split('\n\n')
-    ss << sks.sketches[i].to_string() << "\n";
-  }
-
-  // remove the last 2 \n characters so that (1) there isn't an extra blank 
-  // entry when user splits it and (2) same format for all sketch summaries
-  rs = ss.str();
-  rs.erase(rs.size() - 2, 2);
-  return rs;
-}
-
-template<typename T>
-py::array kll_sketches_is_estimation_mode(const kll_sketches<T>& sks) {
-  uint32_t nSketches = sks.d;
-
-  std::vector<bool> vals(nSketches);
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    vals[i] = sks.sketches[i].is_estimation_mode();
-  }
-
-  py::array result = py::cast(vals);
-  return result;
-}
-
-// Value of sketch(es) corresponding to some quantile(s)
-template<typename T, typename A>
-py::array kll_sketches_get_quantiles(const kll_sketches<T>& sks, 
-                                     py::array_t<A>& fractions, 
-                                     py::array_t<int>& isk) {
-  uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
-
-  auto buf = fractions.request();
-  int nQuantiles = buf.size;
-  double *ptr = (double *) buf.ptr;
-
-  std::vector<std::vector<T>> quants(nSketches, std::vector<T> (nQuantiles));
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    auto quant = sks.sketches[inds[i]].get_quantiles(&ptr[0], nQuantiles);
-    for (int j = 0; j < nQuantiles; ++j) {
-      quants[i][j] = quant[j];
-    }
-  }
-
-  py::array result = py::cast(quants);
-  return result;
-}
-
-// Value of sketch(es) corresponding to some rank(s)
-template<typename T, typename A>
-py::array kll_sketches_get_ranks(const kll_sketches<T>& sks, 
-                                 py::array_t<A>& values, 
-                                 py::array_t<int>& isk) {
-  uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
-
-  auto buf = values.request();
-  int nRanks = buf.size;
-  double *ptr = (double *) buf.ptr;
-
-  std::vector<std::vector<T>> ranks(nSketches, std::vector<T> (nRanks));
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    for (int j = 0; j < nRanks; ++j) {
-      ranks[i][j] = sks.sketches[inds[i]].get_rank(ptr[j]);
-    }
-  }
-
-  py::array result = py::cast(ranks);
-  return result;
-}
-
-// PMF(s) of sketch(es)
-template<typename T>
-py::array kll_sketches_get_pmf(const kll_sketches<T>& sks, 
-                               std::vector<T>& split_points, 
-                               py::array_t<int>& isk) {
-  uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
-
-  size_t nPoints = split_points.size();
-
-  std::vector<std::vector<T>> pmfs(nSketches, std::vector<T> (nPoints + 1));
-
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    auto pmf = sks.sketches[inds[i]].get_PMF(&split_points[0], nPoints);
-    for (size_t j = 0; j <= nPoints; ++j) {
-      pmfs[i][j] = pmf[j];
-    }
-  }
-
-  py::array result = py::cast(pmfs);
-  return result;
-}
-
-// CDF(s) of sketch(es)
-template<typename T>
-py::array kll_sketches_get_cdf(const kll_sketches<T>& sks, 
-                               std::vector<T>& split_points, 
-                               py::array_t<int>& isk) {
-  uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
-
-  size_t nPoints = split_points.size();
-
-  std::vector<std::vector<T>> cdfs(nSketches, std::vector<T> (nPoints + 1));
-
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    auto cdf = sks.sketches[inds[0]].get_CDF(&split_points[0], nPoints);
-    for (size_t j = 0; j <= nPoints; ++j) {
-      cdfs[i][j] = cdf[j];
-    }
-  }
-
-  py::array result = py::cast(cdfs);
-  return result;
-}
-
-template<typename T>
-void kll_sketches_deserialize(kll_sketches<T>& sks, py::bytes skBytes, uint32_t isk) {
-  std::string skStr = skBytes; // implicit cast
-  // load the sketch into the proper index
-  sks.sketches[isk] = kll_sketch<T>::deserialize(skStr.c_str(), skStr.length());
-}
-
-template<typename T>
-py::list kll_sketches_serialize(const kll_sketches<T>& sks, 
-                                  py::array_t<int>& isk) {
-  uint32_t nSketches = kll_sketches_get_num_inds(sks, isk);
-  std::vector<uint32_t> inds = kll_sketches_get_inds(isk, nSketches);
-
-  py::list list(nSketches);
-  for (uint32_t i = 0; i < nSketches; ++i) {
-    auto serResult = sks.sketches[inds[i]].serialize();
-    list[i] = py::bytes((char*)serResult.data(), serResult.size());
-  }
-
-  return list;
-}
-
-// Helper functions to return value of k or d, in case user creates the object 
-// with defaults
-template<typename T>
-uint32_t kll_sketches_get_k(const kll_sketches<T>& sks) {
-  return sks.k;
-}
-
-template<typename T>
-uint32_t kll_sketches_get_d(const kll_sketches<T>& sks) {
-  return sks.d;
-}
 
 }
 }
@@ -467,41 +467,44 @@ void bind_kll_sketches(py::module &m, const char* name) {
                                          py::arg("d")=kll_sketches<T>::DEFAULT_D)
     .def(py::init<const kll_sketches<T>&>())
     // allow user to retrieve k or d, in case it's instantiated w/ defaults
-    .def("get_k", &dspy::kll_sketches_get_k<T>, 
+    .def("get_k", &kll_sketches<T>::get_k,
          "Returns the value of `k` of the sketch(es)")
-    .def("get_d", &dspy::kll_sketches_get_d<T>, 
+    .def("get_d", &kll_sketches<T>::get_d,
          "Returns the number of sketches")
-    .def("update", &dspy::kll_sketches_update<T, A>, py::arg("items"), 
+    .def("update", &kll_sketches<T>::update, py::arg("items"), 
          "Updates the sketch(es) with value(s).  Must be a 1D array of size equal to the number of sketches.  Can also be 2D array of shape (n_updates, n_sketches).  If a sketch does not have a value to update, use np.nan")
-    .def("__str__", &dspy::kll_sketches_to_strings<T>, 
+    .def("__str__", &kll_sketches<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
          "Produces a string summary of all sketches. Users should split the returned string by '\n\n'")
-    .def("is_empty", &dspy::kll_sketches_is_empty<T>, 
+    .def("to_string", &kll_sketches<T>::to_string, py::arg("print_levels")=false,
+                                                   py::arg("print_items")=false,
+         "Produces a string summary of all sketches. Users should split the returned string by '\n\n'")
+    .def("is_empty", &kll_sketches<T>::is_empty,
          "Returns whether the sketch(es) is(are) empty of not")
-    .def("get_n", &dspy::kll_sketches_get_n<T>, 
+    .def("get_n", &kll_sketches<T>::get_n, 
          "Returns the number of values seen by the sketch(es)")
-    .def("get_num_retained", &dspy::kll_sketches_get_num_retained<T>, 
+    .def("get_num_retained", &kll_sketches<T>::get_num_retained, 
          "Returns the number of values retained by the sketch(es)")
-    .def("is_estimation_mode", &dspy::kll_sketches_is_estimation_mode<T>, 
+    .def("is_estimation_mode", &kll_sketches<T>::is_estimation_mode, 
          "Returns whether the sketch(es) is(are) in estimation mode")
-    .def("get_min_values", &dspy::kll_sketches_get_min_values<T>, 
+    .def("get_min_values", &kll_sketches<T>::get_min_values,
          "Returns the minimum value(s) of the sketch(es)")
-    .def("get_max_values", &dspy::kll_sketches_get_max_values<T>, 
+    .def("get_max_values", &kll_sketches<T>::get_max_values,
          "Returns the maximum value(s) of the sketch(es)")
-    .def("get_quantiles", &dspy::kll_sketches_get_quantiles<T, A>, py::arg("fractions"), 
-                                                                   py::arg("isk")=-1, 
-         "Returns the value(s) associated with the specified quantile(s) for the specified sketch(es). `fractions` can be a float between 0 and 1 (inclusive), or a list/array of values. `isk` specifies which sketch(es) to return the value(s) for (default: all sketches)")
-    .def("get_ranks", &dspy::kll_sketches_get_ranks<T, A>, py::arg("values"), 
+    .def("get_quantiles", &kll_sketches<T>::get_quantiles, py::arg("fractions"), 
                                                            py::arg("isk")=-1, 
+         "Returns the value(s) associated with the specified quantile(s) for the specified sketch(es). `fractions` can be a float between 0 and 1 (inclusive), or a list/array of values. `isk` specifies which sketch(es) to return the value(s) for (default: all sketches)")
+    .def("get_ranks", &kll_sketches<T>::get_ranks, py::arg("values"), 
+                                                   py::arg("isk")=-1, 
          "Returns the value(s) associated with the specified ranks(s) for the specified sketch(es). `values` can be an int between 0 and the number of values retained, or a list/array of values. `isk` specifies which sketch(es) to return the value(s) for (default: all sketches)")
-    .def("get_pmf", &dspy::kll_sketches_get_pmf<T>, py::arg("split_points"), py::arg("isk")=-1, 
+    .def("get_pmf", &kll_sketches<T>::get_pmf, py::arg("split_points"), py::arg("isk")=-1, 
          "Returns the probability mass function (PMF) at `split_points` of the specified sketch(es).  `split_points` should be a list/array of floats between 0 and 1 (inclusive). `isk` specifies which sketch(es) to return the PMF for (default: all sketches)")
-    .def("get_cdf", &dspy::kll_sketches_get_cdf<T>, py::arg("split_points"), py::arg("isk")=-1, 
+    .def("get_cdf", &kll_sketches<T>::get_cdf, py::arg("split_points"), py::arg("isk")=-1, 
          "Returns the cumulative distribution function (CDF) at `split_points` of the specified sketch(es).  `split_points` should be a list/array of floats between 0 and 1 (inclusive). `isk` specifies which sketch(es) to return the CDF for (default: all sketches)")
     .def_static("get_normalized_rank_error", &dspy::kll_sketch_generic_normalized_rank_error<T>,
          py::arg("k"), py::arg("as_pmf"), "Returns the normalized rank error")
-    .def("serialize", &dspy::kll_sketches_serialize<T>, py::arg("isk")=-1, 
+    .def("serialize", &kll_sketches<T>::serialize, py::arg("isk")=-1, 
          "Serializes the specified sketch(es). `isk` can be an int or a list/array of ints (default: all sketches)")
-    .def("deserialize", &dspy::kll_sketches_deserialize<T>, py::arg("skBytes"), py::arg("isk"), 
+    .def("deserialize", &kll_sketches<T>::deserialize, py::arg("skBytes"), py::arg("isk"), 
          "Deserializes the specified sketch.  `isk` must be an int.")
     // FINDME The following have not yet been implemented:
     //.def("merge", (void (kll_sketch<T>::*)(const kll_sketch<T>&)) &kll_sketch<T>::merge, py::arg("sketch"))
