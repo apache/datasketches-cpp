@@ -103,9 +103,10 @@ uint32_t kll_sketches<T,C,S>::get_d() const {
 
 template<typename T, typename C, typename S>
 std::vector<uint32_t> kll_sketches<T,C,S>::get_indices(const py::array_t<int>& isk) const {
+  auto data = isk.unchecked<1>();
   std::vector<uint32_t> indices;
   
-  if (isk.size() == 1 && isk.at(0) == -1) {
+  if (isk.size() == 1 && data(0) == -1) {
     indices.reserve(d_);
     for (uint32_t i = 0; i < d_; ++i) {
       indices.push_back(i);
@@ -113,9 +114,9 @@ std::vector<uint32_t> kll_sketches<T,C,S>::get_indices(const py::array_t<int>& i
   } else {
     indices.reserve(isk.size());
     for (uint32_t i = 0; i < isk.size(); ++i) {
-      const uint32_t idx = static_cast<uint32_t>(isk.at(i));
+      const uint32_t idx = static_cast<uint32_t>(data(i));
       if (idx < d_) {
-        indices.push_back(static_cast<uint32_t>(isk.at(i)));
+        indices.push_back(idx);
       } else {
         throw std::invalid_argument("request for invalid dimenions >= d ("
                  + std::to_string(d_) +"): "+ std::to_string(idx));
@@ -141,21 +142,34 @@ py::array kll_sketches<T,C,S>::is_empty() const {
 // TODO: allow subsets of sketches to be updated
 template<typename T, typename C, typename S>
 void kll_sketches<T,C,S>::update(const py::array_t<T>& items) {
+  if (items.shape(0) != d_) {
+    throw std::invalid_argument("input data must have rows with  " + std::to_string(d_)
+          + " elements. Found: " + std::to_string(items.shape(0)));
+  }
+ 
   size_t ndim = items.ndim();
-
+  
   if (ndim == 1) {
     // 1D case: single value to update per sketch
-    const T* ptr = items.data();
-    for (int i = 0; i < items.size(); ++i) {
-      sketches_.at(i).update(ptr[i]);
+    auto data = items.template unchecked<1>();
+    for (uint32_t i = 0; i < d_; ++i) {
+      sketches_[i].update(data(i));
     }
   }
   else if (ndim == 2) {
     // 2D case: multiple values to update per sketch
-    for (int i = 0; i < items.shape(0); ++i) {
-      const T* ptr = items.data(i * items.shape(1));
-      for (int j = 0; j < items.shape(1); ++j) {
-        sketches_.at(j).update(ptr[j]);
+    auto data = items.template unchecked<2>();
+    if (items.flags() & py::array::f_style) {
+      for (uint32_t j = 0; j < d_; ++j) {
+        for (uint32_t i = 0; i < items.shape(1); ++i) { 
+          sketches_[j].update(data(i,j));
+        }
+      }
+    } else { // py::array::c_style or py::array::forcecast 
+      for (uint32_t i = 0; i < items.shape(1); ++i) { 
+        for (uint32_t j = 0; j < d_; ++j) {
+          sketches_[j].update(data(i,j));
+        }
       }
     }
   }
@@ -241,7 +255,7 @@ py::array kll_sketches<T,C,S>::get_quantiles(const std::vector<double>& fraction
   std::vector<std::vector<T>> quants(num_sketches, std::vector<T>(num_quantiles));
   for (uint32_t i = 0; i < num_sketches; ++i) {
     auto quant = sketches_[inds[i]].get_quantiles(fractions.data(), num_quantiles);
-    for (int j = 0; j < num_quantiles; ++j) {
+    for (size_t j = 0; j < num_quantiles; ++j) {
       quants[i][j] = quant[j];
     }
   }
@@ -259,7 +273,7 @@ py::array kll_sketches<T,C,S>::get_ranks(const std::vector<T>& values,
 
   std::vector<std::vector<T>> ranks(num_sketches, std::vector<T>(num_ranks));
   for (uint32_t i = 0; i < num_sketches; ++i) {
-    for (int j = 0; j < num_ranks; ++j) {
+    for (size_t j = 0; j < num_ranks; ++j) {
       ranks[i][j] = sketches_[inds[i]].get_rank(values[j]);
     }
   }
@@ -433,7 +447,7 @@ void bind_kll_sketch(py::module &m, const char* name) {
     ;
 }
 
-template<typename T, typename A>
+template<typename T>
 void bind_kll_sketches(py::module &m, const char* name) {
   using namespace datasketches;
 
@@ -490,6 +504,6 @@ void bind_kll_sketches(py::module &m, const char* name) {
 void init_kll(py::module &m) {
   bind_kll_sketch<int>(m, "kll_ints_sketch");
   bind_kll_sketch<float>(m, "kll_floats_sketch");
-  bind_kll_sketches<int, int>(m, "kll_intarray_sketches");
-  bind_kll_sketches<float, double>(m, "kll_floatarray_sketches");
+  bind_kll_sketches<int>(m, "kll_intarray_sketches");
+  bind_kll_sketches<float>(m, "kll_floatarray_sketches");
 }
