@@ -52,8 +52,8 @@ class kll_sketches {
     py::array get_min_values() const;
     py::array get_max_values() const;
     py::array get_num_retained() const;
-    py::array get_quantiles(const std::vector<double>& fractions, const py::array_t<int>& isk) const;
-    py::array get_ranks(const std::vector<T>& values, const py::array_t<int>& isk) const;
+    py::array get_quantiles(const py::array_t<double>& fractions, const py::array_t<int>& isk) const;
+    py::array get_ranks(const py::array_t<T>& values, const py::array_t<int>& isk) const;
     py::array get_pmf(const py::array_t<T>& split_points, const py::array_t<int>& isk) const;
     py::array get_cdf(const py::array_t<T>& split_points, const py::array_t<int>& isk) const;
 
@@ -103,15 +103,19 @@ uint32_t kll_sketches<T,C,S>::get_d() const {
 
 template<typename T, typename C, typename S>
 std::vector<uint32_t> kll_sketches<T,C,S>::get_indices(const py::array_t<int>& isk) const {
-  auto data = isk.unchecked<1>();
   std::vector<uint32_t> indices;
-  
-  if (isk.size() == 1 && data(0) == -1) {
-    indices.reserve(d_);
-    for (uint32_t i = 0; i < d_; ++i) {
-      indices.push_back(i);
+  if (isk.size() == 1) {
+    auto data = isk.unchecked();
+    if (data(0) == -1) {
+      indices.reserve(d_);
+      for (uint32_t i = 0; i < d_; ++i) {
+        indices.push_back(i);
+      }
+    } else {
+      indices.push_back(static_cast<uint32_t>(data(0)));
     }
   } else {
+    auto data = isk.unchecked<1>();
     indices.reserve(isk.size());
     for (uint32_t i = 0; i < isk.size(); ++i) {
       const uint32_t idx = static_cast<uint32_t>(data(i));
@@ -246,7 +250,7 @@ py::array kll_sketches<T,C,S>::is_estimation_mode() const {
 
 // Value of sketch(es) corresponding to some quantile(s)
 template<typename T, typename C, typename S>
-py::array kll_sketches<T,C,S>::get_quantiles(const std::vector<double>& fractions, 
+py::array kll_sketches<T,C,S>::get_quantiles(const py::array_t<double>& fractions, 
                                              const py::array_t<int>& isk) const {
   std::vector<uint32_t> inds = get_indices(isk);
   size_t num_sketches = inds.size();
@@ -265,16 +269,17 @@ py::array kll_sketches<T,C,S>::get_quantiles(const std::vector<double>& fraction
 
 // Value of sketch(es) corresponding to some rank(s)
 template<typename T, typename C, typename S>
-py::array kll_sketches<T,C,S>::get_ranks(const std::vector<T>& values, 
+py::array kll_sketches<T,C,S>::get_ranks(const py::array_t<T>& values, 
                                          const py::array_t<int>& isk) const {
   std::vector<uint32_t> inds = get_indices(isk);
   size_t num_sketches = inds.size();
   size_t num_ranks = values.size();
+  auto vals = values.data();
 
-  std::vector<std::vector<T>> ranks(num_sketches, std::vector<T>(num_ranks));
+  std::vector<std::vector<float>> ranks(num_sketches, std::vector<float>(num_ranks));
   for (uint32_t i = 0; i < num_sketches; ++i) {
     for (size_t j = 0; j < num_ranks; ++j) {
-      ranks[i][j] = sketches_[inds[i]].get_rank(values[j]);
+      ranks[i][j] = sketches_[inds[i]].get_rank(vals[j]);
     }
   }
 
