@@ -36,8 +36,7 @@ m_(DEFAULT_M),
 min_k_(k),
 n_(0),
 num_levels_(1),
-levels_(nullptr),
-levels_size_(2),
+levels_(2),
 items_(nullptr),
 items_size_(k_),
 min_value_(nullptr),
@@ -47,7 +46,7 @@ is_level_zero_sorted_(false)
   if (k < MIN_K || k > MAX_K) {
     throw std::invalid_argument("K must be >= " + std::to_string(MIN_K) + " and <= " + std::to_string(MAX_K) + ": " + std::to_string(k));
   }
-  levels_ = new (AllocU32().allocate(2)) uint32_t[2] {k_, k_};
+  levels_[0] = levels_[1] = k;
   items_ = A().allocate(items_size_);
 }
 
@@ -58,16 +57,13 @@ m_(other.m_),
 min_k_(other.min_k_),
 n_(other.n_),
 num_levels_(other.num_levels_),
-levels_(nullptr),
-levels_size_(other.levels_size_),
+levels_(other.levels_),
 items_(nullptr),
 items_size_(other.items_size_),
 min_value_(nullptr),
 max_value_(nullptr),
 is_level_zero_sorted_(other.is_level_zero_sorted_)
 {
-  levels_ = AllocU32().allocate(levels_size_);
-  std::copy(&other.levels_[0], &other.levels_[levels_size_], levels_);
   items_ = A().allocate(items_size_);
   std::copy(&other.items_[levels_[0]], &other.items_[levels_[num_levels_]], &items_[levels_[0]]);
   if (other.min_value_ != nullptr) min_value_ = new (A().allocate(1)) T(*other.min_value_);
@@ -81,15 +77,13 @@ m_(other.m_),
 min_k_(other.min_k_),
 n_(other.n_),
 num_levels_(other.num_levels_),
-levels_(other.levels_),
-levels_size_(other.levels_size_),
+levels_(std::move(other.levels_)),
 items_(other.items_),
 items_size_(other.items_size_),
 min_value_(other.min_value_),
 max_value_(other.max_value_),
 is_level_zero_sorted_(other.is_level_zero_sorted_)
 {
-  other.levels_ = nullptr;
   other.items_ = nullptr;
   other.min_value_ = nullptr;
   other.max_value_ = nullptr;
@@ -104,7 +98,6 @@ kll_sketch<T, C, S, A>& kll_sketch<T, C, S, A>::operator=(const kll_sketch& othe
   std::swap(n_, copy.n_);
   std::swap(num_levels_, copy.num_levels_);
   std::swap(levels_, copy.levels_);
-  std::swap(levels_size_, copy.levels_size_);
   std::swap(items_, copy.items_);
   std::swap(items_size_, copy.items_size_);
   std::swap(min_value_, copy.min_value_);
@@ -121,7 +114,6 @@ kll_sketch<T, C, S, A>& kll_sketch<T, C, S, A>::operator=(kll_sketch&& other) {
   std::swap(n_, other.n_);
   std::swap(num_levels_, other.num_levels_);
   std::swap(levels_, other.levels_);
-  std::swap(levels_size_, other.levels_size_);
   std::swap(items_, other.items_);
   std::swap(items_size_, other.items_size_);
   std::swap(min_value_, other.min_value_);
@@ -138,7 +130,6 @@ kll_sketch<T, C, S, A>::~kll_sketch() {
     for (uint32_t i = begin; i < end; i++) items_[i].~T();
     A().deallocate(items_, items_size_);
   }
-  if (levels_ != nullptr) AllocU32().deallocate(levels_, levels_size_);
   if (min_value_ != nullptr) {
     min_value_->~T();
     A().deallocate(min_value_, 1);
@@ -408,7 +399,7 @@ void kll_sketch<T, C, S, A>::serialize(std::ostream& os) const {
     os.write((char*)&min_k_, sizeof(min_k_));
     os.write((char*)&num_levels_, sizeof(num_levels_));
     os.write((char*)&unused, sizeof(unused));
-    os.write((char*)levels_, sizeof(levels_[0]) * num_levels_);
+    os.write((char*)levels_.data(), sizeof(levels_[0]) * num_levels_);
     S().serialize(os, min_value_, 1);
     S().serialize(os, max_value_, 1);
   }
@@ -444,7 +435,7 @@ vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const
       ptr += copy_to_mem(&min_k_, ptr, sizeof(min_k_));
       ptr += copy_to_mem(&num_levels_, ptr, sizeof(num_levels_));
       ptr += copy_to_mem(&unused, ptr, sizeof(unused));
-      ptr += copy_to_mem(levels_, ptr, sizeof(levels_[0]) * num_levels_);
+      ptr += copy_to_mem(levels_.data(), ptr, sizeof(levels_[0]) * num_levels_);
       ptr += S().serialize(ptr, end_ptr - ptr, min_value_, 1);
       ptr += S().serialize(ptr, end_ptr - ptr, max_value_, 1);
     }
@@ -479,7 +470,6 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is) {
   check_family_id(family_id);
 
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
-
   if (!is.good()) throw std::runtime_error("error reading from std::istream"); 
   if (is_empty) return kll_sketch<T, C, S, A>(k);
 
@@ -556,6 +546,7 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
   ptr += copy_from_mem(ptr, &k, sizeof(k));
   uint8_t m;
   ptr += copy_from_mem(ptr, &m, sizeof(m));
+  ptr++; // skip unused byte
 
   check_m(m);
   check_preamble_ints(preamble_ints, flags_byte);
@@ -564,7 +555,64 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
   ensure_minimum_memory(size, 1 << preamble_ints);
 
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
-  return is_empty ? kll_sketch<T, C, S, A>(k) : kll_sketch<T, C, S, A>(k, flags_byte, bytes, size);
+  if (is_empty) return kll_sketch<T, C, S, A>(k);
+
+  uint64_t n;
+  uint16_t min_k;
+  uint8_t num_levels;
+  const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
+  const char* end_ptr = static_cast<const char*>(bytes) + size;
+  if (is_single_item) {
+    n = 1;
+    min_k = k;
+    num_levels = 1;
+  } else {
+    ptr += copy_from_mem(ptr, &n, sizeof(n));
+    ptr += copy_from_mem(ptr, &min_k, sizeof(min_k));
+    ptr += copy_from_mem(ptr, &num_levels, sizeof(num_levels));
+    ptr++; // skip unused byte
+  }
+  vector_u32<A> levels(num_levels + 1);
+  const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));
+  if (is_single_item) {
+    levels[0] = capacity - 1;
+  } else {
+    // the last integer in levels_ is not serialized because it can be derived
+    ptr += copy_from_mem(ptr, levels.data(), sizeof(levels[0]) * num_levels);
+  }
+  levels[num_levels] = capacity;
+  auto item_buffer_deleter = [](T* ptr) { A().deallocate(ptr, 1); };
+  std::unique_ptr<T, decltype(item_buffer_deleter)> min_value_buffer(A().allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> max_value_buffer(A().allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, item_deleter> min_value;
+  std::unique_ptr<T, item_deleter> max_value;
+  if (!is_single_item) {
+    ptr += S().deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter());
+    ptr += S().deserialize(ptr, end_ptr - ptr, max_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter());
+  }
+  auto items_buffer_deleter = [capacity](T* ptr) { A().deallocate(ptr, capacity); };
+  std::unique_ptr<T, decltype(items_buffer_deleter)> items_buffer(A().allocate(capacity), items_buffer_deleter);
+  const auto num_items = levels[num_levels] - levels[0];
+  ptr += S().deserialize(ptr, end_ptr - ptr, &items_buffer.get()[levels[0]], num_items);
+  // serde call did not throw, repackage with destrtuctors
+  std::unique_ptr<T, items_deleter> items(items_buffer.release(), items_deleter(levels[0], capacity));
+  const size_t delta = ptr - static_cast<const char*>(bytes);
+  if (delta != size) throw std::logic_error("deserialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
+  const bool is_level_zero_sorted = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
+  if (is_single_item) {
+    new (min_value_buffer.get()) T(items.get()[levels[0]]);
+    // copy did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter());
+    new (max_value_buffer.get()) T(items.get()[levels[0]]);
+    // copy did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter());
+  }
+  return kll_sketch(k, min_k, n, num_levels, std::move(levels), std::move(items), capacity,
+      std::move(min_value), std::move(max_value), is_level_zero_sorted);
 }
 
 /*
@@ -582,98 +630,22 @@ double kll_sketch<T, C, S, A>::get_normalized_rank_error(uint16_t k, bool pmf) {
 }
 
 // for deserialization
-// the common part of the preamble was read and compatibility checks were done
 template<typename T, typename C, typename S, typename A>
-kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, std::istream& is) {
-  k_ = k;
-  m_ = DEFAULT_M;
-  const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
-  if (is_single_item) {
-    n_ = 1;
-    min_k_ = k_;
-    num_levels_ = 1;
-  } else {
-    is.read((char*)&n_, sizeof(n_));
-    is.read((char*)&min_k_, sizeof(min_k_));
-    is.read((char*)&num_levels_, sizeof(num_levels_));
-    uint8_t unused;
-    is.read((char*)&unused, sizeof(unused));
-  }
-  levels_ = AllocU32().allocate(num_levels_ + 1);
-  levels_size_ = num_levels_ + 1;
-  const uint32_t capacity(kll_helper::compute_total_capacity(k_, m_, num_levels_));
-  if (is_single_item) {
-    levels_[0] = capacity - 1;
-  } else {
-    // the last integer in levels_ is not serialized because it can be derived
-    is.read((char*)levels_, sizeof(levels_[0]) * num_levels_);
-  }
-  levels_[num_levels_] = capacity;
-  min_value_ = A().allocate(1);
-  max_value_ = A().allocate(1);
-  if (!is_single_item) {
-    S().deserialize(is, min_value_, 1);
-    S().deserialize(is, max_value_, 1);
-  }
-  items_ = A().allocate(capacity);
-  items_size_ = capacity;
-  const auto num_items = levels_[num_levels_] - levels_[0];
-  S().deserialize(is, &items_[levels_[0]], num_items);
-  if (is_single_item) {
-    new (min_value_) T(items_[levels_[0]]);
-    new (max_value_) T(items_[levels_[0]]);
-  }
-  is_level_zero_sorted_ = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
-}
-
-// for deserialization
-// the common part of the preamble was read and compatibility checks were done
-// we also assume we have already checked that the preamble information fits within the buffer
-template<typename T, typename C, typename S, typename A>
-kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint8_t flags_byte, const void* bytes, size_t size) {
-  k_ = k;
-  m_ = DEFAULT_M;
-  const bool is_single_item(flags_byte & (1 << flags::IS_SINGLE_ITEM)); // used in serial version 2
-  const char* ptr = static_cast<const char*>(bytes) + DATA_START_SINGLE_ITEM;
-  const char* end_ptr = static_cast<const char*>(bytes) + size;
-  if (is_single_item) {
-    n_ = 1;
-    min_k_ = k_;
-    num_levels_ = 1;
-  } else {
-    ptr += copy_from_mem(ptr, &n_, sizeof(n_));
-    ptr += copy_from_mem(ptr, &min_k_, sizeof(min_k_));
-    ptr += copy_from_mem(ptr, &num_levels_, sizeof(num_levels_));
-    ptr++; // skip unused byte
-  }
-  levels_ = AllocU32().allocate(num_levels_ + 1);
-  levels_size_ = num_levels_ + 1;
-  const uint32_t capacity(kll_helper::compute_total_capacity(k_, m_, num_levels_));
-  if (is_single_item) {
-    levels_[0] = capacity - 1;
-  } else {
-    // the last integer in levels_ is not serialized because it can be derived
-    ptr += copy_from_mem(ptr, levels_, sizeof(levels_[0]) * num_levels_);
-  }
-  levels_[num_levels_] = capacity;
-  min_value_ = A().allocate(1);
-  max_value_ = A().allocate(1);
-  if (!is_single_item) {
-    ptr += S().deserialize(ptr, end_ptr - ptr, min_value_, 1);
-    ptr += S().deserialize(ptr, end_ptr - ptr, max_value_, 1);
-  }
-  items_ = A().allocate(capacity);
-  items_size_ = capacity;
-  const auto num_items(levels_[num_levels_] - levels_[0]);
-  ptr += S().deserialize(ptr, end_ptr - ptr, &items_[levels_[0]], num_items);
-  if (is_single_item) {
-    new (min_value_) T(items_[levels_[0]]);
-    new (max_value_) T(items_[levels_[0]]);
-  }
-  is_level_zero_sorted_ = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
-  const size_t delta = ptr - static_cast<const char*>(bytes);
-  if (delta != size) throw std::logic_error("deserialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
-}
+kll_sketch<T, C, S, A>::kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, vector_u32<A>&& levels,
+    std::unique_ptr<T, items_deleter> items, uint32_t items_size, std::unique_ptr<T, item_deleter> min_value,
+    std::unique_ptr<T, item_deleter> max_value, bool is_level_zero_sorted):
+k_(k),
+m_(DEFAULT_M),
+min_k_(min_k),
+n_(n),
+num_levels_(num_levels),
+levels_(std::move(levels)),
+items_(items.release()),
+items_size_(items_size),
+min_value_(min_value.release()),
+max_value_(max_value.release()),
+is_level_zero_sorted_(is_level_zero_sorted)
+{}
 
 // The following code is only valid in the special case of exactly reaching capacity while updating.
 // It cannot be used while merging, while reducing k, or anything else.
@@ -719,7 +691,7 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
   }
 
   // verify that we freed up half_adj_pop array slots just below the current level
-  assert (levels_[level] == (raw_beg + half_adj_pop));
+  if (levels_[level] != (raw_beg + half_adj_pop)) throw std::logic_error("compaction error");
 
   // finally, we need to shift up the data in the levels below
   // so that the freed-up space can be used by level zero
@@ -735,7 +707,7 @@ template<typename T, typename C, typename S, typename A>
 uint8_t kll_sketch<T, C, S, A>::find_level_to_compact() const {
   uint8_t level = 0;
   while (true) {
-    assert (level < num_levels_);
+    if (level >= num_levels_) throw std::logic_error("capacity calculation error");
     const uint32_t pop = levels_[level + 1] - levels_[level];
     const uint32_t cap = kll_helper::level_capacity(k_, num_levels_, level, m_);
     if (pop >= cap) {
@@ -750,17 +722,13 @@ void kll_sketch<T, C, S, A>::add_empty_top_level_to_completely_full_sketch() {
   const uint32_t cur_total_cap = levels_[num_levels_];
 
   // make sure that we are following a certain growth scheme
-  assert (levels_[0] == 0);
-  assert (items_size_ == cur_total_cap);
+  if (levels_[0] != 0) throw std::logic_error("full sketch expected");
+  if (items_size_ != cur_total_cap) throw std::logic_error("current capacity mismatch");
 
   // note that merging MIGHT over-grow levels_, in which case we might not have to grow it here
   const uint8_t new_levels_size = num_levels_ + 2;
-  if (levels_size_ < new_levels_size) {
-    uint32_t* new_levels = AllocU32().allocate(new_levels_size);
-    std::copy(&levels_[0], &levels_[levels_size_], new_levels);
-    AllocU32().deallocate(levels_, levels_size_);
-    levels_ = new_levels;
-    levels_size_ = new_levels_size;
+  if (levels_.size() < new_levels_size) {
+    levels_.resize(new_levels_size);
   }
 
   const uint32_t delta_cap = kll_helper::level_capacity(k_, num_levels_ + 1, 0, m_);
@@ -778,7 +746,7 @@ void kll_sketch<T, C, S, A>::add_empty_top_level_to_completely_full_sketch() {
     levels_[i] += delta_cap;
   }
 
-  assert (levels_[num_levels_] == new_total_cap);
+  if (levels_[num_levels_] != new_total_cap) throw std::logic_error("new capacity mismatch");
 
   num_levels_++;
   levels_[num_levels_] = new_total_cap; // initialize the new "extra" index at the top
@@ -797,7 +765,7 @@ std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantil
   sort_level_zero();
   typedef typename std::allocator_traits<A>::template rebind_alloc<kll_quantile_calculator<T, C, A>> AllocCalc;
   std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> quantile_calculator(
-    new (AllocCalc().allocate(1)) kll_quantile_calculator<T, C, A>(items_, levels_, num_levels_, n_),
+    new (AllocCalc().allocate(1)) kll_quantile_calculator<T, C, A>(items_, levels_.data(), num_levels_, n_),
     [](kll_quantile_calculator<T, C, A>* ptr){ ptr->~kll_quantile_calculator<T, C, A>(); AllocCalc().deallocate(ptr, 1); }
   );
   return quantile_calculator;
@@ -881,16 +849,15 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(O&& other, uint64_t final_n) {
   const std::unique_ptr<T, decltype(tmp_items_deleter)> workbuf(A().allocate(tmp_num_items), tmp_items_deleter);
   const uint8_t ub = kll_helper::ub_on_num_levels(final_n);
   const size_t work_levels_size = ub + 2; // ub+1 does not work
-  auto tmp_levels_deleter = [work_levels_size](uint32_t* ptr) { AllocU32().deallocate(ptr, work_levels_size); };
-  const std::unique_ptr<uint32_t[], decltype(tmp_levels_deleter)> worklevels(AllocU32().allocate(work_levels_size), tmp_levels_deleter);
-  const std::unique_ptr<uint32_t[], decltype(tmp_levels_deleter)> outlevels(AllocU32().allocate(work_levels_size), tmp_levels_deleter);
+  vector_u32<A> worklevels(work_levels_size);
+  vector_u32<A> outlevels(work_levels_size);
 
   const uint8_t provisional_num_levels = std::max(num_levels_, other.num_levels_);
 
-  populate_work_arrays(std::forward<O>(other), workbuf.get(), worklevels.get(), provisional_num_levels);
+  populate_work_arrays(std::forward<O>(other), workbuf.get(), worklevels.data(), provisional_num_levels);
 
   const kll_helper::compress_result result = kll_helper::general_compress<T, C>(k_, m_, provisional_num_levels, workbuf.get(),
-      worklevels.get(), outlevels.get(), is_level_zero_sorted_);
+      worklevels.data(), outlevels.data(), is_level_zero_sorted_);
 
   // ub can sometimes be much bigger
   if (result.final_num_levels > ub) throw std::logic_error("merge error");
@@ -904,13 +871,11 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(O&& other, uint64_t final_n) {
   const uint32_t free_space_at_bottom = result.final_capacity - result.final_num_items;
   kll_helper::move_construct<T>(workbuf.get(), outlevels[0], outlevels[0] + result.final_num_items, items_, free_space_at_bottom, true);
 
-  if (levels_size_ < (result.final_num_levels + 1)) {
-    AllocU32().deallocate(levels_, levels_size_);
-    levels_size_ = result.final_num_levels + 1;
-    levels_ = AllocU32().allocate(levels_size_);
+  if (levels_.size() < (result.final_num_levels + 1)) {
+    levels_.resize(result.final_num_levels + 1);
   }
   const uint32_t offset = free_space_at_bottom - outlevels[0];
-  for (uint8_t lvl = 0; lvl < levels_size_; lvl++) { // includes the "extra" index
+  for (uint8_t lvl = 0; lvl < levels_.size(); lvl++) { // includes the "extra" index
     levels_[lvl] = outlevels[lvl] + offset;
   }
   num_levels_ = result.final_num_levels;
@@ -968,7 +933,7 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(kll_sketch&& other, T* workbuf
 
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::assert_correct_total_weight() const {
-  const uint64_t total(kll_helper::sum_the_sample_weights(num_levels_, levels_));
+  const uint64_t total(kll_helper::sum_the_sample_weights(num_levels_, levels_.data()));
   if (total != n_) {
     throw std::logic_error("Total weight does not match N");
   }
@@ -1051,11 +1016,7 @@ string<A> kll_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items)
   }
   os << "### End sketch summary" << std::endl;
 
-  // for debugging
-  const bool with_levels(false);
-  const bool with_data(false);
-
-  if (with_levels) {
+  if (print_levels) {
     os << "### KLL sketch levels:" << std::endl;
     os << "   index: nominal capacity, actual size" << std::endl;
     for (uint8_t i = 0; i < num_levels_; i++) {
@@ -1064,7 +1025,7 @@ string<A> kll_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items)
     os << "### End sketch levels" << std::endl;
   }
 
-  if (with_data) {
+  if (print_items) {
     os << "### KLL sketch data:" << std::endl;
     uint8_t level(0);
     while (level < num_levels_) {
@@ -1085,7 +1046,7 @@ string<A> kll_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items)
 
 template <typename T, typename C, typename S, typename A>
 typename kll_sketch<T, C, S, A>::const_iterator kll_sketch<T, C, S, A>::begin() const {
-  return kll_sketch<T, C, S, A>::const_iterator(items_, levels_, num_levels_);
+  return kll_sketch<T, C, S, A>::const_iterator(items_, levels_.data(), num_levels_);
 }
 
 template <typename T, typename C, typename S, typename A>
@@ -1135,6 +1096,34 @@ template<typename T, typename C, typename S, typename A>
 const std::pair<const T&, const uint64_t> kll_sketch<T, C, S, A>::const_iterator::operator*() const {
   return std::pair<const T&, const uint64_t>(items[index], weight);
 }
+
+template<typename T, typename C, typename S, typename A>
+class kll_sketch<T, C, S, A>::item_deleter {
+  public:
+  void operator() (T* ptr) const {
+    if (ptr != nullptr) {
+      ptr->~T();
+      A().deallocate(ptr, 1);
+    }
+  }
+};
+
+template<typename T, typename C, typename S, typename A>
+class kll_sketch<T, C, S, A>::items_deleter {
+  public:
+  items_deleter(uint32_t start, uint32_t num): start(start), num(num) {}
+  void operator() (T* ptr) const {
+    if (ptr != nullptr) {
+      for (uint32_t i = start; i < num; ++i) {
+        ptr[i].~T();
+      }
+      A().deallocate(ptr, num);
+    }
+  }
+  private:
+  uint32_t start;
+  uint32_t num;
+};
 
 } /* namespace datasketches */
 
