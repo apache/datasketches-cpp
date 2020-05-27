@@ -313,10 +313,9 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     typedef typename std::allocator_traits<A>::template rebind_alloc<W> AllocW;
     std::vector<W, AllocW> weights(num_items);
     is.read((char*)weights.data(), sizeof(W) * num_items);
-    items_deleter deleter(num_items, false);
-    std::unique_ptr<T, items_deleter> items(A().allocate(num_items), deleter);
+    std::unique_ptr<T, items_deleter> items(A().allocate(num_items), items_deleter(num_items, false));
     S().deserialize(is, items.get(), num_items);
-    deleter.set_destroy(true); // serde did not throw, so the items must be constructed
+    items.get_deleter().set_destroy(true); // serde did not throw, so the items must be constructed
     for (uint32_t i = 0; i < num_items; i++) {
       sketch.update(std::move(items.get()[i]), weights[i]);
     }
@@ -372,11 +371,10 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     typedef typename std::allocator_traits<A>::template rebind_alloc<W> AllocW;
     std::vector<W, AllocW> weights(num_items);
     ptr += copy_from_mem(ptr, weights.data(), sizeof(W) * num_items);
-    items_deleter deleter(num_items, false);
-    std::unique_ptr<T, items_deleter> items(A().allocate(num_items), deleter);
+    std::unique_ptr<T, items_deleter> items(A().allocate(num_items), items_deleter(num_items, false));
     const size_t bytes_remaining = size - (ptr - base);
     ptr += S().deserialize(ptr, bytes_remaining, items.get(), num_items);
-    deleter.set_destroy(true); // serde did not throw, so the items must be constructed
+    items.get_deleter().set_destroy(true); // serde did not throw, so the items must be constructed
     for (uint32_t i = 0; i < num_items; i++) {
       sketch.update(std::move(items.get()[i]), weights[i]);
     }
