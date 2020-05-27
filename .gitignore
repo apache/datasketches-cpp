@@ -16,7 +16,7 @@
 *.dll
 *.dylib
 bin/
-build/
+build/*
 lib/
 Default/
 
