@@ -101,9 +101,9 @@ typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(st
   is.read((char*)&seed_hash, sizeof(seed_hash));
 
   check_serial_version(serial_version, SERIAL_VERSION);
-  check_seed_hash(seed_hash, get_seed_hash(seed));
 
   if (type == update_theta_sketch_alloc<A>::SKETCH_TYPE) {
+    check_seed_hash(seed_hash, get_seed_hash(seed));
     typename update_theta_sketch_alloc<A>::resize_factor rf = static_cast<typename update_theta_sketch_alloc<A>::resize_factor>(preamble_longs >> 6);
     typedef typename std::allocator_traits<A>::template rebind_alloc<update_theta_sketch_alloc<A>> AU;
     return unique_ptr(
@@ -114,6 +114,8 @@ typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(st
       }
     );
   } else if (type == compact_theta_sketch_alloc<A>::SKETCH_TYPE) {
+    const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+    if (!is_empty) check_seed_hash(seed_hash, get_seed_hash(seed));
     typedef typename std::allocator_traits<A>::template rebind_alloc<compact_theta_sketch_alloc<A>> AC;
     return unique_ptr(
       static_cast<theta_sketch_alloc<A>*>(new (AC().allocate(1)) compact_theta_sketch_alloc<A>(compact_theta_sketch_alloc<A>::internal_deserialize(is, preamble_longs, flags_byte, seed_hash))),
@@ -146,9 +148,9 @@ typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(co
   ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
 
   check_serial_version(serial_version, SERIAL_VERSION);
-  check_seed_hash(seed_hash, get_seed_hash(seed));
 
   if (type == update_theta_sketch_alloc<A>::SKETCH_TYPE) {
+    check_seed_hash(seed_hash, get_seed_hash(seed));
     typename update_theta_sketch_alloc<A>::resize_factor rf = static_cast<typename update_theta_sketch_alloc<A>::resize_factor>(preamble_longs >> 6);
     typedef typename std::allocator_traits<A>::template rebind_alloc<update_theta_sketch_alloc<A>> AU;
     return unique_ptr(
@@ -161,6 +163,8 @@ typename theta_sketch_alloc<A>::unique_ptr theta_sketch_alloc<A>::deserialize(co
       }
     );
   } else if (type == compact_theta_sketch_alloc<A>::SKETCH_TYPE) {
+    const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+    if (!is_empty) check_seed_hash(seed_hash, get_seed_hash(seed));
     typedef typename std::allocator_traits<A>::template rebind_alloc<compact_theta_sketch_alloc<A>> AC;
     return unique_ptr(
       static_cast<theta_sketch_alloc<A>*>(new (AC().allocate(1)) compact_theta_sketch_alloc<A>(
@@ -346,8 +350,7 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::deserialize(std::istr
   is.read((char*)&seed_hash, sizeof(seed_hash));
   theta_sketch_alloc<A>::check_sketch_type(type, SKETCH_TYPE);
   theta_sketch_alloc<A>::check_serial_version(serial_version, theta_sketch_alloc<A>::SERIAL_VERSION);
-  const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
-  if (!is_empty) theta_sketch_alloc<A>::check_seed_hash(seed_hash, theta_sketch_alloc<A>::get_seed_hash(seed));
+  theta_sketch_alloc<A>::check_seed_hash(seed_hash, theta_sketch_alloc<A>::get_seed_hash(seed));
   return internal_deserialize(is, rf, lg_cur_size, lg_nom_size, flags_byte, seed);
 }
 
@@ -388,8 +391,7 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::deserialize(const voi
   ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
   theta_sketch_alloc<A>::check_sketch_type(type, SKETCH_TYPE);
   theta_sketch_alloc<A>::check_serial_version(serial_version, theta_sketch_alloc<A>::SERIAL_VERSION);
-  const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
-  if (!is_empty) theta_sketch_alloc<A>::check_seed_hash(seed_hash, theta_sketch_alloc<A>::get_seed_hash(seed));
+  theta_sketch_alloc<A>::check_seed_hash(seed_hash, theta_sketch_alloc<A>::get_seed_hash(seed));
   return internal_deserialize(ptr, size - (ptr - static_cast<const char*>(bytes)), rf, lg_cur_size, lg_nom_size, flags_byte, seed);
 }
 
@@ -755,7 +757,8 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
   is.read((char*)&seed_hash, sizeof(seed_hash));
   theta_sketch_alloc<A>::check_sketch_type(type, SKETCH_TYPE);
   theta_sketch_alloc<A>::check_serial_version(serial_version, theta_sketch_alloc<A>::SERIAL_VERSION);
-  theta_sketch_alloc<A>::check_seed_hash(seed_hash, theta_sketch_alloc<A>::get_seed_hash(seed));
+  const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+  if (!is_empty) theta_sketch_alloc<A>::check_seed_hash(seed_hash, theta_sketch_alloc<A>::get_seed_hash(seed));
   return internal_deserialize(is, preamble_longs, flags_byte, seed_hash);
 }
 
@@ -803,7 +806,8 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const v
   ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
   theta_sketch_alloc<A>::check_sketch_type(type, SKETCH_TYPE);
   theta_sketch_alloc<A>::check_serial_version(serial_version, theta_sketch_alloc<A>::SERIAL_VERSION);
-  theta_sketch_alloc<A>::check_seed_hash(seed_hash, theta_sketch_alloc<A>::get_seed_hash(seed));
+  const bool is_empty = flags_byte & (1 << theta_sketch_alloc<A>::flags::IS_EMPTY);
+  if (!is_empty) theta_sketch_alloc<A>::check_seed_hash(seed_hash, theta_sketch_alloc<A>::get_seed_hash(seed));
   return internal_deserialize(ptr, size - (ptr - static_cast<const char*>(bytes)), preamble_longs, flags_byte, seed_hash);
 }
 
