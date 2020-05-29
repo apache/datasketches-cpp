@@ -22,6 +22,8 @@
 
 #include <algorithm>
 
+#include "conditional_back_inserter.hpp"
+
 namespace datasketches {
 
 /*
@@ -44,54 +46,37 @@ compact_theta_sketch_alloc<A> theta_a_not_b_alloc<A>::compute(const theta_sketch
 
   const uint64_t theta = std::min(a.get_theta64(), b.get_theta64());
   vector_u64<A> keys;
-  uint32_t keys_size = 0;
-  uint32_t count = 0;
   bool is_empty = a.is_empty();
+  auto less_than_theta = [theta](uint64_t key) { return key < theta; };
 
   if (b.get_num_retained() == 0) {
-    for (auto key: a) if (key < theta) ++count;
-    keys.resize(count);
-    std::copy_if(a.begin(), a.end(), &keys[0], [theta](uint64_t key) { return key < theta; });
-    if (ordered && !a.is_ordered()) std::sort(keys.begin(), keys.end());
-    if (count == 0 && theta == theta_sketch_alloc<A>::MAX_THETA) is_empty = true;
-    return compact_theta_sketch_alloc<A>(is_empty, theta, std::move(keys), seed_hash_, a.is_ordered() || ordered);
-  }
-
-  keys_size = a.get_num_retained();
-  keys.resize(keys_size);
-
-  if (a.is_ordered() && b.is_ordered()) { // sort-based
-    const auto end = std::set_difference(a.begin(), a.end(), b.begin(), b.end(), keys.begin());
-    count = end - keys.begin();
-  } else { // hash-based
-    const uint8_t lg_size = lg_size_from_count(b.get_num_retained(), update_theta_sketch_alloc<A>::REBUILD_THRESHOLD);
-    vector_u64<A> b_hash_table(1 << lg_size, 0);
-    for (auto key: b) {
-      if (key < theta) {
-        update_theta_sketch_alloc<A>::hash_search_or_insert(key, b_hash_table.data(), lg_size);
-      } else if (b.is_ordered()) {
-        break; // early stop
+    std::copy_if(a.begin(), a.end(), std::back_inserter(keys), less_than_theta);
+  } else {
+    if (a.is_ordered() && b.is_ordered()) { // sort-based
+      std::set_difference(a.begin(), a.end(), b.begin(), b.end(), conditional_back_inserter(keys, less_than_theta));
+    } else { // hash-based
+      const uint8_t lg_size = lg_size_from_count(b.get_num_retained(), update_theta_sketch_alloc<A>::REBUILD_THRESHOLD);
+      vector_u64<A> b_hash_table(1 << lg_size, 0);
+      for (auto key: b) {
+        if (key < theta) {
+          update_theta_sketch_alloc<A>::hash_search_or_insert(key, b_hash_table.data(), lg_size);
+        } else if (b.is_ordered()) {
+          break; // early stop
+        }
       }
-    }
 
-    // scan A lookup B
-    for (auto key: a) {
-      if (key < theta) {
-        if (!update_theta_sketch_alloc<A>::hash_search(key, b_hash_table.data(), lg_size)) keys[count++] = key;
-      } else if (a.is_ordered()) {
-        break; // early stop
+      // scan A lookup B
+      for (auto key: a) {
+        if (key < theta) {
+          if (!update_theta_sketch_alloc<A>::hash_search(key, b_hash_table.data(), lg_size)) keys.push_back(key);
+        } else if (a.is_ordered()) {
+          break; // early stop
+        }
       }
     }
   }
-
-  if (count == 0) {
-    keys.resize(0);
-    if (theta == theta_sketch_alloc<A>::MAX_THETA) is_empty = true;
-  } else if (count < keys_size) {
-    keys.resize(count);
-    if (ordered && !a.is_ordered()) std::sort(keys.begin(), keys.end());
-  }
-
+  if (keys.empty() && theta == theta_sketch_alloc<A>::MAX_THETA) is_empty = true;
+  if (ordered && !a.is_ordered()) std::sort(keys.begin(), keys.end());
   return compact_theta_sketch_alloc<A>(is_empty, theta, std::move(keys), seed_hash_, a.is_ordered() || ordered);
 }
 
