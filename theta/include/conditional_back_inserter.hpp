@@ -25,9 +25,10 @@
 
 namespace datasketches {
 
-template <class Container, class Predicate>
+template <typename Container, typename Predicate>
 class conditional_back_insert_iterator: public std::back_insert_iterator<Container> {
 public:
+  conditional_back_insert_iterator(Container& c, Predicate& p): std::back_insert_iterator<Container>(c), p(p) {}
   conditional_back_insert_iterator(Container& c, Predicate&& p): std::back_insert_iterator<Container>(c), p(std::forward<Predicate>(p)) {}
 
   conditional_back_insert_iterator& operator=(typename Container::const_reference value) {
@@ -43,7 +44,12 @@ private:
   Predicate p;
 };
 
-template< class Container, class Predicate>
+template<typename Container, typename Predicate>
+conditional_back_insert_iterator<Container, Predicate> conditional_back_inserter(Container& c, Predicate& p) {
+  return conditional_back_insert_iterator<Container, Predicate>(c, p);
+}
+
+template<typename Container, typename Predicate>
 conditional_back_insert_iterator<Container, Predicate> conditional_back_inserter(Container& c, Predicate&& p) {
   return conditional_back_insert_iterator<Container, Predicate>(c, std::forward<Predicate>(p));
 }
