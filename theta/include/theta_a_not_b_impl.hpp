@@ -47,13 +47,12 @@ compact_theta_sketch_alloc<A> theta_a_not_b_alloc<A>::compute(const theta_sketch
   const uint64_t theta = std::min(a.get_theta64(), b.get_theta64());
   vector_u64<A> keys;
   bool is_empty = a.is_empty();
-  auto less_than_theta = [theta](uint64_t key) { return key < theta; };
 
   if (b.get_num_retained() == 0) {
-    std::copy_if(a.begin(), a.end(), std::back_inserter(keys), less_than_theta);
+    std::copy_if(a.begin(), a.end(), std::back_inserter(keys), [theta](uint64_t key) { return key < theta; });
   } else {
     if (a.is_ordered() && b.is_ordered()) { // sort-based
-      std::set_difference(a.begin(), a.end(), b.begin(), b.end(), conditional_back_inserter(keys, less_than_theta));
+      std::set_difference(a.begin(), a.end(), b.begin(), b.end(), conditional_back_inserter(keys, [theta](uint64_t key) { return key < theta; }));
     } else { // hash-based
       const uint8_t lg_size = lg_size_from_count(b.get_num_retained(), update_theta_sketch_alloc<A>::REBUILD_THRESHOLD);
       vector_u64<A> b_hash_table(1 << lg_size, 0);
