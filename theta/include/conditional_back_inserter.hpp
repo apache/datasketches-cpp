@@ -31,6 +31,15 @@ public:
   template<typename P>
   conditional_back_insert_iterator(Container& c, P&& p): std::back_insert_iterator<Container>(c), p(std::forward<P>(p)) {}
 
+  // MSVC seems to insist on having copy constructor and assignment
+  conditional_back_insert_iterator(const conditional_back_insert_iterator& other):
+    std::back_insert_iterator<Container>(other), p(other.p) {}
+  conditional_back_insert_iterator& operator=(const conditional_back_insert_iterator& other) {
+    std::back_insert_iterator<Container>::operator=(other);
+    p = other.p;
+    return *this;
+  }
+
   conditional_back_insert_iterator& operator=(typename Container::const_reference value) {
     if (p(value)) std::back_insert_iterator<Container>::operator=(value);
     return *this;
