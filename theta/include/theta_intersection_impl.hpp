@@ -44,7 +44,7 @@ seed_hash_(theta_sketch_alloc<A>::get_seed_hash(seed))
 template<typename A>
 void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
   if (is_empty_) return;
-  if (sketch.get_seed_hash() != seed_hash_) throw std::invalid_argument("seed hash mismatch");
+  if (!sketch.is_empty() && sketch.get_seed_hash() != seed_hash_) throw std::invalid_argument("seed hash mismatch");
   is_empty_ |= sketch.is_empty();
   theta_ = std::min(theta_, sketch.get_theta64());
   if (is_valid_ && num_keys_ == 0) return;
