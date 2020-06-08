@@ -17,8 +17,8 @@
 
 import unittest
 from datasketches import (kll_ints_sketch, kll_floats_sketch, 
-                          kll_intarray_sketches,
-                          kll_floatarray_sketches)
+                          vector_of_kll_ints_sketches,
+                          vector_of_kll_floats_sketches)
 import numpy as np
 
 
@@ -112,7 +112,7 @@ class KllTest(unittest.TestCase):
         self.assertTrue(isinstance(kll_ints_sketch.deserialize(sk_bytes), kll_ints_sketch))
 
     def test_kll_floats_sketch(self):
-      # alraedy tested ints and it's templatized, so just make sure it instantiates properly
+      # already tested ints and it's templatized, so just make sure it instantiates properly
       k = 75
       kll = kll_floats_sketch(k)
       self.assertTrue(kll.is_empty())
@@ -125,7 +125,7 @@ class KllSketchesTest(unittest.TestCase):
       n = 2 ** 20
 
       # create a sketch and inject ~1 million N(0,1) points
-      kll = kll_floatarray_sketches(k, d)
+      kll = vector_of_kll_floats_sketches(k, d)
       # Track the min/max for each sketch to test later
       smin = np.zeros(d) + np.inf
       smax = np.zeros(d) - np.inf
@@ -159,49 +159,39 @@ class KllSketchesTest(unittest.TestCase):
       self.assertEqual(cdf.shape[0], pts.shape[0])
       self.assertEqual(cdf.shape[1], pts.shape[1]+1)
 
-      #err = kll.normalized_rank_error(False)  # method not implemented
-      #self.assertEqual(err, kll.get_normalized_rank_error(k, False))
-
       # and a few basic queries about the sketch
       self.assertFalse(np.all(kll.is_empty()))
       self.assertTrue(np.all(kll.is_estimation_mode()))
       self.assertTrue(np.all(kll.get_n() == n))
       self.assertTrue(np.all(kll.get_num_retained() < n))
 
-      # Merging not yet implemented
-      # merging itself will double the number of items the sketch has seen
-      #kll.merge(kll)
-      #self.assertEqual(kll.get_n(), 2*n)
+      # we can combine sketches across all dimensions and get the reuslt
+      result = kll.collapse()
+      self.assertEqual(result.get_n(), d * n)
+
+      # merging a copy of itself will double the number of items the sketch has seen
+      kll_copy = vector_of_kll_floats_sketches(kll)
+      kll.merge(kll_copy)
+      np.testing.assert_equal(kll.get_n(), 2*n)
 
       # we can then serialize and reconstruct the sketch
       kll_bytes = kll.serialize() # serializes each sketch as a list
-      # store values we are interested in
-      oldkll_num_retained = kll.get_num_retained()
-      oldkll_min_values   = kll.get_min_values()
-      oldkll_max_values   = kll.get_max_values()
-      oldkll_quantiles    = kll.get_quantiles(0.7)
-      oldkll_ranks        = kll.get_ranks(0.0)
-      # deserialize the sketches
+      new_kll = vector_of_kll_floats_sketches(k, d)
       for s in range(len(kll_bytes)):
-        kll.deserialize(kll_bytes[s], s)
-      np.testing.assert_allclose(oldkll_num_retained, kll.get_num_retained())
-      np.testing.assert_allclose(oldkll_min_values, kll.get_min_values())
-      np.testing.assert_allclose(oldkll_max_values, kll.get_max_values())
-      np.testing.assert_allclose(oldkll_quantiles, kll.get_quantiles(0.7))
-      np.testing.assert_allclose(oldkll_ranks, kll.get_ranks(0.0))
+        new_kll.deserialize(kll_bytes[s], s)
+
+      # everything should be exactly equal
+      np.testing.assert_equal(kll.get_num_retained(), new_kll.get_num_retained())
+      np.testing.assert_equal;(kll.get_min_values(), new_kll.get_min_values())
+      np.testing.assert_equal(kll.get_max_values(), new_kll.get_max_values())
+      np.testing.assert_equal(kll.get_quantiles(0.7), new_kll.get_quantiles(0.7))
+      np.testing.assert_equal(kll.get_ranks(0.0), new_kll.get_ranks(0.0))
 
     def test_kll_ints_sketches(self):
       # already tested floats and it's templatized, so just make sure it instantiates properly
       k = 100
       d = 5
-      kll = kll_intarray_sketches(k, d)
-      self.assertTrue(np.all(kll.is_empty()))
-
-    def test_kll_floats_sketches(self):
-      # already tested in the example
-      k = 75
-      d = 3
-      kll = kll_floatarray_sketches(k, d)
+      kll = vector_of_kll_ints_sketches(k, d)
       self.assertTrue(np.all(kll.is_empty()))
 
 

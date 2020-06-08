@@ -37,6 +37,10 @@ class vector_of_kll_sketches {
     static const uint32_t DEFAULT_D = 1;
 
     explicit vector_of_kll_sketches(uint32_t k = DEFAULT_K, uint32_t d = DEFAULT_D);
+    vector_of_kll_sketches(const vector_of_kll_sketches& other);
+    vector_of_kll_sketches(vector_of_kll_sketches&& other) noexcept;
+    vector_of_kll_sketches<T,C,S>& operator=(const vector_of_kll_sketches& other);
+    vector_of_kll_sketches<T,C,S>& operator=(vector_of_kll_sketches&& other);
 
     // container parameters
     inline uint32_t get_k() const;
@@ -93,6 +97,37 @@ d_(d)
   for (uint32_t i = 0; i < d; i++) {
     sketches_.emplace_back(k);
   }
+}
+
+template<typename T, typename C, typename S>
+vector_of_kll_sketches<T,C,S>::vector_of_kll_sketches(const vector_of_kll_sketches& other) :
+  k_(other.k_),
+  d_(other.d_),
+  sketches_(other.sketches_)
+{}
+
+template<typename T, typename C, typename S>
+vector_of_kll_sketches<T,C,S>::vector_of_kll_sketches(vector_of_kll_sketches&& other) noexcept :
+  k_(other.k_),
+  d_(other.d_),
+  sketches_(std::move(other.sketches_))
+{}
+
+template<typename T, typename C, typename S>
+vector_of_kll_sketches<T,C,S>& vector_of_kll_sketches<T,C,S>::operator=(const vector_of_kll_sketches& other) {
+  vector_of_kll_sketches<T,C,S> copy(other);
+  std::swap(k_, copy.k_);
+  std::swap(d_, copy.d_);
+  std::swap(sketches_, copy.sketches_);
+  return *this;
+}
+
+template<typename T, typename C, typename S>
+vector_of_kll_sketches<T,C,S>& vector_of_kll_sketches<T,C,S>::operator=(vector_of_kll_sketches&& other) {
+  std::swap(k_, other.k_);
+  std::swap(d_, other.d_);
+  std::swap(sketches_, other.sketches_);
+  return *this;
 }
 
 template<typename T, typename C, typename S>
@@ -540,6 +575,6 @@ void bind_vector_of_kll_sketches(py::module &m, const char* name) {
 void init_kll(py::module &m) {
   bind_kll_sketch<int>(m, "kll_ints_sketch");
   bind_kll_sketch<float>(m, "kll_floats_sketch");
-  bind_vector_of_kll_sketches<int>(m, "kll_intarray_sketches");
-  bind_vector_of_kll_sketches<float>(m, "kll_floatarray_sketches");
+  bind_vector_of_kll_sketches<int>(m, "vector_of_kll_ints_sketches");
+  bind_vector_of_kll_sketches<float>(m, "vector_of_kll_floats_sketches");
 }
