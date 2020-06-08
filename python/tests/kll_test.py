@@ -21,11 +21,10 @@ from datasketches import (kll_ints_sketch, kll_floats_sketch,
                           vector_of_kll_floats_sketches)
 import numpy as np
 
-
 class KllTest(unittest.TestCase):
     def test_kll_example(self):
       k = 160
-      n = 2 ** 20
+      n = 2 ** 18
 
       # create a sketch and inject ~1 million N(0,1) points
       kll = kll_floats_sketch(k)
@@ -75,7 +74,6 @@ class KllTest(unittest.TestCase):
       self.assertEqual(kll.get_quantile(0.7), new_kll.get_quantile(0.7))
       self.assertEqual(kll.get_rank(0.0), new_kll.get_rank(0.0))
 
-
     def test_kll_ints_sketch(self):
         k = 100
         n = 10
@@ -116,84 +114,6 @@ class KllTest(unittest.TestCase):
       k = 75
       kll = kll_floats_sketch(k)
       self.assertTrue(kll.is_empty())
-
-
-class KllSketchesTest(unittest.TestCase):
-    def test_kll_sketches_example(self):
-      k = 200
-      d = 3
-      n = 2 ** 20
-
-      # create a sketch and inject ~1 million N(0,1) points
-      kll = vector_of_kll_floats_sketches(k, d)
-      # Track the min/max for each sketch to test later
-      smin = np.zeros(d) + np.inf
-      smax = np.zeros(d) - np.inf
-
-      for i in range(0, n):
-        dat  = np.random.randn(d)
-        smin = np.amin([smin, dat], axis=0)
-        smax = np.amax([smax, dat], axis=0)
-        kll.update(dat)
-
-      # 0 should be near the median
-      np.testing.assert_allclose(0.5, kll.get_ranks(0.0), atol=0.025)
-      # the median should be near 0
-      np.testing.assert_allclose(0.0, kll.get_quantiles(0.5), atol=0.025)
-      # we also track the min/max independently from the rest of the data
-      # which lets us know the full observed data range
-      np.testing.assert_allclose(kll.get_min_values(), smin)
-      np.testing.assert_allclose(kll.get_max_values(), smax)
-      np.testing.assert_array_less(kll.get_min_values(), kll.get_quantiles(0.01)[:,0])
-      np.testing.assert_array_less(kll.get_quantiles(0.99)[:,0], kll.get_max_values())
-
-      # we can also extract a list of values at a time,
-      # here the values should give us something close to [-2, -1, 0, 1, 2].
-      # then get the CDF, which will return something close to
-      # the original values used in get_quantiles()
-      # finally, can check the normalized rank error bound
-      pts = kll.get_quantiles([0.0228, 0.1587, 0.5, 0.8413, 0.9772])
-      # use the mean pts for the CDF, include 1.0 at end to account for all probability mass
-      meanpts = np.mean(pts, axis=0)
-      cdf = kll.get_cdf(meanpts)
-      self.assertEqual(cdf.shape[0], pts.shape[0])
-      self.assertEqual(cdf.shape[1], pts.shape[1]+1)
-
-      # and a few basic queries about the sketch
-      self.assertFalse(np.all(kll.is_empty()))
-      self.assertTrue(np.all(kll.is_estimation_mode()))
-      self.assertTrue(np.all(kll.get_n() == n))
-      self.assertTrue(np.all(kll.get_num_retained() < n))
-
-      # we can combine sketches across all dimensions and get the reuslt
-      result = kll.collapse()
-      self.assertEqual(result.get_n(), d * n)
-
-      # merging a copy of itself will double the number of items the sketch has seen
-      kll_copy = vector_of_kll_floats_sketches(kll)
-      kll.merge(kll_copy)
-      np.testing.assert_equal(kll.get_n(), 2*n)
-
-      # we can then serialize and reconstruct the sketch
-      kll_bytes = kll.serialize() # serializes each sketch as a list
-      new_kll = vector_of_kll_floats_sketches(k, d)
-      for s in range(len(kll_bytes)):
-        new_kll.deserialize(kll_bytes[s], s)
-
-      # everything should be exactly equal
-      np.testing.assert_equal(kll.get_num_retained(), new_kll.get_num_retained())
-      np.testing.assert_equal;(kll.get_min_values(), new_kll.get_min_values())
-      np.testing.assert_equal(kll.get_max_values(), new_kll.get_max_values())
-      np.testing.assert_equal(kll.get_quantiles(0.7), new_kll.get_quantiles(0.7))
-      np.testing.assert_equal(kll.get_ranks(0.0), new_kll.get_ranks(0.0))
-
-    def test_kll_ints_sketches(self):
-      # already tested floats and it's templatized, so just make sure it instantiates properly
-      k = 100
-      d = 5
-      kll = vector_of_kll_ints_sketches(k, d)
-      self.assertTrue(np.all(kll.is_empty()))
-
 
 if __name__ == '__main__':
     unittest.main()
