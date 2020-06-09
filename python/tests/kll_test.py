@@ -16,18 +16,20 @@
 # under the License.
 
 import unittest
-from datasketches import kll_ints_sketch, kll_floats_sketch
+from datasketches import (kll_ints_sketch, kll_floats_sketch, 
+                          vector_of_kll_ints_sketches,
+                          vector_of_kll_floats_sketches)
+import numpy as np
 
 class KllTest(unittest.TestCase):
     def test_kll_example(self):
-      from numpy.random import randn
       k = 160
-      n = 2 ** 20
+      n = 2 ** 18
 
       # create a sketch and inject ~1 million N(0,1) points
       kll = kll_floats_sketch(k)
       for i in range(0, n):
-        kll.update(randn())
+        kll.update(np.random.randn())
 
       # 0 should be near the median
       self.assertAlmostEqual(0.5, kll.get_rank(0.0), delta=0.025)
@@ -72,7 +74,6 @@ class KllTest(unittest.TestCase):
       self.assertEqual(kll.get_quantile(0.7), new_kll.get_quantile(0.7))
       self.assertEqual(kll.get_rank(0.0), new_kll.get_rank(0.0))
 
-
     def test_kll_ints_sketch(self):
         k = 100
         n = 10
@@ -109,10 +110,10 @@ class KllTest(unittest.TestCase):
         self.assertTrue(isinstance(kll_ints_sketch.deserialize(sk_bytes), kll_ints_sketch))
 
     def test_kll_floats_sketch(self):
-      # alraedy tested ints and it's templatized, so just make sure it instantiates properly
+      # already tested ints and it's templatized, so just make sure it instantiates properly
       k = 75
       kll = kll_floats_sketch(k)
       self.assertTrue(kll.is_empty())
-        
+
 if __name__ == '__main__':
     unittest.main()

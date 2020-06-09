@@ -22,10 +22,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <sstream>
+#include <vector>
 
 namespace py = pybind11;
 
 namespace datasketches {
+
 namespace python {
 
 template<typename T>
@@ -49,7 +51,7 @@ double kll_sketch_generic_normalized_rank_error(uint16_t k, bool pmf) {
 
 template<typename T>
 py::list kll_sketch_get_quantiles(const kll_sketch<T>& sk,
-                                 std::vector<double>& fractions) {
+                                  std::vector<double>& fractions) {
   size_t nQuantiles = fractions.size();
   auto result = sk.get_quantiles(&fractions[0], nQuantiles);
 

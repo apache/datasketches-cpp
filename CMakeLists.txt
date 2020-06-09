@@ -57,6 +57,10 @@ else()
   add_compile_options(-Wall -pedantic -W -Wextra)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")
+  add_compile_options(-Wimplicit-fallthrough=3)
+endif()
+
 # Code generation options, to ensure shaerd libraries work and are portable
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_C_EXTENSIONS OFF)
