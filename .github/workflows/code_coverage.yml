@@ -15,6 +15,14 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
+      - name: Download and install lcov
+        run: |
+          VERSION="1.14"
+          mkdir lcov_pkg && cd lcov_pkg
+          wget "https://github.com/linux-test-project/lcov/releases/download/v1.14/lcov-$VERSION.tar.gz"
+          tar -xzf "lcov-$VERSION.tar.gz"
+          cd "lcov-$VERSION"
+          sudo make install
       - name: Configure
         run: mkdir build && cd build && cmake .. -DCOVERAGE=ON
       - name: Build unit tests
