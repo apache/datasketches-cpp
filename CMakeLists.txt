@@ -95,6 +95,7 @@ add_subdirectory(kll)
 add_subdirectory(fi)
 add_subdirectory(theta)
 add_subdirectory(sampling)
+add_subdirectory(tuple)
 
 if (WITH_PYTHON)
   add_subdirectory(python)

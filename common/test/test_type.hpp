@@ -25,7 +25,7 @@
 namespace datasketches {
 
 class test_type {
-  static const bool DEBUG = false;
+  static const bool DEBUG = true;
 public:
   // no default constructor should be required
   test_type(int value): value(value) {
@@ -90,6 +90,24 @@ struct test_type_serde {
   }
   size_t size_of_item(const test_type&) {
     return sizeof(int);
+  }
+  size_t serialize(void* ptr, size_t capacity, const test_type* items, unsigned num) {
+    const size_t bytes_written = sizeof(int) * num;
+    check_memory_size(bytes_written, capacity);
+    for (unsigned i = 0; i < num; ++i) {
+      memcpy(ptr, &items[i], sizeof(int));
+      ptr = static_cast<char*>(ptr) + sizeof(int);
+    }
+    return bytes_written;
+  }
+  size_t deserialize(const void* ptr, size_t capacity, test_type* items, unsigned num) {
+    const size_t bytes_read = sizeof(int) * num;
+    check_memory_size(bytes_read, capacity);
+    for (unsigned i = 0; i < num; ++i) {
+      memcpy(&items[i], ptr, sizeof(int));
+      ptr = static_cast<const char*>(ptr) + sizeof(int);
+    }
+    return bytes_read;
   }
 };
 
