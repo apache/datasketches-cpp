@@ -20,10 +20,16 @@
 #include <iostream>
 #include <tuple>
 
+namespace datasketches {
+
+using three_doubles = std::tuple<double, double, double>;
+
 // this is needed for a test below, but should be defined here
-std::ostream& operator<<(std::ostream& os, const std::tuple<double, double, double>& tuple) {
+std::ostream& operator<<(std::ostream& os, const three_doubles& tuple) {
   os << std::get<0>(tuple) << ", " << std::get<1>(tuple) << ", " << std::get<2>(tuple);
   return os;
+}
+
 }
 
 #include <catch.hpp>
@@ -172,7 +178,6 @@ struct three_doubles_update_policy {
 };
 
 TEST_CASE("tuple sketch: array of doubles", "[tuple_sketch]") {
-  using three_doubles = std::tuple<double, double, double>;
   using three_doubles_update_tuple_sketch = update_tuple_sketch<three_doubles, three_doubles, three_doubles_update_policy>;
   auto update_sketch = three_doubles_update_tuple_sketch::builder().build();
   update_sketch.update(1, three_doubles(1, 2, 3));
