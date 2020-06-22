@@ -35,7 +35,7 @@ theta_(theta_constants::MAX_THETA),
 seed_(seed),
 entries_(nullptr)
 {
-  const size_t size = 1 << (lg_cur_size + 1);
+  const size_t size = 1 << lg_cur_size;
   entries_ = A().allocate(size);
   for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
   if (p < 1) this->theta_ *= p;
