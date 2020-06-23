@@ -24,4 +24,8 @@ namespace datasketches {
 // global variable to keep track of allocated size
 long long test_allocator_total_bytes = 0;
 
+// global variable to keep track of net allocations
+// (number of allocations minus number of deallocations)
+long long test_allocator_net_allocations = 0;
+
 } /* namespace datasketches */

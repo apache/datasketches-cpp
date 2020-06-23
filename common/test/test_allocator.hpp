@@ -28,6 +28,7 @@
 namespace datasketches {
 
 extern long long test_allocator_total_bytes;
+extern long long test_allocator_net_allocations;
 
 template <class T> class test_allocator {
 public:
@@ -57,12 +58,14 @@ public:
     void* p = new char[n * sizeof(value_type)];
     if (!p) throw std::bad_alloc();
     test_allocator_total_bytes += n * sizeof(value_type);
+    ++test_allocator_net_allocations;
     return static_cast<pointer>(p);
   }
 
   void deallocate(pointer p, size_type n) {
     if (p) delete[] (char*) p;
     test_allocator_total_bytes -= n * sizeof(value_type);
+    --test_allocator_net_allocations;
   }
 
   size_type max_size() const {
