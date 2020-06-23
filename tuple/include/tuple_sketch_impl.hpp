@@ -106,9 +106,12 @@ void update_tuple_sketch<S, U, P, SD, A>::update(const void* key, size_t length,
   if (hash >= map_.theta_ || hash == 0) return; // hash == 0 is reserved to mark empty slots in the table
   auto result = map_.find(hash);
   if (!result.second) {
-    map_.insert(result.first, Entry(hash, policy_.create()));
+    S summary = policy_.create();
+    policy_.update(summary, std::forward<UU>(value));
+    map_.insert(result.first, Entry(hash, std::move(summary)));
+  } else {
+    policy_.update((*result.first).second, std::forward<UU>(value));
   }
-  policy_.update((*result.first).second, std::forward<UU>(value));
 }
 
 template<typename S, typename U, typename P, typename SD, typename A>
