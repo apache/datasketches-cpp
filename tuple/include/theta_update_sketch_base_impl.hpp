@@ -140,7 +140,6 @@ void theta_update_sketch_base<EN, EK, A>::resize() {
   const uint8_t factor = std::max(1, std::min(static_cast<int>(rf_), lg_tgt_size - lg_cur_size_));
   lg_cur_size_ += factor;
   const size_t new_size = 1 << lg_cur_size_;
-//  std::cout << "resizing from " << old_size << " to " << new_size << std::endl;
   EN* old_entries = entries_;
   entries_ = A().allocate(new_size);
   for (size_t i = 0; i < new_size; ++i) EK()(entries_[i]) = 0;
@@ -157,7 +156,6 @@ void theta_update_sketch_base<EN, EK, A>::resize() {
 
 template<typename EN, typename EK, typename A>
 void theta_update_sketch_base<EN, EK, A>::rebuild() {
-//  std::cout << "rebuilding" << std::endl;
   const size_t size = 1 << lg_cur_size_;
   const uint32_t pivot = (1 << lg_nom_size_) + size - num_entries_;
   std::nth_element(&entries_[0], &entries_[pivot], &entries_[size], comparator());
@@ -174,6 +172,11 @@ void theta_update_sketch_base<EN, EK, A>::rebuild() {
     }
   }
   A().deallocate(old_entries, size);
+}
+
+template<typename EN, typename EK, typename A>
+void theta_update_sketch_base<EN, EK, A>::trim() {
+  if (num_entries_ > static_cast<uint32_t>(1 << lg_nom_size_)) rebuild();
 }
 
 // builder

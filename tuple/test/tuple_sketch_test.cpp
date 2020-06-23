@@ -191,4 +191,43 @@ TEST_CASE("tuple sketch: array of doubles", "[tuple_sketch]") {
   std::cout << compact_sketch.to_string(true);
 }
 
+TEST_CASE("tuple sketch: float, update with different types of keys", "[tuple_sketch]") {
+  std::cout << "update with different values begin" << std::endl;
+  auto sketch = update_tuple_sketch<float>::builder().build();
+  sketch.update(static_cast<uint64_t>(1), 1);
+  REQUIRE(sketch.get_num_retained() == 1);
+
+  sketch.update(static_cast<int64_t>(1), 1);
+  REQUIRE(sketch.get_num_retained() == 1);
+
+  sketch.update(static_cast<uint32_t>(1), 1);
+  REQUIRE(sketch.get_num_retained() == 1);
+
+  sketch.update(static_cast<int32_t>(1), 1);
+  REQUIRE(sketch.get_num_retained() == 1);
+
+  sketch.update(static_cast<uint16_t>(1), 1);
+  REQUIRE(sketch.get_num_retained() == 1);
+
+  sketch.update(static_cast<int16_t>(1), 1);
+  REQUIRE(sketch.get_num_retained() == 1);
+
+  sketch.update(static_cast<uint8_t>(1), 1);
+  REQUIRE(sketch.get_num_retained() == 1);
+
+  sketch.update(static_cast<int8_t>(1), 1);
+  REQUIRE(sketch.get_num_retained() == 1);
+
+  sketch.update(1.0, 1);
+  REQUIRE(sketch.get_num_retained() == 2);
+
+  sketch.update(static_cast<float>(1), 1);
+  REQUIRE(sketch.get_num_retained() == 2);
+
+  sketch.update("a", 1);
+  REQUIRE(sketch.get_num_retained() == 3);
+
+  std::cout << "update with different values end" << std::endl;
+}
+
 } /* namespace datasketches */

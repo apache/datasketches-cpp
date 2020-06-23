@@ -45,7 +45,7 @@ struct theta_update_sketch_base {
   // TODO: copy and move
   ~theta_update_sketch_base();
 
-  typedef Entry* iterator;
+  using iterator = Entry*;
 
   std::pair<iterator, bool> find(uint64_t key) const;
 
@@ -77,6 +77,7 @@ struct theta_update_sketch_base {
 
   void resize();
   void rebuild();
+  void trim();
 
   static inline uint32_t get_capacity(uint8_t lg_cur_size, uint8_t lg_nom_size);
   static inline uint32_t get_stride(uint64_t key, uint8_t lg_size);
@@ -219,6 +220,23 @@ private:
   uint32_t size_;
   uint32_t index_;
 };
+
+// double value canonicalization for compatibility with Java
+static inline int64_t canonical_double(double value) {
+  union {
+    int64_t long_value;
+    double double_value;
+  } long_double_union;
+
+  if (value == 0.0) {
+    long_double_union.double_value = 0.0; // canonicalize -0.0 to 0.0
+  } else if (std::isnan(value)) {
+    long_double_union.long_value = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
+  } else {
+    long_double_union.double_value = value;
+  }
+  return long_double_union.long_value;
+}
 
 } /* namespace datasketches */
 

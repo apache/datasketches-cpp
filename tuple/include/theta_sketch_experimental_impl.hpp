@@ -44,6 +44,11 @@ void theta_sketch_experimental<A>::update(const void* key, size_t length) {
 }
 
 template<typename A>
+void theta_sketch_experimental<A>::trim() {
+  table_.trim();
+}
+
+template<typename A>
 string<A> theta_sketch_experimental<A>::to_string(bool detail) const {
   std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   auto type = typeid(*this).name();

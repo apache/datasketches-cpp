@@ -232,8 +232,8 @@ public:
    * Update this sketch with a given string.
    * @param value string to update the sketch with
    */
-//  template<typename FwdUpdate>
-//  void update(const std::string& key, FwdUpdate&& value);
+  template<typename FwdUpdate>
+  void update(const std::string& key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given unsigned 64-bit integer.
@@ -246,72 +246,72 @@ public:
    * Update this sketch with a given signed 64-bit integer.
    * @param value int64_t to update the sketch with
    */
-//  template<typename FwdUpdate>
-//  void update(int64_t key, FwdUpdate&& value);
-//
-//  /**
-//   * Update this sketch with a given unsigned 32-bit integer.
-//   * For compatibility with Java implementation.
-//   * @param value uint32_t to update the sketch with
-//   */
-//  template<typename FwdUpdate>
-//  void update(uint32_t key, FwdUpdate&& value);
-//
-//  /**
-//   * Update this sketch with a given signed 32-bit integer.
-//   * For compatibility with Java implementation.
-//   * @param value int32_t to update the sketch with
-//   */
-//  template<typename FwdUpdate>
-//  void update(int32_t key, FwdUpdate&& value);
-//
-//  /**
-//   * Update this sketch with a given unsigned 16-bit integer.
-//   * For compatibility with Java implementation.
-//   * @param value uint16_t to update the sketch with
-//   */
-//  template<typename FwdUpdate>
-//  void update(uint16_t key, FwdUpdate&& value);
-//
-//  /**
-//   * Update this sketch with a given signed 16-bit integer.
-//   * For compatibility with Java implementation.
-//   * @param value int16_t to update the sketch with
-//   */
-//  template<typename FwdUpdate>
-//  void update(int16_t key, FwdUpdate&& value);
-//
-//  /**
-//   * Update this sketch with a given unsigned 8-bit integer.
-//   * For compatibility with Java implementation.
-//   * @param value uint8_t to update the sketch with
-//   */
-//  template<typename FwdUpdate>
-//  void update(uint8_t key, FwdUpdate&& value);
-//
-//  /**
-//   * Update this sketch with a given signed 8-bit integer.
-//   * For compatibility with Java implementation.
-//   * @param value int8_t to update the sketch with
-//   */
-//  template<typename FwdUpdate>
-//  void update(int8_t key, FwdUpdate&& value);
-//
-//  /**
-//   * Update this sketch with a given double-precision floating point value.
-//   * For compatibility with Java implementation.
-//   * @param value double to update the sketch with
-//   */
-//  template<typename FwdUpdate>
-//  void update(double key, FwdUpdate&& value);
-//
-//  /**
-//   * Update this sketch with a given floating point value.
-//   * For compatibility with Java implementation.
-//   * @param value float to update the sketch with
-//   */
-//  template<typename FwdUpdate>
-//  void update(float key, FwdUpdate&& value);
+  template<typename FwdUpdate>
+  void update(int64_t key, FwdUpdate&& value);
+
+  /**
+   * Update this sketch with a given unsigned 32-bit integer.
+   * For compatibility with Java implementation.
+   * @param value uint32_t to update the sketch with
+   */
+  template<typename FwdUpdate>
+  void update(uint32_t key, FwdUpdate&& value);
+
+  /**
+   * Update this sketch with a given signed 32-bit integer.
+   * For compatibility with Java implementation.
+   * @param value int32_t to update the sketch with
+   */
+  template<typename FwdUpdate>
+  void update(int32_t key, FwdUpdate&& value);
+
+  /**
+   * Update this sketch with a given unsigned 16-bit integer.
+   * For compatibility with Java implementation.
+   * @param value uint16_t to update the sketch with
+   */
+  template<typename FwdUpdate>
+  void update(uint16_t key, FwdUpdate&& value);
+
+  /**
+   * Update this sketch with a given signed 16-bit integer.
+   * For compatibility with Java implementation.
+   * @param value int16_t to update the sketch with
+   */
+  template<typename FwdUpdate>
+  void update(int16_t key, FwdUpdate&& value);
+
+  /**
+   * Update this sketch with a given unsigned 8-bit integer.
+   * For compatibility with Java implementation.
+   * @param value uint8_t to update the sketch with
+   */
+  template<typename FwdUpdate>
+  void update(uint8_t key, FwdUpdate&& value);
+
+  /**
+   * Update this sketch with a given signed 8-bit integer.
+   * For compatibility with Java implementation.
+   * @param value int8_t to update the sketch with
+   */
+  template<typename FwdUpdate>
+  void update(int8_t key, FwdUpdate&& value);
+
+  /**
+   * Update this sketch with a given double-precision floating point value.
+   * For compatibility with Java implementation.
+   * @param value double to update the sketch with
+   */
+  template<typename FwdUpdate>
+  void update(double key, FwdUpdate&& value);
+
+  /**
+   * Update this sketch with a given floating point value.
+   * For compatibility with Java implementation.
+   * @param value float to update the sketch with
+   */
+  template<typename FwdUpdate>
+  void update(float key, FwdUpdate&& value);
 
   /**
    * Update this sketch with given data of any type.

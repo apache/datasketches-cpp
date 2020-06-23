@@ -50,6 +50,8 @@ public:
   void update(uint64_t key);
   void update(const void* key, size_t length);
 
+  void trim();
+
   string<A> to_string(bool detail = false) const;
 
   vector_bytes serialize(unsigned header_size_bytes = 0) const;
@@ -62,7 +64,7 @@ public:
 
 private:
   enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
-  typedef theta_update_sketch_base<uint64_t, trivial_extract_key<uint64_t>, A> theta_table;
+  using theta_table = theta_update_sketch_base<uint64_t, trivial_extract_key<uint64_t>, A>;
   theta_table table_;
 
   theta_sketch_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);

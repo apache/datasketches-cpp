@@ -29,6 +29,17 @@ namespace datasketches {
 
 // experimental theta union derived from the same base as tuple union
 
+// utility function to hide unused compiler warning
+// usually has no additional cost
+template<typename T> void unused(T&&...) {}
+
+struct pass_through_policy {
+  uint64_t operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
+    unused(incoming_entry);
+    return internal_entry;
+  }
+};
+
 template<typename Allocator = std::allocator<uint64_t>>
 class theta_union_experimental {
 public:
@@ -37,12 +48,6 @@ public:
   using Sketch = theta_sketch_experimental<Allocator>;
   using CompactSketch = compact_theta_sketch_experimental<Allocator>;
   using resize_factor = theta_constants::resize_factor;
-
-  struct pass_through_policy {
-    uint64_t operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
-      return internal_entry;
-    }
-  };
 
   using State = theta_union_base<Entry, ExtractKey, pass_through_policy, Sketch, CompactSketch, Allocator>;
 
