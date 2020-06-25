@@ -185,12 +185,13 @@ py::array vector_of_kll_sketches<T,C,S>::is_empty() const {
 // TODO: allow subsets of sketches to be updated
 template<typename T, typename C, typename S>
 void vector_of_kll_sketches<T,C,S>::update(const py::array_t<T>& items) {
-  if (items.shape(0) != d_) {
-    throw std::invalid_argument("input data must have rows with  " + std::to_string(d_)
-          + " elements. Found: " + std::to_string(items.shape(0)));
-  }
  
   size_t ndim = items.ndim();
+
+  if (items.shape(ndim-1) != d_) {
+    throw std::invalid_argument("input data must have rows with  " + std::to_string(d_)
+          + " elements. Found: " + std::to_string(items.shape(ndim-1)));
+  }
   
   if (ndim == 1) {
     // 1D case: single value to update per sketch
