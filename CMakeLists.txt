@@ -29,18 +29,6 @@ if(EXISTS "${LOC_PATH}")
     message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
 endif()
 
-# set default build type to debug
-# Mostly from: https://blog.kitware.com/cmake-and-the-default-build-type/
-set(default_build_type "Release")
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
-  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
-      STRING "Choose the type of build." FORCE)
-  # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
-
 # Ensure builds on Windows export all symbols
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
@@ -57,12 +45,16 @@ else()
   add_compile_options(-Wall -pedantic -W -Wextra)
 endif()
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.0")
+  add_compile_options(-Wimplicit-fallthrough=3)
+endif()
+
 # Code generation options, to ensure shaerd libraries work and are portable
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+#list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 ###### OPTIONS ######
 # Enable testing
@@ -71,7 +63,30 @@ if (BUILD_TESTS)
   enable_testing()
 endif()
 
-add_library(datasketches SHARED "")
+option(COVERAGE "Enable code coverage reporting (g++/clang only)" OFF)
+if(COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  set(CMAKE_BUILD_TYPE "Debug" FORCE)
+  add_compile_options(--coverage -O0 -g3)
+  add_link_options(--coverage)
+endif()
+
+# set default build type to Release
+# Derived from: https://blog.kitware.com/cmake-and-the-default-build-type/
+set(default_build_type "Release")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
+      STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+###### TARGETS ######
+# do we need the next line since we don't actually make a library anymore?
+add_library(datasketches INTERFACE)
+
+target_compile_features(datasketches INTERFACE cxx_std_11)
 
 add_subdirectory(common)
 add_subdirectory(hll)
@@ -85,18 +100,22 @@ if (WITH_PYTHON)
   add_subdirectory(python)
 endif()
 
-target_link_libraries(datasketches PUBLIC hll cpc kll fi theta sampling)
+target_link_libraries(datasketches INTERFACE hll cpc kll fi theta sampling)
 
-set_target_properties(datasketches PROPERTIES
-  LINKER_LANGUAGE CXX
-  CXX_STANDARD 11
-  CXX_STANDARD_REQUIRED YES
-)
+if (COVERAGE)
+  find_program(LCOV_PATH NAMES "lcov")
+  find_program(GENHTML_PATH NAMES "genhtml")
+  if (NOT LCOV_PATH-NOTFOUND AND NOT GENHTML_PATH-NOTFOUND)
+    add_custom_target(coverage_report
+      COMMAND ${LCOV_PATH} --capture --exclude '*/test/*' --exclude '/Library/*' --exclude '/usr/include/*' --directory . --output-file lcov.info
+      COMMAND ${GENHTML_PATH} --legend lcov.info --output-directory coverage --demangle-cpp)
+    endif()
+endif()
+
 
 # # Installation
 install(TARGETS datasketches
   EXPORT ${PROJCT_NAME}
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
 )

@@ -54,6 +54,13 @@ private:
   typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
   uint16_t seed_hash_;
 
+  class less_than {
+  public:
+    explicit less_than(uint64_t value): value(value) {}
+    bool operator()(uint64_t value) const { return value < this->value; }
+  private:
+    uint64_t value;
+  };
 };
 
 // alias with default allocator for convenience

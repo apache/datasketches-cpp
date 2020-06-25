@@ -104,14 +104,12 @@ FORCE_INLINE void MurmurHash3_x64_128(const void* key, int lenBytes, uint64_t se
   out.h2 = seed;
 
   // Number of full 128-bit blocks of 16 bytes.
-  // Possible exclusion fo a remainder of up to 15 bytes.
+  // Possible exclusion of a remainder of up to 15 bytes.
   const int nblocks = lenBytes >> 4; // bytes / 16 
 
-  // Process the 128-bit blocks (the body) into teh hash
+  // Process the 128-bit blocks (the body) into the hash
   const uint64_t* blocks = (const uint64_t*)(data);
   for (int i = 0; i < nblocks; ++i) { // 16 bytes per block
-    //uint64_t k1 = getblock64(blocks, 0);
-    //uint64_t k2 = getblock64(blocks, 1);
     uint64_t k1 = getblock64(blocks,i*2+0);
     uint64_t k2 = getblock64(blocks,i*2+1);
 
@@ -124,12 +122,9 @@ FORCE_INLINE void MurmurHash3_x64_128(const void* key, int lenBytes, uint64_t se
     out.h2 = ROTL64(out.h2,31);
     out.h2 += out.h1;
     out.h2 = out.h2*5+0x38495ab5;
-
-    blocks += 2;
   }
 
   // tail
-  //const uint8_t * tail = (const uint8_t*)blocks;
   const uint8_t * tail = (const uint8_t*)(data + (nblocks << 4));
 
   uint64_t k1 = 0;
@@ -137,22 +132,22 @@ FORCE_INLINE void MurmurHash3_x64_128(const void* key, int lenBytes, uint64_t se
 
   switch(lenBytes & 15)
   {
-  case 15: k2 ^= ((uint64_t)tail[14]) << 48; //@suppress("No break at end of case")
-  case 14: k2 ^= ((uint64_t)tail[13]) << 40; //@suppress("No break at end of case")
-  case 13: k2 ^= ((uint64_t)tail[12]) << 32; //@suppress("No break at end of case")
-  case 12: k2 ^= ((uint64_t)tail[11]) << 24; //@suppress("No break at end of case")
-  case 11: k2 ^= ((uint64_t)tail[10]) << 16; //@suppress("No break at end of case")
-  case 10: k2 ^= ((uint64_t)tail[ 9]) << 8;  //@suppress("No break at end of case")
+  case 15: k2 ^= ((uint64_t)tail[14]) << 48; // falls through
+  case 14: k2 ^= ((uint64_t)tail[13]) << 40; // falls through
+  case 13: k2 ^= ((uint64_t)tail[12]) << 32; // falls through
+  case 12: k2 ^= ((uint64_t)tail[11]) << 24; // falls through
+  case 11: k2 ^= ((uint64_t)tail[10]) << 16; // falls through
+  case 10: k2 ^= ((uint64_t)tail[ 9]) << 8;  // falls through
   case  9: k2 ^= ((uint64_t)tail[ 8]) << 0;
            k2 *= c2; k2  = ROTL64(k2,33); k2 *= c1; out.h2 ^= k2;
-           //@suppress("No break at end of case")
-  case  8: k1 ^= ((uint64_t)tail[ 7]) << 56; //@suppress("No break at end of case")
-  case  7: k1 ^= ((uint64_t)tail[ 6]) << 48; //@suppress("No break at end of case")
-  case  6: k1 ^= ((uint64_t)tail[ 5]) << 40; //@suppress("No break at end of case")
-  case  5: k1 ^= ((uint64_t)tail[ 4]) << 32; //@suppress("No break at end of case")
-  case  4: k1 ^= ((uint64_t)tail[ 3]) << 24; //@suppress("No break at end of case")
-  case  3: k1 ^= ((uint64_t)tail[ 2]) << 16; //@suppress("No break at end of case")
-  case  2: k1 ^= ((uint64_t)tail[ 1]) << 8; //@suppress("No break at end of case")
+           // falls through
+  case  8: k1 ^= ((uint64_t)tail[ 7]) << 56; // falls through
+  case  7: k1 ^= ((uint64_t)tail[ 6]) << 48; // falls through
+  case  6: k1 ^= ((uint64_t)tail[ 5]) << 40; // falls through
+  case  5: k1 ^= ((uint64_t)tail[ 4]) << 32; // falls through
+  case  4: k1 ^= ((uint64_t)tail[ 3]) << 24; // falls through
+  case  3: k1 ^= ((uint64_t)tail[ 2]) << 16; // falls through
+  case  2: k1 ^= ((uint64_t)tail[ 1]) << 8; // falls through
   case  1: k1 ^= ((uint64_t)tail[ 0]) << 0;
            k1 *= c1; k1  = ROTL64(k1,31); k1 *= c2; out.h1 ^= k1;
   };

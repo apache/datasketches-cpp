@@ -315,7 +315,14 @@ string<A> var_opt_union<T,S,A>::to_string() const {
 
 template<typename T, typename S, typename A>
 void var_opt_union<T,S,A>::update(const var_opt_sketch<T,S,A>& sk) {
-  merge_into(sk);
+  merge_items(sk);
+  resolve_tau(sk);
+}
+
+template<typename T, typename S, typename A>
+void var_opt_union<T,S,A>::update(var_opt_sketch<T,S,A>&& sk) {
+  merge_items(std::move(sk));
+  resolve_tau(sk); // don't need items, so ok even if they've been moved out
 }
 
 template<typename T, typename S, typename A>
@@ -328,7 +335,34 @@ double var_opt_union<T,S,A>::get_outer_tau() const {
 }
 
 template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::merge_into(const var_opt_sketch<T,S,A>& sketch) {
+void var_opt_union<T,S,A>::merge_items(const var_opt_sketch<T,S,A>& sketch) {
+  if (sketch.n_ == 0) {
+    return;
+  }
+
+  n_ += sketch.n_;
+
+  // H region const_iterator
+  typename var_opt_sketch<T,S,A>::const_iterator h_itr(sketch, false, false);
+  typename var_opt_sketch<T,S,A>::const_iterator h_end(sketch, true, false);
+  while (h_itr != h_end) {
+    std::pair<const T&, const double> sample = *h_itr;
+    gadget_.update(sample.first, sample.second, false);
+    ++h_itr;
+  }
+
+  // Weight-correcting R region iterator (const_iterator doesn't do the correction)
+  typename var_opt_sketch<T,S,A>::iterator r_itr(sketch, false, true);
+  typename var_opt_sketch<T,S,A>::iterator r_end(sketch, true, true);
+  while (r_itr != r_end) {
+    std::pair<const T&, const double> sample = *r_itr;
+    gadget_.update(sample.first, sample.second, true);
+    ++r_itr;
+  }
+}
+
+template<typename T, typename S, typename A>
+void var_opt_union<T,S,A>::merge_items(var_opt_sketch<T,S,A>&& sketch) {
   if (sketch.n_ == 0) {
     return;
   }
@@ -336,24 +370,26 @@ void var_opt_union<T,S,A>::merge_into(const var_opt_sketch<T,S,A>& sketch) {
   n_ += sketch.n_;
 
   // H region iterator
-  typename var_opt_sketch<T,S,A>::const_iterator h_itr(sketch, false, false, false);
-  typename var_opt_sketch<T,S,A>::const_iterator h_end(sketch, true, false, false);
+  typename var_opt_sketch<T,S,A>::iterator h_itr(sketch, false, false);
+  typename var_opt_sketch<T,S,A>::iterator h_end(sketch, true, false);
   while (h_itr != h_end) {
-    std::pair<const T&, const double> sample = *h_itr;
-    gadget_.update(sample.first, sample.second, false);
+    std::pair<T&, double> sample = *h_itr;
+    gadget_.update(std::move(sample.first), sample.second, false);
     ++h_itr;
   }
 
-  // Weight-correcitng R region iterator
-  typename var_opt_sketch<T,S,A>::const_iterator r_itr(sketch, false, true, true);
-  typename var_opt_sketch<T,S,A>::const_iterator r_end(sketch, true, true, true);
+  // Weight-correcting R region iterator
+  typename var_opt_sketch<T,S,A>::iterator r_itr(sketch, false, true);
+  typename var_opt_sketch<T,S,A>::iterator r_end(sketch, true, true);
   while (r_itr != r_end) {
-    std::pair<const T&, const double> sample = *r_itr;
-    gadget_.update(sample.first, sample.second, true);
+    std::pair<T&, double> sample = *r_itr;
+    gadget_.update(std::move(sample.first), sample.second, true);
     ++r_itr;
   }
+}
 
-  // resolve tau
+template<typename T, typename S, typename A>
+void var_opt_union<T,S,A>::resolve_tau(const var_opt_sketch<T,S,A>& sketch) {
   if (sketch.r_ > 0) {
     const double sketch_tau = sketch.get_tau();
     const double outer_tau = get_outer_tau();
@@ -436,7 +472,7 @@ bool var_opt_union<T,S,A>::detect_and_handle_subcase_of_pseudo_exact(var_opt_ske
   const bool condition2 = gadget_.num_marks_in_h_ > 0;
 
   // if gadget is pseudo-exact and the number of marks equals outer_tau_denom, then we can deduce
-  // from the bookkeeping logic of merge_into() that all estimation mode input sketches must
+  // from the bookkeeping logic of resolve_tau() that all estimation mode input sketches must
   // have had the same tau, so we can throw all of the marked items into a common reservoir.
   const bool condition3 = gadget_.num_marks_in_h_ == outer_tau_denom_;
 

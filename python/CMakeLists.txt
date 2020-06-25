@@ -57,4 +57,5 @@ target_sources(python
     src/fi_wrapper.cpp
     src/theta_wrapper.cpp
     src/vo_wrapper.cpp
+    src/vector_of_kll.cpp
 )

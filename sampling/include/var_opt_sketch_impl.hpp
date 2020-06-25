@@ -63,9 +63,9 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other) :
     data_ = A().allocate(curr_items_alloc_);
     // skip gap or anything unused at the end
     for (size_t i = 0; i < h_; ++i)
-      A().construct(&data_[i], T(other.data_[i]));
+      new (&data_[i]) T(other.data_[i]);
     for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
-      A().construct(&data_[i], T(other.data_[i]));
+      new (&data_[i]) T(other.data_[i]);
 
     // we skipped the gap
     filled_data_ = false;
@@ -99,9 +99,9 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other, bool as_sketc
     data_ = A().allocate(curr_items_alloc_);
     // skip gap or anything unused at the end
     for (size_t i = 0; i < h_; ++i)
-      A().construct(&data_[i], T(other.data_[i]));
+      new (&data_[i]) T(other.data_[i]);
     for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
-      A().construct(&data_[i], T(other.data_[i]));
+      new (&data_[i]) T(other.data_[i]);
     
     // we skipped the gap
     filled_data_ = false;
@@ -723,11 +723,10 @@ void var_opt_sketch<T,S,A>::update(const T& item, double weight) {
   update(item, weight, false);
 }
 
-/*
 template<typename T, typename S, typename A>
 void var_opt_sketch<T,S,A>::update(T&& item, double weight) {
+  update(std::move(item), weight, false);
 }
-*/
 
 template<typename T, typename S, typename A>
 string<A> var_opt_sketch<T,S,A>::to_string() const {
@@ -747,21 +746,41 @@ template<typename T, typename S, typename A>
 string<A> var_opt_sketch<T,S,A>::items_to_string() const {
   std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### Sketch Items" << std::endl;
-  const uint32_t print_length = (n_ < k_ ? n_ : k_ + 1);
-  for (uint32_t i = 0; i < print_length; ++i) {
-    if (i == h_) {
+  int idx = 0;
+  for (auto record : *this) {
+    os << idx << ": " << record.first << "\twt = " << record.second << std::endl;
+    ++idx;
+  }
+  return os.str();
+}
+
+template<typename T, typename S, typename A>
+string<A> var_opt_sketch<T,S,A>::items_to_string(bool print_gap) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  os << "### Sketch Items" << std::endl;
+  const uint32_t array_length = (n_ < k_ ? n_ : k_ + 1);
+  for (uint32_t i = 0, display_idx = 0; i < array_length; ++i) {
+    if (i == h_ && print_gap) {
       os << i << ": GAP" << std::endl;
+      ++display_idx;
     } else {
-      os << i << ": " << data_[i] << "\twt = " << weights_[i] << std::endl;
+      os << i << ": " << data_[i] << "\twt = ";
+      if (weights_[i] == -1.0) {
+        os << get_tau() << "\t(-1.0)" << std::endl;
+      } else {
+        os << weights_[i] << std::endl;
+      }
+      ++display_idx;
     }
   }
   return os.str();
 }
 
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::update(const T& item, double weight, bool mark) {
+template<typename O>
+void var_opt_sketch<T,S,A>::update(O&& item, double weight, bool mark) {
   if (weight < 0.0 || std::isnan(weight) || std::isinf(weight)) {
-    throw std::invalid_argument("Item weights must be nonnegativge and finite. Found: "
+    throw std::invalid_argument("Item weights must be nonnegative and finite. Found: "
                                 + std::to_string(weight));
   } else if (weight == 0.0) {
     return;
@@ -770,7 +789,7 @@ void var_opt_sketch<T,S,A>::update(const T& item, double weight, bool mark) {
 
   if (r_ == 0) {
     // exact mode
-    update_warmup_phase(item, weight, mark);
+    update_warmup_phase(std::forward<O>(item), weight, mark);
   } else {
     // sketch is in estimation mode so we can make the following check,
     // although very conservative to check every time
@@ -788,17 +807,18 @@ void var_opt_sketch<T,S,A>::update(const T& item, double weight, bool mark) {
     const double condition2 = weight < hypothetical_tau;
   
     if (condition1 && condition2) {
-      update_light(item, weight, mark);
+      update_light(std::forward<O>(item), weight, mark);
     } else if (r_ == 1) {
-      update_heavy_r_eq1(item, weight, mark);
+      update_heavy_r_eq1(std::forward<O>(item), weight, mark);
     } else {
-      update_heavy_general(item, weight, mark);
+      update_heavy_general(std::forward<O>(item), weight, mark);
     }
   }
 }
 
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::update_warmup_phase(const T& item, double weight, bool mark) {
+template<typename O>
+void var_opt_sketch<T,S,A>::update_warmup_phase(O&& item, double weight, bool mark) {
   // seems overly cautious
   if (r_ > 0 || m_ != 0 || h_ > k_) throw std::logic_error("invalid sketch state during warmup");
 
@@ -807,7 +827,7 @@ void var_opt_sketch<T,S,A>::update_warmup_phase(const T& item, double weight, bo
   }
 
   // store items as they come in until full
-  A().construct(&data_[h_], T(item));
+  new (&data_[h_]) T(std::forward<O>(item));
   weights_[h_] = weight;
   if (marks_ != nullptr) {
     marks_[h_] = mark;
@@ -827,14 +847,15 @@ void var_opt_sketch<T,S,A>::update_warmup_phase(const T& item, double weight, bo
    list. It is easy to prove that it is light enough to be part of this
    round's downsampling */
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::update_light(const T& item, double weight, bool mark) {
+template<typename O>
+void var_opt_sketch<T,S,A>::update_light(O&& item, double weight, bool mark) {
   if (r_ == 0 || (r_ + h_) != k_) throw std::logic_error("invalid sketch state during light warmup");
 
   const uint32_t m_slot = h_; // index of the gap, which becomes the M region
   if (filled_data_) {
-    data_[m_slot] = item;
+    data_[m_slot] = std::forward<O>(item);
   } else {
-    A().construct(&data_[m_slot], T(item));
+    new (&data_[m_slot]) T(std::forward<O>(item));
     filled_data_ = true;
   }
   weights_[m_slot] = weight;
@@ -853,11 +874,12 @@ void var_opt_sketch<T,S,A>::update_light(const T& item, double weight, bool mark
    but that should be okay because pseudo_heavy items cannot predominate
    in long streams unless (max wt) / (min wt) > o(exp(N)) */
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::update_heavy_general(const T& item, double weight, bool mark) {
+template<typename O>
+void var_opt_sketch<T,S,A>::update_heavy_general(O&& item, double weight, bool mark) {
   if (r_ < 2 || m_ != 0 || (r_ + h_) != k_) throw std::logic_error("invalid sketch state during heavy general update");
 
   // put into H, although may come back out momentarily
-  push(item, weight, mark);
+  push(std::forward<O>(item), weight, mark);
 
   grow_candidate_set(total_wt_r_, r_);
 }
@@ -866,10 +888,11 @@ void var_opt_sketch<T,S,A>::update_heavy_general(const T& item, double weight, b
    The one small technical difference is that since R < 2, we must grab an M item
    to have a valid starting point for continue_by_growing_candidate_set () */
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::update_heavy_r_eq1(const T& item, double weight, bool mark) {
+template<typename O>
+void var_opt_sketch<T,S,A>::update_heavy_r_eq1(O&& item, double weight, bool mark) {
   if (r_ != 1 || m_ != 0 || (r_ + h_) != k_) throw std::logic_error("invalid sketch state during heavy r=1 update");
 
-  push(item, weight, mark);  // new item into H
+  push(std::forward<O>(item), weight, mark);  // new item into H
   pop_min_to_m_region();     // pop lightest back into M
 
   // Any set of two items is downsample-able to one item,
@@ -971,7 +994,7 @@ void var_opt_sketch<T,S,A>::grow_data_arrays() {
     double* tmp_weights = AllocDouble().allocate(curr_items_alloc_);
 
     for (uint32_t i = 0; i < prev_size; ++i) {
-      A().construct(&tmp_data[i], std::move(data_[i]));
+      new (&tmp_data[i]) T(std::move(data_[i]));
       A().destroy(data_ + i);
       tmp_weights[i] = weights_[i];
     }
@@ -1076,11 +1099,12 @@ void var_opt_sketch<T,S,A>::restore_towards_root(uint32_t slot_in) {
 }
 
 template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::push(const T& item, double wt, bool mark) {
+template<typename O>
+void var_opt_sketch<T,S,A>::push(O&& item, double wt, bool mark) {
   if (filled_data_) {
-    data_[h_] = item;
+    data_[h_] = std::forward<O>(item);
   } else {
-    A().construct(&data_[h_], T(item));
+    new (&data_[h_]) T(std::forward<O>(item));
     filled_data_ = true;
   }
   weights_[h_] = wt;
@@ -1477,8 +1501,7 @@ var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),
-  final_idx_(sk.r_ > 0 ? sk.h_ + sk.r_ + 1 : sk.h_),
-  weight_correction_(false)
+  final_idx_(sk.r_ > 0 ? sk.h_ + sk.r_ + 1 : sk.h_)
 {
   // index logic easier to read if not inline
   if (is_end) {
@@ -1493,12 +1516,11 @@ var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A
 }
 
 template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region, bool weight_corr) :
+var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region) :
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),
-  final_idx_(sk.h_ + (use_r_region ? 1 + sk.r_ : 0)),
-  weight_correction_(weight_corr)
+  final_idx_(sk.h_ + (use_r_region ? 1 + sk.r_ : 0))
 {
   if (use_r_region) {
     idx_ = sk.h_ + 1 + (is_end ? sk.r_ : 0);
@@ -1518,8 +1540,7 @@ var_opt_sketch<T, S, A>::const_iterator::const_iterator(const const_iterator& ot
   cum_r_weight_(other.cum_r_weight_),
   r_item_wt_(other.r_item_wt_),
   idx_(other.idx_),
-  final_idx_(other.final_idx_),
-  weight_correction_(other.weight_correction_)
+  final_idx_(other.final_idx_)
 {}
 
 template<typename T,  typename S, typename A>
@@ -1560,8 +1581,6 @@ const std::pair<const T&, const double> var_opt_sketch<T, S, A>::const_iterator:
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
-  } else if (weight_correction_ && idx_ == final_idx_ - 1) {
-    wt = sk_->total_wt_r_ - cum_r_weight_;
   } else {
     wt = r_item_wt_;
   }
@@ -1572,6 +1591,88 @@ template<typename T, typename S, typename A>
 bool var_opt_sketch<T, S, A>::const_iterator::get_mark() const {
   return sk_->marks_ == nullptr ? false : sk_->marks_[idx_];
 }
+
+
+// -------- var_opt_sketch::iterator implementation ---------
+
+template<typename T, typename S, typename A>
+var_opt_sketch<T,S,A>::iterator::iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region) :
+  sk_(&sk),
+  cum_r_weight_(0.0),
+  r_item_wt_(sk.get_tau()),
+  final_idx_(sk.h_ + (use_r_region ? 1 + sk.r_ : 0))
+{
+  if (use_r_region) {
+    idx_ = sk.h_ + 1 + (is_end ? sk.r_ : 0);
+  } else { // H region
+    // gap at start only if h_ == 0, so index always starts at 0
+    idx_ = (is_end ? sk.h_ : 0);
+  }
+  
+  // unlike in full iterator case, may happen even if sketch is not empty
+  if (idx_ == final_idx_) { sk_ = nullptr; }
+}
+
+template<typename T,  typename S, typename A>
+var_opt_sketch<T, S, A>::iterator::iterator(const iterator& other) :
+  sk_(other.sk_),
+  cum_r_weight_(other.cum_r_weight_),
+  r_item_wt_(other.r_item_wt_),
+  idx_(other.idx_),
+  final_idx_(other.final_idx_)
+{}
+
+template<typename T,  typename S, typename A>
+typename var_opt_sketch<T, S, A>::iterator& var_opt_sketch<T, S, A>::iterator::operator++() {
+  ++idx_;
+  
+  if (idx_ == final_idx_) {
+    sk_ = nullptr;
+    return *this;
+  } else if (idx_ == sk_->h_ && sk_->r_ > 0) { // check for the gap
+    ++idx_;
+  }
+  if (idx_ > sk_->h_) { cum_r_weight_ += r_item_wt_; }
+  return *this;
+}
+
+template<typename T,  typename S, typename A>
+typename var_opt_sketch<T, S, A>::iterator& var_opt_sketch<T, S, A>::iterator::operator++(int) {
+  const_iterator tmp(*this);
+  operator++();
+  return tmp;
+}
+
+template<typename T, typename S, typename A>
+bool var_opt_sketch<T, S, A>::iterator::operator==(const iterator& other) const {
+  if (sk_ != other.sk_) return false;
+  if (sk_ == nullptr) return true; // end (and we know other.sk_ is also null)
+  return idx_ == other.idx_;
+}
+
+template<typename T, typename S, typename A>
+bool var_opt_sketch<T, S, A>::iterator::operator!=(const iterator& other) const {
+  return !operator==(other);
+}
+
+template<typename T, typename S, typename A>
+std::pair<T&, double> var_opt_sketch<T, S, A>::iterator::operator*() {
+  double wt;
+  if (idx_ < sk_->h_) {
+    wt = sk_->weights_[idx_];
+  } else if (idx_ == final_idx_ - 1) {
+    wt = sk_->total_wt_r_ - cum_r_weight_;
+  } else {
+    wt = r_item_wt_;
+  }
+  return std::pair<T&, double>(sk_->data_[idx_], wt);
+}
+
+template<typename T, typename S, typename A>
+bool var_opt_sketch<T, S, A>::iterator::get_mark() const {
+  return sk_->marks_ == nullptr ? false : sk_->marks_[idx_];
+}
+
 
 
 // ******************** MOVE TO COMMON UTILS AREA EVENTUALLY *********************

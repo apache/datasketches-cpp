@@ -217,4 +217,28 @@ TEST_CASE("theta a-not-b: seed mismatch", "[theta_a_not_b]") {
   REQUIRE_THROWS_AS(a_not_b.compute(sketch, sketch), std::invalid_argument);
 }
 
+TEST_CASE("theta a-not-b: issue #152", "[theta_a_not_b]") {
+  update_theta_sketch a = update_theta_sketch::builder().build();
+  int value = 0;
+  for (int i = 0; i < 10000; i++) a.update(value++);
+
+  update_theta_sketch b = update_theta_sketch::builder().build();
+  value = 5000;
+  for (int i = 0; i < 25000; i++) b.update(value++);
+
+  theta_a_not_b a_not_b;
+
+  // unordered inputs
+  compact_theta_sketch result = a_not_b.compute(a, b);
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE(result.is_estimation_mode());
+  REQUIRE(result.get_estimate() == Approx(5000).margin(5000 * 0.03));
+
+  // ordered inputs
+  result = a_not_b.compute(a.compact(), b.compact());
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE(result.is_estimation_mode());
+  REQUIRE(result.get_estimate() == Approx(5000).margin(5000 * 0.03));
+}
+
 } /* namespace datasketches */
