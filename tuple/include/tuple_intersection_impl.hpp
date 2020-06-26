@@ -19,26 +19,19 @@
 
 namespace datasketches {
 
-template<typename A>
-theta_union_experimental<A>::theta_union_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed):
-state_(lg_cur_size, lg_nom_size, rf, p, seed, pass_through_policy())
+template<typename S, typename P, typename SD, typename A>
+tuple_intersection<S, P, SD, A>::tuple_intersection(uint64_t seed, const P& policy):
+state_(seed, internal_policy(policy))
 {}
 
-template<typename A>
-void theta_union_experimental<A>::update(const Sketch& sketch) {
+template<typename S, typename P, typename SD, typename A>
+void tuple_intersection<S, P, SD, A>::update(const Sketch& sketch) {
   state_.update(sketch);
 }
 
-template<typename A>
-auto theta_union_experimental<A>::get_result(bool ordered) const -> CompactSketch {
+template<typename S, typename P, typename SD, typename A>
+auto tuple_intersection<S, P, SD, A>::get_result(bool ordered) const -> CompactSketch {
   return state_.get_result(ordered);
-}
-
-template<typename A>
-auto theta_union_experimental<A>::builder::build() const -> theta_union_experimental {
-  return theta_union_experimental(
-      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
-      this->lg_k_, this->rf_, this->p_, this->seed_);
 }
 
 } /* namespace datasketches */

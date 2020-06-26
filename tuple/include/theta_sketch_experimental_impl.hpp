@@ -35,8 +35,8 @@ void theta_sketch_experimental<A>::update(uint64_t key) {
 
 template<typename A>
 void theta_sketch_experimental<A>::update(const void* key, size_t length) {
-  const uint64_t hash = compute_hash(key, length, DEFAULT_SEED);
-  if (hash >= table_.theta_ || hash == 0) return; // hash == 0 is reserved to mark empty slots in the table
+  const uint64_t hash = table_.hash_and_screen(key, length);
+  if (hash == 0) return;
   auto result = table_.find(hash);
   if (!result.second) {
     table_.insert(result.first, hash);
@@ -106,7 +106,9 @@ auto theta_sketch_experimental<A>::end() const -> const_iterator {
 
 template<typename A>
 theta_sketch_experimental<A> theta_sketch_experimental<A>::builder::build() const {
-  return theta_sketch_experimental(starting_sub_multiple(lg_k_ + 1, MIN_LG_K, static_cast<uint8_t>(rf_)), lg_k_, rf_, p_, seed_);
+  return theta_sketch_experimental(
+      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
+      this->lg_k_, this->rf_, this->p_, this->seed_);
 }
 
 template<typename A>
@@ -140,6 +142,15 @@ entries_()
 {
   std::copy_if(first, last, std::back_inserter(entries_), [theta](uint64_t value) { return value != 0 && value < theta; });
 }
+
+template<typename A>
+compact_theta_sketch_experimental<A>::compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<uint64_t, A>&& entries):
+is_empty_(is_empty),
+is_ordered_(is_ordered),
+seed_hash_(seed_hash),
+theta_(theta),
+entries_(std::move(entries))
+{}
 
 template<typename A>
 string<A> compact_theta_sketch_experimental<A>::to_string(bool detail) const {

@@ -51,30 +51,20 @@ theta_update_sketch_base<EN, EK, A>::~theta_update_sketch_base()
   A().deallocate(entries_, size);
 }
 
-//template<typename EN, typename EK, typename A>
-//void theta_base<EN, EK, A>::update(EN&& entry) {
-//  const uint64_t hash = EK()(entry);
-//  if (hash >= this->theta_ || hash == 0) return; // hash == 0 is reserved to mark empty slots in the table
-//  auto result = find(hash);
-//  if (!result.second) {
-//    insert(result.first, std::forward<EN>(entry));
-//  }
-//}
-
 template<typename EN, typename EK, typename A>
-auto theta_update_sketch_base<EN, EK, A>::find(uint64_t key) const -> std::pair<iterator, bool> {
-  const size_t size = 1 << lg_cur_size_;
+auto theta_update_sketch_base<EN, EK, A>::find(EN* entries, uint8_t lg_size, uint64_t key) -> std::pair<iterator, bool> {
+  const size_t size = 1 << lg_size;
   const size_t mask = size - 1;
-  const uint32_t stride = get_stride(key, lg_cur_size_);
+  const uint32_t stride = get_stride(key, lg_size);
   uint32_t index = static_cast<uint32_t>(key) & mask;
   // search for duplicate or zero
   const uint32_t loop_index = index;
   do {
-    const uint64_t probe = EK()(entries_[index]);
+    const uint64_t probe = EK()(entries[index]);
     if (probe == 0) {
-      return std::pair<iterator, bool>(&entries_[index], false);
+      return std::pair<iterator, bool>(&entries[index], false);
     } else if (probe == key) {
-      return std::pair<iterator, bool>(&entries_[index], true);
+      return std::pair<iterator, bool>(&entries[index], true);
     }
     index = (index + stride) & mask;
   } while (index != loop_index);
@@ -82,10 +72,22 @@ auto theta_update_sketch_base<EN, EK, A>::find(uint64_t key) const -> std::pair<
 }
 
 template<typename EN, typename EK, typename A>
+uint64_t theta_update_sketch_base<EN, EK, A>::hash_and_screen(const void* data, size_t length) {
+  is_empty_ = false;
+  const uint64_t hash = compute_hash(data, length, seed_);
+  if (hash >= theta_ || hash == 0) return 0; // hash == 0 is reserved to mark empty slots in the table
+  return hash;
+}
+
+template<typename EN, typename EK, typename A>
+auto theta_update_sketch_base<EN, EK, A>::find(uint64_t key) const -> std::pair<iterator, bool> {
+  return find(entries_, lg_cur_size_, key);
+}
+
+template<typename EN, typename EK, typename A>
 template<typename Fwd>
 void theta_update_sketch_base<EN, EK, A>::insert(iterator it, Fwd&& entry) {
   new (it) EN(std::forward<Fwd>(entry));
-  is_empty_ = false;
   ++num_entries_;
   if (num_entries_ > get_capacity(lg_cur_size_, lg_nom_size_)) {
     if (lg_cur_size_ <= lg_nom_size_) {
@@ -181,40 +183,40 @@ void theta_update_sketch_base<EN, EK, A>::trim() {
 
 // builder
 
-template<bool dummy>
-theta_base_builder<dummy>::theta_base_builder():
+template<typename Derived>
+theta_base_builder<Derived>::theta_base_builder():
 lg_k_(DEFAULT_LG_K), rf_(DEFAULT_RESIZE_FACTOR), p_(1), seed_(DEFAULT_SEED) {}
 
-template<bool dummy>
-auto theta_base_builder<dummy>::set_lg_k(uint8_t lg_k) -> theta_base_builder& {
+template<typename Derived>
+auto theta_base_builder<Derived>::set_lg_k(uint8_t lg_k) -> Derived& {
   if (lg_k < MIN_LG_K) {
     throw std::invalid_argument("lg_k must not be less than " + std::to_string(MIN_LG_K) + ": " + std::to_string(lg_k));
   }
   lg_k_ = lg_k;
-  return *this;
+  return static_cast<Derived&>(*this);
 }
 
-template<bool dummy>
-auto theta_base_builder<dummy>::set_resize_factor(resize_factor rf) -> theta_base_builder& {
+template<typename Derived>
+auto theta_base_builder<Derived>::set_resize_factor(resize_factor rf) -> Derived& {
   rf_ = rf;
-  return *this;
+  return static_cast<Derived&>(*this);
 }
 
-template<bool dummy>
-auto theta_base_builder<dummy>::set_p(float p) -> theta_base_builder& {
+template<typename Derived>
+auto theta_base_builder<Derived>::set_p(float p) -> Derived& {
   if (p < 0 || p > 1) throw std::invalid_argument("sampling probability must be between 0 and 1");
   p_ = p;
-  return *this;
+  return static_cast<Derived&>(*this);
 }
 
-template<bool dummy>
-auto theta_base_builder<dummy>::set_seed(uint64_t seed) -> theta_base_builder& {
+template<typename Derived>
+auto theta_base_builder<Derived>::set_seed(uint64_t seed) -> Derived& {
   seed_ = seed;
-  return *this;
+  return static_cast<Derived&>(*this);
 }
 
-template<bool dummy>
-uint8_t theta_base_builder<dummy>::starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf) {
+template<typename Derived>
+uint8_t theta_base_builder<Derived>::starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf) {
   return (lg_tgt <= lg_min) ? lg_min : (lg_rf == 0) ? lg_tgt : ((lg_tgt - lg_min) % lg_rf) + lg_min;
 }
 

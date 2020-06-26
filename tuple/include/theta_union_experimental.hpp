@@ -75,7 +75,7 @@ private:
 };
 
 template<typename A>
-class theta_union_experimental<A>::builder: public theta_base_builder<true> {
+class theta_union_experimental<A>::builder: public theta_base_builder<theta_union_experimental<A>::builder> {
 public:
 
   /**

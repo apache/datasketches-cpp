@@ -34,10 +34,11 @@ template<
 >
 class theta_union_base {
 public:
-  using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
   using resize_factor = theta_constants::resize_factor;
+  using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
+  using comparator = comparator<Entry, ExtractKey>;
 
-  theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, Policy policy);
+  theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
 
   void update(const Sketch& sketch);
 

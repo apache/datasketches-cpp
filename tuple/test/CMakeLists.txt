@@ -41,6 +41,7 @@ target_sources(tuple_test
     tuple_sketch_test.cpp
     tuple_sketch_allocation_test.cpp
     tuple_union_test.cpp
+    tuple_intersection_test.cpp
     theta_sketch_experimental_test.cpp
     theta_union_experimental_test.cpp
 )

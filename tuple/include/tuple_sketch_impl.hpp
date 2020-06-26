@@ -163,8 +163,8 @@ void update_tuple_sketch<S, U, P, SD, A>::update(int8_t key, UU&& value) {
 template<typename S, typename U, typename P, typename SD, typename A>
 template<typename UU>
 void update_tuple_sketch<S, U, P, SD, A>::update(const void* key, size_t length, UU&& value) {
-  const uint64_t hash = compute_hash(key, length, map_.seed_);
-  if (hash >= map_.theta_ || hash == 0) return; // hash == 0 is reserved to mark empty slots in the table
+  const uint64_t hash = map_.hash_and_screen(key, length);
+  if (hash == 0) return;
   auto result = map_.find(hash);
   if (!result.second) {
     S summary = policy_.create();
@@ -214,14 +214,14 @@ compact_tuple_sketch<S, SD, A> update_tuple_sketch<S, U, P, SD, A>::compact(bool
 
 // compact sketch
 
-//template<typename S, typename SD, typename A>
-//compact_tuple_sketch<S, SD, A>::compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries):
-//is_empty_(is_empty),
-//is_ordered_(is_ordered),
-//seed_hash_(seed_hash),
-//theta_(theta),
-//entries_(std::move(entries))
-//{}
+template<typename S, typename SD, typename A>
+compact_tuple_sketch<S, SD, A>::compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries):
+is_empty_(is_empty),
+is_ordered_(is_ordered),
+seed_hash_(seed_hash),
+theta_(theta),
+entries_(std::move(entries))
+{}
 
 template<typename S, typename SD, typename A>
 template<typename InputIt>
@@ -232,7 +232,7 @@ seed_hash_(seed_hash),
 theta_(theta),
 entries_()
 {
-  std::copy_if(first, last, back_inserter(entries_), key_less_than<uint64_t, Entry, pair_extract_key<uint64_t, S>>(theta));
+  std::copy_if(first, last, back_inserter(entries_), key_less_than<uint64_t, Entry, ExtractKey>(theta));
 }
 
 template<typename S, typename SD, typename A>
@@ -245,7 +245,7 @@ entries_()
 {
   entries_.reserve(other.get_num_retained());
   std::copy(other.begin(), other.end(), std::back_inserter(entries_));
-  if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end());
+  if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end(), comparator());
 }
 
 template<typename S, typename SD, typename A>
@@ -276,16 +276,30 @@ uint16_t compact_tuple_sketch<S, SD, A>::get_seed_hash() const {
 template<typename S, typename SD, typename A>
 string<A> compact_tuple_sketch<S, SD, A>::to_string(bool detail) const {
   std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  os << "### Compact Tuple sketch summary:" << std::endl;
   auto type = typeid(*this).name();
-  os << "sizeof(" << type << ")=" << sizeof(*this) << std::endl;
-  os << "sizeof(entry)=" << sizeof(Entry) << std::endl;
-  os << "empty? : " << (is_empty_ ? "true" : "false") << std::endl;
+  os << "   type                 : " << type << std::endl;
+  os << "   sizeof(type)         : " << sizeof(*this) << std::endl;
+  os << "   sizeof(entry)        : " << sizeof(Entry) << std::endl;
+  os << "   num retained entries : " << entries_.size() << std::endl;
+  os << "   seed hash            : " << this->get_seed_hash() << std::endl;
+  os << "   empty?               : " << (this->is_empty() ? "true" : "false") << std::endl;
+  os << "   ordered?             : " << (this->is_ordered() ? "true" : "false") << std::endl;
+  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
+  os << "   theta (fraction)     : " << this->get_theta() << std::endl;
+  os << "   theta (raw 64-bit)   : " << this->theta_ << std::endl;
+  os << "   estimate             : " << this->get_estimate() << std::endl;
+  os << "   lower bound 95% conf : " << this->get_lower_bound(2) << std::endl;
+  os << "   upper bound 95% conf : " << this->get_upper_bound(2) << std::endl;
+  os << "### End sketch summary" << std::endl;
   if (detail) {
+    os << "### Retained entries" << std::endl;
     for (const auto& it: entries_) {
       if (it.first != 0) {
         os << it.first << ": " << it.second << std::endl;
       }
     }
+    os << "### End retained entries" << std::endl;
   }
   return os.str();
 }
@@ -372,11 +386,13 @@ auto compact_tuple_sketch<S, SD, A>::end() const -> const_iterator {
 
 template<typename S, typename U, typename P, typename SD, typename A>
 update_tuple_sketch<S, U, P, SD, A>::builder::builder(const P& policy):
-theta_base_builder<true>(), policy_(policy) {}
+policy_(policy) {}
 
 template<typename S, typename U, typename P, typename SD, typename A>
 update_tuple_sketch<S, U, P, SD, A> update_tuple_sketch<S, U, P, SD, A>::builder::build() const {
-  return update_tuple_sketch<S, U, P, SD, A>(starting_sub_multiple(lg_k_ + 1, MIN_LG_K, static_cast<uint8_t>(rf_)), lg_k_, rf_, p_, seed_, policy_);
+  return update_tuple_sketch(
+      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
+      this->lg_k_, this->rf_, this->p_, this->seed_, this->policy_);
 }
 
 } /* namespace datasketches */

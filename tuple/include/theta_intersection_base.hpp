@@ -17,28 +17,45 @@
  * under the License.
  */
 
+#ifndef THETA_INTERSECTION_BASE_HPP_
+#define THETA_INTERSECTION_BASE_HPP_
+
 namespace datasketches {
 
-template<typename A>
-theta_union_experimental<A>::theta_union_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed):
-state_(lg_cur_size, lg_nom_size, rf, p, seed, pass_through_policy())
-{}
+template<
+  typename Entry,
+  typename ExtractKey,
+  typename Policy,
+  typename Sketch,
+  typename CompactSketch,
+  typename Allocator
+>
+class theta_intersection_base {
+public:
+  using comparator = comparator<Entry, ExtractKey>;
+  theta_intersection_base(uint64_t seed, const Policy& policy);
+  ~theta_intersection_base();
+  void destroy_objects();
 
-template<typename A>
-void theta_union_experimental<A>::update(const Sketch& sketch) {
-  state_.update(sketch);
-}
+  // TODO: copy and move
 
-template<typename A>
-auto theta_union_experimental<A>::get_result(bool ordered) const -> CompactSketch {
-  return state_.get_result(ordered);
-}
+  void update(const Sketch& sketch);
 
-template<typename A>
-auto theta_union_experimental<A>::builder::build() const -> theta_union_experimental {
-  return theta_union_experimental(
-      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
-      this->lg_k_, this->rf_, this->p_, this->seed_);
-}
+  CompactSketch get_result(bool ordered = true) const;
+
+private:
+  Policy policy_;
+  bool is_valid_;
+  bool is_empty_;
+  uint8_t lg_size_;
+  uint16_t seed_hash_;
+  uint32_t num_entries_;
+  uint64_t theta_;
+  Entry* entries_;
+};
 
 } /* namespace datasketches */
+
+#include "theta_intersection_base_impl.hpp"
+
+#endif

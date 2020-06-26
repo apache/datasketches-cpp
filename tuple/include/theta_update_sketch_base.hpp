@@ -33,6 +33,13 @@ namespace theta_constants {
   static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
 }
 
+template<typename Entry, typename ExtractKey>
+struct comparator {
+  bool operator()(Entry& a, Entry& b) const {
+    return ExtractKey()(a) < ExtractKey()(b);
+  }
+};
+
 template<
   typename Entry,
   typename ExtractKey,
@@ -40,12 +47,15 @@ template<
 >
 struct theta_update_sketch_base {
   using resize_factor = theta_constants::resize_factor;
+  using comparator = comparator<Entry, ExtractKey>;
 
   theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);
   // TODO: copy and move
   ~theta_update_sketch_base();
 
   using iterator = Entry*;
+
+  uint64_t hash_and_screen(const void* data, size_t length);
 
   std::pair<iterator, bool> find(uint64_t key) const;
 
@@ -82,16 +92,12 @@ struct theta_update_sketch_base {
   static inline uint32_t get_capacity(uint8_t lg_cur_size, uint8_t lg_nom_size);
   static inline uint32_t get_stride(uint64_t key, uint8_t lg_size);
 
-  struct comparator {
-    bool operator()(Entry& a, Entry& b) const {
-      return ExtractKey()(a) < ExtractKey()(b);
-    }
-  };
+  static std::pair<iterator, bool> find(Entry* entries, uint8_t lg_size, uint64_t key);
 };
 
 // builder
 
-template<bool dummy>
+template<typename Derived>
 class theta_base_builder {
 public:
   using resize_factor = theta_constants::resize_factor;
@@ -109,14 +115,14 @@ public:
    * @param lg_k base 2 logarithm of nominal number of entries
    * @return this builder
    */
-  theta_base_builder& set_lg_k(uint8_t lg_k);
+  Derived& set_lg_k(uint8_t lg_k);
 
   /**
    * Set resize factor for the internal hash table (defaults to 8)
    * @param rf resize factor
    * @return this builder
    */
-  theta_base_builder& set_resize_factor(resize_factor rf);
+  Derived& set_resize_factor(resize_factor rf);
 
   /**
    * Set sampling probability (initial theta). The default is 1, so the sketch retains
@@ -125,7 +131,7 @@ public:
    * @param p sampling probability
    * @return this builder
    */
-  theta_base_builder& set_p(float p);
+  Derived& set_p(float p);
 
   /**
    * Set the seed for the hash function. Should be used carefully if needed.
@@ -134,7 +140,7 @@ public:
    * @param seed hash seed
    * @return this builder
    */
-  theta_base_builder& set_seed(uint64_t seed);
+  Derived& set_seed(uint64_t seed);
 
 protected:
   uint8_t lg_k_;
@@ -184,6 +190,27 @@ public:
   explicit key_less_than(const Key& key): key(key) {}
   bool operator()(const Entry& entry) const {
     return ExtractKey()(entry) < this->key;
+  }
+private:
+  Key key;
+};
+
+// not zero
+
+template<typename Entry, typename ExtractKey>
+class key_not_zero {
+public:
+  bool operator()(const Entry& entry) const {
+    return ExtractKey()(entry) != 0;
+  }
+};
+
+template<typename Key, typename Entry, typename ExtractKey>
+class key_not_zero_less_than {
+public:
+  explicit key_not_zero_less_than(const Key& key): key(key) {}
+  bool operator()(const Entry& entry) const {
+    return ExtractKey()(entry) != 0 && ExtractKey()(entry) < this->key;
   }
 private:
   Key key;

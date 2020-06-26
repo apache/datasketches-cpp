@@ -17,28 +17,34 @@
  * under the License.
  */
 
+#include <iostream>
+
+#include <catch.hpp>
+#include <tuple_intersection.hpp>
+
 namespace datasketches {
 
-template<typename A>
-theta_union_experimental<A>::theta_union_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed):
-state_(lg_cur_size, lg_nom_size, rf, p, seed, pass_through_policy())
-{}
+template<typename Summary>
+struct subtracting_intersection_policy {
+  void operator()(Summary& summary, const Summary& other) const {
+    summary -= other;
+  }
+};
 
-template<typename A>
-void theta_union_experimental<A>::update(const Sketch& sketch) {
-  state_.update(sketch);
-}
+TEST_CASE("tuple_intersection float", "[tuple_intersection]") {
+  auto update_sketch1 = update_tuple_sketch<float>::builder().build();
+  update_sketch1.update(1, 1);
+  update_sketch1.update(2, 1);
 
-template<typename A>
-auto theta_union_experimental<A>::get_result(bool ordered) const -> CompactSketch {
-  return state_.get_result(ordered);
-}
+  auto update_sketch2 = update_tuple_sketch<float>::builder().build();
+  update_sketch2.update(1, 1);
+  update_sketch2.update(3, 1);
 
-template<typename A>
-auto theta_union_experimental<A>::builder::build() const -> theta_union_experimental {
-  return theta_union_experimental(
-      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
-      this->lg_k_, this->rf_, this->p_, this->seed_);
+  tuple_intersection<float, subtracting_intersection_policy<float>> is;
+  is.update(update_sketch1);
+  is.update(update_sketch2);
+  auto r = is.get_result();
+  REQUIRE(r.get_num_retained() == 1);
 }
 
 } /* namespace datasketches */

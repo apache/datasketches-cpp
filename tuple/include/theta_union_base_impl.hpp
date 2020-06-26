@@ -23,15 +23,15 @@
 
 namespace datasketches {
 
-template<typename E, typename EK, typename P, typename S, typename CS, typename A>
-theta_union_base<E, EK, P, S, CS, A>::theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, P policy):
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
+theta_union_base<EN, EK, P, S, CS, A>::theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const P& policy):
 policy_(policy),
 table_(lg_cur_size, lg_nom_size, rf, p, seed),
 union_theta_(table_.theta_)
 {}
 
-template<typename E, typename EK, typename P, typename S, typename CS, typename A>
-void theta_union_base<E, EK, P, S, CS, A>::update(const S& sketch) {
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
+void theta_union_base<EN, EK, P, S, CS, A>::update(const S& sketch) {
   if (sketch.is_empty()) return;
   if (sketch.get_seed_hash() != compute_seed_hash(table_.seed_)) throw std::invalid_argument("seed hash mismatch");
   table_.is_empty_ = false;
@@ -52,10 +52,25 @@ void theta_union_base<E, EK, P, S, CS, A>::update(const S& sketch) {
   if (table_.theta_ < union_theta_) union_theta_ = table_.theta_;
 }
 
-template<typename E, typename EK, typename P, typename S, typename CS, typename A>
-CS theta_union_base<E, EK, P, S, CS, A>::get_result(bool ordered) const {
-  // relies on the constructor to skip holes and hashes < theta
-  return CS(table_.is_empty_, ordered, DEFAULT_SEED, theta_constants::MAX_THETA, table_.begin(), table_.end());
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
+CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
+  if (table_.is_empty_) return CS(true, true, compute_seed_hash(table_.seed_), union_theta_, table_.end(), table_.end());
+  std::vector<EN, A> entries;
+  entries.reserve(table_.num_entries_);
+  uint64_t theta = std::min(union_theta_, table_.theta_);
+  const uint32_t nominal_num = 1 << table_.lg_nom_size_;
+  if (union_theta_ >= theta && table_.num_entries_ <= nominal_num) {
+    std::copy_if(table_.begin(), table_.end(), std::back_inserter(entries), key_not_zero<EN, EK>());
+  } else {
+    std::copy_if(table_.begin(), table_.end(), std::back_inserter(entries), key_not_zero_less_than<uint64_t, EN, EK>(theta));
+    if (entries.size() > nominal_num) {
+      std::nth_element(&entries[0], &entries[nominal_num], &entries[entries.size()], comparator());
+      theta = EK()(entries[nominal_num]);
+      entries.resize(nominal_num);
+    }
+  }
+  if (ordered) std::sort(entries.begin(), entries.end(), comparator());
+  return CS(table_.is_empty_, ordered, compute_seed_hash(table_.seed_), theta, std::move(entries));
 }
 
 } /* namespace datasketches */

@@ -21,7 +21,7 @@ namespace datasketches {
 
 template<typename S, typename P, typename SD, typename A>
 tuple_union<S, P, SD, A>::tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const P& policy):
-state_(lg_cur_size, lg_nom_size, rf, p, seed, policy)
+state_(lg_cur_size, lg_nom_size, rf, p, seed, internal_policy(policy))
 {}
 
 template<typename S, typename P, typename SD, typename A>
@@ -40,7 +40,9 @@ policy_(policy) {}
 
 template<typename S, typename P, typename SD, typename A>
 auto tuple_union<S, P, SD, A>::builder::build() const -> tuple_union {
-  return tuple_union(starting_sub_multiple(lg_k_ + 1, MIN_LG_K, static_cast<uint8_t>(rf_)), lg_k_, rf_, p_, seed_, policy_);
+  return tuple_union(
+      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
+      this->lg_k_, this->rf_, this->p_, this->seed_, this->policy_);
 }
 
 } /* namespace datasketches */

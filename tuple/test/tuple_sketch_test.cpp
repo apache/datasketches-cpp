@@ -192,8 +192,8 @@ TEST_CASE("tuple sketch: array of doubles", "[tuple_sketch]") {
 }
 
 TEST_CASE("tuple sketch: float, update with different types of keys", "[tuple_sketch]") {
-  std::cout << "update with different values begin" << std::endl;
   auto sketch = update_tuple_sketch<float>::builder().build();
+
   sketch.update(static_cast<uint64_t>(1), 1);
   REQUIRE(sketch.get_num_retained() == 1);
 
@@ -226,8 +226,6 @@ TEST_CASE("tuple sketch: float, update with different types of keys", "[tuple_sk
 
   sketch.update("a", 1);
   REQUIRE(sketch.get_num_retained() == 3);
-
-  std::cout << "update with different values end" << std::endl;
 }
 
 } /* namespace datasketches */

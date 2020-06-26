@@ -17,37 +17,37 @@
  * under the License.
  */
 
-#ifndef TUPLE_UNION_HPP_
-#define TUPLE_UNION_HPP_
+#ifndef TUPLE_INTERSECTION_HPP_
+#define TUPLE_INTERSECTION_HPP_
 
 #include "serde.hpp"
 #include "tuple_sketch.hpp"
-#include "theta_union_base.hpp"
+#include "theta_intersection_base.hpp"
 
 namespace datasketches {
-
+/*
 // for types with defined + operation
 template<typename Summary>
-struct default_union_policy {
+struct example_intersection_policy {
   void operator()(Summary& summary, const Summary& other) const {
     summary += other;
   }
 };
+*/
 
 template<
   typename Summary,
-  typename Policy = default_union_policy<Summary>,
+  typename Policy,
   typename SerDe = serde<Summary>,
   typename Allocator = std::allocator<Summary>
 >
-class tuple_union {
+class tuple_intersection {
 public:
   using Entry = std::pair<uint64_t, Summary>;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
   using Sketch = tuple_sketch<Summary, SerDe, Allocator>;
   using CompactSketch = compact_tuple_sketch<Summary, SerDe, Allocator>;
-  using resize_factor = theta_constants::resize_factor;
 
   // reformulate the external policy that operates on Summary
   // in terms of operations on Entry
@@ -60,51 +60,33 @@ public:
     Policy policy_;
   };
 
-  using State = theta_union_base<Entry, ExtractKey, internal_policy, Sketch, CompactSketch, AllocEntry>;
+  using State = theta_intersection_base<Entry, ExtractKey, internal_policy, Sketch, CompactSketch, AllocEntry>;
 
-  // No constructor here. Use builder instead.
-  class builder;
+  explicit tuple_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy());
 
   /**
-   * This method is to update the union with a given sketch
-   * @param sketch to update the union with
+   * Updates the intersection with a given sketch.
+   * The intersection can be viewed as starting from the "universe" set, and every update
+   * can reduce the current set to leave the overlapping subset only.
+   * @param sketch represents input set for the intersection
    */
   void update(const Sketch& sketch);
 
   /**
-   * This method produces a copy of the current state of the union as a compact sketch.
+   * Produces a copy of the current state of the intersection.
+   * If update() was not called, the state is the infinite "universe",
+   * which is considered an undefined state, and throws an exception.
    * @param ordered optional flag to specify if ordered sketch should be produced
-   * @return the result of the union
+   * @return the result of the intersection
    */
   CompactSketch get_result(bool ordered = true) const;
 
 private:
   State state_;
-
-  // for builder
-  tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
-};
-
-template<typename S, typename P, typename SD, typename A>
-class tuple_union<S, P, SD, A>::builder: public theta_base_builder<tuple_union<S, P, SD, A>::builder> {
-public:
-  /**
-   * Creates and instance of the builder with default parameters.
-   */
-  builder(const P& policy = P());
-
-  /**
-   * This is to create an instance of the union with predefined parameters.
-   * @return an instance of the union
-   */
-  tuple_union<S, P, SD, A> build() const;
-
-private:
-  P policy_;
 };
 
 } /* namespace datasketches */
 
-#include "tuple_union_impl.hpp"
+#include "tuple_intersection_impl.hpp"
 
 #endif

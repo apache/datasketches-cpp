@@ -57,7 +57,7 @@ public:
    * If update() was not called, the state is the infinite "universe",
    * which is considered an undefined state, and throws an exception.
    * @param ordered optional flag to specify if ordered sketch should be produced
-   * @returnthe  result of the intersection
+   * @return the result of the intersection
    */
   compact_theta_sketch_alloc<A> get_result(bool ordered = true) const;
 

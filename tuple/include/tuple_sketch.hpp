@@ -196,7 +196,8 @@ public:
   using Base = tuple_sketch<Summary, SerDe, Allocator>;
   using Entry = typename Base::Entry;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
-  using tuple_map = theta_update_sketch_base<Entry, pair_extract_key<uint64_t, Summary>, AllocEntry>;
+  using ExtractKey = pair_extract_key<uint64_t, Summary>;
+  using tuple_map = theta_update_sketch_base<Entry, ExtractKey, AllocEntry>;
   using resize_factor = typename tuple_map::resize_factor;
   using const_iterator = typename Base::const_iterator;
 
@@ -396,9 +397,12 @@ class compact_tuple_sketch: public tuple_sketch<Summary, SerDe, Allocator> {
 public:
   using Base = tuple_sketch<Summary, SerDe, Allocator>;
   using Entry = typename Base::Entry;
+  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using const_iterator = typename Base::const_iterator;
   using AllocBytes = typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
+  using ExtractKey = pair_extract_key<uint64_t, Summary>;
+  using comparator = comparator<Entry, ExtractKey>;
 
   static const uint8_t SKETCH_TYPE = 3;
 
@@ -444,16 +448,14 @@ public:
   template<typename InputIt>
   compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, InputIt first, InputIt last);
 
+  compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
+
 private:
   bool is_empty_;
   bool is_ordered_;
   uint16_t seed_hash_;
   uint64_t theta_;
-
-  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   std::vector<Entry, AllocEntry> entries_;
-
-  //compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
 
   /**
    * Computes size needed to serialize summaries in the sketch.
@@ -478,7 +480,7 @@ private:
 // builder
 
 template<typename S, typename U, typename P, typename SD, typename A>
-class update_tuple_sketch<S, U, P, SD, A>::builder: public theta_base_builder<true> {
+class update_tuple_sketch<S, U, P, SD, A>::builder: public theta_base_builder<update_tuple_sketch<S, U, P, SD, A>::builder> {
 public:
   /**
    * Creates and instance of the builder with default parameters.

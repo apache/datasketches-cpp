@@ -36,7 +36,7 @@ public:
   using AllocBytes = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
 
-  class builder: public theta_base_builder<true> {
+  class builder: public theta_base_builder<theta_sketch_experimental::builder> {
   public:
       theta_sketch_experimental build() const;
   };
@@ -77,6 +77,8 @@ public:
 
   template<typename InputIt>
   compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, InputIt first, InputIt last);
+
+  compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<uint64_t, A>&& entries);
 
   uint32_t get_num_retained() const { return entries_.size(); }
 
