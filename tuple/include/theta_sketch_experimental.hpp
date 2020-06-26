@@ -75,9 +75,6 @@ class compact_theta_sketch_experimental {
 public:
   compact_theta_sketch_experimental(const theta_sketch_experimental<A>& other, bool ordered);
 
-  template<typename InputIt>
-  compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, InputIt first, InputIt last);
-
   compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<uint64_t, A>&& entries);
 
   uint32_t get_num_retained() const { return entries_.size(); }

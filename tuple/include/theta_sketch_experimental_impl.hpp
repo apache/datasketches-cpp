@@ -130,18 +130,6 @@ entries_()
 }
 
 template<typename A>
-template<typename InputIt>
-compact_theta_sketch_experimental<A>::compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, InputIt first, InputIt last):
-is_empty_(is_empty),
-is_ordered_(is_ordered),
-seed_hash_(seed_hash),
-theta_(theta),
-entries_()
-{
-  std::copy_if(first, last, std::back_inserter(entries_), [theta](uint64_t value) { return value != 0 && value < theta; });
-}
-
-template<typename A>
 compact_theta_sketch_experimental<A>::compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<uint64_t, A>&& entries):
 is_empty_(is_empty),
 is_ordered_(is_ordered),

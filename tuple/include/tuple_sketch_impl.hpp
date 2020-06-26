@@ -224,18 +224,6 @@ entries_(std::move(entries))
 {}
 
 template<typename S, typename SD, typename A>
-template<typename InputIt>
-compact_tuple_sketch<S, SD, A>::compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, InputIt first, InputIt last):
-is_empty_(is_empty),
-is_ordered_(is_ordered),
-seed_hash_(seed_hash),
-theta_(theta),
-entries_()
-{
-  std::copy_if(first, last, back_inserter(entries_), key_less_than<uint64_t, Entry, ExtractKey>(theta));
-}
-
-template<typename S, typename SD, typename A>
 compact_tuple_sketch<S, SD, A>::compact_tuple_sketch(const Base& other, bool ordered):
 is_empty_(other.is_empty()),
 is_ordered_(other.is_ordered() || ordered),

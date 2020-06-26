@@ -54,8 +54,8 @@ void theta_union_base<EN, EK, P, S, CS, A>::update(const S& sketch) {
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
 CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
-  if (table_.is_empty_) return CS(true, true, compute_seed_hash(table_.seed_), union_theta_, table_.end(), table_.end());
   std::vector<EN, A> entries;
+  if (table_.is_empty_) return CS(true, true, compute_seed_hash(table_.seed_), union_theta_, std::move(entries));
   entries.reserve(table_.num_entries_);
   uint64_t theta = std::min(union_theta_, table_.theta_);
   const uint32_t nominal_num = 1 << table_.lg_nom_size_;
