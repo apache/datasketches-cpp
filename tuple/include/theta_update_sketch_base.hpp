@@ -34,7 +34,7 @@ namespace theta_constants {
 }
 
 template<typename Entry, typename ExtractKey>
-struct comparator {
+struct compare_by_key {
   bool operator()(Entry& a, Entry& b) const {
     return ExtractKey()(a) < ExtractKey()(b);
   }
@@ -47,7 +47,7 @@ template<
 >
 struct theta_update_sketch_base {
   using resize_factor = theta_constants::resize_factor;
-  using comparator = comparator<Entry, ExtractKey>;
+  using comparator = compare_by_key<Entry, ExtractKey>;
 
   theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);
   // TODO: copy and move

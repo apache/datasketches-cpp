@@ -32,7 +32,7 @@ template<
 >
 class theta_intersection_base {
 public:
-  using comparator = comparator<Entry, ExtractKey>;
+  using comparator = compare_by_key<Entry, ExtractKey>;
   theta_intersection_base(uint64_t seed, const Policy& policy);
   ~theta_intersection_base();
   void destroy_objects();

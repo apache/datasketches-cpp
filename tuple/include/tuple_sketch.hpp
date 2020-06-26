@@ -402,7 +402,7 @@ public:
   using AllocBytes = typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
-  using comparator = comparator<Entry, ExtractKey>;
+  using comparator = compare_by_key<Entry, ExtractKey>;
 
   static const uint8_t SKETCH_TYPE = 3;
 
