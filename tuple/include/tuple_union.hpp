@@ -86,7 +86,7 @@ private:
 };
 
 template<typename S, typename P, typename SD, typename A>
-class tuple_union<S, P, SD, A>::builder: public theta_base_builder<tuple_union<S, P, SD, A>::builder> {
+class tuple_union<S, P, SD, A>::builder: public theta_base_builder<builder> {
 public:
   /**
    * Creates and instance of the builder with default parameters.

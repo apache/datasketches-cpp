@@ -36,7 +36,7 @@ public:
   using AllocBytes = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
 
-  class builder: public theta_base_builder<theta_sketch_experimental::builder> {
+  class builder: public theta_base_builder<builder> {
   public:
       theta_sketch_experimental build() const;
   };

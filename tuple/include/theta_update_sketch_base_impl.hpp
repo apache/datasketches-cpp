@@ -188,7 +188,7 @@ theta_base_builder<Derived>::theta_base_builder():
 lg_k_(DEFAULT_LG_K), rf_(DEFAULT_RESIZE_FACTOR), p_(1), seed_(DEFAULT_SEED) {}
 
 template<typename Derived>
-auto theta_base_builder<Derived>::set_lg_k(uint8_t lg_k) -> Derived& {
+Derived& theta_base_builder<Derived>::set_lg_k(uint8_t lg_k) {
   if (lg_k < MIN_LG_K) {
     throw std::invalid_argument("lg_k must not be less than " + std::to_string(MIN_LG_K) + ": " + std::to_string(lg_k));
   }
@@ -197,22 +197,27 @@ auto theta_base_builder<Derived>::set_lg_k(uint8_t lg_k) -> Derived& {
 }
 
 template<typename Derived>
-auto theta_base_builder<Derived>::set_resize_factor(resize_factor rf) -> Derived& {
+Derived& theta_base_builder<Derived>::set_resize_factor(resize_factor rf) {
   rf_ = rf;
   return static_cast<Derived&>(*this);
 }
 
 template<typename Derived>
-auto theta_base_builder<Derived>::set_p(float p) -> Derived& {
+Derived& theta_base_builder<Derived>::set_p(float p) {
   if (p < 0 || p > 1) throw std::invalid_argument("sampling probability must be between 0 and 1");
   p_ = p;
   return static_cast<Derived&>(*this);
 }
 
 template<typename Derived>
-auto theta_base_builder<Derived>::set_seed(uint64_t seed) -> Derived& {
+Derived& theta_base_builder<Derived>::set_seed(uint64_t seed) {
   seed_ = seed;
   return static_cast<Derived&>(*this);
+}
+
+template<typename Derived>
+uint8_t theta_base_builder<Derived>::starting_lg_size() const {
+  return starting_sub_multiple(lg_k_ + 1, MIN_LG_K, static_cast<uint8_t>(rf_));
 }
 
 template<typename Derived>

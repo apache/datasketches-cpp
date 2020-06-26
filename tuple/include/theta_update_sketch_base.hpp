@@ -148,6 +148,7 @@ protected:
   float p_;
   uint64_t seed_;
 
+  uint8_t starting_lg_size() const;
   static uint8_t starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf);
 };
 

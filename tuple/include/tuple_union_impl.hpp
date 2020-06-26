@@ -40,9 +40,7 @@ policy_(policy) {}
 
 template<typename S, typename P, typename SD, typename A>
 auto tuple_union<S, P, SD, A>::builder::build() const -> tuple_union {
-  return tuple_union(
-      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
-      this->lg_k_, this->rf_, this->p_, this->seed_, this->policy_);
+  return tuple_union(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->seed_, policy_);
 }
 
 } /* namespace datasketches */

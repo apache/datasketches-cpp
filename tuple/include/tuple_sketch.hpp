@@ -480,7 +480,7 @@ private:
 // builder
 
 template<typename S, typename U, typename P, typename SD, typename A>
-class update_tuple_sketch<S, U, P, SD, A>::builder: public theta_base_builder<update_tuple_sketch<S, U, P, SD, A>::builder> {
+class update_tuple_sketch<S, U, P, SD, A>::builder: public theta_base_builder<builder> {
 public:
   /**
    * Creates and instance of the builder with default parameters.

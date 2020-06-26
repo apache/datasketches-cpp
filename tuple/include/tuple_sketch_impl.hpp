@@ -390,9 +390,7 @@ policy_(policy) {}
 
 template<typename S, typename U, typename P, typename SD, typename A>
 update_tuple_sketch<S, U, P, SD, A> update_tuple_sketch<S, U, P, SD, A>::builder::build() const {
-  return update_tuple_sketch(
-      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
-      this->lg_k_, this->rf_, this->p_, this->seed_, this->policy_);
+  return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->seed_, policy_);
 }
 
 } /* namespace datasketches */

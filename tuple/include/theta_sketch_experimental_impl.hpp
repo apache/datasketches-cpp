@@ -106,9 +106,7 @@ auto theta_sketch_experimental<A>::end() const -> const_iterator {
 
 template<typename A>
 theta_sketch_experimental<A> theta_sketch_experimental<A>::builder::build() const {
-  return theta_sketch_experimental(
-      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
-      this->lg_k_, this->rf_, this->p_, this->seed_);
+  return theta_sketch_experimental(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->seed_);
 }
 
 template<typename A>
