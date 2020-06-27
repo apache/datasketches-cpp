@@ -29,10 +29,6 @@ namespace datasketches {
 
 // experimental theta union derived from the same base as tuple union
 
-// utility function to hide unused compiler warning
-// usually has no additional cost
-template<typename T> void unused(T&&...) {}
-
 struct pass_through_policy {
   uint64_t operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
     unused(incoming_entry);

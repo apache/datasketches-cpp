@@ -19,18 +19,18 @@
 
 namespace datasketches {
 
-template<typename S, typename P, typename SD, typename A>
-tuple_intersection<S, P, SD, A>::tuple_intersection(uint64_t seed, const P& policy):
+template<typename S, typename P, typename A>
+tuple_intersection<S, P, A>::tuple_intersection(uint64_t seed, const P& policy):
 state_(seed, internal_policy(policy))
 {}
 
-template<typename S, typename P, typename SD, typename A>
-void tuple_intersection<S, P, SD, A>::update(const Sketch& sketch) {
+template<typename S, typename P, typename A>
+void tuple_intersection<S, P, A>::update(const Sketch& sketch) {
   state_.update(sketch);
 }
 
-template<typename S, typename P, typename SD, typename A>
-auto tuple_intersection<S, P, SD, A>::get_result(bool ordered) const -> CompactSketch {
+template<typename S, typename P, typename A>
+auto tuple_intersection<S, P, A>::get_result(bool ordered) const -> CompactSketch {
   return state_.get_result(ordered);
 }
 

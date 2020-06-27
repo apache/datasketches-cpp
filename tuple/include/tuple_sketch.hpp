@@ -28,13 +28,12 @@
 namespace datasketches {
 
 // forward-declarations
-template<typename S, typename SD, typename A> class tuple_sketch;
-template<typename S, typename U, typename P, typename SD, typename A> class update_tuple_sketch;
-template<typename S, typename SD, typename A> class compact_tuple_sketch;
+template<typename S, typename A> class tuple_sketch;
+template<typename S, typename U, typename P, typename A> class update_tuple_sketch;
+template<typename S, typename A> class compact_tuple_sketch;
 
 template<
   typename Summary,
-  typename SerDe = serde<Summary>,
   typename Allocator = std::allocator<Summary>
 >
 class tuple_sketch {
@@ -188,12 +187,11 @@ template<
   typename Summary,
   typename Update = Summary,
   typename Policy = default_update_policy<Summary, Update>,
-  typename SerDe = serde<Summary>,
   typename Allocator = std::allocator<Summary>
 >
-class update_tuple_sketch: public tuple_sketch<Summary, SerDe, Allocator> {
+class update_tuple_sketch: public tuple_sketch<Summary, Allocator> {
 public:
-  using Base = tuple_sketch<Summary, SerDe, Allocator>;
+  using Base = tuple_sketch<Summary, Allocator>;
   using Entry = typename Base::Entry;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
@@ -340,7 +338,7 @@ public:
    * @param ordered optional flag to specify if ordered sketch should be produced
    * @return compact sketch
    */
-  compact_tuple_sketch<Summary, SerDe, Allocator> compact(bool ordered = true) const;
+  compact_tuple_sketch<Summary, Allocator> compact(bool ordered = true) const;
 
   virtual const_iterator begin() const;
   virtual const_iterator end() const;
@@ -390,12 +388,11 @@ private:
 
 template<
   typename Summary,
-  typename SerDe = serde<Summary>,
   typename Allocator = std::allocator<Summary>
 >
-class compact_tuple_sketch: public tuple_sketch<Summary, SerDe, Allocator> {
+class compact_tuple_sketch: public tuple_sketch<Summary, Allocator> {
 public:
-  using Base = tuple_sketch<Summary, SerDe, Allocator>;
+  using Base = tuple_sketch<Summary, Allocator>;
   using Entry = typename Base::Entry;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using const_iterator = typename Base::const_iterator;
@@ -403,6 +400,7 @@ public:
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
   using comparator = compare_by_key<Entry, ExtractKey>;
+  using AllocU64 = typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>;
 
   static const uint8_t SKETCH_TYPE = 3;
 
@@ -421,8 +419,11 @@ public:
   virtual uint16_t get_seed_hash() const;
   virtual string<Allocator> to_string(bool print_items = false) const;
 
-  void serialize(std::ostream& os) const;
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+  template<typename SerDe = serde<Summary>>
+  void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
+
+  template<typename SerDe = serde<Summary>>
+  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
   virtual const_iterator begin() const;
   virtual const_iterator end() const;
@@ -442,7 +443,8 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of the sketch
    */
-  static compact_tuple_sketch deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
+  template<typename SerDe = serde<Summary>>
+  static compact_tuple_sketch deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, const SerDe& sd = SerDe());
 
   // TODO: try to hide this
   compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
@@ -459,25 +461,40 @@ private:
    * This version is for fixed-size arithmetic types (integral and floating point).
    * @return size in bytes needed to serialize summaries in this sketch
    */
-  template<typename SS = Summary, typename std::enable_if<std::is_arithmetic<SS>::value, int>::type = 0>
-  size_t get_serialized_size_summaries_bytes() const;
+  template<typename SerDe, typename SS = Summary, typename std::enable_if<std::is_arithmetic<SS>::value, int>::type = 0>
+  size_t get_serialized_size_summaries_bytes(const SerDe& sd) const;
 
   /**
    * Computes size needed to serialize summaries in the sketch.
    * This version is for all other types and can be expensive since every item needs to be looked at.
    * @return size in bytes needed to serialize summaries in this sketch
    */
-  template<typename SS = Summary, typename std::enable_if<!std::is_arithmetic<SS>::value, int>::type = 0>
-  size_t get_serialized_size_summaries_bytes() const;
+  template<typename SerDe, typename SS = Summary, typename std::enable_if<!std::is_arithmetic<SS>::value, int>::type = 0>
+  size_t get_serialized_size_summaries_bytes(const SerDe& sd) const;
 
-//  static compact_tuple_sketch<Summary, SerDe, Allocator> internal_deserialize(std::istream& is, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash);
-//  static compact_tuple_sketch<Summary, SerDe, Allocator> internal_deserialize(const void* bytes, size_t size, uint8_t preamble_longs, uint8_t flags_byte, uint16_t seed_hash);
+  // for deserialize
+  class deleter_of_summaries {
+  public:
+    deleter_of_summaries(uint32_t num, bool destroy): num(num), destroy(destroy) {}
+    void set_destroy(bool destroy) { this->destroy = destroy; }
+    void operator() (Summary* ptr) const {
+      if (ptr != nullptr) {
+        if (destroy) {
+          for (uint32_t i = 0; i < num; ++i) ptr[i].~Summary();
+        }
+        Allocator().deallocate(ptr, num);
+      }
+    }
+  private:
+    uint32_t num;
+    bool destroy;
+  };
 };
 
 // builder
 
-template<typename S, typename U, typename P, typename SD, typename A>
-class update_tuple_sketch<S, U, P, SD, A>::builder: public theta_base_builder<builder> {
+template<typename S, typename U, typename P, typename A>
+class update_tuple_sketch<S, U, P, A>::builder: public theta_base_builder<builder> {
 public:
   /**
    * Creates and instance of the builder with default parameters.
@@ -488,7 +505,7 @@ public:
    * This is to create an instance of the sketch with predefined parameters.
    * @return an instance of the sketch
    */
-  update_tuple_sketch<S, U, P, SD, A> build() const;
+  update_tuple_sketch<S, U, P, A> build() const;
 
 private:
   P policy_;

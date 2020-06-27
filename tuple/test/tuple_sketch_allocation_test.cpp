@@ -26,7 +26,7 @@
 namespace datasketches {
 
 using update_tuple_sketch_int_alloc =
-    update_tuple_sketch<int, int, default_update_policy<int, int>, serde<int>, test_allocator<int>>;
+    update_tuple_sketch<int, int, default_update_policy<int, int>, test_allocator<int>>;
 
 TEST_CASE("tuple sketch with test allocator: exact mode", "[tuple_sketch]") {
   test_allocator_total_bytes = 0;

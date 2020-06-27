@@ -75,7 +75,7 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
   update_sketch.update(1, 1);
   update_sketch.update(2, 2);
   update_sketch.update(1, 1);
-  std::cout << update_sketch.to_string(true);
+//  std::cout << update_sketch.to_string(true);
   REQUIRE(!update_sketch.is_empty());
   REQUIRE(!update_sketch.is_estimation_mode());
   REQUIRE(update_sketch.get_estimate() == 2);
@@ -92,7 +92,7 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
   REQUIRE(count == 2);
 
   auto compact_sketch = update_sketch.compact();
-  std::cout << compact_sketch.to_string(true);
+//  std::cout << compact_sketch.to_string(true);
   REQUIRE(!compact_sketch.is_empty());
   REQUIRE(!compact_sketch.is_estimation_mode());
   REQUIRE(compact_sketch.get_estimate() == 2);
@@ -107,6 +107,18 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
     ++count;
   }
   REQUIRE(count == 2);
+
+  auto bytes = compact_sketch.serialize();
+  auto deserialized_sketch = compact_tuple_sketch<float>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(!deserialized_sketch.is_empty());
+  REQUIRE(!deserialized_sketch.is_estimation_mode());
+  REQUIRE(deserialized_sketch.get_estimate() == 2);
+  REQUIRE(deserialized_sketch.get_lower_bound(1) == 2);
+  REQUIRE(deserialized_sketch.get_upper_bound(1) == 2);
+  REQUIRE(deserialized_sketch.get_theta() == 1);
+  REQUIRE(deserialized_sketch.get_num_retained() == 2);
+  REQUIRE(deserialized_sketch.is_ordered());
+//  std::cout << deserialized_sketch.to_string(true);
 }
 
 template<typename T>
@@ -119,7 +131,7 @@ private:
   T initial_value;
 };
 
-typedef update_tuple_sketch<float, float, max_value_policy<float>> max_float_update_tuple_sketch;
+using max_float_update_tuple_sketch = update_tuple_sketch<float, float, max_value_policy<float>>;
 
 TEST_CASE("tuple sketch: float, custom policy", "[tuple_sketch]") {
   auto update_sketch = max_float_update_tuple_sketch::builder(max_value_policy<float>(5)).build();
@@ -128,7 +140,7 @@ TEST_CASE("tuple sketch: float, custom policy", "[tuple_sketch]") {
   update_sketch.update(2, 10);
   update_sketch.update(3, 3);
   update_sketch.update(3, 7);
-  std::cout << update_sketch.to_string(true);
+//  std::cout << update_sketch.to_string(true);
   int count = 0;
   float sum = 0;
   for (const auto& entry: update_sketch) {
@@ -154,12 +166,12 @@ struct test_type_replace_policy {
 };
 
 TEST_CASE("tuple sketch: test type with replace policy", "[tuple_sketch]") {
-  auto sketch = update_tuple_sketch<test_type, test_type, test_type_replace_policy, test_type_serde>::builder().build();
+  auto sketch = update_tuple_sketch<test_type, test_type, test_type_replace_policy>::builder().build();
   test_type a(1);
   sketch.update(1, a); // this should copy
   sketch.update(2, 2); // this should move
   sketch.update(1, 2); // this should move
-  std::cout << sketch.to_string(true);
+//  std::cout << sketch.to_string(true);
   REQUIRE(sketch.get_num_retained() == 2);
   for (const auto& entry: sketch) {
     REQUIRE(entry.second.get_value() == 2);
@@ -181,14 +193,15 @@ TEST_CASE("tuple sketch: array of doubles", "[tuple_sketch]") {
   using three_doubles_update_tuple_sketch = update_tuple_sketch<three_doubles, three_doubles, three_doubles_update_policy>;
   auto update_sketch = three_doubles_update_tuple_sketch::builder().build();
   update_sketch.update(1, three_doubles(1, 2, 3));
-  std::cout << update_sketch.to_string(true);
+//  std::cout << update_sketch.to_string(true);
   const auto& entry = *update_sketch.begin();
   REQUIRE(std::get<0>(entry.second) == 1.0);
   REQUIRE(std::get<1>(entry.second) == 2.0);
   REQUIRE(std::get<2>(entry.second) == 3.0);
 
   auto compact_sketch = update_sketch.compact();
-  std::cout << compact_sketch.to_string(true);
+//  std::cout << compact_sketch.to_string(true);
+  REQUIRE(compact_sketch.get_num_retained() == 1);
 }
 
 TEST_CASE("tuple sketch: float, update with different types of keys", "[tuple_sketch]") {

@@ -37,7 +37,6 @@ struct default_union_policy {
 template<
   typename Summary,
   typename Policy = default_union_policy<Summary>,
-  typename SerDe = serde<Summary>,
   typename Allocator = std::allocator<Summary>
 >
 class tuple_union {
@@ -45,8 +44,8 @@ public:
   using Entry = std::pair<uint64_t, Summary>;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
-  using Sketch = tuple_sketch<Summary, SerDe, Allocator>;
-  using CompactSketch = compact_tuple_sketch<Summary, SerDe, Allocator>;
+  using Sketch = tuple_sketch<Summary, Allocator>;
+  using CompactSketch = compact_tuple_sketch<Summary, Allocator>;
   using resize_factor = theta_constants::resize_factor;
 
   // reformulate the external policy that operates on Summary
@@ -85,8 +84,8 @@ private:
   tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
 };
 
-template<typename S, typename P, typename SD, typename A>
-class tuple_union<S, P, SD, A>::builder: public theta_base_builder<builder> {
+template<typename S, typename P, typename A>
+class tuple_union<S, P, A>::builder: public theta_base_builder<builder> {
 public:
   /**
    * Creates and instance of the builder with default parameters.
@@ -97,7 +96,7 @@ public:
    * This is to create an instance of the union with predefined parameters.
    * @return an instance of the union
    */
-  tuple_union<S, P, SD, A> build() const;
+  tuple_union build() const;
 
 private:
   P policy_;

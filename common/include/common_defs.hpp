@@ -31,6 +31,10 @@ static const uint64_t DEFAULT_SEED = 9001;
 template<typename A> using AllocChar = typename std::allocator_traits<A>::template rebind_alloc<char>;
 template<typename A> using string = std::basic_string<char, std::char_traits<char>, AllocChar<A>>;
 
+// utility function to hide unused compiler warning
+// usually has no additional cost
+template<typename T> void unused(T&&...) {}
+
 // common helping functions
 // TODO: find a better place for them
 

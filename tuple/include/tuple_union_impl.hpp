@@ -19,27 +19,27 @@
 
 namespace datasketches {
 
-template<typename S, typename P, typename SD, typename A>
-tuple_union<S, P, SD, A>::tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const P& policy):
+template<typename S, typename P, typename A>
+tuple_union<S, P, A>::tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const P& policy):
 state_(lg_cur_size, lg_nom_size, rf, p, seed, internal_policy(policy))
 {}
 
-template<typename S, typename P, typename SD, typename A>
-void tuple_union<S, P, SD, A>::update(const Sketch& sketch) {
+template<typename S, typename P, typename A>
+void tuple_union<S, P, A>::update(const Sketch& sketch) {
   state_.update(sketch);
 }
 
-template<typename S, typename P, typename SD, typename A>
-auto tuple_union<S, P, SD, A>::get_result(bool ordered) const -> CompactSketch {
+template<typename S, typename P, typename A>
+auto tuple_union<S, P, A>::get_result(bool ordered) const -> CompactSketch {
   return state_.get_result(ordered);
 }
 
-template<typename S, typename P, typename SD, typename A>
-tuple_union<S, P, SD, A>::builder::builder(const P& policy):
+template<typename S, typename P, typename A>
+tuple_union<S, P, A>::builder::builder(const P& policy):
 policy_(policy) {}
 
-template<typename S, typename P, typename SD, typename A>
-auto tuple_union<S, P, SD, A>::builder::build() const -> tuple_union {
+template<typename S, typename P, typename A>
+auto tuple_union<S, P, A>::builder::build() const -> tuple_union {
   return tuple_union(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->seed_, policy_);
 }
 

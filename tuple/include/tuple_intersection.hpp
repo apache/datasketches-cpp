@@ -38,7 +38,6 @@ struct example_intersection_policy {
 template<
   typename Summary,
   typename Policy,
-  typename SerDe = serde<Summary>,
   typename Allocator = std::allocator<Summary>
 >
 class tuple_intersection {
@@ -46,8 +45,8 @@ public:
   using Entry = std::pair<uint64_t, Summary>;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
-  using Sketch = tuple_sketch<Summary, SerDe, Allocator>;
-  using CompactSketch = compact_tuple_sketch<Summary, SerDe, Allocator>;
+  using Sketch = tuple_sketch<Summary, Allocator>;
+  using CompactSketch = compact_tuple_sketch<Summary, Allocator>;
 
   // reformulate the external policy that operates on Summary
   // in terms of operations on Entry
