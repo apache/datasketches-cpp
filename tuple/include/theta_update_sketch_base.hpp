@@ -35,7 +35,7 @@ namespace theta_constants {
 
 template<typename Entry, typename ExtractKey>
 struct compare_by_key {
-  bool operator()(Entry& a, Entry& b) const {
+  bool operator()(const Entry& a, const Entry& b) const {
     return ExtractKey()(a) < ExtractKey()(b);
   }
 };
