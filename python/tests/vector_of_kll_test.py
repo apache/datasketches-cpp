@@ -96,5 +96,53 @@ class VectorOfKllSketchesTest(unittest.TestCase):
       kll = vector_of_kll_ints_sketches(k, d)
       self.assertTrue(np.all(kll.is_empty()))
 
+    def test_kll_2Dupdates(self):
+      # 1D case tested in the first example
+      # 2D case will follow same idea, but focusing on update()
+      k = 200
+      d = 3
+      # we'll do ~250k updates of 4 values each (total ~1mil updates, as above)
+      n = 2 ** 18
+      nbatch = 4
+
+      # create a sketch and inject ~1 million N(0,1) points
+      kll = vector_of_kll_floats_sketches(k, d)
+      # Track the min/max for each sketch to test later
+      smin = np.zeros(d) + np.inf
+      smax = np.zeros(d) - np.inf
+
+      for i in range(0, n):
+        dat  = np.random.randn(nbatch, d)
+        smin = np.amin(np.row_stack((smin, dat)), axis=0)
+        smax = np.amax(np.row_stack((smax, dat)), axis=0)
+        kll.update(dat)
+
+      # 0 should be near the median
+      np.testing.assert_allclose(0.5, kll.get_ranks(0.0), atol=0.025)
+      # the median should be near 0
+      np.testing.assert_allclose(0.0, kll.get_quantiles(0.5), atol=0.025)
+      # we also track the min/max independently from the rest of the data
+      # which lets us know the full observed data range
+      np.testing.assert_allclose(kll.get_min_values(), smin)
+      np.testing.assert_allclose(kll.get_max_values(), smax)
+
+    def test_kll_3Dupdates(self):
+      # now test 3D update, which should fail
+      k = 200
+      d = 3
+
+      # create a sketch
+      kll = vector_of_kll_floats_sketches(k, d)
+
+      # we'll try 1 3D update
+      dat = np.random.randn(10, 7, d)
+      try:
+        kll.update(dat)
+      except:
+        # this is what we expect
+        pass
+      # the sketches should still be empty
+      self.assertTrue(np.all(kll.is_empty()))
+
 if __name__ == '__main__':
     unittest.main()
