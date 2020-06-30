@@ -205,12 +205,12 @@ void vector_of_kll_sketches<T,C,S>::update(const py::array_t<T>& items) {
     auto data = items.template unchecked<2>();
     if (items.flags() & py::array::f_style) {
       for (uint32_t j = 0; j < d_; ++j) {
-        for (uint32_t i = 0; i < items.shape(1); ++i) { 
+        for (uint32_t i = 0; i < items.shape(0); ++i) { 
           sketches_[j].update(data(i,j));
         }
       }
     } else { // py::array::c_style or py::array::forcecast 
-      for (uint32_t i = 0; i < items.shape(1); ++i) { 
+      for (uint32_t i = 0; i < items.shape(0); ++i) { 
         for (uint32_t j = 0; j < d_; ++j) {
           sketches_[j].update(data(i,j));
         }
