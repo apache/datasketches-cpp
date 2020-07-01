@@ -61,7 +61,7 @@ compact_theta_sketch_alloc<A> theta_union_alloc<A>::get_result(bool ordered) con
     if (key < theta) keys[num_keys++] = key;
   }
   if (num_keys > nom_num_keys) {
-    std::nth_element(&keys[0], &keys[nom_num_keys], &keys[num_keys]);
+    std::nth_element(keys.begin(), keys.begin() + nom_num_keys, keys.begin() + num_keys);
     theta = keys[nom_num_keys];
     num_keys = nom_num_keys;
   }
