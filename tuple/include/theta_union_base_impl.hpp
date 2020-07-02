@@ -64,7 +64,7 @@ CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
   } else {
     std::copy_if(table_.begin(), table_.end(), std::back_inserter(entries), key_not_zero_less_than<uint64_t, EN, EK>(theta));
     if (entries.size() > nominal_num) {
-      std::nth_element(&entries[0], &entries[nominal_num], &entries[entries.size()], comparator());
+      std::nth_element(entries.begin(), entries.begin() + nominal_num, entries.end(), comparator());
       theta = EK()(entries[nominal_num]);
       entries.resize(nominal_num);
     }

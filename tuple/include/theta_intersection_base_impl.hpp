@@ -143,7 +143,7 @@ CS theta_intersection_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const 
   std::vector<EN, A> entries_copy;
   if (num_entries_ > 0) {
     entries_copy.reserve(num_entries_);
-    std::copy_if(&entries_[0], &entries_[1 << lg_size_], std::back_inserter(entries_copy), key_not_zero<EN, EK>());
+    std::copy_if(entries_, entries_ + (1 << lg_size_), std::back_inserter(entries_copy), key_not_zero<EN, EK>());
     if (ordered) std::sort(entries_copy.begin(), entries_copy.end(), comparator());
   }
   return CS(is_empty_, ordered, seed_hash_, theta_, std::move(entries_copy));
