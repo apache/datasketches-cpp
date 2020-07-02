@@ -534,7 +534,7 @@ void update_theta_sketch_alloc<A>::resize() {
 template<typename A>
 void update_theta_sketch_alloc<A>::rebuild() {
   const uint32_t pivot = (1 << lg_nom_size_) + keys_.size() - num_keys_;
-  std::nth_element(&keys_[0], &keys_[pivot], &keys_[keys_.size()]);
+  std::nth_element(keys_.begin(), keys_.begin() + pivot, keys_.end());
   this->theta_ = keys_[pivot];
   vector_u64<A> new_keys(keys_.size(), 0);
   num_keys_ = 0;
