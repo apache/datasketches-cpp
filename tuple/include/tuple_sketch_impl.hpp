@@ -312,15 +312,15 @@ size_t compact_tuple_sketch<S, A>::get_serialized_size_summaries_bytes(const SD&
 }
 
 template<typename S, typename A>
-template<typename SD>
-void compact_tuple_sketch<S, A>::serialize(std::ostream& os, const SD& sd) const {
+template<typename SerDe>
+void compact_tuple_sketch<S, A>::serialize(std::ostream& os, const SerDe& sd) const {
   unused(os);
   unused(sd);
 }
 
 template<typename S, typename A>
-template<typename SD>
-auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const SD& sd) const -> vector_bytes {
+template<typename SerDe>
+auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const SerDe& sd) const -> vector_bytes {
   const bool is_single_item = entries_.size() == 1 && !this->is_estimation_mode();
   const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
   const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs
@@ -366,8 +366,8 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const SD&
 }
 
 template<typename S, typename A>
-template<typename SD>
-compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* bytes, size_t size, uint64_t seed, const SD& sd) {
+template<typename SerDe>
+compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* bytes, size_t size, uint64_t seed, const SerDe& sd) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* base = ptr;
