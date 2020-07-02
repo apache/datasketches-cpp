@@ -75,23 +75,23 @@ struct test_type_less {
 };
 
 struct test_type_serde {
-  void serialize(std::ostream& os, const test_type* items, unsigned num) {
+  void serialize(std::ostream& os, const test_type* items, unsigned num) const {
     for (unsigned i = 0; i < num; i++) {
       const int value = items[i].get_value();
       os.write((char*)&value, sizeof(value));
     }
   }
-  void deserialize(std::istream& is, test_type* items, unsigned num) {
+  void deserialize(std::istream& is, test_type* items, unsigned num) const {
     for (unsigned i = 0; i < num; i++) {
       int value;
       is.read((char*)&value, sizeof(value));
       new (&items[i]) test_type(value);
     }
   }
-  size_t size_of_item(const test_type&) {
+  size_t size_of_item(const test_type&) const {
     return sizeof(int);
   }
-  size_t serialize(void* ptr, size_t capacity, const test_type* items, unsigned num) {
+  size_t serialize(void* ptr, size_t capacity, const test_type* items, unsigned num) const {
     const size_t bytes_written = sizeof(int) * num;
     check_memory_size(bytes_written, capacity);
     for (unsigned i = 0; i < num; ++i) {
@@ -100,7 +100,7 @@ struct test_type_serde {
     }
     return bytes_written;
   }
-  size_t deserialize(const void* ptr, size_t capacity, test_type* items, unsigned num) {
+  size_t deserialize(const void* ptr, size_t capacity, test_type* items, unsigned num) const {
     const size_t bytes_read = sizeof(int) * num;
     check_memory_size(bytes_read, capacity);
     for (unsigned i = 0; i < num; ++i) {

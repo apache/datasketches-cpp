@@ -56,6 +56,10 @@ TEST_CASE("tuple sketch with test allocator: exact mode", "[tuple_sketch]") {
       ++count;
     }
     REQUIRE(count == update_sketch.get_num_retained());
+
+    auto bytes = compact_sketch.serialize();
+    auto deserialized_sketch = compact_tuple_sketch<int, test_allocator<int>>::deserialize(bytes.data(), bytes.size());
+    REQUIRE(deserialized_sketch.get_estimate() == compact_sketch.get_estimate());
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);

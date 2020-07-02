@@ -166,14 +166,23 @@ struct test_type_replace_policy {
 };
 
 TEST_CASE("tuple sketch: test type with replace policy", "[tuple_sketch]") {
-  auto sketch = update_tuple_sketch<test_type, test_type, test_type_replace_policy>::builder().build();
+  auto update_sketch = update_tuple_sketch<test_type, test_type, test_type_replace_policy>::builder().build();
   test_type a(1);
-  sketch.update(1, a); // this should copy
-  sketch.update(2, 2); // this should move
-  sketch.update(1, 2); // this should move
+  update_sketch.update(1, a); // this should copy
+  update_sketch.update(2, 2); // this should move
+  update_sketch.update(1, 2); // this should move
 //  std::cout << sketch.to_string(true);
-  REQUIRE(sketch.get_num_retained() == 2);
-  for (const auto& entry: sketch) {
+  REQUIRE(update_sketch.get_num_retained() == 2);
+  for (const auto& entry: update_sketch) {
+    REQUIRE(entry.second.get_value() == 2);
+  }
+
+  auto compact_sketch = update_sketch.compact();
+  auto bytes = compact_sketch.serialize(0, test_type_serde());
+  auto deserialized_sketch = compact_tuple_sketch<test_type>::deserialize(bytes.data(), bytes.size(),
+      DEFAULT_SEED, test_type_serde());
+  REQUIRE(deserialized_sketch.get_num_retained() == 2);
+  for (const auto& entry: deserialized_sketch) {
     REQUIRE(entry.second.get_value() == 2);
   }
 }
