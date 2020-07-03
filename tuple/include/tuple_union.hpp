@@ -42,10 +42,10 @@ template<
 class tuple_union {
 public:
   using Entry = std::pair<uint64_t, Summary>;
-  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
   using Sketch = tuple_sketch<Summary, Allocator>;
   using CompactSketch = compact_tuple_sketch<Summary, Allocator>;
+  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using resize_factor = theta_constants::resize_factor;
 
   // reformulate the external policy that operates on Summary

@@ -25,6 +25,7 @@
 #include "theta_intersection_base.hpp"
 
 namespace datasketches {
+
 /*
 // for types with defined + operation
 template<typename Summary>
@@ -43,10 +44,10 @@ template<
 class tuple_intersection {
 public:
   using Entry = std::pair<uint64_t, Summary>;
-  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
   using Sketch = tuple_sketch<Summary, Allocator>;
   using CompactSketch = compact_tuple_sketch<Summary, Allocator>;
+  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
 
   // reformulate the external policy that operates on Summary
   // in terms of operations on Entry

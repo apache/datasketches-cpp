@@ -38,6 +38,10 @@ template<
 >
 class tuple_sketch {
 public:
+  using Entry = std::pair<uint64_t, Summary>;
+  using ExtractKey = pair_extract_key<uint64_t, Summary>;
+  using const_iterator = theta_const_iterator<Entry, ExtractKey>;
+
   static const uint8_t SERIAL_VERSION = 3;
 
   virtual ~tuple_sketch() = default;
@@ -104,50 +108,6 @@ public:
   virtual string<Allocator> to_string(bool print_items = false) const = 0;
 
   /**
-   * This method serializes the sketch into a given stream in a binary form
-   * @param os output stream
-   */
-//  virtual void serialize(std::ostream& os) const = 0;
-
-  // This is a convenience alias for users
-  // The type returned by the following serialize method
-//  typedef vector_u8<Allocator> vector_bytes;
-
-  /**
-   * This method serializes the sketch as a vector of bytes.
-   * An optional header can be reserved in front of the sketch.
-   * It is an uninitialized space of a given size.
-   * This header is used in Datasketches PostgreSQL extension.
-   * @param header_size_bytes space to reserve in front of the sketch
-   */
-//  virtual vector_bytes serialize(unsigned header_size_bytes = 0) const = 0;
-
-  // This is a convenience alias for users
-  // The type returned by the following deserialize methods
-  // It is not possible to return instances of an abstract type, so this has to be a pointer
-//  typedef std::unique_ptr<tuple_sketch, std::function<void(tuple_sketch*)>> unique_ptr;
-
-  /**
-   * This method deserializes a sketch from a given stream.
-   * @param is input stream
-   * @param seed the seed for the hash function that was used to create the sketch
-   * @return an instance of a sketch as a unique_ptr
-   */
-//  static unique_ptr deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
-
-  /**
-   * This method deserializes a sketch from a given array of bytes.
-   * @param bytes pointer to the array of bytes
-   * @param size the size of the array
-   * @param seed the seed for the hash function that was used to create the sketch
-   * @return an instance of the sketch
-   */
-//  static unique_ptr deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
-
-  using Entry = std::pair<uint64_t, Summary>;
-  using const_iterator = theta_const_iterator<Entry, pair_extract_key<uint64_t, Summary>>;
-
-  /**
    * Iterator over entries in this sketch.
    * @return begin iterator
    */
@@ -193,11 +153,11 @@ class update_tuple_sketch: public tuple_sketch<Summary, Allocator> {
 public:
   using Base = tuple_sketch<Summary, Allocator>;
   using Entry = typename Base::Entry;
+  using ExtractKey = typename Base::ExtractKey;
+  using const_iterator = typename Base::const_iterator;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
-  using ExtractKey = pair_extract_key<uint64_t, Summary>;
   using tuple_map = theta_update_sketch_base<Entry, ExtractKey, AllocEntry>;
   using resize_factor = typename tuple_map::resize_factor;
-  using const_iterator = typename Base::const_iterator;
 
   static const uint8_t SKETCH_TYPE = 2;
 
@@ -212,10 +172,6 @@ public:
   virtual uint32_t get_num_retained() const;
   virtual uint16_t get_seed_hash() const;
   virtual string<Allocator> to_string(bool print_items = false) const;
-
-//  virtual void serialize(std::ostream& os) const;
-//  typedef vector_u8<Allocator> vector_bytes; // alias for users
-//  virtual vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
   /**
    * @return configured nominal number of entries in the sketch
@@ -343,39 +299,6 @@ public:
   virtual const_iterator begin() const;
   virtual const_iterator end() const;
 
-  /**
-   * This method deserializes a sketch from a given stream.
-   * @param is input stream
-   * @param seed the seed for the hash function that was used to create the sketch
-   * @return an instance of a sketch
-   */
-//  static update_tuple_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
-
-  /**
-   * This method deserializes a sketch from a given array of bytes.
-   * @param bytes pointer to the array of bytes
-   * @param size the size of the array
-   * @param seed the seed for the hash function that was used to create the sketch
-   * @return an instance of the sketch
-   */
-//  static update_tuple_sketch deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
-
-  /**
-   * Computes size needed to serialize the current state of the sketch.
-   * This version is for fixed-size arithmetic types (integral and floating point).
-   * @return size in bytes needed to serialize this sketch
-   */
-//  template<typename SS = Summary, typename std::enable_if<std::is_arithmetic<SS>::value, int>::type = 0>
-//  size_t get_serialized_size_bytes() const;
-
-  /**
-   * Computes size needed to serialize the current state of the sketch.
-   * This version is for all other types and can be expensive since every item needs to be looked at.
-   * @return size in bytes needed to serialize this sketch
-   */
-//  template<typename SS = Summary, typename std::enable_if<!std::is_arithmetic<SS>::value, int>::type = 0>
-//  size_t get_serialized_size_bytes() const;
-
 private:
   Policy policy_;
   tuple_map map_;
@@ -394,13 +317,13 @@ class compact_tuple_sketch: public tuple_sketch<Summary, Allocator> {
 public:
   using Base = tuple_sketch<Summary, Allocator>;
   using Entry = typename Base::Entry;
-  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
+  using ExtractKey = typename Base::ExtractKey;
   using const_iterator = typename Base::const_iterator;
+  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
+  using AllocU64 = typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>;
   using AllocBytes = typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
-  using ExtractKey = pair_extract_key<uint64_t, Summary>;
   using comparator = compare_by_key<Entry, ExtractKey>;
-  using AllocU64 = typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>;
 
   static const uint8_t SKETCH_TYPE = 3;
 
@@ -432,15 +355,18 @@ public:
    * This method deserializes a sketch from a given stream.
    * @param is input stream
    * @param seed the seed for the hash function that was used to create the sketch
+   * @param instance of a SerDe
    * @return an instance of a sketch
    */
-  static compact_tuple_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
+  template<typename SerDe = serde<Summary>>
+  static compact_tuple_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, const SerDe& sd = SerDe());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
    * @param seed the seed for the hash function that was used to create the sketch
+   * @param instance of a SerDe
    * @return an instance of the sketch
    */
   template<typename SerDe = serde<Summary>>
