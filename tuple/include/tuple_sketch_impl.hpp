@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include "binomial_bounds.hpp"
+#include "theta_helpers.hpp"
 
 namespace datasketches {
 
@@ -383,10 +384,10 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
   uint16_t seed_hash;
   ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
-  check_sketch_type(type, SKETCH_TYPE);
-  check_serial_version(serial_version, SERIAL_VERSION);
+  checker<true>::check_sketch_type(type, SKETCH_TYPE);
+  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
   const bool is_empty = flags_byte & (1 << Base::flags::IS_EMPTY);
-  if (!is_empty) check_seed_hash(seed_hash, compute_seed_hash(seed));
+  if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
   uint64_t theta = theta_constants::MAX_THETA;
   uint32_t num_entries = 0;

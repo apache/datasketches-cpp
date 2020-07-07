@@ -262,24 +262,4 @@ auto theta_const_iterator<Entry, ExtractKey>::operator*() const -> const Entry& 
   return entries_[index_];
 }
 
-// helpers
-
-static inline void check_sketch_type(uint8_t actual, uint8_t expected) {
-  if (actual != expected) {
-    throw std::invalid_argument("Sketch type mismatch: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int)actual));
-  }
-}
-
-static inline void check_serial_version(uint8_t actual, uint8_t expected) {
-  if (actual != expected) {
-    throw std::invalid_argument("Sketch serial version mismatch: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int)actual));
-  }
-}
-
-static inline void check_seed_hash(uint16_t actual, uint16_t expected) {
-  if (actual != expected) {
-    throw std::invalid_argument("Sketch seed hash mismatch: expected " + std::to_string(expected) + ", actual " + std::to_string(actual));
-  }
-}
-
 } /* namespace datasketches */
