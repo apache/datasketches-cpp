@@ -114,17 +114,16 @@ struct serde<std::string> {
     unsigned i = 0;
     bool failure = false;
     try {
-      for (; i < num && is.good(); i++) {
+      for (; i < num; i++) {
         uint32_t length;
         is.read((char*)&length, sizeof(length));
         if (!is.good()) { break; }
         std::string str;
         str.reserve(length);
-        auto it = std::istreambuf_iterator<char>(is);
         for (uint32_t j = 0; j < length; j++) {
-          str.push_back(*it);
-          ++it;
+          str.push_back(is.get());
         }
+        if (!is.good()) { break; }
         new (&items[i]) std::string(std::move(str));
       }
     } catch (std::istream::failure& e) {
