@@ -17,41 +17,16 @@
  * under the License.
  */
 
-#ifndef THETA_UNION_BASE_HPP_
-#define THETA_UNION_BASE_HPP_
-
-#include "theta_update_sketch_base.hpp"
-
 namespace datasketches {
 
-template<
-  typename Entry,
-  typename ExtractKey,
-  typename Policy,
-  typename Sketch,
-  typename CompactSketch,
-  typename Allocator = std::allocator<Entry>
->
-class theta_union_base {
-public:
-  using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
-  using resize_factor = typename hash_table::resize_factor;
-  using comparator = compare_by_key<Entry, ExtractKey>;
+template<typename S, typename A>
+tuple_a_not_b<S, A>::tuple_a_not_b(uint64_t seed):
+state_(seed)
+{}
 
-  theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
-
-  void update(const Sketch& sketch);
-
-  CompactSketch get_result(bool ordered = true) const;
-
-private:
-  Policy policy_;
-  hash_table table_;
-  uint64_t union_theta_;
-};
+template<typename S, typename A>
+auto tuple_a_not_b<S, A>::compute(const Sketch& a, const Sketch& b, bool ordered) const -> CompactSketch {
+  return state_.compute(a, b, ordered);
+}
 
 } /* namespace datasketches */
-
-#include "theta_union_base_impl.hpp"
-
-#endif

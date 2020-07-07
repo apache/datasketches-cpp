@@ -17,41 +17,40 @@
  * under the License.
  */
 
-#ifndef THETA_UNION_BASE_HPP_
-#define THETA_UNION_BASE_HPP_
-
-#include "theta_update_sketch_base.hpp"
+#ifndef THETA_COMPARATORS_HPP_
+#define THETA_COMPARATORS_HPP_
 
 namespace datasketches {
 
-template<
-  typename Entry,
-  typename ExtractKey,
-  typename Policy,
-  typename Sketch,
-  typename CompactSketch,
-  typename Allocator = std::allocator<Entry>
->
-class theta_union_base {
+template<typename Entry, typename ExtractKey>
+struct compare_by_key {
+  bool operator()(const Entry& a, const Entry& b) const {
+    return ExtractKey()(a) < ExtractKey()(b);
+  }
+};
+
+// less than
+
+template<typename T>
+class less_than {
 public:
-  using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
-  using resize_factor = typename hash_table::resize_factor;
-  using comparator = compare_by_key<Entry, ExtractKey>;
-
-  theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
-
-  void update(const Sketch& sketch);
-
-  CompactSketch get_result(bool ordered = true) const;
-
+  explicit less_than(const T& value): value(value) {}
+  bool operator()(const T& value) const { return value < this->value; }
 private:
-  Policy policy_;
-  hash_table table_;
-  uint64_t union_theta_;
+  T value;
+};
+
+template<typename Key, typename Entry, typename ExtractKey>
+class key_less_than {
+public:
+  explicit key_less_than(const Key& key): key(key) {}
+  bool operator()(const Entry& entry) const {
+    return ExtractKey()(entry) < this->key;
+  }
+private:
+  Key key;
 };
 
 } /* namespace datasketches */
-
-#include "theta_union_base_impl.hpp"
 
 #endif

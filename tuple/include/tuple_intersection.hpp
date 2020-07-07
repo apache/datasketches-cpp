@@ -20,7 +20,6 @@
 #ifndef TUPLE_INTERSECTION_HPP_
 #define TUPLE_INTERSECTION_HPP_
 
-#include "serde.hpp"
 #include "tuple_sketch.hpp"
 #include "theta_intersection_base.hpp"
 

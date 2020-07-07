@@ -17,8 +17,6 @@
  * under the License.
  */
 
-#include <iostream>
-#include <sstream>
 #include <algorithm>
 
 namespace datasketches {

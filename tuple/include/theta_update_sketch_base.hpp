@@ -25,6 +25,7 @@
 
 #include "common_defs.hpp"
 #include "MurmurHash3.h"
+#include "theta_comparators.hpp"
 
 namespace datasketches {
 
@@ -32,13 +33,6 @@ namespace theta_constants {
   enum resize_factor { X1, X2, X4, X8 };
   static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
 }
-
-template<typename Entry, typename ExtractKey>
-struct compare_by_key {
-  bool operator()(const Entry& a, const Entry& b) const {
-    return ExtractKey()(a) < ExtractKey()(b);
-  }
-};
 
 template<
   typename Entry,
@@ -172,28 +166,6 @@ struct pair_extract_key {
   const K& operator()(const std::pair<K, V>& entry) const {
     return entry.first;
   }
-};
-
-// less than
-
-template<typename T>
-class less_than {
-public:
-  explicit less_than(const T& value): value(value) {}
-  bool operator()(const T& value) const { return value < this->value; }
-private:
-  T value;
-};
-
-template<typename Key, typename Entry, typename ExtractKey>
-class key_less_than {
-public:
-  explicit key_less_than(const Key& key): key(key) {}
-  bool operator()(const Entry& entry) const {
-    return ExtractKey()(entry) < this->key;
-  }
-private:
-  Key key;
 };
 
 // not zero

@@ -20,7 +20,6 @@
 #ifndef TUPLE_UNION_HPP_
 #define TUPLE_UNION_HPP_
 
-#include "serde.hpp"
 #include "tuple_sketch.hpp"
 #include "theta_union_base.hpp"
 

@@ -104,7 +104,6 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(const S& sketch) {
       }
       ++count;
     }
-    std::cout << "intersection: matching done" << std::endl;
     if (count > sketch.get_num_retained()) {
       throw std::invalid_argument(" more keys then expected, possibly corrupted input sketch");
     } else if (!sketch.is_ordered() && count < sketch.get_num_retained()) {
@@ -118,11 +117,9 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(const S& sketch) {
       num_entries_ = 0;
       if (theta_ == theta_constants::MAX_THETA) is_empty_ = true;
     } else {
-      std::cout << "intersection: converting to hash map" << std::endl;
       const uint8_t lg_size = lg_size_from_count(match_count, theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
       const size_t size = 1 << lg_size;
       if (lg_size != lg_size_) {
-        std::cout << "intersection: resizing from " << (1<<lg_size_) << " to " << size << std::endl;
         A().deallocate(entries_, 1 << lg_size_);
         entries_ = nullptr;
         lg_size_ = lg_size;
