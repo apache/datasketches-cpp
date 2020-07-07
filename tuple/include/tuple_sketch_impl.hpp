@@ -330,7 +330,7 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
   const uint8_t* end_ptr = ptr + size;
 
   ptr += copy_to_mem(&preamble_longs, ptr, sizeof(preamble_longs));
-  const uint8_t serial_version = Base::SERIAL_VERSION;
+  const uint8_t serial_version = SERIAL_VERSION;
   ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
   const uint8_t type = SKETCH_TYPE;
   ptr += copy_to_mem(&type, ptr, sizeof(type));
@@ -383,10 +383,10 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
   uint16_t seed_hash;
   ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
-//  theta_sketch_alloc<A>::check_sketch_type(type, SKETCH_TYPE);
-//  theta_sketch_alloc<A>::check_serial_version(serial_version, theta_sketch_alloc<A>::SERIAL_VERSION);
+  check_sketch_type(type, SKETCH_TYPE);
+  check_serial_version(serial_version, SERIAL_VERSION);
   const bool is_empty = flags_byte & (1 << Base::flags::IS_EMPTY);
-//  if (!is_empty) theta_sketch_alloc<A>::check_seed_hash(seed_hash, theta_sketch_alloc<A>::get_seed_hash(seed));
+  if (!is_empty) check_seed_hash(seed_hash, compute_seed_hash(seed));
 
   uint64_t theta = theta_constants::MAX_THETA;
   uint32_t num_entries = 0;

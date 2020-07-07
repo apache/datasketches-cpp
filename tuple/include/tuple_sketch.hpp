@@ -42,8 +42,6 @@ public:
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
   using const_iterator = theta_const_iterator<Entry, ExtractKey>;
 
-  static const uint8_t SERIAL_VERSION = 3;
-
   virtual ~tuple_sketch() = default;
 
   /**
@@ -325,6 +323,7 @@ public:
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
   using comparator = compare_by_key<Entry, ExtractKey>;
 
+  static const uint8_t SERIAL_VERSION = 3;
   static const uint8_t SKETCH_TYPE = 3;
 
   // Instances of this type can be obtained:
