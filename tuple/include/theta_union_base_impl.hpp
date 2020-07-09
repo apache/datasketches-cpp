@@ -64,7 +64,8 @@ CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
     if (entries.size() > nominal_num) {
       std::nth_element(entries.begin(), entries.begin() + nominal_num, entries.end(), comparator());
       theta = EK()(entries[nominal_num]);
-      entries.resize(nominal_num);
+      entries.erase(entries.begin() + nominal_num, entries.end());
+      entries.shrink_to_fit();
     }
   }
   if (ordered) std::sort(entries.begin(), entries.end(), comparator());
