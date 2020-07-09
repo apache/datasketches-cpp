@@ -75,7 +75,7 @@ template<typename EN, typename EK, typename A>
 uint64_t theta_update_sketch_base<EN, EK, A>::hash_and_screen(const void* data, size_t length) {
   is_empty_ = false;
   const uint64_t hash = compute_hash(data, length, seed_);
-  if (hash >= theta_ || hash == 0) return 0; // hash == 0 is reserved to mark empty slots in the table
+  if (hash >= theta_) return 0; // hash == 0 is reserved to mark empty slots in the table
   return hash;
 }
 
