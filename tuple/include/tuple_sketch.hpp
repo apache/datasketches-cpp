@@ -186,21 +186,21 @@ public:
    * @param value string to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(const std::string& key, FwdUpdate&& value);
+  inline void update(const std::string& key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given unsigned 64-bit integer.
    * @param value uint64_t to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(uint64_t key, FwdUpdate&& value);
+  inline void update(uint64_t key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given signed 64-bit integer.
    * @param value int64_t to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(int64_t key, FwdUpdate&& value);
+  inline void update(int64_t key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given unsigned 32-bit integer.
@@ -208,7 +208,7 @@ public:
    * @param value uint32_t to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(uint32_t key, FwdUpdate&& value);
+  inline void update(uint32_t key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given signed 32-bit integer.
@@ -216,7 +216,7 @@ public:
    * @param value int32_t to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(int32_t key, FwdUpdate&& value);
+  inline void update(int32_t key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given unsigned 16-bit integer.
@@ -224,7 +224,7 @@ public:
    * @param value uint16_t to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(uint16_t key, FwdUpdate&& value);
+  inline void update(uint16_t key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given signed 16-bit integer.
@@ -232,7 +232,7 @@ public:
    * @param value int16_t to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(int16_t key, FwdUpdate&& value);
+  inline void update(int16_t key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given unsigned 8-bit integer.
@@ -240,7 +240,7 @@ public:
    * @param value uint8_t to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(uint8_t key, FwdUpdate&& value);
+  inline void update(uint8_t key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given signed 8-bit integer.
@@ -248,7 +248,7 @@ public:
    * @param value int8_t to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(int8_t key, FwdUpdate&& value);
+  inline void update(int8_t key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given double-precision floating point value.
@@ -256,7 +256,7 @@ public:
    * @param value double to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(double key, FwdUpdate&& value);
+  inline void update(double key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given floating point value.
@@ -264,7 +264,7 @@ public:
    * @param value float to update the sketch with
    */
   template<typename FwdUpdate>
-  void update(float key, FwdUpdate&& value);
+  inline void update(float key, FwdUpdate&& value);
 
   /**
    * Update this sketch with given data of any type.
@@ -321,7 +321,7 @@ public:
   using AllocU64 = typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>;
   using AllocBytes = typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
-  using comparator = compare_by_key<Entry, ExtractKey>;
+  using comparator = compare_by_key<ExtractKey>;
 
   static const uint8_t SERIAL_VERSION = 3;
   static const uint8_t SKETCH_TYPE = 3;

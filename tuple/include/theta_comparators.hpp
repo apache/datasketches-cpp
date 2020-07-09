@@ -22,23 +22,15 @@
 
 namespace datasketches {
 
-template<typename Entry, typename ExtractKey>
+template<typename ExtractKey>
 struct compare_by_key {
-  bool operator()(const Entry& a, const Entry& b) const {
-    return ExtractKey()(a) < ExtractKey()(b);
+  template<typename Entry>
+  bool operator()(Entry&& a, Entry&& b) const {
+    return ExtractKey()(std::forward<Entry>(a)) < ExtractKey()(std::forward<Entry>(b));
   }
 };
 
 // less than
-
-template<typename T>
-class less_than {
-public:
-  explicit less_than(const T& value): value(value) {}
-  bool operator()(const T& value) const { return value < this->value; }
-private:
-  T value;
-};
 
 template<typename Key, typename Entry, typename ExtractKey>
 class key_less_than {

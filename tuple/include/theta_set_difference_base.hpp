@@ -34,7 +34,7 @@ template<
 >
 class theta_set_difference_base {
 public:
-  using comparator = compare_by_key<Entry, ExtractKey>;
+  using comparator = compare_by_key<ExtractKey>;
   using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
 
   theta_set_difference_base(uint64_t seed);

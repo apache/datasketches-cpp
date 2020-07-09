@@ -47,7 +47,7 @@ public:
   uint64_t get_theta64() const { return table_.theta_; }
   uint32_t get_num_retained() const { return table_.num_entries_; }
 
-  void update(uint64_t key);
+  inline void update(uint64_t key);
   void update(const void* key, size_t length);
 
   void trim();
@@ -56,7 +56,7 @@ public:
 
   vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
-  using const_iterator = theta_const_iterator<uint64_t, trivial_extract_key<uint64_t>>;
+  using const_iterator = theta_const_iterator<uint64_t, trivial_extract_key>;
   const_iterator begin() const;
   const_iterator end() const;
 
@@ -64,7 +64,7 @@ public:
 
 private:
   enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
-  using theta_table = theta_update_sketch_base<uint64_t, trivial_extract_key<uint64_t>, A>;
+  using theta_table = theta_update_sketch_base<uint64_t, trivial_extract_key, A>;
   theta_table table_;
 
   theta_sketch_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);

@@ -40,7 +40,7 @@ template<typename Allocator = std::allocator<uint64_t>>
 class theta_union_experimental {
 public:
   using Entry = uint64_t;
-  using ExtractKey = trivial_extract_key<uint64_t>;
+  using ExtractKey = trivial_extract_key;
   using Sketch = theta_sketch_experimental<Allocator>;
   using CompactSketch = compact_theta_sketch_experimental<Allocator>;
   using resize_factor = theta_constants::resize_factor;

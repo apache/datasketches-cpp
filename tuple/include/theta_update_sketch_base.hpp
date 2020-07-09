@@ -41,7 +41,7 @@ template<
 >
 struct theta_update_sketch_base {
   using resize_factor = theta_constants::resize_factor;
-  using comparator = compare_by_key<Entry, ExtractKey>;
+  using comparator = compare_by_key<ExtractKey>;
 
   theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);
   // TODO: copy and move
@@ -49,12 +49,12 @@ struct theta_update_sketch_base {
 
   using iterator = Entry*;
 
-  uint64_t hash_and_screen(const void* data, size_t length);
+  inline uint64_t hash_and_screen(const void* data, size_t length);
 
-  std::pair<iterator, bool> find(uint64_t key) const;
+  inline std::pair<iterator, bool> find(uint64_t key) const;
 
   template<typename FwdEntry>
-  void insert(iterator it, FwdEntry&& entry);
+  inline void insert(iterator it, FwdEntry&& entry);
 
   iterator begin() const;
   iterator end() const;
@@ -86,7 +86,7 @@ struct theta_update_sketch_base {
   static inline uint32_t get_capacity(uint8_t lg_cur_size, uint8_t lg_nom_size);
   static inline uint32_t get_stride(uint64_t key, uint8_t lg_size);
 
-  static std::pair<iterator, bool> find(Entry* entries, uint8_t lg_size, uint64_t key);
+  static inline std::pair<iterator, bool> find(Entry* entries, uint8_t lg_size, uint64_t key);
 };
 
 // builder
@@ -148,13 +148,10 @@ protected:
 
 // key extractors
 
-template<typename T>
 struct trivial_extract_key {
-  T& operator()(T& entry) const {
-    return entry;
-  }
-  const T& operator()(const T& entry) const {
-    return entry;
+  template<typename T>
+  auto operator()(T&& entry) const -> decltype(std::forward<T>(entry)) {
+    return std::forward<T>(entry);
   }
 };
 
