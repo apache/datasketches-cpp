@@ -28,30 +28,18 @@ table_(lg_cur_size, lg_nom_size, rf, p, seed),
 union_theta_(table_.theta_)
 {}
 
-template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-void theta_union_base<EN, EK, P, S, CS, A>::update(const S& sketch) {
-  if (sketch.is_empty()) return;
-  if (sketch.get_seed_hash() != compute_seed_hash(table_.seed_)) throw std::invalid_argument("seed hash mismatch");
-  table_.is_empty_ = false;
-  if (sketch.get_theta64() < union_theta_) union_theta_ = sketch.get_theta64();
-  for (const auto& entry: sketch) {
-    const uint64_t hash = EK()(entry);
-    if (hash < union_theta_) {
-      auto result = table_.find(hash);
-      if (!result.second) {
-        table_.insert(result.first, entry);
-      } else {
-        policy_(*result.first, entry);
-      }
-    } else {
-      if (sketch.is_ordered()) break; // early stop
-    }
-  }
-  if (table_.theta_ < union_theta_) union_theta_ = table_.theta_;
+template<typename Container, typename Element>
+using fwd_type = typename std::conditional<std::is_lvalue_reference<Container>::value,
+    Element, typename std::remove_reference<Element>::type&&>::type;
+
+template<typename Container, typename Element>
+fwd_type<Container, Element> forward_element(Element&& element) {
+  return std::forward<fwd_type<Container, Element>>(std::forward<Element>(element));
 }
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-void theta_union_base<EN, EK, P, S, CS, A>::update(S&& sketch) {
+template<typename SS>
+void theta_union_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   if (sketch.is_empty()) return;
   if (sketch.get_seed_hash() != compute_seed_hash(table_.seed_)) throw std::invalid_argument("seed hash mismatch");
   table_.is_empty_ = false;
@@ -61,9 +49,9 @@ void theta_union_base<EN, EK, P, S, CS, A>::update(S&& sketch) {
     if (hash < union_theta_) {
       auto result = table_.find(hash);
       if (!result.second) {
-        table_.insert(result.first, std::move(entry));
+        table_.insert(result.first, forward_element<SS>(entry));
       } else {
-        policy_(*result.first, std::move(entry));
+        policy_(*result.first, forward_element<SS>(entry));
       }
     } else {
       if (sketch.is_ordered()) break; // early stop
