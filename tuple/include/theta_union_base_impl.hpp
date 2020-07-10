@@ -41,7 +41,29 @@ void theta_union_base<EN, EK, P, S, CS, A>::update(const S& sketch) {
       if (!result.second) {
         table_.insert(result.first, entry);
       } else {
-        *result.first = policy_(*result.first, entry);
+        policy_(*result.first, entry);
+      }
+    } else {
+      if (sketch.is_ordered()) break; // early stop
+    }
+  }
+  if (table_.theta_ < union_theta_) union_theta_ = table_.theta_;
+}
+
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
+void theta_union_base<EN, EK, P, S, CS, A>::update(S&& sketch) {
+  if (sketch.is_empty()) return;
+  if (sketch.get_seed_hash() != compute_seed_hash(table_.seed_)) throw std::invalid_argument("seed hash mismatch");
+  table_.is_empty_ = false;
+  if (sketch.get_theta64() < union_theta_) union_theta_ = sketch.get_theta64();
+  for (auto& entry: sketch) {
+    const uint64_t hash = EK()(entry);
+    if (hash < union_theta_) {
+      auto result = table_.find(hash);
+      if (!result.second) {
+        table_.insert(result.first, std::move(entry));
+      } else {
+        policy_(*result.first, std::move(entry));
       }
     } else {
       if (sketch.is_ordered()) break; // early stop

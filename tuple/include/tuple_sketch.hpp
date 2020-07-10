@@ -40,6 +40,7 @@ class tuple_sketch {
 public:
   using Entry = std::pair<uint64_t, Summary>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
+  using iterator = theta_iterator<Entry, ExtractKey>;
   using const_iterator = theta_const_iterator<Entry, ExtractKey>;
 
   virtual ~tuple_sketch() = default;
@@ -109,12 +110,25 @@ public:
    * Iterator over entries in this sketch.
    * @return begin iterator
    */
-  virtual const_iterator begin() const = 0;
+  virtual iterator begin() = 0;
 
   /**
    * Iterator pointing past the valid range.
    * Not to be incremented or dereferenced.
    * @return end iterator
+   */
+  virtual iterator end() = 0;
+
+  /**
+   * Const iterator over entries in this sketch.
+   * @return begin const iterator
+   */
+  virtual const_iterator begin() const = 0;
+
+  /**
+   * Const iterator pointing past the valid range.
+   * Not to be incremented or dereferenced.
+   * @return end const iterator
    */
   virtual const_iterator end() const = 0;
 
@@ -152,6 +166,7 @@ public:
   using Base = tuple_sketch<Summary, Allocator>;
   using Entry = typename Base::Entry;
   using ExtractKey = typename Base::ExtractKey;
+  using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using tuple_map = theta_update_sketch_base<Entry, ExtractKey, AllocEntry>;
@@ -294,6 +309,8 @@ public:
    */
   compact_tuple_sketch<Summary, Allocator> compact(bool ordered = true) const;
 
+  virtual iterator begin();
+  virtual iterator end();
   virtual const_iterator begin() const;
   virtual const_iterator end() const;
 
@@ -316,6 +333,7 @@ public:
   using Base = tuple_sketch<Summary, Allocator>;
   using Entry = typename Base::Entry;
   using ExtractKey = typename Base::ExtractKey;
+  using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using AllocU64 = typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>;
@@ -347,6 +365,8 @@ public:
   template<typename SerDe = serde<Summary>>
   vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
+  virtual iterator begin();
+  virtual iterator end();
   virtual const_iterator begin() const;
   virtual const_iterator end() const;
 

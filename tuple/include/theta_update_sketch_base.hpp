@@ -200,7 +200,23 @@ static inline uint16_t compute_seed_hash(uint64_t seed) {
   return hashes.h1;
 }
 
-// iterator
+// iterators
+
+template<typename Entry, typename ExtractKey>
+class theta_iterator: public std::iterator<std::input_iterator_tag, Entry> {
+public:
+  theta_iterator(Entry* entries, uint32_t size, uint32_t index);
+  theta_iterator& operator++();
+  theta_iterator operator++(int);
+  bool operator==(const theta_iterator& other) const;
+  bool operator!=(const theta_iterator& other) const;
+  Entry& operator*() const;
+
+private:
+  Entry* entries_;
+  uint32_t size_;
+  uint32_t index_;
+};
 
 template<typename Entry, typename ExtractKey>
 class theta_const_iterator: public std::iterator<std::input_iterator_tag, Entry> {

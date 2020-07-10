@@ -40,7 +40,9 @@ public:
 
   theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
 
+  // TODO: try to avoid duplication
   void update(const Sketch& sketch);
+  void update(Sketch&& sketch);
 
   CompactSketch get_result(bool ordered = true) const;
 

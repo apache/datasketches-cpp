@@ -199,6 +199,16 @@ string<A> update_tuple_sketch<S, U, P, A>::to_string(bool detail) const {
 }
 
 template<typename S, typename U, typename P, typename A>
+auto update_tuple_sketch<S, U, P, A>::begin() -> iterator {
+  return iterator(map_.entries_, 1 << map_.lg_cur_size_, 0);
+}
+
+template<typename S, typename U, typename P, typename A>
+auto update_tuple_sketch<S, U, P, A>::end() -> iterator {
+  return iterator(nullptr, 0, 1 << map_.lg_cur_size_);
+}
+
+template<typename S, typename U, typename P, typename A>
 auto update_tuple_sketch<S, U, P, A>::begin() const -> const_iterator {
   return const_iterator(map_.entries_, 1 << map_.lg_cur_size_, 0);
 }
@@ -423,6 +433,16 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   }
   const bool is_ordered = flags_byte & (1 << Base::flags::IS_ORDERED);
   return compact_tuple_sketch(is_empty, is_ordered, seed_hash, theta, std::move(entries));
+}
+
+template<typename S, typename A>
+auto compact_tuple_sketch<S, A>::begin() -> iterator {
+  return iterator(entries_.data(), entries_.size(), 0);
+}
+
+template<typename S, typename A>
+auto compact_tuple_sketch<S, A>::end() -> iterator {
+  return iterator(nullptr, 0, entries_.size());
 }
 
 template<typename S, typename A>

@@ -228,6 +228,43 @@ uint8_t theta_base_builder<Derived>::starting_sub_multiple(uint8_t lg_tgt, uint8
 // iterator
 
 template<typename Entry, typename ExtractKey>
+theta_iterator<Entry, ExtractKey>::theta_iterator(Entry* entries, uint32_t size, uint32_t index):
+entries_(entries), size_(size), index_(index) {
+  while (index_ < size_ && ExtractKey()(entries_[index_]) == 0) ++index_;
+}
+
+template<typename Entry, typename ExtractKey>
+auto theta_iterator<Entry, ExtractKey>::operator++() -> theta_iterator& {
+  ++index_;
+  while (index_ < size_ && ExtractKey()(entries_[index_]) == 0) ++index_;
+  return *this;
+}
+
+template<typename Entry, typename ExtractKey>
+auto theta_iterator<Entry, ExtractKey>::operator++(int) -> theta_iterator {
+  theta_iterator tmp(*this);
+  operator++();
+  return tmp;
+}
+
+template<typename Entry, typename ExtractKey>
+bool theta_iterator<Entry, ExtractKey>::operator!=(const theta_iterator& other) const {
+  return index_ != other.index_;
+}
+
+template<typename Entry, typename ExtractKey>
+bool theta_iterator<Entry, ExtractKey>::operator==(const theta_iterator& other) const {
+  return index_ == other.index_;
+}
+
+template<typename Entry, typename ExtractKey>
+auto theta_iterator<Entry, ExtractKey>::operator*() const -> Entry& {
+  return entries_[index_];
+}
+
+// const iterator
+
+template<typename Entry, typename ExtractKey>
 theta_const_iterator<Entry, ExtractKey>::theta_const_iterator(const Entry* entries, uint32_t size, uint32_t index):
 entries_(entries), size_(size), index_(index) {
   while (index_ < size_ && ExtractKey()(entries_[index_]) == 0) ++index_;
