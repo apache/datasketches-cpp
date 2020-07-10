@@ -39,7 +39,8 @@ public:
 
   // TODO: copy and move
 
-  void update(const Sketch& sketch);
+  template<typename FwdSketch>
+  void update(FwdSketch&& sketch);
 
   CompactSketch get_result(bool ordered = true) const;
 

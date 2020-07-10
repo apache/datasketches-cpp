@@ -21,6 +21,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include "conditional_forward.hpp"
+
 namespace datasketches {
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
@@ -55,7 +57,8 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::destroy_objects() {
 }
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-void theta_intersection_base<EN, EK, P, S, CS, A>::update(const S& sketch) {
+template<typename SS>
+void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   if (is_empty_) return;
   if (!sketch.is_empty() && sketch.get_seed_hash() != seed_hash_) throw std::invalid_argument("seed hash mismatch");
   is_empty_ |= sketch.is_empty();
@@ -70,18 +73,18 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(const S& sketch) {
     num_entries_ = 0;
     return;
   }
-  if (!is_valid_) { // first update, clone incoming sketch
+  if (!is_valid_) { // first update, copy or move incoming sketch
     is_valid_ = true;
     lg_size_ = lg_size_from_count(sketch.get_num_retained(), theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
     const size_t size = 1 << lg_size_;
     entries_ = A().allocate(size);
     for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
-    for (const auto& entry: sketch) {
+    for (auto& entry: sketch) {
       auto result = theta_update_sketch_base<EN, EK, A>::find(entries_, lg_size_, EK()(entry));
       if (result.second) {
         throw std::invalid_argument("duplicate key, possibly corrupted input sketch");
       }
-      new (result.first) EN(entry); // TODO: support move
+      new (result.first) EN(conditional_forward<SS>(entry));
       ++num_entries_;
     }
     if (num_entries_ != sketch.get_num_retained()) throw std::invalid_argument("num entries mismatch, possibly corrupted input sketch");
@@ -91,12 +94,13 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(const S& sketch) {
     matched_entries.reserve(max_matches);
     uint32_t match_count = 0;
     uint32_t count = 0;
-    for (const auto& entry: sketch) {
+    for (auto& entry: sketch) {
       if (EK()(entry) < theta_) {
         auto result = theta_update_sketch_base<EN, EK, A>::find(entries_, lg_size_, EK()(entry));
         if (result.second) {
           if (match_count == max_matches) throw std::invalid_argument("max matches exceeded, possibly corrupted input sketch");
-          matched_entries.push_back(policy_(*result.first, entry));
+          policy_(*result.first, conditional_forward<SS>(entry));
+          matched_entries.push_back(std::move(*result.first));
           ++match_count;
         }
       } else if (sketch.is_ordered()) {

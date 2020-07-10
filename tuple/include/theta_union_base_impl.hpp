@@ -19,6 +19,8 @@
 
 #include <algorithm>
 
+#include "conditional_forward.hpp"
+
 namespace datasketches {
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
@@ -27,15 +29,6 @@ policy_(policy),
 table_(lg_cur_size, lg_nom_size, rf, p, seed),
 union_theta_(table_.theta_)
 {}
-
-template<typename Container, typename Element>
-using fwd_type = typename std::conditional<std::is_lvalue_reference<Container>::value,
-    Element, typename std::remove_reference<Element>::type&&>::type;
-
-template<typename Container, typename Element>
-fwd_type<Container, Element> forward_element(Element&& element) {
-  return std::forward<fwd_type<Container, Element>>(std::forward<Element>(element));
-}
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
 template<typename SS>
@@ -49,9 +42,9 @@ void theta_union_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
     if (hash < union_theta_) {
       auto result = table_.find(hash);
       if (!result.second) {
-        table_.insert(result.first, forward_element<SS>(entry));
+        table_.insert(result.first, conditional_forward<SS>(entry));
       } else {
-        policy_(*result.first, forward_element<SS>(entry));
+        policy_(*result.first, conditional_forward<SS>(entry));
       }
     } else {
       if (sketch.is_ordered()) break; // early stop

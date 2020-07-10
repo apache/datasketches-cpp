@@ -39,5 +39,6 @@ target_sources(common
     ${CMAKE_CURRENT_SOURCE_DIR}/include/inv_pow2_table.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/binomial_bounds.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/conditional_back_inserter.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/conditional_forward.hpp
 )
 

@@ -32,6 +32,9 @@ struct example_intersection_policy {
   void operator()(Summary& summary, const Summary& other) const {
     summary += other;
   }
+  void operator()(Summary& summary, Summary&& other) const {
+    summary += other;
+  }
 };
 */
 
@@ -52,9 +55,11 @@ public:
   // in terms of operations on Entry
   struct internal_policy {
     internal_policy(const Policy& policy): policy_(policy) {}
-    Entry& operator()(Entry& internal_entry, const Entry& incoming_entry) const {
+    void operator()(Entry& internal_entry, const Entry& incoming_entry) const {
       policy_(internal_entry.second, incoming_entry.second);
-      return internal_entry;
+    }
+    void operator()(Entry& internal_entry, Entry&& incoming_entry) const {
+      policy_(internal_entry.second, std::move(incoming_entry.second));
     }
     Policy policy_;
   };
@@ -69,7 +74,8 @@ public:
    * can reduce the current set to leave the overlapping subset only.
    * @param sketch represents input set for the intersection
    */
-  void update(const Sketch& sketch);
+  template<typename FwdSketch>
+  void update(FwdSketch&& sketch);
 
   /**
    * Produces a copy of the current state of the intersection.

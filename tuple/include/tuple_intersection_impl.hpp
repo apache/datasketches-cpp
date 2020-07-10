@@ -25,8 +25,9 @@ state_(seed, internal_policy(policy))
 {}
 
 template<typename S, typename P, typename A>
-void tuple_intersection<S, P, A>::update(const Sketch& sketch) {
-  state_.update(sketch);
+template<typename SS>
+void tuple_intersection<S, P, A>::update(SS&& sketch) {
+  state_.update(std::forward<SS>(sketch));
 }
 
 template<typename S, typename P, typename A>
