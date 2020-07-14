@@ -51,6 +51,34 @@ double tuple_sketch<S, A>::get_upper_bound(uint8_t num_std_devs) const {
   return binomial_bounds::get_upper_bound(get_num_retained(), get_theta(), num_std_devs);
 }
 
+template<typename S, typename A>
+string<A> tuple_sketch<S, A>::to_string(bool detail) const {
+  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  os << "### Tuple sketch summary:" << std::endl;
+  os << "   num retained entries : " << get_num_retained() << std::endl;
+  os << "   seed hash            : " << get_seed_hash() << std::endl;
+  os << "   empty?               : " << (is_empty() ? "true" : "false") << std::endl;
+  os << "   ordered?             : " << (is_ordered() ? "true" : "false") << std::endl;
+  os << "   estimation mode?     : " << (is_estimation_mode() ? "true" : "false") << std::endl;
+  os << "   theta (fraction)     : " << get_theta() << std::endl;
+  os << "   theta (raw 64-bit)   : " << get_theta64() << std::endl;
+  os << "   estimate             : " << this->get_estimate() << std::endl;
+  os << "   lower bound 95% conf : " << this->get_lower_bound(2) << std::endl;
+  os << "   upper bound 95% conf : " << this->get_upper_bound(2) << std::endl;
+  print_specifics(os);
+  os << "### End sketch summary" << std::endl;
+  if (detail) {
+    os << "### Retained entries" << std::endl;
+    for (const auto& it: *this) {
+      if (it.first != 0) {
+        os << it.first << ": " << it.second << std::endl;
+      }
+    }
+    os << "### End retained entries" << std::endl;
+  }
+  return os.str();
+}
+
 // update sketch
 
 template<typename S, typename U, typename P, typename A>
@@ -182,23 +210,6 @@ void update_tuple_sketch<S, U, P, A>::trim() {
 }
 
 template<typename S, typename U, typename P, typename A>
-string<A> update_tuple_sketch<S, U, P, A>::to_string(bool detail) const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
-  auto type = typeid(*this).name();
-  os << "sizeof(" << type << ")=" << sizeof(*this) << std::endl;
-  os << "sizeof(entry)=" << sizeof(Entry) << std::endl;
-  os << map_.to_string();
-  if (detail) {
-    for (const auto& it: map_) {
-      if (it.first != 0) {
-        os << it.first << ": " << it.second << std::endl;
-      }
-    }
-  }
-  return os.str();
-}
-
-template<typename S, typename U, typename P, typename A>
 auto update_tuple_sketch<S, U, P, A>::begin() -> iterator {
   return iterator(map_.entries_, 1 << map_.lg_cur_size_, 0);
 }
@@ -221,6 +232,13 @@ auto update_tuple_sketch<S, U, P, A>::end() const -> const_iterator {
 template<typename S, typename U, typename P, typename A>
 compact_tuple_sketch<S, A> update_tuple_sketch<S, U, P, A>::compact(bool ordered) const {
   return compact_tuple_sketch<S, A>(*this, ordered);
+}
+
+template<typename S, typename U, typename P, typename A>
+void update_tuple_sketch<S, U, P, A>::print_specifics(std::ostringstream& os) const {
+  os << "   lg nominal size      : " << (int) map_.lg_nom_size_ << std::endl;
+  os << "   lg current size      : " << (int) map_.lg_cur_size_ << std::endl;
+  os << "   resize factor        : " << (1 << map_.rf_) << std::endl;
 }
 
 // compact sketch
@@ -270,37 +288,6 @@ uint32_t compact_tuple_sketch<S, A>::get_num_retained() const {
 template<typename S, typename A>
 uint16_t compact_tuple_sketch<S, A>::get_seed_hash() const {
   return seed_hash_;
-}
-
-template<typename S, typename A>
-string<A> compact_tuple_sketch<S, A>::to_string(bool detail) const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
-  os << "### Compact Tuple sketch summary:" << std::endl;
-  auto type = typeid(*this).name();
-  os << "   type                 : " << type << std::endl;
-  os << "   sizeof(type)         : " << sizeof(*this) << std::endl;
-  os << "   sizeof(entry)        : " << sizeof(Entry) << std::endl;
-  os << "   num retained entries : " << entries_.size() << std::endl;
-  os << "   seed hash            : " << this->get_seed_hash() << std::endl;
-  os << "   empty?               : " << (this->is_empty() ? "true" : "false") << std::endl;
-  os << "   ordered?             : " << (this->is_ordered() ? "true" : "false") << std::endl;
-  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
-  os << "   theta (fraction)     : " << this->get_theta() << std::endl;
-  os << "   theta (raw 64-bit)   : " << this->theta_ << std::endl;
-  os << "   estimate             : " << this->get_estimate() << std::endl;
-  os << "   lower bound 95% conf : " << this->get_lower_bound(2) << std::endl;
-  os << "   upper bound 95% conf : " << this->get_upper_bound(2) << std::endl;
-  os << "### End sketch summary" << std::endl;
-  if (detail) {
-    os << "### Retained entries" << std::endl;
-    for (const auto& it: entries_) {
-      if (it.first != 0) {
-        os << it.first << ": " << it.second << std::endl;
-      }
-    }
-    os << "### End retained entries" << std::endl;
-  }
-  return os.str();
 }
 
 // implementation for fixed-size arithmetic types (integral and floating point)
@@ -454,6 +441,9 @@ template<typename S, typename A>
 auto compact_tuple_sketch<S, A>::end() const -> const_iterator {
   return const_iterator(nullptr, 0, entries_.size());
 }
+
+template<typename S, typename A>
+void compact_tuple_sketch<S, A>::print_specifics(std::ostringstream&) const {}
 
 // builder
 

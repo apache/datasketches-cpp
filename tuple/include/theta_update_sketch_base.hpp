@@ -73,7 +73,6 @@ struct theta_update_sketch_base {
   uint8_t lg_cur_size_;
   uint8_t lg_nom_size_;
   resize_factor rf_;
-  float p_;
   uint32_t num_entries_;
   uint64_t theta_;
   uint64_t seed_;

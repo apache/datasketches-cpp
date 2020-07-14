@@ -101,10 +101,11 @@ public:
   virtual bool is_ordered() const = 0;
 
   /**
-   * Writes a human-readable summary of this sketch to a given stream
+   * Provides a human-readable summary of this sketch as a string
    * @param print_items if true include the list of items retained by the sketch
+   * @return sketch summary as a string
    */
-  virtual string<Allocator> to_string(bool print_items = false) const = 0;
+  string<Allocator> to_string(bool print_items = false) const;
 
   /**
    * Iterator over entries in this sketch.
@@ -134,6 +135,8 @@ public:
 
 protected:
   enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
+
+  virtual void print_specifics(std::ostringstream& os) const = 0;
 
   static uint16_t get_seed_hash(uint64_t seed);
 
@@ -184,7 +187,6 @@ public:
   virtual uint64_t get_theta64() const;
   virtual uint32_t get_num_retained() const;
   virtual uint16_t get_seed_hash() const;
-  virtual string<Allocator> to_string(bool print_items = false) const;
 
   /**
    * @return configured nominal number of entries in the sketch
@@ -320,6 +322,8 @@ private:
 
   // for builder
   update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
+
+  virtual void print_specifics(std::ostringstream& os) const;
 };
 
 // compact sketch
@@ -357,7 +361,6 @@ public:
   virtual uint64_t get_theta64() const;
   virtual uint32_t get_num_retained() const;
   virtual uint16_t get_seed_hash() const;
-  virtual string<Allocator> to_string(bool print_items = false) const;
 
   template<typename SerDe = serde<Summary>>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
@@ -434,6 +437,9 @@ private:
     uint32_t num;
     bool destroy;
   };
+
+  virtual void print_specifics(std::ostringstream& os) const;
+
 };
 
 // builder
