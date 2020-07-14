@@ -44,7 +44,8 @@ public:
    * Computes the a-not-b set operation given two sketches.
    * @return the result of a-not-b
    */
-  CompactSketch compute(const Sketch& a, const Sketch& b, bool ordered = true) const;
+  template<typename FwdSketch>
+  CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;
 
 private:
   State state_;

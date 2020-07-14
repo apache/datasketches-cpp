@@ -35,11 +35,13 @@ template<
 class theta_set_difference_base {
 public:
   using comparator = compare_by_key<ExtractKey>;
-  using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
+  using AllocU64 = typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>;
+  using hash_table = theta_update_sketch_base<uint64_t, trivial_extract_key, AllocU64>;
 
   theta_set_difference_base(uint64_t seed);
 
-  CompactSketch compute(const Sketch& a, const Sketch& b, bool ordered) const;
+  template<typename SS>
+  CompactSketch compute(SS&& a, const Sketch& b, bool ordered) const;
 
 private:
   uint16_t seed_hash_;

@@ -25,8 +25,9 @@ state_(seed)
 {}
 
 template<typename S, typename A>
-auto tuple_a_not_b<S, A>::compute(const Sketch& a, const Sketch& b, bool ordered) const -> CompactSketch {
-  return state_.compute(a, b, ordered);
+template<typename SS>
+auto tuple_a_not_b<S, A>::compute(SS&& a, const Sketch& b, bool ordered) const -> CompactSketch {
+  return state_.compute(std::forward<SS>(a), b, ordered);
 }
 
 } /* namespace datasketches */

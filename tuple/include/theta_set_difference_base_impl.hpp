@@ -20,6 +20,7 @@
 #include <algorithm>
 
 #include "conditional_back_inserter.hpp"
+#include "conditional_forward.hpp"
 
 namespace datasketches {
 
@@ -29,7 +30,8 @@ seed_hash_(compute_seed_hash(seed))
 {}
 
 template<typename EN, typename EK, typename S, typename CS, typename A>
-CS theta_set_difference_base<EN, EK, S, CS, A>::compute(const S& a, const S& b, bool ordered) const {
+template<typename SS>
+CS theta_set_difference_base<EN, EK, S, CS, A>::compute(SS&& a, const S& b, bool ordered) const {
   if (a.is_empty() || a.get_num_retained() == 0 || b.is_empty()) return CS(a, ordered);
   if (a.get_seed_hash() != seed_hash_) throw std::invalid_argument("A seed hash mismatch");
   if (b.get_seed_hash() != seed_hash_) throw std::invalid_argument("B seed hash mismatch");
@@ -39,28 +41,30 @@ CS theta_set_difference_base<EN, EK, S, CS, A>::compute(const S& a, const S& b, 
   bool is_empty = a.is_empty();
 
   if (b.get_num_retained() == 0) {
-    std::copy_if(a.begin(), a.end(), std::back_inserter(entries), key_less_than<uint64_t, EN, EK>(theta));
+    std::copy_if(forward_begin(std::forward<SS>(a)), forward_end(std::forward<SS>(a)), std::back_inserter(entries),
+        key_less_than<uint64_t, EN, EK>(theta));
   } else {
     if (a.is_ordered() && b.is_ordered()) { // sort-based
-      std::set_difference(a.begin(), a.end(), b.begin(), b.end(), conditional_back_inserter(entries, key_less_than<uint64_t, EN, EK>(theta)));
+      std::set_difference(forward_begin(std::forward<SS>(a)), forward_end(std::forward<SS>(a)), b.begin(), b.end(),
+          conditional_back_inserter(entries, key_less_than<uint64_t, EN, EK>(theta)), comparator());
     } else { // hash-based
       const uint8_t lg_size = lg_size_from_count(b.get_num_retained(), hash_table::REBUILD_THRESHOLD);
       hash_table table(lg_size, lg_size, hash_table::resize_factor::X1, 1, 0); // seed is not used here
       for (const auto& entry: b) {
         const uint64_t hash = EK()(entry);
         if (hash < theta) {
-          table.insert(table.find(hash).first, entry);
+          table.insert(table.find(hash).first, hash);
         } else if (b.is_ordered()) {
           break; // early stop
         }
       }
 
       // scan A lookup B
-      for (const auto& entry: a) {
+      for (auto& entry: a) {
         const uint64_t hash = EK()(entry);
         if (hash < theta) {
           auto result = table.find(hash);
-          if (!result.second) entries.push_back(entry);
+          if (!result.second) entries.push_back(conditional_forward<SS>(entry));
         } else if (a.is_ordered()) {
           break; // early stop
         }

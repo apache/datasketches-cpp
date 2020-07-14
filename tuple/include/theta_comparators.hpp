@@ -24,9 +24,9 @@ namespace datasketches {
 
 template<typename ExtractKey>
 struct compare_by_key {
-  template<typename Entry>
-  bool operator()(Entry&& a, Entry&& b) const {
-    return ExtractKey()(std::forward<Entry>(a)) < ExtractKey()(std::forward<Entry>(b));
+  template<typename Entry1, typename Entry2>
+  bool operator()(Entry1&& a, Entry2&& b) const {
+    return ExtractKey()(std::forward<Entry1>(a)) < ExtractKey()(std::forward<Entry2>(b));
   }
 };
 

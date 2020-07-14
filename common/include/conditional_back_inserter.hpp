@@ -40,8 +40,13 @@ public:
     return *this;
   }
 
-  conditional_back_insert_iterator& operator=(typename Container::const_reference value) {
+  conditional_back_insert_iterator& operator=(const typename Container::value_type& value) {
     if (p(value)) std::back_insert_iterator<Container>::operator=(value);
+    return *this;
+  }
+
+  conditional_back_insert_iterator& operator=(typename Container::value_type&& value) {
+    if (p(value)) std::back_insert_iterator<Container>::operator=(std::move(value));
     return *this;
   }
 

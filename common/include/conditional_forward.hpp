@@ -35,6 +35,36 @@ fwd_type<T1, T2> conditional_forward(T2&& value) {
   return std::forward<fwd_type<T1, T2>>(std::forward<T2>(value));
 }
 
+// Forward container as iterators
+
+template<typename Container>
+auto forward_begin(Container&& c) ->
+typename std::enable_if<std::is_lvalue_reference<Container>::value, decltype(c.begin())>::type
+{
+  return c.begin();
+}
+
+template<typename Container>
+auto forward_begin(Container&& c) ->
+typename std::enable_if<!std::is_lvalue_reference<Container>::value, decltype(std::make_move_iterator(c.begin()))>::type
+{
+  return std::make_move_iterator(c.begin());
+}
+
+template<typename Container>
+auto forward_end(Container&& c) ->
+typename std::enable_if<std::is_lvalue_reference<Container>::value, decltype(c.end())>::type
+{
+  return c.end();
+}
+
+template<typename Container>
+auto forward_end(Container&& c) ->
+typename std::enable_if<!std::is_lvalue_reference<Container>::value, decltype(std::make_move_iterator(c.end()))>::type
+{
+  return std::make_move_iterator(c.end());
+}
+
 } /* namespace datasketches */
 
 #endif
