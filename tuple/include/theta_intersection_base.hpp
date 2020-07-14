@@ -44,6 +44,8 @@ public:
 
   CompactSketch get_result(bool ordered = true) const;
 
+  bool has_result() const;
+
 private:
   Policy policy_;
   bool is_valid_;

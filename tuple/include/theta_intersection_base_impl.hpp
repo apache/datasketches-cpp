@@ -141,6 +141,7 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
 CS theta_intersection_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
+  if (!is_valid_) throw std::invalid_argument("calling get_result() before calling update() is undefined");
   std::vector<EN, A> entries_copy;
   if (num_entries_ > 0) {
     entries_copy.reserve(num_entries_);
@@ -148,6 +149,11 @@ CS theta_intersection_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const 
     if (ordered) std::sort(entries_copy.begin(), entries_copy.end(), comparator());
   }
   return CS(is_empty_, ordered, seed_hash_, theta_, std::move(entries_copy));
+}
+
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
+bool theta_intersection_base<EN, EK, P, S, CS, A>::has_result() const {
+  return is_valid_;
 }
 
 } /* namespace datasketches */

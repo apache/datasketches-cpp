@@ -27,7 +27,6 @@
 namespace datasketches {
 
 TEST_CASE("theta_union_exeperimental") {
-  std::cout << "theta union test begin" << std::endl;
   auto update_sketch1 = theta_sketch_experimental<>::builder().build();
   update_sketch1.update(1);
   update_sketch1.update(2);
@@ -40,8 +39,6 @@ TEST_CASE("theta_union_exeperimental") {
   u.update(update_sketch1);
   u.update(update_sketch2);
   auto r = u.get_result();
-  std::cout << r.to_string(true);
-  std::cout << "theta union test end" << std::endl;
 }
 
 } /* namespace datasketches */

@@ -35,4 +35,9 @@ auto tuple_intersection<S, P, A>::get_result(bool ordered) const -> CompactSketc
   return state_.get_result(ordered);
 }
 
+template<typename S, typename P, typename A>
+bool tuple_intersection<S, P, A>::has_result() const {
+  return state_.has_result();
+}
+
 } /* namespace datasketches */

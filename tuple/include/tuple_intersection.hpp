@@ -86,6 +86,12 @@ public:
    */
   CompactSketch get_result(bool ordered = true) const;
 
+  /**
+   * Returns true if the state of the intersection is defined (not infinite "universe").
+   * @return true if the state is valid
+   */
+  bool has_result() const;
+
 private:
   State state_;
 };
