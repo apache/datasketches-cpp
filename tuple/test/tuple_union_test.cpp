@@ -78,13 +78,24 @@ TEST_CASE("tuple_union float: exact mode half overlap", "[tuple union]") {
   value = 500;
   for (int i = 0; i < 1000; ++i) update_sketch2.update(value++, 1);
 
-  auto u = tuple_union<float>::builder().build();
-  u.update(update_sketch1);
-  u.update(update_sketch2);
-  auto result = u.get_result();
-  REQUIRE(!result.is_empty());
-  REQUIRE(!result.is_estimation_mode());
-  REQUIRE(result.get_estimate() == Approx(1500).margin(1500 * 0.01));
+  { // unordered
+    auto u = tuple_union<float>::builder().build();
+    u.update(update_sketch1);
+    u.update(update_sketch2);
+    auto result = u.get_result();
+    REQUIRE(!result.is_empty());
+    REQUIRE(!result.is_estimation_mode());
+    REQUIRE(result.get_estimate() == Approx(1500).margin(1500 * 0.01));
+  }
+  { // ordered
+    auto u = tuple_union<float>::builder().build();
+    u.update(update_sketch1.compact());
+    u.update(update_sketch2.compact());
+    auto result = u.get_result();
+    REQUIRE(!result.is_empty());
+    REQUIRE(!result.is_estimation_mode());
+    REQUIRE(result.get_estimate() == Approx(1500).margin(1500 * 0.01));
+  }
 }
 
 TEST_CASE("tuple_union float: estimation mode half overlap", "[tuple union]") {
@@ -96,13 +107,24 @@ TEST_CASE("tuple_union float: estimation mode half overlap", "[tuple union]") {
   value = 5000;
   for (int i = 0; i < 10000; ++i) update_sketch2.update(value++, 1);
 
-  auto u = tuple_union<float>::builder().build();
-  u.update(update_sketch1);
-  u.update(update_sketch2);
-  auto result = u.get_result();
-  REQUIRE(!result.is_empty());
-  REQUIRE(result.is_estimation_mode());
-  REQUIRE(result.get_estimate() == Approx(15000).margin(15000 * 0.01));
+  { // unordered
+    auto u = tuple_union<float>::builder().build();
+    u.update(update_sketch1);
+    u.update(update_sketch2);
+    auto result = u.get_result();
+    REQUIRE(!result.is_empty());
+    REQUIRE(result.is_estimation_mode());
+    REQUIRE(result.get_estimate() == Approx(15000).margin(15000 * 0.01));
+  }
+  { // ordered
+    auto u = tuple_union<float>::builder().build();
+    u.update(update_sketch1.compact());
+    u.update(update_sketch2.compact());
+    auto result = u.get_result();
+    REQUIRE(!result.is_empty());
+    REQUIRE(result.is_estimation_mode());
+    REQUIRE(result.get_estimate() == Approx(15000).margin(15000 * 0.01));
+  }
 }
 
 TEST_CASE("tuple_union float: seed mismatch", "[tuple union]") {
