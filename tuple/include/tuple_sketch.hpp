@@ -134,8 +134,6 @@ public:
   virtual const_iterator end() const = 0;
 
 protected:
-  enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
-
   virtual void print_specifics(std::ostringstream& os) const = 0;
 
   static uint16_t get_seed_hash(uint64_t seed);
@@ -174,8 +172,6 @@ public:
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using tuple_map = theta_update_sketch_base<Entry, ExtractKey, AllocEntry>;
   using resize_factor = typename tuple_map::resize_factor;
-
-  static const uint8_t SKETCH_TYPE = 2;
 
   // No constructor here. Use builder instead.
   class builder;
@@ -398,6 +394,8 @@ public:
   compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
 
 private:
+  enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
+
   bool is_empty_;
   bool is_ordered_;
   uint16_t seed_hash_;

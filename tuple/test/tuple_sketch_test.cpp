@@ -50,6 +50,7 @@ TEST_CASE("tuple sketch float: builder", "[tuple_sketch]") {
 
 TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {
   auto update_sketch = update_tuple_sketch<float>::builder().build();
+  std::cout << "sizeof(update_tuple_sketch<float>)=" << sizeof(update_sketch) << std::endl;
   REQUIRE(update_sketch.is_empty());
   REQUIRE(!update_sketch.is_estimation_mode());
   REQUIRE(update_sketch.get_estimate() == 0);
@@ -60,6 +61,7 @@ TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {
   REQUIRE(!update_sketch.is_ordered());
 
   auto compact_sketch = update_sketch.compact();
+  std::cout << "sizeof(compact_tuple_sketch<float>)=" << sizeof(compact_sketch) << std::endl;
   REQUIRE(compact_sketch.is_empty());
   REQUIRE(!compact_sketch.is_estimation_mode());
   REQUIRE(compact_sketch.get_estimate() == 0);
@@ -108,17 +110,34 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
   }
   REQUIRE(count == 2);
 
-  auto bytes = compact_sketch.serialize();
-  auto deserialized_sketch = compact_tuple_sketch<float>::deserialize(bytes.data(), bytes.size());
-  REQUIRE(!deserialized_sketch.is_empty());
-  REQUIRE(!deserialized_sketch.is_estimation_mode());
-  REQUIRE(deserialized_sketch.get_estimate() == 2);
-  REQUIRE(deserialized_sketch.get_lower_bound(1) == 2);
-  REQUIRE(deserialized_sketch.get_upper_bound(1) == 2);
-  REQUIRE(deserialized_sketch.get_theta() == 1);
-  REQUIRE(deserialized_sketch.get_num_retained() == 2);
-  REQUIRE(deserialized_sketch.is_ordered());
-//  std::cout << deserialized_sketch.to_string(true);
+  { // stream
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    compact_sketch.serialize(s);
+    auto deserialized_sketch = compact_tuple_sketch<float>::deserialize(s);
+    REQUIRE(!deserialized_sketch.is_empty());
+    REQUIRE(!deserialized_sketch.is_estimation_mode());
+    REQUIRE(deserialized_sketch.get_estimate() == 2);
+    REQUIRE(deserialized_sketch.get_lower_bound(1) == 2);
+    REQUIRE(deserialized_sketch.get_upper_bound(1) == 2);
+    REQUIRE(deserialized_sketch.get_theta() == 1);
+    REQUIRE(deserialized_sketch.get_num_retained() == 2);
+    REQUIRE(deserialized_sketch.is_ordered());
+    std::cout << "deserialized sketch:" << std::endl;
+    std::cout << deserialized_sketch.to_string(true);
+  }
+  { // bytes
+    auto bytes = compact_sketch.serialize();
+    auto deserialized_sketch = compact_tuple_sketch<float>::deserialize(bytes.data(), bytes.size());
+    REQUIRE(!deserialized_sketch.is_empty());
+    REQUIRE(!deserialized_sketch.is_estimation_mode());
+    REQUIRE(deserialized_sketch.get_estimate() == 2);
+    REQUIRE(deserialized_sketch.get_lower_bound(1) == 2);
+    REQUIRE(deserialized_sketch.get_upper_bound(1) == 2);
+    REQUIRE(deserialized_sketch.get_theta() == 1);
+    REQUIRE(deserialized_sketch.get_num_retained() == 2);
+    REQUIRE(deserialized_sketch.is_ordered());
+//    std::cout << deserialized_sketch.to_string(true);
+  }
 }
 
 template<typename T>
