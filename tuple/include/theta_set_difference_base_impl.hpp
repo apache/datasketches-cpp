@@ -38,7 +38,7 @@ CS theta_set_difference_base<EN, EK, S, CS, A>::compute(SS&& a, const S& b, bool
   if (b.get_seed_hash() != seed_hash_) throw std::invalid_argument("B seed hash mismatch");
 
   const uint64_t theta = std::min(a.get_theta64(), b.get_theta64());
-  std::vector<EN, A> entries;
+  std::vector<EN, A> entries(allocator_);
   bool is_empty = a.is_empty();
 
   if (b.get_num_retained() == 0) {

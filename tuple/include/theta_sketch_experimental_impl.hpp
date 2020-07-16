@@ -128,7 +128,7 @@ is_empty_(other.is_empty()),
 is_ordered_(other.is_ordered()),
 seed_hash_(other.get_seed_hash()),
 theta_(other.get_theta64()),
-entries_()
+entries_(other.get_allocator())
 {
   entries_.reserve(other.get_num_retained());
   std::copy(other.begin(), other.end(), std::back_inserter(entries_));
@@ -136,7 +136,8 @@ entries_()
 }
 
 template<typename A>
-compact_theta_sketch_experimental<A>::compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<uint64_t, A>&& entries):
+compact_theta_sketch_experimental<A>::compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta,
+    std::vector<uint64_t, A>&& entries):
 is_empty_(is_empty),
 is_ordered_(is_ordered),
 seed_hash_(seed_hash),
@@ -155,6 +156,11 @@ string<A> compact_theta_sketch_experimental<A>::to_string(bool detail) const {
     }
   }
   return os.str();
+}
+
+template<typename A>
+A compact_theta_sketch_experimental<A>::get_allocator() const {
+  return entries_.get_allocator();
 }
 
 } /* namespace datasketches */

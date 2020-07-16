@@ -88,6 +88,11 @@ map_(lg_cur_size, lg_nom_size, rf, p, seed, allocator)
 {}
 
 template<typename S, typename U, typename P, typename A>
+A update_tuple_sketch<S, U, P, A>::get_allocator() const {
+  return map_.allocator_;
+}
+
+template<typename S, typename U, typename P, typename A>
 bool update_tuple_sketch<S, U, P, A>::is_empty() const {
   return map_.is_empty_;
 }
@@ -244,7 +249,8 @@ void update_tuple_sketch<S, U, P, A>::print_specifics(std::ostringstream& os) co
 // compact sketch
 
 template<typename S, typename A>
-compact_tuple_sketch<S, A>::compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries):
+compact_tuple_sketch<S, A>::compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta,
+    std::vector<Entry, AllocEntry>&& entries):
 is_empty_(is_empty),
 is_ordered_(is_ordered),
 seed_hash_(seed_hash),
@@ -258,11 +264,16 @@ is_empty_(other.is_empty()),
 is_ordered_(other.is_ordered() || ordered),
 seed_hash_(other.get_seed_hash()),
 theta_(other.get_theta64()),
-entries_()
+entries_(other.get_allocator())
 {
   entries_.reserve(other.get_num_retained());
   std::copy(other.begin(), other.end(), std::back_inserter(entries_));
   if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end(), comparator());
+}
+
+template<typename S, typename A>
+A compact_tuple_sketch<S, A>::get_allocator() const {
+  return entries_.get_allocator();
 }
 
 template<typename S, typename A>
@@ -356,7 +367,7 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
   const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
   const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs
       + sizeof(uint64_t) * entries_.size() + get_serialized_size_summaries_bytes(sd);
-  vector_bytes bytes(size);
+  vector_bytes bytes(size, 0, entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
   const uint8_t* end_ptr = ptr + size;
 
@@ -398,7 +409,7 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
 
 template<typename S, typename A>
 template<typename SerDe>
-compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream& is, uint64_t seed, const SerDe& sd) {
+compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream& is, uint64_t seed, const SerDe& sd, const A& allocator) {
   uint8_t preamble_longs;
   is.read((char*)&preamble_longs, sizeof(preamble_longs));
   uint8_t serial_version;
@@ -430,12 +441,13 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
       }
     }
   }
-  std::vector<Entry, AllocEntry> entries;
+  std::vector<Entry, AllocEntry> entries(allocator);
   if (!is_empty) {
     entries.reserve(num_entries);
-    std::vector<uint64_t, AllocU64> keys(num_entries);
+    std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
     is.read((char*)keys.data(), num_entries * sizeof(uint64_t));
-    std::unique_ptr<S, deleter_of_summaries> summaries(A().allocate(num_entries), deleter_of_summaries(num_entries, false));
+    A alloc(allocator);
+    std::unique_ptr<S, deleter_of_summaries> summaries(alloc.allocate(num_entries), deleter_of_summaries(num_entries, false));
     sd.deserialize(is, summaries.get(), num_entries);
     summaries.get_deleter().set_destroy(true); // serde did not throw, so the items must be constructed
     for (size_t i = 0; i < num_entries; ++i) {
@@ -449,7 +461,7 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
 
 template<typename S, typename A>
 template<typename SerDe>
-compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* bytes, size_t size, uint64_t seed, const SerDe& sd) {
+compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* bytes, size_t size, uint64_t seed, const SerDe& sd, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* base = ptr;
@@ -489,12 +501,13 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   }
   const size_t keys_size_bytes = sizeof(uint64_t) * num_entries;
   ensure_minimum_memory(size, ptr - base + keys_size_bytes);
-  std::vector<Entry, AllocEntry> entries;
+  std::vector<Entry, AllocEntry> entries(allocator);
   if (!is_empty) {
     entries.reserve(num_entries);
-    std::vector<uint64_t, AllocU64> keys(num_entries);
+    std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
     ptr += copy_from_mem(ptr, keys.data(), keys_size_bytes);
-    std::unique_ptr<S, deleter_of_summaries> summaries(A().allocate(num_entries), deleter_of_summaries(num_entries, false));
+    A alloc(allocator);
+    std::unique_ptr<S, deleter_of_summaries> summaries(alloc.allocate(num_entries), deleter_of_summaries(num_entries, false));
     ptr += sd.deserialize(ptr, base + size - ptr, summaries.get(), num_entries);
     summaries.get_deleter().set_destroy(true); // serde did not throw, so the items must be constructed
     for (size_t i = 0; i < num_entries; ++i) {

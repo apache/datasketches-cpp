@@ -45,6 +45,8 @@ public:
 
   virtual ~tuple_sketch() = default;
 
+  virtual Allocator get_allocator() const = 0;
+
   /**
    * @return true if this sketch represents an empty set (not the same as no retained entries!)
    */
@@ -178,6 +180,7 @@ public:
 
   virtual ~update_tuple_sketch() = default;
 
+  virtual Allocator get_allocator() const;
   virtual bool is_empty() const;
   virtual bool is_ordered() const;
   virtual uint64_t get_theta64() const;
@@ -352,6 +355,7 @@ public:
   compact_tuple_sketch(const Base& other, bool ordered);
   virtual ~compact_tuple_sketch() = default;
 
+  virtual Allocator get_allocator() const;
   virtual bool is_empty() const;
   virtual bool is_ordered() const;
   virtual uint64_t get_theta64() const;
@@ -377,7 +381,8 @@ public:
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<Summary>>
-  static compact_tuple_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, const SerDe& sd = SerDe());
+  static compact_tuple_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED,
+      const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
@@ -388,9 +393,10 @@ public:
    * @return an instance of the sketch
    */
   template<typename SerDe = serde<Summary>>
-  static compact_tuple_sketch deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, const SerDe& sd = SerDe());
+  static compact_tuple_sketch deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED,
+      const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
-  // TODO: try to hide this
+  // for internal use
   compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
 
 private:

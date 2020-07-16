@@ -33,7 +33,7 @@ template<
 class theta_intersection_base {
 public:
   using comparator = compare_by_key<ExtractKey>;
-  theta_intersection_base(uint64_t seed, const Policy& policy);
+  theta_intersection_base(uint64_t seed, const Policy& policy, const Allocator& allocator);
   ~theta_intersection_base();
   void destroy_objects();
 
@@ -47,6 +47,7 @@ public:
   bool has_result() const;
 
 private:
+  Allocator allocator_;
   Policy policy_;
   bool is_valid_;
   bool is_empty_;

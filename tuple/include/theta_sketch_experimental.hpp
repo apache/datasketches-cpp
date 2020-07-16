@@ -44,6 +44,7 @@ public:
       A allocator_;
   };
 
+  A get_allocator() const { return table_.allocator_; };
   bool is_empty() const { return table_.is_empty_; }
   bool is_ordered() const { return false; }
   uint16_t get_seed_hash() const { return compute_seed_hash(DEFAULT_SEED); }
@@ -83,6 +84,8 @@ public:
   uint32_t get_num_retained() const { return entries_.size(); }
 
   string<A> to_string(bool detail = false) const;
+
+  A get_allocator() const;
 
 private:
   bool is_empty_;

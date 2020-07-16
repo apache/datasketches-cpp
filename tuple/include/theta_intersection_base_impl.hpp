@@ -26,7 +26,8 @@
 namespace datasketches {
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-theta_intersection_base<EN, EK, P, S, CS, A>::theta_intersection_base(uint64_t seed, const P& policy):
+theta_intersection_base<EN, EK, P, S, CS, A>::theta_intersection_base(uint64_t seed, const P& policy, const A& allocator):
+allocator_(allocator),
 policy_(policy),
 is_valid_(false),
 is_empty_(false),
@@ -40,7 +41,7 @@ entries_(nullptr)
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
 theta_intersection_base<EN, EK, P, S, CS, A>::~theta_intersection_base() {
   destroy_objects();
-  if (entries_ != nullptr) A().deallocate(entries_, 1 << lg_size_);
+  if (entries_ != nullptr) allocator_.deallocate(entries_, 1 << lg_size_);
 }
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
@@ -67,7 +68,7 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   if (sketch.get_num_retained() == 0) {
     is_valid_ = true;
     destroy_objects();
-    A().deallocate(entries_, 1 << lg_size_);
+    allocator_.deallocate(entries_, 1 << lg_size_);
     entries_ = nullptr;
     lg_size_ = 0;
     num_entries_ = 0;
@@ -77,7 +78,7 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
     is_valid_ = true;
     lg_size_ = lg_size_from_count(sketch.get_num_retained(), theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
     const size_t size = 1 << lg_size_;
-    entries_ = A().allocate(size);
+    entries_ = allocator_.allocate(size);
     for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
     for (auto& entry: sketch) {
       auto result = theta_update_sketch_base<EN, EK, A>::find(entries_, lg_size_, EK()(entry));
@@ -115,7 +116,7 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
     }
     destroy_objects();
     if (match_count == 0) {
-      A().deallocate(entries_, 1 << lg_size_);
+      allocator_.deallocate(entries_, 1 << lg_size_);
       entries_ = nullptr;
       lg_size_ = 0;
       num_entries_ = 0;
@@ -124,10 +125,10 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
       const uint8_t lg_size = lg_size_from_count(match_count, theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
       const size_t size = 1 << lg_size;
       if (lg_size != lg_size_) {
-        A().deallocate(entries_, 1 << lg_size_);
+        allocator_.deallocate(entries_, 1 << lg_size_);
         entries_ = nullptr;
         lg_size_ = lg_size;
-        entries_ = A().allocate(size);
+        entries_ = allocator_.allocate(size);
         for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
       }
       for (uint32_t i = 0; i < match_count; i++) {

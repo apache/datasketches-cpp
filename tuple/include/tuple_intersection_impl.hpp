@@ -20,8 +20,8 @@
 namespace datasketches {
 
 template<typename S, typename P, typename A>
-tuple_intersection<S, P, A>::tuple_intersection(uint64_t seed, const P& policy):
-state_(seed, internal_policy(policy))
+tuple_intersection<S, P, A>::tuple_intersection(uint64_t seed, const P& policy, const A& allocator):
+state_(seed, internal_policy(policy), allocator)
 {}
 
 template<typename S, typename P, typename A>

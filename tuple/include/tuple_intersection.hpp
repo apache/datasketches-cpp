@@ -66,7 +66,7 @@ public:
 
   using State = theta_intersection_base<Entry, ExtractKey, internal_policy, Sketch, CompactSketch, AllocEntry>;
 
-  explicit tuple_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy());
+  explicit tuple_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy(), const Allocator& allocator = Allocator());
 
   /**
    * Updates the intersection with a given sketch.
