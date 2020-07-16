@@ -38,7 +38,7 @@ public:
   using resize_factor = typename hash_table::resize_factor;
   using comparator = compare_by_key<ExtractKey>;
 
-  theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
+  theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy, const Allocator& allocator);
 
   template<typename FwdSketch>
   void update(FwdSketch&& sketch);

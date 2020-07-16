@@ -317,7 +317,7 @@ private:
   tuple_map map_;
 
   // for builder
-  update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
+  update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy, const Allocator& allocator);
 
   virtual void print_specifics(std::ostringstream& os) const;
 };
@@ -448,7 +448,7 @@ public:
   /**
    * Creates and instance of the builder with default parameters.
    */
-  builder(const P& policy = P());
+  builder(const P& policy = P(), const A& allocator = A());
 
   /**
    * This is to create an instance of the sketch with predefined parameters.
@@ -458,6 +458,7 @@ public:
 
 private:
   P policy_;
+  A allocator_;
 };
 
 } /* namespace datasketches */

@@ -24,7 +24,8 @@
 namespace datasketches {
 
 template<typename EN, typename EK, typename A>
-theta_update_sketch_base<EN, EK, A>::theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed):
+theta_update_sketch_base<EN, EK, A>::theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const A& allocator):
+allocator_(allocator),
 is_empty_(true),
 lg_cur_size_(lg_cur_size),
 lg_nom_size_(lg_nom_size),
@@ -35,7 +36,7 @@ seed_(seed),
 entries_(nullptr)
 {
   const size_t size = 1 << lg_cur_size;
-  entries_ = A().allocate(size);
+  entries_ = allocator_.allocate(size);
   for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
   if (p < 1) this->theta_ *= p;
 }
@@ -47,7 +48,7 @@ theta_update_sketch_base<EN, EK, A>::~theta_update_sketch_base()
   for (size_t i = 0; i < size; ++i) {
     if (EK()(entries_[i]) != 0) entries_[i].~EN();
   }
-  A().deallocate(entries_, size);
+  allocator_.deallocate(entries_, size);
 }
 
 template<typename EN, typename EK, typename A>
@@ -108,21 +109,6 @@ auto theta_update_sketch_base<EN, EK, A>::end() const -> iterator {
 }
 
 template<typename EN, typename EK, typename A>
-string<A> theta_update_sketch_base<EN, EK, A>::to_string() const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
-  auto type = typeid(*this).name();
-  os << "type: " << type << std::endl;
-  os << "sizeof: " << sizeof(*this) << std::endl;
-  os << "is_empty:    " << (is_empty_ ? "true" : "false") << std::endl;
-  os << "lg_cur_size: " << std::to_string(lg_cur_size_) << std::endl;
-  os << "lg_nom_size: " << std::to_string(lg_nom_size_) << std::endl;
-  os << "num_entries: " << num_entries_ << std::endl;
-  os << "theta (as long): " << theta_ << std::endl;
-  os << "theta (as fraction): " << static_cast<double>(theta_) / theta_constants::MAX_THETA << std::endl;
-  return os.str();
-}
-
-template<typename EN, typename EK, typename A>
 uint32_t theta_update_sketch_base<EN, EK, A>::get_capacity(uint8_t lg_cur_size, uint8_t lg_nom_size) {
   const double fraction = (lg_cur_size <= lg_nom_size) ? RESIZE_THRESHOLD : REBUILD_THRESHOLD;
   return std::floor(fraction * (1 << lg_cur_size));
@@ -142,7 +128,7 @@ void theta_update_sketch_base<EN, EK, A>::resize() {
   lg_cur_size_ += factor;
   const size_t new_size = 1 << lg_cur_size_;
   EN* old_entries = entries_;
-  entries_ = A().allocate(new_size);
+  entries_ = allocator_.allocate(new_size);
   for (size_t i = 0; i < new_size; ++i) EK()(entries_[i]) = 0;
   num_entries_ = 0;
   for (size_t i = 0; i < old_size; ++i) {
@@ -152,7 +138,7 @@ void theta_update_sketch_base<EN, EK, A>::resize() {
       old_entries[i].~EN();
     }
   }
-  A().deallocate(old_entries, old_size);
+  allocator_.deallocate(old_entries, old_size);
 }
 
 template<typename EN, typename EK, typename A>
@@ -162,7 +148,7 @@ void theta_update_sketch_base<EN, EK, A>::rebuild() {
   std::nth_element(&entries_[0], &entries_[pivot], &entries_[size], comparator());
   this->theta_ = EK()(entries_[pivot]);
   EN* old_entries = entries_;
-  entries_ = A().allocate(size);
+  entries_ = allocator_.allocate(size);
   for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
   num_entries_ = 0;
   for (size_t i = 0; i < size; ++i) {
@@ -172,7 +158,7 @@ void theta_update_sketch_base<EN, EK, A>::rebuild() {
       old_entries[i].~EN();
     }
   }
-  A().deallocate(old_entries, size);
+  allocator_.deallocate(old_entries, size);
 }
 
 template<typename EN, typename EK, typename A>

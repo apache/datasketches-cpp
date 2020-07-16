@@ -24,8 +24,9 @@ namespace datasketches {
 // experimental update theta sketch derived from the same base as tuple sketch
 
 template<typename A>
-theta_sketch_experimental<A>::theta_sketch_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed):
-table_(lg_cur_size, lg_nom_size, rf, p, seed)
+theta_sketch_experimental<A>::theta_sketch_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
+    float p, uint64_t seed, const A& allocator):
+table_(lg_cur_size, lg_nom_size, rf, p, seed, allocator)
 {}
 
 template<typename A>
@@ -104,9 +105,14 @@ auto theta_sketch_experimental<A>::end() const -> const_iterator {
   return const_iterator(nullptr, 0, 1 << table_.lg_cur_size_);
 }
 
+// builder
+
+template<typename A>
+theta_sketch_experimental<A>::builder::builder(const A& allocator): allocator_(allocator) {}
+
 template<typename A>
 theta_sketch_experimental<A> theta_sketch_experimental<A>::builder::build() const {
-  return theta_sketch_experimental(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->seed_);
+  return theta_sketch_experimental(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->seed_, allocator_);
 }
 
 template<typename A>

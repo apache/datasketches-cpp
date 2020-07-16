@@ -83,7 +83,7 @@ private:
   State state_;
 
   // for builder
-  tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy);
+  tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Policy& policy, const Allocator& allocator);
 };
 
 template<typename S, typename P, typename A>
@@ -92,7 +92,7 @@ public:
   /**
    * Creates and instance of the builder with default parameters.
    */
-  builder(const P& policy = P());
+  builder(const P& policy = P(), const A& allocator = A());
 
   /**
    * This is to create an instance of the union with predefined parameters.
@@ -102,6 +102,7 @@ public:
 
 private:
   P policy_;
+  A allocator_;
 };
 
 } /* namespace datasketches */

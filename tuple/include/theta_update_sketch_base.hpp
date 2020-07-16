@@ -43,7 +43,8 @@ struct theta_update_sketch_base {
   using resize_factor = theta_constants::resize_factor;
   using comparator = compare_by_key<ExtractKey>;
 
-  theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);
+  theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p,
+      uint64_t seed, const Allocator& allocator);
   // TODO: copy and move
   ~theta_update_sketch_base();
 
@@ -59,8 +60,6 @@ struct theta_update_sketch_base {
   iterator begin() const;
   iterator end() const;
 
-  string<Allocator> to_string() const;
-
   // resize threshold = 0.5 tuned for speed
   static constexpr double RESIZE_THRESHOLD = 0.5;
   // hash table rebuild threshold = 15/16
@@ -69,6 +68,7 @@ struct theta_update_sketch_base {
   static constexpr uint8_t STRIDE_HASH_BITS = 7;
   static constexpr uint32_t STRIDE_MASK = (1 << STRIDE_HASH_BITS) - 1;
 
+  Allocator allocator_;
   bool is_empty_;
   uint8_t lg_cur_size_;
   uint8_t lg_nom_size_;

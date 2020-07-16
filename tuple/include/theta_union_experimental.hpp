@@ -67,18 +67,22 @@ private:
   State state_;
 
   // for builder
-  theta_union_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);
+  theta_union_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const Allocator& allocator);
 };
 
 template<typename A>
 class theta_union_experimental<A>::builder: public theta_base_builder<theta_union_experimental<A>::builder> {
 public:
+  builder(const A& allocator = A());
 
   /**
    * This is to create an instance of the union with predefined parameters.
    * @return an instance of the union
    */
   theta_union_experimental<A> build() const;
+
+private:
+  A allocator_;
 };
 
 } /* namespace datasketches */

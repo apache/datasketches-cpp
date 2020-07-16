@@ -38,7 +38,10 @@ public:
 
   class builder: public theta_base_builder<builder> {
   public:
+      builder(const A& allocator = A());
       theta_sketch_experimental build() const;
+  private:
+      A allocator_;
   };
 
   bool is_empty() const { return table_.is_empty_; }
@@ -67,7 +70,7 @@ private:
   using theta_table = theta_update_sketch_base<uint64_t, trivial_extract_key, A>;
   theta_table table_;
 
-  theta_sketch_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed);
+  theta_sketch_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const A& allocator);
 };
 
 template<typename A = std::allocator<uint64_t>>
