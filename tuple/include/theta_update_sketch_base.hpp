@@ -45,8 +45,11 @@ struct theta_update_sketch_base {
 
   theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p,
       uint64_t seed, const Allocator& allocator);
-  // TODO: copy and move
+  theta_update_sketch_base(const theta_update_sketch_base& other);
+  theta_update_sketch_base(theta_update_sketch_base&& other) noexcept;
   ~theta_update_sketch_base();
+  theta_update_sketch_base& operator=(const theta_update_sketch_base& other);
+  theta_update_sketch_base& operator=(theta_update_sketch_base&& other);
 
   using iterator = Entry*;
 

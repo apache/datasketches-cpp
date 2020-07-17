@@ -27,6 +27,8 @@ namespace datasketches {
 
 using update_tuple_sketch_int_alloc =
     update_tuple_sketch<int, int, default_update_policy<int, int>, test_allocator<int>>;
+using compact_tuple_sketch_int_alloc =
+    compact_tuple_sketch<int, test_allocator<int>>;
 
 TEST_CASE("tuple sketch with test allocator: exact mode", "[tuple_sketch]") {
   test_allocator_total_bytes = 0;
@@ -58,8 +60,21 @@ TEST_CASE("tuple sketch with test allocator: exact mode", "[tuple_sketch]") {
     REQUIRE(count == update_sketch.get_num_retained());
 
     auto bytes = compact_sketch.serialize();
-    auto deserialized_sketch = compact_tuple_sketch<int, test_allocator<int>>::deserialize(bytes.data(), bytes.size());
+    auto deserialized_sketch = compact_tuple_sketch_int_alloc::deserialize(bytes.data(), bytes.size());
     REQUIRE(deserialized_sketch.get_estimate() == compact_sketch.get_estimate());
+
+    // update sketch copy
+    update_tuple_sketch_int_alloc update_sketch_copy(update_sketch);
+    update_sketch_copy = update_sketch;
+    // update sketch move
+    update_tuple_sketch_int_alloc update_sketch_moved(std::move(update_sketch_copy));
+    update_sketch_moved = std::move(update_sketch);
+
+    // compact sketch copy
+    compact_tuple_sketch_int_alloc compact_sketch_copy(compact_sketch);
+    compact_sketch_copy = compact_sketch;
+    compact_tuple_sketch_int_alloc compact_sketch_moved(std::move(compact_sketch_copy));
+    compact_sketch_moved = std::move(compact_sketch);
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);

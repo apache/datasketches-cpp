@@ -47,7 +47,10 @@ public:
   test_allocator(const test_allocator&) {}
   template <class U>
   test_allocator(const test_allocator<U>&) {}
+  test_allocator(test_allocator&&) {}
   ~test_allocator() {}
+  test_allocator& operator=(const test_allocator&) { return *this; }
+  test_allocator& operator=(test_allocator&&) { return *this; }
 
   pointer address(reference x) const { return &x; }
   const_pointer address(const_reference x) const {
@@ -77,9 +80,6 @@ public:
     new(p) value_type(std::forward<Args>(args)...);
   }
   void destroy(pointer p) { p->~value_type(); }
-
-private:
-  void operator=(const test_allocator&);
 };
 
 template<> class test_allocator<void> {

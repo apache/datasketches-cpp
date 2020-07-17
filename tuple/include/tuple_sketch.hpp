@@ -178,7 +178,11 @@ public:
   // No constructor here. Use builder instead.
   class builder;
 
+  update_tuple_sketch(const update_tuple_sketch&) = default;
+  update_tuple_sketch(update_tuple_sketch&&) noexcept = default;
   virtual ~update_tuple_sketch() = default;
+  update_tuple_sketch& operator=(const update_tuple_sketch&) = default;
+  update_tuple_sketch& operator=(update_tuple_sketch&&) = default;
 
   virtual Allocator get_allocator() const;
   virtual bool is_empty() const;
@@ -353,7 +357,11 @@ public:
   // - by deserializing a previously serialized compact sketch
 
   compact_tuple_sketch(const Base& other, bool ordered);
+  compact_tuple_sketch(const compact_tuple_sketch&) = default;
+  compact_tuple_sketch(compact_tuple_sketch&&) noexcept = default;
   virtual ~compact_tuple_sketch() = default;
+  compact_tuple_sketch& operator=(const compact_tuple_sketch&) = default;
+  compact_tuple_sketch& operator=(compact_tuple_sketch&&) = default;
 
   virtual Allocator get_allocator() const;
   virtual bool is_empty() const;

@@ -42,13 +42,84 @@ entries_(nullptr)
 }
 
 template<typename EN, typename EK, typename A>
+theta_update_sketch_base<EN, EK, A>::theta_update_sketch_base(const theta_update_sketch_base& other):
+allocator_(other.allocator_),
+is_empty_(other.is_empty_),
+lg_cur_size_(other.lg_cur_size_),
+lg_nom_size_(other.lg_nom_size_),
+rf_(other.rf_),
+num_entries_(other.num_entries_),
+theta_(other.theta_),
+seed_(other.seed_),
+entries_(nullptr)
+{
+  if (other.entries_ != nullptr) {
+    const size_t size = 1 << lg_cur_size_;
+    entries_ = allocator_.allocate(size);
+    for (size_t i = 0; i < size; ++i) {
+      if (EK()(other.entries_[i]) != 0) {
+        entries_[i] = other.entries_[i];
+      } else {
+        EK()(entries_[i]) = 0;
+      }
+    }
+  }
+}
+
+template<typename EN, typename EK, typename A>
+theta_update_sketch_base<EN, EK, A>::theta_update_sketch_base(theta_update_sketch_base&& other) noexcept:
+allocator_(other.allocator_),
+is_empty_(other.is_empty_),
+lg_cur_size_(other.lg_cur_size_),
+lg_nom_size_(other.lg_nom_size_),
+rf_(other.rf_),
+num_entries_(other.num_entries_),
+theta_(other.theta_),
+seed_(other.seed_),
+entries_(other.entries_)
+{
+  other.entries_ = nullptr;
+}
+
+template<typename EN, typename EK, typename A>
 theta_update_sketch_base<EN, EK, A>::~theta_update_sketch_base()
 {
-  const size_t size = 1 << lg_cur_size_;
-  for (size_t i = 0; i < size; ++i) {
-    if (EK()(entries_[i]) != 0) entries_[i].~EN();
+  if (entries_ != nullptr) {
+    const size_t size = 1 << lg_cur_size_;
+    for (size_t i = 0; i < size; ++i) {
+      if (EK()(entries_[i]) != 0) entries_[i].~EN();
+    }
+    allocator_.deallocate(entries_, size);
   }
-  allocator_.deallocate(entries_, size);
+}
+
+template<typename EN, typename EK, typename A>
+theta_update_sketch_base<EN, EK, A>& theta_update_sketch_base<EN, EK, A>::operator=(const theta_update_sketch_base& other) {
+  theta_update_sketch_base<EN, EK, A> copy(other);
+  std::swap(allocator_, copy.allocator_);
+  std::swap(is_empty_, copy.is_empty_);
+  std::swap(lg_cur_size_, copy.lg_cur_size_);
+  std::swap(lg_nom_size_, copy.lg_nom_size_);
+  std::swap(rf_, copy.rf_);
+  std::swap(num_entries_, copy.num_entries_);
+  std::swap(theta_, copy.theta_);
+  std::swap(seed_, copy.seed_);
+  std::swap(entries_, copy.entries_);
+  return *this;
+}
+
+template<typename EN, typename EK, typename A>
+theta_update_sketch_base<EN, EK, A>& theta_update_sketch_base<EN, EK, A>::operator=(theta_update_sketch_base&& other) {
+  std::swap(allocator_, other.allocator_);
+  std::swap(is_empty_, other.is_empty_);
+  std::swap(lg_cur_size_, other.lg_cur_size_);
+  std::swap(lg_nom_size_, other.lg_nom_size_);
+  std::swap(rf_, other.rf_);
+  std::swap(num_entries_, other.num_entries_);
+  std::swap(theta_, other.theta_);
+  std::swap(seed_, other.seed_);
+  std::swap(entries_, other.entries_);
+  return *this;
 }
 
 template<typename EN, typename EK, typename A>
