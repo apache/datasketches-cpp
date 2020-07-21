@@ -24,12 +24,12 @@ import numpy as np
 class KllTest(unittest.TestCase):
     def test_kll_example(self):
       k = 160
-      n = 2 ** 18
+      n = 2 ** 20
 
-      # create a sketch and inject ~1 million N(0,1) points
+      # create a sketch and inject ~1 million N(0,1) points as an array and as a single item
       kll = kll_floats_sketch(k)
-      for i in range(0, n):
-        kll.update(np.random.randn())
+      kll.update(np.random.normal(size=n-1))
+      kll.update(0.0)
 
       # 0 should be near the median
       self.assertAlmostEqual(0.5, kll.get_rank(0.0), delta=0.025)
