@@ -32,12 +32,10 @@ template<
 >
 class theta_intersection_base {
 public:
+  using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
+  using resize_factor = typename hash_table::resize_factor;
   using comparator = compare_by_key<ExtractKey>;
   theta_intersection_base(uint64_t seed, const Policy& policy, const Allocator& allocator);
-  ~theta_intersection_base();
-  void destroy_objects();
-
-  // TODO: copy and move
 
   template<typename FwdSketch>
   void update(FwdSketch&& sketch);
@@ -47,15 +45,9 @@ public:
   bool has_result() const;
 
 private:
-  Allocator allocator_;
   Policy policy_;
   bool is_valid_;
-  bool is_empty_;
-  uint8_t lg_size_;
-  uint16_t seed_hash_;
-  uint32_t num_entries_;
-  uint64_t theta_;
-  Entry* entries_;
+  hash_table table_;
 };
 
 } /* namespace datasketches */

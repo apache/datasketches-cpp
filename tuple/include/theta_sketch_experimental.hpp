@@ -33,8 +33,6 @@ template<typename A = std::allocator<uint64_t>>
 class theta_sketch_experimental {
 public:
   using resize_factor = theta_constants::resize_factor;
-  using AllocBytes = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
-  using vector_bytes = std::vector<uint8_t, AllocBytes>;
 
   class builder: public theta_base_builder<builder> {
   public:
@@ -58,8 +56,6 @@ public:
 
   string<A> to_string(bool detail = false) const;
 
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
-
   using const_iterator = theta_const_iterator<uint64_t, trivial_extract_key>;
   const_iterator begin() const;
   const_iterator end() const;
@@ -71,7 +67,7 @@ private:
   using theta_table = theta_update_sketch_base<uint64_t, trivial_extract_key, A>;
   theta_table table_;
 
-  theta_sketch_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const A& allocator);
+  theta_sketch_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const A& allocator);
 };
 
 template<typename A = std::allocator<uint64_t>>

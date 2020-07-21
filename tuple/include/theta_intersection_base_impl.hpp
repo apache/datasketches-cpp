@@ -27,77 +27,45 @@ namespace datasketches {
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
 theta_intersection_base<EN, EK, P, S, CS, A>::theta_intersection_base(uint64_t seed, const P& policy, const A& allocator):
-allocator_(allocator),
 policy_(policy),
 is_valid_(false),
-is_empty_(false),
-lg_size_(0),
-seed_hash_(compute_seed_hash(seed)),
-num_entries_(0),
-theta_(theta_constants::MAX_THETA),
-entries_(nullptr)
+table_(0, 0, resize_factor::X1, theta_constants::MAX_THETA, seed, allocator, false)
 {}
-
-template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-theta_intersection_base<EN, EK, P, S, CS, A>::~theta_intersection_base() {
-  destroy_objects();
-  if (entries_ != nullptr) allocator_.deallocate(entries_, 1 << lg_size_);
-}
-
-template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-void theta_intersection_base<EN, EK, P, S, CS, A>::destroy_objects() {
-  if (entries_ != nullptr) {
-    const size_t size = 1 << lg_size_;
-    for (size_t i = 0; i < size; ++i) {
-      if (EK()(entries_[i]) != 0) {
-        entries_[i].~EN();
-        EK()(entries_[i]) = 0;
-      }
-    }
-  }
-}
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
 template<typename SS>
 void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
-  if (is_empty_) return;
-  if (!sketch.is_empty() && sketch.get_seed_hash() != seed_hash_) throw std::invalid_argument("seed hash mismatch");
-  is_empty_ |= sketch.is_empty();
-  theta_ = std::min(theta_, sketch.get_theta64());
-  if (is_valid_ && num_entries_ == 0) return;
+  if (table_.is_empty_) return;
+  if (!sketch.is_empty() && sketch.get_seed_hash() != compute_seed_hash(table_.seed_)) throw std::invalid_argument("seed hash mismatch");
+  table_.is_empty_ |= sketch.is_empty();
+  table_.theta_ = std::min(table_.theta_, sketch.get_theta64());
+  if (is_valid_ && table_.num_entries_ == 0) return;
   if (sketch.get_num_retained() == 0) {
     is_valid_ = true;
-    destroy_objects();
-    allocator_.deallocate(entries_, 1 << lg_size_);
-    entries_ = nullptr;
-    lg_size_ = 0;
-    num_entries_ = 0;
+    table_ = hash_table(0, 0, resize_factor::X1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
     return;
   }
   if (!is_valid_) { // first update, copy or move incoming sketch
     is_valid_ = true;
-    lg_size_ = lg_size_from_count(sketch.get_num_retained(), theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
-    const size_t size = 1 << lg_size_;
-    entries_ = allocator_.allocate(size);
-    for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
+    const uint8_t lg_size = lg_size_from_count(sketch.get_num_retained(), theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
+    table_ = hash_table(lg_size, lg_size, resize_factor::X1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
     for (auto& entry: sketch) {
-      auto result = theta_update_sketch_base<EN, EK, A>::find(entries_, lg_size_, EK()(entry));
+      auto result = table_.find(EK()(entry));
       if (result.second) {
         throw std::invalid_argument("duplicate key, possibly corrupted input sketch");
       }
-      new (result.first) EN(conditional_forward<SS>(entry));
-      ++num_entries_;
+      table_.insert(result.first, conditional_forward<SS>(entry));
     }
-    if (num_entries_ != sketch.get_num_retained()) throw std::invalid_argument("num entries mismatch, possibly corrupted input sketch");
+    if (table_.num_entries_ != sketch.get_num_retained()) throw std::invalid_argument("num entries mismatch, possibly corrupted input sketch");
   } else { // intersection
-    const uint32_t max_matches = std::min(num_entries_, sketch.get_num_retained());
-    std::vector<EN, A> matched_entries;
+    const uint32_t max_matches = std::min(table_.num_entries_, sketch.get_num_retained());
+    std::vector<EN, A> matched_entries(table_.allocator_);
     matched_entries.reserve(max_matches);
     uint32_t match_count = 0;
     uint32_t count = 0;
     for (auto& entry: sketch) {
-      if (EK()(entry) < theta_) {
-        auto result = theta_update_sketch_base<EN, EK, A>::find(entries_, lg_size_, EK()(entry));
+      if (EK()(entry) < table_.theta_) {
+        auto result = table_.find(EK()(entry));
         if (result.second) {
           if (match_count == max_matches) throw std::invalid_argument("max matches exceeded, possibly corrupted input sketch");
           policy_(*result.first, conditional_forward<SS>(entry));
@@ -114,28 +82,16 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
     } else if (!sketch.is_ordered() && count < sketch.get_num_retained()) {
       throw std::invalid_argument(" fewer keys then expected, possibly corrupted input sketch");
     }
-    destroy_objects();
     if (match_count == 0) {
-      allocator_.deallocate(entries_, 1 << lg_size_);
-      entries_ = nullptr;
-      lg_size_ = 0;
-      num_entries_ = 0;
-      if (theta_ == theta_constants::MAX_THETA) is_empty_ = true;
+      table_ = hash_table(0, 0, resize_factor::X1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
+      if (table_.theta_ == theta_constants::MAX_THETA) table_.is_empty_ = true;
     } else {
       const uint8_t lg_size = lg_size_from_count(match_count, theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
-      const size_t size = 1 << lg_size;
-      if (lg_size != lg_size_) {
-        allocator_.deallocate(entries_, 1 << lg_size_);
-        entries_ = nullptr;
-        lg_size_ = lg_size;
-        entries_ = allocator_.allocate(size);
-        for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
-      }
+      table_ = hash_table(lg_size, lg_size, resize_factor::X1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
       for (uint32_t i = 0; i < match_count; i++) {
-        auto result = theta_update_sketch_base<EN, EK, A>::find(entries_, lg_size_, EK()(matched_entries[i]));
-        new (result.first) EN(std::move(matched_entries[i]));
+        auto result = table_.find(EK()(matched_entries[i]));
+        table_.insert(result.first, std::move(matched_entries[i]));
       }
-      num_entries_ = match_count;
     }
   }
 }
@@ -143,13 +99,13 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
 CS theta_intersection_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
   if (!is_valid_) throw std::invalid_argument("calling get_result() before calling update() is undefined");
-  std::vector<EN, A> entries_copy;
-  if (num_entries_ > 0) {
-    entries_copy.reserve(num_entries_);
-    std::copy_if(entries_, entries_ + (1 << lg_size_), std::back_inserter(entries_copy), key_not_zero<EN, EK>());
-    if (ordered) std::sort(entries_copy.begin(), entries_copy.end(), comparator());
+  std::vector<EN, A> entries(table_.allocator_);
+  if (table_.num_entries_ > 0) {
+    entries.reserve(table_.num_entries_);
+    std::copy_if(table_.begin(), table_.end(), std::back_inserter(entries), key_not_zero<EN, EK>());
+    if (ordered) std::sort(entries.begin(), entries.end(), comparator());
   }
-  return CS(is_empty_, ordered, seed_hash_, theta_, std::move(entries_copy));
+  return CS(table_.is_empty_, ordered, compute_seed_hash(table_.seed_), table_.theta_, std::move(entries));
 }
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>

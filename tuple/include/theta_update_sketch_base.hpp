@@ -43,8 +43,8 @@ struct theta_update_sketch_base {
   using resize_factor = theta_constants::resize_factor;
   using comparator = compare_by_key<ExtractKey>;
 
-  theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p,
-      uint64_t seed, const Allocator& allocator);
+  theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta,
+      uint64_t seed, const Allocator& allocator, bool is_empty = true);
   theta_update_sketch_base(const theta_update_sketch_base& other);
   theta_update_sketch_base(theta_update_sketch_base&& other) noexcept;
   ~theta_update_sketch_base();
@@ -87,8 +87,6 @@ struct theta_update_sketch_base {
 
   static inline uint32_t get_capacity(uint8_t lg_cur_size, uint8_t lg_nom_size);
   static inline uint32_t get_stride(uint64_t key, uint8_t lg_size);
-
-  static inline std::pair<iterator, bool> find(Entry* entries, uint8_t lg_size, uint64_t key);
 };
 
 // builder
@@ -144,6 +142,7 @@ protected:
   float p_;
   uint64_t seed_;
 
+  uint64_t starting_theta() const;
   uint8_t starting_lg_size() const;
   static uint8_t starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf);
 };

@@ -24,21 +24,22 @@
 namespace datasketches {
 
 template<typename EN, typename EK, typename A>
-theta_update_sketch_base<EN, EK, A>::theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t seed, const A& allocator):
+theta_update_sketch_base<EN, EK, A>::theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const A& allocator, bool is_empty):
 allocator_(allocator),
-is_empty_(true),
+is_empty_(is_empty),
 lg_cur_size_(lg_cur_size),
 lg_nom_size_(lg_nom_size),
 rf_(rf),
 num_entries_(0),
-theta_(theta_constants::MAX_THETA),
+theta_(theta),
 seed_(seed),
 entries_(nullptr)
 {
-  const size_t size = 1 << lg_cur_size;
-  entries_ = allocator_.allocate(size);
-  for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
-  if (p < 1) this->theta_ *= p;
+  if (lg_cur_size > 0) {
+    const size_t size = 1 << lg_cur_size;
+    entries_ = allocator_.allocate(size);
+    for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
+  }
 }
 
 template<typename EN, typename EK, typename A>
@@ -123,26 +124,6 @@ theta_update_sketch_base<EN, EK, A>& theta_update_sketch_base<EN, EK, A>::operat
 }
 
 template<typename EN, typename EK, typename A>
-auto theta_update_sketch_base<EN, EK, A>::find(EN* entries, uint8_t lg_size, uint64_t key) -> std::pair<iterator, bool> {
-  const size_t size = 1 << lg_size;
-  const size_t mask = size - 1;
-  const uint32_t stride = get_stride(key, lg_size);
-  uint32_t index = static_cast<uint32_t>(key) & mask;
-  // search for duplicate or zero
-  const uint32_t loop_index = index;
-  do {
-    const uint64_t probe = EK()(entries[index]);
-    if (probe == 0) {
-      return std::pair<iterator, bool>(&entries[index], false);
-    } else if (probe == key) {
-      return std::pair<iterator, bool>(&entries[index], true);
-    }
-    index = (index + stride) & mask;
-  } while (index != loop_index);
-  throw std::logic_error("key not found and no empty slots!");
-}
-
-template<typename EN, typename EK, typename A>
 uint64_t theta_update_sketch_base<EN, EK, A>::hash_and_screen(const void* data, size_t length) {
   is_empty_ = false;
   const uint64_t hash = compute_hash(data, length, seed_);
@@ -152,7 +133,22 @@ uint64_t theta_update_sketch_base<EN, EK, A>::hash_and_screen(const void* data, 
 
 template<typename EN, typename EK, typename A>
 auto theta_update_sketch_base<EN, EK, A>::find(uint64_t key) const -> std::pair<iterator, bool> {
-  return find(entries_, lg_cur_size_, key);
+  const size_t size = 1 << lg_cur_size_;
+  const size_t mask = size - 1;
+  const uint32_t stride = get_stride(key, lg_cur_size_);
+  uint32_t index = static_cast<uint32_t>(key) & mask;
+  // search for duplicate or zero
+  const uint32_t loop_index = index;
+  do {
+    const uint64_t probe = EK()(entries_[index]);
+    if (probe == 0) {
+      return std::pair<iterator, bool>(&entries_[index], false);
+    } else if (probe == key) {
+      return std::pair<iterator, bool>(&entries_[index], true);
+    }
+    index = (index + stride) & mask;
+  } while (index != loop_index);
+  throw std::logic_error("key not found and no empty slots!");
 }
 
 template<typename EN, typename EK, typename A>
@@ -269,6 +265,12 @@ template<typename Derived>
 Derived& theta_base_builder<Derived>::set_seed(uint64_t seed) {
   seed_ = seed;
   return static_cast<Derived&>(*this);
+}
+
+template<typename Derived>
+uint64_t theta_base_builder<Derived>::starting_theta() const {
+  if (p_ < 1) return theta_constants::MAX_THETA * p_;
+  return theta_constants::MAX_THETA;
 }
 
 template<typename Derived>
