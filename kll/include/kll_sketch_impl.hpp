@@ -378,21 +378,21 @@ template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::serialize(std::ostream& os) const {
   const bool is_single_item = n_ == 1;
   const uint8_t preamble_ints(is_empty() || is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
-  os.write((char*)&preamble_ints, sizeof(preamble_ints));
+  os.write(reinterpret_cast<const char*>(&preamble_ints), sizeof(preamble_ints));
   const uint8_t serial_version(is_single_item ? SERIAL_VERSION_2 : SERIAL_VERSION_1);
-  os.write((char*)&serial_version, sizeof(serial_version));
+  os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
   const uint8_t family(FAMILY);
-  os.write((char*)&family, sizeof(family));
+  os.write(reinterpret_cast<const char*>(&family), sizeof(family));
   const uint8_t flags_byte(
       (is_empty() ? 1 << flags::IS_EMPTY : 0)
     | (is_level_zero_sorted_ ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
     | (is_single_item ? 1 << flags::IS_SINGLE_ITEM : 0)
   );
-  os.write((char*)&flags_byte, sizeof(flags_byte));
+  os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
   os.write((char*)&k_, sizeof(k_));
   os.write((char*)&m_, sizeof(m_));
   const uint8_t unused(0);
-  os.write((char*)&unused, sizeof(unused));
+  os.write(reinterpret_cast<const char*>(&unused), sizeof(unused));
   if (is_empty()) return;
   if (!is_single_item) {
     os.write((char*)&n_, sizeof(n_));
