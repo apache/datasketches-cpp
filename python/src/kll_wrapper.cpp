@@ -21,6 +21,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <sstream>
 #include <vector>
 
@@ -92,6 +93,19 @@ py::list kll_sketch_get_cdf(const kll_sketch<T>& sk,
   return list;
 }
 
+template<typename T>
+void kll_sketch_update(kll_sketch<T>& sk, py::array_t<T, py::array::c_style | py::array::forcecast> items) {
+  if (items.ndim() != 1) {
+    throw std::invalid_argument("input data must have only one dimension. Found: "
+          + std::to_string(items.ndim()));
+  }
+  
+  auto data = items.template unchecked<1>();
+  for (uint32_t i = 0; i < data.size(); ++i) {
+    sk.update(data(i));
+  }
+}
+
 }
 }
 
@@ -105,6 +119,7 @@ void bind_kll_sketch(py::module &m, const char* name) {
     .def(py::init<uint16_t>(), py::arg("k"))
     .def(py::init<const kll_sketch<T>&>())
     .def("update", (void (kll_sketch<T>::*)(const T&)) &kll_sketch<T>::update, py::arg("item"))
+    .def("update", &dspy::kll_sketch_update<T>, py::arg("array"))
     .def("merge", (void (kll_sketch<T>::*)(const kll_sketch<T>&)) &kll_sketch<T>::merge, py::arg("sketch"))
     .def("__str__", &kll_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false)
     .def("to_string", &kll_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false)
