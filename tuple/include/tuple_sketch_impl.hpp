@@ -70,9 +70,7 @@ string<A> tuple_sketch<S, A>::to_string(bool detail) const {
   if (detail) {
     os << "### Retained entries" << std::endl;
     for (const auto& it: *this) {
-      if (it.first != 0) {
-        os << it.first << ": " << it.second << std::endl;
-      }
+      os << it.first << ": " << it.second << std::endl;
     }
     os << "### End retained entries" << std::endl;
   }
@@ -129,13 +127,6 @@ auto update_tuple_sketch<S, U, P, A>::get_rf() const -> resize_factor {
 
 template<typename S, typename U, typename P, typename A>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(const std::string& key, UU&& value) {
-  if (key.empty()) return;
-  update(key.c_str(), key.length(), std::forward<UU>(value));
-}
-
-template<typename S, typename U, typename P, typename A>
-template<typename UU>
 void update_tuple_sketch<S, U, P, A>::update(uint64_t key, UU&& value) {
   update(&key, sizeof(key), std::forward<UU>(value));
 }
@@ -178,6 +169,19 @@ void update_tuple_sketch<S, U, P, A>::update(uint8_t key, UU&& value) {
 
 template<typename S, typename U, typename P, typename A>
 template<typename UU>
+void update_tuple_sketch<S, U, P, A>::update(int8_t key, UU&& value) {
+  update(static_cast<int64_t>(key), std::forward<UU>(value));
+}
+
+template<typename S, typename U, typename P, typename A>
+template<typename UU>
+void update_tuple_sketch<S, U, P, A>::update(const std::string& key, UU&& value) {
+  if (key.empty()) return;
+  update(key.c_str(), key.length(), std::forward<UU>(value));
+}
+
+template<typename S, typename U, typename P, typename A>
+template<typename UU>
 void update_tuple_sketch<S, U, P, A>::update(double key, UU&& value) {
   update(canonical_double(key), std::forward<UU>(value));
 }
@@ -186,12 +190,6 @@ template<typename S, typename U, typename P, typename A>
 template<typename UU>
 void update_tuple_sketch<S, U, P, A>::update(float key, UU&& value) {
   update(static_cast<double>(key), std::forward<UU>(value));
-}
-
-template<typename S, typename U, typename P, typename A>
-template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(int8_t key, UU&& value) {
-  update(static_cast<int64_t>(key), std::forward<UU>(value));
 }
 
 template<typename S, typename U, typename P, typename A>
