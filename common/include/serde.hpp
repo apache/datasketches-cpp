@@ -50,7 +50,7 @@ struct serde<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
   void serialize(std::ostream& os, const T* items, unsigned num) {
     bool failure = false;
     try {
-      os.write((char*)items, sizeof(T) * num);
+      os.write(reinterpret_cast<const char*>(items), sizeof(T) * num);
     } catch (std::ostream::failure& e) {
       failure = true;
     }
