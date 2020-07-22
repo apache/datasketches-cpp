@@ -45,6 +45,9 @@ public:
 
   virtual ~tuple_sketch() = default;
 
+  /**
+   * @return allocator
+   */
   virtual Allocator get_allocator() const = 0;
 
   /**
@@ -95,6 +98,9 @@ public:
    */
   virtual uint32_t get_num_retained() const = 0;
 
+  /**
+   * @return hash of the seed that was used to hash the input
+   */
   virtual uint16_t get_seed_hash() const = 0;
 
   /**
