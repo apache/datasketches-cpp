@@ -27,11 +27,11 @@
 namespace datasketches {
 
 TEST_CASE("theta_union_exeperimental") {
-  auto update_sketch1 = theta_sketch_experimental<>::builder().build();
+  auto update_sketch1 = update_theta_sketch_experimental<>::builder().build();
   update_sketch1.update(1);
   update_sketch1.update(2);
 
-  auto update_sketch2 = theta_sketch_experimental<>::builder().build();
+  auto update_sketch2 = update_theta_sketch_experimental<>::builder().build();
   update_sketch2.update(1);
   update_sketch2.update(3);
 

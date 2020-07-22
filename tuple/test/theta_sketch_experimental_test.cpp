@@ -26,7 +26,7 @@
 namespace datasketches {
 
 TEST_CASE("theta_sketch_experimental: basics ", "[theta_sketch]") {
-  auto update_sketch = theta_sketch_experimental<>::builder().build();
+  auto update_sketch = update_theta_sketch_experimental<>::builder().build();
   update_sketch.update(1);
   update_sketch.update(2);
   REQUIRE(update_sketch.get_num_retained() == 2);
