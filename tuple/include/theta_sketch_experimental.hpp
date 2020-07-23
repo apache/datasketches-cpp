@@ -20,7 +20,6 @@
 #ifndef THETA_SKETCH_EXPERIMENTAL_HPP_
 #define THETA_SKETCH_EXPERIMENTAL_HPP_
 
-#include "serde.hpp"
 #include "theta_update_sketch_base.hpp"
 
 namespace datasketches {
@@ -284,9 +283,9 @@ public:
   virtual const_iterator end() const;
 
 private:
-  enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
   theta_table table_;
 
+  // for builder
   update_theta_sketch_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta,
       uint64_t seed, const Allocator& allocator);
 
@@ -303,6 +302,9 @@ public:
   using const_iterator = typename Base::const_iterator;
   using AllocBytes = typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
+
+  static const uint8_t SERIAL_VERSION = 3;
+  static const uint8_t SKETCH_TYPE = 3;
 
   // Instances of this type can be obtained:
   // - by compacting an update_theta_sketch
@@ -349,7 +351,8 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of the sketch
    */
-  static compact_theta_sketch_experimental deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED);
+  static compact_theta_sketch_experimental deserialize(std::istream& is,
+      uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
@@ -358,12 +361,15 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of the sketch
    */
-  static compact_theta_sketch_experimental deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
+  static compact_theta_sketch_experimental deserialize(const void* bytes, size_t size,
+      uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   // for internal use
   compact_theta_sketch_experimental(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<uint64_t, Allocator>&& entries);
 
 private:
+  enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
+
   bool is_empty_;
   bool is_ordered_;
   uint16_t seed_hash_;
