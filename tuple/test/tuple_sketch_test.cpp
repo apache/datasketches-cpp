@@ -217,7 +217,7 @@ struct three_doubles_update_policy {
   }
 };
 
-TEST_CASE("tuple sketch: array of doubles", "[tuple_sketch]") {
+TEST_CASE("tuple sketch: tuple of doubles", "[tuple_sketch]") {
   using three_doubles_update_tuple_sketch = update_tuple_sketch<three_doubles, three_doubles, three_doubles_update_policy>;
   auto update_sketch = three_doubles_update_tuple_sketch::builder().build();
   update_sketch.update(1, three_doubles(1, 2, 3));

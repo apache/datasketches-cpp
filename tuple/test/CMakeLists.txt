@@ -45,4 +45,5 @@ target_sources(tuple_test
     tuple_a_not_b_test.cpp
     theta_sketch_experimental_test.cpp
     theta_union_experimental_test.cpp
+    array_of_doubles_sketch_test.cpp
 )

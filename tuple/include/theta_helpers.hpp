@@ -28,6 +28,12 @@ namespace datasketches {
 template<bool dummy>
 class checker {
 public:
+  static void check_sketch_family(uint8_t actual, uint8_t expected) {
+      if (actual != expected) {
+        throw std::invalid_argument("Sketch family mismatch: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int)actual));
+      }
+  }
+
   static void check_sketch_type(uint8_t actual, uint8_t expected) {
       if (actual != expected) {
         throw std::invalid_argument("Sketch type mismatch: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int)actual));
