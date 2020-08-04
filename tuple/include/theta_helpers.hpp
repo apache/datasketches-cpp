@@ -25,31 +25,27 @@
 
 namespace datasketches {
 
+template<typename T>
+static void check_value(T actual, T expected, const char* description) {
+  if (actual != expected) {
+    throw std::invalid_argument(std::string(description) + " mismatch: expected " + std::to_string(expected) + ", actual " + std::to_string(actual));
+  }
+}
+
 template<bool dummy>
 class checker {
 public:
-  static void check_sketch_family(uint8_t actual, uint8_t expected) {
-      if (actual != expected) {
-        throw std::invalid_argument("Sketch family mismatch: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int)actual));
-      }
-  }
-
-  static void check_sketch_type(uint8_t actual, uint8_t expected) {
-      if (actual != expected) {
-        throw std::invalid_argument("Sketch type mismatch: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int)actual));
-      }
-  }
-
   static void check_serial_version(uint8_t actual, uint8_t expected) {
-    if (actual != expected) {
-      throw std::invalid_argument("Sketch serial version mismatch: expected " + std::to_string((int)expected) + ", actual " + std::to_string((int)actual));
-    }
+    check_value(actual, expected, "serial version");
   }
-
+  static void check_sketch_family(uint8_t actual, uint8_t expected) {
+    check_value(actual, expected, "sketch family");
+  }
+  static void check_sketch_type(uint8_t actual, uint8_t expected) {
+    check_value(actual, expected, "sketch type");
+  }
   static void check_seed_hash(uint16_t actual, uint16_t expected) {
-    if (actual != expected) {
-      throw std::invalid_argument("Sketch seed hash mismatch: expected " + std::to_string(expected) + ", actual " + std::to_string(actual));
-    }
+    check_value(actual, expected, "seed hash");
   }
 };
 

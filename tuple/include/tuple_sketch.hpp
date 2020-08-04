@@ -414,7 +414,7 @@ public:
   // for internal use
   compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
 
-private:
+protected:
   bool is_empty_;
   bool is_ordered_;
   uint16_t seed_hash_;

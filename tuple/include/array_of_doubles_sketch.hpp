@@ -51,13 +51,15 @@ public:
   using Entry = typename Base::Entry;
   using AllocEntry = typename Base::AllocEntry;
   using AllocU64 = typename Base::AllocU64;
-  using flags = typename Base::flags;
 
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t SKETCH_FAMILY = 9;
   static const uint8_t SKETCH_TYPE = 3;
+  enum flags { UNUSED1, UNUSED2, IS_EMPTY, HAS_ENTRIES, IS_ORDERED };
 
   compact_array_of_doubles_sketch(const Base& other, bool ordered = true);
+
+  void serialize(std::ostream& os) const;
 
   static compact_array_of_doubles_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
 
