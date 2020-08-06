@@ -34,7 +34,7 @@ const std::string inputPath = "test/";
 #endif
 
 TEST_CASE("aod sketch: serialization compatibility with java - empty", "[tuple_sketch]") {
-  auto update_sketch = update_array_of_doubles_sketch<1>::builder().build();
+  auto update_sketch = update_array_of_doubles_sketch<>::builder().build();
   REQUIRE(update_sketch.is_empty());
   REQUIRE(update_sketch.get_num_retained() == 0);
   auto compact_sketch = update_sketch.compact();
@@ -43,7 +43,27 @@ TEST_CASE("aod sketch: serialization compatibility with java - empty", "[tuple_s
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(inputPath + "aod_1_compact_empty_from_java.sk", std::ios::binary);
-  auto compact_sketch_from_java = compact_array_of_doubles_sketch<1>::deserialize(is);
+  auto compact_sketch_from_java = compact_array_of_doubles_sketch<>::deserialize(is);
+  REQUIRE(compact_sketch.get_num_retained() == compact_sketch_from_java.get_num_retained());
+  REQUIRE(compact_sketch.get_theta() == Approx(compact_sketch_from_java.get_theta()).margin(1e-10));
+  REQUIRE(compact_sketch.get_estimate() == Approx(compact_sketch_from_java.get_estimate()).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(1) == Approx(compact_sketch_from_java.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(1) == Approx(compact_sketch_from_java.get_upper_bound(1)).margin(1e-10));
+}
+
+TEST_CASE("aod sketch: serialization compatibility with java - empty configured for three values", "[tuple_sketch]") {
+  auto update_sketch = update_array_of_doubles_sketch<>::builder(3).build();
+  REQUIRE(update_sketch.is_empty());
+  REQUIRE(update_sketch.get_num_retained() == 0);
+  REQUIRE(update_sketch.get_num_values() == 3);
+  auto compact_sketch = update_sketch.compact();
+
+  // read binary sketch from Java
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "aod_3_compact_empty_from_java.sk", std::ios::binary);
+  auto compact_sketch_from_java = compact_array_of_doubles_sketch<>::deserialize(is);
+  REQUIRE(compact_sketch.get_num_values() == compact_sketch_from_java.get_num_values());
   REQUIRE(compact_sketch.get_num_retained() == compact_sketch_from_java.get_num_retained());
   REQUIRE(compact_sketch.get_theta() == Approx(compact_sketch_from_java.get_theta()).margin(1e-10));
   REQUIRE(compact_sketch.get_estimate() == Approx(compact_sketch_from_java.get_estimate()).margin(1e-10));
@@ -52,8 +72,8 @@ TEST_CASE("aod sketch: serialization compatibility with java - empty", "[tuple_s
 }
 
 TEST_CASE("aod sketch: serialization compatibility with java - non-empty no entries", "[tuple_sketch]") {
-  auto update_sketch = update_array_of_doubles_sketch<1>::builder().set_p(0.01).build();
-  std::array<double, 1> a = {1};
+  auto update_sketch = update_array_of_doubles_sketch<>::builder().set_p(0.01).build();
+  std::vector<double> a = {1};
   update_sketch.update(1, a);
   REQUIRE_FALSE(update_sketch.is_empty());
   REQUIRE(update_sketch.get_num_retained() == 0);
@@ -63,7 +83,7 @@ TEST_CASE("aod sketch: serialization compatibility with java - non-empty no entr
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(inputPath + "aod_1_compact_non_empty_no_entries_from_java.sk", std::ios::binary);
-  auto compact_sketch_from_java = compact_array_of_doubles_sketch<1>::deserialize(is);
+  auto compact_sketch_from_java = compact_array_of_doubles_sketch<>::deserialize(is);
   REQUIRE(compact_sketch.get_num_retained() == compact_sketch_from_java.get_num_retained());
   REQUIRE(compact_sketch.get_theta() == Approx(compact_sketch_from_java.get_theta()).margin(1e-10));
   REQUIRE(compact_sketch.get_estimate() == Approx(compact_sketch_from_java.get_estimate()).margin(1e-10));
@@ -72,8 +92,8 @@ TEST_CASE("aod sketch: serialization compatibility with java - non-empty no entr
 }
 
 TEST_CASE("aod sketch: serialization compatibility with java - estimation mode", "[tuple_sketch]") {
-  auto update_sketch = update_array_of_doubles_sketch<1>::builder().build();
-  std::array<double, 1> a = {1};
+  auto update_sketch = update_array_of_doubles_sketch<>::builder().build();
+  std::vector<double> a = {1};
   for (int i = 0; i < 8192; ++i) update_sketch.update(i, a);
   auto compact_sketch = update_sketch.compact();
 
@@ -81,7 +101,7 @@ TEST_CASE("aod sketch: serialization compatibility with java - estimation mode",
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(inputPath + "aod_1_compact_estimation_from_java.sk", std::ios::binary);
-  auto compact_sketch_from_java = compact_array_of_doubles_sketch<1>::deserialize(is);
+  auto compact_sketch_from_java = compact_array_of_doubles_sketch<>::deserialize(is);
   REQUIRE(compact_sketch.get_num_retained() == compact_sketch_from_java.get_num_retained());
   REQUIRE(compact_sketch.get_theta() == Approx(compact_sketch_from_java.get_theta()).margin(1e-10));
   REQUIRE(compact_sketch.get_estimate() == Approx(compact_sketch_from_java.get_estimate()).margin(1e-10));
@@ -94,7 +114,7 @@ TEST_CASE("aod sketch: serialization compatibility with java - estimation mode",
 
   // sketch from Java is not ordered
   // transform it to ordered so that iteration sequence would match exactly
-  compact_array_of_doubles_sketch<1> ordered_sketch_from_java(compact_sketch_from_java, true);
+  compact_array_of_doubles_sketch<> ordered_sketch_from_java(compact_sketch_from_java, true);
   auto it = ordered_sketch_from_java.begin();
   for (const auto& entry: compact_sketch) {
     REQUIRE(entry == *it);
@@ -102,16 +122,51 @@ TEST_CASE("aod sketch: serialization compatibility with java - estimation mode",
   }
 }
 
+TEST_CASE("aod sketch: serialization compatibility with java - exact mode with two values", "[tuple_sketch]") {
+  auto update_sketch = update_array_of_doubles_sketch<>::builder(2).build();
+  std::vector<double> a = {1, 2};
+  for (int i = 0; i < 1000; ++i) update_sketch.update(i, a);
+  auto compact_sketch = update_sketch.compact();
+  REQUIRE_FALSE(compact_sketch.is_estimation_mode());
+
+  // read binary sketch from Java
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "aod_2_compact_exact_from_java.sk", std::ios::binary);
+  auto compact_sketch_from_java = compact_array_of_doubles_sketch<>::deserialize(is);
+  REQUIRE(compact_sketch.get_num_retained() == compact_sketch_from_java.get_num_retained());
+  REQUIRE(compact_sketch.get_theta() == Approx(compact_sketch_from_java.get_theta()).margin(1e-10));
+  REQUIRE(compact_sketch.get_estimate() == Approx(compact_sketch_from_java.get_estimate()).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(1) == Approx(compact_sketch_from_java.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(1) == Approx(compact_sketch_from_java.get_upper_bound(1)).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(2) == Approx(compact_sketch_from_java.get_lower_bound(2)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(2) == Approx(compact_sketch_from_java.get_upper_bound(2)).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(3) == Approx(compact_sketch_from_java.get_lower_bound(3)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(3) == Approx(compact_sketch_from_java.get_upper_bound(3)).margin(1e-10));
+
+  // sketch from Java is not ordered
+  // transform it to ordered so that iteration sequence would match exactly
+  compact_array_of_doubles_sketch<> ordered_sketch_from_java(compact_sketch_from_java, true);
+  auto it = ordered_sketch_from_java.begin();
+  for (const auto& entry: compact_sketch) {
+    REQUIRE(entry.first == (*it).first);
+    REQUIRE(entry.second.size() == 2);
+    REQUIRE(entry.second[0] == (*it).second[0]);
+    REQUIRE(entry.second[1] == (*it).second[1]);
+    ++it;
+  }
+}
+
 TEST_CASE("aod sketch: serialize deserialize - estimation mode", "[tuple_sketch]") {
-  auto update_sketch = update_array_of_doubles_sketch<2>::builder().build();
-  std::array<double, 2> a = {1, 2};
+  auto update_sketch = update_array_of_doubles_sketch<>::builder(2).build();
+  std::vector<double> a = {1, 2};
   for (int i = 0; i < 8192; ++i) update_sketch.update(i, a);
-  compact_array_of_doubles_sketch<2> compact_sketch = update_sketch.compact();
+  auto compact_sketch = update_sketch.compact();
 
   std::stringstream ss;
   ss.exceptions(std::ios::failbit | std::ios::badbit);
   compact_sketch.serialize(ss);
-  auto deserialized_sketch = compact_array_of_doubles_sketch<2>::deserialize(ss);
+  auto deserialized_sketch = compact_array_of_doubles_sketch<>::deserialize(ss);
   REQUIRE(compact_sketch.get_num_retained() == deserialized_sketch.get_num_retained());
   REQUIRE(compact_sketch.get_theta() == Approx(deserialized_sketch.get_theta()).margin(1e-10));
   REQUIRE(compact_sketch.get_estimate() == Approx(deserialized_sketch.get_estimate()).margin(1e-10));
@@ -124,7 +179,10 @@ TEST_CASE("aod sketch: serialize deserialize - estimation mode", "[tuple_sketch]
   // sketches must be ordered and the iteration sequence must match exactly
   auto it = deserialized_sketch.begin();
   for (const auto& entry: compact_sketch) {
-    REQUIRE(entry == *it);
+    REQUIRE(entry.first == (*it).first);
+    REQUIRE(entry.second.size() == 2);
+    REQUIRE(entry.second[0] == (*it).second[0]);
+    REQUIRE(entry.second[1] == (*it).second[1]);
     ++it;
   }
 }

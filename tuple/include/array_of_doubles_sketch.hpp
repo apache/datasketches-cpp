@@ -29,24 +29,58 @@ namespace datasketches {
 
 // equivalent of ArrayOfDoublesSketch in Java
 
-template<int num>
-struct array_of_doubles_update_policy {
-  std::array<double, num> create() const {
-    return std::array<double, num>();
+template<typename A = std::allocator<std::vector<double>>>
+class array_of_doubles_update_policy {
+public:
+  array_of_doubles_update_policy(uint8_t num_values = 1, const A& allocator = A()):
+    allocator(allocator), num_values(num_values) {}
+  std::vector<double> create() const {
+    return std::vector<double>(num_values, 0, allocator);
   }
-  void update(std::array<double, num>& summary, const std::array<double, num>& update) const {
-    for (int i = 0; i < num; ++i) summary[i] += update[i];
+  void update(std::vector<double>& summary, const std::vector<double>& update) const {
+    for (uint8_t i = 0; i < num_values; ++i) summary[i] += update[i];
   }
+  uint8_t get_num_values() const {
+    return num_values;
+  }
+
+private:
+  A allocator;
+  uint8_t num_values;
 };
 
-template<int num, typename A = std::allocator<std::array<double, num>>>
-using update_array_of_doubles_sketch = update_tuple_sketch<
-    std::array<double, num>, std::array<double, num>, array_of_doubles_update_policy<num>, A>;
+// forward declaration
+template<typename A> class compact_array_of_doubles_sketch;
 
-template<int num, typename A = std::allocator<std::array<double, num>>>
-class compact_array_of_doubles_sketch: public compact_tuple_sketch<std::array<double, num>, A> {
+template<typename A = std::allocator<std::vector<double>>>
+class update_array_of_doubles_sketch: public update_tuple_sketch<std::vector<double>, std::vector<double>,
+array_of_doubles_update_policy<A>, A> {
 public:
-  using Summary = std::array<double, num>;
+  using Base = update_tuple_sketch<std::vector<double>, std::vector<double>, array_of_doubles_update_policy<A>, A>;
+  using resize_factor = typename Base::resize_factor;
+
+  class builder;
+
+  compact_array_of_doubles_sketch<A> compact(bool ordered = true) const;
+  uint8_t get_num_values() const;
+
+private:
+  // for builder
+  update_array_of_doubles_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta,
+      uint64_t seed, const array_of_doubles_update_policy<A>& policy, const A& allocator);
+};
+
+template<typename A>
+class update_array_of_doubles_sketch<A>::builder: public Base::builder {
+public:
+  builder(const array_of_doubles_update_policy<A>& policy = array_of_doubles_update_policy<A>(), const A& allocator = A());
+  update_array_of_doubles_sketch<A> build() const;
+};
+
+template<typename A = std::allocator<std::vector<double>>>
+class compact_array_of_doubles_sketch: public compact_tuple_sketch<std::vector<double>, A> {
+public:
+  using Summary = std::vector<double>;
   using Base = compact_tuple_sketch<Summary, A>;
   using Entry = typename Base::Entry;
   using AllocEntry = typename Base::AllocEntry;
@@ -57,14 +91,19 @@ public:
   static const uint8_t SKETCH_TYPE = 3;
   enum flags { UNUSED1, UNUSED2, IS_EMPTY, HAS_ENTRIES, IS_ORDERED };
 
-  compact_array_of_doubles_sketch(const Base& other, bool ordered = true);
+  template<typename Sketch>
+  compact_array_of_doubles_sketch(const Sketch& other, bool ordered = true);
+
+  uint8_t get_num_values() const;
 
   void serialize(std::ostream& os) const;
 
   static compact_array_of_doubles_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
 
   // for internal use
-  compact_array_of_doubles_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
+  compact_array_of_doubles_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries, uint8_t num_values);
+private:
+  uint8_t num_values;
 };
 
 } /* namespace datasketches */

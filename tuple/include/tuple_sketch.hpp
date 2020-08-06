@@ -325,7 +325,7 @@ public:
   virtual const_iterator begin() const;
   virtual const_iterator end() const;
 
-private:
+protected:
   Policy policy_;
   tuple_map map_;
 
@@ -475,7 +475,7 @@ public:
    */
   update_tuple_sketch<S, U, P, A> build() const;
 
-private:
+protected:
   P policy_;
   A allocator_;
 };
