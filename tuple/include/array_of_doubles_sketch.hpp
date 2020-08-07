@@ -80,11 +80,11 @@ public:
 template<typename A = std::allocator<std::vector<double>>>
 class compact_array_of_doubles_sketch: public compact_tuple_sketch<std::vector<double>, A> {
 public:
-  using Summary = std::vector<double>;
-  using Base = compact_tuple_sketch<Summary, A>;
+  using Base = compact_tuple_sketch<std::vector<double>, A>;
   using Entry = typename Base::Entry;
   using AllocEntry = typename Base::AllocEntry;
   using AllocU64 = typename Base::AllocU64;
+  using vector_bytes = typename Base::vector_bytes;
 
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t SKETCH_FAMILY = 9;
@@ -97,13 +97,16 @@ public:
   uint8_t get_num_values() const;
 
   void serialize(std::ostream& os) const;
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
   static compact_array_of_doubles_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
+  static compact_array_of_doubles_sketch deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED,
+      const A& allocator = A());
 
   // for internal use
   compact_array_of_doubles_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries, uint8_t num_values);
 private:
-  uint8_t num_values;
+  uint8_t num_values_;
 };
 
 } /* namespace datasketches */

@@ -51,16 +51,16 @@ update_array_of_doubles_sketch<A> update_array_of_doubles_sketch<A>::builder::bu
 template<typename A>
 template<typename S>
 compact_array_of_doubles_sketch<A>::compact_array_of_doubles_sketch(const S& other, bool ordered):
-Base(other, ordered), num_values(other.get_num_values()) {}
+Base(other, ordered), num_values_(other.get_num_values()) {}
 
 template<typename A>
 compact_array_of_doubles_sketch<A>::compact_array_of_doubles_sketch(bool is_empty, bool is_ordered,
     uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries, uint8_t num_values):
-Base(is_empty, is_ordered, seed_hash, theta, std::move(entries)), num_values(num_values) {}
+Base(is_empty, is_ordered, seed_hash, theta, std::move(entries)), num_values_(num_values) {}
 
 template<typename A>
 uint8_t compact_array_of_doubles_sketch<A>::get_num_values() const {
-  return num_values;
+  return num_values_;
 }
 
 template<typename A>
@@ -79,7 +79,7 @@ void compact_array_of_doubles_sketch<A>::serialize(std::ostream& os) const {
     (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
   );
   os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
-  os.write(reinterpret_cast<const char*>(&num_values), sizeof(num_values));
+  os.write(reinterpret_cast<const char*>(&num_values_), sizeof(num_values_));
   const uint16_t seed_hash = this->get_seed_hash();
   os.write(reinterpret_cast<const char*>(&seed_hash), sizeof(seed_hash));
   os.write(reinterpret_cast<const char*>(&(this->theta_)), sizeof(uint64_t));
@@ -98,6 +98,47 @@ void compact_array_of_doubles_sketch<A>::serialize(std::ostream& os) const {
 }
 
 template<typename A>
+auto compact_array_of_doubles_sketch<A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
+  const uint8_t preamble_longs = 1;
+  const size_t size = header_size_bytes + 16 // preamble and theta
+      + (this->entries_.size() > 0 ? 8 : 0)
+      + (sizeof(uint64_t) + sizeof(double) * num_values_) * this->entries_.size();
+  vector_bytes bytes(size, 0, this->entries_.get_allocator());
+  uint8_t* ptr = bytes.data() + header_size_bytes;
+
+  ptr += copy_to_mem(&preamble_longs, ptr, sizeof(preamble_longs));
+  const uint8_t serial_version = SERIAL_VERSION;
+  ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
+  const uint8_t family = SKETCH_FAMILY;
+  ptr += copy_to_mem(&family, ptr, sizeof(family));
+  const uint8_t type = SKETCH_TYPE;
+  ptr += copy_to_mem(&type, ptr, sizeof(type));
+  const uint8_t flags_byte(
+    (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
+    (this->get_num_retained() ? 1 << flags::HAS_ENTRIES : 0) |
+    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
+  );
+  ptr += copy_to_mem(&flags_byte, ptr, sizeof(flags_byte));
+  ptr += copy_to_mem(&num_values_, ptr, sizeof(num_values_));
+  const uint16_t seed_hash = this->get_seed_hash();
+  ptr += copy_to_mem(&seed_hash, ptr, sizeof(seed_hash));
+  ptr += copy_to_mem(&(this->theta_), ptr, sizeof(uint64_t));
+  if (this->get_num_retained() > 0) {
+    const uint32_t num_entries = this->entries_.size();
+    ptr += copy_to_mem(&num_entries, ptr, sizeof(num_entries));
+    const uint32_t unused32 = 0;
+    ptr += copy_to_mem(&unused32, ptr, sizeof(unused32));
+    for (const auto& it: this->entries_) {
+      ptr += copy_to_mem(&it.first, ptr, sizeof(uint64_t));
+    }
+    for (const auto& it: this->entries_) {
+      ptr += copy_to_mem(it.second.data(), ptr, it.second.size() * sizeof(double));
+    }
+  }
+  return bytes;
+}
+
+template<typename A>
 compact_array_of_doubles_sketch<A> compact_array_of_doubles_sketch<A>::deserialize(std::istream& is, uint64_t seed, const A& allocator) {
   uint8_t preamble_longs;
   is.read(reinterpret_cast<char*>(&preamble_longs), sizeof(preamble_longs));
@@ -113,17 +154,17 @@ compact_array_of_doubles_sketch<A> compact_array_of_doubles_sketch<A>::deseriali
   is.read(reinterpret_cast<char*>(&num_values), sizeof(num_values));
   uint16_t seed_hash;
   is.read(reinterpret_cast<char*>(&seed_hash), sizeof(seed_hash));
+  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
   checker<true>::check_sketch_family(family, SKETCH_FAMILY);
   checker<true>::check_sketch_type(type, SKETCH_TYPE);
-  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
   const bool has_entries = flags_byte & (1 << flags::HAS_ENTRIES);
   if (has_entries) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
   uint64_t theta;
   is.read(reinterpret_cast<char*>(&theta), sizeof(theta));
   std::vector<Entry, AllocEntry> entries(allocator);
-  uint32_t num_entries = 0;
   if (has_entries) {
+    uint32_t num_entries;
     is.read(reinterpret_cast<char*>(&num_entries), sizeof(num_entries));
     uint32_t unused32;
     is.read(reinterpret_cast<char*>(&unused32), sizeof(unused32));
@@ -131,12 +172,60 @@ compact_array_of_doubles_sketch<A> compact_array_of_doubles_sketch<A>::deseriali
     std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
     is.read(reinterpret_cast<char*>(keys.data()), num_entries * sizeof(uint64_t));
     for (size_t i = 0; i < num_entries; ++i) {
-      Summary s(num_values, 0, allocator);
-      is.read(reinterpret_cast<char*>(s.data()), num_values * sizeof(double));
-      entries.push_back(Entry(keys[i], std::move(s)));
+      std::vector<double> summary(num_values, 0, allocator);
+      is.read(reinterpret_cast<char*>(summary.data()), num_values * sizeof(double));
+      entries.push_back(Entry(keys[i], std::move(summary)));
     }
   }
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
+  const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
+  const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
+  return compact_array_of_doubles_sketch(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);
+}
+
+template<typename A>
+compact_array_of_doubles_sketch<A> compact_array_of_doubles_sketch<A>::deserialize(const void* bytes, size_t size, uint64_t seed, const A& allocator) {
+  ensure_minimum_memory(size, 16);
+  const char* ptr = static_cast<const char*>(bytes);
+  uint8_t preamble_longs;
+  ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
+  uint8_t serial_version;
+  ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+  uint8_t family;
+  ptr += copy_from_mem(ptr, &family, sizeof(family));
+  uint8_t type;
+  ptr += copy_from_mem(ptr, &type, sizeof(type));
+  uint8_t flags_byte;
+  ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
+  uint8_t num_values;
+  ptr += copy_from_mem(ptr, &num_values, sizeof(num_values));
+  uint16_t seed_hash;
+  ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
+  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+  checker<true>::check_sketch_family(family, SKETCH_FAMILY);
+  checker<true>::check_sketch_type(type, SKETCH_TYPE);
+  const bool has_entries = flags_byte & (1 << flags::HAS_ENTRIES);
+  if (has_entries) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+
+  uint64_t theta;
+  ptr += copy_from_mem(ptr, &theta, sizeof(theta));
+  std::vector<Entry, AllocEntry> entries(allocator);
+  if (has_entries) {
+    ensure_minimum_memory(size, 24);
+    uint32_t num_entries;
+    ptr += copy_from_mem(ptr, &num_entries, sizeof(num_entries));
+    uint32_t unused32;
+    ptr += copy_from_mem(ptr, &unused32, sizeof(unused32));
+    ensure_minimum_memory(size, 24 + (sizeof(uint64_t) + sizeof(double) * num_values) * num_entries);
+    entries.reserve(num_entries);
+    std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
+    ptr += copy_from_mem(ptr, keys.data(), sizeof(uint64_t) * num_entries);
+    for (size_t i = 0; i < num_entries; ++i) {
+      std::vector<double> summary(num_values, 0, allocator);
+      ptr += copy_from_mem(ptr, summary.data(), num_values * sizeof(double));
+      entries.push_back(Entry(keys[i], std::move(summary)));
+    }
+  }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
   return compact_array_of_doubles_sketch(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);

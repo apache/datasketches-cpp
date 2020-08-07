@@ -157,7 +157,7 @@ TEST_CASE("aod sketch: serialization compatibility with java - exact mode with t
   }
 }
 
-TEST_CASE("aod sketch: serialize deserialize - estimation mode", "[tuple_sketch]") {
+TEST_CASE("aod sketch: stream serialize deserialize - estimation mode", "[tuple_sketch]") {
   auto update_sketch = update_array_of_doubles_sketch<>::builder(2).build();
   std::vector<double> a = {1, 2};
   for (int i = 0; i < 8192; ++i) update_sketch.update(i, a);
@@ -167,6 +167,65 @@ TEST_CASE("aod sketch: serialize deserialize - estimation mode", "[tuple_sketch]
   ss.exceptions(std::ios::failbit | std::ios::badbit);
   compact_sketch.serialize(ss);
   auto deserialized_sketch = compact_array_of_doubles_sketch<>::deserialize(ss);
+  REQUIRE(compact_sketch.get_num_retained() == deserialized_sketch.get_num_retained());
+  REQUIRE(compact_sketch.get_theta() == Approx(deserialized_sketch.get_theta()).margin(1e-10));
+  REQUIRE(compact_sketch.get_estimate() == Approx(deserialized_sketch.get_estimate()).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(1) == Approx(deserialized_sketch.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(1) == Approx(deserialized_sketch.get_upper_bound(1)).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(2) == Approx(deserialized_sketch.get_lower_bound(2)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(2) == Approx(deserialized_sketch.get_upper_bound(2)).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(3) == Approx(deserialized_sketch.get_lower_bound(3)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(3) == Approx(deserialized_sketch.get_upper_bound(3)).margin(1e-10));
+  // sketches must be ordered and the iteration sequence must match exactly
+  auto it = deserialized_sketch.begin();
+  for (const auto& entry: compact_sketch) {
+    REQUIRE(entry.first == (*it).first);
+    REQUIRE(entry.second.size() == 2);
+    REQUIRE(entry.second[0] == (*it).second[0]);
+    REQUIRE(entry.second[1] == (*it).second[1]);
+    ++it;
+  }
+}
+
+TEST_CASE("aod sketch: bytes serialize deserialize - estimation mode", "[tuple_sketch]") {
+  auto update_sketch = update_array_of_doubles_sketch<>::builder(2).build();
+  std::vector<double> a = {1, 2};
+  for (int i = 0; i < 8192; ++i) update_sketch.update(i, a);
+  auto compact_sketch = update_sketch.compact();
+
+  auto bytes = compact_sketch.serialize();
+  std::stringstream ss;
+  ss.exceptions(std::ios::failbit | std::ios::badbit);
+  ss.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  auto deserialized_sketch = compact_array_of_doubles_sketch<>::deserialize(ss);
+  REQUIRE(compact_sketch.get_num_retained() == deserialized_sketch.get_num_retained());
+  REQUIRE(compact_sketch.get_theta() == Approx(deserialized_sketch.get_theta()).margin(1e-10));
+  REQUIRE(compact_sketch.get_estimate() == Approx(deserialized_sketch.get_estimate()).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(1) == Approx(deserialized_sketch.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(1) == Approx(deserialized_sketch.get_upper_bound(1)).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(2) == Approx(deserialized_sketch.get_lower_bound(2)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(2) == Approx(deserialized_sketch.get_upper_bound(2)).margin(1e-10));
+  REQUIRE(compact_sketch.get_lower_bound(3) == Approx(deserialized_sketch.get_lower_bound(3)).margin(1e-10));
+  REQUIRE(compact_sketch.get_upper_bound(3) == Approx(deserialized_sketch.get_upper_bound(3)).margin(1e-10));
+  // sketches must be ordered and the iteration sequence must match exactly
+  auto it = deserialized_sketch.begin();
+  for (const auto& entry: compact_sketch) {
+    REQUIRE(entry.first == (*it).first);
+    REQUIRE(entry.second.size() == 2);
+    REQUIRE(entry.second[0] == (*it).second[0]);
+    REQUIRE(entry.second[1] == (*it).second[1]);
+    ++it;
+  }
+}
+
+TEST_CASE("aod sketch: bytes to stream serialize deserialize - estimation mode", "[tuple_sketch]") {
+  auto update_sketch = update_array_of_doubles_sketch<>::builder(2).build();
+  std::vector<double> a = {1, 2};
+  for (int i = 0; i < 8192; ++i) update_sketch.update(i, a);
+  auto compact_sketch = update_sketch.compact();
+
+  auto bytes = compact_sketch.serialize();
+  auto deserialized_sketch = compact_array_of_doubles_sketch<>::deserialize(bytes.data(), bytes.size());
   REQUIRE(compact_sketch.get_num_retained() == deserialized_sketch.get_num_retained());
   REQUIRE(compact_sketch.get_theta() == Approx(deserialized_sketch.get_theta()).margin(1e-10));
   REQUIRE(compact_sketch.get_estimate() == Approx(deserialized_sketch.get_estimate()).margin(1e-10));
