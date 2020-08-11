@@ -24,7 +24,7 @@ jobs:
           cd "lcov-$VERSION"
           sudo make install
       - name: Configure
-        run: mkdir build && cd build && cmake .. -DCOVERAGE=ON
+        run: cd build && cmake .. -DCOVERAGE=ON
       - name: Build unit tests
         run: cmake --build build
       - name: Run tests

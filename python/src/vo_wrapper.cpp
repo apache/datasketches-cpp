@@ -83,15 +83,25 @@ void bind_vo_sketch(py::module &m, const char* name) {
 
   py::class_<var_opt_sketch<T>>(m, name)
     .def(py::init<uint32_t>(), py::arg("k"))
-    .def("__str__", &dspy::vo_sketch_to_string<T>, py::arg("print_items")=false)
-    .def("to_string", &dspy::vo_sketch_to_string<T>, py::arg("print_items")=false)
-    .def("update", (void (var_opt_sketch<T>::*)(const T&, double)) &var_opt_sketch<T>::update, py::arg("item"), py::arg("weight")=1.0)
-    .def_property_readonly("k", &var_opt_sketch<T>::get_k)
-    .def_property_readonly("n", &var_opt_sketch<T>::get_n)
-    .def_property_readonly("num_samples", &var_opt_sketch<T>::get_num_samples)
-    .def("get_samples", &dspy::vo_sketch_get_samples<T>)
-    .def("is_empty", &var_opt_sketch<T>::is_empty)
-    .def("estimate_subset_sum", &dspy::vo_sketch_estimate_subset_sum<T>)
+    .def("__str__", &dspy::vo_sketch_to_string<T>, py::arg("print_items")=false,
+         "Produces a string summary of the sketch")
+    .def("to_string", &dspy::vo_sketch_to_string<T>, py::arg("print_items")=false,
+         "Produces a string summary of the sketch")
+    .def("update", (void (var_opt_sketch<T>::*)(const T&, double)) &var_opt_sketch<T>::update, py::arg("item"), py::arg("weight")=1.0,
+         "Updates the sketch with the given value and weight")
+    .def_property_readonly("k", &var_opt_sketch<T>::get_k,
+         "Returns the sketch's maximum configured sample size")
+    .def_property_readonly("n", &var_opt_sketch<T>::get_n,
+         "Returns the total stream length")
+    .def_property_readonly("num_samples", &var_opt_sketch<T>::get_num_samples,
+         "Returns the number of samples currently in the sketch")
+    .def("get_samples", &dspy::vo_sketch_get_samples<T>,
+         "Retyrns the set of samples in the sketch")
+    .def("is_empty", &var_opt_sketch<T>::is_empty,
+         "Returns True if the sketch is empty, otherwise False")
+    .def("estimate_subset_sum", &dspy::vo_sketch_estimate_subset_sum<T>,
+         "Applies a provided predicate to the sketch and returns the estimated total weight matching the predicate, as well "
+         "as upper and lower bounds on the estimate and the total weight processed by the sketch")
     // As of writing, not yet clear how to serialize arbitrary python objects,
     // especially in any sort of language-portable way
     //.def("get_serialized_size_bytes", &var_opt_sketch<T>::get_serialized_size_bytes)
@@ -106,11 +116,16 @@ void bind_vo_union(py::module &m, const char* name) {
 
   py::class_<var_opt_union<T>>(m, name)
     .def(py::init<uint32_t>(), py::arg("max_k"))
-    .def("__str__", &var_opt_union<T>::to_string)
-    .def("to_string", &var_opt_union<T>::to_string)
-    .def("update", (void (var_opt_union<T>::*)(const var_opt_sketch<T>& sk)) &var_opt_union<T>::update, py::arg("sketch"))
-    .def("get_result", &var_opt_union<T>::get_result)
-    .def("reset", &var_opt_union<T>::reset)
+    .def("__str__", &var_opt_union<T>::to_string,
+         "Produces a string summary of the sketch")
+    .def("to_string", &var_opt_union<T>::to_string,
+         "Produces a string summary of the sketch")
+    .def("update", (void (var_opt_union<T>::*)(const var_opt_sketch<T>& sk)) &var_opt_union<T>::update, py::arg("sketch"),
+         "Updates the union with the given sketch")
+    .def("get_result", &var_opt_union<T>::get_result,
+         "Returns a sketch corresponding to the union result")
+    .def("reset", &var_opt_union<T>::reset,
+         "Resets the union to the empty state")
     // As of writing, not yet clear how to serialize arbitrary python objects,
     // especially in any sort of language-portable way
     //.def("get_serialized_size_bytes", &var_opt_sketch<T>::get_serialized_size_bytes)
@@ -118,7 +133,6 @@ void bind_vo_union(py::module &m, const char* name) {
     //.def_static("deserialize", &dspy::vo_union_deserialize<T>)
     ;
 }
-
 
 void init_vo(py::module &m) {
   bind_vo_sketch<py::object>(m, "var_opt_sketch");

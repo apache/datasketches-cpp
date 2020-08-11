@@ -81,57 +81,82 @@ void init_theta(py::module &m) {
   using namespace datasketches;
 
   py::class_<theta_sketch>(m, "theta_sketch")
-    .def("serialize", &dspy::theta_sketch_serialize)
-    .def_static("deserialize", &dspy::theta_sketch_deserialize, py::arg("bytes"), py::arg("seed")=DEFAULT_SEED)
-    .def("__str__", &theta_sketch::to_string, py::arg("print_items")=false)
-    .def("to_string", &theta_sketch::to_string, py::arg("print_items")=false)
-    .def("is_empty", &theta_sketch::is_empty)
-    .def("get_estimate", &theta_sketch::get_estimate)
-    .def("get_upper_bound", &theta_sketch::get_upper_bound, py::arg("num_std_devs"))
-    .def("get_lower_bound", &theta_sketch::get_lower_bound, py::arg("num_std_devs"))
-    .def("is_estimation_mode", &theta_sketch::is_estimation_mode)
-    .def("get_theta", &theta_sketch::get_theta)
-    .def("get_num_retained", &theta_sketch::get_num_retained)
-    .def("get_seed_hash", &dspy::theta_sketch_get_seed_hash)
-    .def("is_ordered", &theta_sketch::is_ordered)
+    .def("serialize", &dspy::theta_sketch_serialize,
+         "Serializes the sketch into a bytes object")
+    .def_static("deserialize", &dspy::theta_sketch_deserialize, py::arg("bytes"), py::arg("seed")=DEFAULT_SEED,
+         "Reads a bytes object and returns the corresponding cpc_sketch")
+    .def("__str__", &theta_sketch::to_string, py::arg("print_items")=false,
+         "Produces a string summary of the sketch")
+    .def("to_string", &theta_sketch::to_string, py::arg("print_items")=false,
+         "Produces a string summary of the sketch")
+    .def("is_empty", &theta_sketch::is_empty,
+         "Returns True if the sketch is empty, otherwise Dalse")
+    .def("get_estimate", &theta_sketch::get_estimate,
+         "Estimate of the distinct count of the input stream")
+    .def("get_upper_bound", &theta_sketch::get_upper_bound, py::arg("num_std_devs"),
+         "Returns an approximate upper bound on the estimate at standard deviations in {1, 2, 3}")
+    .def("get_lower_bound", &theta_sketch::get_lower_bound, py::arg("num_std_devs"),
+         "Returns an approximate lower bound on the estimate at standard deviations in {1, 2, 3}")
+    .def("is_estimation_mode", &theta_sketch::is_estimation_mode,
+         "Returns True if sketch is in estimation mode, otherwise False")
+    .def("get_theta", &theta_sketch::get_theta,
+         "Returns theta (effective sampling rate) as a fraction from 0 to 1")
+    .def("get_num_retained", &theta_sketch::get_num_retained,
+         "Retunrs the number of items currently in the sketch")
+    .def("get_seed_hash", &dspy::theta_sketch_get_seed_hash,
+         "Returns a hash of the seed used in the sketch")
+    .def("is_ordered", &theta_sketch::is_ordered,
+         "Returns True if the sketch entries are sorted, otherwise False")
   ;
 
   py::class_<update_theta_sketch, theta_sketch>(m, "update_theta_sketch")
     .def(py::init(&dspy::update_theta_sketch_factory),
          py::arg("lg_k")=update_theta_sketch::builder::DEFAULT_LG_K, py::arg("p")=1.0, py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const update_theta_sketch&>())
-    .def("update", (void (update_theta_sketch::*)(int64_t)) &update_theta_sketch::update, py::arg("datum"))
-    .def("update", (void (update_theta_sketch::*)(double)) &update_theta_sketch::update, py::arg("datum"))
-    .def("update", (void (update_theta_sketch::*)(const std::string&)) &update_theta_sketch::update, py::arg("datum"))
-    .def("compact", &update_theta_sketch::compact, py::arg("ordered")=true)
+    .def("update", (void (update_theta_sketch::*)(int64_t)) &update_theta_sketch::update, py::arg("datum"),
+         "Updates the sketch with the given integral value")
+    .def("update", (void (update_theta_sketch::*)(double)) &update_theta_sketch::update, py::arg("datum"),
+         "Updates the sketch with the given floating point value")
+    .def("update", (void (update_theta_sketch::*)(const std::string&)) &update_theta_sketch::update, py::arg("datum"),
+         "Updates the sketch with the given string")
+    .def("compact", &update_theta_sketch::compact, py::arg("ordered")=true,
+         "Returns a compacted form of the sketch, optionally sorting it")
     .def_static("deserialize", &dspy::update_theta_sketch_deserialize,
-        py::arg("bytes"), py::arg("seed")=DEFAULT_SEED)
+        py::arg("bytes"), py::arg("seed")=DEFAULT_SEED,
+        "Reads a bytes object and returns the corresponding update_theta_sketch")
   ;
 
   py::class_<compact_theta_sketch, theta_sketch>(m, "compact_theta_sketch")
     .def(py::init<const compact_theta_sketch&>())
     .def(py::init<const theta_sketch&, bool>())
     .def_static("deserialize", &dspy::compact_theta_sketch_deserialize,
-        py::arg("bytes"), py::arg("seed")=DEFAULT_SEED)
+        py::arg("bytes"), py::arg("seed")=DEFAULT_SEED,
+        "Reads a bytes object and returns the corresponding update_theta_sketch")        
   ;
 
   py::class_<theta_union>(m, "theta_union")
     .def(py::init(&dspy::theta_union_factory),
          py::arg("lg_k")=update_theta_sketch::builder::DEFAULT_LG_K, py::arg("p")=1.0, py::arg("seed")=DEFAULT_SEED)
-    .def("update", &theta_union::update, py::arg("sketch"))
-    .def("get_result", &theta_union::get_result, py::arg("ordered")=true)
+    .def("update", &theta_union::update, py::arg("sketch"),
+         "Updates the union with the given sketch")
+    .def("get_result", &theta_union::get_result, py::arg("ordered")=true,
+         "Returns the sketch corresponding to the union result")
   ;
 
   py::class_<theta_intersection>(m, "theta_intersection")
     .def(py::init<uint64_t>(), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const theta_intersection&>())
-    .def("update", &theta_intersection::update, py::arg("sketch"))
-    .def("get_result", &theta_intersection::get_result, py::arg("ordered")=true)
-    .def("has_result", &theta_intersection::has_result)
+    .def("update", &theta_intersection::update, py::arg("sketch"),
+         "Intersections the provided sketch with the current intersection state")
+    .def("get_result", &theta_intersection::get_result, py::arg("ordered")=true,
+         "Returns the sketch corresponding to the intersection result")
+    .def("has_result", &theta_intersection::has_result,
+         "Returns True if the intersection has a valid result, otherwisel False")
   ;
 
   py::class_<theta_a_not_b>(m, "theta_a_not_b")
     .def(py::init<uint64_t>(), py::arg("seed")=DEFAULT_SEED)
-    .def("compute", &theta_a_not_b::compute, py::arg("a"), py::arg("b"), py::arg("ordered")=true)
+    .def("compute", &theta_a_not_b::compute, py::arg("a"), py::arg("b"), py::arg("ordered")=true,
+         "Returns a sketch with the reuslt of appying the A-not-B operation on the given inputs")
   ;
 }
