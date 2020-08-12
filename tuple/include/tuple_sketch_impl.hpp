@@ -238,7 +238,7 @@ compact_tuple_sketch<S, A> update_tuple_sketch<S, U, P, A>::compact(bool ordered
 }
 
 template<typename S, typename U, typename P, typename A>
-void update_tuple_sketch<S, U, P, A>::print_specifics(std::ostringstream& os) const {
+void update_tuple_sketch<S, U, P, A>::print_specifics(std::basic_ostream<char>& os) const {
   os << "   lg nominal size      : " << (int) map_.lg_nom_size_ << std::endl;
   os << "   lg current size      : " << (int) map_.lg_cur_size_ << std::endl;
   os << "   resize factor        : " << (1 << map_.rf_) << std::endl;
@@ -397,8 +397,6 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
     }
     for (const auto& it: entries_) {
       ptr += copy_to_mem(&it.first, ptr, sizeof(uint64_t));
-    }
-    for (const auto& it: entries_) {
       ptr += sd.serialize(ptr, end_ptr - ptr, &it.second, 1);
     }
   }
@@ -502,14 +500,14 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   std::vector<Entry, AllocEntry> entries(allocator);
   if (!is_empty) {
     entries.reserve(num_entries);
-    std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
-    ptr += copy_from_mem(ptr, keys.data(), keys_size_bytes);
     A alloc(allocator);
-    std::unique_ptr<S, deleter_of_summaries> summaries(alloc.allocate(num_entries), deleter_of_summaries(num_entries, false));
-    ptr += sd.deserialize(ptr, base + size - ptr, summaries.get(), num_entries);
-    summaries.get_deleter().set_destroy(true); // serde did not throw, so the items must be constructed
+    std::unique_ptr<S, deleter_of_summaries> summary(alloc.allocate(1), deleter_of_summaries(1, false));
     for (size_t i = 0; i < num_entries; ++i) {
-      entries.push_back(Entry(keys[i], std::move(summaries.get()[i])));
+      uint64_t key;
+      ptr += copy_from_mem(ptr, &key, sizeof(key));
+      ptr += sd.deserialize(ptr, base + size - ptr, summary.get(), 1);
+      entries.push_back(Entry(key, std::move(*summary)));
+      summary->~S();
     }
   }
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
@@ -537,7 +535,7 @@ auto compact_tuple_sketch<S, A>::end() const -> const_iterator {
 }
 
 template<typename S, typename A>
-void compact_tuple_sketch<S, A>::print_specifics(std::ostringstream&) const {}
+void compact_tuple_sketch<S, A>::print_specifics(std::basic_ostream<char>&) const {}
 
 // builder
 
