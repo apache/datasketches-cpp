@@ -34,7 +34,7 @@ std::ostream& operator<<(std::ostream& os, const three_doubles& tuple) {
 
 #include <catch.hpp>
 #include <tuple_sketch.hpp>
-#include <test_type.hpp>
+//#include <test_type.hpp>
 
 namespace datasketches {
 
@@ -122,8 +122,8 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
     REQUIRE(deserialized_sketch.get_theta() == 1);
     REQUIRE(deserialized_sketch.get_num_retained() == 2);
     REQUIRE(deserialized_sketch.is_ordered());
-    std::cout << "deserialized sketch:" << std::endl;
-    std::cout << deserialized_sketch.to_string(true);
+//    std::cout << "deserialized sketch:" << std::endl;
+//    std::cout << deserialized_sketch.to_string(true);
   }
   { // bytes
     auto bytes = compact_sketch.serialize();
@@ -168,42 +168,6 @@ TEST_CASE("tuple sketch: float, custom policy", "[tuple_sketch]") {
   }
   REQUIRE(count == 3);
   REQUIRE(sum == 22); // 5 + 10 + 7
-}
-
-struct test_type_replace_policy {
-  test_type create() const { return test_type(0); }
-  void update(test_type& summary, const test_type& update) const {
-    //std::cerr << "policy::update lvalue begin" << std::endl;
-    summary = update;
-    //std::cerr << "policy::update lvalue end" << std::endl;
-  }
-  void update(test_type& summary, test_type&& update) const {
-    //std::cerr << "policy::update rvalue begin" << std::endl;
-    summary = std::move(update);
-    //std::cerr << "policy::update rvalue end" << std::endl;
-  }
-};
-
-TEST_CASE("tuple sketch: test type with replace policy", "[tuple_sketch]") {
-  auto update_sketch = update_tuple_sketch<test_type, test_type, test_type_replace_policy>::builder().build();
-  test_type a(1);
-  update_sketch.update(1, a); // this should copy
-  update_sketch.update(2, 2); // this should move
-  update_sketch.update(1, 2); // this should move
-//  std::cout << sketch.to_string(true);
-  REQUIRE(update_sketch.get_num_retained() == 2);
-  for (const auto& entry: update_sketch) {
-    REQUIRE(entry.second.get_value() == 2);
-  }
-
-  auto compact_sketch = update_sketch.compact();
-  auto bytes = compact_sketch.serialize(0, test_type_serde());
-  auto deserialized_sketch = compact_tuple_sketch<test_type>::deserialize(bytes.data(), bytes.size(),
-      DEFAULT_SEED, test_type_serde());
-  REQUIRE(deserialized_sketch.get_num_retained() == 2);
-  for (const auto& entry: deserialized_sketch) {
-    REQUIRE(entry.second.get_value() == 2);
-  }
 }
 
 struct three_doubles_update_policy {
