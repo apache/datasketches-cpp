@@ -29,7 +29,7 @@ TEST_CASE("tuple_union float: empty", "[tuple union]") {
   auto u = tuple_union<float>::builder().build();
   u.update(update_sketch);
   auto result = u.get_result();
-  std::cout << result.to_string(true);
+//  std::cout << result.to_string(true);
   REQUIRE(result.is_empty());
   REQUIRE(result.get_num_retained() == 0);
   REQUIRE(!result.is_estimation_mode());
@@ -38,14 +38,14 @@ TEST_CASE("tuple_union float: empty", "[tuple union]") {
 
 TEST_CASE("tuple_union float: non-empty no retained entries", "[tuple union]") {
   auto update_sketch = update_tuple_sketch<float>::builder().set_p(0.001).build();
-  std::cout << update_sketch.to_string();
+//  std::cout << update_sketch.to_string();
   update_sketch.update(1, 1);
   REQUIRE(!update_sketch.is_empty());
   REQUIRE(update_sketch.get_num_retained() == 0);
   auto u = tuple_union<float>::builder().build();
   u.update(update_sketch);
   auto result = u.get_result();
-  std::cout << result.to_string(true);
+//  std::cout << result.to_string(true);
   REQUIRE(!result.is_empty());
   REQUIRE(result.get_num_retained() == 0);
   REQUIRE(result.is_estimation_mode());
