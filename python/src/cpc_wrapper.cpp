@@ -53,25 +53,38 @@ void init_cpc(py::module &m) {
   using namespace datasketches;
 
   py::class_<cpc_sketch>(m, "cpc_sketch")
-    .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k"), py::arg("seed")=DEFAULT_SEED)
+    .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k")=CPC_DEFAULT_LG_K, py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_sketch&>())
-    .def("__str__", &cpc_sketch::to_string)
-    .def("to_string", &cpc_sketch::to_string)
-    .def("serialize", &dspy::cpc_sketch_serialize)
-    .def_static("deserialize", &dspy::cpc_sketch_deserialize)
-    .def<void (cpc_sketch::*)(uint64_t)>("update", &cpc_sketch::update, py::arg("datum"))
-    .def<void (cpc_sketch::*)(double)>("update", &cpc_sketch::update, py::arg("datum"))
-    .def<void (cpc_sketch::*)(const std::string&)>("update", &cpc_sketch::update, py::arg("datum"))
-    .def("is_empty", &cpc_sketch::is_empty)
-    .def("get_estimate", &cpc_sketch::get_estimate)
-    .def("get_lower_bound", &cpc_sketch::get_lower_bound, py::arg("kappa"))
-    .def("get_upper_bound", &cpc_sketch::get_upper_bound, py::arg("kappa"))
+    .def("__str__", &cpc_sketch::to_string,
+         "Produces a string summary of the sketch")
+    .def("to_string", &cpc_sketch::to_string,
+         "Produces a string summary of the sketch")
+    .def("serialize", &dspy::cpc_sketch_serialize,
+         "Serializes the sketch into a bytes object")
+    .def_static("deserialize", &dspy::cpc_sketch_deserialize,
+         "Reads a bytes object and returns the corresponding cpc_sketch")
+    .def<void (cpc_sketch::*)(uint64_t)>("update", &cpc_sketch::update, py::arg("datum"),
+         "Updates the sketch with the given 64-bit integer value")
+    .def<void (cpc_sketch::*)(double)>("update", &cpc_sketch::update, py::arg("datum"),
+         "Updates the sketch with the given 64-bit floating point")
+    .def<void (cpc_sketch::*)(const std::string&)>("update", &cpc_sketch::update, py::arg("datum"),
+         "Updates the sketch with the given string")
+    .def("is_empty", &cpc_sketch::is_empty,
+         "Returns True if the sketch is empty, otherwise Dalse")
+    .def("get_estimate", &cpc_sketch::get_estimate,
+         "Estimate of the distinct count of the input stream")
+    .def("get_lower_bound", &cpc_sketch::get_lower_bound, py::arg("kappa"),
+         "Returns an approximate lower bound on the estimate for kappa values in {1, 2, 3}, roughly corresponding to standard deviations")
+    .def("get_upper_bound", &cpc_sketch::get_upper_bound, py::arg("kappa"),
+         "Returns an approximate upper bound on the estimate for kappa values in {1, 2, 3}, roughly corresponding to standard deviations")
     ;
 
   py::class_<cpc_union>(m, "cpc_union")
     .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k"), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_union&>())
-    .def("update", (void (cpc_union::*)(const cpc_sketch&)) &cpc_union::update, py::arg("sketch"))
-    .def("get_result", &dspy::cpc_union_get_result)
+    .def("update", (void (cpc_union::*)(const cpc_sketch&)) &cpc_union::update, py::arg("sketch"),
+         "Updates the union with the provided CPC sketch")
+    .def("get_result", &dspy::cpc_union_get_result,
+         "Returns a CPC sketch with the result of the union")
     ;
 }
