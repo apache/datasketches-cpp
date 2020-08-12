@@ -59,7 +59,7 @@ entries_(nullptr)
     entries_ = allocator_.allocate(size);
     for (size_t i = 0; i < size; ++i) {
       if (EK()(other.entries_[i]) != 0) {
-        entries_[i] = other.entries_[i];
+        new (&entries_[i]) EN(other.entries_[i]);
       } else {
         EK()(entries_[i]) = 0;
       }
@@ -212,7 +212,7 @@ template<typename EN, typename EK, typename A>
 void theta_update_sketch_base<EN, EK, A>::rebuild() {
   const size_t size = 1 << lg_cur_size_;
   const uint32_t pivot = (1 << lg_nom_size_) + size - num_entries_;
-  std::nth_element(&entries_[0], &entries_[pivot], &entries_[size], comparator());
+  std::nth_element(entries_, entries_ + pivot, entries_ + size, comparator());
   this->theta_ = EK()(entries_[pivot]);
   EN* old_entries = entries_;
   entries_ = allocator_.allocate(size);
