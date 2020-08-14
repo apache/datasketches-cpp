@@ -238,7 +238,7 @@ void theta_update_sketch_base<EN, EK, A>::trim() {
 }
 
 template<typename EN, typename EK, typename A>
-void theta_update_sketch_base<EN, EK, A>::consolidate_empty(EN* entries, size_t size, size_t num) {
+void theta_update_sketch_base<EN, EK, A>::consolidate_non_empty(EN* entries, size_t size, size_t num) {
   // find the first empty slot
   size_t i = 0;
   while (i < size) {
