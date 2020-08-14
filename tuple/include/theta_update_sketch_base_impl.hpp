@@ -208,22 +208,26 @@ void theta_update_sketch_base<EN, EK, A>::resize() {
   allocator_.deallocate(old_entries, old_size);
 }
 
+// assumes number of entries > nominal size
 template<typename EN, typename EK, typename A>
 void theta_update_sketch_base<EN, EK, A>::rebuild() {
   const size_t size = 1 << lg_cur_size_;
-  const uint32_t pivot = (1 << lg_nom_size_) + size - num_entries_;
-  std::nth_element(entries_, entries_ + pivot, entries_ + size, comparator());
-  this->theta_ = EK()(entries_[pivot]);
+  const uint32_t nominal_size = 1 << lg_nom_size_;
+
+  // empty entries have uninitialized payloads
+  // TODO: avoid this for empty or trivial payloads (arithmetic types)
+  consolidate_non_empty(entries_, size, num_entries_);
+
+  std::nth_element(entries_, entries_ + nominal_size, entries_ + num_entries_, comparator());
+  this->theta_ = EK()(entries_[nominal_size]);
   EN* old_entries = entries_;
   entries_ = allocator_.allocate(size);
   for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
   num_entries_ = 0;
-  for (size_t i = 0; i < size; ++i) {
-    const uint64_t key = EK()(old_entries[i]);
-    if (key != 0 && key < this->theta_) {
-      insert(find(key).first, std::move(old_entries[i])); // consider a special insert with no comparison
-      old_entries[i].~EN();
-    }
+  // relies on consolidating non-empty entries to the front
+  for (size_t i = 0; i < nominal_size; ++i) {
+    insert(find(EK()(old_entries[i])).first, std::move(old_entries[i])); // consider a special insert with no comparison
+    old_entries[i].~EN();
   }
   allocator_.deallocate(old_entries, size);
 }
@@ -231,6 +235,26 @@ void theta_update_sketch_base<EN, EK, A>::rebuild() {
 template<typename EN, typename EK, typename A>
 void theta_update_sketch_base<EN, EK, A>::trim() {
   if (num_entries_ > static_cast<uint32_t>(1 << lg_nom_size_)) rebuild();
+}
+
+template<typename EN, typename EK, typename A>
+void theta_update_sketch_base<EN, EK, A>::consolidate_empty(EN* entries, size_t size, size_t num) {
+  // find the first empty slot
+  size_t i = 0;
+  while (i < size) {
+    if (EK()(entries[i]) == 0) break;
+    ++i;
+  }
+  // scan the rest and move non-empty entries to the front
+  for (size_t j = i + 1; j < size; ++j) {
+    if (EK()(entries[j]) != 0) {
+      new (&entries[i]) EN(std::move(entries[j]));
+      entries[j].~EN();
+      EK()(entries[j]) = 0;
+      ++i;
+      if (i == num) break;
+    }
+  }
 }
 
 // builder

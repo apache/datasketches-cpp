@@ -87,6 +87,7 @@ struct theta_update_sketch_base {
 
   static inline uint32_t get_capacity(uint8_t lg_cur_size, uint8_t lg_nom_size);
   static inline uint32_t get_stride(uint64_t key, uint8_t lg_size);
+  static void consolidate_empty(Entry* entries, size_t size, size_t num);
 };
 
 // builder
