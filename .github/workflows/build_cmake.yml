@@ -44,7 +44,7 @@ jobs:
         with:
           submodules: true
       - name: Configure
-        run: mkdir build && cd build && cmake ..
+        run: cd build && cmake ..
       - name: Build C++ unit tests
         run: cmake --build build --config Release
       - name: Run C++ tests

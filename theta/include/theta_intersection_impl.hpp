@@ -100,7 +100,7 @@ void theta_intersection_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
         lg_size_ = lg_size;
         keys_.resize(1 << lg_size_);
       }
-      std::fill(&keys_[0], &keys_[1 << lg_size_], 0);
+      std::fill(keys_.begin(), keys_.end(), 0);
       for (uint32_t i = 0; i < match_count; i++) {
         update_theta_sketch_alloc<A>::hash_search_or_insert(matched_keys[i], keys_.data(), lg_size_);
       }
@@ -114,7 +114,7 @@ compact_theta_sketch_alloc<A> theta_intersection_alloc<A>::get_result(bool order
   if (!is_valid_) throw std::invalid_argument("calling get_result() before calling update() is undefined");
   vector_u64<A> keys(num_keys_);
   if (num_keys_ > 0) {
-    std::copy_if(&keys_[0], &keys_[1 << lg_size_], &keys[0], [](uint64_t key) { return key != 0; });
+    std::copy_if(keys_.begin(), keys_.end(), keys.begin(), [](uint64_t key) { return key != 0; });
     if (ordered) std::sort(keys.begin(), keys.end());
   }
   return compact_theta_sketch_alloc<A>(is_empty_, theta_, std::move(keys), seed_hash_, ordered);
