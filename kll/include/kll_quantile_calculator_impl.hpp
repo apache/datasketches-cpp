@@ -24,8 +24,6 @@
 #include <cmath>
 #include <algorithm>
 
-#include <iostream>
-
 #include "kll_helper.hpp"
 
 namespace datasketches {
