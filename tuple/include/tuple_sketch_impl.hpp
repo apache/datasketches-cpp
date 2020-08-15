@@ -507,7 +507,7 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
       ptr += copy_from_mem(ptr, &key, sizeof(key));
       ptr += sd.deserialize(ptr, base + size - ptr, summary.get(), 1);
       entries.push_back(Entry(key, std::move(*summary)));
-      summary->~S();
+      (*summary).~S();
     }
   }
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
