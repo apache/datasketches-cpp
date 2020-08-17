@@ -51,47 +51,47 @@ TEST_CASE("tuple sketch with test allocator: estimation mode", "[tuple_sketch]")
   {
     auto update_sketch = update_tuple_sketch_test::builder().build();
     for (int i = 0; i < 10000; ++i) update_sketch.update(i, 1);
-//    for (int i = 0; i < 10000; ++i) update_sketch.update(i, 2);
-//    REQUIRE(!update_sketch.is_empty());
-//    REQUIRE(update_sketch.is_estimation_mode());
-//    unsigned count = 0;
-//    for (const auto& entry: update_sketch) {
-//      REQUIRE(entry.second.get_value() == 2);
-//      ++count;
-//    }
-//    REQUIRE(count == update_sketch.get_num_retained());
+    for (int i = 0; i < 10000; ++i) update_sketch.update(i, 2);
+    REQUIRE(!update_sketch.is_empty());
+    REQUIRE(update_sketch.is_estimation_mode());
+    unsigned count = 0;
+    for (const auto& entry: update_sketch) {
+      REQUIRE(entry.second.get_value() == 2);
+      ++count;
+    }
+    REQUIRE(count == update_sketch.get_num_retained());
 
-//    update_sketch.trim();
-//    REQUIRE(update_sketch.get_num_retained() == (1 << update_sketch.get_lg_k()));
+    update_sketch.trim();
+    REQUIRE(update_sketch.get_num_retained() == (1 << update_sketch.get_lg_k()));
 
-//    auto compact_sketch = update_sketch.compact();
-//    REQUIRE(!compact_sketch.is_empty());
-//    REQUIRE(compact_sketch.is_estimation_mode());
-//    count = 0;
-//    for (const auto& entry: compact_sketch) {
-//      REQUIRE(entry.second.get_value() == 2);
-//      ++count;
-//    }
-//    REQUIRE(count == update_sketch.get_num_retained());
+    auto compact_sketch = update_sketch.compact();
+    REQUIRE(!compact_sketch.is_empty());
+    REQUIRE(compact_sketch.is_estimation_mode());
+    count = 0;
+    for (const auto& entry: compact_sketch) {
+      REQUIRE(entry.second.get_value() == 2);
+      ++count;
+    }
+    REQUIRE(count == update_sketch.get_num_retained());
 
-//    auto bytes = compact_sketch.serialize(0, test_type_serde());
-//    auto deserialized_sketch = compact_tuple_sketch_test::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED, test_type_serde());
-//    REQUIRE(deserialized_sketch.get_estimate() == compact_sketch.get_estimate());
+    auto bytes = compact_sketch.serialize(0, test_type_serde());
+    auto deserialized_sketch = compact_tuple_sketch_test::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED, test_type_serde());
+    REQUIRE(deserialized_sketch.get_estimate() == compact_sketch.get_estimate());
 
     // update sketch copy
 //    std::cout << update_sketch.to_string();
-//    update_tuple_sketch_test update_sketch_copy(update_sketch);
-//    update_sketch_copy = update_sketch;
+    update_tuple_sketch_test update_sketch_copy(update_sketch);
+    update_sketch_copy = update_sketch;
     // update sketch move
-//    update_tuple_sketch_test update_sketch_moved(std::move(update_sketch_copy));
-//    update_sketch_moved = std::move(update_sketch);
+    update_tuple_sketch_test update_sketch_moved(std::move(update_sketch_copy));
+    update_sketch_moved = std::move(update_sketch);
 
     // compact sketch copy
-//    compact_tuple_sketch_test compact_sketch_copy(compact_sketch);
-//    compact_sketch_copy = compact_sketch;
+    compact_tuple_sketch_test compact_sketch_copy(compact_sketch);
+    compact_sketch_copy = compact_sketch;
     // compact sketch move
-//    compact_tuple_sketch_test compact_sketch_moved(std::move(compact_sketch_copy));
-//    compact_sketch_moved = std::move(compact_sketch);
+    compact_tuple_sketch_test compact_sketch_moved(std::move(compact_sketch_copy));
+    compact_sketch_moved = std::move(compact_sketch);
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);
