@@ -323,36 +323,34 @@ template<typename SerDe>
 void compact_tuple_sketch<S, A>::serialize(std::ostream& os, const SerDe& sd) const {
   const bool is_single_item = entries_.size() == 1 && !this->is_estimation_mode();
   const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
-  os.write((char*)&preamble_longs, sizeof(preamble_longs));
+  os.write(reinterpret_cast<const char*>(&preamble_longs), sizeof(preamble_longs));
   const uint8_t serial_version = SERIAL_VERSION;
-  os.write((char*)&serial_version, sizeof(serial_version));
+  os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
   const uint8_t type = SKETCH_TYPE;
-  os.write((char*)&type, sizeof(type));
+  os.write(reinterpret_cast<const char*>(&type), sizeof(type));
   const uint16_t unused16 = 0;
-  os.write((char*)&unused16, sizeof(unused16));
+  os.write(reinterpret_cast<const char*>(&unused16), sizeof(unused16));
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
     (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
     (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
   );
-  os.write((char*)&flags_byte, sizeof(flags_byte));
+  os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
   const uint16_t seed_hash = get_seed_hash();
-  os.write((char*)&seed_hash, sizeof(seed_hash));
+  os.write(reinterpret_cast<const char*>(&seed_hash), sizeof(seed_hash));
   if (!this->is_empty()) {
     if (!is_single_item) {
       const uint32_t num_entries = entries_.size();
-      os.write((char*)&num_entries, sizeof(num_entries));
+      os.write(reinterpret_cast<const char*>(&num_entries), sizeof(num_entries));
       const uint32_t unused32 = 0;
-      os.write((char*)&unused32, sizeof(unused32));
+      os.write(reinterpret_cast<const char*>(&unused32), sizeof(unused32));
       if (this->is_estimation_mode()) {
-        os.write((char*)&(this->theta_), sizeof(uint64_t));
+        os.write(reinterpret_cast<const char*>(&(this->theta_)), sizeof(uint64_t));
       }
     }
     for (const auto& it: entries_) {
-      os.write((char*)&it.first, sizeof(uint64_t));
-    }
-    for (const auto& it: entries_) {
+      os.write(reinterpret_cast<const char*>(&it.first), sizeof(uint64_t));
       sd.serialize(os, &it.second, 1);
     }
   }
@@ -407,17 +405,17 @@ template<typename S, typename A>
 template<typename SerDe>
 compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream& is, uint64_t seed, const SerDe& sd, const A& allocator) {
   uint8_t preamble_longs;
-  is.read((char*)&preamble_longs, sizeof(preamble_longs));
+  is.read(reinterpret_cast<char*>(&preamble_longs), sizeof(preamble_longs));
   uint8_t serial_version;
-  is.read((char*)&serial_version, sizeof(serial_version));
+  is.read(reinterpret_cast<char*>(&serial_version), sizeof(serial_version));
   uint8_t type;
-  is.read((char*)&type, sizeof(type));
+  is.read(reinterpret_cast<char*>(&type), sizeof(type));
   uint16_t unused16;
-  is.read((char*)&unused16, sizeof(unused16));
+  is.read(reinterpret_cast<char*>(&unused16), sizeof(unused16));
   uint8_t flags_byte;
-  is.read((char*)&flags_byte, sizeof(flags_byte));
+  is.read(reinterpret_cast<char*>(&flags_byte), sizeof(flags_byte));
   uint16_t seed_hash;
-  is.read((char*)&seed_hash, sizeof(seed_hash));
+  is.read(reinterpret_cast<char*>(&seed_hash), sizeof(seed_hash));
   checker<true>::check_sketch_type(type, SKETCH_TYPE);
   checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
@@ -429,25 +427,25 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
     if (preamble_longs == 1) {
       num_entries = 1;
     } else {
-      is.read((char*)&num_entries, sizeof(num_entries));
+      is.read(reinterpret_cast<char*>(&num_entries), sizeof(num_entries));
       uint32_t unused32;
-      is.read((char*)&unused32, sizeof(unused32));
+      is.read(reinterpret_cast<char*>(&unused32), sizeof(unused32));
       if (preamble_longs > 2) {
-        is.read((char*)&theta, sizeof(theta));
+        is.read(reinterpret_cast<char*>(&theta), sizeof(theta));
       }
     }
   }
-  std::vector<Entry, AllocEntry> entries(allocator);
+  A alloc(allocator);
+  std::vector<Entry, AllocEntry> entries(alloc);
   if (!is_empty) {
     entries.reserve(num_entries);
-    std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
-    is.read((char*)keys.data(), num_entries * sizeof(uint64_t));
-    A alloc(allocator);
-    std::unique_ptr<S, deleter_of_summaries> summaries(alloc.allocate(num_entries), deleter_of_summaries(num_entries, false));
-    sd.deserialize(is, summaries.get(), num_entries);
-    summaries.get_deleter().set_destroy(true); // serde did not throw, so the items must be constructed
+    std::unique_ptr<S, deleter_of_summaries> summary(alloc.allocate(1), deleter_of_summaries(1, false));
     for (size_t i = 0; i < num_entries; ++i) {
-      entries.push_back(Entry(keys[i], std::move(summaries.get()[i])));
+      uint64_t key;
+      is.read(reinterpret_cast<char*>(&key), sizeof(uint64_t));
+      sd.deserialize(is, summary.get(), 1);
+      entries.push_back(Entry(key, std::move(*summary)));
+      (*summary).~S();
     }
   }
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
@@ -497,10 +495,10 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   }
   const size_t keys_size_bytes = sizeof(uint64_t) * num_entries;
   ensure_minimum_memory(size, ptr - base + keys_size_bytes);
-  std::vector<Entry, AllocEntry> entries(allocator);
+  A alloc(allocator);
+  std::vector<Entry, AllocEntry> entries(alloc);
   if (!is_empty) {
     entries.reserve(num_entries);
-    A alloc(allocator);
     std::unique_ptr<S, deleter_of_summaries> summary(alloc.allocate(1), deleter_of_summaries(1, false));
     for (size_t i = 0; i < num_entries; ++i) {
       uint64_t key;

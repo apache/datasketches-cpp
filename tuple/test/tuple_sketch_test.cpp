@@ -138,6 +138,19 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
     REQUIRE(deserialized_sketch.is_ordered());
 //    std::cout << deserialized_sketch.to_string(true);
   }
+  // mixed
+  {
+    auto bytes = compact_sketch.serialize();
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    auto deserialized_sketch = compact_tuple_sketch<float>::deserialize(s);
+    auto it = deserialized_sketch.begin();
+    for (const auto& entry: compact_sketch) {
+      REQUIRE(entry.first == (*it).first);
+      REQUIRE(entry.second == (*it).second);
+      ++it;
+    }
+  }
 }
 
 template<typename T>
