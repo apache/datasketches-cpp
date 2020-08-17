@@ -41,12 +41,6 @@ class CMakeBuild(build_ext):
                 "CMake >= 3.12 must be installed to build the following extensions: " +
                 ", ".join(e.name for e in self.extensions))
 
-        # if platform.system() == "Windows":
-        #     cmake_version = LooseVersion(re.search(r'version\s*([\d.]+)',
-        #                                            out.decode()).group(1))
-        #     if cmake_version < '3.12.0':
-        #         raise RuntimeError("Cmake >= 3.12.0 is required")
-
         for ext in self.extensions:
             self.build_extension(ext)
 
@@ -83,8 +77,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name='datasketches',
-    #use_scm_version=True,
-    version='2.0.0-incubating-SNAPSHOT',
+    version='2.2.0-incubating-SNAPSHOT',
     author='Datasketches Developers',
     author_email='dev@datasketches.apache.org',
     description='A wrapper for the C++ Datasketches library',

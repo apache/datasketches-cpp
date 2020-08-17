@@ -65,9 +65,14 @@ Having installed the library, loading the Datasketches library in Python is simp
 - VarOpt Sampling
     - `var_opt_sketch`
     - `var_opt_union`
+- Vector of KLL
+    - `vector_of_kll_ints_sketches`
+    - `vector_of_kll_floats_sketches`
 
 ## Known Differences from C++
 
 The Python API largely mirrors the C++ API, with a few minor exceptions: The primary known differences are that Python on modern platforms does not support unsigned integer values or numeric values with fewer than 64 bits. As a result, you may not be able to produce identical sketches from within Python as you can with Java and C++. Loading those sketches after they have been serialized from another language will work as expected.
+
+The Vector of KLL object is currently exclusive to python, and holds an array of independent KLL sketches. This is useful for creating a set of KLL sketches over a vector and has been designed to allow input as either a vector or a matrix of multiple vectors.
 
 We have also removed reliance on a builder class for theta sketches as Python allows named arguments to the constructor, not strictly positional arguments.
