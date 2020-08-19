@@ -187,7 +187,7 @@ TEST_CASE("aod sketch: stream serialize deserialize - estimation mode", "[tuple_
   }
 }
 
-TEST_CASE("aod sketch: bytes serialize deserialize - estimation mode", "[tuple_sketch]") {
+TEST_CASE("aod sketch: bytes to stream serialize deserialize - estimation mode", "[tuple_sketch]") {
   auto update_sketch = update_array_of_doubles_sketch<>::builder(2).build();
   std::vector<double> a = {1, 2};
   for (int i = 0; i < 8192; ++i) update_sketch.update(i, a);
@@ -218,7 +218,7 @@ TEST_CASE("aod sketch: bytes serialize deserialize - estimation mode", "[tuple_s
   }
 }
 
-TEST_CASE("aod sketch: bytes to stream serialize deserialize - estimation mode", "[tuple_sketch]") {
+TEST_CASE("aod sketch: bytes serialize deserialize - estimation mode", "[tuple_sketch]") {
   auto update_sketch = update_array_of_doubles_sketch<>::builder(2).build();
   std::vector<double> a = {1, 2};
   for (int i = 0; i < 8192; ++i) update_sketch.update(i, a);
