@@ -326,10 +326,12 @@ void compact_tuple_sketch<S, A>::serialize(std::ostream& os, const SerDe& sd) co
   os.write(reinterpret_cast<const char*>(&preamble_longs), sizeof(preamble_longs));
   const uint8_t serial_version = SERIAL_VERSION;
   os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
+  const uint8_t family = SKETCH_FAMILY;
+  os.write(reinterpret_cast<const char*>(&family), sizeof(family));
   const uint8_t type = SKETCH_TYPE;
   os.write(reinterpret_cast<const char*>(&type), sizeof(type));
-  const uint16_t unused16 = 0;
-  os.write(reinterpret_cast<const char*>(&unused16), sizeof(unused16));
+  const uint8_t unused8 = 0;
+  os.write(reinterpret_cast<const char*>(&unused8), sizeof(unused8));
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
@@ -370,10 +372,12 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
   ptr += copy_to_mem(&preamble_longs, ptr, sizeof(preamble_longs));
   const uint8_t serial_version = SERIAL_VERSION;
   ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
+  const uint8_t family = SKETCH_FAMILY;
+  ptr += copy_to_mem(&family, ptr, sizeof(family));
   const uint8_t type = SKETCH_TYPE;
   ptr += copy_to_mem(&type, ptr, sizeof(type));
-  const uint16_t unused16 = 0;
-  ptr += copy_to_mem(&unused16, ptr, sizeof(unused16));
+  const uint8_t unused8 = 0;
+  ptr += copy_to_mem(&unused8, ptr, sizeof(unused8));
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
@@ -408,16 +412,19 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
   is.read(reinterpret_cast<char*>(&preamble_longs), sizeof(preamble_longs));
   uint8_t serial_version;
   is.read(reinterpret_cast<char*>(&serial_version), sizeof(serial_version));
+  uint8_t family;
+  is.read(reinterpret_cast<char*>(&family), sizeof(family));
   uint8_t type;
   is.read(reinterpret_cast<char*>(&type), sizeof(type));
-  uint16_t unused16;
-  is.read(reinterpret_cast<char*>(&unused16), sizeof(unused16));
+  uint8_t unused8;
+  is.read(reinterpret_cast<char*>(&unused8), sizeof(unused8));
   uint8_t flags_byte;
   is.read(reinterpret_cast<char*>(&flags_byte), sizeof(flags_byte));
   uint16_t seed_hash;
   is.read(reinterpret_cast<char*>(&seed_hash), sizeof(seed_hash));
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
   checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+  checker<true>::check_sketch_family(family, SKETCH_FAMILY);
+  checker<true>::check_sketch_type(type, SKETCH_TYPE);
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
@@ -463,16 +470,19 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
   uint8_t serial_version;
   ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+  uint8_t family;
+  ptr += copy_from_mem(ptr, &family, sizeof(family));
   uint8_t type;
   ptr += copy_from_mem(ptr, &type, sizeof(type));
-  uint16_t unused16;
-  ptr += copy_from_mem(ptr, &unused16, sizeof(unused16));
+  uint8_t unused8;
+  ptr += copy_from_mem(ptr, &unused8, sizeof(unused8));
   uint8_t flags_byte;
   ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
   uint16_t seed_hash;
   ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
   checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+  checker<true>::check_sketch_family(family, SKETCH_FAMILY);
+  checker<true>::check_sketch_type(type, SKETCH_TYPE);
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
