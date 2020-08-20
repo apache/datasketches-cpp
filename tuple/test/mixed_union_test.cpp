@@ -60,8 +60,8 @@ TEST_CASE("mixed_union float: full overlap", "[tuple union]") {
   auto compact_tuple = update_tuple.compact();
   u.update(compact_tuple);
 
-//  auto result = u.get_result();
-  std::cout << result.to_string(true);
+  auto result = u.get_result();
+//  std::cout << result.to_string(true);
   REQUIRE_FALSE(result.is_empty());
   REQUIRE(result.get_num_retained() == 10);
   REQUIRE(!result.is_estimation_mode());
