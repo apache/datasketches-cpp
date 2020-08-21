@@ -21,6 +21,7 @@
 
 #include <catch.hpp>
 #include <tuple_a_not_b.hpp>
+#include <theta_sketch_experimental.hpp>
 
 namespace datasketches {
 
@@ -95,6 +96,49 @@ TEST_CASE("tuple a-not-b: exact mode half overlap", "[tuple_a_not_b]") {
 
   // A is ordered, so the result is ordered regardless
   result = a_not_b.compute(a.compact(), b, false);
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE_FALSE(result.is_estimation_mode());
+  REQUIRE(result.is_ordered());
+  REQUIRE(result.get_estimate() == 500.0);
+}
+
+// needed until promotion of experimental to replace existing theta sketch
+using update_theta_sketch = update_theta_sketch_experimental<>;
+
+TEST_CASE("mixed a-not-b: exact mode half overlap", "[tuple_a_not_b]") {
+  auto a = update_tuple_sketch<float>::builder().build();
+  int value = 0;
+  for (int i = 0; i < 1000; i++) a.update(value++, 1);
+
+  auto b = update_theta_sketch::builder().build();
+  value = 500;
+  for (int i = 0; i < 1000; i++) b.update(value++);
+
+  tuple_a_not_b<float> a_not_b;
+
+  // unordered inputs, ordered result
+  auto result = a_not_b.compute(a, compact_tuple_sketch<float>(b, 1, false));
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE_FALSE(result.is_estimation_mode());
+  REQUIRE(result.is_ordered());
+  REQUIRE(result.get_estimate() == 500.0);
+
+  // unordered inputs, unordered result
+  result = a_not_b.compute(a, compact_tuple_sketch<float>(b, 1, false), false);
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE_FALSE(result.is_estimation_mode());
+  REQUIRE_FALSE(result.is_ordered());
+  REQUIRE(result.get_estimate() == 500.0);
+
+  // ordered inputs
+  result = a_not_b.compute(a.compact(), compact_tuple_sketch<float>(b.compact(), 1));
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE_FALSE(result.is_estimation_mode());
+  REQUIRE(result.is_ordered());
+  REQUIRE(result.get_estimate() == 500.0);
+
+  // A is ordered, so the result is ordered regardless
+  result = a_not_b.compute(a.compact(), compact_tuple_sketch<float>(b, 1, false), false);
   REQUIRE_FALSE(result.is_empty());
   REQUIRE_FALSE(result.is_estimation_mode());
   REQUIRE(result.is_ordered());

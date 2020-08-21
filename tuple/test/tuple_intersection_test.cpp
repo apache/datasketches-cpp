@@ -21,6 +21,7 @@
 
 #include <catch.hpp>
 #include <tuple_intersection.hpp>
+#include <theta_sketch_experimental.hpp>
 
 namespace datasketches {
 
@@ -132,6 +133,38 @@ TEST_CASE("tuple intersection: exact mode disjoint", "[tuple_intersection]") {
     REQUIRE(result.is_empty());
     REQUIRE_FALSE(result.is_estimation_mode());
     REQUIRE(result.get_estimate() == 0.0);
+  }
+}
+
+// needed until promotion of experimental to replace existing theta sketch
+using update_theta_sketch = update_theta_sketch_experimental<>;
+
+TEST_CASE("mixed intersection: exact mode half overlap", "[tuple_intersection]") {
+  auto sketch1 = update_tuple_sketch<float>::builder().build();
+  int value = 0;
+  for (int i = 0; i < 1000; i++) sketch1.update(value++, 1);
+
+  auto sketch2 = update_theta_sketch::builder().build();
+  value = 500;
+  for (int i = 0; i < 1000; i++) sketch2.update(value++);
+
+  { // unordered
+    tuple_intersection_float intersection;
+    intersection.update(sketch1);
+    intersection.update(compact_tuple_sketch<float>(sketch2, 1, false));
+    auto result = intersection.get_result();
+    REQUIRE_FALSE(result.is_empty());
+    REQUIRE_FALSE(result.is_estimation_mode());
+    REQUIRE(result.get_estimate() == 500.0);
+  }
+  { // ordered
+    tuple_intersection_float intersection;
+    intersection.update(sketch1.compact());
+    intersection.update(compact_tuple_sketch<float>(sketch2.compact(), 1));
+    auto result = intersection.get_result();
+    REQUIRE_FALSE(result.is_empty());
+    REQUIRE_FALSE(result.is_estimation_mode());
+    REQUIRE(result.get_estimate() == 500.0);
   }
 }
 

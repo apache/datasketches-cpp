@@ -31,6 +31,7 @@ namespace datasketches {
 template<typename S, typename A> class tuple_sketch;
 template<typename S, typename U, typename P, typename A> class update_tuple_sketch;
 template<typename S, typename A> class compact_tuple_sketch;
+template<typename A> class theta_sketch_experimental;
 
 template<
   typename Summary,
@@ -370,6 +371,8 @@ public:
   virtual ~compact_tuple_sketch() = default;
   compact_tuple_sketch& operator=(const compact_tuple_sketch&) = default;
   compact_tuple_sketch& operator=(compact_tuple_sketch&&) = default;
+
+  compact_tuple_sketch(const theta_sketch_experimental<AllocU64>& other, const Summary& summary, bool ordered = true);
 
   virtual Allocator get_allocator() const;
   virtual bool is_empty() const;

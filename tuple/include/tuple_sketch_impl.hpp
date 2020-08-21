@@ -270,6 +270,21 @@ entries_(other.get_allocator())
 }
 
 template<typename S, typename A>
+compact_tuple_sketch<S, A>::compact_tuple_sketch(const theta_sketch_experimental<AllocU64>& other, const S& summary, bool ordered):
+is_empty_(other.is_empty()),
+is_ordered_(other.is_ordered() || ordered),
+seed_hash_(other.get_seed_hash()),
+theta_(other.get_theta64()),
+entries_(other.get_allocator())
+{
+  entries_.reserve(other.get_num_retained());
+  for (uint64_t hash: other) {
+    entries_.push_back(Entry(hash, summary));
+  }
+  if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end(), comparator());
+}
+
+template<typename S, typename A>
 A compact_tuple_sketch<S, A>::get_allocator() const {
   return entries_.get_allocator();
 }

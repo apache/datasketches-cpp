@@ -21,6 +21,7 @@
 
 #include <catch.hpp>
 #include <tuple_union.hpp>
+#include <theta_sketch_experimental.hpp>
 
 namespace datasketches {
 
@@ -28,6 +29,22 @@ TEST_CASE("tuple_union float: empty", "[tuple union]") {
   auto update_sketch = update_tuple_sketch<float>::builder().build();
   auto u = tuple_union<float>::builder().build();
   u.update(update_sketch);
+  auto result = u.get_result();
+//  std::cout << result.to_string(true);
+  REQUIRE(result.is_empty());
+  REQUIRE(result.get_num_retained() == 0);
+  REQUIRE(!result.is_estimation_mode());
+  REQUIRE(result.get_estimate() == 0);
+}
+
+// needed until promotion of experimental to replace existing theta sketch
+using update_theta_sketch = update_theta_sketch_experimental<>;
+
+TEST_CASE("tupe_union float: empty theta sketch", "[tuple union]") {
+  auto update_sketch = update_theta_sketch::builder().build();
+
+  auto u = tuple_union<float>::builder().build();
+  u.update(compact_tuple_sketch<float>(update_sketch, 0));
   auto result = u.get_result();
 //  std::cout << result.to_string(true);
   REQUIRE(result.is_empty());
@@ -133,6 +150,38 @@ TEST_CASE("tuple_union float: seed mismatch", "[tuple union]") {
 
   auto u = tuple_union<float>::builder().set_seed(123).build();
   REQUIRE_THROWS_AS(u.update(update_sketch), std::invalid_argument);
+}
+
+TEST_CASE("tuple_union float: full overlap with theta sketch", "[tuple union]") {
+  auto u = tuple_union<float>::builder().build();
+
+  // tuple update
+  auto update_tuple = update_tuple_sketch<float>::builder().build();
+  for (unsigned i = 0; i < 10; ++i) update_tuple.update(i, 1);
+  u.update(update_tuple);
+
+  // tuple compact
+  auto compact_tuple = update_tuple.compact();
+  u.update(compact_tuple);
+
+  // theta update
+  auto update_theta = update_theta_sketch::builder().build();
+  for (unsigned i = 0; i < 10; ++i) update_theta.update(i);
+  u.update(compact_tuple_sketch<float>(update_theta, 1));
+
+  // theta compact
+  auto compact_theta = update_theta.compact();
+  u.update(compact_tuple_sketch<float>(compact_theta, 1));
+
+  auto result = u.get_result();
+//  std::cout << result.to_string(true);
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE(result.get_num_retained() == 10);
+  REQUIRE(!result.is_estimation_mode());
+  REQUIRE(result.get_estimate() == 10);
+  for (const auto& entry: result) {
+    REQUIRE(entry.second == 4);
+  }
 }
 
 } /* namespace datasketches */

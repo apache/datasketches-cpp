@@ -46,5 +46,4 @@ target_sources(tuple_test
     theta_sketch_experimental_test.cpp
     theta_union_experimental_test.cpp
     array_of_doubles_sketch_test.cpp
-    mixed_union_test.cpp
 )

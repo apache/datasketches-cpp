@@ -44,7 +44,6 @@ list(APPEND tuple_HEADERS "include/theta_set_difference_base.hpp;include/theta_s
 list(APPEND tuple_HEADERS "include/theta_sketch_experimental.hpp;include/theta_sketch_experimental_impl.hpp")
 list(APPEND tuple_HEADERS "include/theta_union_experimental.hpp;include/theta_union_experimental_impl.hpp")
 list(APPEND tuple_HEADERS "include/array_of_doubles_sketch.hpp;include/array_of_doubles_sketch_impl.hpp")
-list(APPEND tuple_HEADERS "include/theta_to_tuple_sketch_adapter.hpp;include/theta_to_tuple_sketch_adapter_impl.hpp")
 
 install(TARGETS tuple
   EXPORT ${PROJECT_NAME}
@@ -77,6 +76,4 @@ target_sources(tuple
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_union_experimental_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_sketch.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_sketch_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_to_tuple_sketch_adapter.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_to_tuple_sketch_adapter_impl.hpp
 )
