@@ -17,28 +17,24 @@
  * under the License.
  */
 
-#ifndef TUPLE_A_NOT_B_HPP_
-#define TUPLE_A_NOT_B_HPP_
+#ifndef THETA_A_NOT_B_EXPERIMENTAL_HPP_
+#define THETA_A_NOT_B_EXPERIMENTAL_HPP_
 
-#include "tuple_sketch.hpp"
+#include "theta_sketch_experimental.hpp"
 #include "theta_set_difference_base.hpp"
 
 namespace datasketches {
 
-template<
-  typename Summary,
-  typename Allocator = std::allocator<Summary>
->
-class tuple_a_not_b {
+template<typename Allocator = std::allocator<uint64_t>>
+class theta_a_not_b_experimental {
 public:
-  using Entry = std::pair<uint64_t, Summary>;
-  using ExtractKey = pair_extract_key<uint64_t, Summary>;
-  using Sketch = tuple_sketch<Summary, Allocator>;
-  using CompactSketch = compact_tuple_sketch<Summary, Allocator>;
-  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
-  using State = theta_set_difference_base<Entry, ExtractKey, Sketch, CompactSketch, AllocEntry>;
+  using Entry = uint64_t;
+  using ExtractKey = trivial_extract_key;
+  using Sketch = theta_sketch_experimental<Allocator>;
+  using CompactSketch = compact_theta_sketch_experimental<Allocator>;
+  using State = theta_set_difference_base<Entry, ExtractKey, Sketch, CompactSketch, Allocator>;
 
-  explicit tuple_a_not_b(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
+  explicit theta_a_not_b_experimental(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
    * Computes the a-not-b set operation given two sketches.
@@ -53,6 +49,6 @@ private:
 
 } /* namespace datasketches */
 
-#include "tuple_a_not_b_impl.hpp"
+#include "theta_a_not_b_experimental_impl.hpp"
 
 #endif

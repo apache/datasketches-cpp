@@ -37,13 +37,15 @@ list(APPEND tuple_HEADERS "include/tuple_sketch.hpp;include/tuple_sketch_impl.hp
 list(APPEND tuple_HEADERS "include/tuple_union.hpp;include/tuple_union_impl.hpp")
 list(APPEND tuple_HEADERS "include/tuple_intersection.hpp;include/tuple_intersection_impl.hpp")
 list(APPEND tuple_HEADERS "include/tuple_a_not_b.hpp;include/tuple_a_not_b_impl.hpp")
+list(APPEND tuple_HEADERS "include/array_of_doubles_sketch.hpp;include/array_of_doubles_sketch_impl.hpp")
 list(APPEND tuple_HEADERS "include/theta_update_sketch_base.hpp;include/theta_update_sketch_base_impl.hpp")
 list(APPEND tuple_HEADERS "include/theta_union_base.hpp;include/theta_union_base_impl.hpp")
 list(APPEND tuple_HEADERS "include/theta_intersection_base.hpp;include/theta_intersection_base_impl.hpp")
 list(APPEND tuple_HEADERS "include/theta_set_difference_base.hpp;include/theta_set_difference_base_impl.hpp")
 list(APPEND tuple_HEADERS "include/theta_sketch_experimental.hpp;include/theta_sketch_experimental_impl.hpp")
 list(APPEND tuple_HEADERS "include/theta_union_experimental.hpp;include/theta_union_experimental_impl.hpp")
-list(APPEND tuple_HEADERS "include/array_of_doubles_sketch.hpp;include/array_of_doubles_sketch_impl.hpp")
+list(APPEND tuple_HEADERS "include/theta_intersection_experimental.hpp;include/theta_intersection_experimental_impl.hpp")
+list(APPEND tuple_HEADERS "include/theta_a_not_b_experimental.hpp;include/theta_a_not_b_experimental_impl.hpp")
 
 install(TARGETS tuple
   EXPORT ${PROJECT_NAME}
@@ -62,6 +64,8 @@ target_sources(tuple
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_intersection_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_a_not_b.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_a_not_b_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_sketch.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_sketch_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_update_sketch_base.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_update_sketch_base_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_union_base.hpp
@@ -74,6 +78,8 @@ target_sources(tuple
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_sketch_experimental_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_union_experimental.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_union_experimental_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_sketch.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_sketch_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_intersection_experimental.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_intersection_experimental_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_a_not_b_experimental.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_a_not_b_experimental_impl.hpp
 )

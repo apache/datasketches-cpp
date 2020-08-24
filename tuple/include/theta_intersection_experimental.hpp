@@ -17,26 +17,21 @@
  * under the License.
  */
 
-#ifndef THETA_UNION_EXPERIMENTAL_HPP_
-#define THETA_UNION_EXPERIMENTAL_HPP_
+#ifndef THETA_INTERSECTION_EXPERIMENTAL_HPP_
+#define THETA_INTERSECTION_EXPERIMENTAL_HPP_
 
-#include "serde.hpp"
-#include "tuple_sketch.hpp"
-#include "theta_union_base.hpp"
 #include "theta_sketch_experimental.hpp"
+#include "theta_intersection_base.hpp"
 
 namespace datasketches {
 
-// experimental theta union derived from the same base as tuple union
-
 template<typename Allocator = std::allocator<uint64_t>>
-class theta_union_experimental {
+class theta_intersection_experimental {
 public:
   using Entry = uint64_t;
   using ExtractKey = trivial_extract_key;
   using Sketch = theta_sketch_experimental<Allocator>;
   using CompactSketch = compact_theta_sketch_experimental<Allocator>;
-  using resize_factor = theta_constants::resize_factor;
 
   struct pass_through_policy {
     uint64_t operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
@@ -44,48 +39,40 @@ public:
       return internal_entry;
     }
   };
-  using State = theta_union_base<Entry, ExtractKey, pass_through_policy, Sketch, CompactSketch, Allocator>;
+  using State = theta_intersection_base<Entry, ExtractKey, pass_through_policy, Sketch, CompactSketch, Allocator>;
 
-  // No constructor here. Use builder instead.
-  class builder;
+  explicit theta_intersection_experimental(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
-   * This method is to update the union with a given sketch
-   * @param sketch to update the union with
+   * Updates the intersection with a given sketch.
+   * The intersection can be viewed as starting from the "universe" set, and every update
+   * can reduce the current set to leave the overlapping subset only.
+   * @param sketch represents input set for the intersection
    */
-  void update(const Sketch& sketch);
+  template<typename FwdSketch>
+  void update(FwdSketch&& sketch);
 
   /**
-   * This method produces a copy of the current state of the union as a compact sketch.
+   * Produces a copy of the current state of the intersection.
+   * If update() was not called, the state is the infinite "universe",
+   * which is considered an undefined state, and throws an exception.
    * @param ordered optional flag to specify if ordered sketch should be produced
-   * @return the result of the union
+   * @return the result of the intersection
    */
   CompactSketch get_result(bool ordered = true) const;
 
+  /**
+   * Returns true if the state of the intersection is defined (not infinite "universe").
+   * @return true if the state is valid
+   */
+  bool has_result() const;
+
 private:
   State state_;
-
-  // for builder
-  theta_union_experimental(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const Allocator& allocator);
-};
-
-template<typename A>
-class theta_union_experimental<A>::builder: public theta_base_builder<theta_union_experimental<A>::builder> {
-public:
-  builder(const A& allocator = A());
-
-  /**
-   * This is to create an instance of the union with predefined parameters.
-   * @return an instance of the union
-   */
-  theta_union_experimental<A> build() const;
-
-private:
-  A allocator_;
 };
 
 } /* namespace datasketches */
 
-#include "theta_union_experimental_impl.hpp"
+#include "theta_intersection_experimental_impl.hpp"
 
 #endif

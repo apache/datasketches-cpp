@@ -19,15 +19,25 @@
 
 namespace datasketches {
 
-template<typename S, typename A>
-tuple_a_not_b<S, A>::tuple_a_not_b(uint64_t seed, const A& allocator):
-state_(seed, allocator)
+template<typename A>
+theta_intersection_experimental<A>::theta_intersection_experimental(uint64_t seed, const A& allocator):
+state_(seed, pass_through_policy(), allocator)
 {}
 
-template<typename S, typename A>
+template<typename A>
 template<typename SS>
-auto tuple_a_not_b<S, A>::compute(SS&& a, const Sketch& b, bool ordered) const -> CompactSketch {
-  return state_.compute(std::forward<SS>(a), b, ordered);
+void theta_intersection_experimental<A>::update(SS&& sketch) {
+  state_.update(std::forward<SS>(sketch));
+}
+
+template<typename A>
+auto theta_intersection_experimental<A>::get_result(bool ordered) const -> CompactSketch {
+  return state_.get_result(ordered);
+}
+
+template<typename A>
+bool theta_intersection_experimental<A>::has_result() const {
+  return state_.has_result();
 }
 
 } /* namespace datasketches */

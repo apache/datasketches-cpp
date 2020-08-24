@@ -31,6 +31,9 @@ const std::string inputPath = TEST_BINARY_INPUT_PATH;
 const std::string inputPath = "test/";
 #endif
 
+// These tests have been copied from the existing theta sketch implementation.
+// Serialization as base class and serialization of update sketch have been removed.
+
 using update_theta_sketch = update_theta_sketch_experimental<>;
 using compact_theta_sketch = compact_theta_sketch_experimental<>;
 

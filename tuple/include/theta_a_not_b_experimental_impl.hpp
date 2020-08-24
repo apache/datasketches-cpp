@@ -19,14 +19,14 @@
 
 namespace datasketches {
 
-template<typename S, typename A>
-tuple_a_not_b<S, A>::tuple_a_not_b(uint64_t seed, const A& allocator):
+template<typename A>
+theta_a_not_b_experimental<A>::theta_a_not_b_experimental(uint64_t seed, const A& allocator):
 state_(seed, allocator)
 {}
 
-template<typename S, typename A>
+template<typename A>
 template<typename SS>
-auto tuple_a_not_b<S, A>::compute(SS&& a, const Sketch& b, bool ordered) const -> CompactSketch {
+auto theta_a_not_b_experimental<A>::compute(SS&& a, const Sketch& b, bool ordered) const -> CompactSketch {
   return state_.compute(std::forward<SS>(a), b, ordered);
 }
 
