@@ -20,51 +20,51 @@
 namespace datasketches {
 
 template<typename A>
-update_array_of_doubles_sketch<A>::update_array_of_doubles_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
+update_array_of_doubles_sketch_alloc<A>::update_array_of_doubles_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
     uint64_t theta, uint64_t seed, const array_of_doubles_update_policy<A>& policy, const A& allocator):
 Base(lg_cur_size, lg_nom_size, rf, theta, seed, policy, allocator) {}
 
 
 template<typename A>
-uint8_t update_array_of_doubles_sketch<A>::get_num_values() const {
+uint8_t update_array_of_doubles_sketch_alloc<A>::get_num_values() const {
   return this->policy_.get_num_values();
 }
 
 template<typename A>
-compact_array_of_doubles_sketch<A> update_array_of_doubles_sketch<A>::compact(bool ordered) const {
-  return compact_array_of_doubles_sketch<A>(*this, ordered);
+compact_array_of_doubles_sketch_alloc<A> update_array_of_doubles_sketch_alloc<A>::compact(bool ordered) const {
+  return compact_array_of_doubles_sketch_alloc<A>(*this, ordered);
 }
 
 // builder
 
 template<typename A>
-update_array_of_doubles_sketch<A>::builder::builder(const array_of_doubles_update_policy<A>& policy, const A& allocator):
+update_array_of_doubles_sketch_alloc<A>::builder::builder(const array_of_doubles_update_policy<A>& policy, const A& allocator):
 Base::builder(policy, allocator) {}
 
 template<typename A>
-update_array_of_doubles_sketch<A> update_array_of_doubles_sketch<A>::builder::build() const {
-  return update_array_of_doubles_sketch<A>(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
+update_array_of_doubles_sketch_alloc<A> update_array_of_doubles_sketch_alloc<A>::builder::build() const {
+  return update_array_of_doubles_sketch_alloc<A>(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 
 // compact sketch
 
 template<typename A>
 template<typename S>
-compact_array_of_doubles_sketch<A>::compact_array_of_doubles_sketch(const S& other, bool ordered):
+compact_array_of_doubles_sketch_alloc<A>::compact_array_of_doubles_sketch_alloc(const S& other, bool ordered):
 Base(other, ordered), num_values_(other.get_num_values()) {}
 
 template<typename A>
-compact_array_of_doubles_sketch<A>::compact_array_of_doubles_sketch(bool is_empty, bool is_ordered,
+compact_array_of_doubles_sketch_alloc<A>::compact_array_of_doubles_sketch_alloc(bool is_empty, bool is_ordered,
     uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries, uint8_t num_values):
 Base(is_empty, is_ordered, seed_hash, theta, std::move(entries)), num_values_(num_values) {}
 
 template<typename A>
-uint8_t compact_array_of_doubles_sketch<A>::get_num_values() const {
+uint8_t compact_array_of_doubles_sketch_alloc<A>::get_num_values() const {
   return num_values_;
 }
 
 template<typename A>
-void compact_array_of_doubles_sketch<A>::serialize(std::ostream& os) const {
+void compact_array_of_doubles_sketch_alloc<A>::serialize(std::ostream& os) const {
   const uint8_t preamble_longs = 1;
   os.write(reinterpret_cast<const char*>(&preamble_longs), sizeof(preamble_longs));
   const uint8_t serial_version = SERIAL_VERSION;
@@ -98,7 +98,7 @@ void compact_array_of_doubles_sketch<A>::serialize(std::ostream& os) const {
 }
 
 template<typename A>
-auto compact_array_of_doubles_sketch<A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
+auto compact_array_of_doubles_sketch_alloc<A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
   const uint8_t preamble_longs = 1;
   const size_t size = header_size_bytes + 16 // preamble and theta
       + (this->entries_.size() > 0 ? 8 : 0)
@@ -139,7 +139,7 @@ auto compact_array_of_doubles_sketch<A>::serialize(unsigned header_size_bytes) c
 }
 
 template<typename A>
-compact_array_of_doubles_sketch<A> compact_array_of_doubles_sketch<A>::deserialize(std::istream& is, uint64_t seed, const A& allocator) {
+compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed, const A& allocator) {
   uint8_t preamble_longs;
   is.read(reinterpret_cast<char*>(&preamble_longs), sizeof(preamble_longs));
   uint8_t serial_version;
@@ -180,11 +180,11 @@ compact_array_of_doubles_sketch<A> compact_array_of_doubles_sketch<A>::deseriali
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  return compact_array_of_doubles_sketch(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);
+  return compact_array_of_doubles_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);
 }
 
 template<typename A>
-compact_array_of_doubles_sketch<A> compact_array_of_doubles_sketch<A>::deserialize(const void* bytes, size_t size, uint64_t seed, const A& allocator) {
+compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed, const A& allocator) {
   ensure_minimum_memory(size, 16);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
@@ -228,7 +228,7 @@ compact_array_of_doubles_sketch<A> compact_array_of_doubles_sketch<A>::deseriali
   }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  return compact_array_of_doubles_sketch(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);
+  return compact_array_of_doubles_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);
 }
 
 } /* namespace datasketches */

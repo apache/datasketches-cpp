@@ -51,10 +51,10 @@ private:
 };
 
 // forward declaration
-template<typename A> class compact_array_of_doubles_sketch;
+template<typename A> class compact_array_of_doubles_sketch_alloc;
 
 template<typename A = std::allocator<std::vector<double>>>
-class update_array_of_doubles_sketch: public update_tuple_sketch<std::vector<double>, std::vector<double>,
+class update_array_of_doubles_sketch_alloc: public update_tuple_sketch<std::vector<double>, std::vector<double>,
 array_of_doubles_update_policy<A>, A> {
 public:
   using Base = update_tuple_sketch<std::vector<double>, std::vector<double>, array_of_doubles_update_policy<A>, A>;
@@ -62,24 +62,27 @@ public:
 
   class builder;
 
-  compact_array_of_doubles_sketch<A> compact(bool ordered = true) const;
+  compact_array_of_doubles_sketch_alloc<A> compact(bool ordered = true) const;
   uint8_t get_num_values() const;
 
 private:
   // for builder
-  update_array_of_doubles_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta,
+  update_array_of_doubles_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta,
       uint64_t seed, const array_of_doubles_update_policy<A>& policy, const A& allocator);
 };
 
+// alias with the default allocator for convenience
+using update_array_of_doubles_sketch = update_array_of_doubles_sketch_alloc<>;
+
 template<typename A>
-class update_array_of_doubles_sketch<A>::builder: public Base::builder {
+class update_array_of_doubles_sketch_alloc<A>::builder: public Base::builder {
 public:
   builder(const array_of_doubles_update_policy<A>& policy = array_of_doubles_update_policy<A>(), const A& allocator = A());
-  update_array_of_doubles_sketch<A> build() const;
+  update_array_of_doubles_sketch_alloc<A> build() const;
 };
 
 template<typename A = std::allocator<std::vector<double>>>
-class compact_array_of_doubles_sketch: public compact_tuple_sketch<std::vector<double>, A> {
+class compact_array_of_doubles_sketch_alloc: public compact_tuple_sketch<std::vector<double>, A> {
 public:
   using Base = compact_tuple_sketch<std::vector<double>, A>;
   using Entry = typename Base::Entry;
@@ -93,22 +96,25 @@ public:
   enum flags { UNUSED1, UNUSED2, IS_EMPTY, HAS_ENTRIES, IS_ORDERED };
 
   template<typename Sketch>
-  compact_array_of_doubles_sketch(const Sketch& other, bool ordered = true);
+  compact_array_of_doubles_sketch_alloc(const Sketch& other, bool ordered = true);
 
   uint8_t get_num_values() const;
 
   void serialize(std::ostream& os) const;
   vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
-  static compact_array_of_doubles_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
-  static compact_array_of_doubles_sketch deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED,
+  static compact_array_of_doubles_sketch_alloc deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
+  static compact_array_of_doubles_sketch_alloc deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED,
       const A& allocator = A());
 
   // for internal use
-  compact_array_of_doubles_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries, uint8_t num_values);
+  compact_array_of_doubles_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries, uint8_t num_values);
 private:
   uint8_t num_values_;
 };
+
+// alias with the default allocator for convenience
+using compact_array_of_doubles_sketch = compact_array_of_doubles_sketch_alloc<>;
 
 } /* namespace datasketches */
 
