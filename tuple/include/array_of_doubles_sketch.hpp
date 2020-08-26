@@ -20,7 +20,8 @@
 #ifndef ARRAY_OF_DOUBLES_SKETCH_HPP_
 #define ARRAY_OF_DOUBLES_SKETCH_HPP_
 
-#include <array>
+#include <vector>
+#include <memory>
 
 #include "serde.hpp"
 #include "tuple_sketch.hpp"
