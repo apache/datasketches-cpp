@@ -70,7 +70,7 @@ private:
 };
 
 template<typename A>
-class theta_union_experimental<A>::builder: public theta_base_builder<theta_union_experimental<A>::builder> {
+class theta_union_experimental<A>::builder: public theta_base_builder<builder, A> {
 public:
   builder(const A& allocator = A());
 
@@ -79,9 +79,6 @@ public:
    * @return an instance of the union
    */
   theta_union_experimental<A> build() const;
-
-private:
-  A allocator_;
 };
 
 } /* namespace datasketches */

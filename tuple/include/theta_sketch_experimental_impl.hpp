@@ -231,11 +231,11 @@ void update_theta_sketch_experimental<A>::print_specifics(std::ostringstream& os
 // builder
 
 template<typename A>
-update_theta_sketch_experimental<A>::builder::builder(const A& allocator): allocator_(allocator) {}
+update_theta_sketch_experimental<A>::builder::builder(const A& allocator): theta_base_builder<builder, A>(allocator) {}
 
 template<typename A>
 update_theta_sketch_experimental<A> update_theta_sketch_experimental<A>::builder::build() const {
-  return update_theta_sketch_experimental(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, allocator_);
+  return update_theta_sketch_experimental(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->allocator_);
 }
 
 // experimental compact theta sketch

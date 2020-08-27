@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <climits>
+#include <cmath>
 
 #include "common_defs.hpp"
 #include "MurmurHash3.h"
@@ -92,7 +93,7 @@ struct theta_update_sketch_base {
 
 // builder
 
-template<typename Derived>
+template<typename Derived, typename Allocator>
 class theta_base_builder {
 public:
   using resize_factor = theta_constants::resize_factor;
@@ -103,7 +104,7 @@ public:
   /**
    * Creates and instance of the builder with default parameters.
    */
-  theta_base_builder();
+  theta_base_builder(const Allocator& allocator);
 
   /**
    * Set log2(k), where k is a nominal number of entries in the sketch
@@ -138,6 +139,7 @@ public:
   Derived& set_seed(uint64_t seed);
 
 protected:
+  Allocator allocator_;
   uint8_t lg_k_;
   resize_factor rf_;
   float p_;

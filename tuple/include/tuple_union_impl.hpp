@@ -37,11 +37,11 @@ auto tuple_union<S, P, A>::get_result(bool ordered) const -> CompactSketch {
 
 template<typename S, typename P, typename A>
 tuple_union<S, P, A>::builder::builder(const P& policy, const A& allocator):
-policy_(policy), allocator_(allocator) {}
+tuple_base_builder<builder, P, A>(policy, allocator) {}
 
 template<typename S, typename P, typename A>
 auto tuple_union<S, P, A>::builder::build() const -> tuple_union {
-  return tuple_union(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, policy_, allocator_);
+  return tuple_union(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 
 } /* namespace datasketches */

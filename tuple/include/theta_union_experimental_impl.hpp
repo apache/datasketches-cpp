@@ -35,13 +35,13 @@ auto theta_union_experimental<A>::get_result(bool ordered) const -> CompactSketc
 }
 
 template<typename A>
-theta_union_experimental<A>::builder::builder(const A& allocator): allocator_(allocator) {}
+theta_union_experimental<A>::builder::builder(const A& allocator): theta_base_builder<builder, A>(allocator) {}
 
 template<typename A>
 auto theta_union_experimental<A>::builder::build() const -> theta_union_experimental {
   return theta_union_experimental(
       this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
-      this->lg_k_, this->rf_, this->starting_theta(), this->seed_, allocator_);
+      this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->allocator_);
 }
 
 } /* namespace datasketches */

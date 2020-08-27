@@ -380,12 +380,10 @@ private:
 };
 
 template<typename Allocator>
-class update_theta_sketch_experimental<Allocator>::builder: public theta_base_builder<builder> {
+class update_theta_sketch_experimental<Allocator>::builder: public theta_base_builder<builder, Allocator> {
 public:
     builder(const Allocator& allocator = Allocator());
     update_theta_sketch_experimental build() const;
-private:
-    Allocator allocator_;
 };
 
 } /* namespace datasketches */

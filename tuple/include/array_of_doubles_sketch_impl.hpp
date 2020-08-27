@@ -39,7 +39,7 @@ compact_array_of_doubles_sketch_alloc<A> update_array_of_doubles_sketch_alloc<A>
 
 template<typename A>
 update_array_of_doubles_sketch_alloc<A>::builder::builder(const array_of_doubles_update_policy<A>& policy, const A& allocator):
-Base::builder(policy, allocator) {}
+tuple_base_builder<builder, array_of_doubles_update_policy<A>, A>(policy, allocator) {}
 
 template<typename A>
 update_array_of_doubles_sketch_alloc<A> update_array_of_doubles_sketch_alloc<A>::builder::build() const {

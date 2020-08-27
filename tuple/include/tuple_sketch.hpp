@@ -465,8 +465,17 @@ protected:
 
 // builder
 
+template<typename Derived, typename Policy, typename Allocator>
+class tuple_base_builder: public theta_base_builder<Derived, Allocator> {
+public:
+  tuple_base_builder(const Policy& policy, const Allocator& allocator);
+
+protected:
+  Policy policy_;
+};
+
 template<typename S, typename U, typename P, typename A>
-class update_tuple_sketch<S, U, P, A>::builder: public theta_base_builder<builder> {
+class update_tuple_sketch<S, U, P, A>::builder: public tuple_base_builder<builder, P, A> {
 public:
   /**
    * Creates and instance of the builder with default parameters.
@@ -478,10 +487,6 @@ public:
    * @return an instance of the sketch
    */
   update_tuple_sketch<S, U, P, A> build() const;
-
-protected:
-  P policy_;
-  A allocator_;
 };
 
 } /* namespace datasketches */

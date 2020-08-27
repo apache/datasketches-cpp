@@ -75,7 +75,7 @@ private:
 using update_array_of_doubles_sketch = update_array_of_doubles_sketch_alloc<>;
 
 template<typename A>
-class update_array_of_doubles_sketch_alloc<A>::builder: public Base::builder {
+class update_array_of_doubles_sketch_alloc<A>::builder: public tuple_base_builder<builder, array_of_doubles_update_policy<A>, A> {
 public:
   builder(const array_of_doubles_update_policy<A>& policy = array_of_doubles_update_policy<A>(), const A& allocator = A());
   update_array_of_doubles_sketch_alloc<A> build() const;

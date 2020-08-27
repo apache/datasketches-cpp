@@ -259,12 +259,12 @@ void theta_update_sketch_base<EN, EK, A>::consolidate_non_empty(EN* entries, siz
 
 // builder
 
-template<typename Derived>
-theta_base_builder<Derived>::theta_base_builder():
-lg_k_(DEFAULT_LG_K), rf_(DEFAULT_RESIZE_FACTOR), p_(1), seed_(DEFAULT_SEED) {}
+template<typename Derived, typename Allocator>
+theta_base_builder<Derived, Allocator>::theta_base_builder(const Allocator& allocator):
+allocator_(allocator), lg_k_(DEFAULT_LG_K), rf_(DEFAULT_RESIZE_FACTOR), p_(1), seed_(DEFAULT_SEED) {}
 
-template<typename Derived>
-Derived& theta_base_builder<Derived>::set_lg_k(uint8_t lg_k) {
+template<typename Derived, typename Allocator>
+Derived& theta_base_builder<Derived, Allocator>::set_lg_k(uint8_t lg_k) {
   if (lg_k < MIN_LG_K) {
     throw std::invalid_argument("lg_k must not be less than " + std::to_string(MIN_LG_K) + ": " + std::to_string(lg_k));
   }
@@ -272,38 +272,38 @@ Derived& theta_base_builder<Derived>::set_lg_k(uint8_t lg_k) {
   return static_cast<Derived&>(*this);
 }
 
-template<typename Derived>
-Derived& theta_base_builder<Derived>::set_resize_factor(resize_factor rf) {
+template<typename Derived, typename Allocator>
+Derived& theta_base_builder<Derived, Allocator>::set_resize_factor(resize_factor rf) {
   rf_ = rf;
   return static_cast<Derived&>(*this);
 }
 
-template<typename Derived>
-Derived& theta_base_builder<Derived>::set_p(float p) {
+template<typename Derived, typename Allocator>
+Derived& theta_base_builder<Derived, Allocator>::set_p(float p) {
   if (p < 0 || p > 1) throw std::invalid_argument("sampling probability must be between 0 and 1");
   p_ = p;
   return static_cast<Derived&>(*this);
 }
 
-template<typename Derived>
-Derived& theta_base_builder<Derived>::set_seed(uint64_t seed) {
+template<typename Derived, typename Allocator>
+Derived& theta_base_builder<Derived, Allocator>::set_seed(uint64_t seed) {
   seed_ = seed;
   return static_cast<Derived&>(*this);
 }
 
-template<typename Derived>
-uint64_t theta_base_builder<Derived>::starting_theta() const {
+template<typename Derived, typename Allocator>
+uint64_t theta_base_builder<Derived, Allocator>::starting_theta() const {
   if (p_ < 1) return theta_constants::MAX_THETA * p_;
   return theta_constants::MAX_THETA;
 }
 
-template<typename Derived>
-uint8_t theta_base_builder<Derived>::starting_lg_size() const {
+template<typename Derived, typename Allocator>
+uint8_t theta_base_builder<Derived, Allocator>::starting_lg_size() const {
   return starting_sub_multiple(lg_k_ + 1, MIN_LG_K, static_cast<uint8_t>(rf_));
 }
 
-template<typename Derived>
-uint8_t theta_base_builder<Derived>::starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf) {
+template<typename Derived, typename Allocator>
+uint8_t theta_base_builder<Derived, Allocator>::starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf) {
   return (lg_tgt <= lg_min) ? lg_min : (lg_rf == 0) ? lg_tgt : ((lg_tgt - lg_min) % lg_rf) + lg_min;
 }
 

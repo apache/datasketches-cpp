@@ -87,7 +87,7 @@ private:
 };
 
 template<typename S, typename P, typename A>
-class tuple_union<S, P, A>::builder: public theta_base_builder<builder> {
+class tuple_union<S, P, A>::builder: public tuple_base_builder<builder, P, A> {
 public:
   /**
    * Creates and instance of the builder with default parameters.
@@ -99,10 +99,6 @@ public:
    * @return an instance of the union
    */
   tuple_union build() const;
-
-private:
-  P policy_;
-  A allocator_;
 };
 
 } /* namespace datasketches */

@@ -562,13 +562,17 @@ void compact_tuple_sketch<S, A>::print_specifics(std::basic_ostream<char>&) cons
 
 // builder
 
+template<typename D, typename P, typename A>
+tuple_base_builder<D, P, A>::tuple_base_builder(const P& policy, const A& allocator):
+theta_base_builder<D, A>(allocator), policy_(policy) {}
+
 template<typename S, typename U, typename P, typename A>
 update_tuple_sketch<S, U, P, A>::builder::builder(const P& policy, const A& allocator):
-policy_(policy), allocator_(allocator) {}
+tuple_base_builder<builder, P, A>(policy, allocator) {}
 
 template<typename S, typename U, typename P, typename A>
 auto update_tuple_sketch<S, U, P, A>::builder::build() const -> update_tuple_sketch {
-  return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, policy_, allocator_);
+  return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 
 } /* namespace datasketches */
