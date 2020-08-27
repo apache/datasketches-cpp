@@ -33,10 +33,9 @@ class tuple_a_not_b {
 public:
   using Entry = std::pair<uint64_t, Summary>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
-  using Sketch = tuple_sketch<Summary, Allocator>;
   using CompactSketch = compact_tuple_sketch<Summary, Allocator>;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
-  using State = theta_set_difference_base<Entry, ExtractKey, Sketch, CompactSketch, AllocEntry>;
+  using State = theta_set_difference_base<Entry, ExtractKey, CompactSketch, AllocEntry>;
 
   explicit tuple_a_not_b(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
@@ -44,7 +43,7 @@ public:
    * Computes the a-not-b set operation given two sketches.
    * @return the result of a-not-b
    */
-  template<typename FwdSketch>
+  template<typename FwdSketch, typename Sketch>
   CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;
 
 private:

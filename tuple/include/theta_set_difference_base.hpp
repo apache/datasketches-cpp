@@ -28,7 +28,6 @@ namespace datasketches {
 template<
   typename Entry,
   typename ExtractKey,
-  typename Sketch,
   typename CompactSketch,
   typename Allocator
 >
@@ -40,8 +39,8 @@ public:
 
   theta_set_difference_base(uint64_t seed, const Allocator& allocator = Allocator());
 
-  template<typename SS>
-  CompactSketch compute(SS&& a, const Sketch& b, bool ordered) const;
+  template<typename FwdSketch, typename Sketch>
+  CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered) const;
 
 private:
   Allocator allocator_;

@@ -24,15 +24,15 @@
 
 namespace datasketches {
 
-template<typename EN, typename EK, typename S, typename CS, typename A>
-theta_set_difference_base<EN, EK, S, CS, A>::theta_set_difference_base(uint64_t seed, const A& allocator):
+template<typename EN, typename EK, typename CS, typename A>
+theta_set_difference_base<EN, EK, CS, A>::theta_set_difference_base(uint64_t seed, const A& allocator):
 allocator_(allocator),
 seed_hash_(compute_seed_hash(seed))
 {}
 
-template<typename EN, typename EK, typename S, typename CS, typename A>
-template<typename SS>
-CS theta_set_difference_base<EN, EK, S, CS, A>::compute(SS&& a, const S& b, bool ordered) const {
+template<typename EN, typename EK, typename CS, typename A>
+template<typename FwdSketch, typename Sketch>
+CS theta_set_difference_base<EN, EK, CS, A>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const {
   if (a.is_empty() || a.get_num_retained() == 0 || b.is_empty()) return CS(a, ordered);
   if (a.get_seed_hash() != seed_hash_) throw std::invalid_argument("A seed hash mismatch");
   if (b.get_seed_hash() != seed_hash_) throw std::invalid_argument("B seed hash mismatch");
@@ -42,11 +42,11 @@ CS theta_set_difference_base<EN, EK, S, CS, A>::compute(SS&& a, const S& b, bool
   bool is_empty = a.is_empty();
 
   if (b.get_num_retained() == 0) {
-    std::copy_if(forward_begin(std::forward<SS>(a)), forward_end(std::forward<SS>(a)), std::back_inserter(entries),
+    std::copy_if(forward_begin(std::forward<FwdSketch>(a)), forward_end(std::forward<FwdSketch>(a)), std::back_inserter(entries),
         key_less_than<uint64_t, EN, EK>(theta));
   } else {
     if (a.is_ordered() && b.is_ordered()) { // sort-based
-      std::set_difference(forward_begin(std::forward<SS>(a)), forward_end(std::forward<SS>(a)), b.begin(), b.end(),
+      std::set_difference(forward_begin(std::forward<FwdSketch>(a)), forward_end(std::forward<FwdSketch>(a)), b.begin(), b.end(),
           conditional_back_inserter(entries, key_less_than<uint64_t, EN, EK>(theta)), comparator());
     } else { // hash-based
       const uint8_t lg_size = lg_size_from_count(b.get_num_retained(), hash_table::REBUILD_THRESHOLD);
@@ -65,7 +65,7 @@ CS theta_set_difference_base<EN, EK, S, CS, A>::compute(SS&& a, const S& b, bool
         const uint64_t hash = EK()(entry);
         if (hash < theta) {
           auto result = table.find(hash);
-          if (!result.second) entries.push_back(conditional_forward<SS>(entry));
+          if (!result.second) entries.push_back(conditional_forward<FwdSketch>(entry));
         } else if (a.is_ordered()) {
           break; // early stop
         }

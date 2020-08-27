@@ -30,9 +30,8 @@ class theta_a_not_b_experimental {
 public:
   using Entry = uint64_t;
   using ExtractKey = trivial_extract_key;
-  using Sketch = theta_sketch_experimental<Allocator>;
   using CompactSketch = compact_theta_sketch_experimental<Allocator>;
-  using State = theta_set_difference_base<Entry, ExtractKey, Sketch, CompactSketch, Allocator>;
+  using State = theta_set_difference_base<Entry, ExtractKey, CompactSketch, Allocator>;
 
   explicit theta_a_not_b_experimental(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
@@ -40,7 +39,7 @@ public:
    * Computes the a-not-b set operation given two sketches.
    * @return the result of a-not-b
    */
-  template<typename FwdSketch>
+  template<typename FwdSketch, typename Sketch>
   CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;
 
 private:

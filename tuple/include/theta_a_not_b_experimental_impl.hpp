@@ -25,9 +25,9 @@ state_(seed, allocator)
 {}
 
 template<typename A>
-template<typename SS>
-auto theta_a_not_b_experimental<A>::compute(SS&& a, const Sketch& b, bool ordered) const -> CompactSketch {
-  return state_.compute(std::forward<SS>(a), b, ordered);
+template<typename FwdSketch, typename Sketch>
+auto theta_a_not_b_experimental<A>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const -> CompactSketch {
+  return state_.compute(std::forward<FwdSketch>(a), b, ordered);
 }
 
 } /* namespace datasketches */
