@@ -25,6 +25,7 @@
 #include <catch.hpp>
 #include <array_of_doubles_sketch.hpp>
 #include <array_of_doubles_union.hpp>
+#include <array_of_doubles_intersection.hpp>
 
 namespace datasketches {
 
@@ -261,6 +262,22 @@ TEST_CASE("aod union: half overlap", "[tuple_sketch]") {
   u.update(update_sketch2);
   auto result = u.get_result();
   REQUIRE(result.get_estimate() == Approx(1500).margin(0.01));
+}
+
+TEST_CASE("aod intersection: half overlap", "[tuple_sketch]") {
+  std::vector<double> a = {1};
+
+  auto update_sketch1 = update_array_of_doubles_sketch::builder().build();
+  for (int i = 0; i < 1000; ++i) update_sketch1.update(i, a);
+
+  auto update_sketch2 = update_array_of_doubles_sketch::builder().build();
+  for (int i = 500; i < 1500; ++i) update_sketch2.update(i, a);
+
+  array_of_doubles_intersection<array_of_doubles_union_policy> intersection;
+  intersection.update(update_sketch1);
+  intersection.update(update_sketch2);
+  auto result = intersection.get_result();
+  REQUIRE(result.get_estimate() == Approx(500).margin(0.01));
 }
 
 } /* namespace datasketches */

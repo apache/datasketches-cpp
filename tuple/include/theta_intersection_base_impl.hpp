@@ -113,4 +113,9 @@ bool theta_intersection_base<EN, EK, P, S, CS, A>::has_result() const {
   return is_valid_;
 }
 
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
+const P& theta_intersection_base<EN, EK, P, S, CS, A>::get_policy() const {
+  return policy_;
+}
+
 } /* namespace datasketches */

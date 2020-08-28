@@ -17,43 +17,36 @@
  * under the License.
  */
 
-#ifndef THETA_INTERSECTION_BASE_HPP_
-#define THETA_INTERSECTION_BASE_HPP_
+#ifndef ARRAY_OF_DOUBLES_INTERSECTION_HPP_
+#define ARRAY_OF_DOUBLES_INTERSECTION_HPP_
+
+#include <vector>
+#include <memory>
+
+#include "array_of_doubles_sketch.hpp"
+#include "tuple_intersection.hpp"
 
 namespace datasketches {
 
 template<
-  typename Entry,
-  typename ExtractKey,
   typename Policy,
-  typename Sketch,
-  typename CompactSketch,
-  typename Allocator
+  typename Allocator = std::allocator<double>
 >
-class theta_intersection_base {
+class array_of_doubles_intersection: public tuple_intersection<std::vector<double, Allocator>, Policy, AllocVectorDouble<Allocator>> {
 public:
-  using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
-  using resize_factor = typename hash_table::resize_factor;
-  using comparator = compare_by_key<ExtractKey>;
-  theta_intersection_base(uint64_t seed, const Policy& policy, const Allocator& allocator);
+  using Summary = std::vector<double, Allocator>;
+  using AllocSummary = AllocVectorDouble<Allocator>;
+  using Base = tuple_intersection<Summary, Policy, AllocSummary>;
+  using CompactSketch = compact_array_of_doubles_sketch_alloc<Allocator>;
+  using resize_factor = theta_constants::resize_factor;
 
-  template<typename FwdSketch>
-  void update(FwdSketch&& sketch);
+  explicit array_of_doubles_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy(), const Allocator& allocator = Allocator());
 
   CompactSketch get_result(bool ordered = true) const;
-
-  bool has_result() const;
-
-  const Policy& get_policy() const;
-
-private:
-  Policy policy_;
-  bool is_valid_;
-  hash_table table_;
 };
 
 } /* namespace datasketches */
 
-#include "theta_intersection_base_impl.hpp"
+#include "array_of_doubles_intersection_impl.hpp"
 
 #endif

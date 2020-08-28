@@ -28,9 +28,9 @@
 
 namespace datasketches {
 
-template<typename A>
-struct array_of_doubles_union_policy {
-  array_of_doubles_union_policy(uint8_t num_values = 1): num_values_(num_values) {}
+template<typename A = std::allocator<double>>
+struct array_of_doubles_union_policy_alloc {
+  array_of_doubles_union_policy_alloc(uint8_t num_values = 1): num_values_(num_values) {}
 
   void operator()(std::vector<double, A>& summary, const std::vector<double, A>& other) const {
     for (size_t i = 0; i < summary.size(); ++i) {
@@ -45,10 +45,12 @@ private:
   uint8_t num_values_;
 };
 
+using array_of_doubles_union_policy = array_of_doubles_union_policy_alloc<>;
+
 template<typename Allocator = std::allocator<double>>
-class array_of_doubles_union_alloc: public tuple_union<std::vector<double, Allocator>, array_of_doubles_union_policy<Allocator>, AllocVectorDouble<Allocator>> {
+class array_of_doubles_union_alloc: public tuple_union<std::vector<double, Allocator>, array_of_doubles_union_policy_alloc<Allocator>, AllocVectorDouble<Allocator>> {
 public:
-  using Policy = array_of_doubles_union_policy<Allocator>;
+  using Policy = array_of_doubles_union_policy_alloc<Allocator>;
   using Base = tuple_union<std::vector<double, Allocator>, Policy, AllocVectorDouble<Allocator>>;
   using CompactSketch = compact_array_of_doubles_sketch_alloc<Allocator>;
   using resize_factor = theta_constants::resize_factor;
@@ -63,9 +65,9 @@ private:
 };
 
 template<typename Allocator>
-class array_of_doubles_union_alloc<Allocator>::builder: public tuple_base_builder<builder, array_of_doubles_union_policy<Allocator>, Allocator> {
+class array_of_doubles_union_alloc<Allocator>::builder: public tuple_base_builder<builder, array_of_doubles_union_policy_alloc<Allocator>, Allocator> {
 public:
-  builder(const array_of_doubles_union_policy<Allocator>& policy = array_of_doubles_union_policy<Allocator>(), const Allocator& allocator = Allocator());
+  builder(const array_of_doubles_union_policy_alloc<Allocator>& policy = array_of_doubles_union_policy_alloc<Allocator>(), const Allocator& allocator = Allocator());
   array_of_doubles_union_alloc<Allocator> build() const;
 };
 

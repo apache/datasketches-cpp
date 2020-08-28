@@ -61,6 +61,7 @@ public:
     void operator()(Entry& internal_entry, Entry&& incoming_entry) const {
       policy_(internal_entry.second, std::move(incoming_entry.second));
     }
+    const Policy& get_policy() const { return policy_; }
     Policy policy_;
   };
 
@@ -92,7 +93,7 @@ public:
    */
   bool has_result() const;
 
-private:
+protected:
   State state_;
 };
 
