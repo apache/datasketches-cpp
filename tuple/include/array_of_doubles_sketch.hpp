@@ -30,34 +30,36 @@ namespace datasketches {
 
 // equivalent of ArrayOfDoublesSketch in Java
 
-template<typename A = std::allocator<std::vector<double>>>
+template<typename A = std::allocator<double>>
 class array_of_doubles_update_policy {
 public:
   array_of_doubles_update_policy(uint8_t num_values = 1, const A& allocator = A()):
-    allocator(allocator), num_values(num_values) {}
-  std::vector<double> create() const {
-    return std::vector<double>(num_values, 0, allocator);
+    allocator_(allocator), num_values_(num_values) {}
+  std::vector<double, A> create() const {
+    return std::vector<double, A>(num_values_, 0, allocator_);
   }
-  void update(std::vector<double>& summary, const std::vector<double>& update) const {
-    for (uint8_t i = 0; i < num_values; ++i) summary[i] += update[i];
+  void update(std::vector<double, A>& summary, const std::vector<double, A>& update) const {
+    for (uint8_t i = 0; i < num_values_; ++i) summary[i] += update[i];
   }
   uint8_t get_num_values() const {
-    return num_values;
+    return num_values_;
   }
 
 private:
-  A allocator;
-  uint8_t num_values;
+  A allocator_;
+  uint8_t num_values_;
 };
 
 // forward declaration
 template<typename A> class compact_array_of_doubles_sketch_alloc;
 
-template<typename A = std::allocator<std::vector<double>>>
-class update_array_of_doubles_sketch_alloc: public update_tuple_sketch<std::vector<double>, std::vector<double>,
-array_of_doubles_update_policy<A>, A> {
+template<typename A> using AllocVectorDouble = typename std::allocator_traits<A>::template rebind_alloc<std::vector<double, A>>;
+
+template<typename A = std::allocator<double>>
+class update_array_of_doubles_sketch_alloc: public update_tuple_sketch<std::vector<double, A>, std::vector<double, A>,
+array_of_doubles_update_policy<A>, AllocVectorDouble<A>> {
 public:
-  using Base = update_tuple_sketch<std::vector<double>, std::vector<double>, array_of_doubles_update_policy<A>, A>;
+  using Base = update_tuple_sketch<std::vector<double, A>, std::vector<double, A>, array_of_doubles_update_policy<A>, AllocVectorDouble<A>>;
   using resize_factor = typename Base::resize_factor;
 
   class builder;
@@ -81,10 +83,10 @@ public:
   update_array_of_doubles_sketch_alloc<A> build() const;
 };
 
-template<typename A = std::allocator<std::vector<double>>>
-class compact_array_of_doubles_sketch_alloc: public compact_tuple_sketch<std::vector<double>, A> {
+template<typename A = std::allocator<double>>
+class compact_array_of_doubles_sketch_alloc: public compact_tuple_sketch<std::vector<double, A>, AllocVectorDouble<A>> {
 public:
-  using Base = compact_tuple_sketch<std::vector<double>, A>;
+  using Base = compact_tuple_sketch<std::vector<double, A>, AllocVectorDouble<A>>;
   using Entry = typename Base::Entry;
   using AllocEntry = typename Base::AllocEntry;
   using AllocU64 = typename Base::AllocU64;
@@ -109,6 +111,7 @@ public:
 
   // for internal use
   compact_array_of_doubles_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries, uint8_t num_values);
+  compact_array_of_doubles_sketch_alloc(uint8_t num_values, Base&& base);
 private:
   uint8_t num_values_;
 };

@@ -59,6 +59,10 @@ compact_array_of_doubles_sketch_alloc<A>::compact_array_of_doubles_sketch_alloc(
 Base(is_empty, is_ordered, seed_hash, theta, std::move(entries)), num_values_(num_values) {}
 
 template<typename A>
+compact_array_of_doubles_sketch_alloc<A>::compact_array_of_doubles_sketch_alloc(uint8_t num_values, Base&& base):
+Base(std::move(base)), num_values_(num_values) {}
+
+template<typename A>
 uint8_t compact_array_of_doubles_sketch_alloc<A>::get_num_values() const {
   return num_values_;
 }
@@ -172,7 +176,7 @@ compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A
     std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
     is.read(reinterpret_cast<char*>(keys.data()), num_entries * sizeof(uint64_t));
     for (size_t i = 0; i < num_entries; ++i) {
-      std::vector<double> summary(num_values, 0, allocator);
+      std::vector<double, A> summary(num_values, 0, allocator);
       is.read(reinterpret_cast<char*>(summary.data()), num_values * sizeof(double));
       entries.push_back(Entry(keys[i], std::move(summary)));
     }
@@ -221,7 +225,7 @@ compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A
     std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
     ptr += copy_from_mem(ptr, keys.data(), sizeof(uint64_t) * num_entries);
     for (size_t i = 0; i < num_entries; ++i) {
-      std::vector<double> summary(num_values, 0, allocator);
+      std::vector<double, A> summary(num_values, 0, allocator);
       ptr += copy_from_mem(ptr, summary.data(), num_values * sizeof(double));
       entries.push_back(Entry(keys[i], std::move(summary)));
     }

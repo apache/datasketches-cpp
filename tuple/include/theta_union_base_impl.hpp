@@ -76,4 +76,9 @@ CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
   return CS(table_.is_empty_, ordered, compute_seed_hash(table_.seed_), theta, std::move(entries));
 }
 
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
+const P& theta_union_base<EN, EK, P, S, CS, A>::get_policy() const {
+  return policy_;
+}
+
 } /* namespace datasketches */

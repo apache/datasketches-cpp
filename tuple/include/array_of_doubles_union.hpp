@@ -23,24 +23,57 @@
 #include <vector>
 #include <memory>
 
+#include "array_of_doubles_sketch.hpp"
 #include "tuple_union.hpp"
 
 namespace datasketches {
 
+template<typename A>
 struct array_of_doubles_union_policy {
-  void operator()(std::vector<double>& summary, const std::vector<double>& other) const {
+  array_of_doubles_union_policy(uint8_t num_values = 1): num_values_(num_values) {}
+
+  void operator()(std::vector<double, A>& summary, const std::vector<double, A>& other) const {
     for (size_t i = 0; i < summary.size(); ++i) {
       summary[i] += other[i];
     }
   }
+
+  uint8_t get_num_values() const {
+    return num_values_;
+  }
+private:
+  uint8_t num_values_;
 };
 
-template<typename Allocator = std::allocator<std::vector<double>>>
-using array_of_doubles_union_alloc = tuple_union<std::vector<double>, array_of_doubles_union_policy, Allocator>;
+template<typename Allocator = std::allocator<double>>
+class array_of_doubles_union_alloc: public tuple_union<std::vector<double, Allocator>, array_of_doubles_union_policy<Allocator>, AllocVectorDouble<Allocator>> {
+public:
+  using Policy = array_of_doubles_union_policy<Allocator>;
+  using Base = tuple_union<std::vector<double, Allocator>, Policy, AllocVectorDouble<Allocator>>;
+  using CompactSketch = compact_array_of_doubles_sketch_alloc<Allocator>;
+  using resize_factor = theta_constants::resize_factor;
+
+  class builder;
+
+  CompactSketch get_result(bool ordered = true) const;
+
+private:
+  // for builder
+  array_of_doubles_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
+};
+
+template<typename Allocator>
+class array_of_doubles_union_alloc<Allocator>::builder: public tuple_base_builder<builder, array_of_doubles_union_policy<Allocator>, Allocator> {
+public:
+  builder(const array_of_doubles_union_policy<Allocator>& policy = array_of_doubles_union_policy<Allocator>(), const Allocator& allocator = Allocator());
+  array_of_doubles_union_alloc<Allocator> build() const;
+};
 
 // alias with default allocator
 using array_of_doubles_union = array_of_doubles_union_alloc<>;
 
 } /* namespace datasketches */
+
+#include "array_of_doubles_union_impl.hpp"
 
 #endif

@@ -57,6 +57,7 @@ public:
     void operator()(Entry& internal_entry, Entry&& incoming_entry) const {
       policy_(internal_entry.second, std::move(incoming_entry.second));
     }
+    const Policy& get_policy() const { return policy_; }
     Policy policy_;
   };
 
@@ -79,7 +80,7 @@ public:
    */
   CompactSketch get_result(bool ordered = true) const;
 
-private:
+protected:
   State state_;
 
   // for builder

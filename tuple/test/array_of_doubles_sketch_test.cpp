@@ -256,7 +256,7 @@ TEST_CASE("aod union: half overlap", "[tuple_sketch]") {
   auto update_sketch2 = update_array_of_doubles_sketch::builder().build();
   for (int i = 500; i < 1500; ++i) update_sketch2.update(i, a);
 
-  auto u = tuple_union<std::vector<double>, array_of_doubles_union_policy>::builder().build();
+  auto u = array_of_doubles_union::builder().build();
   u.update(update_sketch1);
   u.update(update_sketch2);
   auto result = u.get_result();

@@ -45,6 +45,8 @@ public:
 
   CompactSketch get_result(bool ordered = true) const;
 
+  const Policy& get_policy() const;
+
 private:
   Policy policy_;
   hash_table table_;
