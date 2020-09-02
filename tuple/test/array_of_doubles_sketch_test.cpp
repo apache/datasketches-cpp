@@ -127,7 +127,7 @@ TEST_CASE("aod sketch: serialization compatibility with java - estimation mode",
 TEST_CASE("aod sketch: serialization compatibility with java - exact mode with two values", "[tuple_sketch]") {
   auto update_sketch = update_array_of_doubles_sketch::builder(2).build();
   std::vector<double> a = {1, 2};
-  for (int i = 0; i < 1000; ++i) update_sketch.update(i, a);
+  for (int i = 0; i < 1000; ++i) update_sketch.update(i, a.data()); // pass vector as pointer
   auto compact_sketch = update_sketch.compact();
   REQUIRE_FALSE(compact_sketch.is_estimation_mode());
 

@@ -38,7 +38,8 @@ public:
   std::vector<double, A> create() const {
     return std::vector<double, A>(num_values_, 0, allocator_);
   }
-  void update(std::vector<double, A>& summary, const std::vector<double, A>& update) const {
+  template<typename InputVector> // to allow any type with indexed access (such as double*)
+  void update(std::vector<double, A>& summary, const InputVector& update) const {
     for (uint8_t i = 0; i < num_values_; ++i) summary[i] += update[i];
   }
   uint8_t get_num_values() const {
