@@ -78,9 +78,9 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
       ++count;
     }
     if (count > sketch.get_num_retained()) {
-      throw std::invalid_argument(" more keys then expected, possibly corrupted input sketch");
+      throw std::invalid_argument(" more keys than expected, possibly corrupted input sketch");
     } else if (!sketch.is_ordered() && count < sketch.get_num_retained()) {
-      throw std::invalid_argument(" fewer keys then expected, possibly corrupted input sketch");
+      throw std::invalid_argument(" fewer keys than expected, possibly corrupted input sketch");
     }
     if (match_count == 0) {
       table_ = hash_table(0, 0, resize_factor::X1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
