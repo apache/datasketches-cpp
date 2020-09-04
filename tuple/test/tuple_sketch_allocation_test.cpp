@@ -26,17 +26,19 @@
 
 namespace datasketches {
 
+static const bool ALLOCATOR_TEST_DEBUG = false;
+
 struct test_type_replace_policy {
   test_type create() const { return test_type(0); }
   void update(test_type& summary, const test_type& update) const {
-    //std::cerr << "policy::update lvalue begin" << std::endl;
+    if (ALLOCATOR_TEST_DEBUG) std::cerr << "policy::update lvalue begin" << std::endl;
     summary = update;
-    //std::cerr << "policy::update lvalue end" << std::endl;
+    if (ALLOCATOR_TEST_DEBUG) std::cerr << "policy::update lvalue end" << std::endl;
   }
   void update(test_type& summary, test_type&& update) const {
-    //std::cerr << "policy::update rvalue begin" << std::endl;
+    if (ALLOCATOR_TEST_DEBUG) std::cerr << "policy::update rvalue begin" << std::endl;
     summary = std::move(update);
-    //std::cerr << "policy::update rvalue end" << std::endl;
+    if (ALLOCATOR_TEST_DEBUG) std::cerr << "policy::update rvalue end" << std::endl;
   }
 };
 
@@ -79,7 +81,7 @@ TEST_CASE("tuple sketch with test allocator: estimation mode", "[tuple_sketch]")
     REQUIRE(deserialized_sketch.get_estimate() == compact_sketch.get_estimate());
 
     // update sketch copy
-//    std::cout << update_sketch.to_string();
+    if (ALLOCATOR_TEST_DEBUG) std::cout << update_sketch.to_string();
     update_tuple_sketch_test update_sketch_copy(update_sketch);
     update_sketch_copy = update_sketch;
     // update sketch move
