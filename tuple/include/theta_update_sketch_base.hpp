@@ -33,6 +33,7 @@ namespace datasketches {
 namespace theta_constants {
   enum resize_factor { X1, X2, X4, X8 };
   static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
+  static const uint8_t MIN_LG_K = 5;
 }
 
 template<
@@ -97,7 +98,7 @@ template<typename Derived, typename Allocator>
 class theta_base_builder {
 public:
   using resize_factor = theta_constants::resize_factor;
-  static const uint8_t MIN_LG_K = 5;
+  static const uint8_t MIN_LG_K = theta_constants::MIN_LG_K;
   static const uint8_t DEFAULT_LG_K = 12;
   static const resize_factor DEFAULT_RESIZE_FACTOR = resize_factor::X8;
 

@@ -31,6 +31,7 @@
 #include "bounds_binomial_proportions.hpp"
 #include "count_zeros.hpp"
 #include "memory_operations.hpp"
+#include "ceiling_power_of_2.hpp"
 
 namespace datasketches {
 
@@ -1742,17 +1743,6 @@ double var_opt_sketch<T,S,A>::next_double_exclude_zero() {
     r = random_utils::next_double(random_utils::rand);
   }
   return r;
-}
-
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::ceiling_power_of_2(uint32_t n) {
-  --n;
-  n |= n >> 1;
-  n |= n >> 2;
-  n |= n >> 4;
-  n |= n >> 8;
-  n |= n >> 16;
-  return ++n;
 }
 
 }

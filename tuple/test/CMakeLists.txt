@@ -48,4 +48,6 @@ target_sources(tuple_test
     theta_union_experimental_test.cpp
     theta_intersection_experimental_test.cpp
     theta_a_not_b_experimental_test.cpp
+    theta_jaccard_similarity_test.cpp
+    tuple_jaccard_similarity_test.cpp
 )

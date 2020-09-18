@@ -49,6 +49,9 @@ list(APPEND tuple_HEADERS "include/theta_sketch_experimental.hpp;include/theta_s
 list(APPEND tuple_HEADERS "include/theta_union_experimental.hpp;include/theta_union_experimental_impl.hpp")
 list(APPEND tuple_HEADERS "include/theta_intersection_experimental.hpp;include/theta_intersection_experimental_impl.hpp")
 list(APPEND tuple_HEADERS "include/theta_a_not_b_experimental.hpp;include/theta_a_not_b_experimental_impl.hpp")
+list(APPEND tuple_HEADERS "include/bounds_on_ratios_in_sampled_sets.hpp")
+list(APPEND tuple_HEADERS "include/bounds_on_ratios_in_theta_sketched_sets.hpp")
+list(APPEND tuple_HEADERS "include/jaccard_similarity.hpp")
 
 install(TARGETS tuple
   EXPORT ${PROJECT_NAME}
@@ -91,4 +94,7 @@ target_sources(tuple
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_intersection_experimental_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_a_not_b_experimental.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_a_not_b_experimental_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/bounds_on_ratios_in_sampled_sets.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/bounds_on_ratios_in_theta_sketched_sets.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/jaccard_similarity.hpp
 )
