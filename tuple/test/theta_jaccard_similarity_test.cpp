@@ -80,4 +80,25 @@ TEST_CASE("theta jaccard: disjoint exact mode", "[theta_sketch]") {
   REQUIRE(jc == std::array<double, 3>{0, 0, 0});
 }
 
+TEST_CASE("theta jaccard: half overlap estimation mode", "[theta_sketch]") {
+  auto sk_a = update_theta_sketch::builder().build();
+  auto sk_b = update_theta_sketch::builder().build();
+  for (int i = 0; i < 10000; ++i) {
+    sk_a.update(i);
+    sk_b.update(i + 5000);
+  }
+
+  // update sketches
+  auto jc = theta_jaccard_similarity::jaccard(sk_a, sk_b);
+  REQUIRE(jc[0] == Approx(0.33).margin(0.01));
+  REQUIRE(jc[1] == Approx(0.33).margin(0.01));
+  REQUIRE(jc[2] == Approx(0.33).margin(0.01));
+
+  // compact sketches
+  jc = theta_jaccard_similarity::jaccard(sk_a.compact(), sk_b.compact());
+  REQUIRE(jc[0] == Approx(0.33).margin(0.01));
+  REQUIRE(jc[1] == Approx(0.33).margin(0.01));
+  REQUIRE(jc[2] == Approx(0.33).margin(0.01));
+}
+
 } /* namespace datasketches */
