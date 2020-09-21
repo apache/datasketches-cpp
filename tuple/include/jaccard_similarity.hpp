@@ -92,6 +92,44 @@ public:
     return false;
   }
 
+  /**
+   * Tests similarity of an actual Sketch against an expected Sketch.
+   * Computes the lower bound of the Jaccard index <i>J<sub>LB</sub></i> of the actual and
+   * expected sketches.
+   * if <i>J<sub>LB</sub> &ge; threshold</i>, then the sketches are considered to be
+   * similar with a confidence of 97.7%.
+   *
+   * @param actual the sketch to be tested
+   * @param expected the reference sketch that is considered to be correct
+   * @param threshold a real value between zero and one
+   * @return true if the similarity of the two sketches is greater than the given threshold
+   * with at least 97.7% confidence
+   */
+  template<typename SketchA, typename SketchB>
+  static bool similarity_test(const SketchA& actual, const SketchB& expected, double threshold) {
+    auto jc = jaccard(actual, expected);
+    return jc[0] >= threshold;
+  }
+
+  /**
+   * Tests dissimilarity of an actual Sketch against an expected Sketch.
+   * Computes the upper bound of the Jaccard index <i>J<sub>UB</sub></i> of the actual and
+   * expected sketches.
+   * if <i>J<sub>UB</sub> &le; threshold</i>, then the sketches are considered to be
+   * dissimilar with a confidence of 97.7%.
+   *
+   * @param actual the sketch to be tested
+   * @param expected the reference sketch that is considered to be correct
+   * @param threshold a real value between zero and one
+   * @return true if the dissimilarity of the two sketches is greater than the given threshold
+   * with at least 97.7% confidence
+   */
+  template<typename SketchA, typename SketchB>
+  static bool dissimilarity_test(const SketchA& actual, const SketchB& expected, double threshold) {
+    auto jc = jaccard(actual, expected);
+    return jc[2] <= threshold;
+  }
+
 private:
 
   template<typename SketchA, typename SketchB>

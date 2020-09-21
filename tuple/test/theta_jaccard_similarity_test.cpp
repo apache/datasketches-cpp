@@ -101,4 +101,40 @@ TEST_CASE("theta jaccard: half overlap estimation mode", "[theta_sketch]") {
   REQUIRE(jc[2] == Approx(0.33).margin(0.01));
 }
 
+/**
+ * The distribution is quite tight, about +/- 0.7%, which is pretty good since the accuracy of the
+ * underlying sketch is about +/- 1.56%.
+ */
+TEST_CASE("theta jaccard: similarity test", "[theta_sketch]") {
+  const int8_t min_lg_k = 12;
+  const int u1 = 1 << 20;
+  const int u2 = u1 * 0.95;
+  const double threshold = 0.943;
+
+  auto expected = update_theta_sketch::builder().set_lg_k(min_lg_k).build();
+  for (int i = 0; i < u1; ++i) expected.update(i);
+
+  auto actual = update_theta_sketch::builder().set_lg_k(min_lg_k).build();
+  for (int i = 0; i < u2; ++i) actual.update(i);
+
+  REQUIRE(theta_jaccard_similarity::similarity_test(actual, expected, threshold));
+  REQUIRE(theta_jaccard_similarity::similarity_test(actual, actual, threshold));
+}
+
+TEST_CASE("theta jaccard: dissimilarity test", "[theta_sketch]") {
+  const int8_t min_lg_k = 12;
+  const int u1 = 1 << 20;
+  const int u2 = u1 * 0.05;
+  const double threshold = 0.061;
+
+  auto expected = update_theta_sketch::builder().set_lg_k(min_lg_k).build();
+  for (int i = 0; i < u1; ++i) expected.update(i);
+
+  auto actual = update_theta_sketch::builder().set_lg_k(min_lg_k).build();
+  for (int i = 0; i < u2; ++i) actual.update(i);
+
+  REQUIRE(theta_jaccard_similarity::dissimilarity_test(actual, expected, threshold));
+  REQUIRE_FALSE(theta_jaccard_similarity::dissimilarity_test(actual, actual, threshold));
+}
+
 } /* namespace datasketches */
