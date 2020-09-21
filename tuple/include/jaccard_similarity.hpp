@@ -54,26 +54,12 @@ public:
    */
   template<typename SketchA, typename SketchB>
   static std::array<double, 3> jaccard(const SketchA& sketch_a, const SketchB& sketch_b) {
-    if (&sketch_a == &sketch_b) return {1, 1, 1};
+    if (reinterpret_cast<const void*>(&sketch_a) == reinterpret_cast<const void*>(&sketch_b)) return {1, 1, 1};
     if (sketch_a.is_empty() && sketch_b.is_empty()) return {1, 1, 1};
     if (sketch_a.is_empty() || sketch_b.is_empty()) return {0, 0, 0};
 
-    // union
-    const unsigned count_a = sketch_a.get_num_retained();
-    const unsigned count_b = sketch_b.get_num_retained();
-    const unsigned lg_k = std::min(std::max(log2(ceiling_power_of_2(count_a + count_b)), theta_constants::MIN_LG_K), theta_constants::MAX_LG_K);
-    auto u = typename Union::builder().set_lg_k(lg_k).build();
-    u.update(sketch_a);
-    u.update(sketch_b);
-    auto union_ab = u.get_result(false);
-
-    // identical sets
-    if (union_ab.get_num_retained() == sketch_a.get_num_retained() &&
-        union_ab.get_num_retained() == sketch_b.get_num_retained() &&
-        union_ab.get_theta64() == sketch_a.get_theta64() &&
-        union_ab.get_theta64() == sketch_b.get_theta64()) {
-      return {1, 1, 1};
-    }
+    auto union_ab = compute_union(sketch_a, sketch_b);
+    if (identical_sets(sketch_a, sketch_b, union_ab)) return {1, 1, 1};
 
     // intersection
     Intersection i;
@@ -87,6 +73,45 @@ public:
       bounds_on_ratios_in_theta_sketched_sets<ExtractKey>::estimate_of_b_over_a(union_ab, inter_abu),
       bounds_on_ratios_in_theta_sketched_sets<ExtractKey>::upper_bound_for_b_over_a(union_ab, inter_abu)
     };
+  }
+
+  /**
+   * Returns true if the two given sketches are equivalent.
+   * @param sketch_a the given sketch A
+   * @param sketch_b the given sketch B
+   * @return true if the two given sketches are exactly equal
+   */
+  template<typename SketchA, typename SketchB>
+  static bool exactly_equal(const SketchA& sketch_a, const SketchB& sketch_b) {
+    if (reinterpret_cast<const void*>(&sketch_a) == reinterpret_cast<const void*>(&sketch_b)) return true;
+    if (sketch_a.is_empty() && sketch_b.is_empty()) return true;
+    if (sketch_a.is_empty() || sketch_b.is_empty()) return false;
+
+    auto union_ab = compute_union(sketch_a, sketch_b);
+    if (identical_sets(sketch_a, sketch_b, union_ab)) return true;
+    return false;
+  }
+
+private:
+
+  template<typename SketchA, typename SketchB>
+  static typename Union::CompactSketch compute_union(const SketchA& sketch_a, const SketchB& sketch_b) {
+    const unsigned count_a = sketch_a.get_num_retained();
+    const unsigned count_b = sketch_b.get_num_retained();
+    const unsigned lg_k = std::min(std::max(log2(ceiling_power_of_2(count_a + count_b)), theta_constants::MIN_LG_K), theta_constants::MAX_LG_K);
+    auto u = typename Union::builder().set_lg_k(lg_k).build();
+    u.update(sketch_a);
+    u.update(sketch_b);
+    return u.get_result(false);
+  }
+
+  template<typename SketchA, typename SketchB, typename UnionAB>
+  static bool identical_sets(const SketchA& sketch_a, const SketchB& sketch_b, const UnionAB& union_ab) {
+    if (union_ab.get_num_retained() == sketch_a.get_num_retained() &&
+        union_ab.get_num_retained() == sketch_b.get_num_retained() &&
+        union_ab.get_theta64() == sketch_a.get_theta64() &&
+        union_ab.get_theta64() == sketch_b.get_theta64()) return true;
+    return false;
   }
 
 };

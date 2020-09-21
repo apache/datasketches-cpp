@@ -37,6 +37,8 @@ TEST_CASE("tuple jaccard: empty", "[tuple_sketch]") {
   // compact sketches
   jc = tuple_jaccard_similarity_float::jaccard(sk_a.compact(), sk_b.compact());
   REQUIRE(jc == std::array<double, 3>{1, 1, 1});
+
+  REQUIRE(tuple_jaccard_similarity_float::exactly_equal(sk_a, sk_b));
 }
 
 TEST_CASE("tuple jaccard: same sketch exact mode", "[tuple_sketch]") {
@@ -50,6 +52,8 @@ TEST_CASE("tuple jaccard: same sketch exact mode", "[tuple_sketch]") {
   // compact sketch
   jc = tuple_jaccard_similarity_float::jaccard(sk.compact(), sk.compact());
   REQUIRE(jc == std::array<double, 3>{1, 1, 1});
+
+  REQUIRE(tuple_jaccard_similarity_float::exactly_equal(sk, sk));
 }
 
 TEST_CASE("tuple jaccard: full overlap exact mode", "[tuple_sketch]") {
@@ -67,6 +71,11 @@ TEST_CASE("tuple jaccard: full overlap exact mode", "[tuple_sketch]") {
   // compact sketches
   jc = tuple_jaccard_similarity_float::jaccard(sk_a.compact(), sk_b.compact());
   REQUIRE(jc == std::array<double, 3>{1, 1, 1});
+
+  REQUIRE(tuple_jaccard_similarity_float::exactly_equal(sk_a, sk_b));
+  REQUIRE(tuple_jaccard_similarity_float::exactly_equal(sk_a.compact(), sk_b));
+  REQUIRE(tuple_jaccard_similarity_float::exactly_equal(sk_a, sk_b.compact()));
+  REQUIRE(tuple_jaccard_similarity_float::exactly_equal(sk_a.compact(), sk_b.compact()));
 }
 
 TEST_CASE("tuple jaccard: disjoint exact mode", "[tuple_sketch]") {
