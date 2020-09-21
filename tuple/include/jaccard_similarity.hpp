@@ -36,6 +36,22 @@ namespace datasketches {
 template<typename Union, typename Intersection, typename ExtractKey>
 class jaccard_similarity_base {
 public:
+
+  /**
+   * Computes the Jaccard similarity index with upper and lower bounds. The Jaccard similarity index
+   * <i>J(A,B) = (A ^ B)/(A U B)</i> is used to measure how similar the two sketches are to each
+   * other. If J = 1.0, the sketches are considered equal. If J = 0, the two sketches are
+   * disjoint. A Jaccard of .95 means the overlap between the two
+   * sets is 95% of the union of the two sets.
+   *
+   * <p>Note: For very large pairs of sketches, where the configured nominal entries of the sketches
+   * are 2^25 or 2^26, this method may produce unpredictable results.
+   *
+   * @param sketch_a given sketch A
+   * @param sketch_b given sketch B
+   * @return a double array {LowerBound, Estimate, UpperBound} of the Jaccard index.
+   * The Upper and Lower bounds are for a confidence interval of 95.4% or +/- 2 standard deviations.
+   */
   template<typename SketchA, typename SketchB>
   static std::array<double, 3> jaccard(const SketchA& sketch_a, const SketchB& sketch_b) {
     if (&sketch_a == &sketch_b) return {1, 1, 1};
@@ -45,7 +61,7 @@ public:
     // union
     const unsigned count_a = sketch_a.get_num_retained();
     const unsigned count_b = sketch_b.get_num_retained();
-    const unsigned lg_k = std::max(log2(ceiling_power_of_2(count_a + count_b)), theta_constants::MIN_LG_K);
+    const unsigned lg_k = std::min(std::max(log2(ceiling_power_of_2(count_a + count_b)), theta_constants::MIN_LG_K), theta_constants::MAX_LG_K);
     auto u = typename Union::builder().set_lg_k(lg_k).build();
     u.update(sketch_a);
     u.update(sketch_b);

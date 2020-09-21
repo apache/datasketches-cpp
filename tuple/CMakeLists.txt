@@ -52,6 +52,8 @@ list(APPEND tuple_HEADERS "include/theta_a_not_b_experimental.hpp;include/theta_
 list(APPEND tuple_HEADERS "include/bounds_on_ratios_in_sampled_sets.hpp")
 list(APPEND tuple_HEADERS "include/bounds_on_ratios_in_theta_sketched_sets.hpp")
 list(APPEND tuple_HEADERS "include/jaccard_similarity.hpp")
+list(APPEND tuple_HEADERS "include/theta_comparators.hpp")
+list(APPEND tuple_HEADERS "include/theta_cnstants.hpp")
 
 install(TARGETS tuple
   EXPORT ${PROJECT_NAME}
@@ -97,4 +99,6 @@ target_sources(tuple
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bounds_on_ratios_in_sampled_sets.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bounds_on_ratios_in_theta_sketched_sets.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/jaccard_similarity.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_comparators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/theta_constants.hpp
 )
