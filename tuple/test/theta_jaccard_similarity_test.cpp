@@ -121,6 +121,10 @@ TEST_CASE("theta jaccard: similarity test", "[theta_sketch]") {
   REQUIRE(theta_jaccard_similarity::similarity_test(actual, actual, threshold));
 }
 
+/**
+ * The distribution is much looser here, about +/- 14%. This is due to the fact that intersections loose accuracy
+ * as the ratio of intersection to the union becomes a small number.
+ */
 TEST_CASE("theta jaccard: dissimilarity test", "[theta_sketch]") {
   const int8_t min_lg_k = 12;
   const int u1 = 1 << 20;
