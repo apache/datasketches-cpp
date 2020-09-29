@@ -32,7 +32,7 @@ template<typename A = std::allocator<double>>
 struct array_of_doubles_union_policy_alloc {
   array_of_doubles_union_policy_alloc(uint8_t num_values = 1): num_values_(num_values) {}
 
-  void operator()(std::vector<double, A>& summary, const std::vector<double, A>& other) const {
+  void operator()(aod<A>& summary, const aod<A>& other) const {
     for (size_t i = 0; i < summary.size(); ++i) {
       summary[i] += other[i];
     }
@@ -48,10 +48,10 @@ private:
 using array_of_doubles_union_policy = array_of_doubles_union_policy_alloc<>;
 
 template<typename Allocator = std::allocator<double>>
-class array_of_doubles_union_alloc: public tuple_union<std::vector<double, Allocator>, array_of_doubles_union_policy_alloc<Allocator>, AllocVectorDouble<Allocator>> {
+class array_of_doubles_union_alloc: public tuple_union<aod<Allocator>, array_of_doubles_union_policy_alloc<Allocator>, AllocAOD<Allocator>> {
 public:
   using Policy = array_of_doubles_union_policy_alloc<Allocator>;
-  using Base = tuple_union<std::vector<double, Allocator>, Policy, AllocVectorDouble<Allocator>>;
+  using Base = tuple_union<aod<Allocator>, Policy, AllocAOD<Allocator>>;
   using CompactSketch = compact_array_of_doubles_sketch_alloc<Allocator>;
   using resize_factor = theta_constants::resize_factor;
 

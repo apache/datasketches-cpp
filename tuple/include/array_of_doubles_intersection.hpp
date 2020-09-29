@@ -32,10 +32,10 @@ template<
   typename Policy,
   typename Allocator = std::allocator<double>
 >
-class array_of_doubles_intersection: public tuple_intersection<std::vector<double, Allocator>, Policy, AllocVectorDouble<Allocator>> {
+class array_of_doubles_intersection: public tuple_intersection<aod<Allocator>, Policy, AllocAOD<Allocator>> {
 public:
-  using Summary = std::vector<double, Allocator>;
-  using AllocSummary = AllocVectorDouble<Allocator>;
+  using Summary = aod<Allocator>;
+  using AllocSummary = AllocAOD<Allocator>;
   using Base = tuple_intersection<Summary, Policy, AllocSummary>;
   using CompactSketch = compact_array_of_doubles_sketch_alloc<Allocator>;
   using resize_factor = theta_constants::resize_factor;
