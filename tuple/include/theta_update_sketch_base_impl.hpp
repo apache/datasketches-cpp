@@ -221,6 +221,7 @@ void theta_update_sketch_base<EN, EK, A>::rebuild() {
   std::nth_element(entries_, entries_ + nominal_size, entries_ + num_entries_, comparator());
   this->theta_ = EK()(entries_[nominal_size]);
   EN* old_entries = entries_;
+  const size_t num_old_entries = num_entries_;
   entries_ = allocator_.allocate(size);
   for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
   num_entries_ = 0;
@@ -229,6 +230,7 @@ void theta_update_sketch_base<EN, EK, A>::rebuild() {
     insert(find(EK()(old_entries[i])).first, std::move(old_entries[i])); // consider a special insert with no comparison
     old_entries[i].~EN();
   }
+  for (size_t i = nominal_size; i < num_old_entries; ++i) old_entries[i].~EN();
   allocator_.deallocate(old_entries, size);
 }
 
