@@ -367,7 +367,7 @@ public:
 
   compact_tuple_sketch(const Base& other, bool ordered);
   compact_tuple_sketch(const compact_tuple_sketch&) = default;
-  compact_tuple_sketch(compact_tuple_sketch&&) noexcept = default;
+  compact_tuple_sketch(compact_tuple_sketch&&) noexcept;
   virtual ~compact_tuple_sketch() = default;
   compact_tuple_sketch& operator=(const compact_tuple_sketch&) = default;
   compact_tuple_sketch& operator=(compact_tuple_sketch&&) = default;
