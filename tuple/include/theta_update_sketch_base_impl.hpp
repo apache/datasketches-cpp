@@ -285,7 +285,7 @@ Derived& theta_base_builder<Derived, Allocator>::set_resize_factor(resize_factor
 
 template<typename Derived, typename Allocator>
 Derived& theta_base_builder<Derived, Allocator>::set_p(float p) {
-  if (p < 0 || p > 1) throw std::invalid_argument("sampling probability must be between 0 and 1");
+  if (p <= 0 || p > 1) throw std::invalid_argument("sampling probability must be between 0 and 1");
   p_ = p;
   return static_cast<Derived&>(*this);
 }
