@@ -270,6 +270,9 @@ Derived& theta_base_builder<Derived, Allocator>::set_lg_k(uint8_t lg_k) {
   if (lg_k < MIN_LG_K) {
     throw std::invalid_argument("lg_k must not be less than " + std::to_string(MIN_LG_K) + ": " + std::to_string(lg_k));
   }
+  if (lg_k > MAX_LG_K) {
+    throw std::invalid_argument("lg_k must not be greater than " + std::to_string(MAX_LG_K) + ": " + std::to_string(lg_k));
+  }
   lg_k_ = lg_k;
   return static_cast<Derived&>(*this);
 }
