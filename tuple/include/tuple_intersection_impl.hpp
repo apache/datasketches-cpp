@@ -17,15 +17,27 @@
  * under the License.
  */
 
-#include "test_allocator.hpp"
-
 namespace datasketches {
 
-// global variable to keep track of allocated size
-long long test_allocator_total_bytes = 0;
+template<typename S, typename P, typename A>
+tuple_intersection<S, P, A>::tuple_intersection(uint64_t seed, const P& policy, const A& allocator):
+state_(seed, internal_policy(policy), allocator)
+{}
 
-// global variable to keep track of net allocations
-// (number of allocations minus number of deallocations)
-long long test_allocator_net_allocations = 0;
+template<typename S, typename P, typename A>
+template<typename SS>
+void tuple_intersection<S, P, A>::update(SS&& sketch) {
+  state_.update(std::forward<SS>(sketch));
+}
+
+template<typename S, typename P, typename A>
+auto tuple_intersection<S, P, A>::get_result(bool ordered) const -> CompactSketch {
+  return state_.get_result(ordered);
+}
+
+template<typename S, typename P, typename A>
+bool tuple_intersection<S, P, A>::has_result() const {
+  return state_.has_result();
+}
 
 } /* namespace datasketches */

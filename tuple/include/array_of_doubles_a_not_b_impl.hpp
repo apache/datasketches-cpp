@@ -17,15 +17,16 @@
  * under the License.
  */
 
-#include "test_allocator.hpp"
-
 namespace datasketches {
 
-// global variable to keep track of allocated size
-long long test_allocator_total_bytes = 0;
+template<typename A>
+array_of_doubles_a_not_b_alloc<A>::array_of_doubles_a_not_b_alloc(uint64_t seed, const A& allocator):
+Base(seed, allocator) {}
 
-// global variable to keep track of net allocations
-// (number of allocations minus number of deallocations)
-long long test_allocator_net_allocations = 0;
+template<typename A>
+template<typename FwdSketch, typename Sketch>
+auto array_of_doubles_a_not_b_alloc<A>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const -> CompactSketch {
+  return CompactSketch(a.get_num_values(), Base::compute(std::forward<FwdSketch>(a), b, ordered));
+}
 
 } /* namespace datasketches */

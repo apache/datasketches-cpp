@@ -17,15 +17,28 @@
  * under the License.
  */
 
-#include "test_allocator.hpp"
+#include <iostream>
+
+#include <catch.hpp>
+#include <tuple_union.hpp>
+
+#include <theta_union_experimental.hpp>
 
 namespace datasketches {
 
-// global variable to keep track of allocated size
-long long test_allocator_total_bytes = 0;
+TEST_CASE("theta_union_exeperimental") {
+  auto update_sketch1 = update_theta_sketch_experimental<>::builder().build();
+  update_sketch1.update(1);
+  update_sketch1.update(2);
 
-// global variable to keep track of net allocations
-// (number of allocations minus number of deallocations)
-long long test_allocator_net_allocations = 0;
+  auto update_sketch2 = update_theta_sketch_experimental<>::builder().build();
+  update_sketch2.update(1);
+  update_sketch2.update(3);
+
+  auto u = theta_union_experimental<>::builder().build();
+  u.update(update_sketch1);
+  u.update(update_sketch2);
+  auto r = u.get_result();
+}
 
 } /* namespace datasketches */

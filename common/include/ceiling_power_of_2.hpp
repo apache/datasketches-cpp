@@ -17,15 +17,25 @@
  * under the License.
  */
 
-#include "test_allocator.hpp"
+#ifndef CEILING_POWER_OF_2_HPP_
+#define CEILING_POWER_OF_2_HPP_
+
+#include <cstdint>
 
 namespace datasketches {
 
-// global variable to keep track of allocated size
-long long test_allocator_total_bytes = 0;
-
-// global variable to keep track of net allocations
-// (number of allocations minus number of deallocations)
-long long test_allocator_net_allocations = 0;
+// compute the next highest power of 2 of 32-bit n
+// taken from https://graphics.stanford.edu/~seander/bithacks.html
+static inline uint32_t ceiling_power_of_2(uint32_t n) {
+  --n;
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  return ++n;
+}
 
 } /* namespace datasketches */
+
+#endif // CEILING_POWER_OF_2_HPP_

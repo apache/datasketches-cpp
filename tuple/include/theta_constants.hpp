@@ -17,15 +17,18 @@
  * under the License.
  */
 
-#include "test_allocator.hpp"
+#ifndef THETA_CONSTANTS_HPP_
+#define THETA_CONSTANTS_HPP_
 
 namespace datasketches {
 
-// global variable to keep track of allocated size
-long long test_allocator_total_bytes = 0;
-
-// global variable to keep track of net allocations
-// (number of allocations minus number of deallocations)
-long long test_allocator_net_allocations = 0;
+namespace theta_constants {
+  enum resize_factor { X1, X2, X4, X8 };
+  static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
+  static const uint8_t MIN_LG_K = 5;
+  static const uint8_t MAX_LG_K = 26;
+}
 
 } /* namespace datasketches */
+
+#endif

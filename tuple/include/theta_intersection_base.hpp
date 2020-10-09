@@ -17,15 +17,43 @@
  * under the License.
  */
 
-#include "test_allocator.hpp"
+#ifndef THETA_INTERSECTION_BASE_HPP_
+#define THETA_INTERSECTION_BASE_HPP_
 
 namespace datasketches {
 
-// global variable to keep track of allocated size
-long long test_allocator_total_bytes = 0;
+template<
+  typename Entry,
+  typename ExtractKey,
+  typename Policy,
+  typename Sketch,
+  typename CompactSketch,
+  typename Allocator
+>
+class theta_intersection_base {
+public:
+  using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
+  using resize_factor = typename hash_table::resize_factor;
+  using comparator = compare_by_key<ExtractKey>;
+  theta_intersection_base(uint64_t seed, const Policy& policy, const Allocator& allocator);
 
-// global variable to keep track of net allocations
-// (number of allocations minus number of deallocations)
-long long test_allocator_net_allocations = 0;
+  template<typename FwdSketch>
+  void update(FwdSketch&& sketch);
+
+  CompactSketch get_result(bool ordered = true) const;
+
+  bool has_result() const;
+
+  const Policy& get_policy() const;
+
+private:
+  Policy policy_;
+  bool is_valid_;
+  hash_table table_;
+};
 
 } /* namespace datasketches */
+
+#include "theta_intersection_base_impl.hpp"
+
+#endif

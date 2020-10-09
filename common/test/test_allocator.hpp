@@ -28,6 +28,7 @@
 namespace datasketches {
 
 extern long long test_allocator_total_bytes;
+extern long long test_allocator_net_allocations;
 
 template <class T> class test_allocator {
 public:
@@ -46,7 +47,10 @@ public:
   test_allocator(const test_allocator&) {}
   template <class U>
   test_allocator(const test_allocator<U>&) {}
+  test_allocator(test_allocator&&) {}
   ~test_allocator() {}
+  test_allocator& operator=(const test_allocator&) { return *this; }
+  test_allocator& operator=(test_allocator&&) { return *this; }
 
   pointer address(reference x) const { return &x; }
   const_pointer address(const_reference x) const {
@@ -57,12 +61,14 @@ public:
     void* p = new char[n * sizeof(value_type)];
     if (!p) throw std::bad_alloc();
     test_allocator_total_bytes += n * sizeof(value_type);
+    ++test_allocator_net_allocations;
     return static_cast<pointer>(p);
   }
 
   void deallocate(pointer p, size_type n) {
     if (p) delete[] (char*) p;
     test_allocator_total_bytes -= n * sizeof(value_type);
+    --test_allocator_net_allocations;
   }
 
   size_type max_size() const {
@@ -74,9 +80,6 @@ public:
     new(p) value_type(std::forward<Args>(args)...);
   }
   void destroy(pointer p) { p->~value_type(); }
-
-private:
-  void operator=(const test_allocator&);
 };
 
 template<> class test_allocator<void> {

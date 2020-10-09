@@ -17,15 +17,32 @@
  * under the License.
  */
 
-#include "test_allocator.hpp"
+#ifndef THETA_COMPARATORS_HPP_
+#define THETA_COMPARATORS_HPP_
 
 namespace datasketches {
 
-// global variable to keep track of allocated size
-long long test_allocator_total_bytes = 0;
+template<typename ExtractKey>
+struct compare_by_key {
+  template<typename Entry1, typename Entry2>
+  bool operator()(Entry1&& a, Entry2&& b) const {
+    return ExtractKey()(std::forward<Entry1>(a)) < ExtractKey()(std::forward<Entry2>(b));
+  }
+};
 
-// global variable to keep track of net allocations
-// (number of allocations minus number of deallocations)
-long long test_allocator_net_allocations = 0;
+// less than
+
+template<typename Key, typename Entry, typename ExtractKey>
+class key_less_than {
+public:
+  explicit key_less_than(const Key& key): key(key) {}
+  bool operator()(const Entry& entry) const {
+    return ExtractKey()(entry) < this->key;
+  }
+private:
+  Key key;
+};
 
 } /* namespace datasketches */
+
+#endif

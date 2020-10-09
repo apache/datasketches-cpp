@@ -306,5 +306,6 @@ APPENDIX B: Additional licenses relevant to this product.
       * Placed in the Public Domain by Sean Eron Anderson
       
     Code Locations
-      * common/include/CommonUtil.h
+      * common/include/ceiling_power_of_2.hpp
     that is adapted from the above.
+  

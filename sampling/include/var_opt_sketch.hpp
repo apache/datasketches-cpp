@@ -319,7 +319,6 @@ class var_opt_sketch {
     static inline double pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, double sampling_rate);
     static bool is_power_of_2(uint32_t v);
     static uint32_t to_log_2(uint32_t v);
-    static uint32_t ceiling_power_of_2(uint32_t n);
     static inline uint32_t next_int(uint32_t max_value);
     static inline double next_double_exclude_zero();
 

@@ -526,16 +526,6 @@ typedef theta_sketch_alloc<std::allocator<void>> theta_sketch;
 typedef update_theta_sketch_alloc<std::allocator<void>> update_theta_sketch;
 typedef compact_theta_sketch_alloc<std::allocator<void>> compact_theta_sketch;
 
-// common helping functions
-
-constexpr uint8_t log2(uint32_t n) {
-  return (n > 1) ? 1 + log2(n >> 1) : 0;
-}
-
-constexpr uint8_t lg_size_from_count(uint32_t n, double load_factor) {
-  return log2(n) + ((n > static_cast<uint32_t>((1 << (log2(n) + 1)) * load_factor)) ? 2 : 1);
-}
-
 } /* namespace datasketches */
 
 #include "theta_sketch_impl.hpp"

@@ -24,37 +24,50 @@
 
 namespace datasketches {
 
-class test_type {
+template<typename A>
+class test_type_alloc {
   static const bool DEBUG = false;
 public:
   // no default constructor should be required
-  test_type(int value): value(value) {
+  test_type_alloc(int value): value_ptr(A().allocate(1)) {
     if (DEBUG) std::cerr << "test_type constructor" << std::endl;
+    *value_ptr = value;
   }
-  ~test_type() {
+  ~test_type_alloc() {
     if (DEBUG) std::cerr << "test_type destructor" << std::endl;
+    if (value_ptr != nullptr) A().deallocate(value_ptr, 1);
   }
-  test_type(const test_type& other): value(other.value) {
+  test_type_alloc(const test_type_alloc& other): value_ptr(A().allocate(1)) {
     if (DEBUG) std::cerr << "test_type copy constructor" << std::endl;
+    *value_ptr = *other.value_ptr;
   }
   // noexcept is important here so that, for instance, std::vector could move this type
-  test_type(test_type&& other) noexcept : value(other.value) {
+  test_type_alloc(test_type_alloc&& other) noexcept : value_ptr(nullptr) {
     if (DEBUG) std::cerr << "test_type move constructor" << std::endl;
+    if (DEBUG && other.value_ptr == nullptr) std::cerr << "moving null" << std::endl;
+    std::swap(value_ptr, other.value_ptr);
   }
-  test_type& operator=(const test_type& other) {
+  test_type_alloc& operator=(const test_type_alloc& other) {
     if (DEBUG) std::cerr << "test_type copy assignment" << std::endl;
-    value = other.value;
+    if (DEBUG && value_ptr == nullptr) std::cerr << "nullptr" << std::endl;
+    *value_ptr = *other.value_ptr;
     return *this;
   }
-  test_type& operator=(test_type&& other) {
+  test_type_alloc& operator=(test_type_alloc&& other) {
     if (DEBUG) std::cerr << "test_type move assignment" << std::endl;
-    value = other.value;
+    if (DEBUG && other.value_ptr == nullptr) std::cerr << "moving null" << std::endl;
+    std::swap(value_ptr, other.value_ptr);
     return *this;
   }
-  int get_value() const { return value; }
+  int get_value() const {
+    if (value_ptr == nullptr) std::cerr << "null" << std::endl;
+    return *value_ptr;
+  }
 private:
-  int value;
+  int* value_ptr;
 };
+
+using test_type = test_type_alloc<std::allocator<int>>;
 
 struct test_type_hash {
   std::size_t operator()(const test_type& a) const {
@@ -75,21 +88,42 @@ struct test_type_less {
 };
 
 struct test_type_serde {
-  void serialize(std::ostream& os, const test_type* items, unsigned num) {
+  void serialize(std::ostream& os, const test_type* items, unsigned num) const {
     for (unsigned i = 0; i < num; i++) {
       const int value = items[i].get_value();
       os.write((char*)&value, sizeof(value));
     }
   }
-  void deserialize(std::istream& is, test_type* items, unsigned num) {
+  void deserialize(std::istream& is, test_type* items, unsigned num) const {
     for (unsigned i = 0; i < num; i++) {
       int value;
       is.read((char*)&value, sizeof(value));
       new (&items[i]) test_type(value);
     }
   }
-  size_t size_of_item(const test_type&) {
+  size_t size_of_item(const test_type&) const {
     return sizeof(int);
+  }
+  size_t serialize(void* ptr, size_t capacity, const test_type* items, unsigned num) const {
+    const size_t bytes_written = sizeof(int) * num;
+    check_memory_size(bytes_written, capacity);
+    for (unsigned i = 0; i < num; ++i) {
+      const int value = items[i].get_value();
+      memcpy(ptr, &value, sizeof(int));
+      ptr = static_cast<char*>(ptr) + sizeof(int);
+    }
+    return bytes_written;
+  }
+  size_t deserialize(const void* ptr, size_t capacity, test_type* items, unsigned num) const {
+    const size_t bytes_read = sizeof(int) * num;
+    check_memory_size(bytes_read, capacity);
+    for (unsigned i = 0; i < num; ++i) {
+      int value;
+      memcpy(&value, ptr, sizeof(int));
+      new (&items[i]) test_type(value);
+      ptr = static_cast<const char*>(ptr) + sizeof(int);
+    }
+    return bytes_read;
   }
 };
 

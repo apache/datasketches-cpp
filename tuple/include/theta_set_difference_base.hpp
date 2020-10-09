@@ -17,15 +17,38 @@
  * under the License.
  */
 
-#include "test_allocator.hpp"
+#ifndef THETA_SET_DIFFERENCE_BASE_HPP_
+#define THETA_SET_DIFFERENCE_BASE_HPP_
+
+#include "theta_comparators.hpp"
+#include "theta_update_sketch_base.hpp"
 
 namespace datasketches {
 
-// global variable to keep track of allocated size
-long long test_allocator_total_bytes = 0;
+template<
+  typename Entry,
+  typename ExtractKey,
+  typename CompactSketch,
+  typename Allocator
+>
+class theta_set_difference_base {
+public:
+  using comparator = compare_by_key<ExtractKey>;
+  using AllocU64 = typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>;
+  using hash_table = theta_update_sketch_base<uint64_t, trivial_extract_key, AllocU64>;
 
-// global variable to keep track of net allocations
-// (number of allocations minus number of deallocations)
-long long test_allocator_net_allocations = 0;
+  theta_set_difference_base(uint64_t seed, const Allocator& allocator = Allocator());
+
+  template<typename FwdSketch, typename Sketch>
+  CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered) const;
+
+private:
+  Allocator allocator_;
+  uint16_t seed_hash_;
+};
 
 } /* namespace datasketches */
+
+#include "theta_set_difference_base_impl.hpp"
+
+#endif

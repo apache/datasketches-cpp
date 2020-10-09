@@ -17,15 +17,15 @@
  * under the License.
  */
 
-#include "test_allocator.hpp"
-
 namespace datasketches {
 
-// global variable to keep track of allocated size
-long long test_allocator_total_bytes = 0;
+template<typename P, typename A>
+array_of_doubles_intersection<P, A>::array_of_doubles_intersection(uint64_t seed, const P& policy, const A& allocator):
+Base(seed, policy, allocator) {}
 
-// global variable to keep track of net allocations
-// (number of allocations minus number of deallocations)
-long long test_allocator_net_allocations = 0;
+template<typename P, typename A>
+auto array_of_doubles_intersection<P, A>::get_result(bool ordered) const -> CompactSketch {
+  return compact_array_of_doubles_sketch_alloc<A>(this->state_.get_policy().get_policy().get_num_values(), Base::get_result(ordered));
+}
 
 } /* namespace datasketches */
