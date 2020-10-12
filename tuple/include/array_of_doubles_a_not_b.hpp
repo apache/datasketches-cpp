@@ -29,10 +29,10 @@
 namespace datasketches {
 
 template<typename Allocator = std::allocator<double>>
-class array_of_doubles_a_not_b_alloc: tuple_a_not_b<std::vector<double, Allocator>, AllocVectorDouble<Allocator>> {
+class array_of_doubles_a_not_b_alloc: tuple_a_not_b<aod<Allocator>, AllocAOD<Allocator>> {
 public:
-  using Summary = std::vector<double, Allocator>;
-  using AllocSummary = AllocVectorDouble<Allocator>;
+  using Summary = aod<Allocator>;
+  using AllocSummary = AllocAOD<Allocator>;
   using Base = tuple_a_not_b<Summary, AllocSummary>;
   using CompactSketch = compact_array_of_doubles_sketch_alloc<Allocator>;
 
