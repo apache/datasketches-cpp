@@ -410,20 +410,20 @@ void cpc_sketch_alloc<A>::serialize(std::ostream& os) const {
   const bool has_table = compressed.table_data.size() > 0;
   const bool has_window = compressed.window_data.size() > 0;
   const uint8_t preamble_ints = get_preamble_ints(num_coupons, has_hip, has_table, has_window);
-  os.write((char*)&preamble_ints, sizeof(preamble_ints));
+  os.write(reinterpret_cast<const char*>(&preamble_ints), sizeof(preamble_ints));
   const uint8_t serial_version = SERIAL_VERSION;
-  os.write((char*)&serial_version, sizeof(serial_version));
+  os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
   const uint8_t family = FAMILY;
-  os.write((char*)&family, sizeof(family));
-  os.write((char*)&lg_k, sizeof(lg_k));
-  os.write((char*)&first_interesting_column, sizeof(first_interesting_column));
+  os.write(reinterpret_cast<const char*>(&family), sizeof(family));
+  os.write(reinterpret_cast<const char*>(&lg_k), sizeof(lg_k));
+  os.write(reinterpret_cast<const char*>(&first_interesting_column), sizeof(first_interesting_column));
   const uint8_t flags_byte(
     (1 << flags::IS_COMPRESSED)
     | (has_hip ? 1 << flags::HAS_HIP : 0)
     | (has_table ? 1 << flags::HAS_TABLE : 0)
     | (has_window ? 1 << flags::HAS_WINDOW : 0)
   );
-  os.write((char*)&flags_byte, sizeof(flags_byte));
+  os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
   const uint16_t seed_hash(compute_seed_hash(seed));
   os.write((char*)&seed_hash, sizeof(seed_hash));
   if (!is_empty()) {
@@ -794,8 +794,8 @@ vector_u64<A> cpc_sketch_alloc<A>::build_bit_matrix() const {
 
 template<typename A>
 void cpc_sketch_alloc<A>::write_hip(std::ostream& os) const {
-  os.write((char*)&kxp, sizeof(kxp));
-  os.write((char*)&hip_est_accum, sizeof(hip_est_accum));
+  os.write(reinterpret_cast<const char*>(&kxp), sizeof(kxp));
+  os.write(reinterpret_cast<const char*>(&hip_est_accum), sizeof(hip_est_accum));
 }
 
 template<typename A>
