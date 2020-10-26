@@ -50,7 +50,7 @@ jobs:
       - name: Run C++ tests
         run: cmake --build build --config Release --target ${{ matrix.config.test_target }}
       - name: Set up Python 3.x
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2
         with:
           python-version: '3.x' # grabs latest minor version of python3
       - name: Install Python dependencies
