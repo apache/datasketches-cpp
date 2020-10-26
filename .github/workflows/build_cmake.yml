@@ -56,4 +56,4 @@ jobs:
       - name: Install Python dependencies
         run: python -m pip install --upgrade pip setuptools wheel numpy tox
       - name: Build and run Python tests
-        run: tox
+        run: python -m tox
