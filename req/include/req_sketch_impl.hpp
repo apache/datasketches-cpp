@@ -29,7 +29,7 @@
 namespace datasketches {
 
 template<typename T, bool H, typename C, typename A>
-req_compactor<T, H, C, A>::req_compactor(uint8_t lg_weight, uint32_t section_size):
+req_compactor<T, H, C, A>::req_compactor(uint8_t lg_weight, uint32_t section_size, const A& allocator):
 lg_weight_(lg_weight),
 coin_(false),
 sorted_(true),
@@ -37,7 +37,8 @@ section_size_raw_(section_size),
 section_size_(section_size),
 num_sections_(req_constants::INIT_NUM_SECTIONS),
 num_compactions_(0),
-state_(0)
+state_(0),
+items_(allocator)
 {}
 
 template<typename T, bool H, typename C, typename A>
@@ -201,7 +202,7 @@ void req_sketch<T, H, C, S, A>::update(FwdT&& item) {
 template<typename T, bool H, typename C, typename S, typename A>
 void req_sketch<T, H, C, S, A>::grow() {
   const uint8_t lg_weight = get_num_levels();
-  compactors_.push_back(Compactor(lg_weight, k_));
+  compactors_.push_back(Compactor(lg_weight, k_, allocator_));
   update_max_nom_size();
 }
 

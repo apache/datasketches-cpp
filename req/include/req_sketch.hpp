@@ -41,7 +41,7 @@ typename Allocator
 >
 class req_compactor {
 public:
-  req_compactor(uint8_t lg_weight, uint32_t section_size);
+  req_compactor(uint8_t lg_weight, uint32_t section_size, const Allocator& allocator);
 
   bool is_sorted() const;
   uint32_t get_num_items() const;
