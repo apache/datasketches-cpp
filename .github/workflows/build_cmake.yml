@@ -50,10 +50,10 @@ jobs:
       - name: Run C++ tests
         run: cmake --build build --config Release --target ${{ matrix.config.test_target }}
       - name: Set up Python 3.x
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2
         with:
-          python-version: '3.x' # grabs latest minor version of python3
+          python-version: '3.8' # 3.x grabs latest minor version of python3, but 3.9 not fully supported yet
       - name: Install Python dependencies
         run: python -m pip install --upgrade pip setuptools wheel numpy tox
       - name: Build and run Python tests
-        run: tox
+        run: python -m tox
