@@ -33,7 +33,11 @@ target_link_libraries(req INTERFACE common)
 target_compile_features(req INTERFACE cxx_std_11)
 
 set(req_HEADERS "")
+list(APPEND req_HEADERS "include/req_common.hpp")
 list(APPEND req_HEADERS "include/req_sketch.hpp")
+list(APPEND req_HEADERS "include/req_sketch_impl.hpp")
+list(APPEND req_HEADERS "include/req_compactor.hpp")
+list(APPEND req_HEADERS "include/req_compactor_impl.hpp")
 
 install(TARGETS req
   EXPORT ${PROJECT_NAME}
@@ -44,5 +48,9 @@ install(FILES ${req_HEADERS}
 
 target_sources(req
   INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/req_common.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/req_sketch.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/req_sketch_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/req_compactor.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/req_compactor_impl.hpp
 )

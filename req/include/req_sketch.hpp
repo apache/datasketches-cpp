@@ -20,64 +20,10 @@
 #ifndef REQ_SKETCH_HPP_
 #define REQ_SKETCH_HPP_
 
-#include "serde.hpp"
-#include "common_defs.hpp"
+#include "req_common.hpp"
+#include "req_compactor.hpp"
 
 namespace datasketches {
-
-// TODO: have a common random bit with KLL
-static std::independent_bits_engine<std::mt19937, 1, uint8_t> req_random_bit(std::chrono::system_clock::now().time_since_epoch().count());
-
-namespace req_constants {
-  static const uint32_t MIN_K = 4;
-  static const uint32_t INIT_NUM_SECTIONS = 3;
-}
-
-template<
-typename T,
-bool IsHighRank,
-typename Comparator,
-typename Allocator
->
-class req_compactor {
-public:
-  req_compactor(uint8_t lg_weight, uint32_t section_size, const Allocator& allocator);
-
-  bool is_sorted() const;
-  uint32_t get_num_items() const;
-  uint32_t get_nom_capacity() const;
-  //uint8_t get_lg_weight() const;
-
-  template<bool inclusive>
-  uint64_t compute_weight(const T& item) const;
-
-  template<typename FwdT>
-  void append(FwdT&& item);
-
-  void sort();
-  void merge_sort_in(std::vector<T, Allocator>&& items);
-
-  std::vector<T, Allocator> compact();
-
-private:
-  uint8_t lg_weight_;
-  bool coin_; // random bit for compaction
-  bool sorted_;
-  double section_size_raw_;
-  uint32_t section_size_;
-  uint32_t num_sections_;
-  uint32_t num_compactions_;
-  uint32_t state_; // state of the deterministic compaction schedule
-  std::vector<T, Allocator> items_;
-
-  bool ensure_enough_sections();
-  size_t compute_compaction_range(uint32_t secs_to_compact) const;
-
-  static uint32_t nearest_even(double value);
-
-  template<typename Iter>
-  static std::vector<T, Allocator> get_evens_or_odds(Iter from, Iter to, bool flag);
-};
 
 template<
   typename T,
