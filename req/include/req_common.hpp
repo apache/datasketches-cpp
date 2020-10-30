@@ -26,7 +26,7 @@
 namespace datasketches {
 
 // TODO: have a common random bit with KLL
-static std::independent_bits_engine<std::mt19937, 1, uint8_t> req_random_bit(std::chrono::system_clock::now().time_since_epoch().count());
+static std::independent_bits_engine<std::mt19937, 1, unsigned> req_random_bit(std::chrono::system_clock::now().time_since_epoch().count());
 
 namespace req_constants {
   static const uint32_t MIN_K = 4;
