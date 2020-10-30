@@ -21,6 +21,8 @@
 
 #include <req_sketch.hpp>
 
+#include <limits>
+
 namespace datasketches {
 
 #ifdef TEST_BINARY_INPUT_PATH
@@ -35,6 +37,8 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 0);
   REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE(std::isnan(sketch.get_rank(0)));
+  REQUIRE(std::isnan(sketch.get_rank(std::numeric_limits<float>::infinity())));
 }
 
 TEST_CASE("req sketch: single value", "[req_sketch]") {
@@ -44,6 +48,28 @@ TEST_CASE("req sketch: single value", "[req_sketch]") {
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 1);
   REQUIRE(sketch.get_num_retained() == 1);
+  REQUIRE(sketch.get_rank(1) == 0);
+  REQUIRE(sketch.get_rank<true>(1) == 1);
+  REQUIRE(sketch.get_rank(1.1) == 1);
+  REQUIRE(sketch.get_rank(std::numeric_limits<float>::infinity()) == 1);
+}
+
+TEST_CASE("req sketch: repeated values", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+  sketch.update(1);
+  sketch.update(1);
+  sketch.update(1);
+  sketch.update(2);
+  sketch.update(2);
+  sketch.update(2);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_n() == 6);
+  REQUIRE(sketch.get_num_retained() == 6);
+  REQUIRE(sketch.get_rank(1) == 0);
+  REQUIRE(sketch.get_rank<true>(1) == 0.5);
+  REQUIRE(sketch.get_rank(2) == 0.5);
+  REQUIRE(sketch.get_rank<true>(2) == 1);
 }
 
 TEST_CASE("req sketch: exact mode", "[req_sketch]") {
@@ -53,6 +79,8 @@ TEST_CASE("req sketch: exact mode", "[req_sketch]") {
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 100);
   REQUIRE(sketch.get_num_retained() == 100);
+  REQUIRE(sketch.get_rank(50) == 0.5);
+  REQUIRE(sketch.get_rank<true>(49) == 0.5);
 }
 
 TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
@@ -65,6 +93,10 @@ TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
   REQUIRE(sketch.get_n() == n);
   std::cout << sketch.to_string(true, true);
   REQUIRE(sketch.get_num_retained() < n);
+  REQUIRE(sketch.get_rank(0) == 0);
+  REQUIRE(sketch.get_rank(n) == 1);
+  REQUIRE(sketch.get_rank(n / 2) == Approx(0.5).margin(0.01));
+  REQUIRE(sketch.get_rank(n - 1) == Approx(1).margin(0.01));
 }
 
 } /* namespace datasketches */

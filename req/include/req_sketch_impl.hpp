@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <sstream>
+#include <algorithm>
 
 #include "count_zeros.hpp"
 
@@ -54,6 +55,21 @@ uint32_t req_compactor<T, H, C, A>::get_num_items() const {
 template<typename T, bool H, typename C, typename A>
 uint32_t req_compactor<T, H, C, A>::get_nom_capacity() const {
   return 2 * num_sections_ * section_size_;
+}
+
+//template<typename T, bool H, typename C, typename A>
+//uint8_t req_compactor<T, H, C, A>::get_lg_weight() const {
+//  return lg_weight_;
+//}
+
+template<typename T, bool H, typename C, typename A>
+template<bool inclusive>
+uint64_t req_compactor<T, H, C, A>::compute_weight(const T& item) const {
+  if (!sorted_) const_cast<req_compactor*>(this)->sort(); // allow sorting as a side effect
+  auto it = inclusive ?
+      std::upper_bound(items_.begin(), items_.end(), item, C()) :
+      std::lower_bound(items_.begin(), items_.end(), item, C());
+  return std::distance(items_.begin(), it) << lg_weight_;
 }
 
 template<typename T, bool H, typename C, typename A>
@@ -197,6 +213,17 @@ void req_sketch<T, H, C, S, A>::update(FwdT&& item) {
     compress();
   }
   //  aux = null;
+}
+
+
+template<typename T, bool H, typename C, typename S, typename A>
+template<bool inclusive>
+double req_sketch<T, H, C, S, A>::get_rank(const T& item) const {
+  uint64_t weight = 0;
+  for (const auto& compactor: compactors_) {
+    weight += compactor.template compute_weight<inclusive>(item);
+  }
+  return static_cast<double>(weight) / n_;
 }
 
 template<typename T, bool H, typename C, typename S, typename A>

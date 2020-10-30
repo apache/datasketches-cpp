@@ -46,6 +46,10 @@ public:
   bool is_sorted() const;
   uint32_t get_num_items() const;
   uint32_t get_nom_capacity() const;
+  //uint8_t get_lg_weight() const;
+
+  template<bool inclusive>
+  uint64_t compute_weight(const T& item) const;
 
   template<typename FwdT>
   void append(FwdT&& item);
@@ -114,6 +118,19 @@ public:
 
   template<typename FwdT>
   void update(FwdT&& item);
+
+  /**
+   * Returns an approximation to the normalized (fractional) rank of the given item from 0 to 1 inclusive.
+   * With the template parameter inclusive=true the weight of the given item is included into the rank.
+   * Otherwise the rank equals the sum of the weights of items less than the given item according to the Comparator.
+   *
+   * <p>If the sketch is empty this returns NaN.
+   *
+   * @param item to be ranked
+   * @return an approximate rank of the given item
+   */
+  template<bool inclusive = false>
+  double get_rank(const T& item) const;
 
   /**
    * Prints a summary of the sketch.
