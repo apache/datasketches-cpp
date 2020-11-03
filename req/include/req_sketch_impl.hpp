@@ -152,13 +152,14 @@ string<A> req_sketch<T, H, C, S, A>::to_string(bool print_levels, bool print_ite
   std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   os << "### REQ sketch summary:" << std::endl;
   os << "   K              : " << k_ << std::endl;
-  os << "   N              : " << n_ << std::endl;
+  os << "   High Rank Acc  : " << (H ? "true" : "false") << std::endl;
   os << "   Empty          : " << (is_empty() ? "true" : "false") << std::endl;
   os << "   Estimation mode: " << (is_estimation_mode() ? "true" : "false") << std::endl;
-  os << "   Levels         : " << compactors_.size() << std::endl;
   os << "   Sorted         : " << (compactors_[0].is_sorted() ? "true" : "false") << std::endl;
-  os << "   Capacity items : " << max_nom_size_ << std::endl;
+  os << "   N              : " << n_ << std::endl;
+  os << "   Levels         : " << compactors_.size() << std::endl;
   os << "   Retained items : " << num_retained_ << std::endl;
+  os << "   Capacity items : " << max_nom_size_ << std::endl;
 //  os << "   Storage bytes  : " << get_serialized_size_bytes() << std::endl;
 //  if (!is_empty()) {
 //    os << "   Min value      : " << *min_value_ << std::endl;
@@ -179,6 +180,14 @@ string<A> req_sketch<T, H, C, S, A>::to_string(bool print_levels, bool print_ite
 
   if (print_items) {
     os << "### REQ sketch data:" << std::endl;
+    unsigned level = 0;
+    for (const auto& compactor: compactors_) {
+      os << " level " << level << ": " << std::endl;
+      for (const auto& item: compactor.get_items()) {
+        os << "   " << item << std::endl;
+      }
+      ++level;
+    }
     os << "### End sketch data" << std::endl;
   }
   return os.str();
