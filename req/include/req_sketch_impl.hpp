@@ -88,6 +88,25 @@ double req_sketch<T, H, C, S, A>::get_rank(const T& item) const {
 }
 
 template<typename T, bool H, typename C, typename S, typename A>
+template<bool inclusive>
+const T& req_sketch<T, H, C, S, A>::get_quantile(double rank) const {
+  if (is_empty()) throw new std::invalid_argument("sketch is empty");
+  if ((rank < 0.0) || (rank > 1.0)) {
+    throw std::invalid_argument("Rank cannot be less than zero or greater than 1.0");
+  }
+  // TODO: min and max
+  if (!compactors_[0].is_sorted()) {
+    const_cast<req_compactor<T, H, C, A>&>(compactors_[0]).sort(); // allow this side effect
+  }
+  req_quantile_calculator<T, A> quantile_calculator(n_, allocator_);
+  for (auto& compactor: compactors_) {
+    quantile_calculator.add(compactor.get_items(), compactor.get_lg_weight());
+  }
+  quantile_calculator.template convert_to_cummulative<inclusive>();
+  return quantile_calculator.get_quantile(rank);
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
 void req_sketch<T, H, C, S, A>::grow() {
   const uint8_t lg_weight = get_num_levels();
   compactors_.push_back(Compactor(lg_weight, k_, allocator_));

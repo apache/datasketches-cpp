@@ -35,6 +35,8 @@ public:
   bool is_sorted() const;
   uint32_t get_num_items() const;
   uint32_t get_nom_capacity() const;
+  uint8_t get_lg_weight() const;
+  const std::vector<T, Allocator>& get_items() const;
 
   template<bool inclusive>
   uint64_t compute_weight(const T& item) const;

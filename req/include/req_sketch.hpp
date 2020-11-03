@@ -22,6 +22,7 @@
 
 #include "req_common.hpp"
 #include "req_compactor.hpp"
+#include "req_quantile_calculator.hpp"
 
 namespace datasketches {
 
@@ -77,6 +78,9 @@ public:
    */
   template<bool inclusive = false>
   double get_rank(const T& item) const;
+
+  template<bool inclusive = false>
+  const T& get_quantile(double rank) const;
 
   /**
    * Prints a summary of the sketch.

@@ -57,6 +57,16 @@ uint32_t req_compactor<T, H, C, A>::get_nom_capacity() const {
 }
 
 template<typename T, bool H, typename C, typename A>
+uint8_t req_compactor<T, H, C, A>::get_lg_weight() const {
+  return lg_weight_;
+}
+
+template<typename T, bool H, typename C, typename A>
+const std::vector<T, A>& req_compactor<T, H, C, A>::get_items() const {
+  return items_;
+}
+
+template<typename T, bool H, typename C, typename A>
 template<bool inclusive>
 uint64_t req_compactor<T, H, C, A>::compute_weight(const T& item) const {
   if (!sorted_) const_cast<req_compactor*>(this)->sort(); // allow sorting as a side effect
@@ -85,7 +95,7 @@ void req_compactor<T, H, C, A>::merge_sort_in(std::vector<T, A>&& items) {
   if (items_.capacity() < items_.size() + items.size()) items_.reserve(items_.size() + items.size());
   auto middle = items_.end();
   std::move(items.begin(), items.end(), std::back_inserter(items_));
-  std::inplace_merge(items_.begin(), middle, items_.end());
+  std::inplace_merge(items_.begin(), middle, items_.end(), C());
 }
 
 template<typename T, bool H, typename C, typename A>

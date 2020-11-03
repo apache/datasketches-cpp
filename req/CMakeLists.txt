@@ -38,6 +38,8 @@ list(APPEND req_HEADERS "include/req_sketch.hpp")
 list(APPEND req_HEADERS "include/req_sketch_impl.hpp")
 list(APPEND req_HEADERS "include/req_compactor.hpp")
 list(APPEND req_HEADERS "include/req_compactor_impl.hpp")
+list(APPEND req_HEADERS "include/req_quantile_calculator.hpp")
+list(APPEND req_HEADERS "include/req_quantile_calculator_impl.hpp")
 
 install(TARGETS req
   EXPORT ${PROJECT_NAME}
@@ -53,4 +55,6 @@ target_sources(req
     ${CMAKE_CURRENT_SOURCE_DIR}/include/req_sketch_impl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/req_compactor.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/req_compactor_impl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/req_quantile_calculator.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/req_quantile_calculator_impl.hpp
 )

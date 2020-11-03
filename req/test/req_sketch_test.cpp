@@ -52,6 +52,9 @@ TEST_CASE("req sketch: single value", "[req_sketch]") {
   REQUIRE(sketch.get_rank<true>(1) == 1);
   REQUIRE(sketch.get_rank(1.1) == 1);
   REQUIRE(sketch.get_rank(std::numeric_limits<float>::infinity()) == 1);
+  REQUIRE(sketch.get_quantile(0) == 1);
+  REQUIRE(sketch.get_quantile(0.5) == 1);
+  REQUIRE(sketch.get_quantile(1) == 1);
 }
 
 TEST_CASE("req sketch: repeated values", "[req_sketch]") {
@@ -79,8 +82,34 @@ TEST_CASE("req sketch: exact mode", "[req_sketch]") {
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 100);
   REQUIRE(sketch.get_num_retained() == 100);
+
+  // like KLL
+  REQUIRE(sketch.get_rank(0) == 0);
+  REQUIRE(sketch.get_rank(1) == 0.01);
   REQUIRE(sketch.get_rank(50) == 0.5);
+  REQUIRE(sketch.get_rank(98) == 0.98);
+  REQUIRE(sketch.get_rank(99) == 0.99);
+
+  // inclusive
+  REQUIRE(sketch.get_rank<true>(0) == 0.01);
+  REQUIRE(sketch.get_rank<true>(1) == 0.02);
   REQUIRE(sketch.get_rank<true>(49) == 0.5);
+  REQUIRE(sketch.get_rank<true>(98) == 0.99);
+  REQUIRE(sketch.get_rank<true>(99) == 1);
+
+  // like KLL
+  REQUIRE(sketch.get_quantile(0) == 0);
+  REQUIRE(sketch.get_quantile(0.01) == 1);
+  REQUIRE(sketch.get_quantile(0.5) == 50);
+  REQUIRE(sketch.get_quantile(.99) == 99);
+  REQUIRE(sketch.get_quantile(1) == 99);
+
+  // inclusive
+  REQUIRE(sketch.get_quantile<true>(0) == 0);
+  REQUIRE(sketch.get_quantile<true>(0.01) == 0);
+  REQUIRE(sketch.get_quantile<true>(0.5) == 49);
+  REQUIRE(sketch.get_quantile<true>(0.99) == 98);
+  REQUIRE(sketch.get_quantile<true>(1) == 99);
 }
 
 TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
