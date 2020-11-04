@@ -37,7 +37,9 @@ class req_sketch {
 public:
   using Compactor = req_compactor<T, IsHighRank, Comparator, Allocator>;
 
-  req_sketch(uint32_t k, const Allocator& allocator = Allocator());
+  explicit req_sketch(uint32_t k, const Allocator& allocator = Allocator());
+  ~req_sketch();
+  // TODO: copy, move, assign
 
   /**
    * Returns true if this sketch is empty.
@@ -67,6 +69,22 @@ public:
   void update(FwdT&& item);
 
   /**
+   * Returns the min value of the stream.
+   * For floating point types: if the sketch is empty this returns NaN.
+   * For other types: if the sketch is empty this throws runtime_error.
+   * @return the min value of the stream
+   */
+  const T& get_min_value() const;
+
+  /**
+   * Returns the max value of the stream.
+   * For floating point types: if the sketch is empty this returns NaN.
+   * For other types: if the sketch is empty this throws runtime_error.
+   * @return the max value of the stream
+   */
+  const T& get_max_value() const;
+
+  /**
    * Returns an approximation to the normalized (fractional) rank of the given item from 0 to 1 inclusive.
    * With the template parameter inclusive=true the weight of the given item is included into the rank.
    * Otherwise the rank equals the sum of the weights of items less than the given item according to the Comparator.
@@ -76,6 +94,7 @@ public:
    * @param item to be ranked
    * @return an approximate rank of the given item
    */
+
   template<bool inclusive = false>
   double get_rank(const T& item) const;
 
@@ -97,12 +116,38 @@ private:
   uint64_t n_;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
   std::vector<Compactor, AllocCompactor> compactors_;
+  T* min_value_;
+  T* max_value_;
 
   uint8_t get_num_levels() const;
   void grow();
   void update_max_nom_size();
   void update_num_retained();
   void compress();
+
+  // implementations for floating point types
+  template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
+  static const TT& get_invalid_value() {
+    static TT value = std::numeric_limits<TT>::quiet_NaN();
+    return value;
+  }
+
+  template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
+  static inline bool check_update_value(const TT& value) {
+    return !std::isnan(value);
+  }
+
+  // implementations for all other types
+  template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
+  static const TT& get_invalid_value() {
+    throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
+  }
+
+  template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
+  static inline bool check_update_value(const TT&) {
+    return true;
+  }
+
 };
 
 } /* namespace datasketches */

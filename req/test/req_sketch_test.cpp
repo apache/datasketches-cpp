@@ -39,6 +39,11 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
   REQUIRE(sketch.get_num_retained() == 0);
   REQUIRE(std::isnan(sketch.get_rank(0)));
   REQUIRE(std::isnan(sketch.get_rank(std::numeric_limits<float>::infinity())));
+  REQUIRE(std::isnan(sketch.get_min_value()));
+  REQUIRE(std::isnan(sketch.get_max_value()));
+  REQUIRE(std::isnan(sketch.get_quantile(0)));
+  REQUIRE(std::isnan(sketch.get_quantile(0.5)));
+  REQUIRE(std::isnan(sketch.get_quantile(1)));
 }
 
 TEST_CASE("req sketch: single value", "[req_sketch]") {
@@ -113,19 +118,20 @@ TEST_CASE("req sketch: exact mode", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
-  std::cout << "estimation mode test\n";
   req_sketch<float, true> sketch(100);
-  const size_t n = 1250;
+  const size_t n = 100000;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == n);
-  std::cout << sketch.to_string(true, true);
+//  std::cout << sketch.to_string(true);
   REQUIRE(sketch.get_num_retained() < n);
   REQUIRE(sketch.get_rank(0) == 0);
   REQUIRE(sketch.get_rank(n) == 1);
   REQUIRE(sketch.get_rank(n / 2) == Approx(0.5).margin(0.01));
   REQUIRE(sketch.get_rank(n - 1) == Approx(1).margin(0.01));
+  REQUIRE(sketch.get_min_value() == 0);
+  REQUIRE(sketch.get_max_value() == n - 1);
 }
 
 } /* namespace datasketches */

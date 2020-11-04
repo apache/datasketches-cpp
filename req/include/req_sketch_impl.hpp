@@ -27,12 +27,27 @@ namespace datasketches {
 template<typename T, bool H, typename C, typename S, typename A>
 req_sketch<T, H, C, S, A>::req_sketch(uint32_t k, const A& allocator):
 allocator_(allocator),
-k_(k),
+k_(std::max(k & -2, req_constants::MIN_K)), //rounds down one if odd
 max_nom_size_(0),
 num_retained_(0),
-n_(0)
+n_(0),
+compactors_(allocator),
+min_value_(nullptr),
+max_value_(nullptr)
 {
   grow();
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+req_sketch<T, H, C, S, A>::~req_sketch() {
+  if (min_value_ != nullptr) {
+    min_value_->~T();
+    allocator_.deallocate(min_value_, 1);
+  }
+  if (max_value_ != nullptr) {
+    max_value_->~T();
+    allocator_.deallocate(max_value_, 1);
+  }
 }
 
 template<typename T, bool H, typename C, typename S, typename A>
@@ -58,14 +73,14 @@ bool req_sketch<T, H, C, S, A>::is_estimation_mode() const {
 template<typename T, bool H, typename C, typename S, typename A>
 template<typename FwdT>
 void req_sketch<T, H, C, S, A>::update(FwdT&& item) {
-//  if (Float.isNaN(item)) { return; }
-//  if (isEmpty()) {
-//    minValue = item;
-//    maxValue = item;
-//  } else {
-//    if (item < minValue) { minValue = item; }
-//    if (item > maxValue) { maxValue = item; }
-//  }
+  if (!check_update_value(item)) { return; }
+  if (is_empty()) {
+    min_value_ = new (allocator_.allocate(1)) T(item);
+    max_value_ = new (allocator_.allocate(1)) T(item);
+  } else {
+    if (C()(item, *min_value_)) *min_value_ = item;
+    if (C()(*max_value_, item)) *max_value_ = item;
+  }
   compactors_[0].append(item);
   ++num_retained_;
   ++n_;
@@ -73,9 +88,19 @@ void req_sketch<T, H, C, S, A>::update(FwdT&& item) {
     compactors_[0].sort();
     compress();
   }
-  //  aux = null;
 }
 
+template<typename T, bool H, typename C, typename S, typename A>
+const T& req_sketch<T, H, C, S, A>::get_min_value() const {
+  if (is_empty()) return get_invalid_value();
+  return *min_value_;
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+const T& req_sketch<T, H, C, S, A>::get_max_value() const {
+  if (is_empty()) return get_invalid_value();
+  return *max_value_;
+}
 
 template<typename T, bool H, typename C, typename S, typename A>
 template<bool inclusive>
@@ -90,7 +115,9 @@ double req_sketch<T, H, C, S, A>::get_rank(const T& item) const {
 template<typename T, bool H, typename C, typename S, typename A>
 template<bool inclusive>
 const T& req_sketch<T, H, C, S, A>::get_quantile(double rank) const {
-  if (is_empty()) throw new std::invalid_argument("sketch is empty");
+  if (is_empty()) return get_invalid_value();
+  if (rank == 0.0) return *min_value_;
+  if (rank == 1.0) return *max_value_;
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Rank cannot be less than zero or greater than 1.0");
   }
@@ -161,10 +188,10 @@ string<A> req_sketch<T, H, C, S, A>::to_string(bool print_levels, bool print_ite
   os << "   Retained items : " << num_retained_ << std::endl;
   os << "   Capacity items : " << max_nom_size_ << std::endl;
 //  os << "   Storage bytes  : " << get_serialized_size_bytes() << std::endl;
-//  if (!is_empty()) {
-//    os << "   Min value      : " << *min_value_ << std::endl;
-//    os << "   Max value      : " << *max_value_ << std::endl;
-//  }
+  if (!is_empty()) {
+    os << "   Min value      : " << *min_value_ << std::endl;
+    os << "   Max value      : " << *max_value_ << std::endl;
+  }
   os << "### End sketch summary" << std::endl;
 
   if (print_levels) {
