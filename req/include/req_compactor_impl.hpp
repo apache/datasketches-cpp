@@ -210,7 +210,7 @@ req_compactor<T, H, C, A> req_compactor<T, H, C, A>::deserialize(std::istream& i
   for (uint32_t i = 0; i < num_items; ++i) {
     serde.deserialize(is, item_buffer.get(), 1);
     items.push_back(std::move(*item_buffer));
-    item_buffer->~T();
+    (*item_buffer).~T();
   }
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
   return req_compactor(lg_weight, coin, sorted, section_size_raw, num_sections, num_compactions, state, std::move(items));
