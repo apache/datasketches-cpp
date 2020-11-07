@@ -36,6 +36,7 @@ template<
 class req_sketch {
 public:
   using Compactor = req_compactor<T, IsHighRank, Comparator, Allocator>;
+  using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
 
   explicit req_sketch(uint32_t k, const Allocator& allocator = Allocator());
   ~req_sketch();
@@ -102,6 +103,27 @@ public:
   const T& get_quantile(double rank) const;
 
   /**
+   * This method serializes the sketch into a given stream in a binary form
+   * @param os output stream
+   */
+  void serialize(std::ostream& os) const;
+
+  /**
+   * This method deserializes a sketch from a given stream.
+   * @param is input stream
+   * @return an instance of a sketch
+   */
+  static req_sketch deserialize(std::istream& is, const Allocator& allocator = Allocator());
+
+  /**
+   * This method deserializes a sketch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @return an instance of a sketch
+   */
+  //static req_sketch deserialize(const void* bytes, size_t size);
+
+  /**
    * Prints a summary of the sketch.
    * @param print_levels if true include information about levels
    * @param print_items if true include sketch data
@@ -114,16 +136,23 @@ private:
   uint32_t max_nom_size_;
   uint32_t num_retained_;
   uint64_t n_;
-  using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
   std::vector<Compactor, AllocCompactor> compactors_;
   T* min_value_;
   T* max_value_;
+
+  static const uint8_t SERIAL_VERSION = 1;
+  static const uint8_t FAMILY = 17;
+  enum flags { IS_EMPTY, IS_LEVEL_ZERO_SORTED, IS_SINGLE_ITEM, IS_HIGH_RANK, IS_ESTIMATION_MODE };
 
   uint8_t get_num_levels() const;
   void grow();
   void update_max_nom_size();
   void update_num_retained();
   void compress();
+
+  // for deserialization
+  class item_deleter;
+  req_sketch(uint32_t k, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors);
 
   // implementations for floating point types
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>

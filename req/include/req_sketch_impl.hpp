@@ -134,6 +134,105 @@ const T& req_sketch<T, H, C, S, A>::get_quantile(double rank) const {
 }
 
 template<typename T, bool H, typename C, typename S, typename A>
+void req_sketch<T, H, C, S, A>::serialize(std::ostream& os) const {
+  const uint8_t preamble_longs = 1;
+  os.write(reinterpret_cast<const char*>(&preamble_longs), sizeof(preamble_longs));
+  const uint8_t serial_version = SERIAL_VERSION;
+  os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
+  const uint8_t family = FAMILY;
+  os.write(reinterpret_cast<const char*>(&family), sizeof(family));
+  const bool is_single_item = n_ == 1;
+  const uint8_t flags_byte(
+      (is_empty() ? 1 << flags::IS_EMPTY : 0)
+    | (compactors_[0].is_sorted() ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
+    | (is_single_item ? 1 << flags::IS_SINGLE_ITEM : 0)
+    | (H ? 1 << flags::IS_HIGH_RANK : 0)
+    | (is_estimation_mode() ? 1 << flags::IS_ESTIMATION_MODE : 0)
+  );
+  os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
+  os.write(reinterpret_cast<const char*>(&k_), sizeof(k_));
+  if (is_empty()) return;
+  if (!is_single_item) {
+    if (is_estimation_mode()) {
+      os.write(reinterpret_cast<const char*>(&n_), sizeof(n_));
+      const uint8_t num_levels = compactors_.size();
+      os.write(reinterpret_cast<const char*>(&num_levels), sizeof(num_levels));
+    }
+    // do we want some padding here?
+    S().serialize(os, min_value_, 1);
+    S().serialize(os, max_value_, 1);
+  }
+  for (const auto& compactor: compactors_) compactor.serialize(os, S());
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(std::istream& is, const A& allocator) {
+  auto preamble_longs = read<uint8_t>(is);
+  auto serial_version = read<uint8_t>(is);
+  auto family_id = read<uint8_t>(is);
+  auto flags_byte = read<uint8_t>(is);
+  auto k = read<uint32_t>(is);
+
+  // TODO: checks
+
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+  const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
+  if (is_empty) return req_sketch(k, allocator);
+
+  uint64_t n = 1;
+  uint8_t num_levels = 1;
+  const bool is_single_item = flags_byte & (1 << flags::IS_SINGLE_ITEM);
+  const bool is_estimation_mode = flags_byte & (1 << flags::IS_ESTIMATION_MODE);
+  if (!is_single_item) {
+    if (is_estimation_mode) {
+      n = read<uint64_t>(is);
+      num_levels = read<uint8_t>(is);
+    }
+  }
+
+  A alloc(allocator);
+  auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
+  std::unique_ptr<T, decltype(item_buffer_deleter)> min_value_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> max_value_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, item_deleter> min_value(nullptr, item_deleter(allocator));
+  std::unique_ptr<T, item_deleter> max_value(nullptr, item_deleter(allocator));
+
+  if (!is_single_item) {
+    S().deserialize(is, min_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
+    S().deserialize(is, max_value_buffer.get(), 1);
+    // serde call did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
+  }
+
+  const bool is_level_0_sorted = flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED);
+  std::vector<Compactor, AllocCompactor> compactors(allocator);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> item_buffer(alloc.allocate(1), item_buffer_deleter);
+  for (size_t i = 0; i < num_levels; ++i) {
+    auto compactor = req_compactor<T, H, C, A>::deserialize(is, S(), allocator, i == 0 ? is_level_0_sorted : true);
+    compactors.push_back(std::move(compactor));
+  }
+  if (!is_estimation_mode) n = compactors[0].get_num_items();
+  if (is_single_item) {
+    new (min_value_buffer.get()) T(compactors[0].get_items()[0]);
+    // copy did not throw, repackage with destrtuctor
+    min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
+    new (max_value_buffer.get()) T(compactors[0].get_items()[0]);
+    // copy did not throw, repackage with destrtuctor
+    max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
+  }
+
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+  return req_sketch(k, n, std::move(min_value), std::move(max_value), std::move(compactors));
+}
+
+//template<typename T, bool H, typename C, typename S, typename A>
+//req_sketch<T, H, C, S, A> deserialize(const void* bytes, size_t size) {
+//
+//}
+
+template<typename T, bool H, typename C, typename S, typename A>
 void req_sketch<T, H, C, S, A>::grow() {
   const uint8_t lg_weight = get_num_levels();
   compactors_.push_back(Compactor(lg_weight, k_, allocator_));
@@ -171,7 +270,6 @@ void req_sketch<T, H, C, S, A>::compress() {
     }
   }
   update_max_nom_size();
-  // aux = null;
 }
 
 template<typename T, bool H, typename C, typename S, typename A>
@@ -218,6 +316,35 @@ string<A> req_sketch<T, H, C, S, A>::to_string(bool print_levels, bool print_ite
     os << "### End sketch data" << std::endl;
   }
   return os.str();
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+class req_sketch<T, H, C, S, A>::item_deleter {
+  public:
+  item_deleter(const A& allocator): allocator_(allocator) {}
+  void operator() (T* ptr) {
+    if (ptr != nullptr) {
+      ptr->~T();
+      allocator_.deallocate(ptr, 1);
+    }
+  }
+  private:
+  A allocator_;
+};
+
+template<typename T, bool H, typename C, typename S, typename A>
+req_sketch<T, H, C, S, A>::req_sketch(uint32_t k, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors):
+allocator_(compactors.get_allocator()),
+k_(k),
+max_nom_size_(0),
+num_retained_(0),
+n_(n),
+compactors_(std::move(compactors)),
+min_value_(min_value.release()),
+max_value_(max_value.release())
+{
+  update_max_nom_size();
+  update_num_retained();
 }
 
 } /* namespace datasketches */

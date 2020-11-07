@@ -165,6 +165,70 @@ std::vector<T, A> req_compactor<T, H, C, A>::get_evens_or_odds(Iter from, Iter t
   return result;
 }
 
+// helpers for integral types
+template<typename T>
+static inline T read(std::istream& is) {
+  T value;
+  is.read(reinterpret_cast<char*>(&value), sizeof(T));
+  return value;
+}
+
+template<typename T>
+static inline void write(std::ostream& os, T value) {
+  os.write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
+template<typename T, bool H, typename C, typename A>
+template<typename S>
+void req_compactor<T, H, C, A>::serialize(std::ostream& os, const S& serde) const {
+  const uint32_t num_items = items_.size();
+  write(os, num_items);
+  write(os, section_size_raw_);
+  write(os, num_sections_);
+  write(os, num_compactions_);
+  write(os, state_);
+  write(os, lg_weight_);
+  const uint8_t coin = coin_;
+  write(os, coin);
+  serde.serialize(os, items_.data(), items_.size());
+}
+
+template<typename T, bool H, typename C, typename A>
+template<typename S>
+req_compactor<T, H, C, A> req_compactor<T, H, C, A>::deserialize(std::istream& is, const S& serde, const A& allocator, bool sorted) {
+  auto num_items = read<uint32_t>(is);
+  auto section_size_raw = read<double>(is);
+  auto num_sections = read<uint32_t>(is);
+  auto num_compactions = read<uint32_t>(is);
+  auto state = read<uint32_t>(is);
+  auto lg_weight = read<uint8_t>(is);
+  bool coin = read<uint8_t>(is);
+  std::vector<T, A> items(allocator);
+  A alloc(allocator);
+  auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
+  std::unique_ptr<T, decltype(item_buffer_deleter)> item_buffer(alloc.allocate(1), item_buffer_deleter);
+  for (uint32_t i = 0; i < num_items; ++i) {
+    serde.deserialize(is, item_buffer.get(), 1);
+    items.push_back(std::move(*item_buffer));
+    item_buffer->~T();
+  }
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+  return req_compactor(lg_weight, coin, sorted, section_size_raw, num_sections, num_compactions, state, std::move(items));
+}
+
+template<typename T, bool H, typename C, typename A>
+req_compactor<T, H, C, A>::req_compactor(uint8_t lg_weight, bool coin, bool sorted, double section_size_raw, uint32_t num_sections, uint32_t num_compactions, uint32_t state, std::vector<T, A>&& items):
+lg_weight_(lg_weight),
+coin_(coin),
+sorted_(sorted),
+section_size_raw_(section_size_raw),
+section_size_(nearest_even(section_size_raw)),
+num_sections_(num_sections),
+num_compactions_(num_compactions),
+state_(state),
+items_(std::move(items))
+{}
+
 } /* namespace datasketches */
 
 #endif

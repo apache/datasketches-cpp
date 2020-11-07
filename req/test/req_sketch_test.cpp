@@ -134,4 +134,21 @@ TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
   REQUIRE(sketch.get_max_value() == n - 1);
 }
 
+TEST_CASE("req sketch: stream serialize-deserialize estimation mode", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+  const size_t n = 100000;
+  for (size_t i = 0; i < n; ++i) sketch.update(i);
+
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sketch.serialize(s);
+  auto sketch2 = req_sketch<float, true>::deserialize(s);
+  REQUIRE(s.tellg() == s.tellp());
+  REQUIRE(sketch.is_empty() == sketch2.is_empty());
+  REQUIRE(sketch.is_estimation_mode() == sketch2.is_estimation_mode());
+  REQUIRE(sketch.get_num_retained() == sketch2.get_num_retained());
+  REQUIRE(sketch.get_n() == sketch2.get_n());
+  REQUIRE(sketch.get_min_value() == sketch2.get_min_value());
+  REQUIRE(sketch.get_max_value() == sketch2.get_max_value());
+}
+
 } /* namespace datasketches */

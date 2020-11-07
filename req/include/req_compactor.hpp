@@ -49,6 +49,15 @@ public:
 
   std::vector<T, Allocator> compact();
 
+  template<typename S>
+  void serialize(std::ostream& os, const S& serde) const;
+
+  template<typename S>
+  static req_compactor deserialize(std::istream& is, const S& serde, const Allocator& allocator, bool sorted);
+
+  // for deserialization
+  req_compactor(uint8_t lg_weight, bool coin, bool sorted, double section_size_raw, uint32_t num_sections, uint32_t num_compactions, uint32_t state, std::vector<T, Allocator>&& items);
+
 private:
   uint8_t lg_weight_;
   bool coin_; // random bit for compaction
