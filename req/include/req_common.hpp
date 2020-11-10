@@ -29,7 +29,7 @@ namespace datasketches {
 static std::independent_bits_engine<std::mt19937, 1, unsigned> req_random_bit(std::chrono::system_clock::now().time_since_epoch().count());
 
 namespace req_constants {
-  static const uint32_t MIN_K = 4;
+  static const uint16_t MIN_K = 4;
   static const uint32_t INIT_NUM_SECTIONS = 3;
 }
 

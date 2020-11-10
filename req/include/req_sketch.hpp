@@ -38,7 +38,7 @@ public:
   using Compactor = req_compactor<T, IsHighRank, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
 
-  explicit req_sketch(uint32_t k, const Allocator& allocator = Allocator());
+  explicit req_sketch(uint16_t k, const Allocator& allocator = Allocator());
   ~req_sketch();
   // TODO: copy, move, assign
 
@@ -132,7 +132,7 @@ public:
 
 private:
   Allocator allocator_;
-  uint32_t k_;
+  uint16_t k_;
   uint32_t max_nom_size_;
   uint32_t num_retained_;
   uint64_t n_;
@@ -142,7 +142,7 @@ private:
 
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t FAMILY = 17;
-  enum flags { IS_EMPTY, IS_LEVEL_ZERO_SORTED, IS_SINGLE_ITEM, IS_HIGH_RANK, IS_ESTIMATION_MODE };
+  enum flags { RESERVED1, RESERVED2, IS_EMPTY, IS_HIGH_RANK, IS_LEVEL_ZERO_SORTED, IS_SINGLE_ITEM };
 
   uint8_t get_num_levels() const;
   void grow();

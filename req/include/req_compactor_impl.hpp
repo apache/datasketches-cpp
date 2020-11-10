@@ -29,17 +29,19 @@
 namespace datasketches {
 
 template<typename T, bool H, typename C, typename A>
-req_compactor<T, H, C, A>::req_compactor(uint8_t lg_weight, uint32_t section_size, const A& allocator):
+req_compactor<T, H, C, A>::req_compactor(uint8_t lg_weight, uint32_t section_size, const A& allocator, const T* item_ptr, bool sorted):
 lg_weight_(lg_weight),
 coin_(false),
-sorted_(true),
+sorted_(sorted),
 section_size_raw_(section_size),
 section_size_(section_size),
 num_sections_(req_constants::INIT_NUM_SECTIONS),
 num_compactions_(0),
 state_(0),
 items_(allocator)
-{}
+{
+  if (item_ptr != nullptr) items_.push_back(*item_ptr);
+}
 
 template<typename T, bool H, typename C, typename A>
 bool req_compactor<T, H, C, A>::is_sorted() const {
