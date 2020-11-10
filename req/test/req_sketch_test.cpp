@@ -134,21 +134,71 @@ TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
   REQUIRE(sketch.get_max_value() == n - 1);
 }
 
-TEST_CASE("req sketch: stream serialize-deserialize estimation mode", "[req_sketch]") {
+TEST_CASE("req sketch: stream serialize-deserialize empty", "[req_sketch]") {
   req_sketch<float, true> sketch(100);
-  const size_t n = 100000;
-  for (size_t i = 0; i < n; ++i) sketch.update(i);
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
   auto sketch2 = req_sketch<float, true>::deserialize(s);
   REQUIRE(s.tellg() == s.tellp());
-  REQUIRE(sketch.is_empty() == sketch2.is_empty());
-  REQUIRE(sketch.is_estimation_mode() == sketch2.is_estimation_mode());
-  REQUIRE(sketch.get_num_retained() == sketch2.get_num_retained());
-  REQUIRE(sketch.get_n() == sketch2.get_n());
-  REQUIRE(sketch.get_min_value() == sketch2.get_min_value());
-  REQUIRE(sketch.get_max_value() == sketch2.get_max_value());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(std::isnan(sketch2.get_min_value()));
+  REQUIRE(std::isnan(sketch2.get_max_value()));
+}
+
+TEST_CASE("req sketch: stream serialize-deserialize single item", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+  sketch.update(1);
+
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sketch.serialize(s);
+  auto sketch2 = req_sketch<float, true>::deserialize(s);
+  REQUIRE(s.tellg() == s.tellp());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+  REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+}
+
+TEST_CASE("req sketch: stream serialize-deserialize exact mode", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+  const size_t n = 50;
+  for (size_t i = 0; i < n; ++i) sketch.update(i);
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sketch.serialize(s);
+  auto sketch2 = req_sketch<float, true>::deserialize(s);
+  REQUIRE(s.tellg() == s.tellp());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+  REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+}
+
+TEST_CASE("req sketch: stream serialize-deserialize estimation mode", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+  const size_t n = 100000;
+  for (size_t i = 0; i < n; ++i) sketch.update(i);
+  REQUIRE(sketch.is_estimation_mode());
+
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sketch.serialize(s);
+  auto sketch2 = req_sketch<float, true>::deserialize(s);
+  REQUIRE(s.tellg() == s.tellp());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+  REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
 }
 
 } /* namespace datasketches */

@@ -40,7 +40,10 @@ public:
 
   explicit req_sketch(uint16_t k, const Allocator& allocator = Allocator());
   ~req_sketch();
-  // TODO: copy, move, assign
+  req_sketch(const req_sketch& other);
+  req_sketch(req_sketch&& other) noexcept;
+  req_sketch& operator=(const req_sketch& other);
+  req_sketch& operator=(req_sketch&& other);
 
   /**
    * Returns true if this sketch is empty.
