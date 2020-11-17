@@ -671,20 +671,20 @@ template<typename A>
 void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
   const bool is_single_item = keys_.size() == 1 && !this->is_estimation_mode();
   const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
-  os.write((char*)&preamble_longs, sizeof(preamble_longs));
+  os.write(reinterpret_cast<const char*>(&preamble_longs), sizeof(preamble_longs));
   const uint8_t serial_version = theta_sketch_alloc<A>::SERIAL_VERSION;
-  os.write((char*)&serial_version, sizeof(serial_version));
+  os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
   const uint8_t type = SKETCH_TYPE;
-  os.write((char*)&type, sizeof(type));
+  os.write(reinterpret_cast<const char*>(&type), sizeof(type));
   const uint16_t unused16 = 0;
-  os.write((char*)&unused16, sizeof(unused16));
+  os.write(reinterpret_cast<const char*>(&unused16), sizeof(unused16));
   const uint8_t flags_byte(
     (1 << theta_sketch_alloc<A>::flags::IS_COMPACT) |
     (1 << theta_sketch_alloc<A>::flags::IS_READ_ONLY) |
     (this->is_empty() ? 1 << theta_sketch_alloc<A>::flags::IS_EMPTY : 0) |
     (this->is_ordered() ? 1 << theta_sketch_alloc<A>::flags::IS_ORDERED : 0)
   );
-  os.write((char*)&flags_byte, sizeof(flags_byte));
+  os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
   const uint16_t seed_hash = get_seed_hash();
   os.write((char*)&seed_hash, sizeof(seed_hash));
   if (!this->is_empty()) {
