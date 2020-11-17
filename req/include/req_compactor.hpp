@@ -44,38 +44,62 @@ public:
   template<typename FwdT>
   void append(FwdT&& item);
 
+  template<typename FwdC>
+  void merge(FwdC&& other);
+
   void sort();
   void merge_sort_in(std::vector<T, Allocator>&& items);
 
   std::vector<T, Allocator> compact();
 
+  /**
+   * Computes size needed to serialize the current state of the compactor.
+   * This version is for fixed-size arithmetic types (integral and floating point).
+   * @return size in bytes needed to serialize this compactor
+   */
+  template<typename S, typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes(const S& serde) const;
+
+  /**
+   * Computes size needed to serialize the current state of the compactor.
+   * This version is for all other types and can be expensive since every item needs to be looked at.
+   * @return size in bytes needed to serialize this compactor
+   */
+  template<typename S, typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes(const S& serde) const;
+
   template<typename S>
   void serialize(std::ostream& os, const S& serde) const;
 
   template<typename S>
+  size_t serialize(void* dst, size_t capacity, const S& serde) const;
+
+  template<typename S>
   static req_compactor deserialize(std::istream& is, const S& serde, const Allocator& allocator, bool sorted);
 
-  // for deserialization
-  req_compactor(uint8_t lg_weight, bool coin, bool sorted, double section_size_raw, uint32_t num_sections, uint32_t num_compactions, uint32_t state, std::vector<T, Allocator>&& items);
+  template<typename S>
+  static std::pair<req_compactor, size_t> deserialize(const void* bytes, size_t size, const S& serde, const Allocator& allocator, bool sorted);
 
 private:
   uint8_t lg_weight_;
   bool coin_; // random bit for compaction
   bool sorted_;
-  double section_size_raw_;
+  float section_size_raw_;
   uint32_t section_size_;
-  uint32_t num_sections_;
-  uint32_t num_compactions_;
-  uint32_t state_; // state of the deterministic compaction schedule
+  uint8_t num_sections_;
+  uint64_t state_; // state of the deterministic compaction schedule
   std::vector<T, Allocator> items_;
 
   bool ensure_enough_sections();
   size_t compute_compaction_range(uint32_t secs_to_compact) const;
 
-  static uint32_t nearest_even(double value);
+  static uint32_t nearest_even(float value);
 
   template<typename Iter>
   static std::vector<T, Allocator> get_evens_or_odds(Iter from, Iter to, bool flag);
+
+  // for deserialization
+  req_compactor(uint8_t lg_weight, bool sorted, float section_size_raw, uint8_t num_sections, uint64_t state, std::vector<T, Allocator>&& items);
 };
 
 } /* namespace datasketches */

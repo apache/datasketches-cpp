@@ -149,6 +149,21 @@ TEST_CASE("req sketch: stream serialize-deserialize empty", "[req_sketch]") {
   REQUIRE(std::isnan(sketch2.get_max_value()));
 }
 
+TEST_CASE("req sketch: byte serialize-deserialize empty", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+
+  auto bytes = sketch.serialize();
+  REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
+  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(std::isnan(sketch2.get_min_value()));
+  REQUIRE(std::isnan(sketch2.get_max_value()));
+}
+
 TEST_CASE("req sketch: stream serialize-deserialize single item", "[req_sketch]") {
   req_sketch<float, true> sketch(100);
   sketch.update(1);
@@ -157,6 +172,22 @@ TEST_CASE("req sketch: stream serialize-deserialize single item", "[req_sketch]"
   sketch.serialize(s);
   auto sketch2 = req_sketch<float, true>::deserialize(s);
   REQUIRE(s.tellg() == s.tellp());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+  REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+}
+
+TEST_CASE("req sketch: byte serialize-deserialize single item", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+  sketch.update(1);
+
+  auto bytes = sketch.serialize();
+  REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
+  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
   REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
@@ -183,6 +214,24 @@ TEST_CASE("req sketch: stream serialize-deserialize exact mode", "[req_sketch]")
   REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
 }
 
+TEST_CASE("req sketch: byte serialize-deserialize exact mode", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+  const size_t n = 50;
+  for (size_t i = 0; i < n; ++i) sketch.update(i);
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+
+  auto bytes = sketch.serialize();
+  REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
+  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+  REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+}
+
 TEST_CASE("req sketch: stream serialize-deserialize estimation mode", "[req_sketch]") {
   req_sketch<float, true> sketch(100);
   const size_t n = 100000;
@@ -199,6 +248,39 @@ TEST_CASE("req sketch: stream serialize-deserialize estimation mode", "[req_sket
   REQUIRE(sketch2.get_n() == sketch.get_n());
   REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
   REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+}
+
+TEST_CASE("req sketch: byte serialize-deserialize estimation mode", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+  const size_t n = 100000;
+  for (size_t i = 0; i < n; ++i) sketch.update(i);
+  REQUIRE(sketch.is_estimation_mode());
+
+  auto bytes = sketch.serialize();
+  REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
+  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+  REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+}
+
+TEST_CASE("req sketch: merge", "[req_sketch]") {
+  req_sketch<float, true> sketch1(100);
+  for (size_t i = 0; i < 1000; ++i) sketch1.update(i);
+
+  req_sketch<float, true> sketch2(100);
+  for (size_t i = 1000; i < 2000; ++i) sketch2.update(i);
+
+  sketch1.merge(sketch2);
+  //std::cout << sketch1.to_string(true, true);
+  REQUIRE(sketch1.get_min_value() == 0);
+  REQUIRE(sketch1.get_max_value() == 1999);
+  //REQUIRE(sketch1.get_quantile(0.5) == 1000);
+  REQUIRE(sketch1.get_rank(1000) == Approx(0.5).margin(0.01));
 }
 
 } /* namespace datasketches */

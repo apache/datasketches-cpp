@@ -72,6 +72,9 @@ public:
   template<typename FwdT>
   void update(FwdT&& item);
 
+  template<typename FwdSk>
+  void merge(FwdSk&& other);
+
   /**
    * Returns the min value of the stream.
    * For floating point types: if the sketch is empty this returns NaN.
@@ -106,10 +109,39 @@ public:
   const T& get_quantile(double rank) const;
 
   /**
+   * Computes size needed to serialize the current state of the sketch.
+   * This version is for fixed-size arithmetic types (integral and floating point).
+   * @return size in bytes needed to serialize this sketch
+   */
+  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes() const;
+
+  /**
+   * Computes size needed to serialize the current state of the sketch.
+   * This version is for all other types and can be expensive since every item needs to be looked at.
+   * @return size in bytes needed to serialize this sketch
+   */
+  template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes() const;
+
+  /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
    */
   void serialize(std::ostream& os) const;
+
+  // This is a convenience alias for users
+  // The type returned by the following serialize method
+  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;
+
+  /**
+   * This method serializes the sketch as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is a blank space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * @param header_size_bytes space to reserve in front of the sketch
+   */
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
   /**
    * This method deserializes a sketch from a given stream.
@@ -124,7 +156,7 @@ public:
    * @param size the size of the array
    * @return an instance of a sketch
    */
-  //static req_sketch deserialize(const void* bytes, size_t size);
+  static req_sketch deserialize(const void* bytes, size_t size, const Allocator& allocator = Allocator());
 
   /**
    * Prints a summary of the sketch.
@@ -145,6 +177,7 @@ private:
 
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t FAMILY = 17;
+  static const size_t PREAMBLE_SIZE_BYTES = 8;
   enum flags { RESERVED1, RESERVED2, IS_EMPTY, IS_HIGH_RANK, IS_LEVEL_ZERO_SORTED, IS_SINGLE_ITEM };
 
   uint8_t get_num_levels() const;
