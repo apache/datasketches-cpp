@@ -21,14 +21,16 @@
 
 #include <req_sketch.hpp>
 
+#include <fstream>
+#include <sstream>
 #include <limits>
 
 namespace datasketches {
 
 #ifdef TEST_BINARY_INPUT_PATH
-const std::string inputPath = TEST_BINARY_INPUT_PATH;
+const std::string input_path = TEST_BINARY_INPUT_PATH;
 #else
-const std::string inputPath = "test/";
+const std::string input_path = "test/";
 #endif
 
 TEST_CASE("req sketch: empty", "[req_sketch]") {
@@ -266,6 +268,74 @@ TEST_CASE("req sketch: byte serialize-deserialize estimation mode", "[req_sketch
   REQUIRE(sketch2.get_n() == sketch.get_n());
   REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
   REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+}
+
+TEST_CASE("req sketch: serialize deserialize stream and bytes equivalence", "[req_sketch]") {
+  req_sketch<float, true> sketch(100);
+  const size_t n = 100000;
+  for (size_t i = 0; i < n; ++i) sketch.update(i);
+  REQUIRE(sketch.is_estimation_mode());
+
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sketch.serialize(s);
+  auto bytes = sketch.serialize();
+  REQUIRE(bytes.size() == static_cast<size_t>(s.tellp()));
+  for (size_t i = 0; i < bytes.size(); ++i) {
+    REQUIRE(((char*)bytes.data())[i] == (char)s.get());
+  }
+
+  s.seekg(0); // rewind
+  auto sketch1 = req_sketch<float, true>::deserialize(s);
+  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(bytes.size() == static_cast<size_t>(s.tellg()));
+  REQUIRE(sketch2.is_empty() == sketch1.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
+  REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+}
+
+TEST_CASE("req sketch: stream deserialize from Java - empty", "[req_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(input_path + "req_float_empty_from_java.sk", std::ios::binary);
+  auto sketch = req_sketch<float, true>::deserialize(is);
+  std::cout << sketch.to_string();
+  REQUIRE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_n() == 0);
+  REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE(std::isnan(sketch.get_min_value()));
+  REQUIRE(std::isnan(sketch.get_max_value()));
+}
+
+TEST_CASE("req sketch: stream deserialize from Java - single item", "[req_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(input_path + "req_float_single_item_from_java.sk", std::ios::binary);
+  auto sketch = req_sketch<float, true>::deserialize(is);
+  std::cout << sketch.to_string();
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_n() == 1);
+  REQUIRE(sketch.get_num_retained() == 1);
+  REQUIRE(sketch.get_min_value() == 1);
+  REQUIRE(sketch.get_max_value() == 1);
+}
+
+TEST_CASE("req sketch: stream deserialize from Java - estimation mode", "[req_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(input_path + "req_float_estimation_from_java.sk", std::ios::binary);
+  auto sketch = req_sketch<float, true>::deserialize(is);
+  std::cout << sketch.to_string();
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_n() == 10000);
+  REQUIRE(sketch.get_num_retained() == 2942);
+  REQUIRE(sketch.get_min_value() == 0);
+  REQUIRE(sketch.get_max_value() == 9999);
 }
 
 TEST_CASE("req sketch: merge", "[req_sketch]") {

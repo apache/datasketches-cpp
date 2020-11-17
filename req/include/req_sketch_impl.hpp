@@ -256,12 +256,12 @@ void req_sketch<T, H, C, S, A>::serialize(std::ostream& os) const {
   write(os, serial_version);
   const uint8_t family = FAMILY;
   write(os, family);
-  const bool is_single_item = n_ == 1;
+  const bool raw_items = n_ <= req_constants::MIN_K;
   const uint8_t flags_byte(
       (is_empty() ? 1 << flags::IS_EMPTY : 0)
     | (H ? 1 << flags::IS_HIGH_RANK : 0)
+    | (raw_items ? 1 << flags::RAW_ITEMS : 0)
     | (compactors_[0].is_sorted() ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
-    | (is_single_item ? 1 << flags::IS_SINGLE_ITEM : 0)
   );
   write(os, flags_byte);
   write(os, k_);
@@ -275,7 +275,7 @@ void req_sketch<T, H, C, S, A>::serialize(std::ostream& os) const {
     S().serialize(os, min_value_, 1);
     S().serialize(os, max_value_, 1);
   }
-  if (is_single_item) {
+  if (raw_items) {
     S().serialize(os, min_value_, 1);
   } else {
     for (const auto& compactor: compactors_) compactor.serialize(os, S());
@@ -295,12 +295,12 @@ auto req_sketch<T, H, C, S, A>::serialize(unsigned header_size_bytes) const -> v
   ptr += copy_to_mem(serial_version, ptr);
   const uint8_t family = FAMILY;
   ptr += copy_to_mem(family, ptr);
-  const bool is_single_item = n_ == 1;
+  const bool raw_items = n_ <= req_constants::MIN_K;
   const uint8_t flags_byte(
       (is_empty() ? 1 << flags::IS_EMPTY : 0)
     | (H ? 1 << flags::IS_HIGH_RANK : 0)
+    | (raw_items ? 1 << flags::RAW_ITEMS : 0)
     | (compactors_[0].is_sorted() ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
-    | (is_single_item ? 1 << flags::IS_SINGLE_ITEM : 0)
   );
   ptr += copy_to_mem(flags_byte, ptr);
   ptr += copy_to_mem(k_, ptr);
@@ -314,7 +314,7 @@ auto req_sketch<T, H, C, S, A>::serialize(unsigned header_size_bytes) const -> v
       ptr += S().serialize(ptr, end_ptr - ptr, min_value_, 1);
       ptr += S().serialize(ptr, end_ptr - ptr, max_value_, 1);
     }
-    if (is_single_item) {
+    if (raw_items) {
       ptr += S().serialize(ptr, end_ptr - ptr, min_value_, 1);
     } else {
       for (const auto& compactor: compactors_) ptr += compactor.serialize(ptr, end_ptr - ptr, S());
@@ -333,6 +333,7 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(std::istream& i
   const auto num_levels = read<uint8_t>(is);
   read<uint8_t>(is); // unused byte
 
+  std::cout << "flags=" << std::hex << ((int)flags_byte) << "\n";
   // TODO: checks
 
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
@@ -346,7 +347,7 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(std::istream& i
   std::unique_ptr<T, item_deleter> min_value(nullptr, item_deleter(allocator));
   std::unique_ptr<T, item_deleter> max_value(nullptr, item_deleter(allocator));
 
-  const bool is_single_item = flags_byte & (1 << flags::IS_SINGLE_ITEM);
+  const bool raw_items = flags_byte & (1 << flags::RAW_ITEMS);
   const bool is_level_0_sorted = flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED);
   std::vector<Compactor, AllocCompactor> compactors(allocator);
 
@@ -361,7 +362,7 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(std::istream& i
     max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
   }
 
-  if (is_single_item) {
+  if (raw_items) {
     S().deserialize(is, min_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
@@ -430,7 +431,7 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(const void* byt
   std::unique_ptr<T, item_deleter> min_value(nullptr, item_deleter(allocator));
   std::unique_ptr<T, item_deleter> max_value(nullptr, item_deleter(allocator));
 
-  const bool is_single_item = flags_byte & (1 << flags::IS_SINGLE_ITEM);
+  const bool raw_items = flags_byte & (1 << flags::RAW_ITEMS);
   const bool is_level_0_sorted = flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED);
   std::vector<Compactor, AllocCompactor> compactors(allocator);
 
@@ -445,7 +446,7 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(const void* byt
     max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
   }
 
-  if (is_single_item) {
+  if (raw_items) {
     ptr += S().deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));

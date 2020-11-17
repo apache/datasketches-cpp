@@ -178,7 +178,7 @@ private:
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t FAMILY = 17;
   static const size_t PREAMBLE_SIZE_BYTES = 8;
-  enum flags { RESERVED1, RESERVED2, IS_EMPTY, IS_HIGH_RANK, IS_LEVEL_ZERO_SORTED, IS_SINGLE_ITEM };
+  enum flags { RESERVED1, RESERVED2, IS_EMPTY, IS_HIGH_RANK, RAW_ITEMS, IS_LEVEL_ZERO_SORTED };
 
   uint8_t get_num_levels() const;
   void grow();
