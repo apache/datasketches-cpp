@@ -30,7 +30,7 @@
 namespace datasketches {
 
 template<typename T, bool H, typename C, typename A>
-req_compactor<T, H, C, A>::req_compactor(uint8_t lg_weight, uint32_t section_size, const A& allocator, const T* item_ptr, bool sorted):
+req_compactor<T, H, C, A>::req_compactor(uint8_t lg_weight, uint32_t section_size, const A& allocator, bool sorted):
 lg_weight_(lg_weight),
 coin_(false),
 sorted_(sorted),
@@ -39,9 +39,7 @@ section_size_(section_size),
 num_sections_(req_constants::INIT_NUM_SECTIONS),
 state_(0),
 items_(allocator)
-{
-  if (item_ptr != nullptr) items_.push_back(*item_ptr);
-}
+{}
 
 template<typename T, bool H, typename C, typename A>
 bool req_compactor<T, H, C, A>::is_sorted() const {
@@ -256,17 +254,32 @@ req_compactor<T, H, C, A> req_compactor<T, H, C, A>::deserialize(std::istream& i
   auto num_sections = read<decltype(num_sections_)>(is);
   read<uint16_t>(is); // padding
   auto num_items = read<uint32_t>(is);
+  auto items = deserialize_items(is, serde, allocator, num_items);
+  return req_compactor(lg_weight, sorted, section_size_raw, num_sections, state, std::move(items));
+}
+
+template<typename T, bool H, typename C, typename A>
+template<typename S>
+req_compactor<T, H, C, A> req_compactor<T, H, C, A>::deserialize(std::istream& is, const S& serde, const A& allocator, bool sorted, uint16_t k, uint8_t num_items) {
+  auto items = deserialize_items(is, serde, allocator, num_items);
+  return req_compactor(0, sorted, k, req_constants::INIT_NUM_SECTIONS, 0, std::move(items));
+}
+
+template<typename T, bool H, typename C, typename A>
+template<typename S>
+std::vector<T, A> req_compactor<T, H, C, A>::deserialize_items(std::istream& is, const S& serde, const A& allocator, size_t num) {
   std::vector<T, A> items(allocator);
+  items.reserve(num);
   A alloc(allocator);
   auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
   std::unique_ptr<T, decltype(item_buffer_deleter)> item_buffer(alloc.allocate(1), item_buffer_deleter);
-  for (uint32_t i = 0; i < num_items; ++i) {
+  for (uint32_t i = 0; i < num; ++i) {
     serde.deserialize(is, item_buffer.get(), 1);
     items.push_back(std::move(*item_buffer));
     (*item_buffer).~T();
   }
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
-  return req_compactor(lg_weight, sorted, section_size_raw, num_sections, state, std::move(items));
+  return items;
 }
 
 template<typename T, bool H, typename C, typename A>
@@ -287,17 +300,40 @@ std::pair<req_compactor<T, H, C, A>, size_t> req_compactor<T, H, C, A>::deserial
   ptr += 2; // padding
   uint32_t num_items;
   ptr += copy_from_mem(ptr, num_items);
+  auto pair = deserialize_items(ptr, end_ptr - ptr, serde, allocator, num_items);
+  ptr += pair.second;
+  return std::pair<req_compactor, size_t>(
+      req_compactor(lg_weight, sorted, section_size_raw, num_sections, state, std::move(pair.first)),
+      ptr - static_cast<const char*>(bytes)
+  );
+}
+
+template<typename T, bool H, typename C, typename A>
+template<typename S>
+std::pair<req_compactor<T, H, C, A>, size_t> req_compactor<T, H, C, A>::deserialize(const void* bytes, size_t size, const S& serde, const A& allocator, bool sorted, uint16_t k, uint8_t num_items) {
+  auto pair = deserialize_items(bytes, size, serde, allocator, num_items);
+  return std::pair<req_compactor, size_t>(
+      req_compactor(0, sorted, k, req_constants::INIT_NUM_SECTIONS, 0, std::move(pair.first)),
+      pair.second
+  );
+}
+
+template<typename T, bool H, typename C, typename A>
+template<typename S>
+std::pair<std::vector<T, A>, size_t> req_compactor<T, H, C, A>::deserialize_items(const void* bytes, size_t size, const S& serde, const A& allocator, size_t num) {
+  const char* ptr = static_cast<const char*>(bytes);
+  const char* end_ptr = static_cast<const char*>(bytes) + size;
   std::vector<T, A> items(allocator);
   A alloc(allocator);
   auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
   std::unique_ptr<T, decltype(item_buffer_deleter)> item_buffer(alloc.allocate(1), item_buffer_deleter);
-  for (uint32_t i = 0; i < num_items; ++i) {
+  for (uint32_t i = 0; i < num; ++i) {
     ptr += serde.deserialize(ptr, end_ptr - ptr, item_buffer.get(), 1);
     items.push_back(std::move(*item_buffer));
     (*item_buffer).~T();
   }
-  return std::pair<req_compactor, size_t>(
-      req_compactor(lg_weight, sorted, section_size_raw, num_sections, state, std::move(items)),
+  return std::pair<std::vector<T, A>, size_t>(
+      std::move(items),
       ptr - static_cast<const char*>(bytes)
   );
 }

@@ -30,7 +30,7 @@ typename Allocator
 >
 class req_compactor {
 public:
-  req_compactor(uint8_t lg_weight, uint32_t section_size, const Allocator& allocator, const T* item_ptr = nullptr, bool sorted = true);
+  req_compactor(uint8_t lg_weight, uint32_t section_size, const Allocator& allocator, bool sorted = true);
 
   bool is_sorted() const;
   uint32_t get_num_items() const;
@@ -79,6 +79,18 @@ public:
 
   template<typename S>
   static std::pair<req_compactor, size_t> deserialize(const void* bytes, size_t size, const S& serde, const Allocator& allocator, bool sorted);
+
+  template<typename S>
+  static req_compactor deserialize(std::istream& is, const S& serde, const Allocator& allocator, bool sorted, uint16_t k, uint8_t num_items);
+
+  template<typename S>
+  static std::pair<req_compactor, size_t> deserialize(const void* bytes, size_t size, const S& serde, const Allocator& allocator, bool sorted, uint16_t k, uint8_t num_items);
+
+  template<typename S>
+  static std::vector<T, Allocator> deserialize_items(std::istream& is, const S& serde, const Allocator& allocator, size_t num);
+
+  template<typename S>
+  static std::pair<std::vector<T, Allocator>, size_t> deserialize_items(const void* bytes, size_t size, const S& serde, const Allocator& allocator, size_t num);
 
 private:
   uint8_t lg_weight_;

@@ -301,7 +301,6 @@ TEST_CASE("req sketch: stream deserialize from Java - empty", "[req_sketch]") {
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(input_path + "req_float_empty_from_java.sk", std::ios::binary);
   auto sketch = req_sketch<float, true>::deserialize(is);
-  std::cout << sketch.to_string();
   REQUIRE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 0);
@@ -315,13 +314,42 @@ TEST_CASE("req sketch: stream deserialize from Java - single item", "[req_sketch
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(input_path + "req_float_single_item_from_java.sk", std::ios::binary);
   auto sketch = req_sketch<float, true>::deserialize(is);
-  std::cout << sketch.to_string();
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 1);
   REQUIRE(sketch.get_num_retained() == 1);
   REQUIRE(sketch.get_min_value() == 1);
   REQUIRE(sketch.get_max_value() == 1);
+  REQUIRE(sketch.get_rank(1) == 0);
+  REQUIRE(sketch.get_rank<true>(1) == 1);
+}
+
+TEST_CASE("req sketch: stream deserialize from Java - raw items", "[req_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(input_path + "req_float_raw_items_from_java.sk", std::ios::binary);
+  auto sketch = req_sketch<float, true>::deserialize(is);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_n() == 4);
+  REQUIRE(sketch.get_num_retained() == 4);
+  REQUIRE(sketch.get_min_value() == 0);
+  REQUIRE(sketch.get_max_value() == 3);
+  REQUIRE(sketch.get_rank(2) == 0.5);
+}
+
+TEST_CASE("req sketch: stream deserialize from Java - exact mode", "[req_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(input_path + "req_float_exact_from_java.sk", std::ios::binary);
+  auto sketch = req_sketch<float, true>::deserialize(is);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_n() == 100);
+  REQUIRE(sketch.get_num_retained() == 100);
+  REQUIRE(sketch.get_min_value() == 0);
+  REQUIRE(sketch.get_max_value() == 99);
+  REQUIRE(sketch.get_rank(50) == 0.5);
 }
 
 TEST_CASE("req sketch: stream deserialize from Java - estimation mode", "[req_sketch]") {
@@ -329,13 +357,13 @@ TEST_CASE("req sketch: stream deserialize from Java - estimation mode", "[req_sk
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(input_path + "req_float_estimation_from_java.sk", std::ios::binary);
   auto sketch = req_sketch<float, true>::deserialize(is);
-  std::cout << sketch.to_string();
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 10000);
   REQUIRE(sketch.get_num_retained() == 2942);
   REQUIRE(sketch.get_min_value() == 0);
   REQUIRE(sketch.get_max_value() == 9999);
+  REQUIRE(sketch.get_rank(5000) == 0.5);
 }
 
 TEST_CASE("req sketch: merge", "[req_sketch]") {
