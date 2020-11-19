@@ -22,23 +22,23 @@
 
 namespace datasketches {
 
-template<typename T, typename A>
-req_quantile_calculator<T, A>::req_quantile_calculator(uint64_t n, const A& allocator):
+template<typename T, typename C, typename A>
+req_quantile_calculator<T, C, A>::req_quantile_calculator(uint64_t n, const A& allocator):
 n_(n),
 entries_(allocator)
 {}
 
-template<typename T, typename A>
-void req_quantile_calculator<T, A>::add(const std::vector<T, A>& items, uint8_t lg_weight) {
+template<typename T, typename C, typename A>
+void req_quantile_calculator<T, C, A>::add(const std::vector<T, A>& items, uint8_t lg_weight) {
   if (entries_.capacity() < entries_.size() + items.size()) entries_.reserve(entries_.size() + items.size());
   auto middle = entries_.end();
   for (const auto& item: items) entries_.push_back(Entry(&item, 1 << lg_weight));
-  std::inplace_merge(entries_.begin(), middle, entries_.end(), compare_pairs_by_second());
+  std::inplace_merge(entries_.begin(), middle, entries_.end(), compare_pairs_by_first_ptr<C>());
 }
 
-template<typename T, typename A>
+template<typename T, typename C, typename A>
 template<bool inclusive>
-void req_quantile_calculator<T, A>::convert_to_cummulative() {
+void req_quantile_calculator<T, C, A>::convert_to_cummulative() {
   uint64_t subtotal = 0;
   for (auto& entry: entries_) {
     const uint64_t new_subtotal = subtotal + entry.second;
@@ -47,8 +47,8 @@ void req_quantile_calculator<T, A>::convert_to_cummulative() {
   }
 }
 
-template<typename T, typename A>
-const T& req_quantile_calculator<T, A>::get_quantile(double rank) const {
+template<typename T, typename C, typename A>
+const T& req_quantile_calculator<T, C, A>::get_quantile(double rank) const {
   uint64_t weight = static_cast<uint64_t>(rank * n_);
   auto it = std::lower_bound(entries_.begin(), entries_.end(), Entry(nullptr, weight), compare_pairs_by_second());
   if (it == entries_.end()) return *(entries_[entries_.size() - 1].first);

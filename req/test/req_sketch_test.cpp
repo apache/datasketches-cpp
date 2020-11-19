@@ -374,10 +374,11 @@ TEST_CASE("req sketch: merge", "[req_sketch]") {
   for (size_t i = 1000; i < 2000; ++i) sketch2.update(i);
 
   sketch1.merge(sketch2);
-  //std::cout << sketch1.to_string(true, true);
   REQUIRE(sketch1.get_min_value() == 0);
   REQUIRE(sketch1.get_max_value() == 1999);
-  //REQUIRE(sketch1.get_quantile(0.5) == 1000);
+  REQUIRE(sketch1.get_quantile(0.25) == Approx(500).margin(3));
+  REQUIRE(sketch1.get_quantile(0.5) == Approx(1000).margin(1));
+  REQUIRE(sketch1.get_quantile(0.75) == Approx(1500).margin(1));
   REQUIRE(sketch1.get_rank(1000) == Approx(0.5).margin(0.01));
 }
 

@@ -26,6 +26,7 @@ namespace datasketches {
 
 template<
   typename T,
+  typename Comparator,
   typename Allocator
 >
 class req_quantile_calculator {
@@ -43,6 +44,13 @@ private:
   using Entry = std::pair<const T*, uint64_t>;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using Container = std::vector<Entry, AllocEntry>;
+
+  template<typename C>
+  struct compare_pairs_by_first_ptr {
+    bool operator()(const Entry& a, const Entry& b) {
+      return C()(*a.first, *b.first);
+    }
+  };
 
   struct compare_pairs_by_second {
     bool operator()(const Entry& a, const Entry& b) {

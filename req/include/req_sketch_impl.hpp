@@ -204,7 +204,7 @@ const T& req_sketch<T, H, C, S, A>::get_quantile(double rank) const {
   if (!compactors_[0].is_sorted()) {
     const_cast<Compactor&>(compactors_[0]).sort(); // allow this side effect
   }
-  req_quantile_calculator<T, A> quantile_calculator(n_, allocator_);
+  req_quantile_calculator<T, C, A> quantile_calculator(n_, allocator_);
   for (auto& compactor: compactors_) {
     quantile_calculator.add(compactor.get_items(), compactor.get_lg_weight());
   }
