@@ -324,6 +324,7 @@ std::pair<std::vector<T, A>, size_t> req_compactor<T, H, C, A>::deserialize_item
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
   std::vector<T, A> items(allocator);
+  items.reserve(num);
   A alloc(allocator);
   auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
   std::unique_ptr<T, decltype(item_buffer_deleter)> item_buffer(alloc.allocate(1), item_buffer_deleter);
