@@ -36,6 +36,7 @@ public:
   uint32_t get_num_items() const;
   uint32_t get_nom_capacity() const;
   uint8_t get_lg_weight() const;
+  std::vector<T, Allocator>& get_items();
   const std::vector<T, Allocator>& get_items() const;
 
   template<bool inclusive>
@@ -50,7 +51,7 @@ public:
   void sort();
   void merge_sort_in(std::vector<T, Allocator>&& items);
 
-  std::vector<T, Allocator> compact();
+  void compact(req_compactor& next);
 
   /**
    * Computes size needed to serialize the current state of the compactor.
@@ -107,8 +108,8 @@ private:
 
   static uint32_t nearest_even(float value);
 
-  template<typename Iter>
-  static std::vector<T, Allocator> get_evens_or_odds(Iter from, Iter to, bool flag);
+  template<typename InIter, typename OutIter>
+  void promote_evens_or_odds(InIter from, InIter to, bool flag, OutIter dst);
 
   // for deserialization
   req_compactor(uint8_t lg_weight, bool sorted, float section_size_raw, uint8_t num_sections, uint64_t state, std::vector<T, Allocator>&& items);

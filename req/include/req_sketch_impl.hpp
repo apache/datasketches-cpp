@@ -141,10 +141,7 @@ void req_sketch<T, H, C, S, A>::update(FwdT&& item) {
   compactors_[0].append(item);
   ++num_retained_;
   ++n_;
-  if (num_retained_ == max_nom_size_) {
-    compactors_[0].sort();
-    compress();
-  }
+  if (num_retained_ == max_nom_size_) compress();
 }
 
 template<typename T, bool H, typename C, typename S, typename A>
@@ -501,11 +498,11 @@ template<typename T, bool H, typename C, typename S, typename A>
 void req_sketch<T, H, C, S, A>::compress() {
   for (size_t h = 0; h < compactors_.size(); ++h) {
     if (compactors_[h].get_num_items() >= compactors_[h].get_nom_capacity()) {
+      if (h == 0) compactors_[0].sort();
       if (h + 1 >= get_num_levels()) { // at the top?
         grow(); // add a level, increases max_nom_size
       }
-      auto promoted = compactors_[h].compact();
-      compactors_[h + 1].merge_sort_in(std::move(promoted));
+      compactors_[h].compact(compactors_[h + 1]);
       update_num_retained();
       if (num_retained_ < max_nom_size_) break;
     }

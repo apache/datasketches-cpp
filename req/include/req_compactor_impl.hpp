@@ -39,7 +39,9 @@ section_size_(section_size),
 num_sections_(req_constants::INIT_NUM_SECTIONS),
 state_(0),
 items_(allocator)
-{}
+{
+  items_.reserve(2 * get_nom_capacity());
+}
 
 template<typename T, bool H, typename C, typename A>
 bool req_compactor<T, H, C, A>::is_sorted() const {
@@ -59,6 +61,11 @@ uint32_t req_compactor<T, H, C, A>::get_nom_capacity() const {
 template<typename T, bool H, typename C, typename A>
 uint8_t req_compactor<T, H, C, A>::get_lg_weight() const {
   return lg_weight_;
+}
+
+template<typename T, bool H, typename C, typename A>
+std::vector<T, A>& req_compactor<T, H, C, A>::get_items() {
+  return items_;
 }
 
 template<typename T, bool H, typename C, typename A>
@@ -111,10 +118,20 @@ void req_compactor<T, H, C, A>::merge_sort_in(std::vector<T, A>&& items) {
   auto middle = items_.end();
   std::move(items.begin(), items.end(), std::back_inserter(items_));
   std::inplace_merge(items_.begin(), middle, items_.end(), C());
+
+  // alternative implementation
+  //  std::vector<T, A> merged(items_.get_allocator());
+  //  merged.reserve(items_.size() + items.size());
+  //  std::merge(
+  //      std::make_move_iterator(items_.begin()), std::make_move_iterator(items_.end()),
+  //      std::make_move_iterator(items.begin()), std::make_move_iterator(items.end()),
+  //      std::back_inserter(merged), C()
+  //  );
+  //  std::swap(items_, merged);
 }
 
 template<typename T, bool H, typename C, typename A>
-std::vector<T, A> req_compactor<T, H, C, A>::compact() {
+void req_compactor<T, H, C, A>::compact(req_compactor& next) {
   // choose a part of the buffer to compact
   const uint32_t secs_to_compact = std::min(static_cast<uint32_t>(count_trailing_zeros_in_u32(~state_) + 1), static_cast<uint32_t>(num_sections_));
   const size_t compaction_range = compute_compaction_range(secs_to_compact);
@@ -125,12 +142,16 @@ std::vector<T, A> req_compactor<T, H, C, A>::compact() {
   if ((state_ & 1) == 1) { coin_ = !coin_; } // for odd flip coin;
   else { coin_ = req_random_bit(); } // random coin flip
 
-  auto promote = get_evens_or_odds(items_.begin() + compact_from, items_.begin() + compact_to, coin_);
+  auto& dst = next.get_items();
+  const auto num = (compact_to - compact_from) / 2;
+  if (dst.size() + num > dst.capacity()) dst.reserve(dst.size() + num);
+  auto middle = dst.end();
+  promote_evens_or_odds(items_.begin() + compact_from, items_.begin() + compact_to, coin_, std::back_inserter(dst));
+  std::inplace_merge(dst.begin(), middle, dst.end(), C());
   items_.erase(items_.begin() + compact_from, items_.begin() + compact_to);
 
   ++state_;
   ensure_enough_sections();
-  return promote;
 }
 
 template<typename T, bool H, typename C, typename A>
@@ -141,7 +162,7 @@ bool req_compactor<T, H, C, A>::ensure_enough_sections() {
     section_size_raw_ = ssr;
     section_size_ = ne;
     num_sections_ <<= 1;
-    //ensure_capacity(2 * get_nom_capacity());
+    items_.reserve(2 * get_nom_capacity());
     return true;
   }
   return false;
@@ -164,19 +185,18 @@ uint32_t req_compactor<T, H, C, A>::nearest_even(float value) {
 }
 
 template<typename T, bool H, typename C, typename A>
-template<typename Iter>
-std::vector<T, A> req_compactor<T, H, C, A>::get_evens_or_odds(Iter from, Iter to, bool odds) {
-  std::vector<T, A> result;
-  if (from == to) return result;
-  Iter i = from;
+template<typename InIter, typename OutIter>
+void req_compactor<T, H, C, A>::promote_evens_or_odds(InIter from, InIter to, bool odds, OutIter dst) {
+  if (from == to) return;
+  InIter i = from;
   if (odds) ++i;
   while (i != to) {
-    result.push_back(*i);
+    dst = std::move(*i);
+    ++dst;
     ++i;
     if (i == to) break;
     ++i;
   }
-  return result;
 }
 
 // helpers for integral types
