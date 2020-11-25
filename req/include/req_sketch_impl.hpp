@@ -21,6 +21,7 @@
 #define REQ_SKETCH_IMPL_HPP_
 
 #include <sstream>
+#include <stdexcept>
 
 namespace datasketches {
 
@@ -330,7 +331,9 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(std::istream& i
   const auto num_levels = read<uint8_t>(is);
   const auto num_raw_items = read<uint8_t>(is);
 
-  // TODO: checks
+  check_preamble_ints(preamble_ints, num_levels);
+  check_serial_version(serial_version);
+  check_family_id(family_id);
 
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
@@ -409,8 +412,9 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(const void* byt
   uint8_t num_raw_items;
   ptr += copy_from_mem(ptr, num_raw_items);
 
-  // TODO: checks
-  // ensure memory size
+  check_preamble_ints(preamble_ints, num_levels);
+  check_serial_version(serial_version);
+  check_family_id(family_id);
 
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   if (is_empty) return req_sketch(k, allocator);
@@ -428,6 +432,7 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(const void* byt
 
   uint64_t n = 1;
   if (num_levels > 1) {
+    ensure_minimum_memory(end_ptr - ptr, sizeof(n));
     ptr += copy_from_mem(ptr, n);
     ptr += S().deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
@@ -582,6 +587,32 @@ max_value_(max_value.release())
 {
   update_max_nom_size();
   update_num_retained();
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+void req_sketch<T, H, C, S, A>::check_preamble_ints(uint8_t preamble_ints, uint8_t num_levels) {
+  const uint8_t expected_preamble_ints = num_levels > 1 ? 4 : 2;
+  if (preamble_ints != expected_preamble_ints) {
+    throw std::invalid_argument("Possible corruption: preamble ints must be "
+        + std::to_string(expected_preamble_ints) + ", got " + std::to_string(preamble_ints));
+  }
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+void req_sketch<T, H, C, S, A>::check_serial_version(uint8_t serial_version) {
+  if (serial_version != SERIAL_VERSION) {
+    throw std::invalid_argument("Possible corruption: serial version mismatch: expected "
+        + std::to_string(SERIAL_VERSION)
+        + ", got " + std::to_string(serial_version));
+  }
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+void req_sketch<T, H, C, S, A>::check_family_id(uint8_t family_id) {
+  if (family_id != FAMILY) {
+    throw std::invalid_argument("Possible corruption: family mismatch: expected "
+        + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
+  }
 }
 
 } /* namespace datasketches */

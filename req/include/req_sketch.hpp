@@ -190,6 +190,10 @@ private:
   class item_deleter;
   req_sketch(uint32_t k, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors);
 
+  static void check_preamble_ints(uint8_t preamble_ints, uint8_t num_levels);
+  static void check_serial_version(uint8_t serial_version);
+  static void check_family_id(uint8_t family_id);
+
   // implementations for floating point types
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
   static const TT& get_invalid_value() {
