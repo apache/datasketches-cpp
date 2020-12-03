@@ -204,7 +204,7 @@ const T& req_sketch<T, H, C, S, A>::get_quantile(double rank) const {
   }
   req_quantile_calculator<T, C, A> quantile_calculator(n_, allocator_);
   for (auto& compactor: compactors_) {
-    quantile_calculator.add(compactor.get_items(), compactor.get_lg_weight());
+    quantile_calculator.add(compactor.begin(), compactor.end(), compactor.get_lg_weight());
   }
   quantile_calculator.template convert_to_cummulative<inclusive>();
   return quantile_calculator.get_quantile(rank);
@@ -274,7 +274,7 @@ void req_sketch<T, H, C, S, A>::serialize(std::ostream& os) const {
     S().serialize(os, max_value_, 1);
   }
   if (raw_items) {
-    S().serialize(os, compactors_[0].get_items().data(), num_raw_items);
+    S().serialize(os, compactors_[0].begin(), num_raw_items);
   } else {
     for (const auto& compactor: compactors_) compactor.serialize(os, S());
   }
@@ -313,7 +313,7 @@ auto req_sketch<T, H, C, S, A>::serialize(unsigned header_size_bytes) const -> v
       ptr += S().serialize(ptr, end_ptr - ptr, max_value_, 1);
     }
     if (raw_items) {
-      ptr += S().serialize(ptr, end_ptr - ptr, compactors_[0].get_items().data(), num_raw_items);
+      ptr += S().serialize(ptr, end_ptr - ptr, compactors_[0].begin(), num_raw_items);
     } else {
       for (const auto& compactor: compactors_) ptr += compactor.serialize(ptr, end_ptr - ptr, S());
     }
@@ -369,15 +369,14 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(std::istream& i
     }
   }
   if (num_levels == 1) {
-    const auto& items = compactors[0].get_items();
-    n = items.size();
-    auto min_it = items.begin();
-    auto max_it = items.begin();
-    auto it = items.begin();
-    while (it != items.end()) {
+    const auto begin = compactors[0].begin();
+    const auto end = compactors[0].end();
+    n = compactors[0].get_num_items();
+    auto min_it = begin;
+    auto max_it = begin;
+    for (auto it = begin; it != end; ++it) {
       if (C()(*it, *min_it)) min_it = it;
       if (C()(*max_it, *it)) max_it = it;
-      ++it;
     }
     new (min_value_buffer.get()) T(*min_it);
     // copy did not throw, repackage with destrtuctor
@@ -454,15 +453,14 @@ req_sketch<T, H, C, S, A> req_sketch<T, H, C, S, A>::deserialize(const void* byt
     }
   }
   if (num_levels == 1) {
-    const auto& items = compactors[0].get_items();
-    n = items.size();
-    auto min_it = items.begin();
-    auto max_it = items.begin();
-    auto it = items.begin();
-    while (it != items.end()) {
+    const auto begin = compactors[0].begin();
+    const auto end = compactors[0].end();
+    n = compactors[0].get_num_items();
+    auto min_it = begin;
+    auto max_it = begin;
+    for (auto it = begin; it != end; ++it) {
       if (C()(*it, *min_it)) min_it = it;
       if (C()(*max_it, *it)) max_it = it;
-      ++it;
     }
     new (min_value_buffer.get()) T(*min_it);
     // copy did not throw, repackage with destrtuctor
@@ -550,8 +548,8 @@ string<A> req_sketch<T, H, C, S, A>::to_string(bool print_levels, bool print_ite
     unsigned level = 0;
     for (const auto& compactor: compactors_) {
       os << " level " << level << ": " << std::endl;
-      for (const auto& item: compactor.get_items()) {
-        os << "   " << item << std::endl;
+      for (auto it = compactor.begin(); it != compactor.end(); ++it) {
+        os << "   " << *it << std::endl;
       }
       ++level;
     }

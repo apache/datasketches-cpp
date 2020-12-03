@@ -33,7 +33,7 @@ class req_quantile_calculator {
 public:
   req_quantile_calculator(uint64_t n, const Allocator& allocator);
 
-  void add(const std::vector<T, Allocator>& items, uint8_t lg_weight);
+  void add(const T* begin, const T* end, uint8_t lg_weight);
 
   template<bool inclusive>
   void convert_to_cummulative();

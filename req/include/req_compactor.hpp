@@ -20,6 +20,8 @@
 #ifndef REQ_COMPACTOR_HPP_
 #define REQ_COMPACTOR_HPP_
 
+#include <memory>
+
 namespace datasketches {
 
 template<
@@ -31,13 +33,20 @@ typename Allocator
 class req_compactor {
 public:
   req_compactor(uint8_t lg_weight, uint32_t section_size, const Allocator& allocator, bool sorted = true);
+  ~req_compactor();
+  req_compactor(const req_compactor& other);
+  req_compactor(req_compactor&& other) noexcept;
+  req_compactor& operator=(const req_compactor& other);
+  req_compactor& operator=(req_compactor&& other);
 
   bool is_sorted() const;
   uint32_t get_num_items() const;
   uint32_t get_nom_capacity() const;
   uint8_t get_lg_weight() const;
-  std::vector<T, Allocator>& get_items();
-  const std::vector<T, Allocator>& get_items() const;
+  const T* begin() const;
+  const T* end() const;
+  T* begin();
+  T* end();
 
   template<bool inclusive>
   uint64_t compute_weight(const T& item) const;
@@ -49,7 +58,6 @@ public:
   void merge(FwdC&& other);
 
   void sort();
-  void merge_sort_in(std::vector<T, Allocator>&& items);
 
   void compact(req_compactor& next);
 
@@ -87,13 +95,8 @@ public:
   template<typename S>
   static std::pair<req_compactor, size_t> deserialize(const void* bytes, size_t size, const S& serde, const Allocator& allocator, bool sorted, uint16_t k, uint8_t num_items);
 
-  template<typename S>
-  static std::vector<T, Allocator> deserialize_items(std::istream& is, const S& serde, const Allocator& allocator, size_t num);
-
-  template<typename S>
-  static std::pair<std::vector<T, Allocator>, size_t> deserialize_items(const void* bytes, size_t size, const S& serde, const Allocator& allocator, size_t num);
-
 private:
+  Allocator allocator_;
   uint8_t lg_weight_;
   bool coin_; // random bit for compaction
   bool sorted_;
@@ -101,18 +104,30 @@ private:
   uint32_t section_size_;
   uint8_t num_sections_;
   uint64_t state_; // state of the deterministic compaction schedule
-  std::vector<T, Allocator> items_;
+  uint32_t num_items_;
+  uint32_t capacity_;
+  T* items_;
 
   bool ensure_enough_sections();
   size_t compute_compaction_range(uint32_t secs_to_compact) const;
+  void grow(size_t new_capacity);
+  void ensure_space(size_t num);
 
   static uint32_t nearest_even(float value);
 
   template<typename InIter, typename OutIter>
-  void promote_evens_or_odds(InIter from, InIter to, bool flag, OutIter dst);
+  static void promote_evens_or_odds(InIter from, InIter to, bool flag, OutIter dst);
 
   // for deserialization
-  req_compactor(uint8_t lg_weight, bool sorted, float section_size_raw, uint8_t num_sections, uint64_t state, std::vector<T, Allocator>&& items);
+  class items_deleter;
+  req_compactor(uint8_t lg_weight, bool sorted, float section_size_raw, uint8_t num_sections, uint64_t state, std::unique_ptr<T, items_deleter> items, uint32_t num_items, const Allocator& allocator);
+
+  template<typename S>
+  static std::unique_ptr<T, items_deleter> deserialize_items(std::istream& is, const S& serde, const Allocator& allocator, size_t num);
+
+  template<typename S>
+  static std::pair<std::unique_ptr<T, items_deleter>, size_t> deserialize_items(const void* bytes, size_t size, const S& serde, const Allocator& allocator, size_t num);
+
 };
 
 } /* namespace datasketches */

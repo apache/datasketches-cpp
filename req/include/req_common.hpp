@@ -31,6 +31,7 @@ static std::independent_bits_engine<std::mt19937, 1, unsigned> req_random_bit(st
 namespace req_constants {
   static const uint16_t MIN_K = 4;
   static const uint8_t INIT_NUM_SECTIONS = 3;
+  static const unsigned MULTIPLIER = 2;
 }
 
 } /* namespace datasketches */

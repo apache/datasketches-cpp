@@ -34,7 +34,7 @@ const std::string input_path = "test/";
 #endif
 
 TEST_CASE("req sketch: empty", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   REQUIRE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 0);
@@ -49,7 +49,7 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: single value", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   sketch.update(1);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
@@ -65,7 +65,7 @@ TEST_CASE("req sketch: single value", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: repeated values", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   sketch.update(1);
   sketch.update(1);
   sketch.update(1);
@@ -83,44 +83,44 @@ TEST_CASE("req sketch: repeated values", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: exact mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
-  for (size_t i = 0; i < 100; ++i) sketch.update(i);
+  req_sketch<float, true> sketch(12);
+  for (size_t i = 1; i <= 10; ++i) sketch.update(i);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
-  REQUIRE(sketch.get_n() == 100);
-  REQUIRE(sketch.get_num_retained() == 100);
+  REQUIRE(sketch.get_n() == 10);
+  REQUIRE(sketch.get_num_retained() == 10);
 
   // like KLL
-  REQUIRE(sketch.get_rank(0) == 0);
-  REQUIRE(sketch.get_rank(1) == 0.01);
-  REQUIRE(sketch.get_rank(50) == 0.5);
-  REQUIRE(sketch.get_rank(98) == 0.98);
-  REQUIRE(sketch.get_rank(99) == 0.99);
+  REQUIRE(sketch.get_rank(1) == 0);
+  REQUIRE(sketch.get_rank(2) == 0.1);
+  REQUIRE(sketch.get_rank(6) == 0.5);
+  REQUIRE(sketch.get_rank(9) == 0.8);
+  REQUIRE(sketch.get_rank(10) == 0.9);
 
   // inclusive
-  REQUIRE(sketch.get_rank<true>(0) == 0.01);
-  REQUIRE(sketch.get_rank<true>(1) == 0.02);
-  REQUIRE(sketch.get_rank<true>(49) == 0.5);
-  REQUIRE(sketch.get_rank<true>(98) == 0.99);
-  REQUIRE(sketch.get_rank<true>(99) == 1);
+  REQUIRE(sketch.get_rank<true>(1) == 0.1);
+  REQUIRE(sketch.get_rank<true>(2) == 0.2);
+  REQUIRE(sketch.get_rank<true>(5) == 0.5);
+  REQUIRE(sketch.get_rank<true>(9) == 0.9);
+  REQUIRE(sketch.get_rank<true>(10) == 1);
 
   // like KLL
-  REQUIRE(sketch.get_quantile(0) == 0);
-  REQUIRE(sketch.get_quantile(0.01) == 1);
-  REQUIRE(sketch.get_quantile(0.5) == 50);
-  REQUIRE(sketch.get_quantile(.99) == 99);
-  REQUIRE(sketch.get_quantile(1) == 99);
+  REQUIRE(sketch.get_quantile(0) == 1);
+  REQUIRE(sketch.get_quantile(0.1) == 2);
+  REQUIRE(sketch.get_quantile(0.5) == 6);
+  REQUIRE(sketch.get_quantile(0.9) == 10);
+  REQUIRE(sketch.get_quantile(1) == 10);
 
   // inclusive
-  REQUIRE(sketch.get_quantile<true>(0) == 0);
-  REQUIRE(sketch.get_quantile<true>(0.01) == 0);
-  REQUIRE(sketch.get_quantile<true>(0.5) == 49);
-  REQUIRE(sketch.get_quantile<true>(0.99) == 98);
-  REQUIRE(sketch.get_quantile<true>(1) == 99);
+  REQUIRE(sketch.get_quantile<true>(0) == 1);
+  REQUIRE(sketch.get_quantile<true>(0.1) == 1);
+  REQUIRE(sketch.get_quantile<true>(0.5) == 5);
+  REQUIRE(sketch.get_quantile<true>(0.9) == 9);
+  REQUIRE(sketch.get_quantile<true>(1) == 10);
 }
 
 TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   const size_t n = 100000;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE_FALSE(sketch.is_empty());
@@ -137,7 +137,7 @@ TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize empty", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
@@ -152,7 +152,7 @@ TEST_CASE("req sketch: stream serialize-deserialize empty", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: byte serialize-deserialize empty", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
 
   auto bytes = sketch.serialize();
   REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
@@ -167,7 +167,7 @@ TEST_CASE("req sketch: byte serialize-deserialize empty", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize single item", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   sketch.update(1);
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
@@ -183,7 +183,7 @@ TEST_CASE("req sketch: stream serialize-deserialize single item", "[req_sketch]"
 }
 
 TEST_CASE("req sketch: byte serialize-deserialize single item", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   sketch.update(1);
 
   auto bytes = sketch.serialize();
@@ -199,7 +199,7 @@ TEST_CASE("req sketch: byte serialize-deserialize single item", "[req_sketch]") 
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize exact mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   const size_t n = 50;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE_FALSE(sketch.is_estimation_mode());
@@ -217,7 +217,7 @@ TEST_CASE("req sketch: stream serialize-deserialize exact mode", "[req_sketch]")
 }
 
 TEST_CASE("req sketch: byte serialize-deserialize exact mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   const size_t n = 50;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE_FALSE(sketch.is_estimation_mode());
@@ -235,7 +235,7 @@ TEST_CASE("req sketch: byte serialize-deserialize exact mode", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize estimation mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   const size_t n = 100000;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE(sketch.is_estimation_mode());
@@ -253,7 +253,7 @@ TEST_CASE("req sketch: stream serialize-deserialize estimation mode", "[req_sket
 }
 
 TEST_CASE("req sketch: byte serialize-deserialize estimation mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   const size_t n = 100000;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE(sketch.is_estimation_mode());
@@ -271,7 +271,7 @@ TEST_CASE("req sketch: byte serialize-deserialize estimation mode", "[req_sketch
 }
 
 TEST_CASE("req sketch: serialize deserialize stream and bytes equivalence", "[req_sketch]") {
-  req_sketch<float, true> sketch(100);
+  req_sketch<float, true> sketch(12);
   const size_t n = 100000;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE(sketch.is_estimation_mode());
@@ -380,6 +380,17 @@ TEST_CASE("req sketch: merge", "[req_sketch]") {
   REQUIRE(sketch1.get_quantile(0.5) == Approx(1000).margin(1));
   REQUIRE(sketch1.get_quantile(0.75) == Approx(1500).margin(1));
   REQUIRE(sketch1.get_rank(1000) == Approx(0.5).margin(0.01));
+}
+
+TEST_CASE("for manual comparison with Java") {
+  req_sketch<float, true> sketch(12);
+  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
+  sketch.merge(sketch);
+  std::ofstream os;
+  os.exceptions(std::ios::failbit | std::ios::badbit);
+  os.open("req_float_hra_12_100000_merged.sk", std::ios::binary);
+  sketch.get_quantile(0.5); // force sorting level 0
+  sketch.serialize(os);
 }
 
 } /* namespace datasketches */
