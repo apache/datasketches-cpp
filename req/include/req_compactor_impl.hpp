@@ -49,9 +49,7 @@ items_(allocator_.allocate(capacity_))
 template<typename T, bool H, typename C, typename A>
 req_compactor<T, H, C, A>::~req_compactor() {
   if (items_ != nullptr) {
-    const size_t from = H ? capacity_ - num_items_ : 0;
-    const size_t to = H ? capacity_ : num_items_;
-    for (size_t i = from; i < to; ++i) items_[i].~T();
+    for (auto it = begin(); it != end(); ++it) (*it).~T();
     allocator_.deallocate(items_, capacity_);
   }
 }
@@ -178,7 +176,7 @@ void req_compactor<T, H, C, A>::grow(size_t new_capacity) {
     new (new_items + new_i) T(std::move(items_[i]));
     items_[i].~T();
   }
-  allocator_.deallocate(items_, num_items_);
+  allocator_.deallocate(items_, capacity_);
   items_ = new_items;
   capacity_ = new_capacity;
 }
