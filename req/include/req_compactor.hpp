@@ -109,7 +109,7 @@ private:
   T* items_;
 
   bool ensure_enough_sections();
-  size_t compute_compaction_range(uint32_t secs_to_compact) const;
+  std::pair<uint32_t, uint32_t> compute_compaction_range(uint32_t secs_to_compact) const;
   void grow(size_t new_capacity);
   void ensure_space(size_t num);
 

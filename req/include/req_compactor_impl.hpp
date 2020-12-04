@@ -169,12 +169,10 @@ void req_compactor<T, H, C, A>::append(FwdT&& item) {
 template<typename T, bool H, typename C, typename A>
 void req_compactor<T, H, C, A>::grow(size_t new_capacity) {
   T* new_items = allocator_.allocate(new_capacity);
-  const size_t from = H ? capacity_ - num_items_ : 0;
-  const size_t to = H ? capacity_ : num_items_;
   size_t new_i = H ? new_capacity - num_items_ : 0;
-  for (size_t i = from; i < to; ++i, ++new_i) {
-    new (new_items + new_i) T(std::move(items_[i]));
-    items_[i].~T();
+  for (auto it = begin(); it != end(); ++it, ++new_i) {
+    new (new_items + new_i) T(std::move(*it));
+    (*it).~T();
   }
   allocator_.deallocate(items_, capacity_);
   items_ = new_items;
@@ -237,23 +235,21 @@ template<typename T, bool H, typename C, typename A>
 void req_compactor<T, H, C, A>::compact(req_compactor& next) {
   // choose a part of the buffer to compact
   const uint32_t secs_to_compact = std::min(static_cast<uint32_t>(count_trailing_zeros_in_u32(~state_) + 1), static_cast<uint32_t>(num_sections_));
-  const size_t compaction_range = compute_compaction_range(secs_to_compact);
-  const uint32_t compact_from = compaction_range & 0xFFFFFFFFLL; // low 32
-  const uint32_t compact_to = compaction_range >> 32; // high 32
-  if (compact_to - compact_from < 2) throw std::logic_error("compaction range error");
+  auto compaction_range = compute_compaction_range(secs_to_compact);
+  if (compaction_range.second - compaction_range.first < 2) throw std::logic_error("compaction range error");
 
   if ((state_ & 1) == 1) { coin_ = !coin_; } // for odd flip coin;
   else { coin_ = req_random_bit(); } // random coin flip
 
-  const auto num = (compact_to - compact_from) / 2;
+  const auto num = (compaction_range.second - compaction_range.first) / 2;
   next.ensure_space(num);
   auto next_middle = H ? next.begin() : next.end();
   auto next_empty = H ? next.begin() - num : next.end();
-  promote_evens_or_odds(begin() + compact_from, begin() + compact_to, coin_, next_empty);
+  promote_evens_or_odds(begin() + compaction_range.first, begin() + compaction_range.second, coin_, next_empty);
   next.num_items_ += num;
   std::inplace_merge(next.begin(), next_middle, next.end(), C());
-  for (size_t i = compact_from; i < compact_to; ++i) (*(begin() + i)).~T();
-  num_items_ -= compact_to - compact_from;
+  for (size_t i = compaction_range.first; i < compaction_range.second; ++i) (*(begin() + i)).~T();
+  num_items_ -= compaction_range.second - compaction_range.first;
 
   ++state_;
   ensure_enough_sections();
@@ -274,13 +270,13 @@ bool req_compactor<T, H, C, A>::ensure_enough_sections() {
 }
 
 template<typename T, bool H, typename C, typename A>
-size_t req_compactor<T, H, C, A>::compute_compaction_range(uint32_t secs_to_compact) const {
+std::pair<uint32_t, uint32_t> req_compactor<T, H, C, A>::compute_compaction_range(uint32_t secs_to_compact) const {
   uint32_t non_compact = get_nom_capacity() / 2 + (num_sections_ - secs_to_compact) * section_size_;
   // make compacted region even
   if (((num_items_ - non_compact) & 1) == 1) ++non_compact;
   const size_t low = H ? 0 : non_compact;
   const size_t high = H ? num_items_ - non_compact : num_items_;
-  return (high << 32) + low;
+  return std::pair<uint32_t, uint32_t>(low, high);
 }
 
 template<typename T, bool H, typename C, typename A>
