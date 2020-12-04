@@ -31,9 +31,9 @@ entries_(allocator)
 template<typename T, typename C, typename A>
 void req_quantile_calculator<T, C, A>::add(const T* begin, const T* end, uint8_t lg_weight) {
   if (entries_.capacity() < entries_.size() + std::distance(begin, end)) entries_.reserve(entries_.size() + std::distance(begin, end));
-  auto middle = entries_.end();
+  const size_t size_before = entries_.size();
   for (auto it = begin; it != end; ++it) entries_.push_back(Entry(it, 1 << lg_weight));
-  if (std::distance(entries_.begin(), middle) > 0) std::inplace_merge(entries_.begin(), middle, entries_.end(), compare_pairs_by_first_ptr<C>());
+  if (size_before > 0) std::inplace_merge(entries_.begin(), entries_.begin() + size_before, entries_.end(), compare_pairs_by_first_ptr<C>());
 }
 
 template<typename T, typename C, typename A>
