@@ -219,7 +219,7 @@ void req_compactor<T, H, C, A>::merge(FwdC&& other) {
   auto other_it = other.begin();
   for (auto it = from; it != to; ++it, ++other_it) new (it) T(conditional_forward<FwdC>(*other_it));
   if (!other.sorted_) std::sort(from, to, C());
-  std::inplace_merge(H ? from : begin(), middle, H ? end() : to);
+  if (num_items_ > 0) std::inplace_merge(H ? from : begin(), middle, H ? end() : to);
   num_items_ += other.get_num_items();
 }
 

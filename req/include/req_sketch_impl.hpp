@@ -149,7 +149,6 @@ template<typename T, bool H, typename C, typename S, typename A>
 template<typename FwdSk>
 void req_sketch<T, H, C, S, A>::merge(FwdSk&& other) {
   if (other.is_empty()) return;
-  n_ += other.n_;
   if (is_empty()) {
     min_value_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.min_value_));
     max_value_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.max_value_));
@@ -160,9 +159,10 @@ void req_sketch<T, H, C, S, A>::merge(FwdSk&& other) {
   // grow until this has at least as many compactors as other
   while (get_num_levels() < other.get_num_levels()) grow();
   // merge the items in all height compactors
-  for (size_t i = 0; i < get_num_levels(); ++i) {
+  for (size_t i = 0; i < other.get_num_levels(); ++i) {
     compactors_[i].merge(conditional_forward<FwdSk>(other.compactors_[i]));
   }
+  n_ += other.n_;
   update_max_nom_size();
   update_num_retained();
   if (num_retained_ >= max_nom_size_) compress();

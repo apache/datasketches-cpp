@@ -366,6 +366,21 @@ TEST_CASE("req sketch: stream deserialize from Java - estimation mode", "[req_sk
   REQUIRE(sketch.get_rank(5000) == 0.5);
 }
 
+TEST_CASE("req sketch: merge into empty", "[req_sketch]") {
+  req_sketch<float, true> sketch1(40);
+
+  req_sketch<float, true> sketch2(40);
+  for (size_t i = 0; i < 1000; ++i) sketch2.update(i);
+
+  sketch1.merge(sketch2);
+  REQUIRE(sketch1.get_min_value() == 0);
+  REQUIRE(sketch1.get_max_value() == 999);
+  REQUIRE(sketch1.get_quantile(0.25) == Approx(250).margin(3));
+  REQUIRE(sketch1.get_quantile(0.5) == Approx(500).margin(3));
+  REQUIRE(sketch1.get_quantile(0.75) == Approx(750).margin(3));
+  REQUIRE(sketch1.get_rank(500) == Approx(0.5).margin(0.01));
+}
+
 TEST_CASE("req sketch: merge", "[req_sketch]") {
   req_sketch<float, true> sketch1(100);
   for (size_t i = 0; i < 1000; ++i) sketch1.update(i);
@@ -382,15 +397,35 @@ TEST_CASE("req sketch: merge", "[req_sketch]") {
   REQUIRE(sketch1.get_rank(1000) == Approx(0.5).margin(0.01));
 }
 
-TEST_CASE("for manual comparison with Java") {
+TEST_CASE("req sketch: merge multiple", "[req_sketch]") {
+  req_sketch<float, true> sketch1(12);
+  for (size_t i = 0; i < 40; ++i) sketch1.update(i);
+
+  req_sketch<float, true> sketch2(12);
+  for (size_t i = 40; i < 80; ++i) sketch2.update(i);
+
+  req_sketch<float, true> sketch3(12);
+  for (size_t i = 80; i < 120; ++i) sketch3.update(i);
+
   req_sketch<float, true> sketch(12);
-  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
-  sketch.merge(sketch);
-  std::ofstream os;
-  os.exceptions(std::ios::failbit | std::ios::badbit);
-  os.open("req_float_hra_12_100000_merged.sk", std::ios::binary);
-  sketch.get_quantile(0.5); // force sorting level 0
-  sketch.serialize(os);
+  sketch.merge(sketch1);
+  sketch.merge(sketch2);
+  sketch.merge(sketch3);
+  REQUIRE(sketch.get_min_value() == 0);
+  REQUIRE(sketch.get_max_value() == 119);
+  REQUIRE(sketch.get_quantile(0.5) == Approx(60).margin(3));
+  REQUIRE(sketch.get_rank(60) == Approx(0.5).margin(0.01));
 }
+
+//TEST_CASE("for manual comparison with Java") {
+//  req_sketch<float, true> sketch(12);
+//  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
+//  sketch.merge(sketch);
+//  std::ofstream os;
+//  os.exceptions(std::ios::failbit | std::ios::badbit);
+//  os.open("req_float_hra_12_100000_merged.sk", std::ios::binary);
+//  sketch.get_quantile(0.5); // force sorting level 0
+//  sketch.serialize(os);
+//}
 
 } /* namespace datasketches */
