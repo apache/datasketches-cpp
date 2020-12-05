@@ -17,7 +17,7 @@
 
 add_library(req INTERFACE)
 
-add_library(${PROJECT_NAME}::THETA ALIAS req)
+add_library(${PROJECT_NAME}::REQ ALIAS req)
 
 if (BUILD_TESTS)
   add_subdirectory(test)
