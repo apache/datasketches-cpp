@@ -505,12 +505,12 @@ void req_sketch<T, H, C, S, A>::compress() {
       if (h + 1 >= get_num_levels()) { // at the top?
         grow(); // add a level, increases max_nom_size
       }
-      compactors_[h].compact(compactors_[h + 1]);
-      update_num_retained();
+      auto pair = compactors_[h].compact(compactors_[h + 1]);
+      num_retained_ -= pair.first;
+      max_nom_size_ += pair.second;
       if (num_retained_ < max_nom_size_) break;
     }
   }
-  update_max_nom_size();
 }
 
 template<typename T, bool H, typename C, typename S, typename A>

@@ -59,7 +59,7 @@ public:
 
   void sort();
 
-  void compact(req_compactor& next);
+  std::pair<uint32_t, uint32_t> compact(req_compactor& next);
 
   /**
    * Computes size needed to serialize the current state of the compactor.

@@ -232,7 +232,8 @@ void req_compactor<T, H, C, A>::sort() {
 }
 
 template<typename T, bool H, typename C, typename A>
-void req_compactor<T, H, C, A>::compact(req_compactor& next) {
+std::pair<uint32_t, uint32_t> req_compactor<T, H, C, A>::compact(req_compactor& next) {
+  const uint32_t starting_nom_capacity = get_nom_capacity();
   // choose a part of the buffer to compact
   const uint32_t secs_to_compact = std::min(static_cast<uint32_t>(count_trailing_zeros_in_u32(~state_) + 1), static_cast<uint32_t>(num_sections_));
   auto compaction_range = compute_compaction_range(secs_to_compact);
@@ -253,6 +254,10 @@ void req_compactor<T, H, C, A>::compact(req_compactor& next) {
 
   ++state_;
   ensure_enough_sections();
+  return std::pair<uint32_t, uint32_t>(
+    num,
+    get_nom_capacity() - starting_nom_capacity
+  );
 }
 
 template<typename T, bool H, typename C, typename A>
@@ -260,6 +265,7 @@ bool req_compactor<T, H, C, A>::ensure_enough_sections() {
   const float ssr = section_size_raw_ / sqrt(2);
   const uint32_t ne = nearest_even(ssr);
   if (state_ >= static_cast<uint64_t>(1 << (num_sections_ - 1)) && ne >= req_constants::MIN_K) {
+    //std::cout << "lg weight: " << std::to_string(lg_weight_) << ", num sections: " << std::to_string(num_sections_) << ", new sec size: " << ssr << " -> " << ne << "\n";
     section_size_raw_ = ssr;
     section_size_ = ne;
     num_sections_ <<= 1;
