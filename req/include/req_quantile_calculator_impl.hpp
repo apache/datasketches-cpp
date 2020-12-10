@@ -48,11 +48,11 @@ void req_quantile_calculator<T, C, A>::convert_to_cummulative() {
 }
 
 template<typename T, typename C, typename A>
-const T& req_quantile_calculator<T, C, A>::get_quantile(double rank) const {
+const T* req_quantile_calculator<T, C, A>::get_quantile(double rank) const {
   uint64_t weight = static_cast<uint64_t>(rank * n_);
   auto it = std::lower_bound(entries_.begin(), entries_.end(), Entry(nullptr, weight), compare_pairs_by_second());
-  if (it == entries_.end()) return *(entries_[entries_.size() - 1].first);
-  return *(it->first);
+  if (it == entries_.end()) return entries_[entries_.size() - 1].first;
+  return it->first;
 }
 
 } /* namespace datasketches */

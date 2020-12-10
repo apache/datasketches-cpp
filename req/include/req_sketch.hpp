@@ -37,6 +37,7 @@ class req_sketch {
 public:
   using Compactor = req_compactor<T, IsHighRank, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
+  using AllocPtrT = typename std::allocator_traits<Allocator>::template rebind_alloc<const T*>;
 
   explicit req_sketch(uint16_t k, const Allocator& allocator = Allocator());
   ~req_sketch();
@@ -105,8 +106,22 @@ public:
   template<bool inclusive = false>
   double get_rank(const T& item) const;
 
+  /**
+   * Returns an approximate quantile of the given normalized rank.
+   * The normalized rank must be in the range [0.0, 1.0] (both inclusive).
+   * @param rank the given normalized rank
+   * @return approximate quantile given the normalized rank
+   */
   template<bool inclusive = false>
   const T& get_quantile(double rank) const;
+
+  /**
+   * Returns an array of quantiles that correspond to the given array of normalized ranks.
+   * @param ranks given array of normalized ranks.
+   * @return array of quantiles that correspond to the given array of normalized ranks
+   */
+  template<bool inclusive = false>
+  std::vector<const T*, AllocPtrT> get_quantiles(const double* ranks, uint32_t size) const;
 
   /**
    * Computes size needed to serialize the current state of the sketch.
@@ -185,6 +200,13 @@ private:
   void update_max_nom_size();
   void update_num_retained();
   void compress();
+
+  using QuantileCalculator = req_quantile_calculator<T, Comparator, Allocator>;
+  using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
+  class calculator_deleter;
+  using QuantileCalculatorPtr = typename std::unique_ptr<QuantileCalculator, calculator_deleter>;
+  template<bool inclusive>
+  QuantileCalculatorPtr get_quantile_calculator() const;
 
   // for deserialization
   class item_deleter;

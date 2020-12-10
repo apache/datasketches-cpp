@@ -38,7 +38,7 @@ public:
   template<bool inclusive>
   void convert_to_cummulative();
 
-  const T& get_quantile(double rank) const;
+  const T* get_quantile(double rank) const;
 
 private:
   using Entry = std::pair<const T*, uint64_t>;

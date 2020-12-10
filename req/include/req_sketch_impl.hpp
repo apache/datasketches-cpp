@@ -199,15 +199,66 @@ const T& req_sketch<T, H, C, S, A>::get_quantile(double rank) const {
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Rank cannot be less than zero or greater than 1.0");
   }
+  return *(get_quantile_calculator<inclusive>()->get_quantile(rank));
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+template<bool inclusive>
+auto req_sketch<T, H, C, S, A>::get_quantiles(const double* ranks, uint32_t size) const
+-> std::vector<const T*, AllocPtrT> {
+  std::vector<const T*, AllocPtrT> quantiles;
+  if (is_empty()) return quantiles;
+  QuantileCalculatorPtr quantile_calculator(nullptr, calculator_deleter(allocator_));
+  quantiles.reserve(size);
+  for (uint32_t i = 0; i < size; ++i) {
+    const double rank = ranks[i];
+    if ((rank < 0.0) || (rank > 1.0)) {
+      throw std::invalid_argument("rank cannot be less than zero or greater than 1.0");
+    }
+    if      (rank == 0.0) quantiles.push_back(min_value_);
+    else if (rank == 1.0) quantiles.push_back(max_value_);
+    else {
+      if (!quantile_calculator) {
+        // has side effect of sorting level zero if needed
+        quantile_calculator = const_cast<req_sketch*>(this)->get_quantile_calculator<inclusive>();
+      }
+      quantiles.push_back(quantile_calculator->get_quantile(rank));
+    }
+  }
+  return quantiles;
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+class req_sketch<T, H, C, S, A>::calculator_deleter {
+  public:
+  calculator_deleter(const AllocCalc& allocator): allocator_(allocator) {}
+  void operator() (QuantileCalculator* ptr) {
+    if (ptr != nullptr) {
+      ptr->~QuantileCalculator();
+      allocator_.deallocate(ptr, 1);
+    }
+  }
+  private:
+  AllocCalc allocator_;
+};
+
+template<typename T, bool H, typename C, typename S, typename A>
+template<bool inclusive>
+auto req_sketch<T, H, C, S, A>::get_quantile_calculator() const -> QuantileCalculatorPtr {
   if (!compactors_[0].is_sorted()) {
     const_cast<Compactor&>(compactors_[0]).sort(); // allow this side effect
   }
-  req_quantile_calculator<T, C, A> quantile_calculator(n_, allocator_);
+  AllocCalc ac(allocator_);
+  QuantileCalculatorPtr quantile_calculator(
+    new (ac.allocate(1)) req_quantile_calculator<T, C, A>(n_, ac),
+    calculator_deleter(ac)
+  );
+
   for (auto& compactor: compactors_) {
-    quantile_calculator.add(compactor.begin(), compactor.end(), compactor.get_lg_weight());
+    quantile_calculator->add(compactor.begin(), compactor.end(), compactor.get_lg_weight());
   }
-  quantile_calculator.template convert_to_cummulative<inclusive>();
-  return quantile_calculator.get_quantile(rank);
+  quantile_calculator->template convert_to_cummulative<inclusive>();
+  return quantile_calculator;
 }
 
 // implementation for fixed-size arithmetic types (integral and floating point)

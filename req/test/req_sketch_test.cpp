@@ -46,6 +46,8 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
   REQUIRE(std::isnan(sketch.get_quantile(0)));
   REQUIRE(std::isnan(sketch.get_quantile(0.5)));
   REQUIRE(std::isnan(sketch.get_quantile(1)));
+  const double ranks[3] {0, 0.5, 1};
+  REQUIRE(sketch.get_quantiles(ranks, 3).size() == 0);
 }
 
 TEST_CASE("req sketch: single value", "[req_sketch]") {
@@ -62,6 +64,13 @@ TEST_CASE("req sketch: single value", "[req_sketch]") {
   REQUIRE(sketch.get_quantile(0) == 1);
   REQUIRE(sketch.get_quantile(0.5) == 1);
   REQUIRE(sketch.get_quantile(1) == 1);
+
+  const double ranks[3] {0, 0.5, 1};
+  auto quantiles = sketch.get_quantiles(ranks, 3);
+  REQUIRE(quantiles.size() == 3);
+  REQUIRE(*quantiles[0] == 1);
+  REQUIRE(*quantiles[1] == 1);
+  REQUIRE(*quantiles[2] == 1);
 }
 
 TEST_CASE("req sketch: repeated values", "[req_sketch]") {
@@ -117,6 +126,13 @@ TEST_CASE("req sketch: exact mode", "[req_sketch]") {
   REQUIRE(sketch.get_quantile<true>(0.5) == 5);
   REQUIRE(sketch.get_quantile<true>(0.9) == 9);
   REQUIRE(sketch.get_quantile<true>(1) == 10);
+
+  const double ranks[3] {0, 0.5, 1};
+  auto quantiles = sketch.get_quantiles(ranks, 3);
+  REQUIRE(quantiles.size() == 3);
+  REQUIRE(*quantiles[0] == 1);
+  REQUIRE(*quantiles[1] == 6);
+  REQUIRE(*quantiles[2] == 10);
 }
 
 TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
