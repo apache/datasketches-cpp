@@ -133,6 +133,18 @@ TEST_CASE("req sketch: exact mode", "[req_sketch]") {
   REQUIRE(*quantiles[0] == 1);
   REQUIRE(*quantiles[1] == 6);
   REQUIRE(*quantiles[2] == 10);
+
+  const float splits[3] {2, 6, 9};
+  auto cdf = sketch.get_CDF(splits, 3);
+  REQUIRE(cdf[0] == 0.1);
+  REQUIRE(cdf[1] == 0.5);
+  REQUIRE(cdf[2] == 0.8);
+  REQUIRE(cdf[3] == 1);
+  auto pmf = sketch.get_PMF(splits, 3);
+  REQUIRE(pmf[0] == Approx(0.1).margin(1e-8));
+  REQUIRE(pmf[1] == Approx(0.4).margin(1e-8));
+  REQUIRE(pmf[2] == Approx(0.3).margin(1e-8));
+  REQUIRE(pmf[3] == Approx(0.2).margin(1e-8));
 }
 
 TEST_CASE("req sketch: estimation mode", "[req_sketch]") {

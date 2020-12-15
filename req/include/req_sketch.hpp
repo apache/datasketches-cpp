@@ -38,6 +38,9 @@ public:
   using Compactor = req_compactor<T, IsHighRank, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
   using AllocPtrT = typename std::allocator_traits<Allocator>::template rebind_alloc<const T*>;
+  using vector_const_t_ptr = std::vector<const T*, AllocPtrT>;
+  using AllocDouble = typename std::allocator_traits<Allocator>::template rebind_alloc<double>;
+  using vector_double = std::vector<double, AllocDouble>;
 
   explicit req_sketch(uint16_t k, const Allocator& allocator = Allocator());
   ~req_sketch();
@@ -107,6 +110,51 @@ public:
   double get_rank(const T& item) const;
 
   /**
+   * Returns an approximation to the Probability Mass Function (PMF) of the input stream
+   * given a set of split points (values).
+   *
+   * <p>If the sketch is empty this returns an empty vector.
+   *
+   * @param split_points an array of <i>m</i> unique, monotonically increasing values
+   * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
+   * The definition of an "interval" is inclusive of the left split point (or minimum value) and
+   * exclusive of the right split point, with the exception that the last interval will include
+   * the maximum value.
+   * It is not necessary to include either the min or max values in these split points.
+   *
+   * @return an array of m+1 doubles each of which is an approximation
+   * to the fraction of the input stream values (the mass) that fall into one of those intervals.
+   * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
+   * split point, with the exception that the last interval will include the maximum value.
+   * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
+   * split point.
+   */
+  template<bool inclusive = false>
+  vector_double get_PMF(const T* split_points, uint32_t size) const;
+
+  /**
+   * Returns an approximation to the Cumulative Distribution Function (CDF), which is the
+   * cumulative analog of the PMF, of the input stream given a set of split points (values).
+   *
+   * <p>If the sketch is empty this returns an empty vector.
+   *
+   * @param split_points an array of <i>m</i> unique, monotonically increasing float values
+   * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
+   * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
+   * split point, with the exception that the last interval will include the maximum value.
+   * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
+   * split point.
+   * It is not necessary to include either the min or max values in these split points.
+   *
+   * @return an array of m+1 double values, which are a consecutive approximation to the CDF
+   * of the input stream given the split_points. The value at array position j of the returned
+   * CDF array is the sum of the returned values in positions 0 through j of the returned PMF
+   * array.
+   */
+  template<bool inclusive = false>
+  vector_double get_CDF(const T* split_points, uint32_t size) const;
+
+  /**
    * Returns an approximate quantile of the given normalized rank.
    * The normalized rank must be in the range [0.0, 1.0] (both inclusive).
    * @param rank the given normalized rank
@@ -121,7 +169,7 @@ public:
    * @return array of quantiles that correspond to the given array of normalized ranks
    */
   template<bool inclusive = false>
-  std::vector<const T*, AllocPtrT> get_quantiles(const double* ranks, uint32_t size) const;
+  vector_const_t_ptr get_quantiles(const double* ranks, uint32_t size) const;
 
   /**
    * Computes size needed to serialize the current state of the sketch.
@@ -228,6 +276,18 @@ private:
     return !std::isnan(value);
   }
 
+  template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
+  static inline void check_split_points(const T* values, uint32_t size) {
+    for (uint32_t i = 0; i < size ; i++) {
+      if (std::isnan(values[i])) {
+        throw std::invalid_argument("Values must not be NaN");
+      }
+      if ((i < (size - 1)) && !(Comparator()(values[i], values[i + 1]))) {
+        throw std::invalid_argument("Values must be unique and monotonically increasing");
+      }
+    }
+  }
+
   // implementations for all other types
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
   static const TT& get_invalid_value() {
@@ -237,6 +297,15 @@ private:
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
   static inline bool check_update_value(const TT&) {
     return true;
+  }
+
+  template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
+  static inline void check_split_points(const T* values, uint32_t size) {
+    for (uint32_t i = 0; i < size ; i++) {
+      if ((i < (size - 1)) && !(Comparator()(values[i], values[i + 1]))) {
+        throw std::invalid_argument("Values must be unique and monotonically increasing");
+      }
+    }
   }
 
 };

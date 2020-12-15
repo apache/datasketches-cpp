@@ -192,6 +192,28 @@ double req_sketch<T, H, C, S, A>::get_rank(const T& item) const {
 
 template<typename T, bool H, typename C, typename S, typename A>
 template<bool inclusive>
+auto req_sketch<T, H, C, S, A>::get_PMF(const T* split_points, uint32_t size) const -> vector_double {
+  auto buckets = get_CDF<inclusive>(split_points, size);
+  for (uint32_t i = size; i > 0; --i) {
+    buckets[i] -= buckets[i - 1];
+  }
+  return buckets;
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+template<bool inclusive>
+auto req_sketch<T, H, C, S, A>::get_CDF(const T* split_points, uint32_t size) const -> vector_double {
+  vector_double buckets(allocator_);
+  if (is_empty()) return buckets;
+  check_split_points(split_points, size);
+  buckets.reserve(size + 1);
+  for (uint32_t i = 0; i < size; ++i) buckets.push_back(get_rank<inclusive>(split_points[i]));
+  buckets.push_back(1);
+  return buckets;
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+template<bool inclusive>
 const T& req_sketch<T, H, C, S, A>::get_quantile(double rank) const {
   if (is_empty()) return get_invalid_value();
   if (rank == 0.0) return *min_value_;
@@ -205,8 +227,8 @@ const T& req_sketch<T, H, C, S, A>::get_quantile(double rank) const {
 template<typename T, bool H, typename C, typename S, typename A>
 template<bool inclusive>
 auto req_sketch<T, H, C, S, A>::get_quantiles(const double* ranks, uint32_t size) const
--> std::vector<const T*, AllocPtrT> {
-  std::vector<const T*, AllocPtrT> quantiles;
+-> vector_const_t_ptr {
+  vector_const_t_ptr quantiles;
   if (is_empty()) return quantiles;
   QuantileCalculatorPtr quantile_calculator(nullptr, calculator_deleter(allocator_));
   quantiles.reserve(size);
