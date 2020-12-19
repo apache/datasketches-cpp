@@ -231,9 +231,8 @@ const T& req_sketch<T, H, C, S, A>::get_quantile(double rank) const {
 
 template<typename T, bool H, typename C, typename S, typename A>
 template<bool inclusive>
-auto req_sketch<T, H, C, S, A>::get_quantiles(const double* ranks, uint32_t size) const
--> vector_const_t_ptr {
-  vector_const_t_ptr quantiles;
+std::vector<T, A> req_sketch<T, H, C, S, A>::get_quantiles(const double* ranks, uint32_t size) const {
+  std::vector<T, A> quantiles(allocator_);
   if (is_empty()) return quantiles;
   QuantileCalculatorPtr quantile_calculator(nullptr, calculator_deleter(allocator_));
   quantiles.reserve(size);
@@ -242,14 +241,14 @@ auto req_sketch<T, H, C, S, A>::get_quantiles(const double* ranks, uint32_t size
     if ((rank < 0.0) || (rank > 1.0)) {
       throw std::invalid_argument("rank cannot be less than zero or greater than 1.0");
     }
-    if      (rank == 0.0) quantiles.push_back(min_value_);
-    else if (rank == 1.0) quantiles.push_back(max_value_);
+    if      (rank == 0.0) quantiles.push_back(*min_value_);
+    else if (rank == 1.0) quantiles.push_back(*max_value_);
     else {
       if (!quantile_calculator) {
         // has side effect of sorting level zero if needed
         quantile_calculator = const_cast<req_sketch*>(this)->get_quantile_calculator<inclusive>();
       }
-      quantiles.push_back(quantile_calculator->get_quantile(rank));
+      quantiles.push_back(*(quantile_calculator->get_quantile(rank)));
     }
   }
   return quantiles;

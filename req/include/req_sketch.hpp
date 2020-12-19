@@ -37,8 +37,6 @@ class req_sketch {
 public:
   using Compactor = req_compactor<T, IsHighRank, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
-  using AllocPtrT = typename std::allocator_traits<Allocator>::template rebind_alloc<const T*>;
-  using vector_const_t_ptr = std::vector<const T*, AllocPtrT>;
   using AllocDouble = typename std::allocator_traits<Allocator>::template rebind_alloc<double>;
   using vector_double = std::vector<double, AllocDouble>;
 
@@ -175,7 +173,7 @@ public:
    * @return array of quantiles that correspond to the given array of normalized ranks
    */
   template<bool inclusive = false>
-  vector_const_t_ptr get_quantiles(const double* ranks, uint32_t size) const;
+  std::vector<T, Allocator> get_quantiles(const double* ranks, uint32_t size) const;
 
   /**
    * Returns an approximate lower bound of the given noramalized rank.

@@ -69,9 +69,9 @@ TEST_CASE("req sketch: single value", "[req_sketch]") {
   const double ranks[3] {0, 0.5, 1};
   auto quantiles = sketch.get_quantiles(ranks, 3);
   REQUIRE(quantiles.size() == 3);
-  REQUIRE(*quantiles[0] == 1);
-  REQUIRE(*quantiles[1] == 1);
-  REQUIRE(*quantiles[2] == 1);
+  REQUIRE(quantiles[0] == 1);
+  REQUIRE(quantiles[1] == 1);
+  REQUIRE(quantiles[2] == 1);
 }
 
 TEST_CASE("req sketch: repeated values", "[req_sketch]") {
@@ -131,9 +131,9 @@ TEST_CASE("req sketch: exact mode", "[req_sketch]") {
   const double ranks[3] {0, 0.5, 1};
   auto quantiles = sketch.get_quantiles(ranks, 3);
   REQUIRE(quantiles.size() == 3);
-  REQUIRE(*quantiles[0] == 1);
-  REQUIRE(*quantiles[1] == 6);
-  REQUIRE(*quantiles[2] == 10);
+  REQUIRE(quantiles[0] == 1);
+  REQUIRE(quantiles[1] == 6);
+  REQUIRE(quantiles[2] == 10);
 
   const float splits[3] {2, 6, 9};
   auto cdf = sketch.get_CDF(splits, 3);
