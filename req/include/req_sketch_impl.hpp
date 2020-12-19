@@ -109,6 +109,11 @@ req_sketch<T, H, C, S, A>& req_sketch<T, H, C, S, A>::operator=(req_sketch&& oth
 }
 
 template<typename T, bool H, typename C, typename S, typename A>
+uint16_t req_sketch<T, H, C, S, A>::get_k() const {
+  return k_;
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
 bool req_sketch<T, H, C, S, A>::is_empty() const {
   return n_ == 0;
 }
@@ -281,6 +286,54 @@ auto req_sketch<T, H, C, S, A>::get_quantile_calculator() const -> QuantileCalcu
   }
   quantile_calculator->template convert_to_cummulative<inclusive>();
   return quantile_calculator;
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+double req_sketch<T, H, C, S, A>::get_rank_lower_bound(double rank, uint8_t num_std_dev) const {
+  return get_rank_lb(get_k(), get_num_levels(), rank, num_std_dev, get_n());
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+double req_sketch<T, H, C, S, A>::get_rank_upper_bound(double rank, uint8_t num_std_dev) const {
+  return get_rank_ub(get_k(), get_num_levels(), rank, num_std_dev, get_n());
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+double req_sketch<T, H, C, S, A>::get_RSE(uint16_t k, double rank, uint64_t n) {
+  return get_rank_lb(k, 2, rank, 1, n);
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+double req_sketch<T, H, C, S, A>::get_rank_lb(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n) {
+  if (is_exact_rank(k, num_levels, rank, n)) return rank;
+  const double relative = relative_rse_factor() / k * (H ? 1.0 - rank : rank);
+  const double fixed = FIXED_RSE_FACTOR / k;
+  const double lb_rel = rank - num_std_dev * relative;
+  const double lb_fix = rank - num_std_dev * fixed;
+  return std::max(lb_rel, lb_fix);
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+double req_sketch<T, H, C, S, A>::get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n) {
+  if (is_exact_rank(k, num_levels, rank, n)) return rank;
+  const double relative = relative_rse_factor() / k * (H ? 1.0 - rank : rank);
+  const double fixed = FIXED_RSE_FACTOR / k;
+  const double ub_rel = rank + num_std_dev * relative;
+  const double ub_fix = rank + num_std_dev * fixed;
+  return std::min(ub_rel, ub_fix);
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+bool req_sketch<T, H, C, S, A>::is_exact_rank(uint16_t k, uint8_t num_levels, double rank, uint64_t n) {
+  const unsigned base_cap = k * req_constants::INIT_NUM_SECTIONS;
+  if (num_levels == 1 || n <= base_cap) return true;
+  const double exact_rank_thresh = static_cast<double>(base_cap) / n;
+  return (H && rank >= 1.0 - exact_rank_thresh) || (!H && rank <= exact_rank_thresh);
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+double req_sketch<T, H, C, S, A>::relative_rse_factor() {
+  return sqrt(0.0512 / req_constants::INIT_NUM_SECTIONS);
 }
 
 // implementation for fixed-size arithmetic types (integral and floating point)

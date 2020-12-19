@@ -35,6 +35,7 @@ const std::string input_path = "test/";
 
 TEST_CASE("req sketch: empty", "[req_sketch]") {
   req_sketch<float, true> sketch(12);
+  REQUIRE(sketch.get_k() == 12);
   REQUIRE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 0);
@@ -145,6 +146,9 @@ TEST_CASE("req sketch: exact mode", "[req_sketch]") {
   REQUIRE(pmf[1] == Approx(0.4).margin(1e-8));
   REQUIRE(pmf[2] == Approx(0.3).margin(1e-8));
   REQUIRE(pmf[3] == Approx(0.2).margin(1e-8));
+
+  REQUIRE(sketch.get_rank_lower_bound(0.5, 1) == 0.5);
+  REQUIRE(sketch.get_rank_upper_bound(0.5, 1) == 0.5);
 }
 
 TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
@@ -162,6 +166,8 @@ TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
   REQUIRE(sketch.get_rank(n - 1) == Approx(1).margin(0.01));
   REQUIRE(sketch.get_min_value() == 0);
   REQUIRE(sketch.get_max_value() == n - 1);
+  REQUIRE(sketch.get_rank_lower_bound(0.5, 1) < 0.5);
+  REQUIRE(sketch.get_rank_upper_bound(0.5, 1) > 0.5);
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize empty", "[req_sketch]") {

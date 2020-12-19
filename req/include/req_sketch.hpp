@@ -50,6 +50,12 @@ public:
   req_sketch& operator=(req_sketch&& other);
 
   /**
+   * Returns configured parameter K
+   * @return parameter K
+   */
+  uint16_t get_k() const;
+
+  /**
    * Returns true if this sketch is empty.
    * @return empty flag
    */
@@ -172,6 +178,34 @@ public:
   vector_const_t_ptr get_quantiles(const double* ranks, uint32_t size) const;
 
   /**
+   * Returns an approximate lower bound of the given noramalized rank.
+   * @param rank the given rank, a value between 0 and 1.0.
+   * @param num_std_dev the number of standard deviations. Must be 1, 2, or 3.
+   * @return an approximate lower bound rank.
+   */
+  double get_rank_lower_bound(double rank, uint8_t num_std_dev) const;
+
+  /**
+   * Returns an approximate upper bound of the given noramalized rank.
+   * @param rank the given rank, a value between 0 and 1.0.
+   * @param num_std_dev the number of standard deviations. Must be 1, 2, or 3.
+   * @return an approximate upper bound rank.
+   */
+  double get_rank_upper_bound(double rank, uint8_t num_std_dev) const;
+
+  /**
+   * Returns an a priori estimate of relative standard error (RSE, expressed as a number in [0,1]).
+   * Derived from Lemma 12 in https://arxiv.org/abs/2004.01668v2, but the constant factors were
+   * modified based on empirical measurements.
+   *
+   * @param k the given value of k
+   * @param rank the given normalized rank, a number in [0,1].
+   * @param n an estimate of the total number of items submitted to the sketch.
+   * @return an a priori estimate of relative standard error (RSE, expressed as a number in [0,1]).
+   */
+  static double get_RSE(uint16_t k, double rank, uint64_t n);
+
+  /**
    * Computes size needed to serialize the current state of the sketch.
    * This version is for fixed-size arithmetic types (integral and floating point).
    * @return size in bytes needed to serialize this sketch
@@ -243,11 +277,18 @@ private:
   static const size_t PREAMBLE_SIZE_BYTES = 8;
   enum flags { RESERVED1, RESERVED2, IS_EMPTY, IS_HIGH_RANK, RAW_ITEMS, IS_LEVEL_ZERO_SORTED };
 
+  static constexpr double FIXED_RSE_FACTOR = 0.06;
+  static double relative_rse_factor();
+
   uint8_t get_num_levels() const;
   void grow();
   void update_max_nom_size();
   void update_num_retained();
   void compress();
+
+  static double get_rank_lb(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n);
+  static double get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n);
+  static bool is_exact_rank(uint16_t k, uint8_t num_levels, double rank, uint64_t n);
 
   using QuantileCalculator = req_quantile_calculator<T, Comparator, Allocator>;
   using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
