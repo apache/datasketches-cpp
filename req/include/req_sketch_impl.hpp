@@ -144,7 +144,7 @@ void req_sketch<T, H, C, S, A>::update(FwdT&& item) {
     if (C()(item, *min_value_)) *min_value_ = item;
     if (C()(*max_value_, item)) *max_value_ = item;
   }
-  compactors_[0].append(item);
+  compactors_[0].append(std::forward<FwdT>(item));
   ++num_retained_;
   ++n_;
   if (num_retained_ == max_nom_size_) compress();
@@ -360,13 +360,13 @@ size_t req_sketch<T, H, C, S, A>::get_serialized_size_bytes() const {
   if (is_empty()) return size;
   if (is_estimation_mode()) {
     size += sizeof(n_);
-    S().size_of_item(*min_value_);
-    S().size_of_item(*max_value_);
+    size += S().size_of_item(*min_value_);
+    size += S().size_of_item(*max_value_);
   }
   if (n_ == 1) {
-    size += sizeof(TT);
+    size += S().size_of_item(*compactors_[0].begin());
   } else {
-    for (const auto& compactor: compactors_) size += compactor.get_serialized_size_bytes();
+    for (const auto& compactor: compactors_) size += compactor.get_serialized_size_bytes(S());
   }
   return size;
 }
