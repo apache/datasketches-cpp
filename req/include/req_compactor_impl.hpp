@@ -219,7 +219,7 @@ void req_compactor<T, H, C, A>::merge(FwdC&& other) {
   auto other_it = other.begin();
   for (auto it = from; it != to; ++it, ++other_it) new (it) T(conditional_forward<FwdC>(*other_it));
   if (!other.sorted_) std::sort(from, to, C());
-  if (num_items_ > 0) std::inplace_merge(H ? from : begin(), middle, H ? end() : to);
+  if (num_items_ > 0) std::inplace_merge(H ? from : begin(), middle, H ? end() : to, C());
   num_items_ += other.get_num_items();
 }
 
@@ -265,7 +265,6 @@ bool req_compactor<T, H, C, A>::ensure_enough_sections() {
   const float ssr = section_size_raw_ / sqrt(2);
   const uint32_t ne = nearest_even(ssr);
   if (state_ >= static_cast<uint64_t>(1 << (num_sections_ - 1)) && ne >= req_constants::MIN_K) {
-    //std::cout << "lg weight: " << std::to_string(lg_weight_) << ", num sections: " << std::to_string(num_sections_) << ", new sec size: " << ssr << " -> " << ne << "\n";
     section_size_raw_ = ssr;
     section_size_ = ne;
     num_sections_ <<= 1;
@@ -335,8 +334,7 @@ size_t req_compactor<T, H, C, A>::get_serialized_size_bytes(const S& serde) cons
   size_t size = sizeof(state_) + sizeof(section_size_raw_) + sizeof(lg_weight_) + sizeof(num_sections_) +
       sizeof(uint16_t) + // padding
       sizeof(uint32_t); // num_items
-      sizeof(TT) * num_items_;
-  for (const auto& item: items_) size += serde.size_of_item(item);
+  for (auto it = begin(); it != end(); ++it) size += serde.size_of_item(*it);
   return size;
 }
 
