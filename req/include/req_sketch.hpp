@@ -260,6 +260,10 @@ public:
    */
   string<Allocator> to_string(bool print_levels = false, bool print_items = false) const;
 
+  class const_iterator;
+  const_iterator begin() const;
+  const_iterator end() const;
+
 private:
   Allocator allocator_;
   uint16_t k_;
@@ -347,6 +351,23 @@ private:
     }
   }
 
+};
+
+template<typename T, bool H, typename C, typename S, typename A>
+class req_sketch<T, H, C, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+public:
+  const_iterator& operator++();
+  const_iterator& operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  std::pair<const T&, const uint64_t> operator*() const;
+private:
+  using CompactorsIterator = typename std::vector<Compactor, AllocCompactor>::const_iterator;
+  CompactorsIterator compactors_it_;
+  CompactorsIterator compactors_end_;
+  const T* compactor_it_;
+  friend class req_sketch<T, H, C, S, A>;
+  const_iterator(CompactorsIterator begin, CompactorsIterator end);
 };
 
 } /* namespace datasketches */

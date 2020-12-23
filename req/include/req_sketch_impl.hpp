@@ -738,6 +738,59 @@ void req_sketch<T, H, C, S, A>::check_family_id(uint8_t family_id) {
   }
 }
 
+template<typename T, bool H, typename C, typename S, typename A>
+auto req_sketch<T, H, C, S, A>::begin() const -> const_iterator {
+  return const_iterator(compactors_.begin(), compactors_.end());
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+auto req_sketch<T, H, C, S, A>::end() const -> const_iterator {
+  return const_iterator(compactors_.end(), compactors_.end());
+}
+
+// iterator
+
+template<typename T, bool H, typename C, typename S, typename A>
+req_sketch<T, H, C, S, A>::const_iterator::const_iterator(CompactorsIterator begin, CompactorsIterator end):
+compactors_it_(begin),
+compactors_end_(end),
+compactor_it_((*compactors_it_).begin())
+{}
+
+template<typename T, bool H, typename C, typename S, typename A>
+auto req_sketch<T, H, C, S, A>::const_iterator::operator++() -> const_iterator& {
+  ++compactor_it_;
+  if (compactor_it_ == (*compactors_it_).end()) {
+    ++compactors_it_;
+    if (compactors_it_ != compactors_end_) compactor_it_ = (*compactors_it_).begin();
+  }
+  return *this;
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+auto req_sketch<T, H, C, S, A>::const_iterator::operator++(int) -> const_iterator& {
+  const_iterator tmp(*this);
+  operator++();
+  return tmp;
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+bool req_sketch<T, H, C, S, A>::const_iterator::operator==(const const_iterator& other) const {
+  if (compactors_it_ != other.compactors_it_) return false;
+  if (compactors_it_ == compactors_end_) return true;
+  return compactor_it_ == other.compactor_it_;
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+bool req_sketch<T, H, C, S, A>::const_iterator::operator!=(const const_iterator& other) const {
+  return !operator==(other);
+}
+
+template<typename T, bool H, typename C, typename S, typename A>
+std::pair<const T&, const uint64_t> req_sketch<T, H, C, S, A>::const_iterator::operator*() const {
+  return std::pair<const T&, const uint64_t>(*compactor_it_, 1 << (*compactors_it_).get_lg_weight());
+}
+
 } /* namespace datasketches */
 
 #endif

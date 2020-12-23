@@ -72,6 +72,13 @@ TEST_CASE("req sketch: single value", "[req_sketch]") {
   REQUIRE(quantiles[0] == 1);
   REQUIRE(quantiles[1] == 1);
   REQUIRE(quantiles[2] == 1);
+
+  unsigned count = 0;
+  for (auto it: sketch) {
+    REQUIRE(it.second == 1);
+    ++count;
+  }
+  REQUIRE(count == 1);
 }
 
 TEST_CASE("req sketch: repeated values", "[req_sketch]") {
@@ -168,6 +175,13 @@ TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
   REQUIRE(sketch.get_max_value() == n - 1);
   REQUIRE(sketch.get_rank_lower_bound(0.5, 1) < 0.5);
   REQUIRE(sketch.get_rank_upper_bound(0.5, 1) > 0.5);
+
+  unsigned count = 0;
+  for (auto it: sketch) {
+    REQUIRE(it.second >= 1);
+    ++count;
+  }
+  REQUIRE(count == sketch.get_num_retained());
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize empty", "[req_sketch]") {
@@ -451,15 +465,15 @@ TEST_CASE("req sketch: merge multiple", "[req_sketch]") {
   REQUIRE(sketch.get_rank(60) == Approx(0.5).margin(0.01));
 }
 
-//TEST_CASE("for manual comparison with Java") {
-//  req_sketch<float, true> sketch(12);
-//  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
-//  sketch.merge(sketch);
-//  std::ofstream os;
-//  os.exceptions(std::ios::failbit | std::ios::badbit);
-//  os.open("req_float_hra_12_100000_merged.sk", std::ios::binary);
-//  sketch.get_quantile(0.5); // force sorting level 0
-//  sketch.serialize(os);
-//}
+TEST_CASE("for manual comparison with Java") {
+  req_sketch<float, true> sketch(12);
+  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
+  sketch.merge(sketch);
+  std::ofstream os;
+  os.exceptions(std::ios::failbit | std::ios::badbit);
+  os.open("req_float_hra_12_100000_merged.sk", std::ios::binary);
+  sketch.get_quantile(0.5); // force sorting level 0
+  sketch.serialize(os);
+}
 
 } /* namespace datasketches */
