@@ -156,6 +156,34 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(quantiles[2] == quantiles2[2]);
   }
 
+  SECTION("10 items") {
+    kll_float_sketch sketch;
+    sketch.update(1);
+    sketch.update(2);
+    sketch.update(3);
+    sketch.update(4);
+    sketch.update(5);
+    sketch.update(6);
+    sketch.update(7);
+    sketch.update(8);
+    sketch.update(9);
+    sketch.update(10);
+    REQUIRE(sketch.get_quantile(0) == 1.0);
+    REQUIRE(sketch.get_quantile(0.5) == 6.0);
+    REQUIRE(sketch.get_quantile(0.99) == 10.0);
+    REQUIRE(sketch.get_quantile(1) == 10.0);
+  }
+
+  SECTION("100 items") {
+    kll_float_sketch sketch;
+    for (int i = 0; i < 100; ++i) sketch.update(i);
+    REQUIRE(sketch.get_quantile(0) == 0);
+    REQUIRE(sketch.get_quantile(0.01) == 1);
+    REQUIRE(sketch.get_quantile(0.5) == 50);
+    REQUIRE(sketch.get_quantile(0.99) == 99.0);
+    REQUIRE(sketch.get_quantile(1) == 99.0);
+  }
+
   SECTION("many items, estimation mode") {
     kll_float_sketch sketch;
     const int n(1000000);
