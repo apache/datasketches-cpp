@@ -28,19 +28,27 @@ namespace datasketches {
 
 template<
   typename T,
-  bool IsHighRank,
   typename Comparator = std::less<T>,
   typename SerDe = serde<T>,
   typename Allocator = std::allocator<T>
 >
 class req_sketch {
 public:
-  using Compactor = req_compactor<T, IsHighRank, Comparator, Allocator>;
+  using Compactor = req_compactor<T, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
   using AllocDouble = typename std::allocator_traits<Allocator>::template rebind_alloc<double>;
   using vector_double = std::vector<double, AllocDouble>;
 
-  explicit req_sketch(uint16_t k, const Allocator& allocator = Allocator());
+  /**
+   * Constructor
+   * @param k Controls the size and error of the sketch. It must be even and in the range [4, 1024], inclusive.
+   * Value of 12 roughly corresponds to 1% relative error guarantee at 95% confidence.
+   * @param hra if true, the default, the high ranks are prioritized for better
+   * accuracy. Otherwise the low ranks are prioritized for better accuracy.
+   * @param allocator to use by this instance
+   */
+  explicit req_sketch(uint16_t k, bool hra = true, const Allocator& allocator = Allocator());
+
   ~req_sketch();
   req_sketch(const req_sketch& other);
   req_sketch(req_sketch&& other) noexcept;
@@ -52,6 +60,12 @@ public:
    * @return parameter K
    */
   uint16_t get_k() const;
+
+  /**
+   * Returns configured parameter High Rank Accuracy
+   * @return parameter HRA
+   */
+  bool is_HRA() const;
 
   /**
    * Returns true if this sketch is empty.
@@ -198,10 +212,11 @@ public:
    *
    * @param k the given value of k
    * @param rank the given normalized rank, a number in [0,1].
+   * @param hra if true High Rank Accuracy mode is being selected, otherwise, Low Rank Accuracy.
    * @param n an estimate of the total number of items submitted to the sketch.
    * @return an a priori estimate of relative standard error (RSE, expressed as a number in [0,1]).
    */
-  static double get_RSE(uint16_t k, double rank, uint64_t n);
+  static double get_RSE(uint16_t k, double rank, bool hra, uint64_t n);
 
   /**
    * Computes size needed to serialize the current state of the sketch.
@@ -267,6 +282,7 @@ public:
 private:
   Allocator allocator_;
   uint16_t k_;
+  bool hra_;
   uint32_t max_nom_size_;
   uint32_t num_retained_;
   uint64_t n_;
@@ -288,9 +304,9 @@ private:
   void update_num_retained();
   void compress();
 
-  static double get_rank_lb(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n);
-  static double get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n);
-  static bool is_exact_rank(uint16_t k, uint8_t num_levels, double rank, uint64_t n);
+  static double get_rank_lb(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
+  static double get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
+  static bool is_exact_rank(uint16_t k, uint8_t num_levels, double rank, uint64_t n, bool hra);
 
   using QuantileCalculator = req_quantile_calculator<T, Comparator, Allocator>;
   using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
@@ -301,7 +317,7 @@ private:
 
   // for deserialization
   class item_deleter;
-  req_sketch(uint32_t k, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors);
+  req_sketch(uint32_t k, bool hra, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors);
 
   static void check_preamble_ints(uint8_t preamble_ints, uint8_t num_levels);
   static void check_serial_version(uint8_t serial_version);
@@ -353,8 +369,8 @@ private:
 
 };
 
-template<typename T, bool H, typename C, typename S, typename A>
-class req_sketch<T, H, C, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+template<typename T, typename C, typename S, typename A>
+class req_sketch<T, C, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
 public:
   const_iterator& operator++();
   const_iterator& operator++(int);
@@ -366,7 +382,7 @@ private:
   CompactorsIterator compactors_it_;
   CompactorsIterator compactors_end_;
   const T* compactor_it_;
-  friend class req_sketch<T, H, C, S, A>;
+  friend class req_sketch<T, C, S, A>;
   const_iterator(CompactorsIterator begin, CompactorsIterator end);
 };
 

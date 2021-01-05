@@ -26,7 +26,7 @@
 
 namespace datasketches {
 
-using req_test_type_sketch = req_sketch<test_type, true, test_type_less, test_type_serde, test_allocator<test_type>>;
+using req_test_type_sketch = req_sketch<test_type, test_type_less, test_type_serde, test_allocator<test_type>>;
 
 TEST_CASE("req sketch custom type", "[req_sketch]") {
 

@@ -34,8 +34,10 @@ const std::string input_path = "test/";
 #endif
 
 TEST_CASE("req sketch: empty", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  std::cout << "sizeof(req_float_sketch)=" << sizeof(req_sketch<float>) << "\n";
+  req_sketch<float> sketch(12);
   REQUIRE(sketch.get_k() == 12);
+  REQUIRE(sketch.is_HRA());
   REQUIRE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 0);
@@ -51,9 +53,10 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
   REQUIRE(sketch.get_quantiles(ranks, 3).size() == 0);
 }
 
-TEST_CASE("req sketch: single value", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+TEST_CASE("req sketch: single value, lra", "[req_sketch]") {
+  req_sketch<float> sketch(12, false);
   sketch.update(1);
+  REQUIRE_FALSE(sketch.is_HRA());
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 1);
@@ -82,7 +85,7 @@ TEST_CASE("req sketch: single value", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: repeated values", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   sketch.update(1);
   sketch.update(1);
   sketch.update(1);
@@ -100,7 +103,7 @@ TEST_CASE("req sketch: repeated values", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: exact mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   for (size_t i = 1; i <= 10; ++i) sketch.update(i);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
@@ -159,7 +162,7 @@ TEST_CASE("req sketch: exact mode", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   const size_t n = 100000;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE_FALSE(sketch.is_empty());
@@ -185,11 +188,11 @@ TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize empty", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
-  auto sketch2 = req_sketch<float, true>::deserialize(s);
+  auto sketch2 = req_sketch<float>::deserialize(s);
   REQUIRE(s.tellg() == s.tellp());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -200,11 +203,11 @@ TEST_CASE("req sketch: stream serialize-deserialize empty", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: byte serialize-deserialize empty", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
 
   auto bytes = sketch.serialize();
   REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
-  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
   REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -215,12 +218,12 @@ TEST_CASE("req sketch: byte serialize-deserialize empty", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize single item", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   sketch.update(1);
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
-  auto sketch2 = req_sketch<float, true>::deserialize(s);
+  auto sketch2 = req_sketch<float>::deserialize(s);
   REQUIRE(s.tellg() == s.tellp());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -231,12 +234,13 @@ TEST_CASE("req sketch: stream serialize-deserialize single item", "[req_sketch]"
 }
 
 TEST_CASE("req sketch: byte serialize-deserialize single item", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   sketch.update(1);
 
   auto bytes = sketch.serialize();
   REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
-  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
+  std::cout << sketch2.to_string(true);
   REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -247,14 +251,14 @@ TEST_CASE("req sketch: byte serialize-deserialize single item", "[req_sketch]") 
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize exact mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   const size_t n = 50;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE_FALSE(sketch.is_estimation_mode());
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
-  auto sketch2 = req_sketch<float, true>::deserialize(s);
+  auto sketch2 = req_sketch<float>::deserialize(s);
   REQUIRE(s.tellg() == s.tellp());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -265,14 +269,15 @@ TEST_CASE("req sketch: stream serialize-deserialize exact mode", "[req_sketch]")
 }
 
 TEST_CASE("req sketch: byte serialize-deserialize exact mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   const size_t n = 50;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE_FALSE(sketch.is_estimation_mode());
 
   auto bytes = sketch.serialize();
   REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
-  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
+  std::cout << sketch2.to_string(true);
   REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -283,14 +288,14 @@ TEST_CASE("req sketch: byte serialize-deserialize exact mode", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize estimation mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   const size_t n = 100000;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE(sketch.is_estimation_mode());
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
-  auto sketch2 = req_sketch<float, true>::deserialize(s);
+  auto sketch2 = req_sketch<float>::deserialize(s);
   REQUIRE(s.tellg() == s.tellp());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -301,14 +306,14 @@ TEST_CASE("req sketch: stream serialize-deserialize estimation mode", "[req_sket
 }
 
 TEST_CASE("req sketch: byte serialize-deserialize estimation mode", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   const size_t n = 100000;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE(sketch.is_estimation_mode());
 
   auto bytes = sketch.serialize();
   REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
-  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
   REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -319,7 +324,7 @@ TEST_CASE("req sketch: byte serialize-deserialize estimation mode", "[req_sketch
 }
 
 TEST_CASE("req sketch: serialize deserialize stream and bytes equivalence", "[req_sketch]") {
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   const size_t n = 100000;
   for (size_t i = 0; i < n; ++i) sketch.update(i);
   REQUIRE(sketch.is_estimation_mode());
@@ -333,8 +338,8 @@ TEST_CASE("req sketch: serialize deserialize stream and bytes equivalence", "[re
   }
 
   s.seekg(0); // rewind
-  auto sketch1 = req_sketch<float, true>::deserialize(s);
-  auto sketch2 = req_sketch<float, true>::deserialize(bytes.data(), bytes.size());
+  auto sketch1 = req_sketch<float>::deserialize(s);
+  auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
   REQUIRE(bytes.size() == static_cast<size_t>(s.tellg()));
   REQUIRE(sketch2.is_empty() == sketch1.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -348,7 +353,7 @@ TEST_CASE("req sketch: stream deserialize from Java - empty", "[req_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(input_path + "req_float_empty_from_java.sk", std::ios::binary);
-  auto sketch = req_sketch<float, true>::deserialize(is);
+  auto sketch = req_sketch<float>::deserialize(is);
   REQUIRE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 0);
@@ -361,7 +366,7 @@ TEST_CASE("req sketch: stream deserialize from Java - single item", "[req_sketch
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(input_path + "req_float_single_item_from_java.sk", std::ios::binary);
-  auto sketch = req_sketch<float, true>::deserialize(is);
+  auto sketch = req_sketch<float>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 1);
@@ -376,7 +381,7 @@ TEST_CASE("req sketch: stream deserialize from Java - raw items", "[req_sketch]"
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(input_path + "req_float_raw_items_from_java.sk", std::ios::binary);
-  auto sketch = req_sketch<float, true>::deserialize(is);
+  auto sketch = req_sketch<float>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 4);
@@ -390,7 +395,7 @@ TEST_CASE("req sketch: stream deserialize from Java - exact mode", "[req_sketch]
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(input_path + "req_float_exact_from_java.sk", std::ios::binary);
-  auto sketch = req_sketch<float, true>::deserialize(is);
+  auto sketch = req_sketch<float>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 100);
@@ -404,7 +409,7 @@ TEST_CASE("req sketch: stream deserialize from Java - estimation mode", "[req_sk
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(input_path + "req_float_estimation_from_java.sk", std::ios::binary);
-  auto sketch = req_sketch<float, true>::deserialize(is);
+  auto sketch = req_sketch<float>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 10000);
@@ -415,9 +420,9 @@ TEST_CASE("req sketch: stream deserialize from Java - estimation mode", "[req_sk
 }
 
 TEST_CASE("req sketch: merge into empty", "[req_sketch]") {
-  req_sketch<float, true> sketch1(40);
+  req_sketch<float> sketch1(40);
 
-  req_sketch<float, true> sketch2(40);
+  req_sketch<float> sketch2(40);
   for (size_t i = 0; i < 1000; ++i) sketch2.update(i);
 
   sketch1.merge(sketch2);
@@ -430,10 +435,10 @@ TEST_CASE("req sketch: merge into empty", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: merge", "[req_sketch]") {
-  req_sketch<float, true> sketch1(100);
+  req_sketch<float> sketch1(100);
   for (size_t i = 0; i < 1000; ++i) sketch1.update(i);
 
-  req_sketch<float, true> sketch2(100);
+  req_sketch<float> sketch2(100);
   for (size_t i = 1000; i < 2000; ++i) sketch2.update(i);
 
   sketch1.merge(sketch2);
@@ -446,16 +451,16 @@ TEST_CASE("req sketch: merge", "[req_sketch]") {
 }
 
 TEST_CASE("req sketch: merge multiple", "[req_sketch]") {
-  req_sketch<float, true> sketch1(12);
+  req_sketch<float> sketch1(12);
   for (size_t i = 0; i < 40; ++i) sketch1.update(i);
 
-  req_sketch<float, true> sketch2(12);
+  req_sketch<float> sketch2(12);
   for (size_t i = 40; i < 80; ++i) sketch2.update(i);
 
-  req_sketch<float, true> sketch3(12);
+  req_sketch<float> sketch3(12);
   for (size_t i = 80; i < 120; ++i) sketch3.update(i);
 
-  req_sketch<float, true> sketch(12);
+  req_sketch<float> sketch(12);
   sketch.merge(sketch1);
   sketch.merge(sketch2);
   sketch.merge(sketch3);
@@ -465,15 +470,15 @@ TEST_CASE("req sketch: merge multiple", "[req_sketch]") {
   REQUIRE(sketch.get_rank(60) == Approx(0.5).margin(0.01));
 }
 
-TEST_CASE("for manual comparison with Java") {
-  req_sketch<float, true> sketch(12);
-  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
-  sketch.merge(sketch);
-  std::ofstream os;
-  os.exceptions(std::ios::failbit | std::ios::badbit);
-  os.open("req_float_hra_12_100000_merged.sk", std::ios::binary);
-  sketch.get_quantile(0.5); // force sorting level 0
-  sketch.serialize(os);
-}
+//TEST_CASE("for manual comparison with Java") {
+//  req_sketch<float> sketch(12, false);
+//  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
+//  sketch.merge(sketch);
+//  std::ofstream os;
+//  os.exceptions(std::ios::failbit | std::ios::badbit);
+//  os.open("req_float_lra_12_100000_merged.sk", std::ios::binary);
+//  sketch.get_quantile(0.5); // force sorting level 0
+//  sketch.serialize(os);
+//}
 
 } /* namespace datasketches */
