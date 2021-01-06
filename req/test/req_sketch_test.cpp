@@ -470,6 +470,16 @@ TEST_CASE("req sketch: merge multiple", "[req_sketch]") {
   REQUIRE(sketch.get_rank(60) == Approx(0.5).margin(0.01));
 }
 
+TEST_CASE("req sketch: merge incompatible HRA and LRA", "[req_sketch]") {
+  req_sketch<float> sketch1(12);
+  sketch1.update(1);
+
+  req_sketch<float> sketch2(12, false);
+  sketch2.update(1);
+
+  REQUIRE_THROWS_AS(sketch1.merge(sketch2), std::invalid_argument);
+}
+
 //TEST_CASE("for manual comparison with Java") {
 //  req_sketch<float> sketch(12, false);
 //  for (size_t i = 0; i < 100000; ++i) sketch.update(i);

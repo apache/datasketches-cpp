@@ -163,6 +163,7 @@ void req_sketch<T, C, S, A>::update(FwdT&& item) {
 template<typename T, typename C, typename S, typename A>
 template<typename FwdSk>
 void req_sketch<T, C, S, A>::merge(FwdSk&& other) {
+  if (is_HRA() != other.is_HRA()) throw std::invalid_argument("merging HRA and LRA is not valid");
   if (other.is_empty()) return;
   if (is_empty()) {
     min_value_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.min_value_));
