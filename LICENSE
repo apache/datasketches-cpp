@@ -247,7 +247,7 @@ APPENDIX B: Additional licenses relevant to this product.
     SOFTWARE.
     -------------------------------------------------------------
     Code locations:
-      * https://github.com/apache/incubator-datasketches-cpp/blob/master/setup.py
+      * https://github.com/apache/datasketches-cpp/blob/master/setup.py
     that is adapted from the above.
 
 
@@ -285,7 +285,7 @@ APPENDIX B: Additional licenses relevant to this product.
     DEALINGS IN THE SOFTWARE.
     -------------------------------------------------------------
     Code Locations
-      * https://github.com/apache/incubator-datasketches-cpp/blob/master/common/test/catch.hpp
+      * https://github.com/apache/datasketches-cpp/blob/master/common/test/catch.hpp
     that is adapted from the above.
 
 

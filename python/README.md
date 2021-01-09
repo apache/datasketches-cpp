@@ -8,7 +8,7 @@ from a relase package, you must ensure that the pybind11 directory points to a l
 An official pypi build is eventually planned but not yet available.
 
 If you instead want to take a (possibly ill-advised) gamble on the current state of the master branch being useable, you can run:
-```pip install git+https://github.com/apache/incubator-datasketches-cpp.git```
+```pip install git+https://github.com/apache/datasketches-cpp.git```
 
 ## Developer Instructions
 
@@ -16,8 +16,8 @@ If you instead want to take a (possibly ill-advised) gamble on the current state
 
 When cloning the source repository, you should include the pybind11 submodule with the `--recursive` option to the clone command:
 ```
-git clone --recursive https://github.com/apache/incubator-datasketches-cpp.git
-cd incubator-datasketches-cpp
+git clone --recursive https://github.com/apache/datasketches-cpp.git
+cd datasketches-cpp
 python -m pip install --upgrade pip setuptools wheel numpy
 python setup.py build
 ```
