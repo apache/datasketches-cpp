@@ -290,6 +290,8 @@ private:
   T* min_value_;
   T* max_value_;
 
+  static const bool LAZY_COMPRESSION = false;
+
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t FAMILY = 17;
   static const size_t PREAMBLE_SIZE_BYTES = 8;

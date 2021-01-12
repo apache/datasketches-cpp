@@ -646,7 +646,7 @@ void req_sketch<T, C, S, A>::compress() {
       auto pair = compactors_[h].compact(compactors_[h + 1]);
       num_retained_ -= pair.first;
       max_nom_size_ += pair.second;
-      if (num_retained_ < max_nom_size_) break;
+      if (LAZY_COMPRESSION && num_retained_ < max_nom_size_) break;
     }
   }
 }
