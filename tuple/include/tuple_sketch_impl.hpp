@@ -470,7 +470,7 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
   std::vector<Entry, AllocEntry> entries(alloc);
   if (!is_empty) {
     entries.reserve(num_entries);
-    std::unique_ptr<S, deleter_of_summaries> summary(alloc.allocate(1), deleter_of_summaries(1, false));
+    std::unique_ptr<S, deleter_of_summaries> summary(alloc.allocate(1), deleter_of_summaries(1, false, allocator));
     for (size_t i = 0; i < num_entries; ++i) {
       uint64_t key;
       is.read(reinterpret_cast<char*>(&key), sizeof(uint64_t));
@@ -533,7 +533,7 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   std::vector<Entry, AllocEntry> entries(alloc);
   if (!is_empty) {
     entries.reserve(num_entries);
-    std::unique_ptr<S, deleter_of_summaries> summary(alloc.allocate(1), deleter_of_summaries(1, false));
+    std::unique_ptr<S, deleter_of_summaries> summary(alloc.allocate(1), deleter_of_summaries(1, false, allocator));
     for (size_t i = 0; i < num_entries; ++i) {
       uint64_t key;
       ptr += copy_from_mem(ptr, &key, sizeof(key));

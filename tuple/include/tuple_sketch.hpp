@@ -444,19 +444,21 @@ protected:
   // for deserialize
   class deleter_of_summaries {
   public:
-    deleter_of_summaries(uint32_t num, bool destroy): num(num), destroy(destroy) {}
-    void set_destroy(bool destroy) { this->destroy = destroy; }
+    deleter_of_summaries(uint32_t num, bool destroy, const Allocator& allocator):
+      allocator_(allocator), num_(num), destroy_(destroy) {}
+    void set_destroy(bool destroy) { destroy_ = destroy; }
     void operator() (Summary* ptr) const {
       if (ptr != nullptr) {
-        if (destroy) {
-          for (uint32_t i = 0; i < num; ++i) ptr[i].~Summary();
+        if (destroy_) {
+          for (uint32_t i = 0; i < num_; ++i) ptr[i].~Summary();
         }
-        Allocator().deallocate(ptr, num);
+        allocator_.deallocate(ptr, num_);
       }
     }
   private:
-    uint32_t num;
-    bool destroy;
+    Allocator allocator_;
+    uint32_t num_;
+    bool destroy_;
   };
 
   virtual void print_specifics(std::basic_ostream<char>& os) const;
