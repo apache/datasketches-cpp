@@ -447,7 +447,7 @@ protected:
     deleter_of_summaries(uint32_t num, bool destroy, const Allocator& allocator):
       allocator_(allocator), num_(num), destroy_(destroy) {}
     void set_destroy(bool destroy) { destroy_ = destroy; }
-    void operator() (Summary* ptr) const {
+    void operator() (Summary* ptr) {
       if (ptr != nullptr) {
         if (destroy_) {
           for (uint32_t i = 0; i < num_; ++i) ptr[i].~Summary();
