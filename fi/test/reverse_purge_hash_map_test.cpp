@@ -24,20 +24,20 @@
 namespace datasketches {
 
 TEST_CASE("reverse purge hash map: empty", "[frequent_items_sketch]") {
-  reverse_purge_hash_map<int> map(3, 3);
+  reverse_purge_hash_map<int> map(3, 3, std::allocator<int>());
   REQUIRE(map.get_num_active() == 0);
   REQUIRE(map.get_lg_cur_size() == 3);  // static_cast<uint8_t>(3)
 }
 
 TEST_CASE("reverse purge hash map: one item", "[frequent_items_sketch]") {
-  reverse_purge_hash_map<int> map(3, 3);
+  reverse_purge_hash_map<int> map(3, 3, std::allocator<int>());
   map.adjust_or_insert(1, 1);
   REQUIRE(map.get_num_active() == 1);
   REQUIRE(map.get(1) == 1);
 }
 
 TEST_CASE("reverse purge hash map: iterator", "[frequent_items_sketch]") {
-  reverse_purge_hash_map<int> map(3, 4);
+  reverse_purge_hash_map<int> map(3, 4, std::allocator<int>());
   for (int i = 0; i < 11; i++) map.adjust_or_insert(i, 1); // this should fit with no purge
   int sum = 0;
   for (auto &it: map) sum += it.second;
