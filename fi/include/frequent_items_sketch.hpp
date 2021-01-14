@@ -40,14 +40,19 @@ namespace datasketches {
 
 enum frequent_items_error_type { NO_FALSE_POSITIVES, NO_FALSE_NEGATIVES };
 
-// for serialization as raw bytes
-template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
-template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
-
 // type W for weight must be an arithmetic type (integral or floating point)
-template<typename T, typename W = uint64_t, typename H = std::hash<T>, typename E = std::equal_to<T>, typename S = serde<T>, typename A = std::allocator<T>>
+template<
+  typename T,
+  typename W = uint64_t,
+  typename H = std::hash<T>,
+  typename E = std::equal_to<T>,
+  typename S = serde<T>,
+  typename A = std::allocator<T>
+>
 class frequent_items_sketch {
 public:
+
+  static const uint8_t LG_MIN_MAP_SIZE = 3;
 
   /**
    * Construct this sketch with parameters lg_max_map_size and lg_start_map_size.
@@ -59,7 +64,7 @@ public:
    * @param lg_start_map_size Log2 of the starting physical size of the internal hash
    * map managed by this sketch.
    */
-  explicit frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size = LG_MIN_MAP_SIZE);
+  explicit frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size = LG_MIN_MAP_SIZE, const A& allocator = A());
 
   /**
    * Update this sketch with an item and a positive weight (frequency count).
@@ -232,7 +237,8 @@ public:
 
   // This is a convenience alias for users
   // The type returned by the following serialize method
-  typedef vector_u8<A> vector_bytes;
+  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
+
 
   /**
    * This method serializes the sketch as a vector of bytes.
@@ -249,7 +255,7 @@ public:
    * @param is input stream
    * @return an instance of the sketch
    */
-  static frequent_items_sketch deserialize(std::istream& is);
+  static frequent_items_sketch deserialize(std::istream& is, const A& allocator = A());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
@@ -257,7 +263,7 @@ public:
    * @param size the size of the array
    * @return an instance of the sketch
    */
-  static frequent_items_sketch deserialize(const void* bytes, size_t size);
+  static frequent_items_sketch deserialize(const void* bytes, size_t size, const A& allocator = A());
 
   /**
    * Returns a human readable summary of this sketch
@@ -266,7 +272,6 @@ public:
   string<A> to_string(bool print_items = false) const;
 
 private:
-  static const uint8_t LG_MIN_MAP_SIZE = 3;
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t FAMILY_ID = 10;
   static const uint8_t PREAMBLE_LONGS_EMPTY = 1;

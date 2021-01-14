@@ -39,33 +39,39 @@ public:
   using AllocV = typename std::allocator_traits<A>::template rebind_alloc<V>;
   using AllocU16 = typename std::allocator_traits<A>::template rebind_alloc<uint16_t>;
 
-  reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size);
+  reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size, const A& allocator);
   reverse_purge_hash_map(const reverse_purge_hash_map& other);
   reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept;
   ~reverse_purge_hash_map();
   reverse_purge_hash_map& operator=(reverse_purge_hash_map other);
   reverse_purge_hash_map& operator=(reverse_purge_hash_map&& other);
-  V adjust_or_insert(const K& key, V value);
-  V adjust_or_insert(K&& key, V value);
+
+  template<typename FwdK>
+  V adjust_or_insert(FwdK&& key, V value);
+
   V get(const K& key) const;
   uint8_t get_lg_cur_size() const;
   uint8_t get_lg_max_size() const;
   uint32_t get_capacity() const;
   uint32_t get_num_active() const;
+  const A& get_allocator() const;
+
   class iterator;
   iterator begin() const;
   iterator end() const;
+
 private:
   static constexpr double LOAD_FACTOR = 0.75;
   static constexpr uint16_t DRIFT_LIMIT = 1024; // used only for stress testing
   static constexpr uint32_t MAX_SAMPLE_SIZE = 1024; // number of samples to compute approximate median during purge
 
-  uint8_t lg_cur_size;
-  uint8_t lg_max_size;
-  uint32_t num_active;
-  K* keys;
-  V* values;
-  uint16_t* states;
+  A allocator_;
+  uint8_t lg_cur_size_;
+  uint8_t lg_max_size_;
+  uint32_t num_active_;
+  K* keys_;
+  V* values_;
+  uint16_t* states_;
 
   inline bool is_active(uint32_t probe) const;
   void subtract_and_keep_positive_only(V amount);
@@ -83,8 +89,8 @@ public:
   friend class reverse_purge_hash_map<K, V, H, E, A>;
   iterator& operator++() {
     ++count;
-    if (count < map->num_active) {
-      const uint32_t mask = (1 << map->lg_cur_size) - 1;
+    if (count < map->num_active_) {
+      const uint32_t mask = (1 << map->lg_cur_size_) - 1;
       do {
         index = (index + stride) & mask;
       } while (!map->is_active(index));
@@ -95,7 +101,7 @@ public:
   bool operator==(const iterator& rhs) const { return count == rhs.count; }
   bool operator!=(const iterator& rhs) const { return count != rhs.count; }
   const std::pair<K&, V> operator*() const {
-    return std::pair<K&, V>(map->keys[index], map->values[index]);
+    return std::pair<K&, V>(map->keys_[index], map->values_[index]);
   }
 private:
   static constexpr double GOLDEN_RATIO_RECIPROCAL = 0.6180339887498949; // = (sqrt(5) - 1) / 2
@@ -104,7 +110,7 @@ private:
   uint32_t count;
   uint32_t stride;
   iterator(const reverse_purge_hash_map<K, V, H, E, A>* map, uint32_t index, uint32_t count):
-    map(map), index(index), count(count), stride(static_cast<uint32_t>((1 << map->lg_cur_size) * GOLDEN_RATIO_RECIPROCAL) | 1) {}
+    map(map), index(index), count(count), stride(static_cast<uint32_t>((1 << map->lg_cur_size_) * GOLDEN_RATIO_RECIPROCAL) | 1) {}
 };
 
 } /* namespace datasketches */
