@@ -24,7 +24,7 @@
 #include <functional>
 #include <climits>
 
-#include <theta_sketch.hpp>
+#include "theta_sketch.hpp"
 
 namespace datasketches {
 
