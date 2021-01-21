@@ -297,7 +297,7 @@ private:
   static const size_t PREAMBLE_SIZE_BYTES = 8;
   enum flags { RESERVED1, RESERVED2, IS_EMPTY, IS_HIGH_RANK, RAW_ITEMS, IS_LEVEL_ZERO_SORTED };
 
-  static constexpr double FIXED_RSE_FACTOR = 0.06;
+  static constexpr double FIXED_RSE_FACTOR = 0.084;
   static double relative_rse_factor();
 
   uint8_t get_num_levels() const;
