@@ -69,7 +69,7 @@ entries_(nullptr)
 
 template<typename EN, typename EK, typename A>
 theta_update_sketch_base<EN, EK, A>::theta_update_sketch_base(theta_update_sketch_base&& other) noexcept:
-allocator_(other.allocator_),
+allocator_(std::move(other.allocator_)),
 is_empty_(other.is_empty_),
 lg_cur_size_(other.lg_cur_size_),
 lg_nom_size_(other.lg_nom_size_),
