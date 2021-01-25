@@ -380,12 +380,12 @@ public:
   bool operator!=(const const_iterator& other) const;
   std::pair<const T&, const uint64_t> operator*() const;
 private:
-  using CompactorsIterator = typename std::vector<Compactor, AllocCompactor>::const_iterator;
-  CompactorsIterator compactors_it_;
-  CompactorsIterator compactors_end_;
+  using LevelsIterator = typename std::vector<Compactor, AllocCompactor>::const_iterator;
+  LevelsIterator levels_it_;
+  LevelsIterator levels_end_;
   const T* compactor_it_;
   friend class req_sketch<T, C, S, A>;
-  const_iterator(CompactorsIterator begin, CompactorsIterator end);
+  const_iterator(LevelsIterator begin, LevelsIterator end);
 };
 
 } /* namespace datasketches */
