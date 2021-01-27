@@ -48,6 +48,95 @@ public:
   void update(const theta_sketch_alloc<A>& sketch);
 
   /**
+   * This method is to update the union with a given string.
+   * @param value string to update the union with
+   */
+  void update(const std::string &value);
+  
+  /**
+   * This method is to update the union with a given unsigned 64-bit integer.
+   * @param value uint64_t to update the union with
+   */
+  void update(uint64_t value);
+  
+  /**
+   * This method is to update the union with a given signed 64-bit integer.
+   * @param value int64_t to update the union with
+   */
+  void update(int64_t value);
+  
+  /**
+   * This method is to update the union with a given unsigned 32-bit integer.
+   * For compatibility with Java implementation.
+   * @param value uint32_t to update the union with
+   */
+  void update(uint32_t value);
+  
+  /**
+   * This method is to update the union with a given signed 32-bit integer.
+   * For compatibility with Java implementation.
+   * @param value int32_t to update the union with
+   */
+  void update(int32_t value);
+  
+  /**
+   * This method is to update the union with a given unsigned 16-bit integer.
+   * For compatibility with Java implementation.
+   * @param value uint16_t to update the union with
+   */
+  void update(uint16_t value);
+  
+  /**
+   * This method is to update the union with a given signed 16-bit integer.
+   * For compatibility with Java implementation.
+   * @param value int16_t to update the union with
+   */
+  void update(int16_t value);
+  
+  /**
+   * This method is to update the union with a given unsigned 8-bit integer.
+   * For compatibility with Java implementation.
+   * @param value uint8_t to update the union with
+   */
+  void update(uint8_t value);
+  
+  /**
+   * This method is to update the union with a given signed 8-bit integer.
+   * For compatibility with Java implementation.
+   * @param value int8_t to update the union with
+   */
+  void update(int8_t value);
+  
+  /**
+   * This method is to update the union with a given double-precision floating point value.
+   * For compatibility with Java implementation.
+   * @param value double to update the union with
+   */
+  void update(double value);
+  
+  /**
+   * This method is to update the union with a given floating point value.
+   * For compatibility with Java implementation.
+   * @param value float to update the union with
+   */
+  void update(float value);
+  
+  /**
+   * This method is to update the union with given data of any type.
+   * This is a "universal" update that covers all cases above,
+   * but may produce different hashes.
+   * Be very careful to hash input values consistently using the same approach
+   * both over time and on different platforms
+   * and while passing sketches between C++ environment and Java environment.
+   * Otherwise two sketches that should represent overlapping sets will be disjoint
+   * For instance, for signed 32-bit values call update(int32_t) method above,
+   * which does widening conversion to int64_t, if compatibility with Java is expected
+   * @param data pointer to the data
+   * @param length of the data in bytes
+   */
+  void update(const void *data, unsigned length);
+
+  /**
    * This method produces a copy of the current state of the union as a compact sketch.
    * @param ordered optional flag to specify if ordered sketch should be produced
    * @return the result of the union

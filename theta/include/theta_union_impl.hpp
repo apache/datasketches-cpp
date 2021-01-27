@@ -50,6 +50,79 @@ void theta_union_alloc<A>::update(const theta_sketch_alloc<A>& sketch) {
 }
 
 template<typename A>
+void theta_union_alloc<A>::update(const std::string &value) {
+    if (value.empty()) return;
+    is_empty_ = false;
+    state_.update(value);
+}
+
+template<typename A>
+void theta_union_alloc<A>::update(uint64_t value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(int64_t value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(uint32_t value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(int32_t value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(uint16_t value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(int16_t value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(uint8_t value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(int8_t value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(double value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(float value){
+    is_empty_ = false;
+    state_.update(value);
+}
+  
+template<typename A>
+void theta_union_alloc<A>::update(const void *data, unsigned length){
+    is_empty_ = false;
+    state_.update(data, length);
+}
+
+template<typename A>
 compact_theta_sketch_alloc<A> theta_union_alloc<A>::get_result(bool ordered) const {
   if (is_empty_) return state_.compact(ordered);
   const uint32_t nom_num_keys = 1 << state_.lg_nom_size_;

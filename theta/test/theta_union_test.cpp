@@ -50,6 +50,16 @@ TEST_CASE("theta union: non empty no retained keys", "[theta_union]") {
   REQUIRE(sketch.get_theta() == Approx(0.001).margin(1e-10));
 }
 
+TEST_CASE("theta union: single item", "[theta_union]") {
+  theta_union u = theta_union::builder().build();
+  u.update(1);
+  compact_theta_sketch sketch = u.get_result();
+  REQUIRE(sketch.get_num_retained() == 1);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_theta() == 1.0);
+}
+
 TEST_CASE("theta union: exact mode half overlap", "[theta_union]") {
   update_theta_sketch sketch1 = update_theta_sketch::builder().build();
   int value = 0;
