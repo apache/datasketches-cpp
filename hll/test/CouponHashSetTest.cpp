@@ -43,7 +43,7 @@ TEST_CASE("coupon hash set: check corrupt bytearray", "[coupon_hash_set]") {
   // fail in HllSketchImpl
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
   // fail in CouponHashSet
-  REQUIRE_THROWS_AS(CouponHashSet<>::newSet(bytes, size), std::invalid_argument);
+  REQUIRE_THROWS_AS(CouponHashSet<std::allocator<uint8_t>>::newSet(bytes, size, std::allocator<uint8_t>()), std::invalid_argument);
   bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = HllUtil<>::HASH_SET_PREINTS;
 
   bytes[HllUtil<>::SER_VER_BYTE] = 0;
@@ -88,7 +88,7 @@ TEST_CASE("coupon hash set: check corrupt stream", "[coupon_hash_set]") {
   // fail in HllSketchImpl
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
   // fail in CouponHashSet
-  REQUIRE_THROWS_AS(CouponHashSet<>::newSet(ss), std::invalid_argument);
+  REQUIRE_THROWS_AS(CouponHashSet<std::allocator<uint8_t>>::newSet(ss, std::allocator<uint8_t>()), std::invalid_argument);
   ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
   ss.put(HllUtil<>::HASH_SET_PREINTS);
 

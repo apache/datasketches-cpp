@@ -108,7 +108,7 @@ class hll_union_alloc;
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
 
-template<typename A = std::allocator<char> >
+template<typename A = std::allocator<uint8_t> >
 class hll_sketch_alloc final {
   public:
     /**
@@ -119,7 +119,7 @@ class hll_sketch_alloc final {
      *        keeping memory use constant (if HLL_6 or HLL_8) at the cost of
      *        starting out using much more memory
      */
-    explicit hll_sketch_alloc(int lg_config_k, target_hll_type tgt_type = HLL_4, bool start_full_size = false);
+    explicit hll_sketch_alloc(int lg_config_k, target_hll_type tgt_type = HLL_4, bool start_full_size = false, const A& allocator = A());
 
     /**
      * Copy constructor
@@ -140,14 +140,14 @@ class hll_sketch_alloc final {
      * Reconstructs a sketch from a serialized image on a stream.
      * @param is An input stream with a binary image of a sketch
      */
-    static hll_sketch_alloc deserialize(std::istream& is);
+    static hll_sketch_alloc deserialize(std::istream& is, const A& allocator = A());
 
     /**
      * Reconstructs a sketch from a serialized image in a byte array.
      * @param is bytes An input array with a binary image of a sketch
      * @param len Length of the input array, in bytes
      */
-    static hll_sketch_alloc deserialize(const void* bytes, size_t len);
+    static hll_sketch_alloc deserialize(const void* bytes, size_t len, const A& allocator = A());
 
     //! Class destructor
     virtual ~hll_sketch_alloc();
@@ -423,7 +423,7 @@ class hll_sketch_alloc final {
  * author Kevin Lang
  */
  
-template<typename A = std::allocator<char> >
+template<typename A = std::allocator<uint8_t> >
 class hll_union_alloc {
   public:
     /**
@@ -431,7 +431,7 @@ class hll_union_alloc {
      * @param lg_max_k The maximum size, in log2, of k. The value must
      * be between 7 and 21, inclusive.
      */
-    explicit hll_union_alloc(int lg_max_k);
+    explicit hll_union_alloc(int lg_max_k, const A& allocator = A());
 
     /**
      * Returns the current cardinality estimate

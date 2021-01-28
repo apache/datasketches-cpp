@@ -32,9 +32,9 @@
 namespace datasketches {
 
 template<typename A>
-hll_union_alloc<A>::hll_union_alloc(const int lg_max_k):
+hll_union_alloc<A>::hll_union_alloc(const int lg_max_k, const A& allocator):
   lg_max_k(HllUtil<A>::checkLgK(lg_max_k)),
-  gadget(lg_max_k, target_hll_type::HLL_8)
+  gadget(lg_max_k, target_hll_type::HLL_8, false, allocator)
 {}
 
 template<typename A>
@@ -226,7 +226,7 @@ HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(const HllSketchImpl<A>*
     return src->copyAs(HLL_8);
   }
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>> hll8Alloc;
-  Hll8Array<A>* tgtHllArr = new (hll8Alloc().allocate(1)) Hll8Array<A>(tgt_lg_k, false);
+  Hll8Array<A>* tgtHllArr = new (hll8Alloc(src->getAllocator()).allocate(1)) Hll8Array<A>(tgt_lg_k, false, src->getAllocator());
   tgtHllArr->mergeHll(*src);
   //both of these are required for isomorphism
   tgtHllArr->putHipAccum(src->getHipAccum());
