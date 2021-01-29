@@ -20,11 +20,10 @@
 #include <iostream>
 
 #include <catch.hpp>
-#include <jaccard_similarity.hpp>
+
+#include "theta_jaccard_similarity.hpp"
 
 namespace datasketches {
-
-using update_theta_sketch = update_theta_sketch_experimental<>;
 
 TEST_CASE("theta jaccard: empty", "[theta_sketch]") {
   auto sk_a = update_theta_sketch::builder().build();

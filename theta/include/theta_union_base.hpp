@@ -30,7 +30,7 @@ template<
   typename Policy,
   typename Sketch,
   typename CompactSketch,
-  typename Allocator = std::allocator<Entry>
+  typename Allocator
 >
 class theta_union_base {
 public:

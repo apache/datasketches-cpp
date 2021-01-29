@@ -20,7 +20,8 @@
 #include <iostream>
 
 #include <catch.hpp>
-#include <jaccard_similarity.hpp>
+
+#include "tuple_jaccard_similarity.hpp"
 
 namespace datasketches {
 

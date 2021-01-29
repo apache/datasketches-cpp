@@ -21,7 +21,7 @@
 
 #include <catch.hpp>
 #include <tuple_union.hpp>
-#include <theta_sketch_experimental.hpp>
+#include <theta_sketch.hpp>
 
 namespace datasketches {
 
@@ -36,9 +36,6 @@ TEST_CASE("tuple_union float: empty", "[tuple union]") {
   REQUIRE(!result.is_estimation_mode());
   REQUIRE(result.get_estimate() == 0);
 }
-
-// needed until promotion of experimental to replace existing theta sketch
-using update_theta_sketch = update_theta_sketch_experimental<>;
 
 TEST_CASE("tupe_union float: empty theta sketch", "[tuple union]") {
   auto update_sketch = update_theta_sketch::builder().build();

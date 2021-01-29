@@ -17,19 +17,16 @@
  * under the License.
  */
 
-#ifndef JACCARD_SIMILARITY_BASE_HPP_
-#define JACCARD_SIMILARITY_BASE_HPP_
+#ifndef THETA_JACCARD_SIMILARITY_BASE_HPP_
+#define THETA_JACCARD_SIMILARITY_BASE_HPP_
 
 #include <memory>
 #include <array>
 
-#include <theta_union_experimental.hpp>
-#include <theta_intersection_experimental.hpp>
-#include <tuple_union.hpp>
-#include <tuple_intersection.hpp>
-#include <bounds_on_ratios_in_theta_sketched_sets.hpp>
-#include <ceiling_power_of_2.hpp>
-#include <common_defs.hpp>
+#include "theta_constants.hpp"
+#include "bounds_on_ratios_in_theta_sketched_sets.hpp"
+#include "ceiling_power_of_2.hpp"
+#include "common_defs.hpp"
 
 namespace datasketches {
 
@@ -153,19 +150,6 @@ private:
   }
 
 };
-
-template<typename Allocator>
-using theta_jaccard_similarity_alloc = jaccard_similarity_base<theta_union_experimental<Allocator>, theta_intersection_experimental<Allocator>, trivial_extract_key>;
-
-// alias with default allocator for convenience
-using theta_jaccard_similarity = theta_jaccard_similarity_alloc<std::allocator<uint64_t>>;
-
-template<
-  typename Summary,
-  typename IntersectionPolicy,
-  typename UnionPolicy = default_union_policy<Summary>,
-  typename Allocator = std::allocator<Summary>>
-using tuple_jaccard_similarity = jaccard_similarity_base<tuple_union<Summary, UnionPolicy, Allocator>, tuple_intersection<Summary, IntersectionPolicy, Allocator>, pair_extract_key<uint64_t, Summary>>;
 
 } /* namespace datasketches */
 

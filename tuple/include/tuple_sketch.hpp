@@ -31,7 +31,17 @@ namespace datasketches {
 template<typename S, typename A> class tuple_sketch;
 template<typename S, typename U, typename P, typename A> class update_tuple_sketch;
 template<typename S, typename A> class compact_tuple_sketch;
-template<typename A> class theta_sketch_experimental;
+template<typename A> class theta_sketch_alloc;
+
+template<typename K, typename V>
+struct pair_extract_key {
+  K& operator()(std::pair<K, V>& entry) const {
+    return entry.first;
+  }
+  const K& operator()(const std::pair<K, V>& entry) const {
+    return entry.first;
+  }
+};
 
 template<
   typename Summary,
@@ -143,7 +153,8 @@ public:
   virtual const_iterator end() const = 0;
 
 protected:
-  virtual void print_specifics(std::basic_ostream<char>& os) const = 0;
+  using ostrstream = std::basic_ostringstream<char, std::char_traits<char>, AllocChar<Allocator>>;
+  virtual void print_specifics(ostrstream& os) const = 0;
 
   static uint16_t get_seed_hash(uint64_t seed);
 
@@ -333,7 +344,8 @@ protected:
   // for builder
   update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
 
-  virtual void print_specifics(std::basic_ostream<char>& os) const;
+  using ostrstream = typename Base::ostrstream;
+  virtual void print_specifics(ostrstream& os) const;
 };
 
 // compact sketch
@@ -372,7 +384,7 @@ public:
   compact_tuple_sketch& operator=(const compact_tuple_sketch&) = default;
   compact_tuple_sketch& operator=(compact_tuple_sketch&&) = default;
 
-  compact_tuple_sketch(const theta_sketch_experimental<AllocU64>& other, const Summary& summary, bool ordered = true);
+  compact_tuple_sketch(const theta_sketch_alloc<AllocU64>& other, const Summary& summary, bool ordered = true);
 
   virtual Allocator get_allocator() const;
   virtual bool is_empty() const;
@@ -461,7 +473,8 @@ protected:
     bool destroy_;
   };
 
-  virtual void print_specifics(std::basic_ostream<char>& os) const;
+  using ostrstream = typename Base::ostrstream;
+  virtual void print_specifics(ostrstream& os) const;
 
 };
 

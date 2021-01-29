@@ -17,18 +17,21 @@
  * under the License.
  */
 
-#ifndef THETA_CONSTANTS_HPP_
-#define THETA_CONSTANTS_HPP_
+#ifndef THETA_JACCARD_SIMILARITY_HPP_
+#define THETA_JACCARD_SIMILARITY_HPP_
+
+#include "theta_jaccard_similarity_base.hpp"
+#include "theta_union.hpp"
+#include "theta_intersection.hpp"
 
 namespace datasketches {
 
-namespace theta_constants {
-  enum resize_factor { X1, X2, X4, X8 };
-  static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
-  static const uint8_t MIN_LG_K = 5;
-  static const uint8_t MAX_LG_K = 26;
-}
+template<typename Allocator = std::allocator<uint64_t>>
+using theta_jaccard_similarity_alloc = jaccard_similarity_base<theta_union_alloc<Allocator>, theta_intersection_alloc<Allocator>, trivial_extract_key>;
+
+// alias with default allocator for convenience
+using theta_jaccard_similarity = theta_jaccard_similarity_alloc<std::allocator<uint64_t>>;
 
 } /* namespace datasketches */
 
-#endif
+# endif
