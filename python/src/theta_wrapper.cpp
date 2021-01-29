@@ -48,23 +48,13 @@ theta_union theta_union_factory(uint8_t lg_k, double p, uint64_t seed) {
   return builder.build();
 }
 
-theta_sketch* theta_sketch_deserialize(py::bytes skBytes, uint64_t seed) {
-  std::string skStr = skBytes; // implicit cast  
-  return theta_sketch::deserialize(skStr.c_str(), skStr.length(), seed).release();
-}
-
-py::object theta_sketch_serialize(const theta_sketch& sk) {
-  auto serResult = sk.serialize();
-  return py::bytes((char*)serResult.data(), serResult.size());
-}
-
 uint16_t theta_sketch_get_seed_hash(const theta_sketch& sk) {
   return sk.get_seed_hash();
 }
 
-update_theta_sketch update_theta_sketch_deserialize(py::bytes skBytes, uint64_t seed) {
-  std::string skStr = skBytes; // implicit cast  
-  return update_theta_sketch::deserialize(skStr.c_str(), skStr.length(), seed);
+py::object compact_theta_sketch_serialize(const compact_theta_sketch& sk) {
+  auto serResult = sk.serialize();
+  return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 compact_theta_sketch compact_theta_sketch_deserialize(py::bytes skBytes, uint64_t seed) {
@@ -81,16 +71,12 @@ void init_theta(py::module &m) {
   using namespace datasketches;
 
   py::class_<theta_sketch>(m, "theta_sketch")
-    .def("serialize", &dspy::theta_sketch_serialize,
-         "Serializes the sketch into a bytes object")
-    .def_static("deserialize", &dspy::theta_sketch_deserialize, py::arg("bytes"), py::arg("seed")=DEFAULT_SEED,
-         "Reads a bytes object and returns the corresponding cpc_sketch")
     .def("__str__", &theta_sketch::to_string, py::arg("print_items")=false,
          "Produces a string summary of the sketch")
     .def("to_string", &theta_sketch::to_string, py::arg("print_items")=false,
          "Produces a string summary of the sketch")
     .def("is_empty", &theta_sketch::is_empty,
-         "Returns True if the sketch is empty, otherwise Dalse")
+         "Returns True if the sketch is empty, otherwise False")
     .def("get_estimate", &theta_sketch::get_estimate,
          "Estimate of the distinct count of the input stream")
     .def("get_upper_bound", &theta_sketch::get_upper_bound, py::arg("num_std_devs"),
@@ -121,17 +107,16 @@ void init_theta(py::module &m) {
          "Updates the sketch with the given string")
     .def("compact", &update_theta_sketch::compact, py::arg("ordered")=true,
          "Returns a compacted form of the sketch, optionally sorting it")
-    .def_static("deserialize", &dspy::update_theta_sketch_deserialize,
-        py::arg("bytes"), py::arg("seed")=DEFAULT_SEED,
-        "Reads a bytes object and returns the corresponding update_theta_sketch")
   ;
 
   py::class_<compact_theta_sketch, theta_sketch>(m, "compact_theta_sketch")
     .def(py::init<const compact_theta_sketch&>())
     .def(py::init<const theta_sketch&, bool>())
+    .def("serialize", &dspy::compact_theta_sketch_serialize,
+        "Serializes the sketch into a bytes object")
     .def_static("deserialize", &dspy::compact_theta_sketch_deserialize,
         py::arg("bytes"), py::arg("seed")=DEFAULT_SEED,
-        "Reads a bytes object and returns the corresponding update_theta_sketch")        
+        "Reads a bytes object and returns the corresponding compact_theta_sketch")        
   ;
 
   py::class_<theta_union>(m, "theta_union")
@@ -146,17 +131,17 @@ void init_theta(py::module &m) {
   py::class_<theta_intersection>(m, "theta_intersection")
     .def(py::init<uint64_t>(), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const theta_intersection&>())
-    .def("update", &theta_intersection::update, py::arg("sketch"),
+    .def("update", &theta_intersection::update<const theta_sketch&>, py::arg("sketch"),
          "Intersections the provided sketch with the current intersection state")
     .def("get_result", &theta_intersection::get_result, py::arg("ordered")=true,
          "Returns the sketch corresponding to the intersection result")
     .def("has_result", &theta_intersection::has_result,
-         "Returns True if the intersection has a valid result, otherwisel False")
+         "Returns True if the intersection has a valid result, otherwise False")
   ;
 
   py::class_<theta_a_not_b>(m, "theta_a_not_b")
     .def(py::init<uint64_t>(), py::arg("seed")=DEFAULT_SEED)
-    .def("compute", &theta_a_not_b::compute, py::arg("a"), py::arg("b"), py::arg("ordered")=true,
+    .def("compute", &theta_a_not_b::compute<const theta_sketch&, const theta_sketch&>, py::arg("a"), py::arg("b"), py::arg("ordered")=true,
          "Returns a sketch with the reuslt of appying the A-not-B operation on the given inputs")
   ;
 }
