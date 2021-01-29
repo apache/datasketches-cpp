@@ -39,9 +39,9 @@ class ThetaTest(unittest.TestCase):
         self.assertLessEqual(sk.get_lower_bound(1), n)
         self.assertGreaterEqual(sk.get_upper_bound(1), n)
 
-        # serialize for storage and reconstruct
-        sk_bytes = sk.serialize()
-        new_sk = update_theta_sketch.deserialize(sk_bytes)
+        # compact and serialize for storage, then reconstruct
+        sk_bytes = sk.compact().serialize()
+        new_sk = compact_theta_sketch.deserialize(sk_bytes)
 
         # estimate remains unchanged
         self.assertFalse(sk.is_empty())
