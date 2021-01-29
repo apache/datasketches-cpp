@@ -53,7 +53,7 @@ list(APPEND tuple_HEADERS "include/bounds_on_ratios_in_sampled_sets.hpp")
 list(APPEND tuple_HEADERS "include/bounds_on_ratios_in_theta_sketched_sets.hpp")
 list(APPEND tuple_HEADERS "include/jaccard_similarity.hpp")
 list(APPEND tuple_HEADERS "include/theta_comparators.hpp")
-list(APPEND tuple_HEADERS "include/theta_cnstants.hpp")
+list(APPEND tuple_HEADERS "include/theta_constants.hpp")
 
 install(TARGETS tuple
   EXPORT ${PROJECT_NAME}
