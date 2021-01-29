@@ -35,6 +35,7 @@ target_compile_features(hll INTERFACE cxx_std_11)
 # TODO: would be useful if this didn't need to be reproduced in target_sources(), too
 set(hll_HEADERS "")
 list(APPEND hll_HEADERS "include/hll.hpp;include/AuxHashMap.hpp;include/CompositeInterpolationXTable.hpp")
+list(APPEND hll_HEADERS "include/hll.private.hpp;include/HllSketchImplFactory.hpp")
 list(APPEND hll_HEADERS "include/CouponHashSet.hpp;include/CouponList.hpp")
 list(APPEND hll_HEADERS "include/CubicInterpolation.hpp;include/HarmonicNumbers.hpp;include/Hll4Array.hpp")
 list(APPEND hll_HEADERS "include/Hll6Array.hpp;include/Hll8Array.hpp;include/HllArray.hpp")
@@ -60,6 +61,7 @@ install(FILES ${hll_HEADERS}
 target_sources(hll
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/include/hll.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/hll.private.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/AuxHashMap.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CompositeInterpolationXTable.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/CouponHashSet.hpp
@@ -71,6 +73,7 @@ target_sources(hll
     ${CMAKE_CURRENT_SOURCE_DIR}/include/Hll8Array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllArray.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllSketchImpl.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/HllSketchImplFactory.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/HllUtil.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/RelativeErrorTables.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/coupon_iterator.hpp
