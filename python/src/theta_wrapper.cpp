@@ -122,7 +122,7 @@ void init_theta(py::module &m) {
   py::class_<theta_union>(m, "theta_union")
     .def(py::init(&dspy::theta_union_factory),
          py::arg("lg_k")=update_theta_sketch::builder::DEFAULT_LG_K, py::arg("p")=1.0, py::arg("seed")=DEFAULT_SEED)
-    .def("update", &theta_union::update, py::arg("sketch"),
+    .def("update", &theta_union::update<const theta_sketch&>, py::arg("sketch"),
          "Updates the union with the given sketch")
     .def("get_result", &theta_union::get_result, py::arg("ordered")=true,
          "Returns the sketch corresponding to the union result")
