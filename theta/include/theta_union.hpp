@@ -50,7 +50,8 @@ public:
    * This method is to update the union with a given sketch
    * @param sketch to update the union with
    */
-  void update(const Sketch& sketch);
+  template<typename FwdSketch>
+  void update(FwdSketch&& sketch);
 
   /**
    * This method produces a copy of the current state of the union as a compact sketch.

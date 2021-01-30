@@ -28,8 +28,9 @@ state_(lg_cur_size, lg_nom_size, rf, theta, seed, pass_through_policy(), allocat
 {}
 
 template<typename A>
-void theta_union_alloc<A>::update(const Sketch& sketch) {
-  state_.update(sketch);
+template<typename SS>
+void theta_union_alloc<A>::update(SS&& sketch) {
+  state_.update(std::forward<SS>(sketch));
 }
 
 template<typename A>
