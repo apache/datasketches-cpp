@@ -150,16 +150,6 @@ double hll_union_alloc<A>::get_upper_bound(const int num_std_dev) const {
 }
 
 template<typename A>
-int hll_union_alloc<A>::get_compact_serialization_bytes() const {
-  return gadget.get_compact_serialization_bytes();
-}
-
-template<typename A>
-int hll_union_alloc<A>::get_updatable_serialization_bytes() const {
-  return gadget.get_updatable_serialization_bytes();
-}
-
-template<typename A>
 int hll_union_alloc<A>::get_lg_config_k() const {
   return gadget.get_lg_config_k();
 }
@@ -195,18 +185,8 @@ bool hll_union_alloc<A>::is_estimation_mode() const {
 }
 
 template<typename A>
-int hll_union_alloc<A>::get_serialization_version() const {
-  return HllUtil<A>::SER_VER;
-}
-
-template<typename A>
 target_hll_type hll_union_alloc<A>::get_target_type() const {
   return target_hll_type::HLL_8;
-}
-
-template<typename A>
-int hll_union_alloc<A>::get_max_serialization_bytes(const int lg_k) {
-  return hll_sketch_alloc<A>::get_max_updatable_serialization_bytes(lg_k, target_hll_type::HLL_8);
 }
 
 template<typename A>

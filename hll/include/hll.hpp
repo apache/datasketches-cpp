@@ -469,18 +469,6 @@ class hll_union_alloc {
     double get_upper_bound(int num_std_dev) const;
 
     /**
-     * Returns the size of the union serialized in compact form.
-     * @return Size of the union serialized in compact form, in bytes.
-     */
-    int get_compact_serialization_bytes() const;
-
-    /**
-     * Returns the size of the union serialized without compaction.
-     * @return Size of the union serialized without compaction, in bytes.
-     */
-    int get_updatable_serialization_bytes() const;
-
-    /**
      * Returns union's configured lg_k value.
      * @return Configured lg_k value.
      */
@@ -606,15 +594,6 @@ class hll_union_alloc {
     void update(const void* data, size_t length_bytes);
 
     /**
-     * Returns the maximum size in bytes that this union operator can grow to given a lg_k.
-     *
-     * @param lg_k The maximum Log2 of k for this union operator. This value must be
-     * between 4 and 21 inclusively.
-     * @return the maximum size in bytes that this union operator can grow to.
-     */
-    static int get_max_serialization_bytes(int lg_k);
-
-    /**
      * Gets the current (approximate) Relative Error (RE) asymptotic values given several
      * parameters. This is used primarily for testing.
      * @param upper_bound return the RE for the Upper Bound, otherwise for the Lower Bound.
@@ -645,7 +624,6 @@ class hll_union_alloc {
     void coupon_update(int coupon);
 
     hll_mode get_current_mode() const;
-    int get_serialization_version() const;
     bool is_out_of_order_flag() const;
     bool is_estimation_mode() const;
 
