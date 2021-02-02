@@ -30,10 +30,9 @@ class Hll6Iterator;
 template<typename A>
 class Hll6Array final : public HllArray<A> {
   public:
-    explicit Hll6Array(int lgConfigK, bool startFullSize);
-    explicit Hll6Array(const Hll6Array<A>& that);
+    Hll6Array(int lgConfigK, bool startFullSize, const A& allocator);
 
-    virtual ~Hll6Array();
+    virtual ~Hll6Array() = default;
     virtual std::function<void(HllSketchImpl<A>*)> get_deleter() const;
 
     virtual Hll6Array* copy() const;

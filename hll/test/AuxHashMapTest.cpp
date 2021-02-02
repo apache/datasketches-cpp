@@ -25,7 +25,7 @@
 namespace datasketches {
 
 TEST_CASE("aux hash map: check must replace", "[aux_hash_map]") {
-  AuxHashMap<>* map = new AuxHashMap<>(3, 7);
+  AuxHashMap<std::allocator<uint8_t>>* map = new AuxHashMap<std::allocator<uint8_t>>(3, 7, std::allocator<uint8_t>());
   map->mustAdd(100, 5);
   int val = map->mustFindValueFor(100);
   REQUIRE(val == 5);
@@ -40,9 +40,9 @@ TEST_CASE("aux hash map: check must replace", "[aux_hash_map]") {
 }
 
 TEST_CASE("aux hash map: check grow space", "[aux_hash_map]") {
-  auto map = std::unique_ptr<AuxHashMap<>, std::function<void(AuxHashMap<>*)>>(
-      AuxHashMap<>::newAuxHashMap(3, 7),
-      AuxHashMap<>::make_deleter()
+  auto map = std::unique_ptr<AuxHashMap<std::allocator<uint8_t>>, std::function<void(AuxHashMap<std::allocator<uint8_t>>*)>>(
+      AuxHashMap<std::allocator<uint8_t>>::newAuxHashMap(3, 7, std::allocator<uint8_t>()),
+      AuxHashMap<std::allocator<uint8_t>>::make_deleter()
       );
   REQUIRE(map->getLgAuxArrInts() == 3);
   for (int i = 1; i <= 7; ++i) {
@@ -63,17 +63,17 @@ TEST_CASE("aux hash map: check grow space", "[aux_hash_map]") {
 }
 
 TEST_CASE("aux hash map: check exception must find value for", "[aux_hash_map]") {
-  AuxHashMap<> map(3, 7);
+  AuxHashMap<std::allocator<uint8_t>> map(3, 7, std::allocator<uint8_t>());
   map.mustAdd(100, 5);
   REQUIRE_THROWS_AS(map.mustFindValueFor(101), std::invalid_argument);
 }
 
 TEST_CASE("aux hash map: check exception must add", "[aux_hash_map]") {
-  AuxHashMap<>* map = AuxHashMap<>::newAuxHashMap(3, 7);
+  AuxHashMap<std::allocator<uint8_t>>* map = AuxHashMap<std::allocator<uint8_t>>::newAuxHashMap(3, 7, std::allocator<uint8_t>());
   map->mustAdd(100, 5);
   REQUIRE_THROWS_AS(map->mustAdd(100, 6), std::invalid_argument);
   
-  AuxHashMap<>::make_deleter()(map);
+  AuxHashMap<std::allocator<uint8_t>>::make_deleter()(map);
 }
 
 } /* namespace datasketches */

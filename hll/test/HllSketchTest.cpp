@@ -24,7 +24,7 @@
 
 namespace datasketches {
 
-typedef hll_sketch_alloc<test_allocator<void>> hll_sketch_test_alloc;
+typedef hll_sketch_alloc<test_allocator<uint8_t>> hll_sketch_test_alloc;
 
 static void runCheckCopy(int lgConfigK, target_hll_type tgtHllType) {
   hll_sketch_test_alloc sk(lgConfigK, tgtHllType);
