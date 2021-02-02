@@ -51,7 +51,7 @@ class var_opt_union {
 public:
   static const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2;
 
-  explicit var_opt_union(uint32_t max_k);
+  explicit var_opt_union(uint32_t max_k, const A& allocator = A());
   var_opt_union(const var_opt_union& other);
   var_opt_union(var_opt_union&& other) noexcept;
     
@@ -119,7 +119,7 @@ public:
    * @param is input stream
    * @return an instance of a union
    */
-  static var_opt_union deserialize(std::istream& is);
+  static var_opt_union deserialize(std::istream& is, const A& allocator = A());
 
   /**
    * NOTE: This method may be deprecated in a future version.
@@ -128,7 +128,7 @@ public:
    * @param size the size of the array
    * @return an instance of a union
    */
-  static var_opt_union deserialize(const void* bytes, size_t size);
+  static var_opt_union deserialize(const void* bytes, size_t size, const A& allocator = A());
 
   /**
    * Prints a summary of the union as a string.

@@ -62,7 +62,7 @@ class var_opt_sketch {
     static const resize_factor DEFAULT_RESIZE_FACTOR = X8;
     static const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2;
 
-    explicit var_opt_sketch(uint32_t k, resize_factor rf = DEFAULT_RESIZE_FACTOR);
+    explicit var_opt_sketch(uint32_t k, resize_factor rf = DEFAULT_RESIZE_FACTOR, const A& allocator = A());
     var_opt_sketch(const var_opt_sketch& other);
     var_opt_sketch(var_opt_sketch&& other) noexcept;
 
@@ -167,7 +167,7 @@ class var_opt_sketch {
      * @param is input stream
      * @return an instance of a sketch
      */
-    static var_opt_sketch deserialize(std::istream& is);
+    static var_opt_sketch deserialize(std::istream& is, const A& allocator = A());
 
     /**
      * This method deserializes a sketch from a given array of bytes.
@@ -175,7 +175,7 @@ class var_opt_sketch {
      * @param size the size of the array
      * @return an instance of a sketch
      */
-    static var_opt_sketch deserialize(const void* bytes, size_t size);
+    static var_opt_sketch deserialize(const void* bytes, size_t size, const A& allocator = A());
 
     /**
      * Prints a summary of the sketch.
@@ -226,8 +226,9 @@ class var_opt_sketch {
     resize_factor rf_;              // resize factor
 
     uint32_t curr_items_alloc_;     // currently allocated array size
-    bool filled_data_;              // true if we've explciitly set all entries in data_
+    bool filled_data_;              // true if we've explicitly set all entries in data_
 
+    A allocator_;
     T* data_;                       // stored sampled items
     double* weights_;               // weights for sampled items
 
@@ -249,20 +250,20 @@ class var_opt_sketch {
     // occurs and is properly tracked.
     bool* marks_;
 
-    // used during deserialization to avoid memork leaks upon errors
+    // used during deserialization to avoid memory leaks upon errors
     class items_deleter;
     class weights_deleter;
     class marks_deleter;
 
-    var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget);
+    var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, const A& allocator);
     var_opt_sketch(uint32_t k, uint32_t h, uint32_t m, uint32_t r, uint64_t n, double total_wt_r, resize_factor rf,
                    uint32_t curr_items_alloc, bool filled_data, std::unique_ptr<T, items_deleter> items,
                    std::unique_ptr<double, weights_deleter> weights, uint32_t num_marks_in_h,
-                   std::unique_ptr<bool, marks_deleter> marks);
+                   std::unique_ptr<bool, marks_deleter> marks, const A& allocator);
 
     friend class var_opt_union<T,S,A>;
     var_opt_sketch(const var_opt_sketch& other, bool as_sketch, uint64_t adjusted_n);
-    var_opt_sketch(T* data, double* weights, size_t len, uint32_t k, uint64_t n, uint32_t h_count, uint32_t r_count, double total_wt_r);
+    var_opt_sketch(T* data, double* weights, size_t len, uint32_t k, uint64_t n, uint32_t h_count, uint32_t r_count, double total_wt_r, const A& allocator);
 
     string<A> items_to_string(bool print_gap) const;
 
@@ -353,7 +354,7 @@ private:
   double r_item_wt_;
   size_t idx_;
   const size_t final_idx_;
-  bool weight_correction_;
+//  bool weight_correction_;
 };
 
 // non-const iterator for internal use
