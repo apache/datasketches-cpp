@@ -43,6 +43,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
+          persist-credentials: false
       - name: Configure
         run: cd build && cmake ..
       - name: Build C++ unit tests
@@ -54,6 +55,6 @@ jobs:
         with:
           python-version: '3.8' # 3.x grabs latest minor version of python3, but 3.9 not fully supported yet
       - name: Install Python dependencies
-        run: python -m pip install --upgrade pip setuptools wheel numpy tox
+        run: python -m pip install --upgrade pip setuptools wheel numpy tox pytest
       - name: Build and run Python tests
         run: python -m tox
