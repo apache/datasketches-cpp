@@ -481,12 +481,6 @@ class hll_union_alloc {
     target_hll_type get_target_type() const;
 
     /**
-     * Indicates if the union is currently stored compacted.
-     * @return True if the union is stored in compact form.
-     */
-    bool is_compact() const;
-
-    /**
      * Indicates if the union is currently empty.
      * @return True if the union is empty.
      */

@@ -160,11 +160,6 @@ void hll_union_alloc<A>::reset() {
 }
 
 template<typename A>
-bool hll_union_alloc<A>::is_compact() const {
-  return gadget.is_compact();
-}
-
-template<typename A>
 bool hll_union_alloc<A>::is_empty() const {
   return gadget.is_empty();
 }
