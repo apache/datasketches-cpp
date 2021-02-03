@@ -123,7 +123,7 @@ public:
 
   /**
    * NOTE: This method may be deprecated in a future version.
-   * This method deserializes a skeuniontch from a given array of bytes.
+   * This method deserializes a union from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
    * @return an instance of a union
