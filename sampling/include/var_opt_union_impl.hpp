@@ -255,7 +255,7 @@ void var_opt_union<T,S,A>::serialize(std::ostream& os) const {
 template<typename T, typename S, typename A>
 std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header_size_bytes) const {
   const size_t size = header_size_bytes + get_serialized_size_bytes();
-  std::vector<uint8_t, AllocU8<A>> bytes(size);
+  std::vector<uint8_t, AllocU8<A>> bytes(size, 0, gadget_.allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
   const bool empty = n_ == 0;
