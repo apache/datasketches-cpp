@@ -53,7 +53,7 @@ double tuple_sketch<S, A>::get_upper_bound(uint8_t num_std_devs) const {
 
 template<typename S, typename A>
 string<A> tuple_sketch<S, A>::to_string(bool detail) const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  ostrstream os;
   os << "### Tuple sketch summary:" << std::endl;
   os << "   num retained entries : " << get_num_retained() << std::endl;
   os << "   seed hash            : " << get_seed_hash() << std::endl;
@@ -238,7 +238,7 @@ compact_tuple_sketch<S, A> update_tuple_sketch<S, U, P, A>::compact(bool ordered
 }
 
 template<typename S, typename U, typename P, typename A>
-void update_tuple_sketch<S, U, P, A>::print_specifics(std::basic_ostream<char>& os) const {
+void update_tuple_sketch<S, U, P, A>::print_specifics(ostrstream& os) const {
   os << "   lg nominal size      : " << (int) map_.lg_nom_size_ << std::endl;
   os << "   lg current size      : " << (int) map_.lg_cur_size_ << std::endl;
   os << "   resize factor        : " << (1 << map_.rf_) << std::endl;
@@ -279,7 +279,7 @@ entries_(std::move(other.entries_))
 {}
 
 template<typename S, typename A>
-compact_tuple_sketch<S, A>::compact_tuple_sketch(const theta_sketch_experimental<AllocU64>& other, const S& summary, bool ordered):
+compact_tuple_sketch<S, A>::compact_tuple_sketch(const theta_sketch_alloc<AllocU64>& other, const S& summary, bool ordered):
 is_empty_(other.is_empty()),
 is_ordered_(other.is_ordered() || ordered),
 seed_hash_(other.get_seed_hash()),
@@ -567,7 +567,7 @@ auto compact_tuple_sketch<S, A>::end() const -> const_iterator {
 }
 
 template<typename S, typename A>
-void compact_tuple_sketch<S, A>::print_specifics(std::basic_ostream<char>&) const {}
+void compact_tuple_sketch<S, A>::print_specifics(ostrstream&) const {}
 
 // builder
 

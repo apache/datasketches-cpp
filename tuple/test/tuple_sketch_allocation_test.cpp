@@ -51,7 +51,7 @@ TEST_CASE("tuple sketch with test allocator: estimation mode", "[tuple_sketch]")
   test_allocator_total_bytes = 0;
   test_allocator_net_allocations = 0;
   {
-    auto update_sketch = update_tuple_sketch_test::builder().build();
+    auto update_sketch = update_tuple_sketch_test::builder(test_type_replace_policy(), test_allocator<test_type>(0)).build();
     for (int i = 0; i < 10000; ++i) update_sketch.update(i, 1);
     for (int i = 0; i < 10000; ++i) update_sketch.update(i, 2);
     REQUIRE(!update_sketch.is_empty());
@@ -77,7 +77,7 @@ TEST_CASE("tuple sketch with test allocator: estimation mode", "[tuple_sketch]")
     REQUIRE(count == update_sketch.get_num_retained());
 
     auto bytes = compact_sketch.serialize(0, test_type_serde());
-    auto deserialized_sketch = compact_tuple_sketch_test::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED, test_type_serde());
+    auto deserialized_sketch = compact_tuple_sketch_test::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED, test_type_serde(), test_allocator<test_type>(0));
     REQUIRE(deserialized_sketch.get_estimate() == compact_sketch.get_estimate());
 
     // update sketch copy

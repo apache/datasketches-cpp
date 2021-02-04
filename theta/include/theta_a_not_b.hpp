@@ -20,51 +20,34 @@
 #ifndef THETA_A_NOT_B_HPP_
 #define THETA_A_NOT_B_HPP_
 
-#include <memory>
-#include <functional>
-#include <climits>
-
 #include "theta_sketch.hpp"
-#include "common_defs.hpp"
+#include "theta_set_difference_base.hpp"
 
 namespace datasketches {
 
-/*
- * author Alexander Saydakov
- * author Lee Rhodes
- * author Kevin Lang
- */
-
-template<typename A>
+template<typename Allocator = std::allocator<uint64_t>>
 class theta_a_not_b_alloc {
 public:
-  /**
-   * Creates an instance of the a-not-b operation (set difference) with a given has seed.
-   * @param seed hash seed
-   */
-  explicit theta_a_not_b_alloc(uint64_t seed = DEFAULT_SEED);
+  using Entry = uint64_t;
+  using ExtractKey = trivial_extract_key;
+  using CompactSketch = compact_theta_sketch_alloc<Allocator>;
+  using State = theta_set_difference_base<Entry, ExtractKey, CompactSketch, Allocator>;
+
+  explicit theta_a_not_b_alloc(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
    * Computes the a-not-b set operation given two sketches.
    * @return the result of a-not-b
    */
-  compact_theta_sketch_alloc<A> compute(const theta_sketch_alloc<A>& a, const theta_sketch_alloc<A>& b, bool ordered = true) const;
+  template<typename FwdSketch, typename Sketch>
+  CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;
 
 private:
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-  uint16_t seed_hash_;
-
-  class less_than {
-  public:
-    explicit less_than(uint64_t value): value(value) {}
-    bool operator()(uint64_t value) const { return value < this->value; }
-  private:
-    uint64_t value;
-  };
+  State state_;
 };
 
 // alias with default allocator for convenience
-typedef theta_a_not_b_alloc<std::allocator<void>> theta_a_not_b;
+using theta_a_not_b = theta_a_not_b_alloc<std::allocator<uint64_t>>;
 
 } /* namespace datasketches */
 

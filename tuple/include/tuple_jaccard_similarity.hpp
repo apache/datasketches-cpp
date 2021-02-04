@@ -17,17 +17,22 @@
  * under the License.
  */
 
+#ifndef TUPLE_JACCARD_SIMILARITY_HPP_
+#define TUPLE_JACCARD_SIMILARITY_HPP_
+
+#include "theta_jaccard_similarity_base.hpp"
+#include "tuple_union.hpp"
+#include "tuple_intersection.hpp"
+
 namespace datasketches {
 
-template<typename A>
-theta_a_not_b_experimental<A>::theta_a_not_b_experimental(uint64_t seed, const A& allocator):
-state_(seed, allocator)
-{}
-
-template<typename A>
-template<typename FwdSketch, typename Sketch>
-auto theta_a_not_b_experimental<A>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const -> CompactSketch {
-  return state_.compute(std::forward<FwdSketch>(a), b, ordered);
-}
+template<
+  typename Summary,
+  typename IntersectionPolicy,
+  typename UnionPolicy = default_union_policy<Summary>,
+  typename Allocator = std::allocator<Summary>>
+using tuple_jaccard_similarity = jaccard_similarity_base<tuple_union<Summary, UnionPolicy, Allocator>, tuple_intersection<Summary, IntersectionPolicy, Allocator>, pair_extract_key<uint64_t, Summary>>;
 
 } /* namespace datasketches */
+
+# endif

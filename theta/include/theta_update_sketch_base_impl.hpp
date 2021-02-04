@@ -17,6 +17,9 @@
  * under the License.
  */
 
+#ifndef THETA_UPDATE_SKETCH_BASE_IMPL_HPP_
+#define THETA_UPDATE_SKETCH_BASE_IMPL_HPP_
+
 #include <iostream>
 #include <sstream>
 #include <algorithm>
@@ -387,3 +390,5 @@ auto theta_const_iterator<Entry, ExtractKey>::operator*() const -> const Entry& 
 }
 
 } /* namespace datasketches */
+
+#endif

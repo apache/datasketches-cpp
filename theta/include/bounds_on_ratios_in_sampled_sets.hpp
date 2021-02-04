@@ -21,8 +21,9 @@
 #define BOUNDS_ON_RATIOS_IN_SAMPLED_SETS_HPP_
 
 #include <cstdint>
+#include <string>
 
-#include <bounds_binomial_proportions.hpp>
+#include "bounds_binomial_proportions.hpp"
 
 namespace datasketches {
 

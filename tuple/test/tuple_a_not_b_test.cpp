@@ -21,7 +21,7 @@
 
 #include <catch.hpp>
 #include <tuple_a_not_b.hpp>
-#include <theta_sketch_experimental.hpp>
+#include <theta_sketch.hpp>
 
 namespace datasketches {
 
@@ -101,9 +101,6 @@ TEST_CASE("tuple a-not-b: exact mode half overlap", "[tuple_a_not_b]") {
   REQUIRE(result.is_ordered());
   REQUIRE(result.get_estimate() == 500.0);
 }
-
-// needed until promotion of experimental to replace existing theta sketch
-using update_theta_sketch = update_theta_sketch_experimental<>;
 
 TEST_CASE("mixed a-not-b: exact mode half overlap", "[tuple_a_not_b]") {
   auto a = update_tuple_sketch<float>::builder().build();

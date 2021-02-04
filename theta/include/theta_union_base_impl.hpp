@@ -17,6 +17,9 @@
  * under the License.
  */
 
+#ifndef THETA_UNION_BASE_IMPL_HPP_
+#define THETA_UNION_BASE_IMPL_HPP_
+
 #include <algorithm>
 
 #include "conditional_forward.hpp"
@@ -82,3 +85,5 @@ const P& theta_union_base<EN, EK, P, S, CS, A>::get_policy() const {
 }
 
 } /* namespace datasketches */
+
+#endif

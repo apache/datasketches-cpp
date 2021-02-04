@@ -17,28 +17,20 @@
  * under the License.
  */
 
-#include <iostream>
+#ifndef THETA_CONSTANTS_HPP_
+#define THETA_CONSTANTS_HPP_
 
-#include <catch.hpp>
-#include <tuple_union.hpp>
-
-#include <theta_union_experimental.hpp>
+#include <climits>
 
 namespace datasketches {
 
-TEST_CASE("theta_union_exeperimental") {
-  auto update_sketch1 = update_theta_sketch_experimental<>::builder().build();
-  update_sketch1.update(1);
-  update_sketch1.update(2);
-
-  auto update_sketch2 = update_theta_sketch_experimental<>::builder().build();
-  update_sketch2.update(1);
-  update_sketch2.update(3);
-
-  auto u = theta_union_experimental<>::builder().build();
-  u.update(update_sketch1);
-  u.update(update_sketch2);
-  auto r = u.get_result();
+namespace theta_constants {
+  enum resize_factor { X1, X2, X4, X8 };
+  static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
+  static const uint8_t MIN_LG_K = 5;
+  static const uint8_t MAX_LG_K = 26;
 }
 
 } /* namespace datasketches */
+
+#endif

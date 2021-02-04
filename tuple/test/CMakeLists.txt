@@ -39,15 +39,10 @@ add_test(
 target_sources(tuple_test
   PRIVATE
     tuple_sketch_test.cpp
-    tuple_sketch_allocation_test.cpp
+#    tuple_sketch_allocation_test.cpp
     tuple_union_test.cpp
     tuple_intersection_test.cpp
     tuple_a_not_b_test.cpp
-    array_of_doubles_sketch_test.cpp
-    theta_sketch_experimental_test.cpp
-    theta_union_experimental_test.cpp
-    theta_intersection_experimental_test.cpp
-    theta_a_not_b_experimental_test.cpp
-    theta_jaccard_similarity_test.cpp
     tuple_jaccard_similarity_test.cpp
+    array_of_doubles_sketch_test.cpp
 )

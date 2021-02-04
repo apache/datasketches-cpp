@@ -34,7 +34,7 @@ namespace datasketches {
 template<
   typename Entry,
   typename ExtractKey,
-  typename Allocator = std::allocator<Entry>
+  typename Allocator
 >
 struct theta_update_sketch_base {
   using resize_factor = theta_constants::resize_factor;
@@ -147,7 +147,7 @@ protected:
   static uint8_t starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf);
 };
 
-// key extractors
+// key extractor
 
 struct trivial_extract_key {
   template<typename T>
@@ -156,17 +156,7 @@ struct trivial_extract_key {
   }
 };
 
-template<typename K, typename V>
-struct pair_extract_key {
-  K& operator()(std::pair<K, V>& entry) const {
-    return entry.first;
-  }
-  const K& operator()(const std::pair<K, V>& entry) const {
-    return entry.first;
-  }
-};
-
-// not zero
+// key not zero
 
 template<typename Entry, typename ExtractKey>
 class key_not_zero {

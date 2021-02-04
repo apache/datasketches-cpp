@@ -21,7 +21,7 @@
 
 #include <catch.hpp>
 #include <tuple_intersection.hpp>
-#include <theta_sketch_experimental.hpp>
+#include <theta_sketch.hpp>
 
 namespace datasketches {
 
@@ -135,9 +135,6 @@ TEST_CASE("tuple intersection: exact mode disjoint", "[tuple_intersection]") {
     REQUIRE(result.get_estimate() == 0.0);
   }
 }
-
-// needed until promotion of experimental to replace existing theta sketch
-using update_theta_sketch = update_theta_sketch_experimental<>;
 
 TEST_CASE("mixed intersection: exact mode half overlap", "[tuple_intersection]") {
   auto sketch1 = update_tuple_sketch<float>::builder().build();
