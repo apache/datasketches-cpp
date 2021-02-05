@@ -28,12 +28,12 @@
 namespace datasketches {
 
 template<typename T, typename S, typename A>
-var_opt_union<T,S,A>::var_opt_union(uint32_t max_k) :
+var_opt_union<T,S,A>::var_opt_union(uint32_t max_k, const A& allocator) :
   n_(0),
   outer_tau_numer_(0),
   outer_tau_denom_(0.0),
   max_k_(max_k),
-  gadget_(max_k, var_opt_sketch<T,S,A>::DEFAULT_RESIZE_FACTOR, true)
+  gadget_(max_k, var_opt_sketch<T,S,A>::DEFAULT_RESIZE_FACTOR, true, allocator)
 {}
 
 template<typename T, typename S, typename A>
@@ -128,7 +128,7 @@ var_opt_union<T,S,A>& var_opt_union<T,S,A>::operator=(var_opt_union&& other) {
  */
 
 template<typename T, typename S, typename A>
-var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is) {
+var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const A& allocator) {
   uint8_t preamble_longs;
   is.read((char*)&preamble_longs, sizeof(preamble_longs));
   uint8_t serial_version;
@@ -163,7 +163,7 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is) {
   uint64_t outer_tau_denom;
   is.read((char*)&outer_tau_denom, sizeof(outer_tau_denom));
 
-  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(is);
+  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(is, allocator);
 
   if (!is.good())
     throw std::runtime_error("error reading from std::istream"); 
@@ -172,7 +172,7 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is) {
 }
 
 template<typename T, typename S, typename A>
-var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t size) {
+var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t size, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
@@ -207,7 +207,7 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t
   ptr += copy_from_mem(ptr, &outer_tau_denom, sizeof(outer_tau_denom));
 
   const size_t gadget_size = size - (PREAMBLE_LONGS_NON_EMPTY << 3);
-  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(ptr, gadget_size);
+  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(ptr, gadget_size, allocator);
 
   return var_opt_union<T,S,A>(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
 }
@@ -255,7 +255,7 @@ void var_opt_union<T,S,A>::serialize(std::ostream& os) const {
 template<typename T, typename S, typename A>
 std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header_size_bytes) const {
   const size_t size = header_size_bytes + get_serialized_size_bytes();
-  std::vector<uint8_t, AllocU8<A>> bytes(size);
+  std::vector<uint8_t, AllocU8<A>> bytes(size, 0, gadget_.allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
   const bool empty = n_ == 0;
