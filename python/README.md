@@ -1,4 +1,4 @@
-# Python Wrapper for Datasketches
+# Python Wrapper for Apache Datasketches
 
 ## Installation
 
@@ -39,7 +39,7 @@ tox
 
 ## Usage
 
-Having installed the library, loading the Datasketches library in Python is simple: `import datasketches`.
+Having installed the library, loading the Apache Datasketches library in Python is simple: `import datasketches`.
 
 ## Available Sketch Classes
 
