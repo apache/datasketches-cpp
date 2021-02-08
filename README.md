@@ -1,12 +1,12 @@
-# DataSketches Core C++ Library Component
-This is the core C++ component of the DataSketches library.  It contains all of the key sketching algorithms that are in the Java component and can be accessed directly from user applications. 
+# Apache DataSketches Core C++ Library Component
+This is the core C++ component of the Apache DataSketches library.  It contains all of the key sketching algorithms that are in the Java component and can be accessed directly from user applications. 
 
 This component is also a dependency of other components of the library that create adaptors for target systems, such as PostgreSQL.
 
 Note that we have a parallel core component for Java implementations of the same sketch algorithms, 
 [datasketches-java](https://github.com/apache/datasketches-java).
 
-Please visit the main [DataSketches website](https://datasketches.apache.org) for more information. 
+Please visit the main [Apache DataSketches website](https://datasketches.apache.org) for more information. 
 
 If you are interested in making contributions to this site please see our [Community](https://datasketches.apache.org/docs/Community/) page for how to contact us.
 
