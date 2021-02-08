@@ -23,7 +23,7 @@ Default/
 .eggs/
 .tox/
 dist/
-python/datasketches.egg-info/
+python/whylabs_datasketches.egg-info/
 
 # Log file
 
@@ -40,3 +40,8 @@ _*/
 
 # exceptions
 !__init__.py
+
+.idea
+
+cmake-build-debug
+

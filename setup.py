@@ -51,6 +51,8 @@ class CMakeBuild(build_ext):
         cmake_args += ['-DWITH_PYTHON=True']
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
+        # Require to enable Pybind11 to pick up the correct Python paths
+        cmake_args += ['-DPYTHON_EXECUTABLE=' + sys.executable]
 
         if platform.system() == "Windows":
             cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(
@@ -76,8 +78,8 @@ class CMakeBuild(build_ext):
         print() # add an empty line to pretty print
 
 setup(
-    name='datasketches',
-    version='2.2.0-SNAPSHOT',
+    name='whylabs-datasketches',
+    version='2.2.0b1',
     author='Datasketches Developers',
     author_email='dev@datasketches.apache.org',
     description='A wrapper for the C++ Datasketches library',
