@@ -113,8 +113,6 @@ void init_hll(py::module &m) {
          "Returns the approximate lower error bound given the specified number of standard deviations in {1, 2, 3}")
     .def("get_upper_bound", &hll_union::get_upper_bound, py::arg("num_std_devs"),
          "Returns the approximate upper error bound given the specified number of standard deviations in {1, 2, 3}")
-    .def("is_compact", &hll_union::is_compact,
-         "True if the union is compact, otherwise False")
     .def("is_empty", &hll_union::is_empty,
          "True if the union is empty, otherwise False")    
     .def("reset", &hll_union::reset,

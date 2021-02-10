@@ -113,7 +113,6 @@ class HllTest(unittest.TestCase):
         self.assertGreaterEqual(union.get_upper_bound(1), union.get_estimate())
 
         self.assertEqual(union.lg_config_k, k)
-        self.assertFalse(union.is_compact())
         self.assertFalse(union.is_empty())
 
         sk = union.get_result()

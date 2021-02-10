@@ -36,7 +36,7 @@ void println_string(std::string str) {
 
 TEST_CASE("coupon list: check iterator", "[coupon_list]") {
   int lgConfigK = 8;
-  CouponList<> cl(lgConfigK, HLL_4, LIST);
+  CouponList<std::allocator<uint8_t>> cl(lgConfigK, HLL_4, LIST, std::allocator<uint8_t>());
   for (int i = 1; i <= 7; ++i) { cl.couponUpdate(HllUtil<>::pair(i, i)); } // not hashes but distinct values
   const int mask = (1 << lgConfigK) - 1;
   int idx = 0;
@@ -120,7 +120,7 @@ TEST_CASE("coupon list: check corrupt bytearray data", "[coupon_list]") {
 
   bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
-  REQUIRE_THROWS_AS(CouponList<>::newList(bytes, size), std::invalid_argument);
+  REQUIRE_THROWS_AS(CouponList<std::allocator<uint8_t>>::newList(bytes, size, std::allocator<uint8_t>()), std::invalid_argument);
 
   bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = HllUtil<>::LIST_PREINTS;
 
@@ -154,7 +154,7 @@ TEST_CASE("coupon list: check corrupt stream data", "[coupon_list]") {
   ss.put(0);
   ss.seekg(0);
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
-  REQUIRE_THROWS_AS(CouponList<>::newList(ss), std::invalid_argument);
+  REQUIRE_THROWS_AS(CouponList<std::allocator<uint8_t>>::newList(ss, std::allocator<uint8_t>()), std::invalid_argument);
   ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
   ss.put(HllUtil<>::LIST_PREINTS);
 

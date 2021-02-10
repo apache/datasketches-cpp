@@ -111,7 +111,7 @@ TEST_CASE("hll array: check corrupt bytearray", "[hll_array]") {
 
   bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
-  REQUIRE_THROWS_AS(HllArray<>::newHll(bytes, size), std::invalid_argument);
+  REQUIRE_THROWS_AS(HllArray<std::allocator<uint8_t>>::newHll(bytes, size, std::allocator<uint8_t>()), std::invalid_argument);
   bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = HllUtil<>::HLL_PREINTS;
 
   bytes[HllUtil<>::SER_VER_BYTE] = 0;
@@ -150,7 +150,7 @@ TEST_CASE("hll array: check corrupt stream", "[hll_array]") {
   ss.put(0);
   ss.seekg(0);
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
-  REQUIRE_THROWS_AS(HllArray<>::newHll(ss), std::invalid_argument);                                
+  REQUIRE_THROWS_AS(HllArray<std::allocator<uint8_t>>::newHll(ss, std::allocator<uint8_t>()), std::invalid_argument);
   ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
   ss.put(HllUtil<>::HLL_PREINTS);
 
