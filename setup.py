@@ -79,7 +79,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name='datasketches',
-    version='2.2.0-SNAPSHOT',
+    version='2.2.0',
     author='Apache Datasketches Developers',
     author_email='dev@datasketches.apache.org',
     description='A wrapper for the C++ Apache Datasketches library',
