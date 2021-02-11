@@ -130,6 +130,8 @@ void bind_kll_sketch(py::module &m, const char* name) {
          "Produces a string summary of the sketch")
     .def("is_empty", &kll_sketch<T>::is_empty,
          "Returns True if the sketch is empty, otherwise False")
+    .def("get_k", &kll_sketch<T>::get_k,
+         "Returns the configured parameter k")
     .def("get_n", &kll_sketch<T>::get_n,
          "Returns the length of the input stream")
     .def("get_num_retained", &kll_sketch<T>::get_num_retained,

@@ -203,6 +203,12 @@ class kll_sketch {
     bool is_empty() const;
 
     /**
+     * Returns configured parameter k
+     * @return parameter k
+     */
+    uint16_t get_k() const;
+
+    /**
      * Returns the length of the input stream.
      * @return stream length
      */

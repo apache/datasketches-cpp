@@ -86,6 +86,7 @@ class KllTest(unittest.TestCase):
         self.assertEqual(kll.get_n(), n)
         self.assertFalse(kll.is_empty())
         self.assertFalse(kll.is_estimation_mode()) # n < k
+        self.assertEqual(kll.get_k(), k)
 
         pmf = kll.get_pmf([round(n/2)])
         self.assertIsNotNone(pmf)
