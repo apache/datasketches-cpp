@@ -200,7 +200,7 @@ void bind_kll_sketch(py::module &m, const char* name) {
          "If pmf is True, returns the 'double-sided' normalized rank error for the get_PMF() function.\n"
          "Otherwise, it is the 'single-sided' normalized rank error for all the other queries.\n"
          "Constants were derived as the best fit to 99 percentile empirically measured max error in thousands of trials")
-    .def("serialize", &dspy::kll_sketch_serialize<T>, "Serailizes the sketch into a bytes object")
+    .def("serialize", &dspy::kll_sketch_serialize<T>, "Serializes the sketch into a bytes object")
     .def_static("deserialize", &dspy::kll_sketch_deserialize<T>, "Deserializes the sketch from a bytes object")
     ;
 }

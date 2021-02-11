@@ -223,7 +223,7 @@ void bind_req_sketch(py::module &m, const char* name) {
          "Returns an approximate lower bound on the given normalized rank.\n"
          "Normalized rank must be a value between 0.0 and 1.0 (inclusive); "
          "the number of standard deviations must be 1, 2, or 3.")
-    .def("get_rank_lower_bound", &req_sketch<T>::get_rank_upper_bound, py::arg("rank"), py::arg("num_std_dev"),
+    .def("get_rank_upper_bound", &req_sketch<T>::get_rank_upper_bound, py::arg("rank"), py::arg("num_std_dev"),
          "Returns an approximate upper bound on the given normalized rank.\n"
          "Normalized rank must be a value between 0.0 and 1.0 (inclusive); "
          "the number of standard deviations must be 1, 2, or 3.")
@@ -235,12 +235,12 @@ void bind_req_sketch(py::module &m, const char* name) {
          "Normalized rank must be a value between 0.0 and 1.0 (inclusive). If is_hra is True, uses high "
          "rank accuracy mode, else low rank accuracy. N is an estimate of the total number of points "
          "provided to the sketch.")
-    .def("serialize", &dspy::req_sketch_serialize<T>, "Serailizes the sketch into a bytes object")
+    .def("serialize", &dspy::req_sketch_serialize<T>, "Serializes the sketch into a bytes object")
     .def_static("deserialize", &dspy::req_sketch_deserialize<T>, "Deserializes the sketch from a bytes object")
     ;
 }
 
 void init_req(py::module &m) {
-  //bind_req_sketch<int>(m, "req_ints_sketch");
+  bind_req_sketch<int>(m, "req_ints_sketch");
   bind_req_sketch<float>(m, "req_floats_sketch");
 }
