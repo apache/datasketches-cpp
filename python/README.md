@@ -1,4 +1,4 @@
-# Python Wrapper for Apache Datasketches
+# Python Wrapper for Apache DataSketches
 
 ## Installation
 
