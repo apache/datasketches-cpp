@@ -57,33 +57,39 @@ TEST_CASE("varopt allocation test", "[var_opt_sketch]") {
 }
 
 TEST_CASE( "varopt union: move", "[var_opt_union][test_type]") {
-  uint32_t n = 20;
-  uint32_t k = 5;
-  var_opt_union<test_type> u(k);
-  var_opt_sketch<test_type> sk1(k);
-  var_opt_sketch<test_type> sk2(k);
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    uint32_t n = 20;
+    uint32_t k = 5;
+    var_opt_test_union u(k, 0);
+    var_opt_test_sketch sk1(k, var_opt_test_sketch::DEFAULT_RESIZE_FACTOR, 0);
+    var_opt_test_sketch sk2(k, var_opt_test_sketch::DEFAULT_RESIZE_FACTOR, 0);
 
-  // move udpates
-  for (int i = 0; i < (int) n; ++i) {
-    sk1.update(i);
-    sk2.update(-i);
+    // move udpates
+    for (int i = 0; i < (int) n; ++i) {
+      sk1.update(i);
+      sk2.update(-i);
+    }
+    REQUIRE(sk1.get_n() == n);
+    REQUIRE(sk2.get_n() == n);
+
+    // move unions
+    u.update(std::move(sk2));
+    u.update(std::move(sk1));
+    REQUIRE(u.get_result().get_n() == 2 * n);
+
+    // move constructor
+    var_opt_test_union u2(std::move(u));
+    REQUIRE(u2.get_result().get_n() == 2 * n);
+
+    // move assignment
+    var_opt_test_union u3(k, 0);
+    u3 = std::move(u2);
+    REQUIRE(u3.get_result().get_n() == 2 * n);
   }
-  REQUIRE(sk1.get_n() == n);
-  REQUIRE(sk2.get_n() == n);
-
-  // move unions
-  u.update(std::move(sk2));
-  u.update(std::move(sk1));
-  REQUIRE(u.get_result().get_n() == 2 * n);
-
-  // move constructor
-  var_opt_union<test_type> u2(std::move(u));
-  REQUIRE(u2.get_result().get_n() == 2 * n);
-
-  // move assignment
-  var_opt_union<test_type> u3(k);
-  u3 = std::move(u2);
-  REQUIRE(u3.get_result().get_n() == 2 * n);
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
 }
 
 }
