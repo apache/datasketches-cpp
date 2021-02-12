@@ -58,6 +58,7 @@ Having installed the library, loading the Apache Datasketches library in Python 
     - `theta_union`
     - `theta_intersection`
     - `theta_a_not_b`
+    - `theta_jaccard_similarity`
 - HLL
     - `hll_sketch`
     - `hll_union`
