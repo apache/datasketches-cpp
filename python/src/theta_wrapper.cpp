@@ -19,11 +19,13 @@
 
 #include <sstream>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "theta_sketch.hpp"
 #include "theta_union.hpp"
 #include "theta_intersection.hpp"
 #include "theta_a_not_b.hpp"
+#include "theta_jaccard_similarity.hpp"
 #include "common_defs.hpp"
 
 
@@ -60,6 +62,10 @@ py::object compact_theta_sketch_serialize(const compact_theta_sketch& sk) {
 compact_theta_sketch compact_theta_sketch_deserialize(py::bytes skBytes, uint64_t seed) {
   std::string skStr = skBytes; // implicit cast  
   return compact_theta_sketch::deserialize(skStr.c_str(), skStr.length(), seed);
+}
+
+py::list theta_jaccard_sim_computation(const theta_sketch& sketch_a, const theta_sketch& sketch_b) {
+  return py::cast(theta_jaccard_similarity::jaccard(sketch_a, sketch_b));
 }
 
 }
@@ -144,4 +150,23 @@ void init_theta(py::module &m) {
     .def("compute", &theta_a_not_b::compute<const theta_sketch&, const theta_sketch&>, py::arg("a"), py::arg("b"), py::arg("ordered")=true,
          "Returns a sketch with the reuslt of appying the A-not-B operation on the given inputs")
   ;
+  
+  py::class_<theta_jaccard_similarity>(m, "theta_jaccard_similarity")
+     .def_static("jaccard", &dspy::theta_jaccard_sim_computation,
+                 py::arg("sketch_a"), py::arg("sketch_b"),
+                 "Returns a list with {lower_bound, estimate, upper_bound} of the Jaccard similarity between sketches")
+     .def_static("exactly_equal", &theta_jaccard_similarity::exactly_equal<const theta_sketch&, const theta_sketch&>,
+                 py::arg("sketch_a"), py::arg("sketch_b"),
+                 "Returns True if sketch_a and sketch_b are equivalent, otherwise False")
+     .def_static("similarity_test", &theta_jaccard_similarity::similarity_test<const theta_sketch&, const theta_sketch&>,
+                 py::arg("actual"), py::arg("expected"), py::arg("threshold"),
+                 "Tests similarity of an actual sketch against an expected sketch. Computers the lower bound of the Jaccard "
+                 "index J_{LB} of the actual and expected sketches. If J_{LB} >= threshold, then the sketches are considered "
+                 "to be similar sith a confidence of 97.7% and returns True, otherwise False.")
+     .def_static("dissimilarity_test", &theta_jaccard_similarity::dissimilarity_test<const theta_sketch&, const theta_sketch&>,
+                 py::arg("actual"), py::arg("expected"), py::arg("threshold"),
+                 "Tests dissimilarity of an actual sketch against an expected sketch. Computers the lower bound of the Jaccard "
+                 "index J_{UB} of the actual and expected sketches. If J_{UB} <= threshold, then the sketches are considered "
+                 "to be dissimilar sith a confidence of 97.7% and returns True, otherwise False.")            
+  ;     
 }
