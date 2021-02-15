@@ -35,6 +35,7 @@ target_link_libraries(python
     fi
     theta
     sampling
+    req
     pybind11::module
 )
 
@@ -57,5 +58,6 @@ target_sources(python
     src/fi_wrapper.cpp
     src/theta_wrapper.cpp
     src/vo_wrapper.cpp
+    src/req_wrapper.cpp
     src/vector_of_kll.cpp
 )

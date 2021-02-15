@@ -234,6 +234,11 @@ bool kll_sketch<T, C, S, A>::is_empty() const {
 }
 
 template<typename T, typename C, typename S, typename A>
+uint16_t kll_sketch<T, C, S, A>::get_k() const {
+  return k_;
+}
+
+template<typename T, typename C, typename S, typename A>
 uint64_t kll_sketch<T, C, S, A>::get_n() const {
   return n_;
 }

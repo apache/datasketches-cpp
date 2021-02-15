@@ -471,6 +471,9 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_min_value() == n);
     REQUIRE(sketch2.get_max_value() == 2.0f * n - 1);
 
+    REQUIRE(sketch1.get_k() == 256);
+    REQUIRE(sketch2.get_k() == 128);
+
     REQUIRE(sketch1.get_normalized_rank_error(false) < sketch2.get_normalized_rank_error(false));
     REQUIRE(sketch1.get_normalized_rank_error(true) < sketch2.get_normalized_rank_error(true));
 

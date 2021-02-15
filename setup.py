@@ -80,9 +80,9 @@ class CMakeBuild(build_ext):
 setup(
     name='datasketches',
     version='2.2.0.dev0',
-    author='Apache Datasketches Developers',
+    author='Apache DataSketches Developers',
     author_email='dev@datasketches.apache.org',
-    description='A wrapper for the C++ Apache Datasketches library',
+    description='A wrapper for the C++ Apache DataSketches library',
     license='Apache License 2.0',
     url='http://datasketches.apache.org',
     long_description=open('python/README.md').read(),

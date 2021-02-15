@@ -130,6 +130,8 @@ void bind_kll_sketch(py::module &m, const char* name) {
          "Produces a string summary of the sketch")
     .def("is_empty", &kll_sketch<T>::is_empty,
          "Returns True if the sketch is empty, otherwise False")
+    .def("get_k", &kll_sketch<T>::get_k,
+         "Returns the configured parameter k")
     .def("get_n", &kll_sketch<T>::get_n,
          "Returns the length of the input stream")
     .def("get_num_retained", &kll_sketch<T>::get_num_retained,
@@ -198,7 +200,7 @@ void bind_kll_sketch(py::module &m, const char* name) {
          "If pmf is True, returns the 'double-sided' normalized rank error for the get_PMF() function.\n"
          "Otherwise, it is the 'single-sided' normalized rank error for all the other queries.\n"
          "Constants were derived as the best fit to 99 percentile empirically measured max error in thousands of trials")
-    .def("serialize", &dspy::kll_sketch_serialize<T>, "Serailizes the sketch into a bytes object")
+    .def("serialize", &dspy::kll_sketch_serialize<T>, "Serializes the sketch into a bytes object")
     .def_static("deserialize", &dspy::kll_sketch_deserialize<T>, "Deserializes the sketch from a bytes object")
     ;
 }

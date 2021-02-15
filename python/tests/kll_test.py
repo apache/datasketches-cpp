@@ -16,9 +16,7 @@
 # under the License.
 
 import unittest
-from datasketches import (kll_ints_sketch, kll_floats_sketch, 
-                          vector_of_kll_ints_sketches,
-                          vector_of_kll_floats_sketches)
+from datasketches import kll_ints_sketch, kll_floats_sketch
 import numpy as np
 
 class KllTest(unittest.TestCase):
@@ -59,6 +57,7 @@ class KllTest(unittest.TestCase):
       self.assertFalse(kll.is_empty())
       self.assertTrue(kll.is_estimation_mode())
       self.assertEqual(kll.get_n(), n)
+      self.assertEqual(kll.get_k(), k)
       self.assertLess(kll.get_num_retained(), n)
 
       # merging itself will double the number of items the sketch has seen
@@ -86,6 +85,7 @@ class KllTest(unittest.TestCase):
         self.assertEqual(kll.get_n(), n)
         self.assertFalse(kll.is_empty())
         self.assertFalse(kll.is_estimation_mode()) # n < k
+        self.assertEqual(kll.get_k(), k)
 
         pmf = kll.get_pmf([round(n/2)])
         self.assertIsNotNone(pmf)
