@@ -20,6 +20,7 @@ import unittest
 from datasketches import theta_sketch, update_theta_sketch
 from datasketches import compact_theta_sketch, theta_union
 from datasketches import theta_intersection, theta_a_not_b
+from datasketches import theta_jaccard_similarity
 
 class ThetaTest(unittest.TestCase):
     def test_theta_basic_example(self):
@@ -107,6 +108,30 @@ class ThetaTest(unittest.TestCase):
         # we know the sets overlap by 1/4, so the remainder is 3/4
         self.assertLessEqual(result.get_lower_bound(1), 3 * n / 4)
         self.assertGreaterEqual(result.get_upper_bound(1), 3 * n / 4)
+
+
+        # JACCARD SIMILARITY
+        # Jaccard Similarity measure returns (lower_bound, estimate, upper_bound)
+        jac = theta_jaccard_similarity.jaccard(sk1, sk2)
+
+        # we can check that results are in the expected order
+        self.assertLess(jac[0], jac[1])
+        self.assertLess(jac[1], jac[2])
+
+        # checks for sketch equivalency
+        self.assertTrue(theta_jaccard_similarity.exactly_equal(sk1, sk1))
+        self.assertFalse(theta_jaccard_similarity.exactly_equal(sk1, sk2))
+
+        # we can apply a check for similarity or dissimilarity at a
+        # given threshhold, at 97.7% confidence.
+
+        # check that the Jaccard Index is at most (upper bound) 0.2.
+        # exact result would be 1/7
+        self.assertTrue(theta_jaccard_similarity.dissimilarity_test(sk1, sk2, 0.2))
+
+        # check that the Jaccard Index is at least (lower bound) 0.7
+        # exact result would be 3/4, using result from A NOT B test
+        self.assertTrue(theta_jaccard_similarity.similarity_test(sk1, result, 0.7))
 
 
     def generate_theta_sketch(self, n, k, offset=0):
