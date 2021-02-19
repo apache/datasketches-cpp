@@ -185,12 +185,6 @@ static inline uint64_t compute_hash(const void* data, size_t length, uint64_t se
   return (hashes.h1 >> 1); // Java implementation does unsigned shift >>> to make values positive
 }
 
-static inline uint16_t compute_seed_hash(uint64_t seed) {
-  HashState hashes;
-  MurmurHash3_x64_128(&seed, sizeof(seed), 0, hashes);
-  return hashes.h1;
-}
-
 // iterators
 
 template<typename Entry, typename ExtractKey>
