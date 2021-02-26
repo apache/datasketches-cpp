@@ -1,4 +1,4 @@
-# Apache DataSketches Core C++ Library Component
+Apple clang version 12.0.0 (clang-1200.0.32.27)# Apache DataSketches Core C++ Library Component
 This is the core C++ component of the Apache DataSketches library.  It contains all of the key sketching algorithms that are in the Java component and can be accessed directly from user applications. 
 
 This component is also a dependency of other components of the library that create adaptors for target systems, such as PostgreSQL.
@@ -12,7 +12,7 @@ If you are interested in making contributions to this site please see our [Commu
 
 ---
 
-This code requires C++11. It was tested with GCC 4.8.5 (standard in RedHat at the time of this writing), GCC 8.2.0 and Apple LLVM version 10.0.1 (clang-1001.0.46.4)
+This code requires C++11. It was tested with GCC 4.8.5 (standard in RedHat at the time of this writing), GCC 10.2.0 and Apple clang version 12.0.0 (clang-1200.0.32.27)
 
 This includes Python bindings. For the Python interface, see the README notes in [the python subdirectory](https://github.com/apache/datasketches-cpp/tree/master/python).
 
