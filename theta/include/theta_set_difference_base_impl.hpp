@@ -17,6 +17,9 @@
  * under the License.
  */
 
+#ifndef THETA_A_SET_DIFFERENCE_BASE_IMPL_HPP_
+#define THETA_A_SET_DIFFERENCE_BASE_IMPL_HPP_
+
 #include <algorithm>
 
 #include "conditional_back_inserter.hpp"
@@ -78,3 +81,5 @@ CS theta_set_difference_base<EN, EK, CS, A>::compute(FwdSketch&& a, const Sketch
 }
 
 } /* namespace datasketches */
+
+#endif
