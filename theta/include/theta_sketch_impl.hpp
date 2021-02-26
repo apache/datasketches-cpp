@@ -220,6 +220,7 @@ template<typename A>
 auto update_theta_sketch_alloc<A>::end() const -> const_iterator {
   return const_iterator(nullptr, 0, 1 << table_.lg_cur_size_);
 }
+
 template<typename A>
 compact_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::compact(bool ordered) const {
   return compact_theta_sketch_alloc<A>(*this, ordered);
