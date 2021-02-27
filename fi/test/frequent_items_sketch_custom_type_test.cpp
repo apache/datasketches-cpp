@@ -27,6 +27,7 @@
 namespace datasketches {
 
 using frequent_test_type_sketch = frequent_items_sketch<test_type, float, test_type_hash, test_type_equal, test_type_serde, test_allocator<test_type>>;
+using alloc = test_allocator<test_type>;
 
 TEST_CASE("frequent items: custom type", "[frequent_items_sketch]") {
   frequent_test_type_sketch sketch(3, frequent_test_type_sketch::LG_MIN_MAP_SIZE, 0);
@@ -50,7 +51,7 @@ TEST_CASE("frequent items: custom type", "[frequent_items_sketch]") {
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sketch.serialize(s);
-  auto sketch2 = frequent_test_type_sketch::deserialize(s, 0);
+  auto sketch2 = frequent_test_type_sketch::deserialize(s, alloc(0));
   REQUIRE_FALSE(sketch2.is_empty());
   REQUIRE(sketch2.get_total_weight() == 17);
   REQUIRE(sketch2.get_estimate(1) == 10);

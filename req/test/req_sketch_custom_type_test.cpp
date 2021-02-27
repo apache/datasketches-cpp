@@ -27,6 +27,7 @@
 namespace datasketches {
 
 using req_test_type_sketch = req_sketch<test_type, test_type_less, test_type_serde, test_allocator<test_type>>;
+using alloc = test_allocator<test_type>;
 
 TEST_CASE("req sketch custom type", "[req_sketch]") {
 
@@ -92,7 +93,7 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch1.serialize(s);
     REQUIRE((size_t) s.tellp() == sketch1.get_serialized_size_bytes());
-    auto sketch2 = req_test_type_sketch::deserialize(s, 0);
+    auto sketch2 = req_test_type_sketch::deserialize(s, alloc(0));
     REQUIRE((size_t) s.tellg() == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch1.is_empty());
