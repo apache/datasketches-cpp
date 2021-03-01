@@ -30,6 +30,7 @@
 namespace datasketches {
 
 using cpc_sketch_test_alloc = cpc_sketch_alloc<test_allocator<uint8_t>>;
+using alloc = test_allocator<uint8_t>;
 
 TEST_CASE("cpc sketch allocation: serialize deserialize empty", "[cpc_sketch]") {
   test_allocator_total_bytes = 0;
@@ -38,7 +39,7 @@ TEST_CASE("cpc sketch allocation: serialize deserialize empty", "[cpc_sketch]") 
     cpc_sketch_test_alloc sketch(11, DEFAULT_SEED, 0);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, 0);
+    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, alloc(0));
     REQUIRE(deserialized.is_empty() == sketch.is_empty());
     REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
     REQUIRE(deserialized.validate());
@@ -56,7 +57,7 @@ TEST_CASE("cpc sketch allocation: serialize deserialize sparse", "[cpc_sketch]")
     for (int i = 0; i < n; i++) sketch.update(i);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, 0);
+    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, alloc(0));
     REQUIRE(deserialized.is_empty() == sketch.is_empty());
     REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
     REQUIRE(deserialized.validate());
@@ -74,7 +75,7 @@ TEST_CASE("cpc sketch allocation: serialize deserialize hybrid", "[cpc_sketch]")
     for (int i = 0; i < n; i++) sketch.update(i);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, 0);
+    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, alloc(0));
     REQUIRE(deserialized.is_empty() == sketch.is_empty());
     REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
     REQUIRE(deserialized.validate());
@@ -92,7 +93,7 @@ TEST_CASE("cpc sketch allocation: serialize deserialize pinned", "[cpc_sketch]")
     for (int i = 0; i < n; i++) sketch.update(i);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, 0);
+    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, alloc(0));
     REQUIRE(deserialized.is_empty() == sketch.is_empty());
     REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
     REQUIRE(deserialized.validate());
@@ -110,7 +111,7 @@ TEST_CASE("cpc sketch allocation: serialize deserialize sliding", "[cpc_sketch]"
     for (int i = 0; i < n; i++) sketch.update(i);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, 0);
+    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, alloc(0));
     REQUIRE(deserialized.is_empty() == sketch.is_empty());
     REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
     REQUIRE(deserialized.validate());
@@ -128,7 +129,7 @@ TEST_CASE("cpc sketch allocation: serializing deserialize sliding large", "[cpc_
     for (int i = 0; i < n; i++) sketch.update(i);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
-    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, 0);
+    auto deserialized = cpc_sketch_test_alloc::deserialize(s, DEFAULT_SEED, alloc(0));
     REQUIRE(deserialized.is_empty() == sketch.is_empty());
     REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
     REQUIRE(deserialized.validate());

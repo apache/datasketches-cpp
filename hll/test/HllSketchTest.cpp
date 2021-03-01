@@ -25,6 +25,7 @@
 namespace datasketches {
 
 using hll_sketch_test_alloc = hll_sketch_alloc<test_allocator<uint8_t>>;
+using alloc = test_allocator<uint8_t>;
 
 static void runCheckCopy(int lgConfigK, target_hll_type tgtHllType) {
   hll_sketch_test_alloc sk(lgConfigK, tgtHllType, false, 0);
@@ -190,7 +191,7 @@ static bool checkCompact(const int lgK, const int n, const target_hll_type type,
     REQUIRE(ss.tellp() == sk.get_updatable_serialization_bytes());
   }
   
-  hll_sketch_test_alloc sk2 = hll_sketch_test_alloc::deserialize(ss, 0);
+  hll_sketch_test_alloc sk2 = hll_sketch_test_alloc::deserialize(ss, alloc(0));
   REQUIRE(sk2.get_estimate() == Approx(n).margin(0.01));
   bool isCompact = sk2.is_compact();
 
@@ -300,13 +301,13 @@ TEST_CASE("hll sketch: deserialize list mode buffer overrun", "[hll_sketch]") {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
       ss.str(std::string((char*)bytes.data(), 7));
-      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, 0), std::ios_base::failure);
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, alloc(0)), std::ios_base::failure);
     }
     {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
       ss.str(std::string((char*)bytes.data(), bytes.size() - 1));
-      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, 0), std::ios_base::failure);
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, alloc(0)), std::ios_base::failure);
     }
   }
   REQUIRE(test_allocator_total_bytes == 0);
@@ -327,13 +328,13 @@ TEST_CASE("hll sketch: deserialize set mode buffer overrun", "[hll_sketch]") {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
       ss.str(std::string((char*)bytes.data(), 7));
-      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, 0), std::ios_base::failure);
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, alloc(0)), std::ios_base::failure);
     }
     {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
       ss.str(std::string((char*)bytes.data(), bytes.size() - 1));
-      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, 0), std::ios_base::failure);
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, alloc(0)), std::ios_base::failure);
     }
   }
   REQUIRE(test_allocator_total_bytes == 0);
@@ -357,25 +358,25 @@ TEST_CASE("hll sketch: deserialize HLL mode buffer overrun", "[hll_sketch]") {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
       ss.str(std::string((char*)bytes.data(), 7));
-      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, 0), std::ios_base::failure);
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, alloc(0)), std::ios_base::failure);
     }
     {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
       ss.str(std::string((char*)bytes.data(), 15));
-      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, 0), std::ios_base::failure);
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, alloc(0)), std::ios_base::failure);
     }
     {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
       ss.str(std::string((char*)bytes.data(), 16420)); // before aux table
-      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, 0), std::ios_base::failure);
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, alloc(0)), std::ios_base::failure);
     }
     {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
       ss.str(std::string((char*)bytes.data(), bytes.size() - 1));
-      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, 0), std::ios_base::failure);
+      REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, alloc(0)), std::ios_base::failure);
     }
   }
   REQUIRE(test_allocator_total_bytes == 0);

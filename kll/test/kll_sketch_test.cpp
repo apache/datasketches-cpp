@@ -256,7 +256,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_sketch_from_java.sk", std::ios::binary);
-    auto sketch = kll_float_sketch::deserialize(is, 0);
+    auto sketch = kll_float_sketch::deserialize(is, test_allocator<float>(0));
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE(sketch.is_estimation_mode());
     REQUIRE(sketch.get_n() == 1000000);
@@ -270,7 +270,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(s, 0);
+    auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -303,7 +303,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(s, 0);
+    auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE_FALSE(sketch2.is_empty());
@@ -321,7 +321,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.sk", std::ios::binary);
-    auto sketch = kll_float_sketch::deserialize(is, 0);
+    auto sketch = kll_float_sketch::deserialize(is, test_allocator<float>(0));
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE_FALSE(sketch.is_estimation_mode());
     REQUIRE(sketch.get_n() == 1);
@@ -337,7 +337,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(s, 0);
+    auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
@@ -578,7 +578,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch1.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch1.get_serialized_size_bytes());
-    auto sketch2 = kll_string_sketch::deserialize(s, 0);
+    auto sketch2 = kll_string_sketch::deserialize(s, test_allocator<std::string>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch1.is_empty());

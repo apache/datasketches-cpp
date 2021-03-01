@@ -30,6 +30,7 @@ namespace datasketches {
 
 using var_opt_test_sketch = var_opt_sketch<test_type, test_type_serde, test_allocator<test_type>>;
 using var_opt_test_union = var_opt_union<test_type, test_type_serde, test_allocator<test_type>>;
+using alloc = test_allocator<test_type>;
 
 TEST_CASE("varopt allocation test", "[var_opt_sketch]") {
   test_allocator_total_bytes = 0;
@@ -42,7 +43,7 @@ TEST_CASE("varopt allocation test", "[var_opt_sketch]") {
 
     std::stringstream ss;
     sk1.serialize(ss);
-    auto sk3 = var_opt_test_sketch::deserialize(ss, 0);
+    auto sk3 = var_opt_test_sketch::deserialize(ss, alloc(0));
 
     var_opt_test_union u1(10, 0);
     u1.update(sk1);
