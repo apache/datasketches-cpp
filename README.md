@@ -12,7 +12,7 @@ If you are interested in making contributions to this site please see our [Commu
 
 ---
 
-This code requires C++11. It was tested with GCC 4.8.5 (standard in RedHat at the time of this writing), GCC 10.2.0 and Apple clang version 12.0.0 (clang-1200.0.32.27)
+This code requires C++11.
 
 This includes Python bindings. For the Python interface, see the README notes in [the python subdirectory](https://github.com/apache/datasketches-cpp/tree/master/python).
 
