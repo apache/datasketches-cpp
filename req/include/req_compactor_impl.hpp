@@ -309,19 +309,6 @@ void req_compactor<T, C, A>::promote_evens_or_odds(InIter from, InIter to, bool 
   }
 }
 
-// helpers for integral types
-template<typename T>
-static inline T read(std::istream& is) {
-  T value;
-  is.read(reinterpret_cast<char*>(&value), sizeof(T));
-  return value;
-}
-
-template<typename T>
-static inline void write(std::ostream& os, T value) {
-  os.write(reinterpret_cast<const char*>(&value), sizeof(T));
-}
-
 // implementation for fixed-size arithmetic types (integral and floating point)
 template<typename T, typename C, typename A>
 template<typename S, typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>

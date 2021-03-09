@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <iostream>
 
 namespace datasketches {
 
@@ -44,6 +45,19 @@ constexpr uint8_t log2(uint32_t n) {
 
 constexpr uint8_t lg_size_from_count(uint32_t n, double load_factor) {
   return log2(n) + ((n > static_cast<uint32_t>((1 << (log2(n) + 1)) * load_factor)) ? 2 : 1);
+}
+
+// stream helpers for integral types
+template<typename T>
+static inline T read(std::istream& is) {
+  T value;
+  is.read(reinterpret_cast<char*>(&value), sizeof(T));
+  return value;
+}
+
+template<typename T>
+static inline void write(std::ostream& os, T value) {
+  os.write(reinterpret_cast<const char*>(&value), sizeof(T));
 }
 
 } // namespace
