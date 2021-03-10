@@ -70,30 +70,30 @@ uint8_t compact_array_of_doubles_sketch_alloc<A>::get_num_values() const {
 template<typename A>
 void compact_array_of_doubles_sketch_alloc<A>::serialize(std::ostream& os) const {
   const uint8_t preamble_longs = 1;
-  os.write(reinterpret_cast<const char*>(&preamble_longs), sizeof(preamble_longs));
+  write(os, preamble_longs);
   const uint8_t serial_version = SERIAL_VERSION;
-  os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
+  write(os, serial_version);
   const uint8_t family = SKETCH_FAMILY;
-  os.write(reinterpret_cast<const char*>(&family), sizeof(family));
+  write(os, family);
   const uint8_t type = SKETCH_TYPE;
-  os.write(reinterpret_cast<const char*>(&type), sizeof(type));
+  write(os, type);
   const uint8_t flags_byte(
     (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
     (this->get_num_retained() > 0 ? 1 << flags::HAS_ENTRIES : 0) |
     (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
   );
-  os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
-  os.write(reinterpret_cast<const char*>(&num_values_), sizeof(num_values_));
+  write(os, flags_byte);
+  write(os, num_values_);
   const uint16_t seed_hash = this->get_seed_hash();
-  os.write(reinterpret_cast<const char*>(&seed_hash), sizeof(seed_hash));
-  os.write(reinterpret_cast<const char*>(&(this->theta_)), sizeof(uint64_t));
+  write(os, seed_hash);
+  write(os, this->theta_);
   if (this->get_num_retained() > 0) {
     const uint32_t num_entries = this->entries_.size();
-    os.write(reinterpret_cast<const char*>(&num_entries), sizeof(num_entries));
+    write(os, num_entries);
     const uint32_t unused32 = 0;
-    os.write(reinterpret_cast<const char*>(&unused32), sizeof(unused32));
+    write(os, unused32);
     for (const auto& it: this->entries_) {
-      os.write(reinterpret_cast<const char*>(&it.first), sizeof(uint64_t));
+      write(os, it.first);
     }
     for (const auto& it: this->entries_) {
       os.write(reinterpret_cast<const char*>(it.second.data()), it.second.size() * sizeof(double));
@@ -110,30 +110,29 @@ auto compact_array_of_doubles_sketch_alloc<A>::serialize(unsigned header_size_by
   vector_bytes bytes(size, 0, this->entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
-  ptr += copy_to_mem(&preamble_longs, ptr, sizeof(preamble_longs));
+  ptr += copy_to_mem(preamble_longs, ptr);
   const uint8_t serial_version = SERIAL_VERSION;
-  ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
+  ptr += copy_to_mem(serial_version, ptr);
   const uint8_t family = SKETCH_FAMILY;
-  ptr += copy_to_mem(&family, ptr, sizeof(family));
+  ptr += copy_to_mem(family, ptr);
   const uint8_t type = SKETCH_TYPE;
-  ptr += copy_to_mem(&type, ptr, sizeof(type));
+  ptr += copy_to_mem(type, ptr);
   const uint8_t flags_byte(
     (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
     (this->get_num_retained() ? 1 << flags::HAS_ENTRIES : 0) |
     (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
   );
-  ptr += copy_to_mem(&flags_byte, ptr, sizeof(flags_byte));
-  ptr += copy_to_mem(&num_values_, ptr, sizeof(num_values_));
+  ptr += copy_to_mem(flags_byte, ptr);
+  ptr += copy_to_mem(num_values_, ptr);
   const uint16_t seed_hash = this->get_seed_hash();
-  ptr += copy_to_mem(&seed_hash, ptr, sizeof(seed_hash));
-  ptr += copy_to_mem(&(this->theta_), ptr, sizeof(uint64_t));
+  ptr += copy_to_mem(seed_hash, ptr);
+  ptr += copy_to_mem((this->theta_), ptr);
   if (this->get_num_retained() > 0) {
     const uint32_t num_entries = this->entries_.size();
-    ptr += copy_to_mem(&num_entries, ptr, sizeof(num_entries));
-    const uint32_t unused32 = 0;
-    ptr += copy_to_mem(&unused32, ptr, sizeof(unused32));
+    ptr += copy_to_mem(num_entries, ptr);
+    ptr += sizeof(uint32_t); // unused
     for (const auto& it: this->entries_) {
-      ptr += copy_to_mem(&it.first, ptr, sizeof(uint64_t));
+      ptr += copy_to_mem(it.first, ptr);
     }
     for (const auto& it: this->entries_) {
       ptr += copy_to_mem(it.second.data(), ptr, it.second.size() * sizeof(double));
@@ -144,34 +143,24 @@ auto compact_array_of_doubles_sketch_alloc<A>::serialize(unsigned header_size_by
 
 template<typename A>
 compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed, const A& allocator) {
-  uint8_t preamble_longs;
-  is.read(reinterpret_cast<char*>(&preamble_longs), sizeof(preamble_longs));
-  uint8_t serial_version;
-  is.read(reinterpret_cast<char*>(&serial_version), sizeof(serial_version));
-  uint8_t family;
-  is.read(reinterpret_cast<char*>(&family), sizeof(family));
-  uint8_t type;
-  is.read(reinterpret_cast<char*>(&type), sizeof(type));
-  uint8_t flags_byte;
-  is.read(reinterpret_cast<char*>(&flags_byte), sizeof(flags_byte));
-  uint8_t num_values;
-  is.read(reinterpret_cast<char*>(&num_values), sizeof(num_values));
-  uint16_t seed_hash;
-  is.read(reinterpret_cast<char*>(&seed_hash), sizeof(seed_hash));
+  read<uint8_t>(is); // unused
+  const auto serial_version = read<uint8_t>(is);
+  const auto family = read<uint8_t>(is);
+  const auto type = read<uint8_t>(is);
+  const auto flags_byte = read<uint8_t>(is);
+  const auto num_values = read<uint8_t>(is);
+  const auto seed_hash = read<uint16_t>(is);
   checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
   checker<true>::check_sketch_family(family, SKETCH_FAMILY);
   checker<true>::check_sketch_type(type, SKETCH_TYPE);
   const bool has_entries = flags_byte & (1 << flags::HAS_ENTRIES);
   if (has_entries) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
-  uint64_t theta;
-  is.read(reinterpret_cast<char*>(&theta), sizeof(theta));
+  const auto theta = read<uint64_t>(is);
   std::vector<Entry, AllocEntry> entries(allocator);
   if (has_entries) {
-    uint32_t num_entries;
-    is.read(reinterpret_cast<char*>(&num_entries), sizeof(num_entries));
-    uint32_t unused32;
-    is.read(reinterpret_cast<char*>(&unused32), sizeof(unused32));
+    const auto num_entries = read<uint32_t>(is);
+    read<uint32_t>(is); // unused
     entries.reserve(num_entries);
     std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
     is.read(reinterpret_cast<char*>(keys.data()), num_entries * sizeof(uint64_t));
@@ -191,20 +180,19 @@ template<typename A>
 compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed, const A& allocator) {
   ensure_minimum_memory(size, 16);
   const char* ptr = static_cast<const char*>(bytes);
-  uint8_t preamble_longs;
-  ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
+  ptr += sizeof(uint8_t); // unused
   uint8_t serial_version;
-  ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+  ptr += copy_from_mem(ptr, serial_version);
   uint8_t family;
-  ptr += copy_from_mem(ptr, &family, sizeof(family));
+  ptr += copy_from_mem(ptr, family);
   uint8_t type;
-  ptr += copy_from_mem(ptr, &type, sizeof(type));
+  ptr += copy_from_mem(ptr, type);
   uint8_t flags_byte;
-  ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
+  ptr += copy_from_mem(ptr, flags_byte);
   uint8_t num_values;
-  ptr += copy_from_mem(ptr, &num_values, sizeof(num_values));
+  ptr += copy_from_mem(ptr, num_values);
   uint16_t seed_hash;
-  ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
+  ptr += copy_from_mem(ptr, seed_hash);
   checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
   checker<true>::check_sketch_family(family, SKETCH_FAMILY);
   checker<true>::check_sketch_type(type, SKETCH_TYPE);
@@ -212,14 +200,13 @@ compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A
   if (has_entries) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
   uint64_t theta;
-  ptr += copy_from_mem(ptr, &theta, sizeof(theta));
+  ptr += copy_from_mem(ptr, theta);
   std::vector<Entry, AllocEntry> entries(allocator);
   if (has_entries) {
     ensure_minimum_memory(size, 24);
     uint32_t num_entries;
-    ptr += copy_from_mem(ptr, &num_entries, sizeof(num_entries));
-    uint32_t unused32;
-    ptr += copy_from_mem(ptr, &unused32, sizeof(unused32));
+    ptr += copy_from_mem(ptr, num_entries);
+    ptr += sizeof(uint32_t); // unused
     ensure_minimum_memory(size, 24 + (sizeof(uint64_t) + sizeof(double) * num_values) * num_entries);
     entries.reserve(num_entries);
     std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
