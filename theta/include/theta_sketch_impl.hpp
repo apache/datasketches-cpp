@@ -325,30 +325,30 @@ template<typename A>
 void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
   const bool is_single_item = entries_.size() == 1 && !this->is_estimation_mode();
   const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
-  os.write(reinterpret_cast<const char*>(&preamble_longs), sizeof(preamble_longs));
+  write(os, preamble_longs);
   const uint8_t serial_version = SERIAL_VERSION;
-  os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
+  write(os, serial_version);
   const uint8_t type = SKETCH_TYPE;
-  os.write(reinterpret_cast<const char*>(&type), sizeof(type));
+  write(os, type);
   const uint16_t unused16 = 0;
-  os.write(reinterpret_cast<const char*>(&unused16), sizeof(unused16));
+  write(os, unused16);
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
     (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
     (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
   );
-  os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
+  write(os, flags_byte);
   const uint16_t seed_hash = get_seed_hash();
-  os.write(reinterpret_cast<const char*>(&seed_hash), sizeof(seed_hash));
+  write(os, seed_hash);
   if (!this->is_empty()) {
     if (!is_single_item) {
       const uint32_t num_entries = entries_.size();
-      os.write(reinterpret_cast<const char*>(&num_entries), sizeof(num_entries));
+      write(os, num_entries);
       const uint32_t unused32 = 0;
-      os.write(reinterpret_cast<const char*>(&unused32), sizeof(unused32));
+      write(os, unused32);
       if (this->is_estimation_mode()) {
-        os.write(reinterpret_cast<const char*>(&(this->theta_)), sizeof(uint64_t));
+        write(os, this->theta_);
       }
     }
     os.write(reinterpret_cast<const char*>(entries_.data()), entries_.size() * sizeof(uint64_t));
@@ -364,30 +364,30 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
   vector_bytes bytes(size, 0, entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
-  ptr += copy_to_mem(&preamble_longs, ptr, sizeof(preamble_longs));
+  ptr += copy_to_mem(preamble_longs, ptr);
   const uint8_t serial_version = SERIAL_VERSION;
-  ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
+  ptr += copy_to_mem(serial_version, ptr);
   const uint8_t type = SKETCH_TYPE;
-  ptr += copy_to_mem(&type, ptr, sizeof(type));
+  ptr += copy_to_mem(type, ptr);
   const uint16_t unused16 = 0;
-  ptr += copy_to_mem(&unused16, ptr, sizeof(unused16));
+  ptr += copy_to_mem(unused16, ptr);
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
     (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
     (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
   );
-  ptr += copy_to_mem(&flags_byte, ptr, sizeof(flags_byte));
+  ptr += copy_to_mem(flags_byte, ptr);
   const uint16_t seed_hash = get_seed_hash();
-  ptr += copy_to_mem(&seed_hash, ptr, sizeof(seed_hash));
+  ptr += copy_to_mem(seed_hash, ptr);
   if (!this->is_empty()) {
     if (!is_single_item) {
       const uint32_t num_entries = entries_.size();
-      ptr += copy_to_mem(&num_entries, ptr, sizeof(num_entries));
+      ptr += copy_to_mem(num_entries, ptr);
       const uint32_t unused32 = 0;
-      ptr += copy_to_mem(&unused32, ptr, sizeof(unused32));
+      ptr += copy_to_mem(unused32, ptr);
       if (this->is_estimation_mode()) {
-        ptr += copy_to_mem(&theta_, ptr, sizeof(uint64_t));
+        ptr += copy_to_mem(theta_, ptr);
       }
     }
     ptr += copy_to_mem(entries_.data(), ptr, entries_.size() * sizeof(uint64_t));
@@ -397,18 +397,12 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
 
 template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed, const A& allocator) {
-  uint8_t preamble_longs;
-  is.read(reinterpret_cast<char*>(&preamble_longs), sizeof(preamble_longs));
-  uint8_t serial_version;
-  is.read(reinterpret_cast<char*>(&serial_version), sizeof(serial_version));
-  uint8_t type;
-  is.read(reinterpret_cast<char*>(&type), sizeof(type));
-  uint16_t unused16;
-  is.read(reinterpret_cast<char*>(&unused16), sizeof(unused16));
-  uint8_t flags_byte;
-  is.read(reinterpret_cast<char*>(&flags_byte), sizeof(flags_byte));
-  uint16_t seed_hash;
-  is.read(reinterpret_cast<char*>(&seed_hash), sizeof(seed_hash));
+  const auto preamble_longs = read<uint8_t>(is);
+  const auto serial_version = read<uint8_t>(is);
+  const auto type = read<uint8_t>(is);
+  read<uint16_t>(is); // unused
+  const auto flags_byte = read<uint8_t>(is);
+  const auto seed_hash = read<uint16_t>(is);
   checker<true>::check_sketch_type(type, SKETCH_TYPE);
   checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
@@ -420,11 +414,10 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
     if (preamble_longs == 1) {
       num_entries = 1;
     } else {
-      is.read(reinterpret_cast<char*>(&num_entries), sizeof(num_entries));
-      uint32_t unused32;
-      is.read(reinterpret_cast<char*>(&unused32), sizeof(unused32));
+      num_entries = read<uint32_t>(is);
+      read<uint32_t>(is); // unused
       if (preamble_longs > 2) {
-        is.read(reinterpret_cast<char*>(&theta), sizeof(theta));
+        theta = read<uint64_t>(is);
       }
     }
   }
@@ -442,17 +435,16 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const v
   const char* ptr = static_cast<const char*>(bytes);
   const char* base = ptr;
   uint8_t preamble_longs;
-  ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
+  ptr += copy_from_mem(ptr, preamble_longs);
   uint8_t serial_version;
-  ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+  ptr += copy_from_mem(ptr, serial_version);
   uint8_t type;
-  ptr += copy_from_mem(ptr, &type, sizeof(type));
-  uint16_t unused16;
-  ptr += copy_from_mem(ptr, &unused16, sizeof(unused16));
+  ptr += copy_from_mem(ptr, type);
+  ptr += sizeof(uint16_t); // unused
   uint8_t flags_byte;
-  ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
+  ptr += copy_from_mem(ptr, flags_byte);
   uint16_t seed_hash;
-  ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
+  ptr += copy_from_mem(ptr, seed_hash);
   checker<true>::check_sketch_type(type, SKETCH_TYPE);
   checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
@@ -465,12 +457,11 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const v
       num_entries = 1;
     } else {
       ensure_minimum_memory(size, 8); // read the first prelong before this method
-      ptr += copy_from_mem(ptr, &num_entries, sizeof(num_entries));
-      uint32_t unused32;
-      ptr += copy_from_mem(ptr, &unused32, sizeof(unused32));
+      ptr += copy_from_mem(ptr, num_entries);
+      ptr += sizeof(uint32_t); // unused
       if (preamble_longs > 2) {
         ensure_minimum_memory(size, (preamble_longs - 1) << 3);
-        ptr += copy_from_mem(ptr, &theta, sizeof(theta));
+        ptr += copy_from_mem(ptr, theta);
       }
     }
   }

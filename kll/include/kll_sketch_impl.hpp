@@ -388,28 +388,28 @@ template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::serialize(std::ostream& os) const {
   const bool is_single_item = n_ == 1;
   const uint8_t preamble_ints(is_empty() || is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
-  os.write(reinterpret_cast<const char*>(&preamble_ints), sizeof(preamble_ints));
+  write(os, preamble_ints);
   const uint8_t serial_version(is_single_item ? SERIAL_VERSION_2 : SERIAL_VERSION_1);
-  os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
+  write(os, serial_version);
   const uint8_t family(FAMILY);
-  os.write(reinterpret_cast<const char*>(&family), sizeof(family));
+  write(os, family);
   const uint8_t flags_byte(
       (is_empty() ? 1 << flags::IS_EMPTY : 0)
     | (is_level_zero_sorted_ ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
     | (is_single_item ? 1 << flags::IS_SINGLE_ITEM : 0)
   );
-  os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
-  os.write((char*)&k_, sizeof(k_));
-  os.write((char*)&m_, sizeof(m_));
+  write(os, flags_byte);
+  write(os, k_);
+  write(os, m_);
   const uint8_t unused = 0;
-  os.write(reinterpret_cast<const char*>(&unused), sizeof(unused));
+  write(os, unused);
   if (is_empty()) return;
   if (!is_single_item) {
-    os.write((char*)&n_, sizeof(n_));
-    os.write((char*)&min_k_, sizeof(min_k_));
-    os.write((char*)&num_levels_, sizeof(num_levels_));
-    os.write((char*)&unused, sizeof(unused));
-    os.write((char*)levels_.data(), sizeof(levels_[0]) * num_levels_);
+    write(os, n_);
+    write(os, min_k_);
+    write(os, num_levels_);
+    write(os, unused);
+    os.write(reinterpret_cast<const char*>(levels_.data()), sizeof(levels_[0]) * num_levels_);
     S().serialize(os, min_value_, 1);
     S().serialize(os, max_value_, 1);
   }
@@ -424,27 +424,27 @@ vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const
   uint8_t* ptr = bytes.data() + header_size_bytes;
   const uint8_t* end_ptr = ptr + size;
   const uint8_t preamble_ints(is_empty() || is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
-  ptr += copy_to_mem(&preamble_ints, ptr, sizeof(preamble_ints));
+  ptr += copy_to_mem(preamble_ints, ptr);
   const uint8_t serial_version(is_single_item ? SERIAL_VERSION_2 : SERIAL_VERSION_1);
-  ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
+  ptr += copy_to_mem(serial_version, ptr);
   const uint8_t family(FAMILY);
-  ptr += copy_to_mem(&family, ptr, sizeof(family));
+  ptr += copy_to_mem(family, ptr);
   const uint8_t flags_byte(
       (is_empty() ? 1 << flags::IS_EMPTY : 0)
     | (is_level_zero_sorted_ ? 1 << flags::IS_LEVEL_ZERO_SORTED : 0)
     | (is_single_item ? 1 << flags::IS_SINGLE_ITEM : 0)
   );
-  ptr += copy_to_mem(&flags_byte, ptr, sizeof(flags_byte));
-  ptr += copy_to_mem(&k_, ptr, sizeof(k_));
-  ptr += copy_to_mem(&m_, ptr, sizeof(m_));
+  ptr += copy_to_mem(flags_byte, ptr);
+  ptr += copy_to_mem(k_, ptr);
+  ptr += copy_to_mem(m_, ptr);
   const uint8_t unused = 0;
-  ptr += copy_to_mem(&unused, ptr, sizeof(unused));
+  ptr += copy_to_mem(unused, ptr);
   if (!is_empty()) {
     if (!is_single_item) {
-      ptr += copy_to_mem(&n_, ptr, sizeof(n_));
-      ptr += copy_to_mem(&min_k_, ptr, sizeof(min_k_));
-      ptr += copy_to_mem(&num_levels_, ptr, sizeof(num_levels_));
-      ptr += copy_to_mem(&unused, ptr, sizeof(unused));
+      ptr += copy_to_mem(n_, ptr);
+      ptr += copy_to_mem(min_k_, ptr);
+      ptr += copy_to_mem(num_levels_, ptr);
+      ptr += copy_to_mem(unused, ptr);
       ptr += copy_to_mem(levels_.data(), ptr, sizeof(levels_[0]) * num_levels_);
       ptr += S().serialize(ptr, end_ptr - ptr, min_value_, 1);
       ptr += S().serialize(ptr, end_ptr - ptr, max_value_, 1);
@@ -459,20 +459,13 @@ vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const
 
 template<typename T, typename C, typename S, typename A>
 kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is, const A& allocator) {
-  uint8_t preamble_ints;
-  is.read((char*)&preamble_ints, sizeof(preamble_ints));
-  uint8_t serial_version;
-  is.read((char*)&serial_version, sizeof(serial_version));
-  uint8_t family_id;
-  is.read((char*)&family_id, sizeof(family_id));
-  uint8_t flags_byte;
-  is.read((char*)&flags_byte, sizeof(flags_byte));
-  uint16_t k;
-  is.read((char*)&k, sizeof(k));
-  uint8_t m;
-  is.read((char*)&m, sizeof(m));
-  uint8_t unused;
-  is.read((char*)&unused, sizeof(unused));
+  const auto preamble_ints = read<uint8_t>(is);
+  const auto serial_version = read<uint8_t>(is);
+  const auto family_id = read<uint8_t>(is);
+  const auto flags_byte = read<uint8_t>(is);
+  const auto k = read<uint16_t>(is);
+  const auto m = read<uint8_t>(is);
+  read<uint8_t>(is); // skip unused byte
 
   check_m(m);
   check_preamble_ints(preamble_ints, flags_byte);
@@ -492,10 +485,10 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is, con
     min_k = k;
     num_levels = 1;
   } else {
-    is.read((char*)&n, sizeof(n_));
-    is.read((char*)&min_k, sizeof(min_k_));
-    is.read((char*)&num_levels, sizeof(num_levels));
-    is.read((char*)&unused, sizeof(unused));
+    n = read<uint64_t>(is);
+    min_k = read<uint16_t>(is);
+    num_levels = read<uint8_t>(is);
+    read<uint8_t>(is); // skip unused byte
   }
   vector_u32<A> levels(num_levels + 1, 0, allocator);
   const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));
@@ -503,7 +496,7 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is, con
     levels[0] = capacity - 1;
   } else {
     // the last integer in levels_ is not serialized because it can be derived
-    is.read((char*)levels.data(), sizeof(levels[0]) * num_levels);
+    is.read(reinterpret_cast<char*>(levels.data()), sizeof(levels[0]) * num_levels);
   }
   levels[num_levels] = capacity;
   A alloc(allocator);
@@ -546,18 +539,18 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_ints;
-  ptr += copy_from_mem(ptr, &preamble_ints, sizeof(preamble_ints));
+  ptr += copy_from_mem(ptr, preamble_ints);
   uint8_t serial_version;
-  ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+  ptr += copy_from_mem(ptr, serial_version);
   uint8_t family_id;
-  ptr += copy_from_mem(ptr, &family_id, sizeof(family_id));
+  ptr += copy_from_mem(ptr, family_id);
   uint8_t flags_byte;
-  ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
+  ptr += copy_from_mem(ptr, flags_byte);
   uint16_t k;
-  ptr += copy_from_mem(ptr, &k, sizeof(k));
+  ptr += copy_from_mem(ptr, k);
   uint8_t m;
-  ptr += copy_from_mem(ptr, &m, sizeof(m));
-  ptr++; // skip unused byte
+  ptr += copy_from_mem(ptr, m);
+  ptr += sizeof(uint8_t); // skip unused byte
 
   check_m(m);
   check_preamble_ints(preamble_ints, flags_byte);
@@ -578,10 +571,10 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
     min_k = k;
     num_levels = 1;
   } else {
-    ptr += copy_from_mem(ptr, &n, sizeof(n));
-    ptr += copy_from_mem(ptr, &min_k, sizeof(min_k));
-    ptr += copy_from_mem(ptr, &num_levels, sizeof(num_levels));
-    ptr++; // skip unused byte
+    ptr += copy_from_mem(ptr, n);
+    ptr += copy_from_mem(ptr, min_k);
+    ptr += copy_from_mem(ptr, num_levels);
+    ptr += sizeof(uint8_t); // skip unused byte
   }
   vector_u32<A> levels(num_levels + 1, 0, allocator);
   const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));

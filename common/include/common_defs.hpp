@@ -56,7 +56,7 @@ static inline T read(std::istream& is) {
 }
 
 template<typename T>
-static inline void write(std::ostream& os, T value) {
+static inline void write(std::ostream& os, T& value) {
   os.write(reinterpret_cast<const char*>(&value), sizeof(T));
 }
 

@@ -359,21 +359,21 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
   // first prelong
   uint8_t ser_ver(SER_VER);
   uint8_t family(FAMILY_ID);
-  ptr += copy_to_mem(&first_byte, ptr, sizeof(uint8_t));
-  ptr += copy_to_mem(&ser_ver, ptr, sizeof(uint8_t));
-  ptr += copy_to_mem(&family, ptr, sizeof(uint8_t));
-  ptr += copy_to_mem(&flags, ptr, sizeof(uint8_t));
-  ptr += copy_to_mem(&k_, ptr, sizeof(uint32_t));
+  ptr += copy_to_mem(first_byte, ptr);
+  ptr += copy_to_mem(ser_ver, ptr);
+  ptr += copy_to_mem(family, ptr);
+  ptr += copy_to_mem(flags, ptr);
+  ptr += copy_to_mem(k_, ptr);
 
   if (!empty) {
     // second and third prelongs
-    ptr += copy_to_mem(&n_, ptr, sizeof(uint64_t));
-    ptr += copy_to_mem(&h_, ptr, sizeof(uint32_t));
-    ptr += copy_to_mem(&r_, ptr, sizeof(uint32_t));
+    ptr += copy_to_mem(n_, ptr);
+    ptr += copy_to_mem(h_, ptr);
+    ptr += copy_to_mem(r_, ptr);
 
     // fourth prelong, if needed
     if (r_ > 0) {
-      ptr += copy_to_mem(&total_wt_r_, ptr, sizeof(double));
+      ptr += copy_to_mem(total_wt_r_, ptr);
     }
 
     // first h_ weights
@@ -388,14 +388,14 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
         }
 
         if ((i & 0x7) == 0x7) {
-          ptr += copy_to_mem(&val, ptr, sizeof(uint8_t));
+          ptr += copy_to_mem(val, ptr);
           val = 0;
         }
       }
 
       // write out any remaining values
       if ((h_ & 0x7) > 0) {
-        ptr += copy_to_mem(&val, ptr, sizeof(uint8_t));
+        ptr += copy_to_mem(val, ptr);
       }
     }
 
@@ -428,25 +428,25 @@ void var_opt_sketch<T,S,A>::serialize(std::ostream& os) const {
   // first prelong
   const uint8_t ser_ver(SER_VER);
   const uint8_t family(FAMILY_ID);
-  os.write((char*)&first_byte, sizeof(uint8_t));
-  os.write((char*)&ser_ver, sizeof(uint8_t));
-  os.write((char*)&family, sizeof(uint8_t));
-  os.write((char*)&flags, sizeof(uint8_t));
-  os.write((char*)&k_, sizeof(uint32_t));
+  write(os, first_byte);
+  write(os, ser_ver);
+  write(os, family);
+  write(os, flags);
+  write(os, k_);
 
   if (!empty) {
     // second and third prelongs
-    os.write((char*)&n_, sizeof(uint64_t));
-    os.write((char*)&h_, sizeof(uint32_t));
-    os.write((char*)&r_, sizeof(uint32_t));
+    write(os, n_);
+    write(os, h_);
+    write(os, r_);
     
     // fourth prelong, if needed
     if (r_ > 0) {
-      os.write((char*)&total_wt_r_, sizeof(double));
+      write(os, total_wt_r_);
     }
 
     // write the first h_ weights
-    os.write((char*)weights_, h_ * sizeof(double));
+    os.write(reinterpret_cast<char*>(weights_), h_ * sizeof(double));
 
     // write the first h_ marks as packed bytes iff we have a gadget
     if (marks_ != nullptr) {
@@ -457,14 +457,14 @@ void var_opt_sketch<T,S,A>::serialize(std::ostream& os) const {
         }
 
         if ((i & 0x7) == 0x7) {
-          os.write((char*)&val, sizeof(uint8_t));
+          write(os, val);
           val = 0;
         }
       }
 
       // write out any remaining values
       if ((h_ & 0x7) > 0) {
-        os.write((char*)&val, sizeof(uint8_t));
+        write(os, val);
       }
     }
 
@@ -481,17 +481,17 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
   const char* base = ptr;
   const char* end_ptr = ptr + size;
   uint8_t first_byte;
-  ptr += copy_from_mem(ptr, &first_byte, sizeof(first_byte));
+  ptr += copy_from_mem(ptr, first_byte);
   uint8_t preamble_longs = first_byte & 0x3f;
   resize_factor rf = static_cast<resize_factor>((first_byte >> 6) & 0x03);
   uint8_t serial_version;
-  ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+  ptr += copy_from_mem(ptr, serial_version);
   uint8_t family_id;
-  ptr += copy_from_mem(ptr, &family_id, sizeof(family_id));
+  ptr += copy_from_mem(ptr, family_id);
   uint8_t flags;
-  ptr += copy_from_mem(ptr, &flags, sizeof(flags));
+  ptr += copy_from_mem(ptr, flags);
   uint32_t k;
-  ptr += copy_from_mem(ptr, &k, sizeof(k));
+  ptr += copy_from_mem(ptr, k);
 
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
@@ -507,16 +507,16 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
   // second and third prelongs
   uint64_t n;
   uint32_t h, r;
-  ptr += copy_from_mem(ptr, &n, sizeof(n));
-  ptr += copy_from_mem(ptr, &h, sizeof(h));
-  ptr += copy_from_mem(ptr, &r, sizeof(r));
+  ptr += copy_from_mem(ptr, n);
+  ptr += copy_from_mem(ptr, h);
+  ptr += copy_from_mem(ptr, r);
 
   const uint32_t array_size = validate_and_get_target_size(preamble_longs, k, n, h, r, rf);
   
   // current_items_alloc_ is set but validate R region weight (4th prelong), if needed, before allocating
   double total_wt_r = 0.0;
   if (preamble_longs == PREAMBLE_LONGS_FULL) {
-    ptr += copy_from_mem(ptr, &total_wt_r, sizeof(total_wt_r));
+    ptr += copy_from_mem(ptr, total_wt_r);
     if (std::isnan(total_wt_r) || r == 0 || total_wt_r <= 0.0) {
       throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
        "Found r = " + std::to_string(r) + ", R region weight = " + std::to_string(total_wt_r));
@@ -548,7 +548,7 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
     check_memory_size(ptr - base + size_marks, size);
     for (uint32_t i = 0; i < h; ++i) {
      if ((i & 0x7) == 0x0) { // should trigger on first iteration
-        ptr += copy_from_mem(ptr, &val, sizeof(val));
+        ptr += copy_from_mem(ptr, val);
       }
       marks.get()[i] = ((val >> (i & 0x7)) & 0x1) == 1;
       num_marks_in_h += (marks.get()[i] ? 1 : 0);
@@ -571,18 +571,13 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
 
 template<typename T, typename S, typename A>
 var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is, const A& allocator) {
-  uint8_t first_byte;
-  is.read((char*)&first_byte, sizeof(first_byte));
+  const auto first_byte = read<uint8_t>(is);
   uint8_t preamble_longs = first_byte & 0x3f;
-  resize_factor rf = static_cast<resize_factor>((first_byte >> 6) & 0x03);
-  uint8_t serial_version;
-  is.read((char*)&serial_version, sizeof(serial_version));
-  uint8_t family_id;
-  is.read((char*)&family_id, sizeof(family_id));
-  uint8_t flags;
-  is.read((char*)&flags, sizeof(flags));
-  uint32_t k;
-  is.read((char*)&k, sizeof(k));
+  const resize_factor rf = static_cast<resize_factor>((first_byte >> 6) & 0x03);
+  const auto serial_version = read<uint8_t>(is);
+  const auto family_id = read<uint8_t>(is);
+  const auto flags = read<uint8_t>(is);
+  const auto k = read<uint32_t>(is);
 
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
@@ -598,31 +593,27 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is, const
   }
 
   // second and third prelongs
-  uint64_t n;
-  uint32_t h, r;
-  is.read((char*)&n, sizeof(n));
-  is.read((char*)&h, sizeof(h));
-  is.read((char*)&r, sizeof(r));
+  const auto n = read<uint64_t>(is);
+  const auto h = read<uint32_t>(is);
+  const auto r = read<uint32_t>(is);
 
   const uint32_t array_size = validate_and_get_target_size(preamble_longs, k, n, h, r, rf);
 
   // current_items_alloc_ is set but validate R region weight (4th prelong), if needed, before allocating
   double total_wt_r = 0.0;
   if (preamble_longs == PREAMBLE_LONGS_FULL) { 
-    is.read((char*)&total_wt_r, sizeof(total_wt_r));
+    total_wt_r = read<double>(is);
     if (std::isnan(total_wt_r) || r == 0 || total_wt_r <= 0.0) {
       throw std::invalid_argument("Possible corruption: deserializing in full mode but r = 0 or invalid R weight. "
        "Found r = " + std::to_string(r) + ", R region weight = " + std::to_string(total_wt_r));
     }
-  } else {
-    total_wt_r = 0.0;
   }
 
   // read the first h weights, fill remainder with -1.0
   std::unique_ptr<double, weights_deleter> weights(AllocDouble(allocator).allocate(array_size),
       weights_deleter(array_size, allocator));
   double* wts = weights.get(); // to avoid lots of .get() calls -- do not delete
-  is.read((char*)wts, h * sizeof(double));
+  is.read(reinterpret_cast<char*>(wts), h * sizeof(double));
   for (size_t i = 0; i < h; ++i) {
     if (!(wts[i] > 0.0)) {
       throw std::invalid_argument("Possible corruption: Non-positive weight when deserializing: " + std::to_string(wts[i]));
@@ -638,7 +629,7 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is, const
     uint8_t val = 0;
     for (uint32_t i = 0; i < h; ++i) {
       if ((i & 0x7) == 0x0) { // should trigger on first iteration
-        is.read((char*)&val, sizeof(val));
+        val = read<uint8_t>(is);
       }
       marks.get()[i] = ((val >> (i & 0x7)) & 0x1) == 1;
       num_marks_in_h += (marks.get()[i] ? 1 : 0);
