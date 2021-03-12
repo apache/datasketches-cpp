@@ -400,8 +400,7 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
   ptr += copy_to_mem(family, ptr);
   const uint8_t type = SKETCH_TYPE;
   ptr += copy_to_mem(type, ptr);
-  const uint8_t unused8 = 0;
-  ptr += copy_to_mem(unused8, ptr);
+  ptr += sizeof(uint8_t); // unused
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
@@ -415,8 +414,7 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
     if (!is_single_item) {
       const uint32_t num_entries = entries_.size();
       ptr += copy_to_mem(num_entries, ptr);
-      const uint32_t unused32 = 0;
-      ptr += copy_to_mem(unused32, ptr);
+      ptr += sizeof(uint32_t); // unused
       if (this->is_estimation_mode()) {
         ptr += copy_to_mem(theta_, ptr);
       }

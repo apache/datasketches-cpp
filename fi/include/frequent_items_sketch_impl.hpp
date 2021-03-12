@@ -196,7 +196,7 @@ void frequent_items_sketch<T, W, H, E, S, A>::serialize(std::ostream& os) const 
       new (&items[i]) T(it.first);
       weights[i++] = it.second;
     }
-    os.write(reinterpret_cast<const char*>(weights), sizeof(W) * num_items);
+    write(os, weights, sizeof(W) * num_items);
     aw.deallocate(weights, num_items);
     S().serialize(os, items, num_items);
     for (unsigned i = 0; i < num_items; i++) items[i].~T();
@@ -233,13 +233,11 @@ auto frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_size_byt
     (is_empty() ? 1 << flags::IS_EMPTY : 0)
   );
   ptr += copy_to_mem(flags_byte, ptr);
-  const uint16_t unused16 = 0;
-  ptr += copy_to_mem(unused16, ptr);
+  ptr += sizeof(uint16_t); // unused
   if (!is_empty()) {
     const uint32_t num_items = map.get_num_active();
     ptr += copy_to_mem(num_items, ptr);
-    const uint32_t unused32 = 0;
-    ptr += copy_to_mem(unused32, ptr);
+    ptr += sizeof(uint32_t); // unused
     ptr += copy_to_mem(total_weight, ptr);
     ptr += copy_to_mem(offset, ptr);
 
@@ -311,7 +309,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     // batch deserialization with intermediate array of items and weights
     using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
     std::vector<W, AllocW> weights(num_items, 0, allocator);
-    is.read(reinterpret_cast<char*>(weights.data()), sizeof(W) * num_items);
+    read(is, weights.data(), sizeof(W) * num_items);
     A alloc(allocator);
     std::unique_ptr<T, items_deleter> items(alloc.allocate(num_items), items_deleter(num_items, false, alloc));
     S().deserialize(is, items.get(), num_items);

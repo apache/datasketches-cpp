@@ -96,7 +96,7 @@ void compact_array_of_doubles_sketch_alloc<A>::serialize(std::ostream& os) const
       write(os, it.first);
     }
     for (const auto& it: this->entries_) {
-      os.write(reinterpret_cast<const char*>(it.second.data()), it.second.size() * sizeof(double));
+      write(os, it.second.data(), it.second.size() * sizeof(double));
     }
   }
 }
@@ -163,10 +163,10 @@ compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A
     read<uint32_t>(is); // unused
     entries.reserve(num_entries);
     std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
-    is.read(reinterpret_cast<char*>(keys.data()), num_entries * sizeof(uint64_t));
+    read(is, keys.data(), num_entries * sizeof(uint64_t));
     for (size_t i = 0; i < num_entries; ++i) {
       aod<A> summary(num_values, allocator);
-      is.read(reinterpret_cast<char*>(summary.data()), num_values * sizeof(double));
+      read(is, summary.data(), num_values * sizeof(double));
       entries.push_back(Entry(keys[i], std::move(summary)));
     }
   }

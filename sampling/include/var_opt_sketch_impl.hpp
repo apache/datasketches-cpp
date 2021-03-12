@@ -446,7 +446,7 @@ void var_opt_sketch<T,S,A>::serialize(std::ostream& os) const {
     }
 
     // write the first h_ weights
-    os.write(reinterpret_cast<char*>(weights_), h_ * sizeof(double));
+    write(os, weights_, h_ * sizeof(double));
 
     // write the first h_ marks as packed bytes iff we have a gadget
     if (marks_ != nullptr) {
@@ -613,7 +613,7 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is, const
   std::unique_ptr<double, weights_deleter> weights(AllocDouble(allocator).allocate(array_size),
       weights_deleter(array_size, allocator));
   double* wts = weights.get(); // to avoid lots of .get() calls -- do not delete
-  is.read(reinterpret_cast<char*>(wts), h * sizeof(double));
+  read(is, wts, h * sizeof(double));
   for (size_t i = 0; i < h; ++i) {
     if (!(wts[i] > 0.0)) {
       throw std::invalid_argument("Possible corruption: Non-positive weight when deserializing: " + std::to_string(wts[i]));

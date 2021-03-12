@@ -409,7 +409,7 @@ void kll_sketch<T, C, S, A>::serialize(std::ostream& os) const {
     write(os, min_k_);
     write(os, num_levels_);
     write(os, unused);
-    os.write(reinterpret_cast<const char*>(levels_.data()), sizeof(levels_[0]) * num_levels_);
+    write(os, levels_.data(), sizeof(levels_[0]) * num_levels_);
     S().serialize(os, min_value_, 1);
     S().serialize(os, max_value_, 1);
   }
@@ -437,14 +437,13 @@ vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const
   ptr += copy_to_mem(flags_byte, ptr);
   ptr += copy_to_mem(k_, ptr);
   ptr += copy_to_mem(m_, ptr);
-  const uint8_t unused = 0;
-  ptr += copy_to_mem(unused, ptr);
+  ptr += sizeof(uint8_t); // unused
   if (!is_empty()) {
     if (!is_single_item) {
       ptr += copy_to_mem(n_, ptr);
       ptr += copy_to_mem(min_k_, ptr);
       ptr += copy_to_mem(num_levels_, ptr);
-      ptr += copy_to_mem(unused, ptr);
+      ptr += sizeof(uint8_t); // unused
       ptr += copy_to_mem(levels_.data(), ptr, sizeof(levels_[0]) * num_levels_);
       ptr += S().serialize(ptr, end_ptr - ptr, min_value_, 1);
       ptr += S().serialize(ptr, end_ptr - ptr, max_value_, 1);
@@ -496,7 +495,7 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is, con
     levels[0] = capacity - 1;
   } else {
     // the last integer in levels_ is not serialized because it can be derived
-    is.read(reinterpret_cast<char*>(levels.data()), sizeof(levels[0]) * num_levels);
+    read(is, levels.data(), sizeof(levels[0]) * num_levels);
   }
   levels[num_levels] = capacity;
   A alloc(allocator);

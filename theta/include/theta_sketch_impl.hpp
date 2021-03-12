@@ -351,7 +351,7 @@ void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
         write(os, this->theta_);
       }
     }
-    os.write(reinterpret_cast<const char*>(entries_.data()), entries_.size() * sizeof(uint64_t));
+    write(os, entries_.data(), entries_.size() * sizeof(uint64_t));
   }
 }
 
@@ -369,8 +369,7 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
   ptr += copy_to_mem(serial_version, ptr);
   const uint8_t type = SKETCH_TYPE;
   ptr += copy_to_mem(type, ptr);
-  const uint16_t unused16 = 0;
-  ptr += copy_to_mem(unused16, ptr);
+  ptr += sizeof(uint16_t); // unused
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
@@ -384,8 +383,7 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
     if (!is_single_item) {
       const uint32_t num_entries = entries_.size();
       ptr += copy_to_mem(num_entries, ptr);
-      const uint32_t unused32 = 0;
-      ptr += copy_to_mem(unused32, ptr);
+      ptr += sizeof(uint32_t);
       if (this->is_estimation_mode()) {
         ptr += copy_to_mem(theta_, ptr);
       }
@@ -422,7 +420,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
     }
   }
   std::vector<uint64_t, A> entries(num_entries, 0, allocator);
-  if (!is_empty) is.read(reinterpret_cast<char*>(entries.data()), sizeof(uint64_t) * entries.size());
+  if (!is_empty) read(is, entries.data(), sizeof(uint64_t) * entries.size());
 
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
   if (!is.good()) throw std::runtime_error("error reading from std::istream");

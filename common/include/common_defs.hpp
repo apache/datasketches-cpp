@@ -47,7 +47,7 @@ constexpr uint8_t lg_size_from_count(uint32_t n, double load_factor) {
   return log2(n) + ((n > static_cast<uint32_t>((1 << (log2(n) + 1)) * load_factor)) ? 2 : 1);
 }
 
-// stream helpers for integral types
+// stream helpers to hide casts
 template<typename T>
 static inline T read(std::istream& is) {
   T value;
@@ -56,8 +56,18 @@ static inline T read(std::istream& is) {
 }
 
 template<typename T>
+static inline void read(std::istream& is, T* ptr, size_t size_bytes) {
+  is.read(reinterpret_cast<char*>(ptr), size_bytes);
+}
+
+template<typename T>
 static inline void write(std::ostream& os, T& value) {
   os.write(reinterpret_cast<const char*>(&value), sizeof(T));
+}
+
+template<typename T>
+static inline void write(std::ostream& os, const T* ptr, size_t size_bytes) {
+  os.write(reinterpret_cast<const char*>(ptr), size_bytes);
 }
 
 } // namespace

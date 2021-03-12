@@ -449,10 +449,10 @@ void cpc_sketch_alloc<A>::serialize(std::ostream& os) const {
     // this is the second HIP decision point
     if (has_hip && !(has_table && has_window)) write_hip(os);
     if (has_window) {
-      os.write(reinterpret_cast<const char*>(compressed.window_data.data()), compressed.window_data_words * sizeof(uint32_t));
+      write(os, compressed.window_data.data(), compressed.window_data_words * sizeof(uint32_t));
     }
     if (has_table) {
-      os.write(reinterpret_cast<const char*>(compressed.table_data.data()), compressed.table_data_words * sizeof(uint32_t));
+      write(os, compressed.table_data.data(), compressed.table_data_words * sizeof(uint32_t));
     }
   }
 }
@@ -555,11 +555,11 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t 
     }
     if (has_window) {
       compressed.window_data.resize(compressed.window_data_words);
-      is.read(reinterpret_cast<char*>(compressed.window_data.data()), compressed.window_data_words * sizeof(uint32_t));
+      read(is, compressed.window_data.data(), compressed.window_data_words * sizeof(uint32_t));
     }
     if (has_table) {
       compressed.table_data.resize(compressed.table_data_words);
-      is.read(reinterpret_cast<char*>(compressed.table_data.data()), compressed.table_data_words * sizeof(uint32_t));
+      read(is, compressed.table_data.data(), compressed.table_data_words * sizeof(uint32_t));
     }
     if (!has_window) compressed.table_num_entries = num_coupons;
   }
