@@ -111,18 +111,16 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(std::istream& is, const int lgConfigK,
   int configKmask = (1 << lgConfigK) - 1;
 
   if (srcCompact) {
-    int pair;
     for (int i = 0; i < auxCount; ++i) {
-      is.read((char*)&pair, sizeof(pair));
+      const auto pair = read<int>(is);
       int slotNo = HllUtil<A>::getLow26(pair) & configKmask;
       int value = HllUtil<A>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
     }
   } else { // updatable
     int itemsToRead = 1 << lgAuxArrInts;
-    int pair;
     for (int i = 0; i < itemsToRead; ++i) {
-      is.read((char*)&pair, sizeof(pair));
+      const auto pair = read<int>(is);
       if (pair == HllUtil<A>::EMPTY) { continue; }
       int slotNo = HllUtil<A>::getLow26(pair) & configKmask;
       int value = HllUtil<A>::getValue(pair);

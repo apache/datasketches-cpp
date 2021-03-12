@@ -125,7 +125,7 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len, const 
 template<typename A>
 CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is, const A& allocator) {
   uint8_t listHeader[8];
-  is.read((char*)listHeader, 8 * sizeof(uint8_t));
+  read(is, listHeader, 8 * sizeof(uint8_t));
 
   if (listHeader[HllUtil<A>::PREAMBLE_INTS_BYTE] != HllUtil<A>::HASH_SET_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
@@ -152,8 +152,7 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is, const A& allocator)
   int lgArrInts = listHeader[HllUtil<A>::LG_ARR_BYTE];
   const bool compactFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
 
-  int couponCount;
-  is.read((char*)&couponCount, sizeof(couponCount));
+  const auto couponCount = read<int>(is);
   if (lgArrInts < HllUtil<A>::LG_INIT_SET_SIZE) { 
     lgArrInts = HllUtil<A>::computeLgArrInts(SET, couponCount, lgK);
   }
@@ -167,15 +166,14 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is, const A& allocator)
   // we'll set later if updatable, and increment with updates if compact
   if (compactFlag) {
     for (int i = 0; i < couponCount; ++i) {
-      int coupon;
-      is.read((char*)&coupon, sizeof(coupon));
+      const auto coupon = read<int>(is);
       sketch->couponUpdate(coupon);
     }
   } else {
     sketch->coupons.resize(1 << lgArrInts);
     sketch->couponCount = couponCount;
     // for stream processing, read entire list so read pointer ends up set correctly
-    is.read((char*)sketch->coupons.data(), sketch->coupons.size() * sizeof(int));
+    read(is, sketch->coupons.data(), sketch->coupons.size() * sizeof(int));
   } 
 
   if (!is.good())
