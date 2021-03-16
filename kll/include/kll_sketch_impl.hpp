@@ -380,7 +380,7 @@ size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes() const {
   size_t size = DATA_START + num_levels_ * sizeof(uint32_t);
   size += S().size_of_item(*min_value_);
   size += S().size_of_item(*max_value_);
-  for (auto& it: *this) size += S().size_of_item(it.first);
+  for (auto it: *this) size += S().size_of_item(it.first);
   return size;
 }
 

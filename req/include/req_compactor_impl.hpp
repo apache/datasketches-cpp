@@ -389,7 +389,7 @@ auto req_compactor<T, C, A>::deserialize_items(std::istream& is, const S& serde,
   // serde did not throw, enable destructors
   items.get_deleter().set_destroy(true);
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
-  return std::move(items);
+  return items;
 }
 
 template<typename T, typename C, typename A>

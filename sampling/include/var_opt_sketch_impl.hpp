@@ -334,7 +334,7 @@ size_t var_opt_sketch<T,S,A>::get_serialized_size_bytes() const {
     num_bytes += (h_ / 8) + (h_ % 8 > 0);
   }
   // must iterate over the items
-  for (auto& it: *this)
+  for (auto it: *this)
     num_bytes += S().size_of_item(it.first);
   return num_bytes;
 }

@@ -71,7 +71,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch.get_CDF(split_points, 1).size() == 0);
 
     int count = 0;
-    for (auto& it: sketch) {
+    for (auto it: sketch) {
       (void) it; // to suppress "unused" warning
       ++count;
     }
@@ -104,7 +104,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(quantiles[2] == 1.0);
 
     int count = 0;
-    for (auto& it: sketch) {
+    for (auto it: sketch) {
       REQUIRE(it.second == 1);
       ++count;
     }

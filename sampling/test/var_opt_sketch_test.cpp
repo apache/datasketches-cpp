@@ -220,7 +220,7 @@ TEST_CASE("varopt sketch: cumulative weight", "[var_opt_sketch]") {
   }
 
   double output_sum = 0.0;
-  for (auto& it : sk) { // std::pair<int, weight>
+  for (auto it : sk) { // std::pair<int, weight>
     output_sum += it.second;
   }
     

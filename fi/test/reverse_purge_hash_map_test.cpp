@@ -40,7 +40,7 @@ TEST_CASE("reverse purge hash map: iterator", "[frequent_items_sketch]") {
   reverse_purge_hash_map<int> map(3, 4, std::allocator<int>());
   for (int i = 0; i < 11; i++) map.adjust_or_insert(i, 1); // this should fit with no purge
   int sum = 0;
-  for (auto &it: map) sum += it.second;
+  for (auto it: map) sum += it.second;
   REQUIRE(sum == 11);
 }
 
