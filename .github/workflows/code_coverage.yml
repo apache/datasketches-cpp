@@ -22,9 +22,9 @@ jobs:
           persist-credentials: false
       - name: Download and install lcov
         run: |
-          VERSION="1.14"
+          VERSION="1.15"
           mkdir lcov_pkg && cd lcov_pkg
-          wget "https://github.com/linux-test-project/lcov/releases/download/v1.14/lcov-$VERSION.tar.gz"
+          wget "https://github.com/linux-test-project/lcov/releases/download/v$VERSION/lcov-$VERSION.tar.gz"
           tar -xzf "lcov-$VERSION.tar.gz"
           cd "lcov-$VERSION"
           sudo make install

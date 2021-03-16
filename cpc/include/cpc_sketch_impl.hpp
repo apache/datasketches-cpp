@@ -415,44 +415,44 @@ void cpc_sketch_alloc<A>::serialize(std::ostream& os) const {
   const bool has_table = compressed.table_data.size() > 0;
   const bool has_window = compressed.window_data.size() > 0;
   const uint8_t preamble_ints = get_preamble_ints(num_coupons, has_hip, has_table, has_window);
-  os.write(reinterpret_cast<const char*>(&preamble_ints), sizeof(preamble_ints));
+  write(os, preamble_ints);
   const uint8_t serial_version = SERIAL_VERSION;
-  os.write(reinterpret_cast<const char*>(&serial_version), sizeof(serial_version));
+  write(os, serial_version);
   const uint8_t family = FAMILY;
-  os.write(reinterpret_cast<const char*>(&family), sizeof(family));
-  os.write(reinterpret_cast<const char*>(&lg_k), sizeof(lg_k));
-  os.write(reinterpret_cast<const char*>(&first_interesting_column), sizeof(first_interesting_column));
+  write(os, family);
+  write(os, lg_k);
+  write(os, first_interesting_column);
   const uint8_t flags_byte(
     (1 << flags::IS_COMPRESSED)
     | (has_hip ? 1 << flags::HAS_HIP : 0)
     | (has_table ? 1 << flags::HAS_TABLE : 0)
     | (has_window ? 1 << flags::HAS_WINDOW : 0)
   );
-  os.write(reinterpret_cast<const char*>(&flags_byte), sizeof(flags_byte));
+  write(os, flags_byte);
   const uint16_t seed_hash(compute_seed_hash(seed));
-  os.write((char*)&seed_hash, sizeof(seed_hash));
+  write(os, seed_hash);
   if (!is_empty()) {
-    os.write((char*)&num_coupons, sizeof(num_coupons));
+    write(os, num_coupons);
     if (has_table && has_window) {
       // if there is no window it is the same as number of coupons
-      os.write((char*)&compressed.table_num_entries, sizeof(compressed.table_num_entries));
+      write(os, compressed.table_num_entries);
       // HIP values can be in two different places in the sequence of fields
       // this is the first HIP decision point
       if (has_hip) write_hip(os);
     }
     if (has_table) {
-      os.write((char*)&compressed.table_data_words, sizeof(compressed.table_data_words));
+      write(os, compressed.table_data_words);
     }
     if (has_window) {
-      os.write((char*)&compressed.window_data_words, sizeof(compressed.window_data_words));
+      write(os, compressed.window_data_words);
     }
     // this is the second HIP decision point
     if (has_hip && !(has_table && has_window)) write_hip(os);
     if (has_window) {
-      os.write((char*)compressed.window_data.data(), compressed.window_data_words * sizeof(uint32_t));
+      write(os, compressed.window_data.data(), compressed.window_data_words * sizeof(uint32_t));
     }
     if (has_table) {
-      os.write((char*)compressed.table_data.data(), compressed.table_data_words * sizeof(uint32_t));
+      write(os, compressed.table_data.data(), compressed.table_data_words * sizeof(uint32_t));
     }
   }
 }
@@ -471,36 +471,36 @@ vector_u8<A> cpc_sketch_alloc<A>::serialize(unsigned header_size_bytes) const {
   const size_t size = header_size_bytes + (preamble_ints + compressed.table_data_words + compressed.window_data_words) * sizeof(uint32_t);
   vector_u8<A> bytes(size, 0, sliding_window.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  ptr += copy_to_mem(&preamble_ints, ptr, sizeof(preamble_ints));
+  ptr += copy_to_mem(preamble_ints, ptr);
   const uint8_t serial_version = SERIAL_VERSION;
-  ptr += copy_to_mem(&serial_version, ptr, sizeof(serial_version));
+  ptr += copy_to_mem(serial_version, ptr);
   const uint8_t family = FAMILY;
-  ptr += copy_to_mem(&family, ptr, sizeof(family));
-  ptr += copy_to_mem(&lg_k, ptr, sizeof(lg_k));
-  ptr += copy_to_mem(&first_interesting_column, ptr, sizeof(first_interesting_column));
+  ptr += copy_to_mem(family, ptr);
+  ptr += copy_to_mem(lg_k, ptr);
+  ptr += copy_to_mem(first_interesting_column, ptr);
   const uint8_t flags_byte(
     (1 << flags::IS_COMPRESSED)
     | (has_hip ? 1 << flags::HAS_HIP : 0)
     | (has_table ? 1 << flags::HAS_TABLE : 0)
     | (has_window ? 1 << flags::HAS_WINDOW : 0)
   );
-  ptr += copy_to_mem(&flags_byte, ptr, sizeof(flags_byte));
+  ptr += copy_to_mem(flags_byte, ptr);
   const uint16_t seed_hash = compute_seed_hash(seed);
-  ptr += copy_to_mem(&seed_hash, ptr, sizeof(seed_hash));
+  ptr += copy_to_mem(seed_hash, ptr);
   if (!is_empty()) {
-    ptr += copy_to_mem(&num_coupons, ptr, sizeof(num_coupons));
+    ptr += copy_to_mem(num_coupons, ptr);
     if (has_table && has_window) {
       // if there is no window it is the same as number of coupons
-      ptr += copy_to_mem(&compressed.table_num_entries, ptr, sizeof(compressed.table_num_entries));
+      ptr += copy_to_mem(compressed.table_num_entries, ptr);
       // HIP values can be in two different places in the sequence of fields
       // this is the first HIP decision point
       if (has_hip) ptr += copy_hip_to_mem(ptr);
     }
     if (has_table) {
-      ptr += copy_to_mem(&compressed.table_data_words, ptr, sizeof(compressed.table_data_words));
+      ptr += copy_to_mem(compressed.table_data_words, ptr);
     }
     if (has_window) {
-      ptr += copy_to_mem(&compressed.window_data_words, ptr, sizeof(compressed.window_data_words));
+      ptr += copy_to_mem(compressed.window_data_words, ptr);
     }
     // this is the second HIP decision point
     if (has_hip && !(has_table && has_window)) ptr += copy_hip_to_mem(ptr);
@@ -517,20 +517,13 @@ vector_u8<A> cpc_sketch_alloc<A>::serialize(unsigned header_size_bytes) const {
 
 template<typename A>
 cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed, const A& allocator) {
-  uint8_t preamble_ints;
-  is.read((char*)&preamble_ints, sizeof(preamble_ints));
-  uint8_t serial_version;
-  is.read((char*)&serial_version, sizeof(serial_version));
-  uint8_t family_id;
-  is.read((char*)&family_id, sizeof(family_id));
-  uint8_t lg_k;
-  is.read((char*)&lg_k, sizeof(lg_k));
-  uint8_t first_interesting_column;
-  is.read((char*)&first_interesting_column, sizeof(first_interesting_column));
-  uint8_t flags_byte;
-  is.read((char*)&flags_byte, sizeof(flags_byte));
-  uint16_t seed_hash;
-  is.read((char*)&seed_hash, sizeof(seed_hash));
+  const auto preamble_ints = read<uint8_t>(is);
+  const auto serial_version = read<uint8_t>(is);
+  const auto family_id = read<uint8_t>(is);
+  const auto lg_k = read<uint8_t>(is);
+  const auto first_interesting_column = read<uint8_t>(is);
+  const auto flags_byte = read<uint8_t>(is);
+  const auto seed_hash = read<uint16_t>(is);
   const bool has_hip = flags_byte & (1 << flags::HAS_HIP);
   const bool has_table = flags_byte & (1 << flags::HAS_TABLE);
   const bool has_window = flags_byte & (1 << flags::HAS_WINDOW);
@@ -542,31 +535,31 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t 
   double kxp = 0;
   double hip_est_accum = 0;
   if (has_table || has_window) {
-    is.read((char*)&num_coupons, sizeof(num_coupons));
+    num_coupons = read<uint32_t>(is);
     if (has_table && has_window) {
-      is.read((char*)&compressed.table_num_entries, sizeof(compressed.table_num_entries));
+      compressed.table_num_entries = read<uint32_t>(is);
       if (has_hip) {
-        is.read((char*)&kxp, sizeof(kxp));
-        is.read((char*)&hip_est_accum, sizeof(hip_est_accum));
+        kxp = read<double>(is);
+        hip_est_accum = read<double>(is);
       }
     }
     if (has_table) {
-      is.read((char*)&compressed.table_data_words, sizeof(compressed.table_data_words));
+      compressed.table_data_words = read<uint32_t>(is);
     }
     if (has_window) {
-      is.read((char*)&compressed.window_data_words, sizeof(compressed.window_data_words));
+      compressed.window_data_words = read<uint32_t>(is);
     }
     if (has_hip && !(has_table && has_window)) {
-      is.read((char*)&kxp, sizeof(kxp));
-      is.read((char*)&hip_est_accum, sizeof(hip_est_accum));
+      kxp = read<double>(is);
+      hip_est_accum = read<double>(is);
     }
     if (has_window) {
       compressed.window_data.resize(compressed.window_data_words);
-      is.read((char*)compressed.window_data.data(), compressed.window_data_words * sizeof(uint32_t));
+      read(is, compressed.window_data.data(), compressed.window_data_words * sizeof(uint32_t));
     }
     if (has_table) {
       compressed.table_data.resize(compressed.table_data_words);
-      is.read((char*)compressed.table_data.data(), compressed.table_data_words * sizeof(uint32_t));
+      read(is, compressed.table_data.data(), compressed.table_data_words * sizeof(uint32_t));
     }
     if (!has_window) compressed.table_num_entries = num_coupons;
   }
@@ -602,19 +595,19 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
   const char* ptr = static_cast<const char*>(bytes);
   const char* base = static_cast<const char*>(bytes);
   uint8_t preamble_ints;
-  ptr += copy_from_mem(ptr, &preamble_ints, sizeof(preamble_ints));
+  ptr += copy_from_mem(ptr, preamble_ints);
   uint8_t serial_version;
-  ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+  ptr += copy_from_mem(ptr, serial_version);
   uint8_t family_id;
-  ptr += copy_from_mem(ptr, &family_id, sizeof(family_id));
+  ptr += copy_from_mem(ptr, family_id);
   uint8_t lg_k;
-  ptr += copy_from_mem(ptr, &lg_k, sizeof(lg_k));
+  ptr += copy_from_mem(ptr, lg_k);
   uint8_t first_interesting_column;
-  ptr += copy_from_mem(ptr, &first_interesting_column, sizeof(first_interesting_column));
+  ptr += copy_from_mem(ptr, first_interesting_column);
   uint8_t flags_byte;
-  ptr += copy_from_mem(ptr, &flags_byte, sizeof(flags_byte));
+  ptr += copy_from_mem(ptr, flags_byte);
   uint16_t seed_hash;
-  ptr += copy_from_mem(ptr, &seed_hash, sizeof(seed_hash));
+  ptr += copy_from_mem(ptr, seed_hash);
   const bool has_hip = flags_byte & (1 << flags::HAS_HIP);
   const bool has_table = flags_byte & (1 << flags::HAS_TABLE);
   const bool has_window = flags_byte & (1 << flags::HAS_WINDOW);
@@ -628,28 +621,28 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
   double hip_est_accum = 0;
   if (has_table || has_window) {
     check_memory_size(ptr - base + sizeof(num_coupons), size);
-    ptr += copy_from_mem(ptr, &num_coupons, sizeof(num_coupons));
+    ptr += copy_from_mem(ptr, num_coupons);
     if (has_table && has_window) {
       check_memory_size(ptr - base + sizeof(compressed.table_num_entries), size);
-      ptr += copy_from_mem(ptr, &compressed.table_num_entries, sizeof(compressed.table_num_entries));
+      ptr += copy_from_mem(ptr, compressed.table_num_entries);
       if (has_hip) {
         check_memory_size(ptr - base + sizeof(kxp) + sizeof(hip_est_accum), size);
-        ptr += copy_from_mem(ptr, &kxp, sizeof(kxp));
-        ptr += copy_from_mem(ptr, &hip_est_accum, sizeof(hip_est_accum));
+        ptr += copy_from_mem(ptr, kxp);
+        ptr += copy_from_mem(ptr, hip_est_accum);
       }
     }
     if (has_table) {
       check_memory_size(ptr - base + sizeof(compressed.table_data_words), size);
-      ptr += copy_from_mem(ptr, &compressed.table_data_words, sizeof(compressed.table_data_words));
+      ptr += copy_from_mem(ptr, compressed.table_data_words);
     }
     if (has_window) {
       check_memory_size(ptr - base + sizeof(compressed.window_data_words), size);
-      ptr += copy_from_mem(ptr, &compressed.window_data_words, sizeof(compressed.window_data_words));
+      ptr += copy_from_mem(ptr, compressed.window_data_words);
     }
     if (has_hip && !(has_table && has_window)) {
       check_memory_size(ptr - base + sizeof(kxp) + sizeof(hip_est_accum), size);
-      ptr += copy_from_mem(ptr, &kxp, sizeof(kxp));
-      ptr += copy_from_mem(ptr, &hip_est_accum, sizeof(hip_est_accum));
+      ptr += copy_from_mem(ptr, kxp);
+      ptr += copy_from_mem(ptr, hip_est_accum);
     }
     if (has_window) {
       compressed.window_data.resize(compressed.window_data_words);
@@ -799,8 +792,8 @@ vector_u64<A> cpc_sketch_alloc<A>::build_bit_matrix() const {
 
 template<typename A>
 void cpc_sketch_alloc<A>::write_hip(std::ostream& os) const {
-  os.write(reinterpret_cast<const char*>(&kxp), sizeof(kxp));
-  os.write(reinterpret_cast<const char*>(&hip_est_accum), sizeof(hip_est_accum));
+  write(os, kxp);
+  write(os, hip_est_accum);
 }
 
 template<typename A>

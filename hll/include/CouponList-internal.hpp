@@ -121,7 +121,7 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len, const A& al
 template<typename A>
 CouponList<A>* CouponList<A>::newList(std::istream& is, const A& allocator) {
   uint8_t listHeader[8];
-  is.read((char*)listHeader, 8 * sizeof(uint8_t));
+  read(is, listHeader, 8 * sizeof(uint8_t));
 
   if (listHeader[HllUtil<A>::PREAMBLE_INTS_BYTE] != HllUtil<A>::LIST_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
@@ -158,7 +158,7 @@ CouponList<A>* CouponList<A>::newList(std::istream& is, const A& allocator) {
     // pointer ends up set correctly.
     // If not compact, still need to read empty items even though in order.
     const int numToRead = (compact ? couponCount : sketch->coupons.size());
-    is.read((char*)sketch->coupons.data(), numToRead * sizeof(int));
+    read(is, sketch->coupons.data(), numToRead * sizeof(int));
   }
 
   if (!is.good())
@@ -214,32 +214,32 @@ template<typename A>
 void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
   // header
   const uint8_t preInts(getPreInts());
-  os.write((char*)&preInts, sizeof(preInts));
+  write(os, preInts);
   const uint8_t serialVersion(HllUtil<A>::SER_VER);
-  os.write((char*)&serialVersion, sizeof(serialVersion));
+  write(os, serialVersion);
   const uint8_t familyId(HllUtil<A>::FAMILY_ID);
-  os.write((char*)&familyId, sizeof(familyId));
+  write(os, familyId);
   const uint8_t lgKByte((uint8_t) this->lgConfigK);
-  os.write((char*)&lgKByte, sizeof(lgKByte));
+  write(os, lgKByte);
   const uint8_t lgArrIntsByte(count_trailing_zeros_in_u32(coupons.size()));
-  os.write((char*)&lgArrIntsByte, sizeof(lgArrIntsByte));
+  write(os, lgArrIntsByte);
   const uint8_t flagsByte(this->makeFlagsByte(compact));
-  os.write((char*)&flagsByte, sizeof(flagsByte));
+  write(os, flagsByte);
 
   if (this->mode == LIST) {
     const uint8_t listCount((uint8_t) couponCount);
-    os.write((char*)&listCount, sizeof(listCount));
+    write(os, listCount);
   } else { // mode == SET
     const uint8_t unused(0);
-    os.write((char*)&unused, sizeof(unused));
+    write(os, unused);
   }
 
   const uint8_t modeByte(this->makeModeByte());
-  os.write((char*)&modeByte, sizeof(modeByte));
+  write(os, modeByte);
 
   if (this->mode == SET) {
     // writing as int, already stored as int
-    os.write((char*)&couponCount, sizeof(couponCount));
+    write(os, couponCount);
   }
 
   // coupons
@@ -247,12 +247,12 @@ void CouponList<A>::serialize(std::ostream& os, const bool compact) const {
   const int sw = (isCompact() ? 2 : 0) | (compact ? 1 : 0);
   switch (sw) {
     case 0: { // src updatable, dst updatable
-      os.write((char*)coupons.data(), coupons.size() * sizeof(int));
+      write(os, coupons.data(), coupons.size() * sizeof(int));
       break;
     }
     case 1: { // src updatable, dst compact
       for (uint32_t coupon: *this) {
-        os.write((char*)&coupon, sizeof(coupon));
+        write(os, coupon);
       }
       break;
     }

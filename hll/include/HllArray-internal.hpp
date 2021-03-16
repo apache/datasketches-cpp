@@ -135,7 +135,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len, const A& allocat
 template<typename A>
 HllArray<A>* HllArray<A>::newHll(std::istream& is, const A& allocator) {
   uint8_t listHeader[8];
-  is.read((char*)listHeader, 8 * sizeof(uint8_t));
+  read(is, listHeader, 8 * sizeof(uint8_t));
 
   if (listHeader[HllUtil<A>::PREAMBLE_INTS_BYTE] != HllUtil<A>::HLL_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
@@ -166,20 +166,18 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is, const A& allocator) {
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
 
-  double hip, kxq0, kxq1;
-  is.read((char*)&hip, sizeof(hip));
-  is.read((char*)&kxq0, sizeof(kxq0));
-  is.read((char*)&kxq1, sizeof(kxq1));
+  const auto hip = read<double>(is);
+  const auto kxq0 = read<double>(is);
+  const auto kxq1 = read<double>(is);
   if (!oooFlag) sketch->putHipAccum(hip);
   sketch->putKxQ0(kxq0);
   sketch->putKxQ1(kxq1);
 
-  int numAtCurMin, auxCount;
-  is.read((char*)&numAtCurMin, sizeof(numAtCurMin));
-  is.read((char*)&auxCount, sizeof(auxCount));
+  const auto numAtCurMin = read<int>(is);
+  const auto auxCount = read<int>(is);
   sketch->putNumAtCurMin(numAtCurMin);
   
-  is.read((char*)sketch->hllByteArr.data(), sketch->getHllByteArrBytes());
+  read(is, sketch->hllByteArr.data(), sketch->getHllByteArrBytes());
   
   if (auxCount > 0) { // necessarily TgtHllType == HLL_4
     int auxLgIntArrSize = listHeader[4];
@@ -245,49 +243,49 @@ template<typename A>
 void HllArray<A>::serialize(std::ostream& os, const bool compact) const {
   // header
   const uint8_t preInts(getPreInts());
-  os.write((char*)&preInts, sizeof(preInts));
+  write(os, preInts);
   const uint8_t serialVersion(HllUtil<A>::SER_VER);
-  os.write((char*)&serialVersion, sizeof(serialVersion));
+  write(os, serialVersion);
   const uint8_t familyId(HllUtil<A>::FAMILY_ID);
-  os.write((char*)&familyId, sizeof(familyId));
+  write(os, familyId);
   const uint8_t lgKByte((uint8_t) this->lgConfigK);
-  os.write((char*)&lgKByte, sizeof(lgKByte));
+  write(os, lgKByte);
 
   AuxHashMap<A>* auxHashMap = getAuxHashMap();
   uint8_t lgArrByte(0);
   if (auxHashMap != nullptr) {
     lgArrByte = auxHashMap->getLgAuxArrInts();
   }
-  os.write((char*)&lgArrByte, sizeof(lgArrByte));
+  write(os, lgArrByte);
 
   const uint8_t flagsByte(this->makeFlagsByte(compact));
-  os.write((char*)&flagsByte, sizeof(flagsByte));
+  write(os, flagsByte);
   const uint8_t curMinByte((uint8_t) curMin);
-  os.write((char*)&curMinByte, sizeof(curMinByte));
+  write(os, curMinByte);
   const uint8_t modeByte(this->makeModeByte());
-  os.write((char*)&modeByte, sizeof(modeByte));
+  write(os, modeByte);
 
   // estimator data
-  os.write((char*)&hipAccum, sizeof(hipAccum));
-  os.write((char*)&kxq0, sizeof(kxq0));
-  os.write((char*)&kxq1, sizeof(kxq1));
+  write(os, hipAccum);
+  write(os, kxq0);
+  write(os, kxq1);
 
   // array data
-  os.write((char*)&numAtCurMin, sizeof(numAtCurMin));
+  write(os, numAtCurMin);
 
   const int auxCount = (auxHashMap == nullptr ? 0 : auxHashMap->getAuxCount());
-  os.write((char*)&auxCount, sizeof(auxCount));
-  os.write((char*)hllByteArr.data(), getHllByteArrBytes());
+  write(os, auxCount);
+  write(os, hllByteArr.data(), getHllByteArrBytes());
 
   // aux map if HLL_4
   if (this->tgtHllType == HLL_4) {
     if (auxHashMap != nullptr) {
       if (compact) {
         for (uint32_t coupon: *auxHashMap) {
-          os.write((char*)&coupon, sizeof(coupon));
+          write(os, coupon);
         }
       } else {
-        os.write((char*)auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
+        write(os, auxHashMap->getAuxIntArr(), auxHashMap->getUpdatableSizeBytes());
       }
     } else if (!compact) {
       // if updatable, we write even if currently unused so the binary can be wrapped      

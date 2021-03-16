@@ -129,16 +129,11 @@ var_opt_union<T,S,A>& var_opt_union<T,S,A>::operator=(var_opt_union&& other) {
 
 template<typename T, typename S, typename A>
 var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const A& allocator) {
-  uint8_t preamble_longs;
-  is.read((char*)&preamble_longs, sizeof(preamble_longs));
-  uint8_t serial_version;
-  is.read((char*)&serial_version, sizeof(serial_version));
-  uint8_t family_id;
-  is.read((char*)&family_id, sizeof(family_id));
-  uint8_t flags;
-  is.read((char*)&flags, sizeof(flags));
-  uint32_t max_k;
-  is.read((char*)&max_k, sizeof(max_k));
+  const auto preamble_longs = read<uint8_t>(is);
+  const auto serial_version = read<uint8_t>(is);
+  const auto family_id = read<uint8_t>(is);
+  const auto flags = read<uint8_t>(is);
+  const auto max_k = read<uint32_t>(is);
 
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
@@ -156,12 +151,9 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const A
       return var_opt_union<T,S,A>(max_k);
   }
 
-  uint64_t items_seen;
-  is.read((char*)&items_seen, sizeof(items_seen));
-  double outer_tau_numer;
-  is.read((char*)&outer_tau_numer, sizeof(outer_tau_numer));
-  uint64_t outer_tau_denom;
-  is.read((char*)&outer_tau_denom, sizeof(outer_tau_denom));
+  const auto items_seen = read<uint64_t>(is);
+  const auto outer_tau_numer = read<double>(is);
+  const auto outer_tau_denom = read<uint64_t>(is);
 
   var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(is, allocator);
 
@@ -176,15 +168,15 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
-  ptr += copy_from_mem(ptr, &preamble_longs, sizeof(preamble_longs));
+  ptr += copy_from_mem(ptr, preamble_longs);
   uint8_t serial_version;
-  ptr += copy_from_mem(ptr, &serial_version, sizeof(serial_version));
+  ptr += copy_from_mem(ptr, serial_version);
   uint8_t family_id;
-  ptr += copy_from_mem(ptr, &family_id, sizeof(family_id));
+  ptr += copy_from_mem(ptr, family_id);
   uint8_t flags;
-  ptr += copy_from_mem(ptr, &flags, sizeof(flags));
+  ptr += copy_from_mem(ptr, flags);
   uint32_t max_k;
-  ptr += copy_from_mem(ptr, &max_k, sizeof(max_k));
+  ptr += copy_from_mem(ptr, max_k);
 
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
@@ -200,11 +192,11 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t
   }
 
   uint64_t items_seen;
-  ptr += copy_from_mem(ptr, &items_seen, sizeof(items_seen));
+  ptr += copy_from_mem(ptr, items_seen);
   double outer_tau_numer;
-  ptr += copy_from_mem(ptr, &outer_tau_numer, sizeof(outer_tau_numer));
+  ptr += copy_from_mem(ptr, outer_tau_numer);
   uint64_t outer_tau_denom;
-  ptr += copy_from_mem(ptr, &outer_tau_denom, sizeof(outer_tau_denom));
+  ptr += copy_from_mem(ptr, outer_tau_denom);
 
   const size_t gadget_size = size - (PREAMBLE_LONGS_NON_EMPTY << 3);
   var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(ptr, gadget_size, allocator);
@@ -238,16 +230,16 @@ void var_opt_union<T,S,A>::serialize(std::ostream& os) const {
     flags = 0;
   }
 
-  os.write((char*) &preamble_longs, sizeof(uint8_t));
-  os.write((char*) &serialization_version, sizeof(uint8_t));
-  os.write((char*) &family_id, sizeof(uint8_t));
-  os.write((char*) &flags, sizeof(uint8_t));
-  os.write((char*) &max_k_, sizeof(uint32_t));
+  write(os, preamble_longs);
+  write(os, serialization_version);
+  write(os, family_id);
+  write(os, flags);
+  write(os, max_k_);
 
   if (!empty) {
-    os.write((char*) &n_, sizeof(uint64_t));
-    os.write((char*) &outer_tau_numer_, sizeof(double));
-    os.write((char*) &outer_tau_denom_, sizeof(uint64_t));
+    write(os, n_);
+    write(os, outer_tau_numer_);
+    write(os, outer_tau_denom_);
     gadget_.serialize(os);
   }
 }
@@ -275,16 +267,16 @@ std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header
   }
 
   // first prelong
-  ptr += copy_to_mem(&preamble_longs, ptr, sizeof(uint8_t));
-  ptr += copy_to_mem(&serialization_version, ptr, sizeof(uint8_t));
-  ptr += copy_to_mem(&family_id, ptr, sizeof(uint8_t));
-  ptr += copy_to_mem(&flags, ptr, sizeof(uint8_t));
-  ptr += copy_to_mem(&max_k_, ptr, sizeof(uint32_t));
+  ptr += copy_to_mem(preamble_longs, ptr);
+  ptr += copy_to_mem(serialization_version, ptr);
+  ptr += copy_to_mem(family_id, ptr);
+  ptr += copy_to_mem(flags, ptr);
+  ptr += copy_to_mem(max_k_, ptr);
 
   if (!empty) {
-    ptr += copy_to_mem(&n_, ptr, sizeof(uint64_t));
-    ptr += copy_to_mem(&outer_tau_numer_, ptr, sizeof(double));
-    ptr += copy_to_mem(&outer_tau_denom_, ptr, sizeof(uint64_t));
+    ptr += copy_to_mem(n_, ptr);
+    ptr += copy_to_mem(outer_tau_numer_, ptr);
+    ptr += copy_to_mem(outer_tau_denom_, ptr);
 
     auto gadget_bytes = gadget_.serialize();
     ptr += copy_to_mem(gadget_bytes.data(), ptr, gadget_bytes.size() * sizeof(uint8_t));
