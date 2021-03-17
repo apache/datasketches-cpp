@@ -38,7 +38,7 @@ lg_weight_(lg_weight),
 hra_(hra),
 coin_(false),
 sorted_(sorted),
-section_size_raw_(section_size),
+section_size_raw_(static_cast<float>(section_size)),
 section_size_(section_size),
 num_sections_(req_constants::INIT_NUM_SECTIONS),
 state_(0),
@@ -240,7 +240,7 @@ template<typename T, typename C, typename A>
 std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& next) {
   const uint32_t starting_nom_capacity = get_nom_capacity();
   // choose a part of the buffer to compact
-  const uint32_t secs_to_compact = std::min(static_cast<uint32_t>(count_trailing_zeros_in_u32(~state_) + 1), static_cast<uint32_t>(num_sections_));
+  const uint32_t secs_to_compact = std::min<uint32_t>(count_trailing_zeros_in_u32(~state_) + 1, num_sections_);
   auto compaction_range = compute_compaction_range(secs_to_compact);
   if (compaction_range.second - compaction_range.first < 2) throw std::logic_error("compaction range error");
 
@@ -267,9 +267,9 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& nex
 
 template<typename T, typename C, typename A>
 bool req_compactor<T, C, A>::ensure_enough_sections() {
-  const float ssr = section_size_raw_ / sqrt(2);
+  const float ssr = const_cast<float>(section_size_raw_ / sqrt(2));
   const uint32_t ne = nearest_even(ssr);
-  if (state_ >= static_cast<uint64_t>(1 << (num_sections_ - 1)) && ne >= req_constants::MIN_K) {
+  if (state_ >= static_cast<uint64_t>(1ULL << (num_sections_ - 1)) && ne >= req_constants::MIN_K) {
     section_size_raw_ = ssr;
     section_size_ = ne;
     num_sections_ <<= 1;
