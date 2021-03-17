@@ -635,7 +635,7 @@ void cpc_compressor<A>::low_level_uncompress_pairs(
     maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, word_index, 12); // ensure 12 bits in bit buffer
     const size_t peek12 = bitbuf & 0xfff;
     const uint16_t lookup = length_limited_unary_decoding_table65[peek12];
-    const int code_word_length = lookup >> 8;
+    const uint8_t code_word_length = lookup >> 8;
     const int16_t x_delta = lookup & 0xff;
     bitbuf >>= code_word_length;
     bufbits -= code_word_length;
