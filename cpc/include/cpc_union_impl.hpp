@@ -191,7 +191,7 @@ cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_accumulator() const {
 
 template<typename A>
 cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_bit_matrix() const {
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   const uint64_t num_coupons = count_bits_set_in_matrix(bit_matrix.data(), k);
 
   const auto flavor = cpc_sketch_alloc<A>::determine_flavor(lg_k, num_coupons);

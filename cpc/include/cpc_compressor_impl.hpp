@@ -202,7 +202,7 @@ template<typename A>
 void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source, compressed_state<A>& result) const {
   if (source.sliding_window.size() == 0) throw std::logic_error("no sliding window");
   if (source.window_offset != 0) throw std::logic_error("window_offset != 0");
-  const size_t k = 1 << source.get_lg_k();
+  const uint32_t k = 1 << source.get_lg_k();
   vector_u32<A> pairs_from_table = source.surprising_value_table.unwrapping_get_items();
   if (pairs_from_table.size() > 0) u32_table<A>::introspective_insertion_sort(pairs_from_table.data(), 0, pairs_from_table.size());
   const size_t num_pairs_from_window = source.get_num_coupons() - pairs_from_table.size(); // because the window offset is zero
@@ -228,7 +228,7 @@ void cpc_compressor<A>::uncompress_hybrid_flavor(const compressed_state<A>& sour
   // In the hybrid flavor, some of these pairs actually
   // belong in the window, so we will separate them out,
   // moving the "true" pairs to the bottom of the array.
-  const size_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   target.window.resize(k, 0); // important: zero the memory
   size_t next_true_pair = 0;
   for (size_t i = 0; i < source.table_num_entries; i++) {
@@ -354,8 +354,8 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state<A>& sou
 
 template<typename A>
 void cpc_compressor<A>::compress_surprising_values(const vector_u32<A>& pairs, uint8_t lg_k, compressed_state<A>& result) const {
-  const size_t k = 1 << lg_k;
-  const uint64_t num_base_bits = golomb_choose_number_of_base_bits(k + pairs.size(), pairs.size());
+  const uint32_t k = 1 << lg_k;
+  const uint8_t num_base_bits = golomb_choose_number_of_base_bits(k + pairs.size(), pairs.size());
   const uint64_t table_len = safe_length_for_compressed_pair_buf(k, pairs.size(), num_base_bits);
   result.table_data.resize(table_len);
 
@@ -372,7 +372,7 @@ void cpc_compressor<A>::compress_surprising_values(const vector_u32<A>& pairs, u
 template<typename A>
 vector_u32<A> cpc_compressor<A>::uncompress_surprising_values(const uint32_t* data, size_t data_words, size_t num_pairs,
     uint8_t lg_k, const A& allocator) const {
-  const size_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   vector_u32<A> pairs(num_pairs, 0, allocator);
   const uint8_t num_base_bits = golomb_choose_number_of_base_bits(k + num_pairs, num_pairs);
   low_level_uncompress_pairs(pairs.data(), num_pairs, num_base_bits, data, data_words);
@@ -381,7 +381,7 @@ vector_u32<A> cpc_compressor<A>::uncompress_surprising_values(const uint32_t* da
 
 template<typename A>
 void cpc_compressor<A>::compress_sliding_window(const uint8_t* window, uint8_t lg_k, uint32_t num_coupons, compressed_state<A>& target) const {
-  const size_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   const size_t window_buf_len = safe_length_for_compressed_window_buf(k);
   target.window_data.resize(window_buf_len);
   const uint8_t pseudo_phase = determine_pseudo_phase(lg_k, num_coupons);
@@ -404,7 +404,7 @@ void cpc_compressor<A>::uncompress_sliding_window(const uint32_t* data, size_t d
 }
 
 template<typename A>
-size_t cpc_compressor<A>::safe_length_for_compressed_pair_buf(uint64_t k, size_t num_pairs, size_t num_base_bits) {
+size_t cpc_compressor<A>::safe_length_for_compressed_pair_buf(uint32_t k, size_t num_pairs, uint8_t num_base_bits) {
   // Long ybits = k + numPairs; // simpler and safer UB
   // The following tighter UB on ybits is based on page 198
   // of the textbook "Managing Gigabytes" by Witten, Moffat, and Bell.
@@ -422,14 +422,14 @@ size_t cpc_compressor<A>::safe_length_for_compressed_pair_buf(uint64_t k, size_t
 // So the 12-bit lookahead is the tight constraint, but there are at least (2 + B) bits emitted,
 // so we would be safe with max (0, 10 - B) bits of padding at the end of the bitstream.
 template<typename A>
-size_t cpc_compressor<A>::safe_length_for_compressed_window_buf(uint64_t k) { // measured in 32-bit words
+size_t cpc_compressor<A>::safe_length_for_compressed_window_buf(uint32_t k) { // measured in 32-bit words
   const size_t bits = 12 * k + 11; // 11 bits of padding, due to 12-bit lookahead, with 1 bit certainly present.
   return divide_longs_rounding_up(bits, 32);
 }
 
 template<typename A>
 uint8_t cpc_compressor<A>::determine_pseudo_phase(uint8_t lg_k, uint64_t c) {
-  const size_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   // This mid-range logic produces pseudo-phases. They are used to select encoding tables.
   // The thresholds were chosen by hand after looking at plots of measured compression.
   if (1000 * c < 2375 * k) {
@@ -554,7 +554,7 @@ template<typename A>
 size_t cpc_compressor<A>::low_level_compress_pairs(
     const uint32_t* pair_array,  // input
     size_t num_pairs_to_encode,
-    size_t num_base_bits,
+    uint8_t num_base_bits,
     uint32_t* compressed_words // output
 ) const {
   uint64_t bitbuf = 0;
@@ -582,7 +582,7 @@ size_t cpc_compressor<A>::low_level_compress_pairs(
 
     const uint64_t code_info = length_limited_unary_encoding_table65[x_delta];
     const uint64_t code_val = code_info & 0xfff;
-    const uint8_t code_len = code_info >> 12;
+    const uint8_t code_len = static_cast<uint8_t>(code_info >> 12);
     bitbuf |= code_val << bufbits;
     bufbits += code_len;
     maybe_flush_bitbuf(bitbuf, bufbits, compressed_words, next_word_index);
@@ -615,7 +615,7 @@ template<typename A>
 void cpc_compressor<A>::low_level_uncompress_pairs(
     uint32_t* pair_array, // output
     size_t num_pairs_to_decode,
-    size_t num_base_bits,
+    uint8_t num_base_bits,
     const uint32_t* compressed_words, // input
     size_t num_compressed_words
 ) const {
@@ -709,9 +709,9 @@ void write_unary(
 
   if (remaining > 15) throw std::out_of_range("remaining out of range");
 
-  const uint64_t the_unary_code = 1 << remaining;
+  const uint64_t the_unary_code = 1ULL << remaining;
   bitbuf |= the_unary_code << bufbits;
-  bufbits += 1 + remaining;
+  bufbits += static_cast<uint8_t>(remaining + 1);
   maybe_flush_bitbuf(bitbuf, bufbits, compressed_words, next_word_index);
 }
 
@@ -738,7 +738,7 @@ vector_u32<A> cpc_compressor<A>::tricky_get_pairs_from_window(const uint8_t* win
 // returns an integer that is between
 // zero and ceiling(log_2(k)) - 1, inclusive
 template<typename A>
-uint64_t cpc_compressor<A>::golomb_choose_number_of_base_bits(uint64_t k, uint64_t count) {
+uint8_t cpc_compressor<A>::golomb_choose_number_of_base_bits(uint32_t k, uint64_t count) {
   if (k < 1) throw std::invalid_argument("golomb_choose_number_of_base_bits: k < 1");
   if (count < 1) throw std::invalid_argument("golomb_choose_number_of_base_bits: count < 1");
   const uint64_t quotient = (k - count) / count; // integer division

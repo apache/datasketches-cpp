@@ -248,7 +248,7 @@ static inline double icon_exponential_approximation(double k, double c) {
 static inline double compute_icon_estimate(uint8_t lg_k, uint64_t c) {
   if (lg_k < ICON_MIN_LOG_K || lg_k > ICON_MAX_LOG_K) throw std::out_of_range("lg_k out of range");
   if (c < 2) return ((c == 0) ? 0.0 : 1.0);
-  const size_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   const double double_k = k;
   const double double_c = c;
   // Differing thresholds ensure that the approximated estimator is monotonically increasing.

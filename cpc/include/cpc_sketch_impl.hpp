@@ -176,7 +176,7 @@ void cpc_sketch_alloc<A>::update(float value) {
 
 static inline uint32_t row_col_from_two_hashes(uint64_t hash0, uint64_t hash1, uint8_t lg_k) {
   if (lg_k > 26) throw std::logic_error("lg_k > 26");
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   uint8_t col = count_leading_zeros_in_u64(hash1); // 0 <= col <= 64
   if (col > 63) col = 63; // clip so that 0 <= col <= 63
   const uint32_t row = hash0 & (k - 1);
@@ -208,7 +208,7 @@ void cpc_sketch_alloc<A>::row_col_update(uint32_t row_col) {
 
 template<typename A>
 void cpc_sketch_alloc<A>::update_sparse(uint32_t row_col) {
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   const uint64_t c32pre = static_cast<uint64_t>(num_coupons) << 5;
   if (c32pre >= 3 * k) throw std::logic_error("c32pre >= 3 * k"); // C < 3K/32, in other words flavor == SPARSE
   bool is_novel = surprising_value_table.maybe_insert(row_col);
@@ -224,7 +224,7 @@ void cpc_sketch_alloc<A>::update_sparse(uint32_t row_col) {
 template<typename A>
 void cpc_sketch_alloc<A>::update_windowed(uint32_t row_col) {
   if (window_offset > 56) throw std::logic_error("wrong window offset");
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   const uint64_t c32pre = static_cast<uint64_t>(num_coupons) << 5;
   if (c32pre < 3 * k) throw std::logic_error("c32pre < 3 * k"); // C < 3K/32, in other words flavor >= HYBRID
   const uint64_t c8pre = static_cast<uint64_t>(num_coupons) << 3;
@@ -266,7 +266,7 @@ void cpc_sketch_alloc<A>::update_windowed(uint32_t row_col) {
 // Call this whenever a new coupon has been collected.
 template<typename A>
 void cpc_sketch_alloc<A>::update_hip(uint32_t row_col) {
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   const uint8_t col = row_col & 63;
   const double one_over_p = static_cast<double>(k) / kxp;
   hip_est_accum += one_over_p;
@@ -276,7 +276,7 @@ void cpc_sketch_alloc<A>::update_hip(uint32_t row_col) {
 // In terms of flavor, this promotes SPARSE to HYBRID
 template<typename A>
 void cpc_sketch_alloc<A>::promote_sparse_to_windowed() {
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   const uint64_t c32 = static_cast<uint64_t>(num_coupons) << 5;
   if (!(c32 == 3 * k || (lg_k == 4 && c32 > 3 * k))) throw std::logic_error("wrong c32");
 
@@ -357,7 +357,7 @@ void cpc_sketch_alloc<A>::move_window() {
 // so that it will reflect changes that were previously outside the mantissa.
 template<typename A>
 void cpc_sketch_alloc<A>::refresh_kxp(const uint64_t* bit_matrix) {
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
 
   // for improved numerical accuracy, we separately sum the bytes of the U64's
   double byte_sums[8]; // allocating on the stack
@@ -737,7 +737,7 @@ typename cpc_sketch_alloc<A>::flavor cpc_sketch_alloc<A>::determine_flavor() con
 
 template<typename A>
 typename cpc_sketch_alloc<A>::flavor cpc_sketch_alloc<A>::determine_flavor(uint8_t lg_k, uint64_t c) {
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   const uint64_t c2 = c << 1;
   const uint64_t c8 = c << 3;
   const uint64_t c32 = c << 5;
@@ -750,7 +750,7 @@ typename cpc_sketch_alloc<A>::flavor cpc_sketch_alloc<A>::determine_flavor(uint8
 
 template<typename A>
 uint8_t cpc_sketch_alloc<A>::determine_correct_offset(uint8_t lg_k, uint64_t c) {
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   const int64_t tmp = static_cast<int64_t>(c << 3) - static_cast<int64_t>(19 * k); // 8C - 19K
   if (tmp < 0) return 0;
   return tmp >> (lg_k + 3); // tmp / 8K
@@ -758,7 +758,7 @@ uint8_t cpc_sketch_alloc<A>::determine_correct_offset(uint8_t lg_k, uint64_t c) 
 
 template<typename A>
 vector_u64<A> cpc_sketch_alloc<A>::build_bit_matrix() const {
-  const size_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   if (window_offset > 56) throw std::logic_error("offset > 56");
 
   // Fill the matrix with default rows in which the "early zone" is filled with ones.
