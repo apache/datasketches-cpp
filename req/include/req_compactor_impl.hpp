@@ -267,7 +267,7 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& nex
 
 template<typename T, typename C, typename A>
 bool req_compactor<T, C, A>::ensure_enough_sections() {
-  const float ssr = const_cast<float>(section_size_raw_ / sqrt(2));
+  const float ssr = section_size_raw_ / sqrt(2);
   const uint32_t ne = nearest_even(ssr);
   if (state_ >= static_cast<uint64_t>(1ULL << (num_sections_ - 1)) && ne >= req_constants::MIN_K) {
     section_size_raw_ = ssr;
