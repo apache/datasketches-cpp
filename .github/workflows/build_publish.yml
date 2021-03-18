@@ -1,0 +1,64 @@
+name: Build Wheels
+
+on: [ push, pull_request ]
+
+jobs:
+  build_wheels:
+    name: Build Wheels On ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - {
+            name: "MacOS Latest, Clang",
+            os: macos-latest,
+            test_target: test,
+            cc: "clang", cxx: "clang++"
+          }
+          - {
+            name: "Ubuntu Latest, GCC",
+            os: ubuntu-latest,
+            test_target: test,
+            cc: "gcc", cxx: "g++"
+          }
+#          - {
+#            name: "Windows Latest, MSVC",
+#            os:  v,
+#            test_target: RUN_TESTS,
+#            cc: "cl", cxx: "cl",
+#            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+#          }
+            #- {
+            #    name: "Windows Latest, MinGW+gcc",
+          #    os: windows-latest,
+          #    cc: "gcc", cxx: "g++"
+          #  }
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install cibuildwheel
+        run: |
+          pip install wheel
+          pip install -e ".[compat,dev]" cibuildwheel twine
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip setuptools wheel numpy tox
+      - name: Configure
+        run: |
+
+          python setup.py bdist_wheel
+          cibuildwheel --output-dir dist
+          ls dist
+        env:
+          CIBW_BUILD: "cp36-* cp37-* cp38-* cp39-*"
+          CIBW_BEFORE_BUILD: "rm -fr python/datasketches.* && rm -fr build/* && pip install cython"
+      - uses: actions/upload-artifact@v2
+        with:
+          path: ./dist/*.whl
