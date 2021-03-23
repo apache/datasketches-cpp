@@ -283,6 +283,26 @@ TEST_CASE("cpc sketch: serialize deserialize sliding, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.validate());
 }
 
+TEST_CASE("cpc sketch: serialize deserialize sliding huge", "[cpc_sketch]") {
+  cpc_sketch sketch(26);
+  const int n = 10000000;
+  for (int i = 0; i < n; i++) sketch.update(i);
+  REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.001));
+  auto bytes = sketch.serialize();
+  cpc_sketch deserialized = cpc_sketch::deserialize(bytes.data(), bytes.size());
+  REQUIRE(deserialized.is_empty() == sketch.is_empty());
+  REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
+  REQUIRE(deserialized.validate());
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 7), std::out_of_range);
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), 15), std::out_of_range);
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+
+  // updating again with the same values should not change the sketch
+  for (int i = 0; i < n; i++) deserialized.update(i);
+  REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
+  REQUIRE(deserialized.validate());
+}
+
 TEST_CASE("cpc sketch: copy", "[cpc_sketch]") {
   cpc_sketch s1(11);
   s1.update(1);
