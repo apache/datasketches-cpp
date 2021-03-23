@@ -31,9 +31,9 @@ static inline uint64_t divide_longs_rounding_up(uint64_t x, uint64_t y) {
   else return quotient + 1;
 }
 
-static inline uint64_t long_floor_log2_of_long(uint64_t x) {
-  if (x < 1) throw std::invalid_argument("long_floor_log2_of_long: bad argument");
-  uint64_t p = 0;
+static inline uint8_t floor_log2_of_long(uint64_t x) {
+  if (x < 1) throw std::invalid_argument("floor_log2_of_long: bad argument");
+  uint8_t p = 0;
   uint64_t y = 1;
   while (true) {
     if (y == x) return p;

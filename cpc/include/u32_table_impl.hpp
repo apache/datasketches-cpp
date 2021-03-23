@@ -48,7 +48,7 @@ slots(1 << lg_size, UINT32_MAX, allocator)
 }
 
 template<typename A>
-size_t u32_table<A>::get_num_items() const {
+uint32_t u32_table<A>::get_num_items() const {
   return num_items;
 }
 
@@ -70,7 +70,7 @@ void u32_table<A>::clear() {
 
 template<typename A>
 bool u32_table<A>::maybe_insert(uint32_t item) {
-  const size_t index = lookup(item);
+  const uint32_t index = lookup(item);
   if (slots[index] == item) return false;
   if (slots[index] != UINT32_MAX) throw std::logic_error("could not insert");
   slots[index] = item;
@@ -83,7 +83,7 @@ bool u32_table<A>::maybe_insert(uint32_t item) {
 
 template<typename A>
 bool u32_table<A>::maybe_delete(uint32_t item) {
-  const size_t index = lookup(item);
+  const uint32_t index = lookup(item);
   if (slots[index] == UINT32_MAX) return false;
   if (slots[index] != item) throw std::logic_error("item does not exist");
   if (num_items == 0) throw std::logic_error("delete error");
@@ -124,11 +124,11 @@ u32_table<A> u32_table<A>::make_from_pairs(const uint32_t* pairs, size_t num_pai
 }
 
 template<typename A>
-size_t u32_table<A>::lookup(uint32_t item) const {
-  const size_t size = 1 << lg_size;
-  const size_t mask = size - 1;
+uint32_t u32_table<A>::lookup(uint32_t item) const {
+  const uint32_t size = 1 << lg_size;
+  const uint32_t mask = size - 1;
   const uint8_t shift = num_valid_bits - lg_size;
-  size_t probe = item >> shift;
+  uint32_t probe = item >> shift;
   if (probe > mask) throw std::logic_error("probe out of range");
   while (slots[probe] != item && slots[probe] != UINT32_MAX) {
     probe = (probe + 1) & mask;
@@ -139,7 +139,7 @@ size_t u32_table<A>::lookup(uint32_t item) const {
 // counts and resizing must be handled by the caller
 template<typename A>
 void u32_table<A>::must_insert(uint32_t item) {
-  const size_t index = lookup(item);
+  const uint32_t index = lookup(item);
   if (slots[index] == item) throw std::logic_error("item exists");
   if (slots[index] != UINT32_MAX) throw std::logic_error("could not insert");
   slots[index] = item;
@@ -148,13 +148,13 @@ void u32_table<A>::must_insert(uint32_t item) {
 template<typename A>
 void u32_table<A>::rebuild(uint8_t new_lg_size) {
   if (new_lg_size < 2) throw std::logic_error("lg_size must be >= 2");
-  const size_t old_size = 1 << lg_size;
-  const size_t new_size = 1 << new_lg_size;
+  const uint32_t old_size = 1 << lg_size;
+  const uint32_t new_size = 1 << new_lg_size;
   if (new_size <= num_items) throw std::logic_error("new_size <= num_items");
   vector_u32<A> old_slots = std::move(slots);
   slots = vector_u32<A>(new_size, UINT32_MAX, old_slots.get_allocator());
   lg_size = new_lg_size;
-  for (size_t i = 0; i < old_size; i++) {
+  for (uint32_t i = 0; i < old_size; i++) {
     if (old_slots[i] != UINT32_MAX) {
       must_insert(old_slots[i]);
     }

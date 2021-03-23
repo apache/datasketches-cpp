@@ -52,7 +52,7 @@ template<typename A>
 uint8_t* cpc_compressor<A>::make_inverse_permutation(const uint8_t* permu, int length) {
   uint8_t* inverse = new uint8_t[length]; // use new for global initialization
   for (int i = 0; i < length; i++) {
-    inverse[permu[i]] = i;
+    inverse[permu[i]] = static_cast<uint8_t>(i);
   }
   for (int i = 0; i < length; i++) {
     if (permu[inverse[i]] != i) throw std::logic_error("inverse permutation error");
@@ -70,7 +70,7 @@ uint16_t* cpc_compressor<A>::make_decoding_table(const uint16_t* encoding_table,
     const int encoding_entry = encoding_table[byte_value];
     const int code_value = encoding_entry & 0xfff;
     const int code_length = encoding_entry >> 12;
-    const int decoding_entry = (code_length << 8) | byte_value;
+    const uint16_t decoding_entry = (code_length << 8) | byte_value;
     const int garbage_length = 12 - code_length;
     const int num_copies = 1 << garbage_length;
     for (int garbage_bits = 0; garbage_bits < num_copies; garbage_bits++) {
@@ -397,7 +397,7 @@ void cpc_compressor<A>::compress_sliding_window(const uint8_t* window, uint8_t l
 template<typename A>
 void cpc_compressor<A>::uncompress_sliding_window(const uint32_t* data, size_t data_words, vector_u8<A>& window,
     uint8_t lg_k, uint32_t num_coupons) const {
-  const size_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
   window.resize(k); // zeroing not needed here (unlike the Hybrid Flavor)
   const uint8_t pseudo_phase = determine_pseudo_phase(lg_k, num_coupons);
   low_level_uncompress_bytes(window.data(), k, decoding_tables_for_high_entropy_byte[pseudo_phase], data, data_words);
@@ -743,7 +743,7 @@ uint8_t cpc_compressor<A>::golomb_choose_number_of_base_bits(uint32_t k, uint64_
   if (count < 1) throw std::invalid_argument("golomb_choose_number_of_base_bits: count < 1");
   const uint64_t quotient = (k - count) / count; // integer division
   if (quotient == 0) return 0;
-  else return long_floor_log2_of_long(quotient);
+  else return floor_log2_of_long(quotient);
 }
 
 } /* namespace datasketches */
