@@ -192,7 +192,7 @@ public:
    * @param data pointer to the data
    * @param length of the data in bytes
    */
-  void update(const void* value, int size);
+  void update(const void* value, size_t size);
 
   /**
    * Returns a human-readable summary of this sketch

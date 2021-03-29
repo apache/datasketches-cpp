@@ -41,7 +41,7 @@ u32_table<A>::u32_table(uint8_t lg_size, uint8_t num_valid_bits, const A& alloca
 lg_size(lg_size),
 num_valid_bits(num_valid_bits),
 num_items(0),
-slots(1 << lg_size, UINT32_MAX, allocator)
+slots(1ULL << lg_size, UINT32_MAX, allocator)
 {
   if (lg_size < 2) throw std::invalid_argument("lg_size must be >= 2");
   if (num_valid_bits < 1 || num_valid_bits > 32) throw std::invalid_argument("num_valid_bits must be between 1 and 32");
@@ -110,7 +110,7 @@ bool u32_table<A>::maybe_delete(uint32_t item) {
 
 // this one is specifically tailored to be a part of fm85 decompression scheme
 template<typename A>
-u32_table<A> u32_table<A>::make_from_pairs(const uint32_t* pairs, size_t num_pairs, uint8_t lg_k, const A& allocator) {
+u32_table<A> u32_table<A>::make_from_pairs(const uint32_t* pairs, uint32_t num_pairs, uint8_t lg_k, const A& allocator) {
   uint8_t lg_num_slots = 2;
   while (U32_TABLE_UPSIZE_DENOM * num_pairs > U32_TABLE_UPSIZE_NUMER * (1 << lg_num_slots)) lg_num_slots++;
   u32_table<A> table(lg_num_slots, 6 + lg_k, allocator);
@@ -170,7 +170,7 @@ void u32_table<A>::rebuild(uint8_t new_lg_size) {
 template<typename A>
 vector_u32<A> u32_table<A>::unwrapping_get_items() const {
   if (num_items == 0) return vector_u32<A>(slots.get_allocator());
-  const size_t table_size = 1 << lg_size;
+  const uint32_t table_size = 1 << lg_size;
   vector_u32<A> result(num_items, 0, slots.get_allocator());
   size_t i = 0;
   size_t l = 0;

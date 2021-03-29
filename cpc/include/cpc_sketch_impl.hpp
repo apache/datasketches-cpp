@@ -188,7 +188,7 @@ static inline uint32_t row_col_from_two_hashes(uint64_t hash0, uint64_t hash1, u
 }
 
 template<typename A>
-void cpc_sketch_alloc<A>::update(const void* value, int size) {
+void cpc_sketch_alloc<A>::update(const void* value, size_t size) {
   HashState hashes;
   MurmurHash3_x64_128(value, size, seed, hashes);
   row_col_update(row_col_from_two_hashes(hashes.h1, hashes.h2, lg_k));
@@ -285,16 +285,16 @@ void cpc_sketch_alloc<A>::promote_sparse_to_windowed() {
   u32_table<A> new_table(2, 6 + lg_k, sliding_window.get_allocator());
 
   const uint32_t* old_slots = surprising_value_table.get_slots();
-  const size_t old_num_slots = 1 << surprising_value_table.get_lg_size();
+  const uint32_t old_num_slots = 1 << surprising_value_table.get_lg_size();
 
   if (window_offset != 0) throw std::logic_error("window_offset != 0");
 
-  for (size_t i = 0; i < old_num_slots; i++) {
+  for (uint32_t i = 0; i < old_num_slots; i++) {
     const uint32_t row_col = old_slots[i];
     if (row_col != UINT32_MAX) {
       const uint8_t col = row_col & 63;
       if (col < 8) {
-        const size_t row = row_col >> 6;
+        const uint32_t row = row_col >> 6;
         sliding_window[row] |= 1 << col;
       } else {
         // cannot use u32_table::must_insert(), because it doesn't provide for growth
@@ -314,7 +314,7 @@ void cpc_sketch_alloc<A>::move_window() {
   if (new_offset != determine_correct_offset(lg_k, num_coupons)) throw std::logic_error("new_offset is wrong");
 
   if (sliding_window.size() == 0) throw std::logic_error("no sliding window");
-  const uint64_t k = 1 << lg_k;
+  const uint32_t k = 1 << lg_k;
 
   // Construct the full-sized bit matrix that corresponds to the sketch
   vector_u64<A> bit_matrix = build_bit_matrix();
@@ -328,7 +328,7 @@ void cpc_sketch_alloc<A>::move_window() {
   const uint64_t mask_for_flipping_early_zone = (static_cast<uint64_t>(1) << new_offset) - 1;
   uint64_t all_surprises_ored = 0;
 
-  for (size_t i = 0; i < k; i++) {
+  for (uint32_t i = 0; i < k; i++) {
     uint64_t pattern = bit_matrix[i];
     sliding_window[i] = (pattern >> new_offset) & 0xff;
     pattern &= mask_for_clearing_window;
@@ -689,7 +689,7 @@ uint32_t cpc_sketch_alloc<A>::get_num_coupons() const {
 template<typename A>
 bool cpc_sketch_alloc<A>::validate() const {
   vector_u64<A> bit_matrix = build_bit_matrix();
-  const uint64_t num_bits_set = count_bits_set_in_matrix(bit_matrix.data(), 1 << lg_k);
+  const uint64_t num_bits_set = count_bits_set_in_matrix(bit_matrix.data(), 1ULL << lg_k);
   return num_bits_set == num_coupons;
 }
 
@@ -753,7 +753,7 @@ uint8_t cpc_sketch_alloc<A>::determine_correct_offset(uint8_t lg_k, uint64_t c) 
   const uint32_t k = 1 << lg_k;
   const int64_t tmp = static_cast<int64_t>(c << 3) - static_cast<int64_t>(19 * k); // 8C - 19K
   if (tmp < 0) return 0;
-  return tmp >> (lg_k + 3); // tmp / 8K
+  return static_cast<uint8_t>(tmp >> (lg_k + 3)); // tmp / 8K
 }
 
 template<typename A>
@@ -775,12 +775,12 @@ vector_u64<A> cpc_sketch_alloc<A>::build_bit_matrix() const {
   }
 
   const uint32_t* slots = surprising_value_table.get_slots();
-  const size_t num_slots = 1 << surprising_value_table.get_lg_size();
+  const uint32_t num_slots = 1 << surprising_value_table.get_lg_size();
   for (size_t i = 0; i < num_slots; i++) {
     const uint32_t row_col = slots[i];
     if (row_col != UINT32_MAX) {
       const uint8_t col = row_col & 63;
-      const size_t row = row_col >> 6;
+      const uint32_t row = row_col >> 6;
       // Flip the specified matrix bit from its default value.
       // In the "early" zone the bit changes from 1 to 0.
       // In the "late" zone the bit changes from 0 to 1.

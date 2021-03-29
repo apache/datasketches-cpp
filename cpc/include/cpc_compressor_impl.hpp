@@ -49,12 +49,12 @@ cpc_compressor<A>::~cpc_compressor() {
 }
 
 template<typename A>
-uint8_t* cpc_compressor<A>::make_inverse_permutation(const uint8_t* permu, int length) {
+uint8_t* cpc_compressor<A>::make_inverse_permutation(const uint8_t* permu, unsigned length) {
   uint8_t* inverse = new uint8_t[length]; // use new for global initialization
-  for (int i = 0; i < length; i++) {
+  for (unsigned i = 0; i < length; i++) {
     inverse[permu[i]] = static_cast<uint8_t>(i);
   }
-  for (int i = 0; i < length; i++) {
+  for (unsigned i = 0; i < length; i++) {
     if (permu[inverse[i]] != i) throw std::logic_error("inverse permutation error");
   }
   return inverse;
@@ -64,17 +64,17 @@ uint8_t* cpc_compressor<A>::make_inverse_permutation(const uint8_t* permu, int l
    of length at most 12, this builds a size-4096 decoding table */
 // The second argument is typically 256, but can be other values such as 65.
 template<typename A>
-uint16_t* cpc_compressor<A>::make_decoding_table(const uint16_t* encoding_table, int num_byte_values) {
+uint16_t* cpc_compressor<A>::make_decoding_table(const uint16_t* encoding_table, unsigned num_byte_values) {
   uint16_t* decoding_table = new uint16_t[4096]; // use new for global initialization
-  for (int byte_value = 0; byte_value < num_byte_values; byte_value++) {
-    const int encoding_entry = encoding_table[byte_value];
-    const int code_value = encoding_entry & 0xfff;
-    const int code_length = encoding_entry >> 12;
-    const uint16_t decoding_entry = (code_length << 8) | byte_value;
-    const int garbage_length = 12 - code_length;
-    const int num_copies = 1 << garbage_length;
-    for (int garbage_bits = 0; garbage_bits < num_copies; garbage_bits++) {
-      const int extended_code_value = code_value | (garbage_bits << code_length);
+  for (unsigned byte_value = 0; byte_value < num_byte_values; byte_value++) {
+    const uint16_t encoding_entry = encoding_table[byte_value];
+    const uint16_t code_value = encoding_entry & 0xfff;
+    const uint8_t code_length = encoding_entry >> 12;
+    const uint16_t decoding_entry = static_cast<uint16_t>((code_length << 8) | byte_value);
+    const uint8_t garbage_length = 12 - code_length;
+    const unsigned num_copies = 1 << garbage_length;
+    for (unsigned garbage_bits = 0; garbage_bits < num_copies; garbage_bits++) {
+      const uint16_t extended_code_value = static_cast<uint16_t>(code_value | (garbage_bits << code_length));
       decoding_table[extended_code_value & 0xfff] = decoding_entry;
     }
   }
@@ -157,7 +157,7 @@ void cpc_compressor<A>::compress(const cpc_sketch_alloc<A>& source, compressed_s
 }
 
 template<typename A>
-void cpc_compressor<A>::uncompress(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k, uint64_t num_coupons) const {
+void cpc_compressor<A>::uncompress(const compressed_state<A>& source, uncompressed_state<A>& target, uint8_t lg_k, uint32_t num_coupons) const {
   switch (cpc_sketch_alloc<A>::determine_flavor(lg_k, num_coupons)) {
     case cpc_sketch_alloc<A>::flavor::EMPTY:
       target.table = u32_table<A>(2, 6 + lg_k, source.table_data.get_allocator());
@@ -204,14 +204,15 @@ void cpc_compressor<A>::compress_hybrid_flavor(const cpc_sketch_alloc<A>& source
   if (source.window_offset != 0) throw std::logic_error("window_offset != 0");
   const uint32_t k = 1 << source.get_lg_k();
   vector_u32<A> pairs_from_table = source.surprising_value_table.unwrapping_get_items();
-  if (pairs_from_table.size() > 0) u32_table<A>::introspective_insertion_sort(pairs_from_table.data(), 0, pairs_from_table.size());
-  const size_t num_pairs_from_window = source.get_num_coupons() - pairs_from_table.size(); // because the window offset is zero
+  const uint32_t num_pairs_from_table = static_cast<uint32_t>(pairs_from_table.size());
+  if (num_pairs_from_table > 0) u32_table<A>::introspective_insertion_sort(pairs_from_table.data(), 0, num_pairs_from_table);
+  const uint32_t num_pairs_from_window = source.get_num_coupons() - num_pairs_from_table; // because the window offset is zero
 
-  vector_u32<A> all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, pairs_from_table.size(), source.get_allocator());
+  vector_u32<A> all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, num_pairs_from_table, source.get_allocator());
 
   u32_table<A>::merge(
       pairs_from_table.data(), 0, pairs_from_table.size(),
-      all_pairs.data(), pairs_from_table.size(), num_pairs_from_window,
+      all_pairs.data(), num_pairs_from_table, num_pairs_from_window,
       all_pairs.data(), 0
   );  // note the overlapping subarray trick
 
@@ -230,13 +231,13 @@ void cpc_compressor<A>::uncompress_hybrid_flavor(const compressed_state<A>& sour
   // moving the "true" pairs to the bottom of the array.
   const uint32_t k = 1 << lg_k;
   target.window.resize(k, 0); // important: zero the memory
-  size_t next_true_pair = 0;
-  for (size_t i = 0; i < source.table_num_entries; i++) {
+  uint32_t next_true_pair = 0;
+  for (uint32_t i = 0; i < source.table_num_entries; i++) {
     const uint32_t row_col = pairs[i];
     if (row_col == UINT32_MAX) throw std::logic_error("empty marker is not expected");
     const uint8_t col = row_col & 63;
     if (col < 8) {
-      const size_t row = row_col >> 6;
+      const uint32_t row = row_col >> 6;
       target.window[row] |= 1 << col; // set the window bit
     } else {
       pairs[next_true_pair++] = row_col; // move true pair down
@@ -270,7 +271,7 @@ void cpc_compressor<A>::uncompress_pinned_flavor(const compressed_state<A>& sour
     uint8_t lg_k, uint32_t num_coupons) const {
   if (source.window_data.size() == 0) throw std::logic_error("window is expected");
   uncompress_sliding_window(source.window_data.data(), source.window_data_words, target.window, lg_k, num_coupons);
-  const size_t num_pairs = source.table_num_entries;
+  const uint32_t num_pairs = source.table_num_entries;
   if (num_pairs == 0) {
     target.table = u32_table<A>(2, 6 + lg_k, source.table_data.get_allocator());
   } else {
@@ -278,7 +279,7 @@ void cpc_compressor<A>::uncompress_pinned_flavor(const compressed_state<A>& sour
     vector_u32<A> pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, num_pairs,
         lg_k, source.table_data.get_allocator());
     // undo the compressor's 8-column shift
-    for (size_t i = 0; i < num_pairs; i++) {
+    for (uint32_t i = 0; i < num_pairs; i++) {
       if ((pairs[i] & 63) >= 56) throw std::logic_error("(pairs[i] & 63) >= 56");
       pairs[i] += 8;
     }
@@ -302,7 +303,7 @@ void cpc_compressor<A>::compress_sliding_flavor(const cpc_sketch_alloc<A>& sourc
 
     for (size_t i = 0; i < pairs.size(); i++) {
       const uint32_t row_col = pairs[i];
-      const size_t row = row_col >> 6;
+      const uint32_t row = row_col >> 6;
       uint8_t col = row_col & 63;
       // first rotate the columns into a canonical configuration: new = ((old - (offset+8)) + 64) mod 64
       col = (col + 56 - offset) & 63;
@@ -322,7 +323,7 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state<A>& sou
     uint8_t lg_k, uint32_t num_coupons) const {
   if (source.window_data.size() == 0) throw std::logic_error("window is expected");
   uncompress_sliding_window(source.window_data.data(), source.window_data_words, target.window, lg_k, num_coupons);
-  const size_t num_pairs = source.table_num_entries;
+  const uint32_t num_pairs = source.table_num_entries;
   if (num_pairs == 0) {
     target.table = u32_table<A>(2, 6 + lg_k, source.table_data.get_allocator());
   } else {
@@ -337,9 +338,9 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state<A>& sou
     uint8_t offset = cpc_sketch_alloc<A>::determine_correct_offset(lg_k, num_coupons);
     if (offset > 56) throw std::out_of_range("offset out of range");
 
-    for (size_t i = 0; i < num_pairs; i++) {
+    for (uint32_t i = 0; i < num_pairs; i++) {
       const uint32_t row_col = pairs[i];
-      const size_t row = row_col >> 6;
+      const uint32_t row = row_col >> 6;
       uint8_t col = row_col & 63;
       // first undo the permutation
       col = permutation[col];
@@ -355,22 +356,23 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state<A>& sou
 template<typename A>
 void cpc_compressor<A>::compress_surprising_values(const vector_u32<A>& pairs, uint8_t lg_k, compressed_state<A>& result) const {
   const uint32_t k = 1 << lg_k;
-  const uint8_t num_base_bits = golomb_choose_number_of_base_bits(k + pairs.size(), pairs.size());
-  const uint64_t table_len = safe_length_for_compressed_pair_buf(k, pairs.size(), num_base_bits);
+  const uint32_t num_pairs = static_cast<uint32_t>(pairs.size());
+  const uint8_t num_base_bits = golomb_choose_number_of_base_bits(k + num_pairs, num_pairs);
+  const uint64_t table_len = safe_length_for_compressed_pair_buf(k, num_pairs, num_base_bits);
   result.table_data.resize(table_len);
 
-  size_t csv_length = low_level_compress_pairs(pairs.data(), pairs.size(), num_base_bits, result.table_data.data());
+  uint32_t csv_length = low_level_compress_pairs(pairs.data(), static_cast<uint32_t>(pairs.size()), num_base_bits, result.table_data.data());
 
   // At this point we could free the unused portion of the compression output buffer,
   // but it is not necessary if it is temporary
   // Note: realloc caused strange timing spikes for lgK = 11 and 12.
 
   result.table_data_words = csv_length;
-  result.table_num_entries = pairs.size();
+  result.table_num_entries = num_pairs;
 }
 
 template<typename A>
-vector_u32<A> cpc_compressor<A>::uncompress_surprising_values(const uint32_t* data, size_t data_words, size_t num_pairs,
+vector_u32<A> cpc_compressor<A>::uncompress_surprising_values(const uint32_t* data, uint32_t data_words, uint32_t num_pairs,
     uint8_t lg_k, const A& allocator) const {
   const uint32_t k = 1 << lg_k;
   vector_u32<A> pairs(num_pairs, 0, allocator);
@@ -391,11 +393,11 @@ void cpc_compressor<A>::compress_sliding_window(const uint8_t* window, uint8_t l
   // but it is not necessary if it is temporary
   // Note: realloc caused strange timing spikes for lgK = 11 and 12.
 
-  target.window_data_words = data_words;
+  target.window_data_words = static_cast<uint32_t>(data_words);
 }
 
 template<typename A>
-void cpc_compressor<A>::uncompress_sliding_window(const uint32_t* data, size_t data_words, vector_u8<A>& window,
+void cpc_compressor<A>::uncompress_sliding_window(const uint32_t* data, uint32_t data_words, vector_u8<A>& window,
     uint8_t lg_k, uint32_t num_coupons) const {
   const uint32_t k = 1 << lg_k;
   window.resize(k); // zeroing not needed here (unlike the Hybrid Flavor)
@@ -404,7 +406,7 @@ void cpc_compressor<A>::uncompress_sliding_window(const uint32_t* data, size_t d
 }
 
 template<typename A>
-size_t cpc_compressor<A>::safe_length_for_compressed_pair_buf(uint32_t k, size_t num_pairs, uint8_t num_base_bits) {
+size_t cpc_compressor<A>::safe_length_for_compressed_pair_buf(uint32_t k, uint32_t num_pairs, uint8_t num_base_bits) {
   // Long ybits = k + numPairs; // simpler and safer UB
   // The following tighter UB on ybits is based on page 198
   // of the textbook "Managing Gigabytes" by Witten, Moffat, and Bell.
@@ -428,7 +430,7 @@ size_t cpc_compressor<A>::safe_length_for_compressed_window_buf(uint32_t k) { //
 }
 
 template<typename A>
-uint8_t cpc_compressor<A>::determine_pseudo_phase(uint8_t lg_k, uint64_t c) {
+uint8_t cpc_compressor<A>::determine_pseudo_phase(uint8_t lg_k, uint32_t c) {
   const uint32_t k = 1 << lg_k;
   // This mid-range logic produces pseudo-phases. They are used to select encoding tables.
   // The thresholds were chosen by hand after looking at plots of measured compression.
@@ -450,7 +452,7 @@ uint8_t cpc_compressor<A>::determine_pseudo_phase(uint8_t lg_k, uint64_t c) {
   }
 }
 
-static inline void maybe_flush_bitbuf(uint64_t& bitbuf, uint8_t& bufbits, uint32_t* wordarr, size_t& wordindex) {
+static inline void maybe_flush_bitbuf(uint64_t& bitbuf, uint8_t& bufbits, uint32_t* wordarr, uint32_t& wordindex) {
   if (bufbits >= 32) {
     wordarr[wordindex++] = bitbuf & 0xffffffff;
     bitbuf = bitbuf >> 32;
@@ -458,7 +460,7 @@ static inline void maybe_flush_bitbuf(uint64_t& bitbuf, uint8_t& bufbits, uint32
   }
 }
 
-static inline void maybe_fill_bitbuf(uint64_t& bitbuf, uint8_t& bufbits, const uint32_t* wordarr, size_t& wordindex, uint8_t minbits) {
+static inline void maybe_fill_bitbuf(uint64_t& bitbuf, uint8_t& bufbits, const uint32_t* wordarr, uint32_t& wordindex, uint8_t minbits) {
   if (bufbits < minbits) {
     bitbuf |= static_cast<uint64_t>(wordarr[wordindex++]) << bufbits;
     bufbits += 32;
@@ -468,20 +470,20 @@ static inline void maybe_fill_bitbuf(uint64_t& bitbuf, uint8_t& bufbits, const u
 // This returns the number of compressed words that were actually used.
 // It is the caller's responsibility to ensure that the compressed_words array is long enough.
 template<typename A>
-size_t cpc_compressor<A>::low_level_compress_bytes(
+uint32_t cpc_compressor<A>::low_level_compress_bytes(
     const uint8_t* byte_array, // input
-    size_t num_bytes_to_encode,
+    uint32_t num_bytes_to_encode,
     const uint16_t* encoding_table,
     uint32_t* compressed_words // output
 ) const {
   uint64_t bitbuf = 0; // bits are packed into this first, then are flushed to compressed_words
   uint8_t bufbits = 0; // number of bits currently in bitbuf; must be between 0 and 31
-  size_t next_word_index = 0;
+  uint32_t next_word_index = 0;
 
-  for (size_t byte_index = 0; byte_index < num_bytes_to_encode; byte_index++) {
-    const uint64_t code_info = encoding_table[byte_array[byte_index]];
+  for (uint32_t byte_index = 0; byte_index < num_bytes_to_encode; byte_index++) {
+    const uint16_t code_info = encoding_table[byte_array[byte_index]];
     const uint64_t code_val = code_info & 0xfff;
-    const int code_len = code_info >> 12;
+    const uint8_t code_len = code_info >> 12;
     bitbuf |= (code_val << bufbits);
     bufbits += code_len;
     maybe_flush_bitbuf(bitbuf, bufbits, compressed_words, next_word_index);
@@ -502,12 +504,12 @@ size_t cpc_compressor<A>::low_level_compress_bytes(
 template<typename A>
 void cpc_compressor<A>::low_level_uncompress_bytes(
     uint8_t* byte_array, // output
-    size_t num_bytes_to_decode,
+    uint32_t num_bytes_to_decode,
     const uint16_t* decoding_table,
     const uint32_t* compressed_words, // input
-    size_t num_compressed_words
+    uint32_t num_compressed_words
 ) const {
-  size_t word_index = 0;
+  uint32_t word_index = 0;
   uint64_t bitbuf = 0;
   uint8_t bufbits = 0;
 
@@ -515,7 +517,7 @@ void cpc_compressor<A>::low_level_uncompress_bytes(
   if (decoding_table == nullptr) throw std::logic_error("decoding_table == NULL");
   if (compressed_words == nullptr) throw std::logic_error("compressed_words == NULL");
 
-  for (size_t byte_index = 0; byte_index < num_bytes_to_decode; byte_index++) {
+  for (uint32_t byte_index = 0; byte_index < num_bytes_to_decode; byte_index++) {
     maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, word_index, 12); // ensure 12 bits in bit buffer
 
     const size_t peek12 = bitbuf & 0xfff; // These 12 bits will include an entire Huffman codeword.
@@ -533,14 +535,14 @@ void cpc_compressor<A>::low_level_uncompress_bytes(
 
 static inline uint64_t read_unary(
     const uint32_t* compressed_words,
-    size_t& next_word_index,
+    uint32_t& next_word_index,
     uint64_t& bitbuf,
     uint8_t& bufbits
 );
 
 static inline void write_unary(
     uint32_t* compressed_words,
-    size_t& next_word_index_ptr,
+    uint32_t& next_word_index_ptr,
     uint64_t& bit_buf_ptr,
     uint8_t& buf_bits_ptr,
     uint64_t value
@@ -551,36 +553,36 @@ static inline void write_unary(
 
 // returns the number of compressed_words actually used
 template<typename A>
-size_t cpc_compressor<A>::low_level_compress_pairs(
+uint32_t cpc_compressor<A>::low_level_compress_pairs(
     const uint32_t* pair_array,  // input
-    size_t num_pairs_to_encode,
+    uint32_t num_pairs_to_encode,
     uint8_t num_base_bits,
     uint32_t* compressed_words // output
 ) const {
   uint64_t bitbuf = 0;
   uint8_t bufbits = 0;
-  size_t next_word_index = 0;
+  uint32_t next_word_index = 0;
   const uint64_t golomb_lo_mask = (1 << num_base_bits) - 1;
-  uint64_t predicted_row_index = 0;
-  uint16_t predicted_col_index = 0;
+  uint32_t predicted_row_index = 0;
+  uint8_t predicted_col_index = 0;
 
-  for (size_t pair_index = 0; pair_index < num_pairs_to_encode; pair_index++) {
+  for (uint32_t pair_index = 0; pair_index < num_pairs_to_encode; pair_index++) {
     const uint32_t row_col = pair_array[pair_index];
-    const uint64_t row_index = row_col >> 6;
-    const uint16_t col_index = row_col & 63;
+    const uint32_t row_index = row_col >> 6;
+    const uint8_t col_index = row_col & 63;
 
     if (row_index != predicted_row_index) predicted_col_index = 0;
 
     if (row_index < predicted_row_index) throw std::logic_error("row_index < predicted_row_index");
     if (col_index < predicted_col_index) throw std::logic_error("col_index < predicted_col_index");
 
-    const uint64_t y_delta = row_index - predicted_row_index;
-    const uint16_t x_delta = col_index - predicted_col_index;
+    const uint32_t y_delta = row_index - predicted_row_index;
+    const uint8_t x_delta = col_index - predicted_col_index;
 
     predicted_row_index = row_index;
     predicted_col_index = col_index + 1;
 
-    const uint64_t code_info = length_limited_unary_encoding_table65[x_delta];
+    const uint16_t code_info = length_limited_unary_encoding_table65[x_delta];
     const uint64_t code_val = code_info & 0xfff;
     const uint8_t code_len = static_cast<uint8_t>(code_info >> 12);
     bitbuf |= code_val << bufbits;
@@ -614,29 +616,29 @@ size_t cpc_compressor<A>::low_level_compress_pairs(
 template<typename A>
 void cpc_compressor<A>::low_level_uncompress_pairs(
     uint32_t* pair_array, // output
-    size_t num_pairs_to_decode,
+    uint32_t num_pairs_to_decode,
     uint8_t num_base_bits,
     const uint32_t* compressed_words, // input
-    size_t num_compressed_words
+    uint32_t num_compressed_words
 ) const {
-  size_t word_index = 0;
+  uint32_t word_index = 0;
   uint64_t bitbuf = 0;
   uint8_t bufbits = 0;
   const uint64_t golomb_lo_mask = (1 << num_base_bits) - 1;
-  uint64_t predicted_row_index = 0;
-  uint16_t predicted_col_index = 0;
+  uint32_t predicted_row_index = 0;
+  uint8_t predicted_col_index = 0;
 
   // for each pair we need to read:
   // x_delta (12-bit length-limited unary)
   // y_delta_hi (unary)
   // y_delta_lo (basebits)
 
-  for (size_t pair_index = 0; pair_index < num_pairs_to_decode; pair_index++) {
+  for (uint32_t pair_index = 0; pair_index < num_pairs_to_decode; pair_index++) {
     maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, word_index, 12); // ensure 12 bits in bit buffer
     const size_t peek12 = bitbuf & 0xfff;
     const uint16_t lookup = length_limited_unary_decoding_table65[peek12];
     const uint8_t code_word_length = lookup >> 8;
-    const int16_t x_delta = lookup & 0xff;
+    const int8_t x_delta = lookup & 0xff;
     bitbuf >>= code_word_length;
     bufbits -= code_word_length;
 
@@ -650,8 +652,8 @@ void cpc_compressor<A>::low_level_uncompress_pairs(
 
     // Now that we have x_delta and y_delta, we can compute the pair's row and column
     if (y_delta > 0) predicted_col_index = 0;
-    const uint64_t row_index = predicted_row_index + y_delta;
-    const uint16_t col_index = predicted_col_index + x_delta;
+    const uint32_t row_index = static_cast<uint32_t>(predicted_row_index + y_delta);
+    const uint8_t col_index = predicted_col_index + x_delta;
     const uint32_t row_col = (row_index << 6) | col_index;
     pair_array[pair_index] = row_col;
     predicted_row_index = row_index;
@@ -662,7 +664,7 @@ void cpc_compressor<A>::low_level_uncompress_pairs(
 
 uint64_t read_unary(
     const uint32_t* compressed_words,
-    size_t& next_word_index,
+    uint32_t& next_word_index,
     uint64_t& bitbuf,
     uint8_t& bufbits
 ) {
@@ -689,7 +691,7 @@ uint64_t read_unary(
 
 void write_unary(
     uint32_t* compressed_words,
-    size_t& next_word_index,
+    uint32_t& next_word_index,
     uint64_t& bitbuf,
     uint8_t& bufbits,
     uint64_t value

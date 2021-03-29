@@ -121,7 +121,7 @@ struct serde<std::string> {
         std::string str;
         str.reserve(length);
         for (uint32_t j = 0; j < length; j++) {
-          str.push_back(is.get());
+          str.push_back(static_cast<char>(is.get()));
         }
         if (!is.good()) { break; }
         new (&items[i]) std::string(std::move(str));
