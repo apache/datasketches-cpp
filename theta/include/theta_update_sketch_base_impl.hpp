@@ -39,7 +39,7 @@ seed_(seed),
 entries_(nullptr)
 {
   if (lg_cur_size > 0) {
-    const size_t size = 1 << lg_cur_size;
+    const size_t size = 1ULL << lg_cur_size;
     entries_ = allocator_.allocate(size);
     for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
   }
@@ -58,7 +58,7 @@ seed_(other.seed_),
 entries_(nullptr)
 {
   if (other.entries_ != nullptr) {
-    const size_t size = 1 << lg_cur_size_;
+    const size_t size = 1ULL << lg_cur_size_;
     entries_ = allocator_.allocate(size);
     for (size_t i = 0; i < size; ++i) {
       if (EK()(other.entries_[i]) != 0) {
@@ -89,7 +89,7 @@ template<typename EN, typename EK, typename A>
 theta_update_sketch_base<EN, EK, A>::~theta_update_sketch_base()
 {
   if (entries_ != nullptr) {
-    const size_t size = 1 << lg_cur_size_;
+    const size_t size = 1ULL << lg_cur_size_;
     for (size_t i = 0; i < size; ++i) {
       if (EK()(entries_[i]) != 0) entries_[i].~EN();
     }
@@ -136,7 +136,7 @@ uint64_t theta_update_sketch_base<EN, EK, A>::hash_and_screen(const void* data, 
 
 template<typename EN, typename EK, typename A>
 auto theta_update_sketch_base<EN, EK, A>::find(uint64_t key) const -> std::pair<iterator, bool> {
-  const size_t size = 1 << lg_cur_size_;
+  const size_t size = 1ULL << lg_cur_size_;
   const size_t mask = size - 1;
   const uint32_t stride = get_stride(key, lg_cur_size_);
   uint32_t index = static_cast<uint32_t>(key) & mask;
@@ -175,13 +175,13 @@ auto theta_update_sketch_base<EN, EK, A>::begin() const -> iterator {
 
 template<typename EN, typename EK, typename A>
 auto theta_update_sketch_base<EN, EK, A>::end() const -> iterator {
-  return &entries_[1 << lg_cur_size_];
+  return &entries_[1ULL << lg_cur_size_];
 }
 
 template<typename EN, typename EK, typename A>
 uint32_t theta_update_sketch_base<EN, EK, A>::get_capacity(uint8_t lg_cur_size, uint8_t lg_nom_size) {
   const double fraction = (lg_cur_size <= lg_nom_size) ? RESIZE_THRESHOLD : REBUILD_THRESHOLD;
-  return std::floor(fraction * (1 << lg_cur_size));
+  return static_cast<uint32_t>(std::floor(fraction * (1 << lg_cur_size)));
 }
 
 template<typename EN, typename EK, typename A>
@@ -192,11 +192,11 @@ uint32_t theta_update_sketch_base<EN, EK, A>::get_stride(uint64_t key, uint8_t l
 
 template<typename EN, typename EK, typename A>
 void theta_update_sketch_base<EN, EK, A>::resize() {
-  const size_t old_size = 1 << lg_cur_size_;
+  const size_t old_size = 1ULL << lg_cur_size_;
   const uint8_t lg_tgt_size = lg_nom_size_ + 1;
-  const uint8_t factor = std::max(1, std::min(static_cast<int>(rf_), lg_tgt_size - lg_cur_size_));
+  const uint8_t factor = std::max<uint8_t>(1, std::min<uint8_t>(static_cast<uint8_t>(rf_), static_cast<uint8_t>(lg_tgt_size - lg_cur_size_)));
   lg_cur_size_ += factor;
-  const size_t new_size = 1 << lg_cur_size_;
+  const size_t new_size = 1ULL << lg_cur_size_;
   EN* old_entries = entries_;
   entries_ = allocator_.allocate(new_size);
   for (size_t i = 0; i < new_size; ++i) EK()(entries_[i]) = 0;
@@ -214,7 +214,7 @@ void theta_update_sketch_base<EN, EK, A>::resize() {
 // assumes number of entries > nominal size
 template<typename EN, typename EK, typename A>
 void theta_update_sketch_base<EN, EK, A>::rebuild() {
-  const size_t size = 1 << lg_cur_size_;
+  const size_t size = 1ULL << lg_cur_size_;
   const uint32_t nominal_size = 1 << lg_nom_size_;
 
   // empty entries have uninitialized payloads
@@ -301,7 +301,7 @@ Derived& theta_base_builder<Derived, Allocator>::set_seed(uint64_t seed) {
 
 template<typename Derived, typename Allocator>
 uint64_t theta_base_builder<Derived, Allocator>::starting_theta() const {
-  if (p_ < 1) return theta_constants::MAX_THETA * p_;
+  if (p_ < 1) return static_cast<uint64_t>(theta_constants::MAX_THETA * p_);
   return theta_constants::MAX_THETA;
 }
 

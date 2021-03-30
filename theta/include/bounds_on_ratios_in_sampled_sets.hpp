@@ -90,7 +90,7 @@ public:
    * @param f the inclusion probability used to produce the set with size <i>a</i>.
    * @return the approximate lower bound
    */
-  static double estimate_of_a(uint64_t a, uint64_t f) {
+  static double estimate_of_a(uint64_t a, double f) {
     check_inputs(a, 1, f);
     return a / f;
   }
