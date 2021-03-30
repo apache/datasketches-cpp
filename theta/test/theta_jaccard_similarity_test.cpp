@@ -107,7 +107,7 @@ TEST_CASE("theta jaccard: half overlap estimation mode", "[theta_sketch]") {
 TEST_CASE("theta jaccard: similarity test", "[theta_sketch]") {
   const int8_t min_lg_k = 12;
   const int u1 = 1 << 20;
-  const int u2 = u1 * 0.95;
+  const int u2 = static_cast<int>(u1 * 0.95);
   const double threshold = 0.943;
 
   auto expected = update_theta_sketch::builder().set_lg_k(min_lg_k).build();
@@ -127,7 +127,7 @@ TEST_CASE("theta jaccard: similarity test", "[theta_sketch]") {
 TEST_CASE("theta jaccard: dissimilarity test", "[theta_sketch]") {
   const int8_t min_lg_k = 12;
   const int u1 = 1 << 20;
-  const int u2 = u1 * 0.05;
+  const int u2 = static_cast<int>(u1 * 0.05);
   const double threshold = 0.061;
 
   auto expected = update_theta_sketch::builder().set_lg_k(min_lg_k).build();

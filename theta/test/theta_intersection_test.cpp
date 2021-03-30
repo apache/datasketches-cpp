@@ -48,7 +48,7 @@ TEST_CASE("theta intersection: empty", "[theta_intersection]") {
 }
 
 TEST_CASE("theta intersection: non empty no retained keys", "[theta_intersection]") {
-  update_theta_sketch sketch = update_theta_sketch::builder().set_p(0.001).build();
+  update_theta_sketch sketch = update_theta_sketch::builder().set_p(0.001f).build();
   sketch.update(1);
   theta_intersection intersection;
   intersection.update(sketch);

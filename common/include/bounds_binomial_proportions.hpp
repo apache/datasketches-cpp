@@ -117,7 +117,7 @@ public:
     else if (k == 1) { return (exact_lower_bound_on_p_k_eq_1(n, delta_of_num_stdevs(num_std_devs))); }
     else if (k == n) { return (exact_lower_bound_on_p_k_eq_n(n, delta_of_num_stdevs(num_std_devs))); }
     else {
-      double x = abramowitz_stegun_formula_26p5p22((n - k) + 1, k, (-1.0 * num_std_devs));
+      double x = abramowitz_stegun_formula_26p5p22((n - k) + 1.0, static_cast<double>(k), (-1.0 * num_std_devs));
       return (1.0 - x); // which is p
     }
   }
@@ -156,7 +156,7 @@ public:
       return (exact_upper_bound_on_p_k_eq_zero(n, delta_of_num_stdevs(num_std_devs)));
     }
     else {
-      double x = abramowitz_stegun_formula_26p5p22(n - k, k + 1, num_std_devs);
+      double x = abramowitz_stegun_formula_26p5p22(static_cast<double>(n - k), k + 1.0, num_std_devs);
       return (1.0 - x); // which is p
     }
   }
@@ -265,19 +265,19 @@ private:
 
   // Formulas for some special cases.
 
-  static inline double exact_upper_bound_on_p_k_eq_zero(double n, double delta) {
+  static inline double exact_upper_bound_on_p_k_eq_zero(uint64_t n, double delta) {
     return (1.0 - pow(delta, (1.0 / n)));
   }
 
-  static inline double exact_lower_bound_on_p_k_eq_n(double n, double delta) {
+  static inline double exact_lower_bound_on_p_k_eq_n(uint64_t n, double delta) {
     return (pow(delta, (1.0 / n)));
   }
 
-  static inline double exact_lower_bound_on_p_k_eq_1(double n, double delta) {
+  static inline double exact_lower_bound_on_p_k_eq_1(uint64_t n, double delta) {
     return (1.0 - pow((1.0 - delta), (1.0 / n)));
   }
 
-  static inline double exact_upper_bound_on_p_k_eq_minusone(double n, double delta) {
+  static inline double exact_upper_bound_on_p_k_eq_minusone(uint64_t n, double delta) {
     return (pow((1.0 - delta), (1.0 / n)));
   }
 
