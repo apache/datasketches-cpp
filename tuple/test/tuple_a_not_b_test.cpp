@@ -38,8 +38,8 @@ TEST_CASE("tuple a-not-b: empty", "[tuple_a_not_b]") {
 
 TEST_CASE("tuple a-not-b: non empty no retained keys", "[tuple_a_not_b]") {
   auto a = update_tuple_sketch<float>::builder().build();
-  a.update(1, 1);
-  auto b = update_tuple_sketch<float>::builder().set_p(0.001).build();
+  a.update(1, 1.0f);
+  auto b = update_tuple_sketch<float>::builder().set_p(0.001f).build();
   tuple_a_not_b<float> a_not_b;
 
   // B is still empty
@@ -51,7 +51,7 @@ TEST_CASE("tuple a-not-b: non empty no retained keys", "[tuple_a_not_b]") {
   REQUIRE(result.get_estimate() == 1.0);
 
   // B is not empty in estimation mode and no entries
-  b.update(1, 1);
+  b.update(1, 1.0f);
   REQUIRE(b.get_num_retained() == 0);
 
   result = a_not_b.compute(a, b);
@@ -65,11 +65,11 @@ TEST_CASE("tuple a-not-b: non empty no retained keys", "[tuple_a_not_b]") {
 TEST_CASE("tuple a-not-b: exact mode half overlap", "[tuple_a_not_b]") {
   auto a = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 1000; i++) a.update(value++, 1);
+  for (int i = 0; i < 1000; i++) a.update(value++, 1.0f);
 
   auto b = update_tuple_sketch<float>::builder().build();
   value = 500;
-  for (int i = 0; i < 1000; i++) b.update(value++, 1);
+  for (int i = 0; i < 1000; i++) b.update(value++, 1.0f);
 
   tuple_a_not_b<float> a_not_b;
 
@@ -105,7 +105,7 @@ TEST_CASE("tuple a-not-b: exact mode half overlap", "[tuple_a_not_b]") {
 TEST_CASE("mixed a-not-b: exact mode half overlap", "[tuple_a_not_b]") {
   auto a = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 1000; i++) a.update(value++, 1);
+  for (int i = 0; i < 1000; i++) a.update(value++, 1.0f);
 
   auto b = update_theta_sketch::builder().build();
   value = 500;
@@ -145,10 +145,10 @@ TEST_CASE("mixed a-not-b: exact mode half overlap", "[tuple_a_not_b]") {
 TEST_CASE("tuple a-not-b: exact mode disjoint", "[tuple_a_not_b]") {
   auto a = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 1000; i++) a.update(value++, 1);
+  for (int i = 0; i < 1000; i++) a.update(value++, 1.0f);
 
   auto b = update_tuple_sketch<float>::builder().build();
-  for (int i = 0; i < 1000; i++) b.update(value++, 1);
+  for (int i = 0; i < 1000; i++) b.update(value++, 1.0f);
 
   tuple_a_not_b<float> a_not_b;
 
@@ -168,7 +168,7 @@ TEST_CASE("tuple a-not-b: exact mode disjoint", "[tuple_a_not_b]") {
 TEST_CASE("tuple a-not-b: exact mode full overlap", "[tuple_a_not_b]") {
   auto sketch = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 1000; i++) sketch.update(value++, 1);
+  for (int i = 0; i < 1000; i++) sketch.update(value++, 1.0f);
 
   tuple_a_not_b<float> a_not_b;
 
@@ -188,11 +188,11 @@ TEST_CASE("tuple a-not-b: exact mode full overlap", "[tuple_a_not_b]") {
 TEST_CASE("tuple a-not-b: estimation mode half overlap", "[tuple_a_not_b]") {
   auto a = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 10000; i++) a.update(value++, 1);
+  for (int i = 0; i < 10000; i++) a.update(value++, 1.0f);
 
   auto b = update_tuple_sketch<float>::builder().build();
   value = 5000;
-  for (int i = 0; i < 10000; i++) b.update(value++, 1);
+  for (int i = 0; i < 10000; i++) b.update(value++, 1.0f);
 
   tuple_a_not_b<float> a_not_b;
 
@@ -212,10 +212,10 @@ TEST_CASE("tuple a-not-b: estimation mode half overlap", "[tuple_a_not_b]") {
 TEST_CASE("tuple a-not-b: estimation mode disjoint", "[tuple_a_not_b]") {
   auto a = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 10000; i++) a.update(value++, 1);
+  for (int i = 0; i < 10000; i++) a.update(value++, 1.0f);
 
   auto b = update_tuple_sketch<float>::builder().build();
-  for (int i = 0; i < 10000; i++) b.update(value++, 1);
+  for (int i = 0; i < 10000; i++) b.update(value++, 1.0f);
 
   tuple_a_not_b<float> a_not_b;
 
@@ -235,7 +235,7 @@ TEST_CASE("tuple a-not-b: estimation mode disjoint", "[tuple_a_not_b]") {
 TEST_CASE("tuple a-not-b: estimation mode full overlap", "[tuple_a_not_b]") {
   auto sketch = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 10000; i++) sketch.update(value++, 1);
+  for (int i = 0; i < 10000; i++) sketch.update(value++, 1.0f);
 
   tuple_a_not_b<float> a_not_b;
 
@@ -254,7 +254,7 @@ TEST_CASE("tuple a-not-b: estimation mode full overlap", "[tuple_a_not_b]") {
 
 TEST_CASE("tuple a-not-b: seed mismatch", "[tuple_a_not_b]") {
   auto sketch = update_tuple_sketch<float>::builder().build();
-  sketch.update(1, 1); // non-empty should not be ignored
+  sketch.update(1, 1.0f); // non-empty should not be ignored
   tuple_a_not_b<float> a_not_b(123);
   REQUIRE_THROWS_AS(a_not_b.compute(sketch, sketch), std::invalid_argument);
 }
@@ -262,11 +262,11 @@ TEST_CASE("tuple a-not-b: seed mismatch", "[tuple_a_not_b]") {
 TEST_CASE("tuple a-not-b: issue #152", "[tuple_a_not_b]") {
   auto a = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 10000; i++) a.update(value++, 1);
+  for (int i = 0; i < 10000; i++) a.update(value++, 1.0f);
 
   auto b = update_tuple_sketch<float>::builder().build();
   value = 5000;
-  for (int i = 0; i < 25000; i++) b.update(value++, 1);
+  for (int i = 0; i < 25000; i++) b.update(value++, 1.0f);
 
   tuple_a_not_b<float> a_not_b;
 

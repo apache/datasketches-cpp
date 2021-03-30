@@ -51,9 +51,9 @@ TEST_CASE("tupe_union float: empty theta sketch", "[tuple union]") {
 }
 
 TEST_CASE("tuple_union float: non-empty no retained entries", "[tuple union]") {
-  auto update_sketch = update_tuple_sketch<float>::builder().set_p(0.001).build();
+  auto update_sketch = update_tuple_sketch<float>::builder().set_p(0.001f).build();
 //  std::cout << update_sketch.to_string();
-  update_sketch.update(1, 1);
+  update_sketch.update(1, 1.0f);
   REQUIRE(!update_sketch.is_empty());
   REQUIRE(update_sketch.get_num_retained() == 0);
   auto u = tuple_union<float>::builder().build();
@@ -69,12 +69,12 @@ TEST_CASE("tuple_union float: non-empty no retained entries", "[tuple union]") {
 
 TEST_CASE("tuple_union float: simple case", "[tuple union]") {
   auto update_sketch1 = update_tuple_sketch<float>::builder().build();
-  update_sketch1.update(1, 1);
-  update_sketch1.update(2, 1);
+  update_sketch1.update(1, 1.0f);
+  update_sketch1.update(2, 1.0f);
 
   auto update_sketch2 = update_tuple_sketch<float>::builder().build();
-  update_sketch2.update(1, 1);
-  update_sketch2.update(3, 1);
+  update_sketch2.update(1, 1.0f);
+  update_sketch2.update(3, 1.0f);
 
   auto u = tuple_union<float>::builder().build();
   u.update(update_sketch1);
@@ -86,11 +86,11 @@ TEST_CASE("tuple_union float: simple case", "[tuple union]") {
 TEST_CASE("tuple_union float: exact mode half overlap", "[tuple union]") {
   auto update_sketch1 = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 1000; ++i) update_sketch1.update(value++, 1);
+  for (int i = 0; i < 1000; ++i) update_sketch1.update(value++, 1.0f);
 
   auto update_sketch2 = update_tuple_sketch<float>::builder().build();
   value = 500;
-  for (int i = 0; i < 1000; ++i) update_sketch2.update(value++, 1);
+  for (int i = 0; i < 1000; ++i) update_sketch2.update(value++, 1.0f);
 
   { // unordered
     auto u = tuple_union<float>::builder().build();
@@ -115,11 +115,11 @@ TEST_CASE("tuple_union float: exact mode half overlap", "[tuple union]") {
 TEST_CASE("tuple_union float: estimation mode half overlap", "[tuple union]") {
   auto update_sketch1 = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 10000; ++i) update_sketch1.update(value++, 1);
+  for (int i = 0; i < 10000; ++i) update_sketch1.update(value++, 1.0f);
 
   auto update_sketch2 = update_tuple_sketch<float>::builder().build();
   value = 5000;
-  for (int i = 0; i < 10000; ++i) update_sketch2.update(value++, 1);
+  for (int i = 0; i < 10000; ++i) update_sketch2.update(value++, 1.0f);
 
   { // unordered
     auto u = tuple_union<float>::builder().build();
@@ -143,7 +143,7 @@ TEST_CASE("tuple_union float: estimation mode half overlap", "[tuple union]") {
 
 TEST_CASE("tuple_union float: seed mismatch", "[tuple union]") {
   auto update_sketch = update_tuple_sketch<float>::builder().build();
-  update_sketch.update(1, 1); // non-empty should not be ignored
+  update_sketch.update(1, 1.0f); // non-empty should not be ignored
 
   auto u = tuple_union<float>::builder().set_seed(123).build();
   REQUIRE_THROWS_AS(u.update(update_sketch), std::invalid_argument);
@@ -154,7 +154,7 @@ TEST_CASE("tuple_union float: full overlap with theta sketch", "[tuple union]") 
 
   // tuple update
   auto update_tuple = update_tuple_sketch<float>::builder().build();
-  for (unsigned i = 0; i < 10; ++i) update_tuple.update(i, 1);
+  for (unsigned i = 0; i < 10; ++i) update_tuple.update(i, 1.0f);
   u.update(update_tuple);
 
   // tuple compact

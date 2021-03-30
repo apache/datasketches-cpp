@@ -44,7 +44,7 @@ TEST_CASE("tuple jaccard: empty", "[tuple_sketch]") {
 
 TEST_CASE("tuple jaccard: same sketch exact mode", "[tuple_sketch]") {
   auto sk = update_tuple_sketch<float>::builder().build();
-  for (int i = 0; i < 1000; ++i) sk.update(i, 1);
+  for (int i = 0; i < 1000; ++i) sk.update(i, 1.0f);
 
   // update sketch
   auto jc = tuple_jaccard_similarity_float::jaccard(sk, sk);
@@ -61,8 +61,8 @@ TEST_CASE("tuple jaccard: full overlap exact mode", "[tuple_sketch]") {
   auto sk_a = update_tuple_sketch<float>::builder().build();
   auto sk_b = update_tuple_sketch<float>::builder().build();
   for (int i = 0; i < 1000; ++i) {
-    sk_a.update(i, 1);
-    sk_b.update(i, 1);
+    sk_a.update(i, 1.0f);
+    sk_b.update(i, 1.0f);
   }
 
   // update sketches
@@ -83,8 +83,8 @@ TEST_CASE("tuple jaccard: disjoint exact mode", "[tuple_sketch]") {
   auto sk_a = update_tuple_sketch<float>::builder().build();
   auto sk_b = update_tuple_sketch<float>::builder().build();
   for (int i = 0; i < 1000; ++i) {
-    sk_a.update(i, 1);
-    sk_b.update(i + 1000, 1);
+    sk_a.update(i, 1.0f);
+    sk_b.update(i + 1000, 1.0f);
   }
 
   // update sketches

@@ -315,7 +315,7 @@ uint64_t compact_tuple_sketch<S, A>::get_theta64() const {
 
 template<typename S, typename A>
 uint32_t compact_tuple_sketch<S, A>::get_num_retained() const {
-  return entries_.size();
+  return static_cast<uint32_t>(entries_.size());
 }
 
 template<typename S, typename A>
@@ -367,7 +367,7 @@ void compact_tuple_sketch<S, A>::serialize(std::ostream& os, const SerDe& sd) co
   write(os, seed_hash);
   if (!this->is_empty()) {
     if (!is_single_item) {
-      const uint32_t num_entries = entries_.size();
+      const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
       write(os, num_entries);
       const uint32_t unused32 = 0;
       write(os, unused32);
@@ -412,7 +412,7 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
   ptr += copy_to_mem(seed_hash, ptr);
   if (!this->is_empty()) {
     if (!is_single_item) {
-      const uint32_t num_entries = entries_.size();
+      const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
       ptr += copy_to_mem(num_entries, ptr);
       ptr += sizeof(uint32_t); // unused
       if (this->is_estimation_mode()) {
@@ -535,22 +535,22 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
 
 template<typename S, typename A>
 auto compact_tuple_sketch<S, A>::begin() -> iterator {
-  return iterator(entries_.data(), entries_.size(), 0);
+  return iterator(entries_.data(), static_cast<uint32_t>(entries_.size()), 0);
 }
 
 template<typename S, typename A>
 auto compact_tuple_sketch<S, A>::end() -> iterator {
-  return iterator(nullptr, 0, entries_.size());
+  return iterator(nullptr, 0, static_cast<uint32_t>(entries_.size()));
 }
 
 template<typename S, typename A>
 auto compact_tuple_sketch<S, A>::begin() const -> const_iterator {
-  return const_iterator(entries_.data(), entries_.size(), 0);
+  return const_iterator(entries_.data(), static_cast<uint32_t>(entries_.size()), 0);
 }
 
 template<typename S, typename A>
 auto compact_tuple_sketch<S, A>::end() const -> const_iterator {
-  return const_iterator(nullptr, 0, entries_.size());
+  return const_iterator(nullptr, 0, static_cast<uint32_t>(entries_.size()));
 }
 
 template<typename S, typename A>

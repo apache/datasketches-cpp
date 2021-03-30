@@ -88,7 +88,7 @@ void compact_array_of_doubles_sketch_alloc<A>::serialize(std::ostream& os) const
   write(os, seed_hash);
   write(os, this->theta_);
   if (this->get_num_retained() > 0) {
-    const uint32_t num_entries = this->entries_.size();
+    const uint32_t num_entries = static_cast<uint32_t>(this->entries_.size());
     write(os, num_entries);
     const uint32_t unused32 = 0;
     write(os, unused32);
@@ -128,7 +128,7 @@ auto compact_array_of_doubles_sketch_alloc<A>::serialize(unsigned header_size_by
   ptr += copy_to_mem(seed_hash, ptr);
   ptr += copy_to_mem((this->theta_), ptr);
   if (this->get_num_retained() > 0) {
-    const uint32_t num_entries = this->entries_.size();
+    const uint32_t num_entries = static_cast<uint32_t>(this->entries_.size());
     ptr += copy_to_mem(num_entries, ptr);
     ptr += sizeof(uint32_t); // unused
     for (const auto& it: this->entries_) {
