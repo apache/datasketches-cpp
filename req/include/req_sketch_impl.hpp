@@ -766,9 +766,9 @@ auto req_sketch<T, C, S, A>::end() const -> const_iterator {
 
 template<typename T, typename C, typename S, typename A>
 req_sketch<T, C, S, A>::const_iterator::const_iterator(LevelsIterator begin, LevelsIterator end):
-levels_it_(begin),
-levels_end_(end),
-compactor_it_((*levels_it_).begin())
+    levels_it_(begin),
+    levels_end_(end),
+    compactor_it_(begin == end ? nullptr : (*levels_it_).begin())
 {}
 
 template<typename T, typename C, typename S, typename A>
@@ -802,7 +802,7 @@ bool req_sketch<T, C, S, A>::const_iterator::operator!=(const const_iterator& ot
 
 template<typename T, typename C, typename S, typename A>
 std::pair<const T&, const uint64_t> req_sketch<T, C, S, A>::const_iterator::operator*() const {
-  return std::pair<const T&, const uint64_t>(*compactor_it_, 1 << (*levels_it_).get_lg_weight());
+  return std::pair<const T&, const uint64_t>(*compactor_it_, 1ULL << (*levels_it_).get_lg_weight());
 }
 
 } /* namespace datasketches */
