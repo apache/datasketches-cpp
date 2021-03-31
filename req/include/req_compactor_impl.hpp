@@ -72,9 +72,9 @@ items_(nullptr)
 {
   if (other.items_ != nullptr) {
     items_ = allocator_.allocate(capacity_);
-    const size_t from = hra_ ? capacity_ - num_items_ : 0;
-    const size_t to = hra_ ? capacity_ : num_items_;
-    for (size_t i = from; i < to; ++i) new (items_ + i) T(other.items_[i]);
+    const uint32_t from = hra_ ? capacity_ - num_items_ : 0;
+    const uint32_t to = hra_ ? capacity_ : num_items_;
+    for (uint32_t i = from; i < to; ++i) new (items_ + i) T(other.items_[i]);
   }
 }
 
@@ -165,7 +165,7 @@ template<typename T, typename C, typename A>
 template<typename FwdT>
 void req_compactor<T, C, A>::append(FwdT&& item) {
   if (num_items_ == capacity_) grow(capacity_ + get_nom_capacity());
-  const size_t i = hra_ ? capacity_ - num_items_ - 1 : num_items_;
+  const uint32_t i = hra_ ? capacity_ - num_items_ - 1 : num_items_;
   new (items_ + i) T(std::forward<FwdT>(item));
   ++num_items_;
   if (num_items_ > 1) sorted_ = false;
@@ -218,13 +218,13 @@ void req_compactor<T, C, A>::merge(FwdC&& other) {
   while (ensure_enough_sections()) {}
   ensure_space(other.get_num_items());
   sort();
-  auto middle = hra_ ? begin() : end();
+  auto offset = hra_ ? capacity_ - num_items_ : num_items_;
   auto from = hra_ ? begin() - other.get_num_items() : end();
   auto to = from + other.get_num_items();
   auto other_it = other.begin();
   for (auto it = from; it != to; ++it, ++other_it) new (it) T(conditional_forward<FwdC>(*other_it));
   if (!other.sorted_) std::sort(from, to, C());
-  if (num_items_ > 0) std::inplace_merge(hra_ ? from : begin(), middle, hra_ ? end() : to, C());
+  if (num_items_ > 0) std::inplace_merge(hra_ ? from : begin(), items_ + offset, hra_ ? end() : to, C());
   num_items_ += other.get_num_items();
 }
 
