@@ -199,7 +199,7 @@ void frequent_items_sketch<T, W, H, E, S, A>::serialize(std::ostream& os) const 
     write(os, weights, sizeof(W) * num_items);
     aw.deallocate(weights, num_items);
     S().serialize(os, items, num_items);
-    for (unsigned i = 0; i < num_items; i++) items[i].~T();
+    for (i = 0; i < num_items; i++) items[i].~T();
     alloc.deallocate(items, num_items);
   }
 }
@@ -256,7 +256,7 @@ auto frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_size_byt
     aw.deallocate(weights, num_items);
     const size_t bytes_remaining = end_ptr - ptr;
     ptr += S().serialize(ptr, bytes_remaining, items, num_items);
-    for (unsigned i = 0; i < num_items; i++) items[i].~T();
+    for (i = 0; i < num_items; i++) items[i].~T();
     alloc.deallocate(items, num_items);
   }
   return bytes;
@@ -266,20 +266,20 @@ template<typename T, typename W, typename H, typename E, typename S, typename A>
 class frequent_items_sketch<T, W, H, E, S, A>::items_deleter {
 public:
   items_deleter(uint32_t num, bool destroy, const A& allocator):
-    allocator(allocator), num(num), destroy(destroy) {}
-  void set_destroy(bool destroy) { this->destroy = destroy; }
+    allocator_(allocator), num_(num), destroy_(destroy) {}
+  void set_destroy(bool destroy) { destroy_ = destroy; }
   void operator() (T* ptr) {
     if (ptr != nullptr) {
-      if (destroy) {
-        for (uint32_t i = 0; i < num; ++i) ptr[i].~T();
+      if (destroy_) {
+        for (uint32_t i = 0; i < num_; ++i) ptr[i].~T();
       }
-      allocator.deallocate(ptr, num);
+      allocator_.deallocate(ptr, num_);
     }
   }
 private:
-  A allocator;
-  uint32_t num;
-  bool destroy;
+  A allocator_;
+  uint32_t num_;
+  bool destroy_;
 };
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
@@ -350,7 +350,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
   check_serial_version(serial_version);
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
-  ensure_minimum_memory(size, 1 << preamble_longs);
+  ensure_minimum_memory(size, 1ULL << preamble_longs);
 
   frequent_items_sketch<T, W, H, E, S, A> sketch(lg_max_size, lg_cur_size, allocator);
   if (!is_empty) {
