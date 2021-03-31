@@ -174,7 +174,7 @@ void req_compactor<T, C, A>::append(FwdT&& item) {
 template<typename T, typename C, typename A>
 void req_compactor<T, C, A>::grow(uint32_t new_capacity) {
   T* new_items = allocator_.allocate(new_capacity);
-  size_t new_i = hra_ ? new_capacity - num_items_ : 0;
+  uint32_t new_i = hra_ ? new_capacity - num_items_ : 0;
   for (auto it = begin(); it != end(); ++it, ++new_i) {
     new (new_items + new_i) T(std::move(*it));
     (*it).~T();
