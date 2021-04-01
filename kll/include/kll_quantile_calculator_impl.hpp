@@ -35,7 +35,7 @@ n_(n), levels_(num_levels + 1, 0, allocator), entries_(allocator)
   const uint32_t num_items = levels[num_levels] - levels[0];
   entries_.reserve(num_items);
   populate_from_sketch(items, levels, num_levels);
-  merge_sorted_blocks(entries_, levels_.data(), levels_.size() - 1, num_items);
+  merge_sorted_blocks(entries_, levels_.data(), static_cast<uint8_t>(levels_.size()) - 1, num_items);
   if (!is_sorted(entries_.begin(), entries_.end(), compare_pair_by_first<C>())) throw std::logic_error("entries must be sorted");
   convert_to_preceding_cummulative();
 }
@@ -89,7 +89,7 @@ void kll_quantile_calculator<T, C, A>::convert_to_preceding_cummulative() {
 
 template <typename T, typename C, typename A>
 uint64_t kll_quantile_calculator<T, C, A>::pos_of_phi(double phi, uint64_t n) {
-  const uint64_t pos = std::floor(phi * n);
+  const uint64_t pos = static_cast<uint64_t>(std::floor(phi * n));
   return (pos == n) ? n - 1 : pos;
 }
 
@@ -102,11 +102,11 @@ uint32_t kll_quantile_calculator<T, C, A>::chunk_containing_pos(uint64_t pos) co
 }
 
 template <typename T, typename C, typename A>
-uint32_t kll_quantile_calculator<T, C, A>::search_for_chunk_containing_pos(uint64_t pos, uint32_t l, uint32_t r) const {
+uint32_t kll_quantile_calculator<T, C, A>::search_for_chunk_containing_pos(uint64_t pos, uint64_t l, uint64_t r) const {
   if (l + 1 == r) {
-    return l;
+    return static_cast<uint32_t>(l);
   }
-  const uint32_t m(l + (r - l) / 2);
+  const uint64_t m = l + (r - l) / 2;
   if (entries_[m].second <= pos) {
     return search_for_chunk_containing_pos(pos, m, r);
   }

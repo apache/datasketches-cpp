@@ -296,7 +296,7 @@ class kll_sketch {
      *
      * @return array of approximations to the given number of evenly-spaced fractional ranks.
      */
-    std::vector<T, A> get_quantiles(size_t num) const;
+    std::vector<T, A> get_quantiles(uint32_t num) const;
 
     /**
      * Returns an approximation to the normalized (fractional) rank of the given value from 0 to 1,
