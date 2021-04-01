@@ -129,10 +129,11 @@ void kll_quantile_calculator<T, C, A>::merge_sorted_blocks_direct(Container& ori
   const uint8_t num_levels_2 = num_levels - num_levels_1;
   const uint8_t starting_level_1 = starting_level;
   const uint8_t starting_level_2 = starting_level + num_levels_1;
-  const auto chunk_begin = temp.begin() + temp.size();
+  const auto initial_size = temp.size();
   merge_sorted_blocks_reversed(orig, temp, levels, starting_level_1, num_levels_1);
   merge_sorted_blocks_reversed(orig, temp, levels, starting_level_2, num_levels_2);
   const uint32_t num_items_1 = levels[starting_level_1 + num_levels_1] - levels[starting_level_1];
+  const auto chunk_begin = temp.begin() + initial_size;
   std::merge(
     std::make_move_iterator(chunk_begin), std::make_move_iterator(chunk_begin + num_items_1),
     std::make_move_iterator(chunk_begin + num_items_1), std::make_move_iterator(temp.end()),

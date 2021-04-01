@@ -1059,14 +1059,14 @@ typename kll_sketch<T, C, S, A>::const_iterator kll_sketch<T, C, S, A>::begin() 
 
 template <typename T, typename C, typename S, typename A>
 typename kll_sketch<T, C, S, A>::const_iterator kll_sketch<T, C, S, A>::end() const {
-  return kll_sketch<T, C, S, A>::const_iterator(nullptr, nullptr, num_levels_);
+  return kll_sketch<T, C, S, A>::const_iterator(nullptr, levels_.data(), num_levels_);
 }
 
 // kll_sketch::const_iterator implementation
 
 template<typename T, typename C, typename S, typename A>
 kll_sketch<T, C, S, A>::const_iterator::const_iterator(const T* items, const uint32_t* levels, const uint8_t num_levels):
-items(items), levels(levels), num_levels(num_levels), index(levels == nullptr ? 0 : levels[0]), level(levels == nullptr ? num_levels : 0), weight(1)
+items(items), levels(levels), num_levels(num_levels), index(items == nullptr ? levels[num_levels] : levels[0]), level(items == nullptr ? num_levels : 0), weight(1)
 {}
 
 template<typename T, typename C, typename S, typename A>
@@ -1090,8 +1090,6 @@ typename kll_sketch<T, C, S, A>::const_iterator& kll_sketch<T, C, S, A>::const_i
 
 template<typename T, typename C, typename S, typename A>
 bool kll_sketch<T, C, S, A>::const_iterator::operator==(const const_iterator& other) const {
-  if (level != other.level) return false;
-  if (level == num_levels) return true; // end
   return index == other.index;
 }
 

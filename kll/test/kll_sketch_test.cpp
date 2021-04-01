@@ -73,9 +73,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     int count = 0;
     for (auto it: sketch) {
       (void) it; // to suppress "unused" warning
-      ++count;
+      FAIL("should be no iterations over an empty sketch");
     }
-    REQUIRE(count == 0);
 }
 
   SECTION("get bad quantile") {
@@ -123,7 +122,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("many items, exact mode") {
     kll_float_sketch sketch(200, 0);
-    const uint32_t n(200);
+    const uint32_t n = 200;
     for (uint32_t i = 0; i < n; i++) {
       sketch.update(i);
       REQUIRE(sketch.get_n() == i + 1);
@@ -224,6 +223,15 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     }
 
     //std::cout << sketch.to_string();
+
+    uint32_t count = 0;
+    uint64_t total_weight = 0;
+    for (auto it: sketch) {
+      ++count;
+      total_weight += it.second;
+    }
+    REQUIRE(count == sketch.get_num_retained());
+    REQUIRE(total_weight == sketch.get_n());
   }
 
   SECTION("consistency between get_rank adn get_PMF/CDF") {
