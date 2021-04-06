@@ -576,7 +576,7 @@ void HllArray<A>::hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue)
 //In C: again-two-registers.c hhb_get_improved_linear_counting_estimate L1274
 template<typename A>
 double HllArray<A>::getHllBitMapEstimate() const {
-  const uint32_t configK = 1 << lgConfigK_;
+  const uint32_t configK = 1 << this->lgConfigK_;
   const uint32_t numUnhitBuckets = curMin_ == 0 ? numAtCurMin_ : 0;
 
   //This will eventually go away.

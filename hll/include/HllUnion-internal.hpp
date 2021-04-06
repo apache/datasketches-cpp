@@ -146,7 +146,7 @@ double hll_union_alloc<A>::get_lower_bound(uint8_t num_std_dev) const {
 
 template<typename A>
 double hll_union_alloc<A>::get_upper_bound(uint8_t num_std_dev) const {
-  return gadget.get_upper_bound(num_std_dev);
+  return gadget_.get_upper_bound(num_std_dev);
 }
 
 template<typename A>
