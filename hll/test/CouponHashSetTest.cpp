@@ -30,7 +30,7 @@
 namespace datasketches {
 
 TEST_CASE("coupon hash set: check corrupt bytearray", "[coupon_hash_set]") {
-  int lgK = 8;
+  uint8_t lgK = 8;
   hll_sketch sk1(lgK);
   for (int i = 0; i < 24; ++i) {
     sk1.update(i);
@@ -74,7 +74,7 @@ TEST_CASE("coupon hash set: check corrupt bytearray", "[coupon_hash_set]") {
 }
 
 TEST_CASE("coupon hash set: check corrupt stream", "[coupon_hash_set]") {
-  int lgK = 9;
+  uint8_t lgK = 9;
   hll_sketch sk1(lgK);
   for (int i = 0; i < 24; ++i) {
     sk1.update(i);
@@ -107,13 +107,13 @@ TEST_CASE("coupon hash set: check corrupt stream", "[coupon_hash_set]") {
   ss.put(HllUtil<>::FAMILY_ID);
 
   ss.seekg(HllUtil<>::MODE_BYTE);
-  uint8_t tmp = ss.get();
+  auto tmp = ss.get();
   ss.seekp(HllUtil<>::MODE_BYTE);
   ss.put(0x22); // HLL_8, HLL
   ss.seekg(0);
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
   ss.seekp(HllUtil<>::MODE_BYTE);
-  ss.put(tmp);
+  ss.put((char)tmp);
 
   ss.seekg(HllUtil<>::LG_ARR_BYTE);
   tmp = ss.get();
@@ -123,7 +123,7 @@ TEST_CASE("coupon hash set: check corrupt stream", "[coupon_hash_set]") {
   hll_sketch::deserialize(ss);
   // should work fine despite the corruption
   ss.seekp(HllUtil<>::LG_ARR_BYTE);
-  ss.put(tmp);
+  ss.put((char)tmp);
 }
 
 

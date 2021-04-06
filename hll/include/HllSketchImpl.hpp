@@ -30,7 +30,7 @@ namespace datasketches {
 template<typename A>
 class HllSketchImpl {
   public:
-    HllSketchImpl(int lgConfigK, target_hll_type tgtHllType, hll_mode mode, bool startFullSize);
+    HllSketchImpl(uint8_t lgConfigK, target_hll_type tgtHllType, hll_mode mode, bool startFullSize);
     virtual ~HllSketchImpl();
 
     virtual void serialize(std::ostream& os, bool compact) const = 0;
@@ -42,25 +42,25 @@ class HllSketchImpl {
 
     virtual std::function<void(HllSketchImpl<A>*)> get_deleter() const = 0;
 
-    virtual HllSketchImpl* couponUpdate(int coupon) = 0;
+    virtual HllSketchImpl* couponUpdate(uint32_t coupon) = 0;
 
     hll_mode getCurMode() const;
 
     virtual double getEstimate() const = 0;
     virtual double getCompositeEstimate() const = 0;
-    virtual double getUpperBound(int numStdDev) const = 0;
-    virtual double getLowerBound(int numStdDev) const = 0;
+    virtual double getUpperBound(uint8_t numStdDev) const = 0;
+    virtual double getLowerBound(uint8_t numStdDev) const = 0;
 
-    inline int getLgConfigK() const;
+    inline uint8_t getLgConfigK() const;
 
-    virtual int getMemDataStart() const = 0;
+    virtual uint32_t getMemDataStart() const = 0;
 
-    virtual int getPreInts() const = 0;
+    virtual uint8_t getPreInts() const = 0;
 
     target_hll_type getTgtHllType() const;
 
-    virtual int getUpdatableSerializationBytes() const = 0;
-    virtual int getCompactSerializationBytes() const = 0;
+    virtual uint32_t getUpdatableSerializationBytes() const = 0;
+    virtual uint32_t getCompactSerializationBytes() const = 0;
 
     virtual bool isCompact() const = 0;
     virtual bool isEmpty() const = 0;
@@ -75,10 +75,10 @@ class HllSketchImpl {
     uint8_t makeFlagsByte(bool compact) const;
     uint8_t makeModeByte() const;
 
-    const int lgConfigK;
-    const target_hll_type tgtHllType;
-    const hll_mode mode;
-    const bool startFullSize;
+    const uint8_t lgConfigK_;
+    const target_hll_type tgtHllType_;
+    const hll_mode mode_;
+    const bool startFullSize_;
 };
 
 }

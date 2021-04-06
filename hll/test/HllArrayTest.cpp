@@ -25,7 +25,7 @@
 
 namespace datasketches {
 
-static void testComposite(const int lgK, const target_hll_type tgtHllType, const int n) {
+static void testComposite(uint8_t lgK, const target_hll_type tgtHllType, const int n) {
   hll_union u(lgK);
   hll_sketch sk(lgK, tgtHllType);
   for (int i = 0; i < n; ++i) {
@@ -45,7 +45,7 @@ TEST_CASE("hll array: check composite estimate", "[hll_array]") {
   testComposite(13, target_hll_type::HLL_8, 10000);
 }
 
-static void serializeDeserialize(const int lgK, target_hll_type tgtHllType, const int n) {
+static void serializeDeserialize(uint8_t lgK, target_hll_type tgtHllType, const int n) {
   hll_sketch sk1(lgK, tgtHllType);
 
   for (int i = 0; i < n; ++i) {
@@ -72,7 +72,7 @@ static void serializeDeserialize(const int lgK, target_hll_type tgtHllType, cons
 }
 
 TEST_CASE("hll array: check serialize deserialize", "[hll_array]") {
-  int lgK = 4;
+  uint8_t lgK = 4;
   int n = 8;
   serializeDeserialize(lgK, HLL_4, n);
   serializeDeserialize(lgK, HLL_6, n);
@@ -100,7 +100,7 @@ TEST_CASE("hll array: check is compact", "[hll_array]") {
 }
 
 TEST_CASE("hll array: check corrupt bytearray", "[hll_array]") {
-  int lgK = 8;
+  uint8_t lgK = 8;
   hll_sketch sk1(lgK, HLL_8);
   for (int i = 0; i < 50; ++i) {
     sk1.update(i);
@@ -138,7 +138,7 @@ TEST_CASE("hll array: check corrupt bytearray", "[hll_array]") {
 }
 
 TEST_CASE("hll array: check corrupt stream", "[hll_array]") {
-  int lgK = 6;
+  uint8_t lgK = 6;
   hll_sketch sk1(lgK);
   for (int i = 0; i < 50; ++i) {
     sk1.update(i);
@@ -169,13 +169,13 @@ TEST_CASE("hll array: check corrupt stream", "[hll_array]") {
   ss.put(HllUtil<>::FAMILY_ID);
 
   ss.seekg(HllUtil<>::MODE_BYTE);
-  uint8_t tmp = ss.get();
+  auto tmp = ss.get();
   ss.seekp(HllUtil<>::MODE_BYTE);
   ss.put(0x11); // HLL_6, SET
   ss.seekg(0);
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
   ss.seekp(HllUtil<>::MODE_BYTE);
-  ss.put(tmp);
+  ss.put((char)tmp);
 
   ss.seekg(HllUtil<>::LG_ARR_BYTE);
   tmp = ss.get();
@@ -185,7 +185,7 @@ TEST_CASE("hll array: check corrupt stream", "[hll_array]") {
   hll_sketch::deserialize(ss);
   // should work fine despite the corruption
   ss.seekp(HllUtil<>::LG_ARR_BYTE);
-  ss.put(tmp);
+  ss.put((char)tmp);
 }
 
 } /* namespace datasketches */

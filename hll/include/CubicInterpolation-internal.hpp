@@ -102,10 +102,8 @@ double CubicInterpolation<A>::usingXAndYTables(const double xArr[], const double
   else if (offset == numEntries-2) { // corner case
     return (interpolateUsingXAndYTables<A>(xArr, yArr, (offset-2), x));
   }
-  else { // main case
-    return (interpolateUsingXAndYTables<A>(xArr, yArr, (offset-1), x));
-  }
-  throw std::logic_error("Exception should be unreachable");
+  // main case
+  return (interpolateUsingXAndYTables<A>(xArr, yArr, (offset-1), x));
 }
 
 // In C: again-two-registers cubic_interpolate_aux L1368

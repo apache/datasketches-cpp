@@ -27,16 +27,16 @@
 
 namespace datasketches {
 
-static const int numXArrValues = 257;
+static const uint32_t numXArrValues = 257;
 
 /**
  * 18 Values, index 0 is LgK = 4, index 17 is LgK = 21.
  */
-static const int yStrides[] =
+static const uint32_t yStrides[] =
   {1, 2, 3, 5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240, 20480, 40960, 81920};
 
 template<typename A>
-int CompositeInterpolationXTable<A>::get_y_stride(const int logK) {
+uint32_t CompositeInterpolationXTable<A>::get_y_stride(uint8_t logK) {
   if (logK < HllUtil<A>::MIN_LOG_K || logK > HllUtil<A>::MAX_LOG_K) {
     throw std::invalid_argument("logK must be in range [" + std::to_string(HllUtil<A>::MIN_LOG_K)
                                 + ", " + std::to_string(HllUtil<A>::MAX_LOG_K) + "]. Found: "
@@ -46,11 +46,11 @@ int CompositeInterpolationXTable<A>::get_y_stride(const int logK) {
 }
 
 template<typename A>
-int CompositeInterpolationXTable<A>::get_x_arr_length() {
+uint32_t CompositeInterpolationXTable<A>::get_x_arr_length() {
   return numXArrValues;
 }
 
-static const double xArr[18][numXArrValues] = {
+static const double xArray[18][numXArrValues] = {
 {
   10.767999803534, 11.237701481774, 11.722738717438, 12.223246391222,
   12.739366773787, 13.271184824495, 13.818759686650, 14.382159835785,
@@ -797,13 +797,13 @@ static const double xArr[18][numXArrValues] = {
 };
 
 template<typename A>
-const double* CompositeInterpolationXTable<A>::get_x_arr(const int logK) {
+const double* CompositeInterpolationXTable<A>::get_x_arr(uint8_t logK) {
   if (logK < HllUtil<A>::MIN_LOG_K || logK > HllUtil<A>::MAX_LOG_K) {
     throw std::invalid_argument("logK must be in range [" + std::to_string(HllUtil<A>::MIN_LOG_K)
                                 + ", " + std::to_string(HllUtil<A>::MAX_LOG_K) + "]. Found: "
                                 + std::to_string(logK));
   }
-  return xArr[logK - HllUtil<A>::MIN_LOG_K];
+  return xArray[logK - HllUtil<A>::MIN_LOG_K];
 }
 
 }

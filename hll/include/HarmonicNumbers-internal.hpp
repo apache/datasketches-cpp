@@ -68,7 +68,7 @@ double HarmonicNumbers<A>::harmonicNumber(const uint64_t x_i) {
   if (x_i < NUM_EXACT_HARMONIC_NUMBERS) {
     return tableOfExactHarmonicNumbers[x_i];
   } else {
-    double x = x_i;
+    double x = static_cast<double>(x_i);
     double invSq = 1.0 / (x * x);
     double sum = log(x) + EULER_MASCHERONI_CONSTANT + (1.0 / (2.0 * x));
     /* note: the number of terms included from this series expansion is appropriate

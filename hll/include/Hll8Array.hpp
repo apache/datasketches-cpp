@@ -30,24 +30,24 @@ class Hll8Iterator;
 template<typename A>
 class Hll8Array final : public HllArray<A> {
   public:
-    Hll8Array(int lgConfigK, bool startFullSize, const A& allocator);
+    Hll8Array(uint8_t lgConfigK, bool startFullSize, const A& allocator);
 
     virtual ~Hll8Array() = default;
     virtual std::function<void(HllSketchImpl<A>*)> get_deleter() const;
 
     virtual Hll8Array<A>* copy() const;
 
-    inline uint8_t getSlot(int slotNo) const;
-    inline void putSlot(int slotNo, uint8_t value);
+    inline uint8_t getSlot(uint32_t slotNo) const;
+    inline void putSlot(uint32_t slotNo, uint8_t value);
 
-    virtual HllSketchImpl<A>* couponUpdate(int coupon) final;
+    virtual HllSketchImpl<A>* couponUpdate(uint32_t coupon) final;
     void mergeList(const CouponList<A>& src);
     void mergeHll(const HllArray<A>& src);
 
-    virtual int getHllByteArrBytes() const;
+    virtual uint32_t getHllByteArrBytes() const;
 
   private:
-    inline void internalCouponUpdate(int coupon);
+    inline void internalCouponUpdate(uint32_t coupon);
 };
 
 }

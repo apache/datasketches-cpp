@@ -25,15 +25,15 @@ namespace datasketches {
 template<typename A>
 class coupon_iterator: public std::iterator<std::input_iterator_tag, uint32_t> {
 public:
-  coupon_iterator(const int* array, size_t array_slze, size_t index, bool all);
+  coupon_iterator(const uint32_t* array, size_t array_slze, size_t index, bool all);
   coupon_iterator& operator++();
   bool operator!=(const coupon_iterator& other) const;
   uint32_t operator*() const;
 private:
-  const int* array;
-  size_t array_size;
-  size_t index;
-  bool all;
+  const uint32_t* array_;
+  size_t array_size_;
+  size_t index_;
+  bool all_;
 };
 
 }

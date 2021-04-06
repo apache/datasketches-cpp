@@ -35,9 +35,9 @@ void println_string(std::string str) {
 }
 
 TEST_CASE("coupon list: check iterator", "[coupon_list]") {
-  int lgConfigK = 8;
+  uint8_t lgConfigK = 8;
   CouponList<std::allocator<uint8_t>> cl(lgConfigK, HLL_4, LIST, std::allocator<uint8_t>());
-  for (int i = 1; i <= 7; ++i) { cl.couponUpdate(HllUtil<>::pair(i, i)); } // not hashes but distinct values
+  for (uint8_t i = 1; i <= 7; ++i) { cl.couponUpdate(HllUtil<>::pair(i, i)); } // not hashes but distinct values
   const int mask = (1 << lgConfigK) - 1;
   int idx = 0;
   auto itr = cl.begin(false);
@@ -56,7 +56,7 @@ TEST_CASE("coupon list: check iterator", "[coupon_list]") {
 }
 
 TEST_CASE("coupon list: check duplicates and misc", "[coupon_list]") {
-  int lgConfigK = 8;
+  uint8_t lgConfigK = 8;
   hll_sketch sk(lgConfigK);
 
   for (int i = 1; i <= 7; ++i) {
@@ -79,7 +79,7 @@ TEST_CASE("coupon list: check duplicates and misc", "[coupon_list]") {
   REQUIRE(relErr < 0.0);
 }
 
-static void serializeDeserialize(const int lgK) {
+static void serializeDeserialize(uint8_t lgK) {
   hll_sketch sk1(lgK);
 
   int u = (lgK < 8) ? 7 : (((1 << (lgK - 3))/ 4) * 3);
@@ -110,7 +110,7 @@ TEST_CASE("coupon list: check serialize deserialize", "[coupon_list]") {
 }
 
 TEST_CASE("coupon list: check corrupt bytearray data", "[coupon_list]") {
-  int lgK = 6;
+  uint8_t lgK = 6;
   hll_sketch sk1(lgK);
   sk1.update(1);
   sk1.update(2);
@@ -143,7 +143,7 @@ TEST_CASE("coupon list: check corrupt bytearray data", "[coupon_list]") {
 }
 
 TEST_CASE("coupon list: check corrupt stream data", "[coupon_list]") {
-  int lgK = 6;
+  uint8_t lgK = 6;
   hll_sketch sk1(lgK);
   sk1.update(1);
   sk1.update(2);
