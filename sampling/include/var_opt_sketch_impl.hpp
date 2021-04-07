@@ -1411,7 +1411,7 @@ subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(P predicate) const {
   if (effective_sampling_rate < 0.0 || effective_sampling_rate > 1.0)
     throw std::logic_error("invalid sampling rate outside [0.0, 1.0]");
 
-  size_t r_true_count = 0;
+  uint32_t r_true_count = 0;
   ++idx; // skip the gap
   for (; idx < (k_ + 1); ++idx) {
     if (predicate(data_[idx])) {
