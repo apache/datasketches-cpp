@@ -76,11 +76,11 @@ HllSketchImpl<A>* HllSketchImplFactory<A>::deserialize(std::istream& is, const A
   // we'll hand off the sketch based on PreInts so we don't need
   // to move the stream pointer back and forth -- perhaps somewhat fragile?
   const uint8_t preInts = static_cast<uint8_t>(is.peek());
-  if (preInts == HllUtil<A>::HLL_PREINTS) {
+  if (preInts == hll_constants::HLL_PREINTS) {
     return HllArray<A>::newHll(is, allocator);
-  } else if (preInts == HllUtil<A>::HASH_SET_PREINTS) {
+  } else if (preInts == hll_constants::HASH_SET_PREINTS) {
     return CouponHashSet<A>::newSet(is, allocator);
-  } else if (preInts == HllUtil<A>::LIST_PREINTS) {
+  } else if (preInts == hll_constants::LIST_PREINTS) {
     return CouponList<A>::newList(is, allocator);
   } else {
     throw std::invalid_argument("Attempt to deserialize unknown object type");
@@ -91,11 +91,11 @@ template<typename A>
 HllSketchImpl<A>* HllSketchImplFactory<A>::deserialize(const void* bytes, size_t len, const A& allocator) {
   // read current mode directly
   const uint8_t preInts = static_cast<const uint8_t*>(bytes)[0];
-  if (preInts == HllUtil<A>::HLL_PREINTS) {
+  if (preInts == hll_constants::HLL_PREINTS) {
     return HllArray<A>::newHll(bytes, len, allocator);
-  } else if (preInts == HllUtil<A>::HASH_SET_PREINTS) {
+  } else if (preInts == hll_constants::HASH_SET_PREINTS) {
     return CouponHashSet<A>::newSet(bytes, len, allocator);
-  } else if (preInts == HllUtil<A>::LIST_PREINTS) {
+  } else if (preInts == hll_constants::LIST_PREINTS) {
     return CouponList<A>::newList(bytes, len, allocator);
   } else {
     throw std::invalid_argument("Attempt to deserialize unknown object type");

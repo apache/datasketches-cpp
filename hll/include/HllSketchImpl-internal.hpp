@@ -70,10 +70,10 @@ hll_mode HllSketchImpl<A>::extractCurMode(uint8_t modeByte) {
 template<typename A>
 uint8_t HllSketchImpl<A>::makeFlagsByte(bool compact) const {
   uint8_t flags = 0;
-  flags |= (isEmpty() ? HllUtil<A>::EMPTY_FLAG_MASK : 0);
-  flags |= (compact ? HllUtil<A>::COMPACT_FLAG_MASK : 0);
-  flags |= (isOutOfOrderFlag() ? HllUtil<A>::OUT_OF_ORDER_FLAG_MASK : 0);
-  flags |= (startFullSize_ ? HllUtil<A>::FULL_SIZE_FLAG_MASK : 0);
+  flags |= (isEmpty() ? hll_constants::EMPTY_FLAG_MASK : 0);
+  flags |= (compact ? hll_constants::COMPACT_FLAG_MASK : 0);
+  flags |= (isOutOfOrderFlag() ? hll_constants::OUT_OF_ORDER_FLAG_MASK : 0);
+  flags |= (startFullSize_ ? hll_constants::FULL_SIZE_FLAG_MASK : 0);
   return flags;
 }
 

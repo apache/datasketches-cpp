@@ -58,7 +58,7 @@ uint8_t Hll6Array<A>::getSlot(uint32_t slotNo) const {
   const uint32_t shift = startBit & 0x7;
   const uint32_t byteIdx = startBit >> 3;  
   const uint16_t twoByteVal = (this->hllByteArr_[byteIdx + 1] << 8) | this->hllByteArr_[byteIdx];
-  return (twoByteVal >> shift) & HllUtil<A>::VAL_MASK_6;
+  return (twoByteVal >> shift) & hll_constants::VAL_MASK_6;
 }
 
 template<typename A>
@@ -68,7 +68,7 @@ void Hll6Array<A>::putSlot(uint32_t slotNo, uint8_t value) {
   const uint32_t byteIdx = startBit >> 3;
   const uint16_t valShifted = (value & 0x3F) << shift;
   uint16_t curMasked = (this->hllByteArr_[byteIdx + 1] << 8) | this->hllByteArr_[byteIdx];
-  curMasked &= (~(HllUtil<A>::VAL_MASK_6 << shift));
+  curMasked &= (~(hll_constants::VAL_MASK_6 << shift));
   const uint16_t insert = curMasked | valShifted;
   this->hllByteArr_[byteIdx]     = insert & 0xFF;
   this->hllByteArr_[byteIdx + 1] = (insert & 0xFF00) >> 8;

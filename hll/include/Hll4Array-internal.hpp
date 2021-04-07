@@ -82,11 +82,11 @@ uint32_t Hll4Array<A>::getUpdatableSerializationBytes() const {
   AuxHashMap<A>* auxHashMap = getAuxHashMap();
   uint32_t auxBytes;
   if (auxHashMap == nullptr) {
-    auxBytes = 4 << HllUtil<A>::LG_AUX_ARR_INTS[this->lgConfigK_];
+    auxBytes = 4 << hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_];
   } else {
     auxBytes = 4 << auxHashMap->getLgAuxArrInts();
   }
-  return HllUtil<A>::HLL_BYTE_ARR_START + getHllByteArrBytes() + auxBytes;
+  return hll_constants::HLL_BYTE_ARR_START + getHllByteArrBytes() + auxBytes;
 }
 
 template<typename A>
@@ -110,13 +110,13 @@ uint8_t Hll4Array<A>::getSlot(uint32_t slotNo) const {
   if ((slotNo & 1) > 0) { // odd?
     return byte >> 4;
   }
-  return byte & HllUtil<A>::loNibbleMask;
+  return byte & hll_constants::loNibbleMask;
 }
 
 template<typename A>
 uint8_t Hll4Array<A>::get_value(uint32_t index) const {
   const uint8_t value = getSlot(index);
-  if (value != HllUtil<A>::AUX_TOKEN) return value + this->curMin_;
+  if (value != hll_constants::AUX_TOKEN) return value + this->curMin_;
   return auxHashMap_->mustFindValueFor(index);
 }
 
@@ -143,10 +143,10 @@ void Hll4Array<A>::putSlot(uint32_t slotNo, uint8_t newValue) {
   const uint8_t oldValue = this->hllByteArr_[byteno];
   if ((slotNo & 1) == 0) { // set low nibble
     this->hllByteArr_[byteno]
-      = ((oldValue & HllUtil<A>::hiNibbleMask) | (newValue & HllUtil<A>::loNibbleMask));
+      = ((oldValue & hll_constants::hiNibbleMask) | (newValue & hll_constants::loNibbleMask));
   } else { // set high nibble
     this->hllByteArr_[byteno]
-      = ((oldValue & HllUtil<A>::loNibbleMask) | ((newValue << 4) & HllUtil<A>::hiNibbleMask));
+      = ((oldValue & hll_constants::loNibbleMask) | ((newValue << 4) & hll_constants::hiNibbleMask));
   }
 }
 
@@ -161,7 +161,7 @@ void Hll4Array<A>::internalHll4Update(uint32_t slotNo, uint8_t newVal) {
   if (newVal > lbOnOldValue) { // 842
     // Note: if an AUX_TOKEN exists, then auxHashMap must already exist
     // 846: rawStoredOldValue == AUX_TOKEN
-    const uint8_t actualOldValue = (rawStoredOldValue < HllUtil<A>::AUX_TOKEN)
+    const uint8_t actualOldValue = (rawStoredOldValue < hll_constants::AUX_TOKEN)
        ? (lbOnOldValue) : (auxHashMap_->mustFindValueFor(slotNo));
 
     if (newVal > actualOldValue) { // 848: actualOldValue could still be 0; newValue > 0
@@ -175,11 +175,11 @@ void Hll4Array<A>::internalHll4Update(uint32_t slotNo, uint8_t newVal) {
       // and lgConfigK bounds do not allow overflowing an int
       //assert(shiftedNewValue >= 0);
 
-      if (rawStoredOldValue == HllUtil<A>::AUX_TOKEN) { // 879
+      if (rawStoredOldValue == hll_constants::AUX_TOKEN) { // 879
         // Given that we have an AUX_TOKEN, there are 4 cases for how to
         // actually modify the data structure
 
-        if (shiftedNewValue >= HllUtil<A>::AUX_TOKEN) { // case 1: 881
+        if (shiftedNewValue >= hll_constants::AUX_TOKEN) { // case 1: 881
           // the byte array already contains aux token
           // This is the case where old and new values are both exceptions.
           // The 4-bit array already is AUX_TOKEN, only need to update auxHashMap
@@ -190,13 +190,13 @@ void Hll4Array<A>::internalHll4Update(uint32_t slotNo, uint8_t newVal) {
           // which is impossible given that curMin has not changed here and newVal > oldValue
         }
       } else { // rawStoredOldValue != AUX_TOKEN
-        if (shiftedNewValue >= HllUtil<A>::AUX_TOKEN) { // case 3: 892
+        if (shiftedNewValue >= hll_constants::AUX_TOKEN) { // case 3: 892
           // This is the case where the old value is not an exception and the new value is.
           // The AUX_TOKEN must be stored in the 4-bit array and the new value
           // added to the exception table
-          putSlot(slotNo, HllUtil<A>::AUX_TOKEN);
+          putSlot(slotNo, hll_constants::AUX_TOKEN);
           if (auxHashMap_ == nullptr) {
-            auxHashMap_ = AuxHashMap<A>::newAuxHashMap(HllUtil<A>::LG_AUX_ARR_INTS[this->lgConfigK_],
+            auxHashMap_ = AuxHashMap<A>::newAuxHashMap(hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_],
                 this->lgConfigK_, this->getAllocator());
           }
           auxHashMap_->mustAdd(slotNo, newVal);
@@ -245,7 +245,7 @@ void Hll4Array<A>::shiftToBiggerCurMin() {
     if (oldStoredValue == 0) {
       throw std::runtime_error("Array slots cannot be 0 at this point.");
     }
-    if (oldStoredValue < HllUtil<A>::AUX_TOKEN) {
+    if (oldStoredValue < hll_constants::AUX_TOKEN) {
       putSlot(i, --oldStoredValue);
       if (oldStoredValue == 0) { numAtNewCurMin++; }
     } else { //oldStoredValue == AUX_TOKEN
@@ -272,11 +272,11 @@ void Hll4Array<A>::shiftToBiggerCurMin() {
         throw std::logic_error("oldActualVal < newCurMin when incrementing curMin");
       }
 
-      if (getSlot(slotNum) != HllUtil<A>::AUX_TOKEN) {
+      if (getSlot(slotNum) != hll_constants::AUX_TOKEN) {
         throw std::logic_error("getSlot(slotNum) != AUX_TOKEN for item in auxiliary hash map");
       }
       // Array slot != AUX_TOKEN at getSlot(slotNum);
-      if (newShiftedVal < HllUtil<A>::AUX_TOKEN) { // 756
+      if (newShiftedVal < hll_constants::AUX_TOKEN) { // 756
         if (newShiftedVal != 14) {
           throw std::logic_error("newShiftedVal != 14 for item in old auxHashMap despite curMin increment");
         }
@@ -287,7 +287,7 @@ void Hll4Array<A>::shiftToBiggerCurMin() {
       } else { //newShiftedVal >= AUX_TOKEN
         // the former exception remains an exception, so must be added to the newAuxMap
         if (newAuxMap == nullptr) {
-          newAuxMap = AuxHashMap<A>::newAuxHashMap(HllUtil<A>::LG_AUX_ARR_INTS[this->lgConfigK_],
+          newAuxMap = AuxHashMap<A>::newAuxHashMap(hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_],
               this->lgConfigK_, this->getAllocator());
         }
         newAuxMap->mustAdd(slotNum, oldActualVal);

@@ -78,7 +78,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
     auxHashMap = new (ahmAlloc(allocator).allocate(1)) AuxHashMap<A>(lgArrInts, lgConfigK, allocator);
     for (uint32_t i = 0; i < itemsToRead; ++i) {
       const uint32_t pair = auxPtr[i];
-      if (pair == HllUtil<A>::EMPTY) { continue; }
+      if (pair == hll_constants::EMPTY) { continue; }
       const uint32_t slotNo = HllUtil<A>::getLow26(pair) & configKmask;
       const uint8_t value = HllUtil<A>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
@@ -121,7 +121,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(std::istream& is, uint8_t lgConfigK,
     const uint32_t itemsToRead = 1 << lgAuxArrInts;
     for (uint32_t i = 0; i < itemsToRead; ++i) {
       const auto pair = read<int>(is);
-      if (pair == HllUtil<A>::EMPTY) { continue; }
+      if (pair == hll_constants::EMPTY) { continue; }
       const uint32_t slotNo = HllUtil<A>::getLow26(pair) & configKmask;
       const uint8_t value = HllUtil<A>::getValue(pair);
       auxHashMap->mustAdd(slotNo, value);
@@ -214,7 +214,7 @@ void AuxHashMap<A>::mustReplace(uint32_t slotNo, uint8_t value) {
 
 template<typename A>
 void AuxHashMap<A>::checkGrow() {
-  if ((HllUtil<A>::RESIZE_DENOM * auxCount) > (HllUtil<A>::RESIZE_NUMER * (1 << lgAuxArrInts))) {
+  if ((hll_constants::RESIZE_DENOM * auxCount) > (hll_constants::RESIZE_NUMER * (1 << lgAuxArrInts))) {
     growAuxSpace();
   }
 }
@@ -226,7 +226,7 @@ void AuxHashMap<A>::growAuxSpace() {
   vector_int entries_new(newArrLen, 0, entries.get_allocator());
   for (size_t i = 0; i < entries.size(); ++i) {
     const uint32_t fetched = entries[i];
-    if (fetched != HllUtil<A>::EMPTY) {
+    if (fetched != hll_constants::EMPTY) {
       // find empty in new array
       const int32_t idx = find(entries_new.data(), lgAuxArrInts, lgConfigK, fetched & configKmask);
       entries_new[~idx] = fetched;
@@ -248,7 +248,7 @@ int32_t AuxHashMap<A>::find(const uint32_t* auxArr, uint8_t lgAuxArrInts, uint8_
   const uint32_t loopIndex = probe;
   do {
     const uint32_t arrVal = auxArr[probe];
-    if (arrVal == HllUtil<A>::EMPTY) { //Compares on entire entry
+    if (arrVal == hll_constants::EMPTY) { //Compares on entire entry
       return ~probe; //empty
     }
     else if (slotNo == (arrVal & configKmask)) { //Compares only on slotNo

@@ -118,24 +118,24 @@ TEST_CASE("coupon list: check corrupt bytearray data", "[coupon_list]") {
   uint8_t* bytes = sketchBytes.data();
   const size_t size = sketchBytes.size();
 
-  bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = 0;
+  bytes[hll_constants::PREAMBLE_INTS_BYTE] = 0;
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
   REQUIRE_THROWS_AS(CouponList<std::allocator<uint8_t>>::newList(bytes, size, std::allocator<uint8_t>()), std::invalid_argument);
 
-  bytes[HllUtil<>::PREAMBLE_INTS_BYTE] = HllUtil<>::LIST_PREINTS;
+  bytes[hll_constants::PREAMBLE_INTS_BYTE] = hll_constants::LIST_PREINTS;
 
-  bytes[HllUtil<>::SER_VER_BYTE] = 0;
+  bytes[hll_constants::SER_VER_BYTE] = 0;
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
-  bytes[HllUtil<>::SER_VER_BYTE] = HllUtil<>::SER_VER;
+  bytes[hll_constants::SER_VER_BYTE] = hll_constants::SER_VER;
 
-  bytes[HllUtil<>::FAMILY_BYTE] = 0;
+  bytes[hll_constants::FAMILY_BYTE] = 0;
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
-  bytes[HllUtil<>::FAMILY_BYTE] = HllUtil<>::FAMILY_ID;
+  bytes[hll_constants::FAMILY_BYTE] = hll_constants::FAMILY_ID;
 
-  uint8_t tmp = bytes[HllUtil<>::MODE_BYTE];
-  bytes[HllUtil<>::MODE_BYTE] = 0x01; // HLL_4, SET
+  uint8_t tmp = bytes[hll_constants::MODE_BYTE];
+  bytes[hll_constants::MODE_BYTE] = 0x01; // HLL_4, SET
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size), std::invalid_argument);
-  bytes[HllUtil<>::MODE_BYTE] = tmp;
+  bytes[hll_constants::MODE_BYTE] = tmp;
 
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, size - 1), std::out_of_range);
 
@@ -150,29 +150,29 @@ TEST_CASE("coupon list: check corrupt stream data", "[coupon_list]") {
   std::stringstream ss;
   sk1.serialize_compact(ss);
 
-  ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
+  ss.seekp(hll_constants::PREAMBLE_INTS_BYTE);
   ss.put(0);
   ss.seekg(0);
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
   REQUIRE_THROWS_AS(CouponList<std::allocator<uint8_t>>::newList(ss, std::allocator<uint8_t>()), std::invalid_argument);
-  ss.seekp(HllUtil<>::PREAMBLE_INTS_BYTE);
-  ss.put(HllUtil<>::LIST_PREINTS);
+  ss.seekp(hll_constants::PREAMBLE_INTS_BYTE);
+  ss.put(hll_constants::LIST_PREINTS);
 
-  ss.seekp(HllUtil<>::SER_VER_BYTE);
+  ss.seekp(hll_constants::SER_VER_BYTE);
   ss.put(0);
   ss.seekg(0);
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
-  ss.seekp(HllUtil<>::SER_VER_BYTE);
-  ss.put(HllUtil<>::SER_VER);
+  ss.seekp(hll_constants::SER_VER_BYTE);
+  ss.put(hll_constants::SER_VER);
 
-  ss.seekp(HllUtil<>::FAMILY_BYTE);
+  ss.seekp(hll_constants::FAMILY_BYTE);
   ss.put(0);
   ss.seekg(0);
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
-  ss.seekp(HllUtil<>::FAMILY_BYTE);
-  ss.put(HllUtil<>::FAMILY_ID);
+  ss.seekp(hll_constants::FAMILY_BYTE);
+  ss.put(hll_constants::FAMILY_ID);
 
-  ss.seekp(HllUtil<>::MODE_BYTE);
+  ss.seekp(hll_constants::MODE_BYTE);
   ss.put(0x22); // HLL_8, HLL
   ss.seekg(0);
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);

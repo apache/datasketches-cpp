@@ -62,54 +62,54 @@ HllArray<A>* HllArray<A>::copyAs(target_hll_type tgtHllType) const {
 
 template<typename A>
 HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len, const A& allocator) {
-  if (len < HllUtil<A>::HLL_BYTE_ARR_START) {
+  if (len < hll_constants::HLL_BYTE_ARR_START) {
     throw std::out_of_range("Input data length insufficient to hold HLL array");
   }
 
   const uint8_t* data = static_cast<const uint8_t*>(bytes);
-  if (data[HllUtil<A>::PREAMBLE_INTS_BYTE] != HllUtil<A>::HLL_PREINTS) {
+  if (data[hll_constants::PREAMBLE_INTS_BYTE] != hll_constants::HLL_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
-  if (data[HllUtil<A>::SER_VER_BYTE] != HllUtil<A>::SER_VER) {
+  if (data[hll_constants::SER_VER_BYTE] != hll_constants::SER_VER) {
     throw std::invalid_argument("Wrong ser ver in input stream");
   }
-  if (data[HllUtil<A>::FAMILY_BYTE] != HllUtil<A>::FAMILY_ID) {
+  if (data[hll_constants::FAMILY_BYTE] != hll_constants::FAMILY_ID) {
     throw std::invalid_argument("Input array is not an HLL sketch");
   }
 
-  const hll_mode mode = HllSketchImpl<A>::extractCurMode(data[HllUtil<A>::MODE_BYTE]);
+  const hll_mode mode = HllSketchImpl<A>::extractCurMode(data[hll_constants::MODE_BYTE]);
   if (mode != HLL) {
-    throw std::invalid_argument("Calling HLL array construtor with non-HLL mode data");
+    throw std::invalid_argument("Calling HLL array constructor with non-HLL mode data");
   }
 
-  const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[HllUtil<A>::MODE_BYTE]);
-  const bool oooFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  const bool comapctFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
-  const bool startFullSizeFlag = ((data[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
+  const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[hll_constants::MODE_BYTE]);
+  const bool oooFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  const bool comapctFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::COMPACT_FLAG_MASK) ? true : false);
+  const bool startFullSizeFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::FULL_SIZE_FLAG_MASK) ? true : false);
 
-  const uint8_t lgK = data[HllUtil<A>::LG_K_BYTE];
-  const uint8_t curMin = data[HllUtil<A>::HLL_CUR_MIN_BYTE];
+  const uint8_t lgK = data[hll_constants::LG_K_BYTE];
+  const uint8_t curMin = data[hll_constants::HLL_CUR_MIN_BYTE];
 
   const uint32_t arrayBytes = hllArrBytes(tgtHllType, lgK);
-  if (len < static_cast<size_t>(HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes)) {
+  if (len < static_cast<size_t>(hll_constants::HLL_BYTE_ARR_START + arrayBytes)) {
     throw std::out_of_range("Input array too small to hold sketch image");
   }
 
   double hip, kxq0, kxq1;
-  std::memcpy(&hip, data + HllUtil<A>::HIP_ACCUM_DOUBLE, sizeof(double));
-  std::memcpy(&kxq0, data + HllUtil<A>::KXQ0_DOUBLE, sizeof(double));
-  std::memcpy(&kxq1, data + HllUtil<A>::KXQ1_DOUBLE, sizeof(double));
+  std::memcpy(&hip, data + hll_constants::HIP_ACCUM_DOUBLE, sizeof(double));
+  std::memcpy(&kxq0, data + hll_constants::KXQ0_DOUBLE, sizeof(double));
+  std::memcpy(&kxq1, data + hll_constants::KXQ1_DOUBLE, sizeof(double));
 
   uint32_t numAtCurMin, auxCount;
-  std::memcpy(&numAtCurMin, data + HllUtil<A>::CUR_MIN_COUNT_INT, sizeof(int));
-  std::memcpy(&auxCount, data + HllUtil<A>::AUX_COUNT_INT, sizeof(int));
+  std::memcpy(&numAtCurMin, data + hll_constants::CUR_MIN_COUNT_INT, sizeof(int));
+  std::memcpy(&auxCount, data + hll_constants::AUX_COUNT_INT, sizeof(int));
 
   AuxHashMap<A>* auxHashMap = nullptr;
   typedef std::unique_ptr<AuxHashMap<A>, std::function<void(AuxHashMap<A>*)>> aux_hash_map_ptr;
   aux_hash_map_ptr aux_ptr;
   if (auxCount > 0) { // necessarily TgtHllType == HLL_4
     uint8_t auxLgIntArrSize = data[4];
-    const size_t offset = HllUtil<A>::HLL_BYTE_ARR_START + arrayBytes;
+    const size_t offset = hll_constants::HLL_BYTE_ARR_START + arrayBytes;
     const uint8_t* auxDataStart = data + offset;
     auxHashMap = AuxHashMap<A>::deserialize(auxDataStart, len - offset, lgK, auxCount, auxLgIntArrSize, comapctFlag, allocator);
     aux_ptr = aux_hash_map_ptr(auxHashMap, auxHashMap->make_deleter());
@@ -123,7 +123,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len, const A& allocat
   sketch->putKxQ1(kxq1);
   sketch->putNumAtCurMin(numAtCurMin);
 
-  std::memcpy(sketch->hllByteArr_.data(), data + HllUtil<A>::HLL_BYTE_ARR_START, arrayBytes);
+  std::memcpy(sketch->hllByteArr_.data(), data + hll_constants::HLL_BYTE_ARR_START, arrayBytes);
 
   if (auxHashMap != nullptr)
     ((Hll4Array<A>*)sketch)->putAuxHashMap(auxHashMap);
@@ -137,28 +137,28 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is, const A& allocator) {
   uint8_t listHeader[8];
   read(is, listHeader, 8 * sizeof(uint8_t));
 
-  if (listHeader[HllUtil<A>::PREAMBLE_INTS_BYTE] != HllUtil<A>::HLL_PREINTS) {
+  if (listHeader[hll_constants::PREAMBLE_INTS_BYTE] != hll_constants::HLL_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
   }
-  if (listHeader[HllUtil<A>::SER_VER_BYTE] != HllUtil<A>::SER_VER) {
+  if (listHeader[hll_constants::SER_VER_BYTE] != hll_constants::SER_VER) {
     throw std::invalid_argument("Wrong ser ver in input stream");
   }
-  if (listHeader[HllUtil<A>::FAMILY_BYTE] != HllUtil<A>::FAMILY_ID) {
+  if (listHeader[hll_constants::FAMILY_BYTE] != hll_constants::FAMILY_ID) {
     throw std::invalid_argument("Input stream is not an HLL sketch");
   }
 
-  hll_mode mode = HllSketchImpl<A>::extractCurMode(listHeader[HllUtil<A>::MODE_BYTE]);
+  hll_mode mode = HllSketchImpl<A>::extractCurMode(listHeader[hll_constants::MODE_BYTE]);
   if (mode != HLL) {
     throw std::invalid_argument("Calling HLL construtor with non-HLL mode data");
   }
 
-  const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[HllUtil<A>::MODE_BYTE]);
-  const bool oooFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::OUT_OF_ORDER_FLAG_MASK) ? true : false);
-  const bool comapctFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::COMPACT_FLAG_MASK) ? true : false);
-  const bool startFullSizeFlag = ((listHeader[HllUtil<A>::FLAGS_BYTE] & HllUtil<A>::FULL_SIZE_FLAG_MASK) ? true : false);
+  const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[hll_constants::MODE_BYTE]);
+  const bool oooFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::OUT_OF_ORDER_FLAG_MASK) ? true : false);
+  const bool comapctFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::COMPACT_FLAG_MASK) ? true : false);
+  const bool startFullSizeFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::FULL_SIZE_FLAG_MASK) ? true : false);
 
-  const uint8_t lgK = listHeader[HllUtil<A>::LG_K_BYTE];
-  const uint8_t curMin = listHeader[HllUtil<A>::HLL_CUR_MIN_BYTE];
+  const uint8_t lgK = listHeader[hll_constants::LG_K_BYTE];
+  const uint8_t curMin = listHeader[hll_constants::HLL_CUR_MIN_BYTE];
 
   HllArray* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, startFullSizeFlag, allocator);
   typedef std::unique_ptr<HllArray<A>, std::function<void(HllSketchImpl<A>*)>> hll_array_ptr;
@@ -198,21 +198,21 @@ vector_u8<A> HllArray<A>::serialize(bool compact, unsigned header_size_bytes) co
   uint8_t* bytes = byteArr.data() + header_size_bytes;
   AuxHashMap<A>* auxHashMap = getAuxHashMap();
 
-  bytes[HllUtil<A>::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
-  bytes[HllUtil<A>::SER_VER_BYTE] = static_cast<uint8_t>(HllUtil<A>::SER_VER);
-  bytes[HllUtil<A>::FAMILY_BYTE] = static_cast<uint8_t>(HllUtil<A>::FAMILY_ID);
-  bytes[HllUtil<A>::LG_K_BYTE] = static_cast<uint8_t>(this->lgConfigK_);
-  bytes[HllUtil<A>::LG_ARR_BYTE] = static_cast<uint8_t>(auxHashMap == nullptr ? 0 : auxHashMap->getLgAuxArrInts());
-  bytes[HllUtil<A>::FLAGS_BYTE] = this->makeFlagsByte(compact);
-  bytes[HllUtil<A>::HLL_CUR_MIN_BYTE] = static_cast<uint8_t>(curMin_);
-  bytes[HllUtil<A>::MODE_BYTE] = this->makeModeByte();
+  bytes[hll_constants::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());
+  bytes[hll_constants::SER_VER_BYTE] = static_cast<uint8_t>(hll_constants::SER_VER);
+  bytes[hll_constants::FAMILY_BYTE] = static_cast<uint8_t>(hll_constants::FAMILY_ID);
+  bytes[hll_constants::LG_K_BYTE] = static_cast<uint8_t>(this->lgConfigK_);
+  bytes[hll_constants::LG_ARR_BYTE] = static_cast<uint8_t>(auxHashMap == nullptr ? 0 : auxHashMap->getLgAuxArrInts());
+  bytes[hll_constants::FLAGS_BYTE] = this->makeFlagsByte(compact);
+  bytes[hll_constants::HLL_CUR_MIN_BYTE] = static_cast<uint8_t>(curMin_);
+  bytes[hll_constants::MODE_BYTE] = this->makeModeByte();
 
-  std::memcpy(bytes + HllUtil<A>::HIP_ACCUM_DOUBLE, &hipAccum_, sizeof(double));
-  std::memcpy(bytes + HllUtil<A>::KXQ0_DOUBLE, &kxq0_, sizeof(double));
-  std::memcpy(bytes + HllUtil<A>::KXQ1_DOUBLE, &kxq1_, sizeof(double));
-  std::memcpy(bytes + HllUtil<A>::CUR_MIN_COUNT_INT, &numAtCurMin_, sizeof(uint32_t));
+  std::memcpy(bytes + hll_constants::HIP_ACCUM_DOUBLE, &hipAccum_, sizeof(double));
+  std::memcpy(bytes + hll_constants::KXQ0_DOUBLE, &kxq0_, sizeof(double));
+  std::memcpy(bytes + hll_constants::KXQ1_DOUBLE, &kxq1_, sizeof(double));
+  std::memcpy(bytes + hll_constants::CUR_MIN_COUNT_INT, &numAtCurMin_, sizeof(uint32_t));
   const uint32_t auxCount = (auxHashMap == nullptr ? 0 : auxHashMap->getAuxCount());
-  std::memcpy(bytes + HllUtil<A>::AUX_COUNT_INT, &auxCount, sizeof(uint32_t));
+  std::memcpy(bytes + hll_constants::AUX_COUNT_INT, &auxCount, sizeof(uint32_t));
 
   const uint32_t hllByteArrBytes = getHllByteArrBytes();
   std::memcpy(bytes + getMemDataStart(), hllByteArr_.data(), hllByteArrBytes);
@@ -231,7 +231,7 @@ vector_u8<A> HllArray<A>::serialize(bool compact, unsigned header_size_bytes) co
       }
     } else if (!compact) {
       // if updatable, we write even if currently unused so the binary can be wrapped
-      uint32_t auxBytes = 4 << HllUtil<A>::LG_AUX_ARR_INTS[this->lgConfigK_];
+      uint32_t auxBytes = 4 << hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_];
       std::fill_n(bytes, auxBytes, static_cast<uint8_t>(0));
     }
   }
@@ -244,9 +244,9 @@ void HllArray<A>::serialize(std::ostream& os, bool compact) const {
   // header
   const uint8_t preInts = getPreInts();
   write(os, preInts);
-  const uint8_t serialVersion = HllUtil<A>::SER_VER;
+  const uint8_t serialVersion = hll_constants::SER_VER;
   write(os, serialVersion);
-  const uint8_t familyId = HllUtil<A>::FAMILY_ID;
+  const uint8_t familyId = hll_constants::FAMILY_ID;
   write(os, familyId);
   const uint8_t lgKByte = this->lgConfigK_;
   write(os, lgKByte);
@@ -288,7 +288,7 @@ void HllArray<A>::serialize(std::ostream& os, bool compact) const {
       }
     } else if (!compact) {
       // if updatable, we write even if currently unused so the binary can be wrapped      
-      uint32_t auxBytes = 4 << HllUtil<A>::LG_AUX_ARR_INTS[this->lgConfigK_];
+      uint32_t auxBytes = 4 << hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_];
       std::fill_n(std::ostreambuf_iterator<char>(os), auxBytes, static_cast<char>(0));
     }
   }
@@ -327,10 +327,10 @@ double HllArray<A>::getLowerBound(uint8_t numStdDev) const {
   double rseFactor;
   if (oooFlag_) {
     estimate = getCompositeEstimate();
-    rseFactor = HllUtil<A>::HLL_NON_HIP_RSE_FACTOR;
+    rseFactor = hll_constants::HLL_NON_HIP_RSE_FACTOR;
   } else {
     estimate = hipAccum_;
-    rseFactor = HllUtil<A>::HLL_HIP_RSE_FACTOR;
+    rseFactor = hll_constants::HLL_HIP_RSE_FACTOR;
   }
 
   double relErr;
@@ -351,10 +351,10 @@ double HllArray<A>::getUpperBound(uint8_t numStdDev) const {
   double rseFactor;
   if (oooFlag_) {
     estimate = getCompositeEstimate();
-    rseFactor = HllUtil<A>::HLL_NON_HIP_RSE_FACTOR;
+    rseFactor = hll_constants::HLL_NON_HIP_RSE_FACTOR;
   } else {
     estimate = hipAccum_;
-    rseFactor = HllUtil<A>::HLL_HIP_RSE_FACTOR;
+    rseFactor = hll_constants::HLL_HIP_RSE_FACTOR;
   }
 
   double relErr;
@@ -531,24 +531,24 @@ uint32_t HllArray<A>::hll8ArrBytes(uint8_t lgConfigK) {
 
 template<typename A>
 uint32_t HllArray<A>::getMemDataStart() const {
-  return HllUtil<A>::HLL_BYTE_ARR_START;
+  return hll_constants::HLL_BYTE_ARR_START;
 }
 
 template<typename A>
 uint32_t HllArray<A>::getUpdatableSerializationBytes() const {
-  return HllUtil<A>::HLL_BYTE_ARR_START + getHllByteArrBytes();
+  return hll_constants::HLL_BYTE_ARR_START + getHllByteArrBytes();
 }
 
 template<typename A>
 uint32_t HllArray<A>::getCompactSerializationBytes() const {
   AuxHashMap<A>* auxHashMap = getAuxHashMap();
   const uint32_t auxCountBytes = ((auxHashMap == nullptr) ? 0 : auxHashMap->getCompactSizeBytes());
-  return HllUtil<A>::HLL_BYTE_ARR_START + getHllByteArrBytes() + auxCountBytes;
+  return hll_constants::HLL_BYTE_ARR_START + getHllByteArrBytes() + auxCountBytes;
 }
 
 template<typename A>
 uint8_t HllArray<A>::getPreInts() const {
-  return HllUtil<A>::HLL_PREINTS;
+  return hll_constants::HLL_PREINTS;
 }
 
 template<typename A>
@@ -617,7 +617,7 @@ array_(array), array_size_(array_size), index_(index), hll_type_(hll_type), exce
 {
   while (index_ < array_size_) {
     value_ = get_value(array_, index_, hll_type_, exceptions_, offset_);
-    if (all_ || value_ != HllUtil<A>::EMPTY) break;
+    if (all_ || value_ != hll_constants::EMPTY) break;
     ++index_;
   }
 }
@@ -626,7 +626,7 @@ template<typename A>
 typename HllArray<A>::const_iterator& HllArray<A>::const_iterator::operator++() {
   while (++index_ < array_size_) {
     value_ = get_value(array_, index_, hll_type_, exceptions_, offset_);
-    if (all_ || value_ != HllUtil<A>::EMPTY) break;
+    if (all_ || value_ != hll_constants::EMPTY) break;
   }
   return *this;
 }
@@ -648,9 +648,9 @@ uint8_t HllArray<A>::const_iterator::get_value(const uint8_t* array, uint32_t in
     if ((index & 1) > 0) { // odd
         value >>= 4;
     } else {
-      value &= HllUtil<A>::loNibbleMask;
+      value &= hll_constants::loNibbleMask;
     }
-    if (value == HllUtil<A>::AUX_TOKEN) { // exception
+    if (value == hll_constants::AUX_TOKEN) { // exception
       return exceptions->mustFindValueFor(index);
     }
     return value + offset;
@@ -659,7 +659,7 @@ uint8_t HllArray<A>::const_iterator::get_value(const uint8_t* array, uint32_t in
     const uint8_t shift = start_bit & 0x7;
     const size_t byte_idx = start_bit >> 3;
     const uint16_t two_byte_val = (array[byte_idx + 1] << 8) | array[byte_idx];
-    return (two_byte_val >> shift) & HllUtil<A>::VAL_MASK_6;
+    return (two_byte_val >> shift) & hll_constants::VAL_MASK_6;
   }
   // HLL_8
   return array[index];

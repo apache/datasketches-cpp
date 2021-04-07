@@ -124,7 +124,7 @@ TEST_CASE("hll sketch: check misc1", "[hll_sketch]") {
     sk.update(24); // HLL
     REQUIRE(sk.get_updatable_serialization_bytes() == 40 + 256);
 
-    const auto hllBytes = HllUtil<>::HLL_BYTE_ARR_START + (1 << lgConfigK);
+    const auto hllBytes = hll_constants::HLL_BYTE_ARR_START + (1 << lgConfigK);
     REQUIRE(sk.get_compact_serialization_bytes() == hllBytes);
     REQUIRE(hll_sketch::get_max_updatable_serialization_bytes(lgConfigK, HLL_8) == hllBytes);
   }
@@ -141,16 +141,16 @@ void checkSerializationSizes(uint8_t lgConfigK, target_hll_type tgtHllType) {
 
   // LIST
   for (i = 0; i < 7; ++i) { sk.update(i); }
-  auto expected = HllUtil<>::LIST_INT_ARR_START + (i << 2);
+  auto expected = hll_constants::LIST_INT_ARR_START + (i << 2);
   REQUIRE(sk.get_compact_serialization_bytes() == expected);
-  expected = HllUtil<>::LIST_INT_ARR_START + (4 << HllUtil<>::LG_INIT_LIST_SIZE);
+  expected = hll_constants::LIST_INT_ARR_START + (4 << hll_constants::LG_INIT_LIST_SIZE);
   REQUIRE(sk.get_updatable_serialization_bytes() == expected);
 
   // SET
   for (i = 7; i < 24; ++i) { sk.update(i); }
-  expected = HllUtil<>::HASH_SET_INT_ARR_START + (i << 2);
+  expected = hll_constants::HASH_SET_INT_ARR_START + (i << 2);
   REQUIRE(sk.get_compact_serialization_bytes() == expected);
-  expected = HllUtil<>::HASH_SET_INT_ARR_START + (4 << HllUtil<>::LG_INIT_SET_SIZE);
+  expected = hll_constants::HASH_SET_INT_ARR_START + (4 << hll_constants::LG_INIT_SET_SIZE);
   REQUIRE(sk.get_updatable_serialization_bytes() == expected);
 }
 
@@ -230,10 +230,10 @@ TEST_CASE("hll sketch: check compact flag", "[hll_sketch]") {
 TEST_CASE("hll sketch: check k limits", "[hll_sketch]") {
   test_allocator_total_bytes = 0;
   {
-    hll_sketch_test_alloc sketch1(HllUtil<>::MIN_LOG_K, target_hll_type::HLL_8, false, 0);
-    hll_sketch_test_alloc sketch2(HllUtil<>::MAX_LOG_K, target_hll_type::HLL_4, false, 0);
-    REQUIRE_THROWS_AS(hll_sketch_test_alloc(HllUtil<>::MIN_LOG_K - 1, target_hll_type::HLL_4, false, 0), std::invalid_argument);
-    REQUIRE_THROWS_AS(hll_sketch_test_alloc(HllUtil<>::MAX_LOG_K + 1, target_hll_type::HLL_4, false, 0), std::invalid_argument);
+    hll_sketch_test_alloc sketch1(hll_constants::MIN_LOG_K, target_hll_type::HLL_8, false, 0);
+    hll_sketch_test_alloc sketch2(hll_constants::MAX_LOG_K, target_hll_type::HLL_4, false, 0);
+    REQUIRE_THROWS_AS(hll_sketch_test_alloc(hll_constants::MIN_LOG_K - 1, target_hll_type::HLL_4, false, 0), std::invalid_argument);
+    REQUIRE_THROWS_AS(hll_sketch_test_alloc(hll_constants::MAX_LOG_K + 1, target_hll_type::HLL_4, false, 0), std::invalid_argument);
   }
   REQUIRE(test_allocator_total_bytes == 0);
 }

@@ -213,7 +213,7 @@ void hll_sketch_alloc<A>::update(const void* data, size_t lengthBytes) {
 
 template<typename A>
 void hll_sketch_alloc<A>::coupon_update(uint32_t coupon) {
-  if (coupon == HllUtil<A>::EMPTY) { return; }
+  if (coupon == hll_constants::EMPTY) { return; }
   HllSketchImpl<A>* result = this->sketch_impl->couponUpdate(coupon);
   if (result != this->sketch_impl) {
     this->sketch_impl->get_deleter()(this->sketch_impl);
@@ -439,14 +439,14 @@ uint32_t hll_sketch_alloc<A>::get_max_updatable_serialization_bytes(uint8_t lg_c
     const target_hll_type tgtHllType) {
   uint32_t arrBytes;
   if (tgtHllType == target_hll_type::HLL_4) {
-    const uint32_t auxBytes = 4 << HllUtil<A>::LG_AUX_ARR_INTS[lg_config_k];
+    const uint32_t auxBytes = 4 << hll_constants::LG_AUX_ARR_INTS[lg_config_k];
     arrBytes = HllArray<A>::hll4ArrBytes(lg_config_k) + auxBytes;
   } else if (tgtHllType == target_hll_type::HLL_6) {
     arrBytes = HllArray<A>::hll6ArrBytes(lg_config_k);
   } else { //HLL_8
     arrBytes = HllArray<A>::hll8ArrBytes(lg_config_k);
   }
-  return HllUtil<A>::HLL_BYTE_ARR_START + arrBytes;
+  return hll_constants::HLL_BYTE_ARR_START + arrBytes;
 }
 
 template<typename A>

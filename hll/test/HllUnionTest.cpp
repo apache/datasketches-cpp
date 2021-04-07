@@ -180,9 +180,9 @@ TEST_CASE("hll union: check composite estimate", "[hll_union]") {
 }
 
 TEST_CASE("hll union: check config k limits", "[hll_union]") {
-  REQUIRE_THROWS_AS(hll_union(HllUtil<>::MIN_LOG_K - 1), std::invalid_argument);
+  REQUIRE_THROWS_AS(hll_union(hll_constants::MIN_LOG_K - 1), std::invalid_argument);
 
-  REQUIRE_THROWS_AS(hll_union(HllUtil<>::MAX_LOG_K + 1), std::invalid_argument);
+  REQUIRE_THROWS_AS(hll_union(hll_constants::MAX_LOG_K + 1), std::invalid_argument);
 }
 
 static double getBound(int lgK, bool ub, bool oooFlag, int numStdDev, double est) {

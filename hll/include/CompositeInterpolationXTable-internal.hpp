@@ -37,12 +37,12 @@ static const uint32_t yStrides[] =
 
 template<typename A>
 uint32_t CompositeInterpolationXTable<A>::get_y_stride(uint8_t logK) {
-  if (logK < HllUtil<A>::MIN_LOG_K || logK > HllUtil<A>::MAX_LOG_K) {
-    throw std::invalid_argument("logK must be in range [" + std::to_string(HllUtil<A>::MIN_LOG_K)
-                                + ", " + std::to_string(HllUtil<A>::MAX_LOG_K) + "]. Found: "
+  if (logK < hll_constants::MIN_LOG_K || logK > hll_constants::MAX_LOG_K) {
+    throw std::invalid_argument("logK must be in range [" + std::to_string(hll_constants::MIN_LOG_K)
+                                + ", " + std::to_string(hll_constants::MAX_LOG_K) + "]. Found: "
                                 + std::to_string(logK));
   }
-  return yStrides[logK - HllUtil<A>::MIN_LOG_K];
+  return yStrides[logK - hll_constants::MIN_LOG_K];
 }
 
 template<typename A>
@@ -798,12 +798,12 @@ static const double xArray[18][numXArrValues] = {
 
 template<typename A>
 const double* CompositeInterpolationXTable<A>::get_x_arr(uint8_t logK) {
-  if (logK < HllUtil<A>::MIN_LOG_K || logK > HllUtil<A>::MAX_LOG_K) {
-    throw std::invalid_argument("logK must be in range [" + std::to_string(HllUtil<A>::MIN_LOG_K)
-                                + ", " + std::to_string(HllUtil<A>::MAX_LOG_K) + "]. Found: "
+  if (logK < hll_constants::MIN_LOG_K || logK > hll_constants::MAX_LOG_K) {
+    throw std::invalid_argument("logK must be in range [" + std::to_string(hll_constants::MIN_LOG_K)
+                                + ", " + std::to_string(hll_constants::MAX_LOG_K) + "]. Found: "
                                 + std::to_string(logK));
   }
-  return xArray[logK - HllUtil<A>::MIN_LOG_K];
+  return xArray[logK - hll_constants::MIN_LOG_K];
 }
 
 }
