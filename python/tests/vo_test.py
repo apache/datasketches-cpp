@@ -46,7 +46,7 @@ class VoTest(unittest.TestCase):
     self.assertEqual(len(items), k)
 
     # we can also apply a predicate to the sketch to get an estimate
-    # (with optimially minimal variance) of the subset sum of items
+    # (with optimally minimal variance) of the subset sum of items
     # matching that predicate among the entire population
 
     # we'll use a lambda here, but any function operating on a single
@@ -89,11 +89,11 @@ class VoTest(unittest.TestCase):
     # the union and a sketch.
     print(union)
 
-    # if we want to print the list of itmes, there must be a
+    # if we want to print the list of items, there must be a
     # __str__() method for each item (which need not be the same
     # type; they're all generic python objects when used from
     # python), otherwise you may trigger an exception.
-    # to_string() is provided as a convenince to avoid direct
+    # to_string() is provided as a convenience to avoid direct
     # calls to __str__() with parameters.
     print(result.to_string(True))
 

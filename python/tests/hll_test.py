@@ -58,7 +58,7 @@ class HllTest(unittest.TestCase):
         self.assertEqual(len(sk_bytes), result.get_compact_serialization_bytes())
         new_hll = hll_sketch.deserialize(sk_bytes)
 
-        # the sketch can self-report its configuation and status
+        # the sketch can self-report its configuration and status
         self.assertEqual(new_hll.lg_config_k, k)
         self.assertEqual(new_hll.tgt_type, tgt_hll_type.HLL_4)
         self.assertFalse(new_hll.is_empty())

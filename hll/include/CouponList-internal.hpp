@@ -35,7 +35,7 @@ CouponList<A>::CouponList(uint8_t lgConfigK, target_hll_type tgtHllType, hll_mod
 HllSketchImpl<A>(lgConfigK, tgtHllType, mode, false),
 couponCount_(0),
 oooFlag_(false),
-coupons_(1ULL << (mode_ == hll_mode::LIST ? HllUtil<A>::LG_INIT_LIST_SIZE : HllUtil<A>::LG_INIT_SET_SIZE), 0, allocator)
+coupons_(1ULL << (mode == hll_mode::LIST ? HllUtil<A>::LG_INIT_LIST_SIZE : HllUtil<A>::LG_INIT_SET_SIZE), 0, allocator)
 {}
 
 template<typename A>
@@ -271,7 +271,7 @@ HllSketchImpl<A>* CouponList<A>::couponUpdate(uint32_t coupon) {
     if (couponAtIdx == HllUtil<A>::EMPTY) {
       coupons_[i] = coupon; // the actual update
       ++couponCount_;
-      if (couponCount_ == static_cast<int>(coupons_.size())) { // array full
+      if (couponCount_ == static_cast<uint32_t>(coupons_.size())) { // array full
         if (this->lgConfigK_ < 8) {
           return promoteHeapListOrSetToHll(*this);
         }

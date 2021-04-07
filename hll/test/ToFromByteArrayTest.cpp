@@ -44,11 +44,11 @@ TEST_CASE("hll to/from byte array: double serialize", "[hll_byte_array]") {
   auto ser2 = sk.serialize_updatable();
 
   REQUIRE(ser1.size() == ser2.size());
-  auto len = ser1.size();
+  size_t len = ser1.size();
   uint8_t* b1 = ser1.data();
   uint8_t* b2 = ser2.data();
 
-  for (auto i = 0; i < len; ++i) {
+  for (size_t i = 0; i < len; ++i) {
     REQUIRE(b2[i] == b1[i]);
   }
 }

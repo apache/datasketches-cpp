@@ -56,9 +56,9 @@ void init_hll(py::module &m) {
     .export_values();
 
   py::class_<hll_sketch>(m, "hll_sketch")
-    .def(py::init<int>(), py::arg("lg_k"))
-    .def(py::init<int, target_hll_type>(), py::arg("lg_k"), py::arg("tgt_type"))
-    .def(py::init<int, target_hll_type, bool>(), py::arg("lg_k"), py::arg("tgt_type"), py::arg("start_max_size")=false)
+    .def(py::init<uint8_t>(), py::arg("lg_k"))
+    .def(py::init<uint8_t, target_hll_type>(), py::arg("lg_k"), py::arg("tgt_type"))
+    .def(py::init<uint8_t, target_hll_type, bool>(), py::arg("lg_k"), py::arg("tgt_type"), py::arg("start_max_size")=false)
     .def_static("deserialize", &dspy::hll_sketch_deserialize,
          "Reads a bytes object and returns the corresponding hll_sketch")
     .def("serialize_compact", &dspy::hll_sketch_serialize_compact,
@@ -104,7 +104,7 @@ void init_hll(py::module &m) {
     ;
 
   py::class_<hll_union>(m, "hll_union")
-    .def(py::init<int>(), py::arg("lg_max_k"))
+    .def(py::init<uint8_t>(), py::arg("lg_max_k"))
     .def_property_readonly("lg_config_k", &hll_union::get_lg_config_k, "Configured lg_k value for the union")
     .def_property_readonly("tgt_type", &hll_union::get_target_type, "Returns the HLL type (4, 6, or 8) when in estimation mode")
     .def("get_estimate", &hll_union::get_estimate,
