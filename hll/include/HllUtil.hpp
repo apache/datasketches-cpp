@@ -227,10 +227,10 @@ inline uint8_t HllUtil<A>::computeLgArrInts(hll_mode mode, uint32_t count, uint8
   uint32_t ceilPwr2 = ceiling_power_of_2(count);
   if ((HllUtil<A>::RESIZE_DENOM * count) > (HllUtil<A>::RESIZE_NUMER * ceilPwr2)) { ceilPwr2 <<= 1;}
   if (mode == SET) {
-    return std::max<uint8_t>(HllUtil<A>::LG_INIT_SET_SIZE, HllUtil<A>::simpleIntLog2(ceilPwr2));
+    return std::max(HllUtil<A>::LG_INIT_SET_SIZE, HllUtil<A>::simpleIntLog2(ceilPwr2));
   }
   //only used for HLL4
-  return std::max<uint8_t>(HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK], HllUtil<A>::simpleIntLog2(ceilPwr2));
+  return std::max(HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK], HllUtil<A>::simpleIntLog2(ceilPwr2));
 }
 
 }
