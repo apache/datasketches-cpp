@@ -72,8 +72,8 @@ uint16_t* cpc_compressor<A>::make_decoding_table(const uint16_t* encoding_table,
     const uint8_t code_length = encoding_entry >> 12;
     const uint16_t decoding_entry = static_cast<uint16_t>((code_length << 8) | byte_value);
     const uint8_t garbage_length = 12 - code_length;
-    const unsigned num_copies = 1 << garbage_length;
-    for (unsigned garbage_bits = 0; garbage_bits < num_copies; garbage_bits++) {
+    const uint32_t num_copies = 1 << garbage_length;
+    for (uint32_t garbage_bits = 0; garbage_bits < num_copies; garbage_bits++) {
       const uint16_t extended_code_value = static_cast<uint16_t>(code_value | (garbage_bits << code_length));
       decoding_table[extended_code_value & 0xfff] = decoding_entry;
     }

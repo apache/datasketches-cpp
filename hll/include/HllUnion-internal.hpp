@@ -65,7 +65,7 @@ void hll_union_alloc<A>::update(const std::string& datum) {
 }
 
 template<typename A>
-void hll_union_alloc<A>::update(const uint64_t datum) {
+void hll_union_alloc<A>::update(uint64_t datum) {
   gadget_.update(datum);
 }
 
