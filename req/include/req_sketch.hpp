@@ -319,7 +319,7 @@ private:
 
   // for deserialization
   class item_deleter;
-  req_sketch(uint32_t k, bool hra, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors);
+  req_sketch(uint16_t k, bool hra, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors);
 
   static void check_preamble_ints(uint8_t preamble_ints, uint8_t num_levels);
   static void check_serial_version(uint8_t serial_version);

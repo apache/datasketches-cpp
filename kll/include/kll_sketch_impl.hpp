@@ -303,7 +303,7 @@ std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions,
 }
 
 template<typename T, typename C, typename S, typename A>
-std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(size_t num) const {
+std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(uint32_t num) const {
   if (is_empty()) return std::vector<T, A>(allocator_);
   if (num == 0) {
     throw std::invalid_argument("num must be > 0");
@@ -380,7 +380,7 @@ size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes() const {
   size_t size = DATA_START + num_levels_ * sizeof(uint32_t);
   size += S().size_of_item(*min_value_);
   size += S().size_of_item(*max_value_);
-  for (auto& it: *this) size += S().size_of_item(it.first);
+  for (auto it: *this) size += S().size_of_item(it.first);
   return size;
 }
 
@@ -555,7 +555,7 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
   check_preamble_ints(preamble_ints, flags_byte);
   check_serial_version(serial_version);
   check_family_id(family_id);
-  ensure_minimum_memory(size, 1 << preamble_ints);
+  ensure_minimum_memory(size, 1ULL << preamble_ints);
 
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
   if (is_empty) return kll_sketch<T, C, S, A>(k, allocator);

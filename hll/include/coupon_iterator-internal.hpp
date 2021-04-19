@@ -25,30 +25,30 @@
 namespace datasketches {
 
 template<typename A>
-coupon_iterator<A>::coupon_iterator(const int* array, size_t array_size, size_t index, bool all):
-array(array), array_size(array_size), index(index), all(all) {
-  while (this->index < array_size) {
-    if (all || array[this->index] != HllUtil<A>::EMPTY) break;
-    this->index++;
+coupon_iterator<A>::coupon_iterator(const uint32_t* array, size_t array_size, size_t index, bool all):
+array_(array), array_size_(array_size), index_(index), all_(all) {
+  while (index_ < array_size_) {
+    if (all_ || array_[index_] != hll_constants::EMPTY) break;
+    ++index_;
   }
 }
 
 template<typename A>
 coupon_iterator<A>& coupon_iterator<A>::operator++() {
-  while (++index < array_size) {
-    if (all || array[index] != HllUtil<A>::EMPTY) break;
+  while (++index_ < array_size_) {
+    if (all_ || array_[index_] != hll_constants::EMPTY) break;
   }
   return *this;
 }
 
 template<typename A>
 bool coupon_iterator<A>::operator!=(const coupon_iterator& other) const {
-  return index != other.index;
+  return index_ != other.index_;
 }
 
 template<typename A>
 uint32_t coupon_iterator<A>::operator*() const {
-  return array[index];
+  return array_[index_];
 }
 
 }

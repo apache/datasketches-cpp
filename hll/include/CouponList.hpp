@@ -33,7 +33,7 @@ class HllSketchImplFactory;
 template<typename A>
 class CouponList : public HllSketchImpl<A> {
   public:
-    CouponList(int lgConfigK, target_hll_type tgtHllType, hll_mode mode, const A& allocator);
+    CouponList(uint8_t lgConfigK, target_hll_type tgtHllType, hll_mode mode, const A& allocator);
     CouponList(const CouponList& that, target_hll_type tgtHllType);
 
     static CouponList* newList(const void* bytes, size_t len, const A& allocator);
@@ -47,15 +47,15 @@ class CouponList : public HllSketchImpl<A> {
     virtual CouponList* copy() const;
     virtual CouponList* copyAs(target_hll_type tgtHllType) const;
 
-    virtual HllSketchImpl<A>* couponUpdate(int coupon);
+    virtual HllSketchImpl<A>* couponUpdate(uint32_t coupon);
 
     virtual double getEstimate() const;
     virtual double getCompositeEstimate() const;
-    virtual double getUpperBound(int numStdDev) const;
-    virtual double getLowerBound(int numStdDev) const;
+    virtual double getUpperBound(uint8_t numStdDev) const;
+    virtual double getLowerBound(uint8_t numStdDev) const;
 
     virtual bool isEmpty() const;
-    virtual int getCouponCount() const;
+    virtual uint32_t getCouponCount() const;
 
     coupon_iterator<A> begin(bool all = false) const;
     coupon_iterator<A> end() const;
@@ -63,24 +63,24 @@ class CouponList : public HllSketchImpl<A> {
   protected:
     using ClAlloc = typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>>;
 
-    using vector_int = std::vector<int, typename std::allocator_traits<A>::template rebind_alloc<int>>;
+    using vector_int = std::vector<uint32_t, typename std::allocator_traits<A>::template rebind_alloc<uint32_t>>;
 
     HllSketchImpl<A>* promoteHeapListToSet(CouponList& list);
     HllSketchImpl<A>* promoteHeapListOrSetToHll(CouponList& src);
 
-    virtual int getUpdatableSerializationBytes() const;
-    virtual int getCompactSerializationBytes() const;
-    virtual int getMemDataStart() const;
-    virtual int getPreInts() const;
+    virtual uint32_t getUpdatableSerializationBytes() const;
+    virtual uint32_t getCompactSerializationBytes() const;
+    virtual uint32_t getMemDataStart() const;
+    virtual uint8_t getPreInts() const;
     virtual bool isCompact() const;
     virtual bool isOutOfOrderFlag() const;
     virtual void putOutOfOrderFlag(bool oooFlag);
 
     virtual A getAllocator() const;
 
-    int couponCount;
-    bool oooFlag;
-    vector_int coupons;
+    uint32_t couponCount_;
+    bool oooFlag_;
+    vector_int coupons_;
 
     friend class HllSketchImplFactory<A>;
 };

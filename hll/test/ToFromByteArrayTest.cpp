@@ -44,11 +44,11 @@ TEST_CASE("hll to/from byte array: double serialize", "[hll_byte_array]") {
   auto ser2 = sk.serialize_updatable();
 
   REQUIRE(ser1.size() == ser2.size());
-  int len = ser1.size();
+  size_t len = ser1.size();
   uint8_t* b1 = ser1.data();
   uint8_t* b2 = ser2.data();
 
-  for (int i = 0; i < len; ++i) {
+  for (size_t i = 0; i < len; ++i) {
     REQUIRE(b2[i] == b1[i]);
   }
 }
@@ -129,7 +129,7 @@ static void checkSketchEquality(hll_sketch& sk1, hll_sketch& sk2) {
   REQUIRE(sk1.get_target_type() == sk2.get_target_type());
 }
 
-static void toFrom(const int lgConfigK, const target_hll_type tgtHllType, const int n) {
+static void toFrom(const uint8_t lgConfigK, const target_hll_type tgtHllType, const int n) {
   hll_sketch src(lgConfigK, tgtHllType);
   for (int i = 0; i < n; ++i) {
     src.update(i);
@@ -157,7 +157,7 @@ static void toFrom(const int lgConfigK, const target_hll_type tgtHllType, const 
 TEST_CASE("hll to/from byte array: to from sketch", "[hll_byte_array]") {
   for (int i = 0; i < 10; ++i) {
     int n = nArr[i];
-    for (int lgK = 4; lgK <= 13; ++lgK) {
+    for (uint8_t lgK = 4; lgK <= 13; ++lgK) {
       toFrom(lgK, HLL_4, n);
       toFrom(lgK, HLL_6, n);
       toFrom(lgK, HLL_8, n);

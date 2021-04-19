@@ -24,23 +24,19 @@
 
 namespace datasketches {
 
-static int min(int a, int b) {
-  return (a < b) ? a : b;
-}
-
 static void println(std::string& str) {
   //std::cout << str << "\n";
 }
 
 static void basicUnion(uint64_t n1, uint64_t n2,
-		                   uint64_t lgk1, uint64_t lgk2, uint64_t lgMaxK,
+		                   uint8_t lgk1, uint8_t lgk2, uint8_t lgMaxK,
                        target_hll_type type1, target_hll_type type2, target_hll_type resultType) {
   uint64_t v = 0;
   //int tot = n1 + n2;
 
   hll_sketch h1(lgk1, type1);
   hll_sketch h2(lgk2, type2);
-  int lgControlK = min(min(lgk1, lgk2), lgMaxK);
+  uint8_t lgControlK = std::min(std::min(lgk1, lgk2), lgMaxK);
   hll_sketch control(lgControlK, resultType);
 
   for (uint64_t i = 0; i < n1; ++i) {
@@ -89,9 +85,9 @@ TEST_CASE("hll union: check unions", "[hll_union]") {
   target_hll_type type2 = HLL_8;
   target_hll_type resultType = HLL_8;
 
-  uint64_t lgK1 = 7;
-  uint64_t lgK2 = 7;
-  uint64_t lgMaxK = 7;
+  uint8_t lgK1 = 7;
+  uint8_t lgK2 = 7;
+  uint8_t lgMaxK = 7;
   uint64_t n1 = 7;
   uint64_t n2 = 7;
   basicUnion(n1, n2, lgK1, lgK2, lgMaxK, type1, type2, resultType);
@@ -108,7 +104,7 @@ TEST_CASE("hll union: check unions", "[hll_union]") {
   n2 = 14;
   basicUnion(n1, n2, lgK1, lgK2, lgMaxK, type1, type2, resultType);
 
-  int i = 0;
+  uint8_t i = 0;
   for (i = 7; i <= 13; ++i) {
     lgK1 = i;
     lgK2 = i;
@@ -184,9 +180,9 @@ TEST_CASE("hll union: check composite estimate", "[hll_union]") {
 }
 
 TEST_CASE("hll union: check config k limits", "[hll_union]") {
-  REQUIRE_THROWS_AS(hll_union(HllUtil<>::MIN_LOG_K - 1), std::invalid_argument);
+  REQUIRE_THROWS_AS(hll_union(hll_constants::MIN_LOG_K - 1), std::invalid_argument);
 
-  REQUIRE_THROWS_AS(hll_union(HllUtil<>::MAX_LOG_K + 1), std::invalid_argument);
+  REQUIRE_THROWS_AS(hll_union(hll_constants::MAX_LOG_K + 1), std::invalid_argument);
 }
 
 static double getBound(int lgK, bool ub, bool oooFlag, int numStdDev, double est) {
@@ -195,7 +191,7 @@ static double getBound(int lgK, bool ub, bool oooFlag, int numStdDev, double est
 }
 
 TEST_CASE("hll union: check ub lb", "[hll_union]") {
-  int lgK = 4;
+  uint8_t lgK = 4;
   int n = 1 << 20;
   bool oooFlag = false;
   
@@ -223,7 +219,7 @@ TEST_CASE("hll union: check ub lb", "[hll_union]") {
 }
 
 TEST_CASE("hll union: check conversions", "[hll_union]") {
-  int lgK = 4;
+  uint8_t lgK = 4;
   hll_sketch sk1(lgK, HLL_8);
   hll_sketch sk2(lgK, HLL_8);
   int n = 1 << 20;

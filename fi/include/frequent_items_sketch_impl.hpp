@@ -65,7 +65,7 @@ template<typename T, typename W, typename H, typename E, typename S, typename A>
 void frequent_items_sketch<T, W, H, E, S, A>::merge(const frequent_items_sketch& other) {
   if (other.is_empty()) return;
   const W merged_total_weight = total_weight + other.get_total_weight(); // for correction at the end
-  for (auto &it: other.map) {
+  for (auto it: other.map) {
     update(it.first, it.second);
   }
   offset += other.offset;
@@ -76,7 +76,7 @@ template<typename T, typename W, typename H, typename E, typename S, typename A>
 void frequent_items_sketch<T, W, H, E, S, A>::merge(frequent_items_sketch&& other) {
   if (other.is_empty()) return;
   const W merged_total_weight = total_weight + other.get_total_weight(); // for correction at the end
-  for (auto &it: other.map) {
+  for (auto it: other.map) {
     update(std::move(it.first), it.second);
   }
   offset += other.offset;
@@ -147,7 +147,7 @@ template<typename T, typename W, typename H, typename E, typename S, typename A>
 typename frequent_items_sketch<T, W, H, E, S, A>::vector_row
 frequent_items_sketch<T, W, H, E, S, A>::get_frequent_items(frequent_items_error_type err_type, W threshold) const {
   vector_row items(map.get_allocator());
-  for (auto &it: map) {
+  for (auto it: map) {
     const W lb = it.second;
     const W ub = it.second + offset;
     if ((err_type == NO_FALSE_NEGATIVES && ub > threshold) || (err_type == NO_FALSE_POSITIVES && lb > threshold)) {
@@ -192,14 +192,14 @@ void frequent_items_sketch<T, W, H, E, S, A>::serialize(std::ostream& os) const 
     A alloc(map.get_allocator());
     T* items = alloc.allocate(num_items);
     uint32_t i = 0;
-    for (auto &it: map) {
+    for (auto it: map) {
       new (&items[i]) T(it.first);
       weights[i++] = it.second;
     }
     write(os, weights, sizeof(W) * num_items);
     aw.deallocate(weights, num_items);
     S().serialize(os, items, num_items);
-    for (unsigned i = 0; i < num_items; i++) items[i].~T();
+    for (i = 0; i < num_items; i++) items[i].~T();
     alloc.deallocate(items, num_items);
   }
 }
@@ -208,7 +208,7 @@ template<typename T, typename W, typename H, typename E, typename S, typename A>
 size_t frequent_items_sketch<T, W, H, E, S, A>::get_serialized_size_bytes() const {
   if (is_empty()) return PREAMBLE_LONGS_EMPTY * sizeof(uint64_t);
   size_t size = PREAMBLE_LONGS_NONEMPTY * sizeof(uint64_t) + map.get_num_active() * sizeof(W);
-  for (auto &it: map) size += S().size_of_item(it.first);
+  for (auto it: map) size += S().size_of_item(it.first);
   return size;
 }
 
@@ -248,7 +248,7 @@ auto frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_size_byt
     A alloc(map.get_allocator());
     T* items = alloc.allocate(num_items);
     uint32_t i = 0;
-    for (auto &it: map) {
+    for (auto it: map) {
       new (&items[i]) T(it.first);
       weights[i++] = it.second;
     }
@@ -256,7 +256,7 @@ auto frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_size_byt
     aw.deallocate(weights, num_items);
     const size_t bytes_remaining = end_ptr - ptr;
     ptr += S().serialize(ptr, bytes_remaining, items, num_items);
-    for (unsigned i = 0; i < num_items; i++) items[i].~T();
+    for (i = 0; i < num_items; i++) items[i].~T();
     alloc.deallocate(items, num_items);
   }
   return bytes;
@@ -266,20 +266,20 @@ template<typename T, typename W, typename H, typename E, typename S, typename A>
 class frequent_items_sketch<T, W, H, E, S, A>::items_deleter {
 public:
   items_deleter(uint32_t num, bool destroy, const A& allocator):
-    allocator(allocator), num(num), destroy(destroy) {}
-  void set_destroy(bool destroy) { this->destroy = destroy; }
+    allocator_(allocator), num_(num), destroy_(destroy) {}
+  void set_destroy(bool destroy) { destroy_ = destroy; }
   void operator() (T* ptr) {
     if (ptr != nullptr) {
-      if (destroy) {
-        for (uint32_t i = 0; i < num; ++i) ptr[i].~T();
+      if (destroy_) {
+        for (uint32_t i = 0; i < num_; ++i) ptr[i].~T();
       }
-      allocator.deallocate(ptr, num);
+      allocator_.deallocate(ptr, num_);
     }
   }
 private:
-  A allocator;
-  uint32_t num;
-  bool destroy;
+  A allocator_;
+  uint32_t num_;
+  bool destroy_;
 };
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
@@ -350,7 +350,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
   check_serial_version(serial_version);
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
-  ensure_minimum_memory(size, 1 << preamble_longs);
+  ensure_minimum_memory(size, 1ULL << preamble_longs);
 
   frequent_items_sketch<T, W, H, E, S, A> sketch(lg_max_size, lg_cur_size, allocator);
   if (!is_empty) {
@@ -431,14 +431,14 @@ string<A> frequent_items_sketch<T, W, H, E, S, A>::to_string(bool print_items) c
   os << "### End sketch summary" << std::endl;
   if (print_items) {
     vector_row items;
-    for (auto &it: map) {
+    for (auto it: map) {
       items.push_back(row(&it.first, it.second, offset));
     }
     // sort by estimate in descending order
     std::sort(items.begin(), items.end(), [](row a, row b){ return a.get_estimate() > b.get_estimate(); });
     os << "### Items in descending order by estimate" << std::endl;
     os << "   item, estimate, lower bound, upper bound" << std::endl;
-    for (auto &it: items) {
+    for (auto it: items) {
       os << "   " << it.get_item() << ", " << it.get_estimate() << ", "
          << it.get_lower_bound() << ", " << it.get_upper_bound() << std::endl;
     }

@@ -119,7 +119,7 @@ class hll_sketch_alloc final {
      *        keeping memory use constant (if HLL_6 or HLL_8) at the cost of
      *        starting out using much more memory
      */
-    explicit hll_sketch_alloc(int lg_config_k, target_hll_type tgt_type = HLL_4, bool start_full_size = false, const A& allocator = A());
+    explicit hll_sketch_alloc(uint8_t lg_config_k, target_hll_type tgt_type = HLL_4, bool start_full_size = false, const A& allocator = A());
 
     /**
      * Copy constructor
@@ -306,7 +306,7 @@ class hll_sketch_alloc final {
      * @param num_std_dev Number of standard deviations, an integer from the set  {1, 2, 3}.
      * @return The approximate lower bound.
      */
-    double get_lower_bound(int num_std_dev) const;
+    double get_lower_bound(uint8_t num_std_dev) const;
 
     /**
      * Returns the approximate upper error bound given the specified
@@ -314,13 +314,13 @@ class hll_sketch_alloc final {
      * @param num_std_dev Number of standard deviations, an integer from the set  {1, 2, 3}.
      * @return The approximate upper bound.
      */
-    double get_upper_bound(int num_std_dev) const;
+    double get_upper_bound(uint8_t num_std_dev) const;
 
     /**
      * Returns sketch's configured lg_k value.
      * @return Configured lg_k value.
      */
-    int get_lg_config_k() const;
+    uint8_t get_lg_config_k() const;
 
     /**
      * Returns the sketch's target HLL mode (from #target_hll_type).
@@ -344,13 +344,13 @@ class hll_sketch_alloc final {
      * Returns the size of the sketch serialized in compact form.
      * @return Size of the sketch serialized in compact form, in bytes.
      */
-    int get_compact_serialization_bytes() const;
+    uint32_t get_compact_serialization_bytes() const;
 
     /**
      * Returns the size of the sketch serialized without compaction.
      * @return Size of the sketch serialized without compaction, in bytes.
      */
-    int get_updatable_serialization_bytes() const;
+    uint32_t get_updatable_serialization_bytes() const;
 
     /**
      * Returns the maximum size in bytes that this sketch can grow to
@@ -363,7 +363,7 @@ class hll_sketch_alloc final {
      * @param tgt_type the desired Hll type
      * @return the maximum size in bytes that this sketch can grow to.
      */
-    static int get_max_updatable_serialization_bytes(int lg_k, target_hll_type tgt_type);
+    static uint32_t get_max_updatable_serialization_bytes(uint8_t lg_k, target_hll_type tgt_type);
   
     /**
      * Gets the current (approximate) Relative Error (RE) asymptotic values given several
@@ -376,18 +376,18 @@ class hll_sketch_alloc final {
      * @return the current (approximate) RelativeError
      */
     static double get_rel_err(bool upper_bound, bool unioned,
-                              int lg_config_k, int num_std_dev);
+                              uint8_t lg_config_k, uint8_t num_std_dev);
 
   private:
     explicit hll_sketch_alloc(HllSketchImpl<A>* that);
 
-    void coupon_update(int coupon);
+    void coupon_update(uint32_t coupon);
 
     std::string type_as_string() const;
     std::string mode_as_string() const;
 
     hll_mode get_current_mode() const;
-    int get_serialization_version() const;
+    uint8_t get_serialization_version() const;
     bool is_out_of_order_flag() const;
     bool is_estimation_mode() const;
 
@@ -431,7 +431,7 @@ class hll_union_alloc {
      * @param lg_max_k The maximum size, in log2, of k. The value must
      * be between 7 and 21, inclusive.
      */
-    explicit hll_union_alloc(int lg_max_k, const A& allocator = A());
+    explicit hll_union_alloc(uint8_t lg_max_k, const A& allocator = A());
 
     /**
      * Returns the current cardinality estimate
@@ -458,7 +458,7 @@ class hll_union_alloc {
      * @param num_std_dev Number of standard deviations, an integer from the set  {1, 2, 3}.
      * @return The approximate lower bound.
      */
-    double get_lower_bound(int num_std_dev) const;
+    double get_lower_bound(uint8_t num_std_dev) const;
 
     /**
      * Returns the approximate upper error bound given the specified
@@ -466,13 +466,13 @@ class hll_union_alloc {
      * @param num_std_dev Number of standard deviations, an integer from the set  {1, 2, 3}.
      * @return The approximate upper bound.
      */
-    double get_upper_bound(int num_std_dev) const;
+    double get_upper_bound(uint8_t num_std_dev) const;
 
     /**
      * Returns union's configured lg_k value.
      * @return Configured lg_k value.
      */
-    int get_lg_config_k() const;
+    uint8_t get_lg_config_k() const;
 
     /**
      * Returns the union's target HLL mode (from #target_hll_type).
@@ -598,7 +598,7 @@ class hll_union_alloc {
      * @return the current (approximate) RelativeError
      */
     static double get_rel_err(bool upper_bound, bool unioned,
-                              int lg_config_k, int num_std_dev);
+                              uint8_t lg_config_k, uint8_t num_std_dev);
 
   private:
 
@@ -611,21 +611,21 @@ class hll_union_alloc {
     * @param incoming_impl the given incoming sketch, which may not be modified.
     * @param lg_max_k the maximum value of log2 K for this union.
     */
-    inline void union_impl(const hll_sketch_alloc<A>& sketch, int lg_max_k);
+    inline void union_impl(const hll_sketch_alloc<A>& sketch, uint8_t lg_max_k);
 
-    static HllSketchImpl<A>* copy_or_downsample(const HllSketchImpl<A>* src_impl, int tgt_lg_k);
+    static HllSketchImpl<A>* copy_or_downsample(const HllSketchImpl<A>* src_impl, uint8_t tgt_lg_k);
 
-    void coupon_update(int coupon);
+    void coupon_update(uint32_t coupon);
 
     hll_mode get_current_mode() const;
     bool is_out_of_order_flag() const;
     bool is_estimation_mode() const;
 
     // calls couponUpdate on sketch, freeing the old sketch upon changes in hll_mode
-    static HllSketchImpl<A>* leak_free_coupon_update(HllSketchImpl<A>* impl, int coupon);
+    static HllSketchImpl<A>* leak_free_coupon_update(HllSketchImpl<A>* impl, uint32_t coupon);
 
-    int lg_max_k;
-    hll_sketch_alloc<A> gadget;
+    uint8_t lg_max_k_;
+    hll_sketch_alloc<A> gadget_;
 };
 
 /// convenience alias for hll_sketch with default allocator

@@ -245,12 +245,12 @@ static inline double icon_exponential_approximation(double k, double c) {
   return (0.7940236163830469 * k * pow(2.0, c / k));
 }
 
-static inline double compute_icon_estimate(uint8_t lg_k, uint64_t c) {
+static inline double compute_icon_estimate(uint8_t lg_k, uint32_t c) {
   if (lg_k < ICON_MIN_LOG_K || lg_k > ICON_MAX_LOG_K) throw std::out_of_range("lg_k out of range");
   if (c < 2) return ((c == 0) ? 0.0 : 1.0);
-  const size_t k = 1 << lg_k;
-  const double double_k = k;
-  const double double_c = c;
+  const uint32_t k = 1 << lg_k;
+  const double double_k = static_cast<double>(k);
+  const double double_c = static_cast<double>(c);
   // Differing thresholds ensure that the approximated estimator is monotonically increasing.
   const double threshold_factor = ((lg_k < 14) ? 5.7 : 5.6);
   if (double_c > (threshold_factor * double_k)) return icon_exponential_approximation(double_k, double_c);

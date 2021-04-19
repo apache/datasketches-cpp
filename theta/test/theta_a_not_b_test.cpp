@@ -37,7 +37,7 @@ TEST_CASE("theta a-not-b: empty", "[theta_a_not_b]") {
 TEST_CASE("theta a-not-b: non empty no retained keys", "[theta_a_not_b]") {
   update_theta_sketch a = update_theta_sketch::builder().build();
   a.update(1);
-  update_theta_sketch b = update_theta_sketch::builder().set_p(0.001).build();
+  update_theta_sketch b = update_theta_sketch::builder().set_p(0.001f).build();
   theta_a_not_b a_not_b;
 
   // B is still empty

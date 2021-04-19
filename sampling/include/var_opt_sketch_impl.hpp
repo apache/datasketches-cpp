@@ -334,7 +334,7 @@ size_t var_opt_sketch<T,S,A>::get_serialized_size_bytes() const {
     num_bytes += (h_ / 8) + (h_ % 8 > 0);
   }
   // must iterate over the items
-  for (auto& it: *this)
+  for (auto it: *this)
     num_bytes += S().size_of_item(it.first);
   return num_bytes;
 }
@@ -1411,7 +1411,7 @@ subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(P predicate) const {
   if (effective_sampling_rate < 0.0 || effective_sampling_rate > 1.0)
     throw std::logic_error("invalid sampling rate outside [0.0, 1.0]");
 
-  size_t r_true_count = 0;
+  uint32_t r_true_count = 0;
   ++idx; // skip the gap
   for (; idx < (k_ + 1); ++idx) {
     if (predicate(data_[idx])) {

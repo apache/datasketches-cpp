@@ -34,140 +34,133 @@ namespace datasketches {
 
 enum hll_mode { LIST = 0, SET, HLL };
 
+namespace hll_constants {
+
+// preamble stuff
+static const uint8_t SER_VER = 1;
+static const uint8_t FAMILY_ID = 7;
+
+static const uint8_t EMPTY_FLAG_MASK          = 4;
+static const uint8_t COMPACT_FLAG_MASK        = 8;
+static const uint8_t OUT_OF_ORDER_FLAG_MASK   = 16;
+static const uint8_t FULL_SIZE_FLAG_MASK      = 32;
+
+static const uint32_t PREAMBLE_INTS_BYTE = 0;
+static const uint32_t SER_VER_BYTE       = 1;
+static const uint32_t FAMILY_BYTE        = 2;
+static const uint32_t LG_K_BYTE          = 3;
+static const uint32_t LG_ARR_BYTE        = 4;
+static const uint32_t FLAGS_BYTE         = 5;
+static const uint32_t LIST_COUNT_BYTE    = 6;
+static const uint32_t HLL_CUR_MIN_BYTE   = 6;
+static const uint32_t MODE_BYTE          = 7; // lo2bits = curMode, next 2 bits = tgtHllMode
+
+// Coupon List
+static const uint32_t LIST_INT_ARR_START = 8;
+static const uint8_t LIST_PREINTS = 2;
+// Coupon Hash Set
+static const uint32_t HASH_SET_COUNT_INT             = 8;
+static const uint32_t HASH_SET_INT_ARR_START         = 12;
+static const uint8_t HASH_SET_PREINTS         = 3;
+// HLL
+static const uint8_t HLL_PREINTS = 10;
+static const uint32_t HLL_BYTE_ARR_START = 40;
+static const uint32_t HIP_ACCUM_DOUBLE = 8;
+static const uint32_t KXQ0_DOUBLE = 16;
+static const uint32_t KXQ1_DOUBLE = 24;
+static const uint32_t CUR_MIN_COUNT_INT = 32;
+static const uint32_t AUX_COUNT_INT = 36;
+
+static const uint32_t EMPTY_SKETCH_SIZE_BYTES = 8;
+
+// other HllUtil stuff
+static const uint8_t KEY_BITS_26 = 26;
+static const uint8_t VAL_BITS_6 = 6;
+static const uint32_t KEY_MASK_26 = (1 << KEY_BITS_26) - 1;
+static const uint32_t VAL_MASK_6 = (1 << VAL_BITS_6) - 1;
+static const uint32_t EMPTY = 0;
+static const uint8_t MIN_LOG_K = 4;
+static const uint8_t MAX_LOG_K = 21;
+
+static const double HLL_HIP_RSE_FACTOR = 0.8325546; // sqrt(ln(2))
+static const double HLL_NON_HIP_RSE_FACTOR = 1.03896; // sqrt((3 * ln(2)) - 1)
+static const double COUPON_RSE_FACTOR = 0.409; // at transition point not the asymptote
+static const double COUPON_RSE = COUPON_RSE_FACTOR / (1 << 13);
+
+static const uint8_t LG_INIT_LIST_SIZE = 3;
+static const uint8_t LG_INIT_SET_SIZE = 5;
+static const uint32_t RESIZE_NUMER = 3;
+static const uint32_t RESIZE_DENOM = 4;
+
+static const uint8_t loNibbleMask = 0x0f;
+static const uint8_t hiNibbleMask = 0xf0;
+static const uint8_t AUX_TOKEN = 0xf;
+
+/**
+* Log2 table sizes for exceptions based on lgK from 0 to 26.
+* However, only lgK from 4 to 21 are used.
+*/
+static const uint8_t LG_AUX_ARR_INTS[] = {
+  0, 2, 2, 2, 2, 2, 2, 3, 3, 3,   // 0 - 9
+  4, 4, 5, 5, 6, 7, 8, 9, 10, 11, // 10-19
+  12, 13, 14, 15, 16, 17, 18      // 20-26
+};
+
+} // namespace hll_constants
+
+
 // template provides internal consistency and allows static float values
 // but we don't use the template parameter anywhere
 template<typename A = std::allocator<uint8_t> >
 class HllUtil final {
 public:
-  // preamble stuff
-  static const int SER_VER = 1;
-  static const int FAMILY_ID = 7;
 
-  static const int EMPTY_FLAG_MASK          = 4;
-  static const int COMPACT_FLAG_MASK        = 8;
-  static const int OUT_OF_ORDER_FLAG_MASK   = 16;
-  static const int FULL_SIZE_FLAG_MASK      = 32;
-
-  static const int PREAMBLE_INTS_BYTE = 0;
-  static const int SER_VER_BYTE       = 1;
-  static const int FAMILY_BYTE        = 2;
-  static const int LG_K_BYTE          = 3;
-  static const int LG_ARR_BYTE        = 4;
-  static const int FLAGS_BYTE         = 5;
-  static const int LIST_COUNT_BYTE    = 6;
-  static const int HLL_CUR_MIN_BYTE   = 6;
-  static const int MODE_BYTE          = 7; // lo2bits = curMode, next 2 bits = tgtHllMode
-
-  // Coupon List
-  static const int LIST_INT_ARR_START = 8;
-  static const int LIST_PREINTS = 2;
-  // Coupon Hash Set
-  static const int HASH_SET_COUNT_INT             = 8;
-  static const int HASH_SET_INT_ARR_START         = 12;
-  static const int HASH_SET_PREINTS         = 3;
-  // HLL
-  static const int HLL_PREINTS = 10;
-  static const int HLL_BYTE_ARR_START = 40;
-  static const int HIP_ACCUM_DOUBLE = 8;
-  static const int KXQ0_DOUBLE = 16;
-  static const int KXQ1_DOUBLE = 24;
-  static const int CUR_MIN_COUNT_INT = 32;
-  static const int AUX_COUNT_INT = 36;
-  
-  static const int EMPTY_SKETCH_SIZE_BYTES = 8;
-
-  // other HllUtil stuff
-  static const int KEY_BITS_26 = 26;
-  static const int VAL_BITS_6 = 6;
-  static const int KEY_MASK_26 = (1 << KEY_BITS_26) - 1;
-  static const int VAL_MASK_6 = (1 << VAL_BITS_6) - 1;
-  static const int EMPTY = 0;
-  static const int MIN_LOG_K = 4;
-  static const int MAX_LOG_K = 21;
-
-  static const double HLL_HIP_RSE_FACTOR; // sqrt(log(2.0)) = 0.8325546
-  static const double HLL_NON_HIP_RSE_FACTOR; // sqrt((3.0 * log(2.0)) - 1.0) = 1.03896
-  static const double COUPON_RSE_FACTOR; // 0.409 at transition point not the asymptote
-  static const double COUPON_RSE; // COUPON_RSE_FACTOR / (1 << 13);
-
-  static const int LG_INIT_LIST_SIZE = 3;
-  static const int LG_INIT_SET_SIZE = 5;
-  static const int RESIZE_NUMER = 3;
-  static const int RESIZE_DENOM = 4;
-
-  static const int loNibbleMask = 0x0f;
-  static const int hiNibbleMask = 0xf0;
-  static const int AUX_TOKEN = 0xf;
-
-  /**
-  * Log2 table sizes for exceptions based on lgK from 0 to 26.
-  * However, only lgK from 4 to 21 are used.
-  */
-  static const int LG_AUX_ARR_INTS[];
-
-  static int coupon(const uint64_t hash[]);
-  static int coupon(const HashState& hashState);
-  static void hash(const void* key, int keyLen, uint64_t seed, HashState& result);
-  static int checkLgK(int lgK);
+  static uint32_t coupon(const uint64_t hash[]);
+  static uint32_t coupon(const HashState& hashState);
+  static void hash(const void* key, size_t keyLen, uint64_t seed, HashState& result);
+  static uint8_t checkLgK(uint8_t lgK);
   static void checkMemSize(uint64_t minBytes, uint64_t capBytes);
-  static inline void checkNumStdDev(int numStdDev);
-  static int pair(int slotNo, int value);
-  static int getLow26(unsigned int coupon);
-  static int getValue(unsigned int coupon);
-  static double invPow2(int e);
-  static unsigned int ceilingPowerOf2(unsigned int n);
-  static unsigned int simpleIntLog2(unsigned int n); // n must be power of 2
-  static int computeLgArrInts(hll_mode mode, int count, int lgConfigK);
-  static double getRelErr(bool upperBound, bool unioned,
-                          int lgConfigK, int numStdDev);
+  static inline void checkNumStdDev(uint8_t numStdDev);
+  static uint32_t pair(uint32_t slotNo, uint8_t value);
+  static uint32_t getLow26(uint32_t coupon);
+  static uint8_t getValue(uint32_t coupon);
+  static double invPow2(uint8_t e);
+  static uint8_t ceilingPowerOf2(uint32_t n);
+  static uint8_t simpleIntLog2(uint32_t n); // n must be power of 2
+  static uint8_t computeLgArrInts(hll_mode mode, uint32_t count, uint8_t lgConfigK);
+  static double getRelErr(bool upperBound, bool unioned, uint8_t lgConfigK, uint8_t numStdDev);
 };
 
 template<typename A>
-const double HllUtil<A>::HLL_HIP_RSE_FACTOR = sqrt(log(2.0)); // 0.8325546
-template<typename A>
-const double HllUtil<A>::HLL_NON_HIP_RSE_FACTOR = sqrt((3.0 * log(2.0)) - 1.0); // 1.03896
-template<typename A>
-const double HllUtil<A>::COUPON_RSE_FACTOR = 0.409;
-template<typename A>
-const double HllUtil<A>::COUPON_RSE = COUPON_RSE_FACTOR / (1 << 13);
-
-template<typename A>
-const int HllUtil<A>::LG_AUX_ARR_INTS[] = {
-      0, 2, 2, 2, 2, 2, 2, 3, 3, 3,   // 0 - 9
-      4, 4, 5, 5, 6, 7, 8, 9, 10, 11, // 10-19
-      12, 13, 14, 15, 16, 17, 18      // 20-26
-      };
-
-template<typename A>
-inline int HllUtil<A>::coupon(const uint64_t hash[]) {
-  int addr26 = (int) (hash[0] & KEY_MASK_26);
-  int lz = count_leading_zeros_in_u64(hash[1]);
-  int value = ((lz > 62 ? 62 : lz) + 1); 
-  return (value << KEY_BITS_26) | addr26;
+inline uint32_t HllUtil<A>::coupon(const uint64_t hash[]) {
+  uint32_t addr26 = hash[0] & hll_constants::KEY_MASK_26;
+  uint8_t lz = count_leading_zeros_in_u64(hash[1]);
+  uint8_t value = ((lz > 62 ? 62 : lz) + 1); 
+  return (value << hll_constants::KEY_BITS_26) | addr26;
 }
 
 template<typename A>
-inline int HllUtil<A>::coupon(const HashState& hashState) {
-  int addr26 = (int) (hashState.h1 & KEY_MASK_26);
-  int lz = count_leading_zeros_in_u64(hashState.h2);  
-  int value = ((lz > 62 ? 62 : lz) + 1); 
-  return (value << KEY_BITS_26) | addr26;
+inline uint32_t HllUtil<A>::coupon(const HashState& hashState) {
+  uint32_t addr26 = (int) (hashState.h1 & hll_constants::KEY_MASK_26);
+  uint8_t lz = count_leading_zeros_in_u64(hashState.h2);  
+  uint8_t value = ((lz > 62 ? 62 : lz) + 1); 
+  return (value << hll_constants::KEY_BITS_26) | addr26;
 }
 
 template<typename A>
-inline void HllUtil<A>::hash(const void* key, const int keyLen, const uint64_t seed, HashState& result) {
+inline void HllUtil<A>::hash(const void* key, size_t keyLen, uint64_t seed, HashState& result) {
   MurmurHash3_x64_128(key, keyLen, seed, result);
 }
 
 template<typename A>
-inline double HllUtil<A>::getRelErr(const bool upperBound, const bool unioned,
-                                    const int lgConfigK, const int numStdDev) {
+inline double HllUtil<A>::getRelErr(bool upperBound, bool unioned,
+                                    uint8_t lgConfigK, uint8_t numStdDev) {
   return RelativeErrorTables<A>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
 }
 
 template<typename A>
-inline int HllUtil<A>::checkLgK(const int lgK) {
-  if ((lgK >= HllUtil<A>::MIN_LOG_K) && (lgK <= HllUtil<A>::MAX_LOG_K)) {
+inline uint8_t HllUtil<A>::checkLgK(uint8_t lgK) {
+  if ((lgK >= hll_constants::MIN_LOG_K) && (lgK <= hll_constants::MAX_LOG_K)) {
     return lgK;
   } else {
     throw std::invalid_argument("Invalid value of k: " + std::to_string(lgK));
@@ -175,36 +168,36 @@ inline int HllUtil<A>::checkLgK(const int lgK) {
 }
 
 template<typename A>
-inline void HllUtil<A>::checkMemSize(const uint64_t minBytes, const uint64_t capBytes) {
+inline void HllUtil<A>::checkMemSize(uint64_t minBytes, uint64_t capBytes) {
   if (capBytes < minBytes) {
     throw std::invalid_argument("Given destination array is not large enough: " + std::to_string(capBytes));
   }
 }
 
 template<typename A>
-inline void HllUtil<A>::checkNumStdDev(const int numStdDev) {
+inline void HllUtil<A>::checkNumStdDev(uint8_t numStdDev) {
   if ((numStdDev < 1) || (numStdDev > 3)) {
     throw std::invalid_argument("NumStdDev may not be less than 1 or greater than 3.");
   }
 }
 
 template<typename A>
-inline int HllUtil<A>::pair(const int slotNo, const int value) {
-  return (value << HllUtil<A>::KEY_BITS_26) | (slotNo & HllUtil<A>::KEY_MASK_26);
+inline uint32_t HllUtil<A>::pair(uint32_t slotNo, uint8_t value) {
+  return (value << hll_constants::KEY_BITS_26) | (slotNo & hll_constants::KEY_MASK_26);
 }
 
 template<typename A>
-inline int HllUtil<A>::getLow26(const unsigned int coupon) {
-  return coupon & HllUtil<A>::KEY_MASK_26;
+inline uint32_t HllUtil<A>::getLow26(uint32_t coupon) {
+  return coupon & hll_constants::KEY_MASK_26;
 }
 
 template<typename A>
-inline int HllUtil<A>::getValue(const unsigned int coupon) {
-  return coupon >> HllUtil<A>::KEY_BITS_26;
+inline uint8_t HllUtil<A>::getValue(uint32_t coupon) {
+  return coupon >> hll_constants::KEY_BITS_26;
 }
 
 template<typename A>
-inline double HllUtil<A>::invPow2(const int e) {
+inline double HllUtil<A>::invPow2(uint8_t e) {
   union {
     long long longVal;
     double doubleVal;
@@ -214,7 +207,7 @@ inline double HllUtil<A>::invPow2(const int e) {
 }
 
 template<typename A>
-inline uint32_t HllUtil<A>::simpleIntLog2(uint32_t n) {
+inline uint8_t HllUtil<A>::simpleIntLog2(uint32_t n) {
   if (n == 0) {
     throw std::logic_error("cannot take log of 0");
   }
@@ -222,16 +215,16 @@ inline uint32_t HllUtil<A>::simpleIntLog2(uint32_t n) {
 }
 
 template<typename A>
-inline int HllUtil<A>::computeLgArrInts(hll_mode mode, int count, int lgConfigK) {
+inline uint8_t HllUtil<A>::computeLgArrInts(hll_mode mode, uint32_t count, uint8_t lgConfigK) {
   // assume value missing and recompute
-  if (mode == LIST) { return HllUtil<A>::LG_INIT_LIST_SIZE; }
-  int ceilPwr2 = ceiling_power_of_2(count);
-  if ((HllUtil<A>::RESIZE_DENOM * count) > (HllUtil<A>::RESIZE_NUMER * ceilPwr2)) { ceilPwr2 <<= 1;}
+  if (mode == LIST) { return hll_constants::LG_INIT_LIST_SIZE; }
+  uint32_t ceilPwr2 = ceiling_power_of_2(count);
+  if ((hll_constants::RESIZE_DENOM * count) > (hll_constants::RESIZE_NUMER * ceilPwr2)) { ceilPwr2 <<= 1;}
   if (mode == SET) {
-    return fmax(HllUtil<A>::LG_INIT_SET_SIZE, HllUtil<A>::simpleIntLog2(ceilPwr2));
+    return std::max(hll_constants::LG_INIT_SET_SIZE, HllUtil<A>::simpleIntLog2(ceilPwr2));
   }
   //only used for HLL4
-  return fmax(HllUtil<A>::LG_AUX_ARR_INTS[lgConfigK], HllUtil<A>::simpleIntLog2(ceilPwr2));
+  return std::max(hll_constants::LG_AUX_ARR_INTS[lgConfigK], HllUtil<A>::simpleIntLog2(ceilPwr2));
 }
 
 }

@@ -75,7 +75,7 @@ TEST_CASE("aod sketch: serialization compatibility with java - empty configured 
 }
 
 TEST_CASE("aod sketch: serialization compatibility with java - non-empty no entries", "[tuple_sketch]") {
-  auto update_sketch = update_array_of_doubles_sketch::builder().set_p(0.01).build();
+  auto update_sketch = update_array_of_doubles_sketch::builder().set_p(0.01f).build();
   std::vector<double> a = {1};
   update_sketch.update(1, a);
   REQUIRE_FALSE(update_sketch.is_empty());

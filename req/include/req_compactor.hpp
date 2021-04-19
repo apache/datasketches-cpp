@@ -110,8 +110,8 @@ private:
 
   bool ensure_enough_sections();
   std::pair<uint32_t, uint32_t> compute_compaction_range(uint32_t secs_to_compact) const;
-  void grow(size_t new_capacity);
-  void ensure_space(size_t num);
+  void grow(uint32_t new_capacity);
+  void ensure_space(uint32_t num);
 
   static uint32_t nearest_even(float value);
 
@@ -123,10 +123,10 @@ private:
   req_compactor(bool hra, uint8_t lg_weight, bool sorted, float section_size_raw, uint8_t num_sections, uint64_t state, std::unique_ptr<T, items_deleter> items, uint32_t num_items, const Allocator& allocator);
 
   template<typename S>
-  static std::unique_ptr<T, items_deleter> deserialize_items(std::istream& is, const S& serde, const Allocator& allocator, size_t num);
+  static std::unique_ptr<T, items_deleter> deserialize_items(std::istream& is, const S& serde, const Allocator& allocator, uint32_t num);
 
   template<typename S>
-  static std::pair<std::unique_ptr<T, items_deleter>, size_t> deserialize_items(const void* bytes, size_t size, const S& serde, const Allocator& allocator, size_t num);
+  static std::pair<std::unique_ptr<T, items_deleter>, size_t> deserialize_items(const void* bytes, size_t size, const S& serde, const Allocator& allocator, uint32_t num);
 
 };
 

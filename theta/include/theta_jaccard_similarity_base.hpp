@@ -131,9 +131,9 @@ private:
 
   template<typename SketchA, typename SketchB>
   static typename Union::CompactSketch compute_union(const SketchA& sketch_a, const SketchB& sketch_b) {
-    const unsigned count_a = sketch_a.get_num_retained();
-    const unsigned count_b = sketch_b.get_num_retained();
-    const unsigned lg_k = std::min(std::max(log2(ceiling_power_of_2(count_a + count_b)), theta_constants::MIN_LG_K), theta_constants::MAX_LG_K);
+    const auto count_a = sketch_a.get_num_retained();
+    const auto count_b = sketch_b.get_num_retained();
+    const uint8_t lg_k = std::min(std::max(log2(ceiling_power_of_2(count_a + count_b)), theta_constants::MIN_LG_K), theta_constants::MAX_LG_K);
     auto u = typename Union::builder().set_lg_k(lg_k).build();
     u.update(sketch_a);
     u.update(sketch_b);

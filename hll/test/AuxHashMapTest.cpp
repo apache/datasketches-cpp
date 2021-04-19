@@ -45,7 +45,7 @@ TEST_CASE("aux hash map: check grow space", "[aux_hash_map]") {
       AuxHashMap<std::allocator<uint8_t>>::make_deleter()
       );
   REQUIRE(map->getLgAuxArrInts() == 3);
-  for (int i = 1; i <= 7; ++i) {
+  for (uint8_t i = 1; i <= 7; ++i) {
     map->mustAdd(i, i);
   }
   REQUIRE(map->getLgAuxArrInts() == 4);

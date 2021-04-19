@@ -31,7 +31,7 @@ class Hll4Iterator;
 template<typename A>
 class Hll4Array final : public HllArray<A> {
   public:
-    explicit Hll4Array(int lgConfigK, bool startFullSize, const A& allocator);
+    explicit Hll4Array(uint8_t lgConfigK, bool startFullSize, const A& allocator);
     explicit Hll4Array(const Hll4Array<A>& that);
 
     virtual ~Hll4Array();
@@ -39,14 +39,14 @@ class Hll4Array final : public HllArray<A> {
 
     virtual Hll4Array* copy() const;
 
-    inline uint8_t getSlot(int slotNo) const;
-    inline void putSlot(int slotNo, uint8_t value);
+    inline uint8_t getSlot(uint32_t slotNo) const;
+    inline void putSlot(uint32_t slotNo, uint8_t value);
     inline uint8_t get_value(uint32_t index) const;
 
-    virtual int getUpdatableSerializationBytes() const;
-    virtual int getHllByteArrBytes() const;
+    virtual uint32_t getUpdatableSerializationBytes() const;
+    virtual uint32_t getHllByteArrBytes() const;
 
-    virtual HllSketchImpl<A>* couponUpdate(int coupon) final;
+    virtual HllSketchImpl<A>* couponUpdate(uint32_t coupon) final;
     void mergeHll(const HllArray<A>& src);
 
     virtual AuxHashMap<A>* getAuxHashMap() const;
@@ -57,11 +57,11 @@ class Hll4Array final : public HllArray<A> {
     virtual typename HllArray<A>::const_iterator end() const;
 
   private:
-    void internalCouponUpdate(int coupon);
-    void internalHll4Update(int slotNo, int newVal);
+    void internalCouponUpdate(uint32_t coupon);
+    void internalHll4Update(uint32_t slotNo, uint8_t newVal);
     void shiftToBiggerCurMin();
 
-    AuxHashMap<A>* auxHashMap;
+    AuxHashMap<A>* auxHashMap_;
 };
 
 }

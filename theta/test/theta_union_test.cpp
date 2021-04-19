@@ -39,7 +39,7 @@ TEST_CASE("theta union: empty", "[theta_union]") {
 }
 
 TEST_CASE("theta union: non empty no retained keys", "[theta_union]") {
-  update_theta_sketch update_sketch = update_theta_sketch::builder().set_p(0.001).build();
+  update_theta_sketch update_sketch = update_theta_sketch::builder().set_p(0.001f).build();
   update_sketch.update(1);
   theta_union u = theta_union::builder().build();
   u.update(update_sketch);

@@ -28,7 +28,7 @@ namespace datasketches {
 template<typename T, typename C, typename S, typename A>
 req_sketch<T, C, S, A>::req_sketch(uint16_t k, bool hra, const A& allocator):
 allocator_(allocator),
-k_(std::max(static_cast<int>(k) & -2, static_cast<int>(req_constants::MIN_K))), //rounds down one if odd
+k_(std::max<uint8_t>(static_cast<int>(k) & -2, static_cast<int>(req_constants::MIN_K))), //rounds down one if odd
 hra_(hra),
 max_nom_size_(0),
 num_retained_(0),
@@ -401,7 +401,7 @@ void req_sketch<T, C, S, A>::serialize(std::ostream& os) const {
   write(os, k_);
   const uint8_t num_levels = is_empty() ? 0 : get_num_levels();
   write(os, num_levels);
-  const uint8_t num_raw_items = raw_items ? n_ : 0;
+  const uint8_t num_raw_items = raw_items ? static_cast<uint8_t>(n_) : 0;
   write(os, num_raw_items);
   if (is_empty()) return;
   if (is_estimation_mode()) {
@@ -440,7 +440,7 @@ auto req_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const -> vect
   ptr += copy_to_mem(k_, ptr);
   const uint8_t num_levels = is_empty() ? 0 : get_num_levels();
   ptr += copy_to_mem(num_levels, ptr);
-  const uint8_t num_raw_items = raw_items ? n_ : 0;
+  const uint8_t num_raw_items = raw_items ? static_cast<uint8_t>(n_) : 0;
   ptr += copy_to_mem(num_raw_items, ptr);
   if (!is_empty()) {
     if (is_estimation_mode()) {
@@ -620,7 +620,7 @@ void req_sketch<T, C, S, A>::grow() {
 
 template<typename T, typename C, typename S, typename A>
 uint8_t req_sketch<T, C, S, A>::get_num_levels() const {
-  return compactors_.size();
+  return static_cast<uint8_t>(compactors_.size());
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -711,7 +711,7 @@ class req_sketch<T, C, S, A>::item_deleter {
 };
 
 template<typename T, typename C, typename S, typename A>
-req_sketch<T, C, S, A>::req_sketch(uint32_t k, bool hra, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors):
+req_sketch<T, C, S, A>::req_sketch(uint16_t k, bool hra, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors):
 allocator_(compactors.get_allocator()),
 k_(k),
 hra_(hra),
@@ -766,9 +766,9 @@ auto req_sketch<T, C, S, A>::end() const -> const_iterator {
 
 template<typename T, typename C, typename S, typename A>
 req_sketch<T, C, S, A>::const_iterator::const_iterator(LevelsIterator begin, LevelsIterator end):
-levels_it_(begin),
-levels_end_(end),
-compactor_it_((*levels_it_).begin())
+    levels_it_(begin),
+    levels_end_(end),
+    compactor_it_(begin == end ? nullptr : (*levels_it_).begin())
 {}
 
 template<typename T, typename C, typename S, typename A>
@@ -802,7 +802,7 @@ bool req_sketch<T, C, S, A>::const_iterator::operator!=(const const_iterator& ot
 
 template<typename T, typename C, typename S, typename A>
 std::pair<const T&, const uint64_t> req_sketch<T, C, S, A>::const_iterator::operator*() const {
-  return std::pair<const T&, const uint64_t>(*compactor_it_, 1 << (*levels_it_).get_lg_weight());
+  return std::pair<const T&, const uint64_t>(*compactor_it_, 1ULL << (*levels_it_).get_lg_weight());
 }
 
 } /* namespace datasketches */

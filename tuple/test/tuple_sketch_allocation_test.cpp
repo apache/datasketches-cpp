@@ -64,7 +64,7 @@ TEST_CASE("tuple sketch with test allocator: estimation mode", "[tuple_sketch]")
     REQUIRE(count == update_sketch.get_num_retained());
 
     update_sketch.trim();
-    REQUIRE(update_sketch.get_num_retained() == (1 << update_sketch.get_lg_k()));
+    REQUIRE(update_sketch.get_num_retained() == (1U << update_sketch.get_lg_k()));
 
     auto compact_sketch = update_sketch.compact();
     REQUIRE(!compact_sketch.is_empty());

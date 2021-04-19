@@ -76,7 +76,7 @@ typedef struct {
 // Block read - if your platform needs to do endian-swapping or can only
 // handle aligned reads, do the conversion here
 
-FORCE_INLINE uint64_t getblock64 ( const uint64_t * p, int i )
+FORCE_INLINE uint64_t getblock64 ( const uint64_t * p, size_t i )
 {
   return p[i];
 }
@@ -95,7 +95,7 @@ FORCE_INLINE uint64_t fmix64 ( uint64_t k )
   return k;
 }
 
-FORCE_INLINE void MurmurHash3_x64_128(const void* key, int lenBytes, uint64_t seed, HashState& out) {
+FORCE_INLINE void MurmurHash3_x64_128(const void* key, size_t lenBytes, uint64_t seed, HashState& out) {
   static const uint64_t c1 = BIG_CONSTANT(0x87c37b91114253d5);
   static const uint64_t c2 = BIG_CONSTANT(0x4cf5ad432745937f);
 
@@ -106,13 +106,13 @@ FORCE_INLINE void MurmurHash3_x64_128(const void* key, int lenBytes, uint64_t se
 
   // Number of full 128-bit blocks of 16 bytes.
   // Possible exclusion of a remainder of up to 15 bytes.
-  const int nblocks = lenBytes >> 4; // bytes / 16 
+  const size_t nblocks = lenBytes >> 4; // bytes / 16 
 
   // Process the 128-bit blocks (the body) into the hash
   const uint64_t* blocks = (const uint64_t*)(data);
-  for (int i = 0; i < nblocks; ++i) { // 16 bytes per block
-    uint64_t k1 = getblock64(blocks,i*2+0);
-    uint64_t k2 = getblock64(blocks,i*2+1);
+  for (size_t i = 0; i < nblocks; ++i) { // 16 bytes per block
+    uint64_t k1 = getblock64(blocks, i * 2 + 0);
+    uint64_t k2 = getblock64(blocks, i * 2 + 1);
 
     k1 *= c1; k1  = ROTL64(k1,31); k1 *= c2; out.h1 ^= k1;
     out.h1 = ROTL64(out.h1,27);

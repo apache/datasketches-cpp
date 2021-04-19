@@ -40,7 +40,7 @@ namespace datasketches {
 
 TEST_CASE("tuple sketch float: builder", "[tuple_sketch]") {
   auto builder = update_tuple_sketch<float>::builder();
-  builder.set_lg_k(10).set_p(0.5).set_resize_factor(theta_constants::resize_factor::X2).set_seed(123);
+  builder.set_lg_k(10).set_p(0.5f).set_resize_factor(theta_constants::resize_factor::X2).set_seed(123);
   auto sketch = builder.build();
   REQUIRE(sketch.get_lg_k() == 10);
   REQUIRE(sketch.get_theta() == 0.5);
@@ -74,9 +74,9 @@ TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {
 
 TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
   auto update_sketch = update_tuple_sketch<float>::builder().build();
-  update_sketch.update(1, 1);
-  update_sketch.update(2, 2);
-  update_sketch.update(1, 1);
+  update_sketch.update(1, 1.0f);
+  update_sketch.update(2, 2.0f);
+  update_sketch.update(1, 1.0f);
 //  std::cout << update_sketch.to_string(true);
   REQUIRE(!update_sketch.is_empty());
   REQUIRE(!update_sketch.is_estimation_mode());
@@ -167,11 +167,11 @@ using max_float_update_tuple_sketch = update_tuple_sketch<float, float, max_valu
 
 TEST_CASE("tuple sketch: float, custom policy", "[tuple_sketch]") {
   auto update_sketch = max_float_update_tuple_sketch::builder(max_value_policy<float>(5)).build();
-  update_sketch.update(1, 1);
-  update_sketch.update(1, 2);
-  update_sketch.update(2, 10);
-  update_sketch.update(3, 3);
-  update_sketch.update(3, 7);
+  update_sketch.update(1, 1.0f);
+  update_sketch.update(1, 2.0f);
+  update_sketch.update(2, 10.0f);
+  update_sketch.update(3, 3.0f);
+  update_sketch.update(3, 7.0f);
 //  std::cout << update_sketch.to_string(true);
   int count = 0;
   float sum = 0;
@@ -212,37 +212,37 @@ TEST_CASE("tuple sketch: tuple of doubles", "[tuple_sketch]") {
 TEST_CASE("tuple sketch: float, update with different types of keys", "[tuple_sketch]") {
   auto sketch = update_tuple_sketch<float>::builder().build();
 
-  sketch.update(static_cast<uint64_t>(1), 1);
+  sketch.update(static_cast<uint64_t>(1), 1.0f);
   REQUIRE(sketch.get_num_retained() == 1);
 
-  sketch.update(static_cast<int64_t>(1), 1);
+  sketch.update(static_cast<int64_t>(1), 1.0f);
   REQUIRE(sketch.get_num_retained() == 1);
 
-  sketch.update(static_cast<uint32_t>(1), 1);
+  sketch.update(static_cast<uint32_t>(1), 1.0f);
   REQUIRE(sketch.get_num_retained() == 1);
 
-  sketch.update(static_cast<int32_t>(1), 1);
+  sketch.update(static_cast<int32_t>(1), 1.0f);
   REQUIRE(sketch.get_num_retained() == 1);
 
-  sketch.update(static_cast<uint16_t>(1), 1);
+  sketch.update(static_cast<uint16_t>(1), 1.0f);
   REQUIRE(sketch.get_num_retained() == 1);
 
-  sketch.update(static_cast<int16_t>(1), 1);
+  sketch.update(static_cast<int16_t>(1), 1.0f);
   REQUIRE(sketch.get_num_retained() == 1);
 
-  sketch.update(static_cast<uint8_t>(1), 1);
+  sketch.update(static_cast<uint8_t>(1), 1.0f);
   REQUIRE(sketch.get_num_retained() == 1);
 
-  sketch.update(static_cast<int8_t>(1), 1);
+  sketch.update(static_cast<int8_t>(1), 1.0f);
   REQUIRE(sketch.get_num_retained() == 1);
 
-  sketch.update(1.0, 1);
+  sketch.update(1.0, 1.0f);
   REQUIRE(sketch.get_num_retained() == 2);
 
-  sketch.update(static_cast<float>(1), 1);
+  sketch.update(static_cast<float>(1), 1.0f);
   REQUIRE(sketch.get_num_retained() == 2);
 
-  sketch.update("a", 1);
+  sketch.update("a", 1.0f);
   REQUIRE(sketch.get_num_retained() == 3);
 }
 

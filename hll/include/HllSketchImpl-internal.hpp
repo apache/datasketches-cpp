@@ -26,12 +26,12 @@
 namespace datasketches {
 
 template<typename A>
-HllSketchImpl<A>::HllSketchImpl(const int lgConfigK, const target_hll_type tgtHllType,
-                                const hll_mode mode, const bool startFullSize)
-  : lgConfigK(lgConfigK),
-    tgtHllType(tgtHllType),
-    mode(mode),
-    startFullSize(startFullSize)
+HllSketchImpl<A>::HllSketchImpl(uint8_t lgConfigK, target_hll_type tgtHllType,
+                                hll_mode mode, bool startFullSize)
+  : lgConfigK_(lgConfigK),
+    tgtHllType_(tgtHllType),
+    mode_(mode),
+    startFullSize_(startFullSize)
 {
 }
 
@@ -40,7 +40,7 @@ HllSketchImpl<A>::~HllSketchImpl() {
 }
 
 template<typename A>
-target_hll_type HllSketchImpl<A>::extractTgtHllType(const uint8_t modeByte) {
+target_hll_type HllSketchImpl<A>::extractTgtHllType(uint8_t modeByte) {
   switch ((modeByte >> 2) & 0x3) {
   case 0:
     return target_hll_type::HLL_4;
@@ -54,7 +54,7 @@ target_hll_type HllSketchImpl<A>::extractTgtHllType(const uint8_t modeByte) {
 }
 
 template<typename A>
-hll_mode HllSketchImpl<A>::extractCurMode(const uint8_t modeByte) {
+hll_mode HllSketchImpl<A>::extractCurMode(uint8_t modeByte) {
   switch (modeByte & 0x3) {
   case 0:
     return hll_mode::LIST;
@@ -68,12 +68,12 @@ hll_mode HllSketchImpl<A>::extractCurMode(const uint8_t modeByte) {
 }
 
 template<typename A>
-uint8_t HllSketchImpl<A>::makeFlagsByte(const bool compact) const {
-  uint8_t flags(0);
-  flags |= (isEmpty() ? HllUtil<A>::EMPTY_FLAG_MASK : 0);
-  flags |= (compact ? HllUtil<A>::COMPACT_FLAG_MASK : 0);
-  flags |= (isOutOfOrderFlag() ? HllUtil<A>::OUT_OF_ORDER_FLAG_MASK : 0);
-  flags |= (startFullSize ? HllUtil<A>::FULL_SIZE_FLAG_MASK : 0);
+uint8_t HllSketchImpl<A>::makeFlagsByte(bool compact) const {
+  uint8_t flags = 0;
+  flags |= (isEmpty() ? hll_constants::EMPTY_FLAG_MASK : 0);
+  flags |= (compact ? hll_constants::COMPACT_FLAG_MASK : 0);
+  flags |= (isOutOfOrderFlag() ? hll_constants::OUT_OF_ORDER_FLAG_MASK : 0);
+  flags |= (startFullSize_ ? hll_constants::FULL_SIZE_FLAG_MASK : 0);
   return flags;
 }
 
@@ -92,7 +92,7 @@ template<typename A>
 uint8_t HllSketchImpl<A>::makeModeByte() const {
   uint8_t byte = 0;
 
-  switch (mode) {
+  switch (mode_) {
   case LIST:
     byte = 0;
     break;
@@ -104,7 +104,7 @@ uint8_t HllSketchImpl<A>::makeModeByte() const {
     break;
   }
 
-  switch (tgtHllType) {
+  switch (tgtHllType_) {
   case HLL_4:
     byte |= (0 << 2);  // for completeness
     break;
@@ -121,27 +121,27 @@ uint8_t HllSketchImpl<A>::makeModeByte() const {
 
 template<typename A>
 HllSketchImpl<A>* HllSketchImpl<A>::reset() {
-  return HllSketchImplFactory<A>::reset(this, startFullSize);
+  return HllSketchImplFactory<A>::reset(this, startFullSize_);
 }
 
 template<typename A>
 target_hll_type HllSketchImpl<A>::getTgtHllType() const {
-  return tgtHllType;
+  return tgtHllType_;
 }
 
 template<typename A>
-int HllSketchImpl<A>::getLgConfigK() const {
-  return lgConfigK;
+uint8_t HllSketchImpl<A>::getLgConfigK() const {
+  return lgConfigK_;
 }
 
 template<typename A>
 hll_mode HllSketchImpl<A>::getCurMode() const {
-  return mode;
+  return mode_;
 }
 
 template<typename A>
 bool HllSketchImpl<A>::isStartFullSize() const {
-  return startFullSize;
+  return startFullSize_;
 }
 
 }

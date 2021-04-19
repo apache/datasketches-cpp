@@ -57,7 +57,7 @@ static int get_n(int lg_k, hll_mode mode) {
 
 static long v = 0;
 
-static hll_sketch build_sketch(int lg_k, target_hll_type hll_type, hll_mode mode) {
+static hll_sketch build_sketch(uint8_t lg_k, target_hll_type hll_type, hll_mode mode) {
   hll_sketch sk(lg_k, hll_type);
   int n = get_n(lg_k, mode);
   for (int i = 0; i < n; i++) sk.update(static_cast<uint64_t>(i + v));
@@ -67,7 +67,7 @@ static hll_sketch build_sketch(int lg_k, target_hll_type hll_type, hll_mode mode
 
 // merges a sketch to an empty union and gets result of the same type, checks binary equivalence
 static void union_one_update(bool compact) {
-  for (int lg_k = 4; lg_k <= 21; lg_k++) { // all lg_k
+  for (uint8_t lg_k = 4; lg_k <= 21; lg_k++) { // all lg_k
     for (int mode = 0; mode <= 2; mode++) { // List, Set, Hll
       if ((lg_k < 8) && (mode == 1)) continue; // lg_k < 8 list transitions directly to HLL
       for (int t = 0; t <= 2; t++) { // HLL_4, HLL_6, HLL_8
@@ -102,7 +102,7 @@ TEST_CASE("hll isomorphic: union one update serialize compact", "[hll_isomorphic
 
 // converts a sketch to a different type and converts back to the original type to check binary equivalence
 static void convert_back_and_forth(bool compact) {
-  for (int lg_k = 4; lg_k <= 21; lg_k++) { // all lg_k
+  for (uint8_t lg_k = 4; lg_k <= 21; lg_k++) { // all lg_k
     for (int mode = 0; mode <= 2; mode++) { // List, Set, Hll
       if ((lg_k < 8) && (mode == 1)) continue; // lg_k < 8 list transitions directly to HLL
       for (int t1 = 0; t1 <= 2; t1++) { // HLL_4, HLL_6, HLL_8

@@ -26,7 +26,7 @@
 
 namespace datasketches {
 
-static hll_sketch buildSketch(const int n, const int lgK, const target_hll_type tgtHllType) {
+static hll_sketch buildSketch(const int n, const uint8_t lgK, const target_hll_type tgtHllType) {
   hll_sketch sketch(lgK, tgtHllType);
   for (int i = 0; i < n; ++i) {
     sketch.update(i);
@@ -34,7 +34,7 @@ static hll_sketch buildSketch(const int n, const int lgK, const target_hll_type 
   return sketch;
 }
 
-static void crossCountingCheck(const int lgK, const int n) {
+static void crossCountingCheck(const uint8_t lgK, const int n) {
   hll_sketch sk4 = buildSketch(n, lgK, HLL_4);
   const double est = sk4.get_estimate();
   const double lb = sk4.get_lower_bound(1);

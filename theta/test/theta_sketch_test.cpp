@@ -50,7 +50,7 @@ TEST_CASE("theta sketch: empty", "[theta_sketch]") {
 }
 
 TEST_CASE("theta sketch: non empty no retained keys", "[theta_sketch]") {
-  update_theta_sketch update_sketch = update_theta_sketch::builder().set_p(0.001).build();
+  update_theta_sketch update_sketch = update_theta_sketch::builder().set_p(0.001f).build();
   update_sketch.update(1);
   //std::cerr << update_sketch.to_string();
   REQUIRE(update_sketch.get_num_retained() == 0);

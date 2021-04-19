@@ -30,8 +30,8 @@ namespace datasketches {
 template<typename T, typename S, typename A>
 var_opt_union<T,S,A>::var_opt_union(uint32_t max_k, const A& allocator) :
   n_(0),
-  outer_tau_numer_(0),
-  outer_tau_denom_(0.0),
+  outer_tau_numer_(0.0),
+  outer_tau_denom_(0),
   max_k_(max_k),
   gadget_(max_k, var_opt_sketch<T,S,A>::DEFAULT_RESIZE_FACTOR, true, allocator)
 {}

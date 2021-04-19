@@ -59,8 +59,8 @@ TEST_CASE("tuple intersection: empty", "[tuple_intersection]") {
 }
 
 TEST_CASE("tuple intersection: non empty no retained keys", "[tuple_intersection]") {
-  auto sketch = update_tuple_sketch<float>::builder().set_p(0.001).build();
-  sketch.update(1, 1);
+  auto sketch = update_tuple_sketch<float>::builder().set_p(0.001f).build();
+  sketch.update(1, 1.0f);
   tuple_intersection_float intersection;
   intersection.update(sketch);
   auto result = intersection.get_result();
@@ -82,11 +82,11 @@ TEST_CASE("tuple intersection: non empty no retained keys", "[tuple_intersection
 TEST_CASE("tuple intersection: exact mode half overlap", "[tuple_intersection]") {
   auto sketch1 = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 1000; i++) sketch1.update(value++, 1);
+  for (int i = 0; i < 1000; i++) sketch1.update(value++, 1.0f);
 
   auto sketch2 = update_tuple_sketch<float>::builder().build();
   value = 500;
-  for (int i = 0; i < 1000; i++) sketch2.update(value++, 1);
+  for (int i = 0; i < 1000; i++) sketch2.update(value++, 1.0f);
 
   { // unordered
     tuple_intersection_float intersection;
@@ -111,10 +111,10 @@ TEST_CASE("tuple intersection: exact mode half overlap", "[tuple_intersection]")
 TEST_CASE("tuple intersection: exact mode disjoint", "[tuple_intersection]") {
   auto sketch1 = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 1000; i++) sketch1.update(value++, 1);
+  for (int i = 0; i < 1000; i++) sketch1.update(value++, 1.0f);
 
   auto sketch2 = update_tuple_sketch<float>::builder().build();
-  for (int i = 0; i < 1000; i++) sketch2.update(value++, 1);
+  for (int i = 0; i < 1000; i++) sketch2.update(value++, 1.0f);
 
   { // unordered
     tuple_intersection_float intersection;
@@ -139,7 +139,7 @@ TEST_CASE("tuple intersection: exact mode disjoint", "[tuple_intersection]") {
 TEST_CASE("mixed intersection: exact mode half overlap", "[tuple_intersection]") {
   auto sketch1 = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 1000; i++) sketch1.update(value++, 1);
+  for (int i = 0; i < 1000; i++) sketch1.update(value++, 1.0f);
 
   auto sketch2 = update_theta_sketch::builder().build();
   value = 500;
@@ -168,11 +168,11 @@ TEST_CASE("mixed intersection: exact mode half overlap", "[tuple_intersection]")
 TEST_CASE("tuple intersection: estimation mode half overlap", "[tuple_intersection]") {
   auto sketch1 = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 10000; i++) sketch1.update(value++, 1);
+  for (int i = 0; i < 10000; i++) sketch1.update(value++, 1.0f);
 
   auto sketch2 = update_tuple_sketch<float>::builder().build();
   value = 5000;
-  for (int i = 0; i < 10000; i++) sketch2.update(value++, 1);
+  for (int i = 0; i < 10000; i++) sketch2.update(value++, 1.0f);
 
   { // unordered
     tuple_intersection_float intersection;
@@ -197,10 +197,10 @@ TEST_CASE("tuple intersection: estimation mode half overlap", "[tuple_intersecti
 TEST_CASE("tuple intersection: estimation mode disjoint", "[tuple_intersection]") {
   auto sketch1 = update_tuple_sketch<float>::builder().build();
   int value = 0;
-  for (int i = 0; i < 10000; i++) sketch1.update(value++, 1);
+  for (int i = 0; i < 10000; i++) sketch1.update(value++, 1.0f);
 
   auto sketch2 = update_tuple_sketch<float>::builder().build();
-  for (int i = 0; i < 10000; i++) sketch2.update(value++, 1);
+  for (int i = 0; i < 10000; i++) sketch2.update(value++, 1.0f);
 
   { // unordered
     tuple_intersection_float intersection;
@@ -224,7 +224,7 @@ TEST_CASE("tuple intersection: estimation mode disjoint", "[tuple_intersection]"
 
 TEST_CASE("tuple intersection: seed mismatch", "[tuple_intersection]") {
   auto sketch = update_tuple_sketch<float>::builder().build();
-  sketch.update(1, 1); // non-empty should not be ignored
+  sketch.update(1, 1.0f); // non-empty should not be ignored
   tuple_intersection_float intersection(123);
   REQUIRE_THROWS_AS(intersection.update(sketch), std::invalid_argument);
 }

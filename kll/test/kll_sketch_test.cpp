@@ -70,8 +70,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch.get_PMF(split_points, 1).size() == 0);
     REQUIRE(sketch.get_CDF(split_points, 1).size() == 0);
 
-    int count = 0;
-    for (auto& it: sketch) {
+    for (auto it: sketch) {
       (void) it; // to suppress "unused" warning
       FAIL("should be no iterations over an empty sketch");
     }
@@ -85,13 +84,13 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("one item") {
     kll_float_sketch sketch(200, 0);
-    sketch.update(1);
+    sketch.update(1.0f);
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE_FALSE(sketch.is_estimation_mode());
     REQUIRE(sketch.get_n() == 1);
     REQUIRE(sketch.get_num_retained() == 1);
-    REQUIRE(sketch.get_rank(1) == 0.0);
-    REQUIRE(sketch.get_rank(2) == 1.0);
+    REQUIRE(sketch.get_rank(1.0f) == 0.0);
+    REQUIRE(sketch.get_rank(2.0f) == 1.0);
     REQUIRE(sketch.get_min_value() == 1.0);
     REQUIRE(sketch.get_max_value() == 1.0);
     REQUIRE(sketch.get_quantile(0.5) == 1.0);
@@ -103,7 +102,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(quantiles[2] == 1.0);
 
     int count = 0;
-    for (auto& it: sketch) {
+    for (auto it: sketch) {
       REQUIRE(it.second == 1);
       ++count;
     }
@@ -115,7 +114,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     sketch.update(std::numeric_limits<float>::quiet_NaN());
     REQUIRE(sketch.is_empty());
 
-    sketch.update(0.0);
+    sketch.update(0);
     sketch.update(std::numeric_limits<float>::quiet_NaN());
     REQUIRE(sketch.get_n() == 1);
   }
@@ -124,7 +123,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     kll_float_sketch sketch(200, 0);
     const uint32_t n = 200;
     for (uint32_t i = 0; i < n; i++) {
-      sketch.update(i);
+      sketch.update(static_cast<float>(i));
       REQUIRE(sketch.get_n() == i + 1);
     }
     REQUIRE_FALSE(sketch.is_empty());
@@ -144,7 +143,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
     for (uint32_t i = 0; i < n; i++) {
       const double trueRank = (double) i / n;
-      REQUIRE(sketch.get_rank(i) == trueRank);
+      REQUIRE(sketch.get_rank(static_cast<float>(i)) == trueRank);
     }
 
     // the alternative method must produce the same result
@@ -157,16 +156,16 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("10 items") {
     kll_float_sketch sketch(200, 0);
-    sketch.update(1);
-    sketch.update(2);
-    sketch.update(3);
-    sketch.update(4);
-    sketch.update(5);
-    sketch.update(6);
-    sketch.update(7);
-    sketch.update(8);
-    sketch.update(9);
-    sketch.update(10);
+    sketch.update(1.0f);
+    sketch.update(2.0f);
+    sketch.update(3.0f);
+    sketch.update(4.0f);
+    sketch.update(5.0f);
+    sketch.update(6.0f);
+    sketch.update(7.0f);
+    sketch.update(8.0f);
+    sketch.update(9.0f);
+    sketch.update(10.0f);
     REQUIRE(sketch.get_quantile(0) == 1.0);
     REQUIRE(sketch.get_quantile(0.5) == 6.0);
     REQUIRE(sketch.get_quantile(0.99) == 10.0);
@@ -175,7 +174,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("100 items") {
     kll_float_sketch sketch(200, 0);
-    for (int i = 0; i < 100; ++i) sketch.update(i);
+    for (int i = 0; i < 100; ++i) sketch.update(static_cast<float>(i));
     REQUIRE(sketch.get_quantile(0) == 0);
     REQUIRE(sketch.get_quantile(0.01) == 1);
     REQUIRE(sketch.get_quantile(0.5) == 50);
@@ -185,9 +184,9 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("many items, estimation mode") {
     kll_float_sketch sketch(200, 0);
-    const int n(1000000);
+    const int n = 1000000;
     for (int i = 0; i < n; i++) {
-      sketch.update(i);
+      sketch.update(static_cast<float>(i));
       REQUIRE(sketch.get_n() == static_cast<uint64_t>(i + 1));
     }
     REQUIRE_FALSE(sketch.is_empty());
@@ -200,7 +199,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     // test rank
     for (int i = 0; i < n; i++) {
       const double trueRank = (double) i / n;
-      REQUIRE(sketch.get_rank(i) == Approx(trueRank).margin(RANK_EPS_FOR_K_200));
+      REQUIRE(sketch.get_rank(static_cast<float>(i)) == Approx(trueRank).margin(RANK_EPS_FOR_K_200));
     }
 
     // test quantiles at every 0.1 percentage point
@@ -239,8 +238,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     const int n = 1000;
     float values[n];
     for (int i = 0; i < n; i++) {
-      sketch.update(i);
-      values[i] = i;
+      sketch.update(static_cast<float>(i));
+      values[i] = static_cast<float>(i);
     }
 
     const auto ranks(sketch.get_CDF(values, n));
@@ -307,7 +306,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("serialize deserialize one item") {
     kll_float_sketch sketch(200, 0);
-    sketch.update(1);
+    sketch.update(1.0f);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
@@ -340,8 +339,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("stream serialize deserialize many floats") {
     kll_float_sketch sketch(200, 0);
-    const int n(1000);
-    for (int i = 0; i < n; i++) sketch.update(i);
+    const int n = 1000;
+    for (int i = 0; i < n; i++) sketch.update(static_cast<float>(i));
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
@@ -358,13 +357,13 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
     REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
     REQUIRE(sketch2.get_rank(0) == sketch.get_rank(0));
-    REQUIRE(sketch2.get_rank(n) == sketch.get_rank(n));
+    REQUIRE(sketch2.get_rank(static_cast<float>(n)) == sketch.get_rank(static_cast<float>(n)));
   }
 
   SECTION("bytes serialize deserialize many floats") {
     kll_float_sketch sketch(200, 0);
-    const int n(1000);
-    for (int i = 0; i < n; i++) sketch.update(i);
+    const int n = 1000;
+    for (int i = 0; i < n; i++) sketch.update(static_cast<float>(i));
     auto bytes = sketch.serialize();
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
     auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), 0);
@@ -379,7 +378,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
     REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
     REQUIRE(sketch2.get_rank(0) == sketch.get_rank(0));
-    REQUIRE(sketch2.get_rank(n) == sketch.get_rank(n));
+    REQUIRE(sketch2.get_rank(static_cast<float>(n)) == sketch.get_rank(static_cast<float>(n)));
     REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), 7), std::out_of_range);
     REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), 15), std::out_of_range);
     REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
@@ -387,7 +386,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("bytes serialize deserialize many ints") {
     kll_sketch<int> sketch;
-    const int n(1000);
+    const int n = 1000;
     for (int i = 0; i < n; i++) sketch.update(i);
     auto bytes = sketch.serialize();
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
@@ -447,8 +446,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     kll_float_sketch sketch2(200, 0);
     const int n = 10000;
     for (int i = 0; i < n; i++) {
-      sketch1.update(i);
-      sketch2.update((2 * n) - i - 1);
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>((2 * n) - i - 1));
     }
 
     REQUIRE(sketch1.get_min_value() == 0.0f);
@@ -470,8 +469,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     kll_float_sketch sketch2(128, 0);
     const int n = 10000;
     for (int i = 0; i < n; i++) {
-      sketch1.update(i);
-      sketch2.update((2 * n) - i - 1);
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>((2 * n) - i - 1));
     }
 
     REQUIRE(sketch1.get_min_value() == 0.0f);
@@ -503,7 +502,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     kll_float_sketch sketch2(128, 0);
     const int n = 10000;
     for (int i = 0; i < n; i++) {
-      sketch1.update(i);
+      sketch1.update(static_cast<float>(i));
     }
 
     // rank error should not be affected by a merge with an empty sketch with lower k
@@ -526,8 +525,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   SECTION("merge min value from other") {
     kll_float_sketch sketch1(200, 0);
     kll_float_sketch sketch2(200, 0);
-    sketch1.update(1);
-    sketch2.update(2);
+    sketch1.update(1.0f);
+    sketch2.update(2.0f);
     sketch2.merge(sketch1);
     REQUIRE(sketch2.get_min_value() == 1.0f);
     REQUIRE(sketch2.get_max_value() == 2.0f);
@@ -535,7 +534,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("merge min and max values from other") {
     kll_float_sketch sketch1(200, 0);
-    for (int i = 0; i < 1000000; i++) sketch1.update(i);
+    for (int i = 0; i < 1000000; i++) sketch1.update(static_cast<float>(i));
     kll_float_sketch sketch2(200, 0);
     sketch2.merge(sketch1);
     REQUIRE(sketch2.get_min_value() == 0.0f);
@@ -548,7 +547,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE_THROWS_AS(sketch.get_min_value(), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_max_value(), std::runtime_error);
 
-    const int n(1000);
+    const int n = 1000;
     for (int i = 0; i < n; i++) sketch.update(i);
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);

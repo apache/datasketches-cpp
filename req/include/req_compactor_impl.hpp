@@ -38,7 +38,7 @@ lg_weight_(lg_weight),
 hra_(hra),
 coin_(false),
 sorted_(sorted),
-section_size_raw_(section_size),
+section_size_raw_(static_cast<float>(section_size)),
 section_size_(section_size),
 num_sections_(req_constants::INIT_NUM_SECTIONS),
 state_(0),
@@ -72,9 +72,9 @@ items_(nullptr)
 {
   if (other.items_ != nullptr) {
     items_ = allocator_.allocate(capacity_);
-    const size_t from = hra_ ? capacity_ - num_items_ : 0;
-    const size_t to = hra_ ? capacity_ : num_items_;
-    for (size_t i = from; i < to; ++i) new (items_ + i) T(other.items_[i]);
+    const uint32_t from = hra_ ? capacity_ - num_items_ : 0;
+    const uint32_t to = hra_ ? capacity_ : num_items_;
+    for (uint32_t i = from; i < to; ++i) new (items_ + i) T(other.items_[i]);
   }
 }
 
@@ -165,16 +165,16 @@ template<typename T, typename C, typename A>
 template<typename FwdT>
 void req_compactor<T, C, A>::append(FwdT&& item) {
   if (num_items_ == capacity_) grow(capacity_ + get_nom_capacity());
-  const size_t i = hra_ ? capacity_ - num_items_ - 1 : num_items_;
+  const uint32_t i = hra_ ? capacity_ - num_items_ - 1 : num_items_;
   new (items_ + i) T(std::forward<FwdT>(item));
   ++num_items_;
   if (num_items_ > 1) sorted_ = false;
 }
 
 template<typename T, typename C, typename A>
-void req_compactor<T, C, A>::grow(size_t new_capacity) {
+void req_compactor<T, C, A>::grow(uint32_t new_capacity) {
   T* new_items = allocator_.allocate(new_capacity);
-  size_t new_i = hra_ ? new_capacity - num_items_ : 0;
+  uint32_t new_i = hra_ ? new_capacity - num_items_ : 0;
   for (auto it = begin(); it != end(); ++it, ++new_i) {
     new (new_items + new_i) T(std::move(*it));
     (*it).~T();
@@ -185,7 +185,7 @@ void req_compactor<T, C, A>::grow(size_t new_capacity) {
 }
 
 template<typename T, typename C, typename A>
-void req_compactor<T, C, A>::ensure_space(size_t num) {
+void req_compactor<T, C, A>::ensure_space(uint32_t num) {
   if (num_items_ + num > capacity_) grow(num_items_ + num + get_nom_capacity());
 }
 
@@ -218,13 +218,13 @@ void req_compactor<T, C, A>::merge(FwdC&& other) {
   while (ensure_enough_sections()) {}
   ensure_space(other.get_num_items());
   sort();
-  auto middle = hra_ ? begin() : end();
+  auto offset = hra_ ? capacity_ - num_items_ : num_items_;
   auto from = hra_ ? begin() - other.get_num_items() : end();
   auto to = from + other.get_num_items();
   auto other_it = other.begin();
   for (auto it = from; it != to; ++it, ++other_it) new (it) T(conditional_forward<FwdC>(*other_it));
   if (!other.sorted_) std::sort(from, to, C());
-  if (num_items_ > 0) std::inplace_merge(hra_ ? from : begin(), middle, hra_ ? end() : to, C());
+  if (num_items_ > 0) std::inplace_merge(hra_ ? from : begin(), items_ + offset, hra_ ? end() : to, C());
   num_items_ += other.get_num_items();
 }
 
@@ -240,7 +240,7 @@ template<typename T, typename C, typename A>
 std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& next) {
   const uint32_t starting_nom_capacity = get_nom_capacity();
   // choose a part of the buffer to compact
-  const uint32_t secs_to_compact = std::min(static_cast<uint32_t>(count_trailing_zeros_in_u32(~state_) + 1), static_cast<uint32_t>(num_sections_));
+  const uint32_t secs_to_compact = std::min<uint32_t>(count_trailing_zeros_in_u64(~state_) + 1, num_sections_);
   auto compaction_range = compute_compaction_range(secs_to_compact);
   if (compaction_range.second - compaction_range.first < 2) throw std::logic_error("compaction range error");
 
@@ -267,9 +267,9 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& nex
 
 template<typename T, typename C, typename A>
 bool req_compactor<T, C, A>::ensure_enough_sections() {
-  const float ssr = section_size_raw_ / sqrt(2);
+  const float ssr = section_size_raw_ / sqrtf(2);
   const uint32_t ne = nearest_even(ssr);
-  if (state_ >= static_cast<uint64_t>(1 << (num_sections_ - 1)) && ne >= req_constants::MIN_K) {
+  if (state_ >= static_cast<uint64_t>(1ULL << (num_sections_ - 1)) && ne >= req_constants::MIN_K) {
     section_size_raw_ = ssr;
     section_size_ = ne;
     num_sections_ <<= 1;
@@ -284,8 +284,8 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compute_compaction_range(u
   uint32_t non_compact = get_nom_capacity() / 2 + (num_sections_ - secs_to_compact) * section_size_;
   // make compacted region even
   if (((num_items_ - non_compact) & 1) == 1) ++non_compact;
-  const size_t low = hra_ ? 0 : non_compact;
-  const size_t high = hra_ ? num_items_ - non_compact : num_items_;
+  const uint32_t low = hra_ ? 0 : non_compact;
+  const uint32_t high = hra_ ? num_items_ - non_compact : num_items_;
   return std::pair<uint32_t, uint32_t>(low, high);
 }
 
@@ -381,7 +381,7 @@ req_compactor<T, C, A> req_compactor<T, C, A>::deserialize(std::istream& is, con
 
 template<typename T, typename C, typename A>
 template<typename S>
-auto req_compactor<T, C, A>::deserialize_items(std::istream& is, const S& serde, const A& allocator, size_t num)
+auto req_compactor<T, C, A>::deserialize_items(std::istream& is, const S& serde, const A& allocator, uint32_t num)
 -> std::unique_ptr<T, items_deleter> {
   A alloc(allocator);
   std::unique_ptr<T, items_deleter> items(alloc.allocate(num), items_deleter(allocator, false, num));
@@ -389,7 +389,7 @@ auto req_compactor<T, C, A>::deserialize_items(std::istream& is, const S& serde,
   // serde did not throw, enable destructors
   items.get_deleter().set_destroy(true);
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
-  return std::move(items);
+  return items;
 }
 
 template<typename T, typename C, typename A>
@@ -430,7 +430,7 @@ std::pair<req_compactor<T, C, A>, size_t> req_compactor<T, C, A>::deserialize(co
 
 template<typename T, typename C, typename A>
 template<typename S>
-auto req_compactor<T, C, A>::deserialize_items(const void* bytes, size_t size, const S& serde, const A& allocator, size_t num)
+auto req_compactor<T, C, A>::deserialize_items(const void* bytes, size_t size, const S& serde, const A& allocator, uint32_t num)
 -> std::pair<std::unique_ptr<T, items_deleter>, size_t> {
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
@@ -465,22 +465,22 @@ items_(items.release())
 template<typename T, typename C, typename A>
 class req_compactor<T, C, A>::items_deleter {
   public:
-  items_deleter(const A& allocator, bool destroy, uint32_t num): allocator(allocator), destroy(destroy), num(num) {}
+  items_deleter(const A& allocator, bool destroy, size_t num): allocator_(allocator), destroy_(destroy), num_(num) {}
   void operator() (T* ptr) {
     if (ptr != nullptr) {
-      if (destroy) {
-        for (uint32_t i = 0; i < num; ++i) {
+      if (destroy_) {
+        for (size_t i = 0; i < num_; ++i) {
           ptr[i].~T();
         }
       }
-      allocator.deallocate(ptr, num);
+      allocator_.deallocate(ptr, num_);
     }
   }
-  void set_destroy(bool destroy) { this->destroy = destroy; }
+  void set_destroy(bool destroy) { destroy_ = destroy; }
   private:
-  A allocator;
-  bool destroy;
-  uint32_t num;
+  A allocator_;
+  bool destroy_;
+  size_t num_;
 };
 
 } /* namespace datasketches */

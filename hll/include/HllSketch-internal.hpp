@@ -42,7 +42,7 @@ typedef union {
 } longDoubleUnion;
 
 template<typename A>
-hll_sketch_alloc<A>::hll_sketch_alloc(int lg_config_k, target_hll_type tgt_type, bool start_full_size, const A& allocator) {
+hll_sketch_alloc<A>::hll_sketch_alloc(uint8_t lg_config_k, target_hll_type tgt_type, bool start_full_size, const A& allocator) {
   HllUtil<A>::checkLgK(lg_config_k);
   if (start_full_size) {
     sketch_impl = HllSketchImplFactory<A>::newHll(lg_config_k, tgt_type, start_full_size, allocator);
@@ -122,7 +122,7 @@ void hll_sketch_alloc<A>::update(const std::string& datum) {
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const uint64_t datum) {
+void hll_sketch_alloc<A>::update(uint64_t datum) {
   // no sign extension with 64 bits so no need to cast to signed value
   HashState hashResult;
   HllUtil<A>::hash(&datum, sizeof(uint64_t), DEFAULT_SEED, hashResult);
@@ -130,53 +130,53 @@ void hll_sketch_alloc<A>::update(const uint64_t datum) {
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const uint32_t datum) {
+void hll_sketch_alloc<A>::update(uint32_t datum) {
   update(static_cast<int32_t>(datum));
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const uint16_t datum) {
+void hll_sketch_alloc<A>::update(uint16_t datum) {
   update(static_cast<int16_t>(datum));
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const uint8_t datum) {
+void hll_sketch_alloc<A>::update(uint8_t datum) {
   update(static_cast<int8_t>(datum));
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const int64_t datum) {
+void hll_sketch_alloc<A>::update(int64_t datum) {
   HashState hashResult;
   HllUtil<A>::hash(&datum, sizeof(int64_t), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const int32_t datum) {
-  int64_t val = static_cast<int64_t>(datum);
+void hll_sketch_alloc<A>::update(int32_t datum) {
+  const int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
   HllUtil<A>::hash(&val, sizeof(int64_t), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const int16_t datum) {
-  int64_t val = static_cast<int64_t>(datum);
+void hll_sketch_alloc<A>::update(int16_t datum) {
+  const int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
   HllUtil<A>::hash(&val, sizeof(int64_t), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const int8_t datum) {
-  int64_t val = static_cast<int64_t>(datum);
+void hll_sketch_alloc<A>::update(int8_t datum) {
+  const int64_t val = static_cast<int64_t>(datum);
   HashState hashResult;
   HllUtil<A>::hash(&val, sizeof(int64_t), DEFAULT_SEED, hashResult);
   coupon_update(HllUtil<A>::coupon(hashResult));
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const double datum) {
+void hll_sketch_alloc<A>::update(double datum) {
   longDoubleUnion d;
   d.doubleBytes = static_cast<double>(datum);
   if (datum == 0.0) {
@@ -190,7 +190,7 @@ void hll_sketch_alloc<A>::update(const double datum) {
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const float datum) {
+void hll_sketch_alloc<A>::update(float datum) {
   longDoubleUnion d;
   d.doubleBytes = static_cast<double>(datum);
   if (datum == 0.0) {
@@ -204,7 +204,7 @@ void hll_sketch_alloc<A>::update(const float datum) {
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::update(const void* data, const size_t lengthBytes) {
+void hll_sketch_alloc<A>::update(const void* data, size_t lengthBytes) {
   if (data == nullptr) { return; }
   HashState hashResult;
   HllUtil<A>::hash(data, lengthBytes, DEFAULT_SEED, hashResult);
@@ -212,8 +212,8 @@ void hll_sketch_alloc<A>::update(const void* data, const size_t lengthBytes) {
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::coupon_update(int coupon) {
-  if (coupon == HllUtil<A>::EMPTY) { return; }
+void hll_sketch_alloc<A>::coupon_update(uint32_t coupon) {
+  if (coupon == hll_constants::EMPTY) { return; }
   HllSketchImpl<A>* result = this->sketch_impl->couponUpdate(coupon);
   if (result != this->sketch_impl) {
     this->sketch_impl->get_deleter()(this->sketch_impl);
@@ -352,12 +352,12 @@ double hll_sketch_alloc<A>::get_composite_estimate() const {
 }
 
 template<typename A>
-double hll_sketch_alloc<A>::get_lower_bound(int numStdDev) const {
+double hll_sketch_alloc<A>::get_lower_bound(uint8_t numStdDev) const {
   return sketch_impl->getLowerBound(numStdDev);
 }
 
 template<typename A>
-double hll_sketch_alloc<A>::get_upper_bound(int numStdDev) const {
+double hll_sketch_alloc<A>::get_upper_bound(uint8_t numStdDev) const {
   return sketch_impl->getUpperBound(numStdDev);
 }
 
@@ -367,7 +367,7 @@ hll_mode hll_sketch_alloc<A>::get_current_mode() const {
 }
 
 template<typename A>
-int hll_sketch_alloc<A>::get_lg_config_k() const {
+uint8_t hll_sketch_alloc<A>::get_lg_config_k() const {
   return sketch_impl->getLgConfigK();
 }
 
@@ -387,12 +387,12 @@ bool hll_sketch_alloc<A>::is_estimation_mode() const {
 }
 
 template<typename A>
-int hll_sketch_alloc<A>::get_updatable_serialization_bytes() const {
+uint32_t hll_sketch_alloc<A>::get_updatable_serialization_bytes() const {
   return sketch_impl->getUpdatableSerializationBytes();
 }
 
 template<typename A>
-int hll_sketch_alloc<A>::get_compact_serialization_bytes() const {
+uint32_t hll_sketch_alloc<A>::get_compact_serialization_bytes() const {
   return sketch_impl->getCompactSerializationBytes();
 }
 
@@ -435,23 +435,23 @@ std::string hll_sketch_alloc<A>::mode_as_string() const {
 }
 
 template<typename A>
-int hll_sketch_alloc<A>::get_max_updatable_serialization_bytes(const int lg_config_k,
+uint32_t hll_sketch_alloc<A>::get_max_updatable_serialization_bytes(uint8_t lg_config_k,
     const target_hll_type tgtHllType) {
-  int arrBytes;
+  uint32_t arrBytes;
   if (tgtHllType == target_hll_type::HLL_4) {
-    const int auxBytes = 4 << HllUtil<A>::LG_AUX_ARR_INTS[lg_config_k];
+    const uint32_t auxBytes = 4 << hll_constants::LG_AUX_ARR_INTS[lg_config_k];
     arrBytes = HllArray<A>::hll4ArrBytes(lg_config_k) + auxBytes;
   } else if (tgtHllType == target_hll_type::HLL_6) {
     arrBytes = HllArray<A>::hll6ArrBytes(lg_config_k);
   } else { //HLL_8
     arrBytes = HllArray<A>::hll8ArrBytes(lg_config_k);
   }
-  return HllUtil<A>::HLL_BYTE_ARR_START + arrBytes;
+  return hll_constants::HLL_BYTE_ARR_START + arrBytes;
 }
 
 template<typename A>
-double hll_sketch_alloc<A>::get_rel_err(const bool upperBound, const bool unioned,
-                           const int lg_config_k, const int numStdDev) {
+double hll_sketch_alloc<A>::get_rel_err(bool upperBound, bool unioned,
+                           uint8_t lg_config_k, uint8_t numStdDev) {
   return HllUtil<A>::getRelErr(upperBound, unioned, lg_config_k, numStdDev);
 }
 

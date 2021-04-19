@@ -27,11 +27,11 @@
 namespace datasketches {
 
 template<typename A>
-Hll6Array<A>::Hll6Array(const int lgConfigK, const bool startFullSize, const A& allocator):
+Hll6Array<A>::Hll6Array(uint8_t lgConfigK, bool startFullSize, const A& allocator):
 HllArray<A>(lgConfigK, target_hll_type::HLL_6, startFullSize, allocator)
 {
   const int numBytes = this->hll6ArrBytes(lgConfigK);
-  this->hllByteArr.resize(numBytes, 0);
+  this->hllByteArr_.resize(numBytes, 0);
 }
 
 template<typename A>
@@ -53,57 +53,57 @@ Hll6Array<A>* Hll6Array<A>::copy() const {
 }
 
 template<typename A>
-uint8_t Hll6Array<A>::getSlot(int slotNo) const {
-  const int startBit = slotNo * 6;
-  const int shift = startBit & 0x7;
-  const int byteIdx = startBit >> 3;  
-  const uint16_t twoByteVal = (this->hllByteArr[byteIdx + 1] << 8) | this->hllByteArr[byteIdx];
-  return (twoByteVal >> shift) & HllUtil<A>::VAL_MASK_6;
+uint8_t Hll6Array<A>::getSlot(uint32_t slotNo) const {
+  const uint32_t startBit = slotNo * 6;
+  const uint32_t shift = startBit & 0x7;
+  const uint32_t byteIdx = startBit >> 3;  
+  const uint16_t twoByteVal = (this->hllByteArr_[byteIdx + 1] << 8) | this->hllByteArr_[byteIdx];
+  return (twoByteVal >> shift) & hll_constants::VAL_MASK_6;
 }
 
 template<typename A>
-void Hll6Array<A>::putSlot(int slotNo, uint8_t value) {
-  const int startBit = slotNo * 6;
-  const int shift = startBit & 0x7;
-  const int byteIdx = startBit >> 3;
+void Hll6Array<A>::putSlot(uint32_t slotNo, uint8_t value) {
+  const uint32_t startBit = slotNo * 6;
+  const uint32_t shift = startBit & 0x7;
+  const uint32_t byteIdx = startBit >> 3;
   const uint16_t valShifted = (value & 0x3F) << shift;
-  uint16_t curMasked = (this->hllByteArr[byteIdx + 1] << 8) | this->hllByteArr[byteIdx];
-  curMasked &= (~(HllUtil<A>::VAL_MASK_6 << shift));
+  uint16_t curMasked = (this->hllByteArr_[byteIdx + 1] << 8) | this->hllByteArr_[byteIdx];
+  curMasked &= (~(hll_constants::VAL_MASK_6 << shift));
   const uint16_t insert = curMasked | valShifted;
-  this->hllByteArr[byteIdx]     = insert & 0xFF;
-  this->hllByteArr[byteIdx + 1] = (insert & 0xFF00) >> 8;
+  this->hllByteArr_[byteIdx]     = insert & 0xFF;
+  this->hllByteArr_[byteIdx + 1] = (insert & 0xFF00) >> 8;
 }
 
 template<typename A>
-int Hll6Array<A>::getHllByteArrBytes() const {
-  return this->hll6ArrBytes(this->lgConfigK);
+uint32_t Hll6Array<A>::getHllByteArrBytes() const {
+  return this->hll6ArrBytes(this->lgConfigK_);
 }
 
 template<typename A>
-HllSketchImpl<A>* Hll6Array<A>::couponUpdate(const int coupon) {
+HllSketchImpl<A>* Hll6Array<A>::couponUpdate(uint32_t coupon) {
   internalCouponUpdate(coupon);
   return this;
 }
 
 template<typename A>
-void Hll6Array<A>::internalCouponUpdate(const int coupon) {
-  const int configKmask = (1 << this->lgConfigK) - 1;
-  const int slotNo = HllUtil<A>::getLow26(coupon) & configKmask;
-  const int newVal = HllUtil<A>::getValue(coupon);
+void Hll6Array<A>::internalCouponUpdate(uint32_t coupon) {
+  const uint32_t configKmask = (1 << this->lgConfigK_) - 1;
+  const uint32_t slotNo = HllUtil<A>::getLow26(coupon) & configKmask;
+  const uint8_t newVal = HllUtil<A>::getValue(coupon);
 
-  const int curVal = getSlot(slotNo);
+  const uint8_t curVal = getSlot(slotNo);
   if (newVal > curVal) {
     putSlot(slotNo, newVal);
     this->hipAndKxQIncrementalUpdate(curVal, newVal);
     if (curVal == 0) {
-      this->numAtCurMin--; // interpret numAtCurMin as num zeros
+      this->numAtCurMin_--; // interpret numAtCurMin as num zeros
     }
   }
 }
 
 template<typename A>
 void Hll6Array<A>::mergeHll(const HllArray<A>& src) {
-  for (auto coupon: src) {
+  for (const auto coupon: src) {
     internalCouponUpdate(coupon);
   }
 }

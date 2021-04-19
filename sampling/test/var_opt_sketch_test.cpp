@@ -41,7 +41,7 @@ static constexpr double EPS = 1e-13;
 static var_opt_sketch<int> create_unweighted_sketch(uint32_t k, uint64_t n) {
   var_opt_sketch<int> sk(k);
   for (uint64_t i = 0; i < n; ++i) {
-    sk.update(i, 1.0);
+    sk.update(static_cast<int>(i), 1.0);
   }
   return sk;
 }
@@ -71,7 +71,7 @@ static void check_if_equal(var_opt_sketch<T,S,A>& sk1, var_opt_sketch<T,S,A>& sk
 
 TEST_CASE("varopt sketch: invalid k", "[var_opt_sketch]") {
   REQUIRE_THROWS_AS(var_opt_sketch<int>(0), std::invalid_argument);
-  REQUIRE_THROWS_AS(var_opt_sketch<int>(1 << 31), std::invalid_argument); // aka k < 0
+  REQUIRE_THROWS_AS(var_opt_sketch<int>(1U << 31), std::invalid_argument); // aka k < 0
 }
 
 TEST_CASE("varopt sketch: bad serialization version", "[var_opt_sketch]") {
@@ -216,11 +216,11 @@ TEST_CASE("varopt sketch: cumulative weight", "[var_opt_sketch]") {
     // which covers about 10 orders of magnitude
     double w = std::exp(5 * N(rand));
     input_sum += w;
-    sk.update(i, w);
+    sk.update(static_cast<int>(i), w);
   }
 
   double output_sum = 0.0;
-  for (auto& it : sk) { // std::pair<int, weight>
+  for (auto it : sk) { // std::pair<int, weight>
     output_sum += it.second;
   }
     
@@ -350,7 +350,7 @@ TEST_CASE("varopt sketch: pseudo-heavy update", "[var_opt_sketch]") {
   // Last one should call update_pseudo_heavy_r_eq_1(), since we'll have
   // added k-1 heavy items, leaving only 1 item left in R
   for (uint32_t i = 1; i <= k; ++i) {
-    sk.update(-i, k + (i * wt_scale));
+    sk.update(-1 * static_cast<int>(i), k + (i * wt_scale));
   }
 
   auto it = sk.begin();
@@ -442,7 +442,7 @@ TEST_CASE("varopt sketch: estimate subset sum", "[var_opt_sketch]") {
   // finally, a non-degenerate predicate
   // insert negative items with identical weights, filter for negative weights only
   for (uint32_t i = 1; i <= (k + 1); ++i) {
-    sk.update(static_cast<int32_t>(-i), 1.0 * i);
+    sk.update(-1 * static_cast<int32_t>(i), static_cast<double>(i));
     total_weight += 1.0 * i;
   }
 
