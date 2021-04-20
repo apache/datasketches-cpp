@@ -207,13 +207,12 @@ void theta_update_sketch_base<EN, EK, A>::resize() {
     if (key != 0) {
       // always finds an empty slot in a larger table
       new (find(new_entries, lg_new_size, key).first) EN(std::move(entries_[i]));
+      entries_[i].~EN();
+      EK()(entries_[i]) = 0;
     }
   }
   std::swap(entries_, new_entries);
   lg_cur_size_ = lg_new_size;
-  for (size_t i = 0; i < old_size; ++i) {
-    if (EK()(new_entries[i]) != 0) new_entries[i].~EN();
-  }
   allocator_.deallocate(new_entries, old_size);
 }
 
