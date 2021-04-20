@@ -136,18 +136,23 @@ uint64_t theta_update_sketch_base<EN, EK, A>::hash_and_screen(const void* data, 
 
 template<typename EN, typename EK, typename A>
 auto theta_update_sketch_base<EN, EK, A>::find(uint64_t key) const -> std::pair<iterator, bool> {
-  const size_t size = 1ULL << lg_cur_size_;
+  return find(entries_, lg_cur_size_, key);
+}
+
+template<typename EN, typename EK, typename A>
+auto theta_update_sketch_base<EN, EK, A>::find(EN* entries, uint8_t lg_size, uint64_t key) -> std::pair<iterator, bool> {
+  const size_t size = 1 << lg_size;
   const size_t mask = size - 1;
-  const uint32_t stride = get_stride(key, lg_cur_size_);
+  const uint32_t stride = get_stride(key, lg_size);
   uint32_t index = static_cast<uint32_t>(key) & mask;
   // search for duplicate or zero
   const uint32_t loop_index = index;
   do {
-    const uint64_t probe = EK()(entries_[index]);
+    const uint64_t probe = EK()(entries[index]);
     if (probe == 0) {
-      return std::pair<iterator, bool>(&entries_[index], false);
+      return std::pair<iterator, bool>(&entries[index], false);
     } else if (probe == key) {
-      return std::pair<iterator, bool>(&entries_[index], true);
+      return std::pair<iterator, bool>(&entries[index], true);
     }
     index = (index + stride) & mask;
   } while (index != loop_index);
@@ -193,22 +198,23 @@ uint32_t theta_update_sketch_base<EN, EK, A>::get_stride(uint64_t key, uint8_t l
 template<typename EN, typename EK, typename A>
 void theta_update_sketch_base<EN, EK, A>::resize() {
   const size_t old_size = 1ULL << lg_cur_size_;
-  const uint8_t lg_tgt_size = lg_nom_size_ + 1;
-  const uint8_t factor = std::max<uint8_t>(1, std::min<uint8_t>(static_cast<uint8_t>(rf_), static_cast<uint8_t>(lg_tgt_size - lg_cur_size_)));
-  lg_cur_size_ += factor;
-  const size_t new_size = 1ULL << lg_cur_size_;
-  EN* old_entries = entries_;
-  entries_ = allocator_.allocate(new_size);
-  for (size_t i = 0; i < new_size; ++i) EK()(entries_[i]) = 0;
-  num_entries_ = 0;
+  const uint8_t lg_new_size = std::min<uint8_t>(lg_cur_size_ + static_cast<uint8_t>(rf_), lg_nom_size_ + 1);
+  const size_t new_size = 1ULL << lg_new_size;
+  EN* new_entries = allocator_.allocate(new_size);
+  for (size_t i = 0; i < new_size; ++i) EK()(new_entries[i]) = 0;
   for (size_t i = 0; i < old_size; ++i) {
-    const uint64_t key = EK()(old_entries[i]);
+    const uint64_t key = EK()(entries_[i]);
     if (key != 0) {
-      insert(find(key).first, std::move(old_entries[i])); // consider a special insert with no comparison
-      old_entries[i].~EN();
+      // always finds an empty slot in a larger table
+      new (find(new_entries, lg_new_size, key).first) EN(std::move(entries_[i]));
     }
   }
-  allocator_.deallocate(old_entries, old_size);
+  std::swap(entries_, new_entries);
+  lg_cur_size_ = lg_new_size;
+  for (size_t i = 0; i < old_size; ++i) {
+    if (EK()(new_entries[i]) != 0) new_entries[i].~EN();
+  }
+  allocator_.deallocate(new_entries, old_size);
 }
 
 // assumes number of entries > nominal size
