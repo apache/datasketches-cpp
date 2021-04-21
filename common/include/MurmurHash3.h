@@ -16,6 +16,8 @@
 #ifndef _MURMURHASH3_H_
 #define _MURMURHASH3_H_
 
+#include <cstring>
+
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros
 
@@ -78,7 +80,9 @@ typedef struct {
 
 FORCE_INLINE uint64_t getblock64 ( const uint64_t * p, size_t i )
 {
-  return p[i];
+  uint64_t res;
+  memcpy(&res, p + i, sizeof(res));
+  return res;
 }
 
 //-----------------------------------------------------------------------------
