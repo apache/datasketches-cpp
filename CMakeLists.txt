@@ -70,6 +70,13 @@ if(COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   add_link_options(--coverage)
 endif()
 
+option(SANITIZE "Run sanitization checks (g++/clang only)" OFF)
+if(SANITIZE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  add_compile_options(-fsanitize=${SANITIZE})
+  add_link_options(-fsanitize=${SANITIZE})
+endif()
+
+
 # set default build type to Release
 # Derived from: https://blog.kitware.com/cmake-and-the-default-build-type/
 set(default_build_type "Release")
