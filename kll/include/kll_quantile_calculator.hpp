@@ -24,19 +24,27 @@
 
 namespace datasketches {
 
+// forward declaration
+template<typename T, typename C, typename S, typename A> class kll_sketch;
+
 template <typename T, typename C, typename A>
 class kll_quantile_calculator {
   public:
-    // assumes that all levels are sorted including level 0
-    kll_quantile_calculator(const T* items, const uint32_t* levels, uint8_t num_levels, uint64_t n, const A& allocator);
+    using Entry = std::pair<T, uint64_t>;
+    using AllocEntry = typename std::allocator_traits<A>::template rebind_alloc<Entry>;
+    using Container = std::vector<Entry, AllocEntry>;
+    using const_iterator = typename Container::const_iterator;
+
+    template<typename S>
+    kll_quantile_calculator(const kll_sketch<T, C, S, A>& sketch);
+
     T get_quantile(double fraction) const;
+    const_iterator begin() const;
+    const_iterator end() const;
 
   private:
     using AllocU32 = typename std::allocator_traits<A>::template rebind_alloc<uint32_t>;
     using vector_u32 = std::vector<uint32_t, AllocU32>;
-    using Entry = std::pair<T, uint64_t>;
-    using AllocEntry = typename std::allocator_traits<A>::template rebind_alloc<Entry>;
-    using Container = std::vector<Entry, AllocEntry>;
     uint64_t n_;
     vector_u32 levels_;
     Container entries_;

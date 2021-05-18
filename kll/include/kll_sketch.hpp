@@ -156,6 +156,9 @@ template<typename A> using vector_d = std::vector<double, AllocD<A>>;
 template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class kll_sketch {
   public:
+    using value_type = T;
+    using comparator = C;
+
     static const uint8_t DEFAULT_M = 8;
     static const uint16_t DEFAULT_K = 200;
     static const uint16_t MIN_K = DEFAULT_M;
@@ -391,7 +394,7 @@ class kll_sketch {
 
     // This is a convenience alias for users
     // The type returned by the following serialize method
-    typedef vector_u8<A> vector_bytes;
+    using vector_bytes = vector_u8<A>;
 
     /**
      * This method serializes the sketch as a vector of bytes.
@@ -479,6 +482,8 @@ class kll_sketch {
     T* min_value_;
     T* max_value_;
     bool is_level_zero_sorted_;
+
+    friend class kll_quantile_calculator<T, C, A>;
 
     // for deserialization
     class item_deleter;
