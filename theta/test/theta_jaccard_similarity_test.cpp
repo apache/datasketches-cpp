@@ -193,7 +193,7 @@ TEST_CASE("theta jaccard: dissimilarity test custom seed", "[theta_sketch]") {
   for (int i = 0; i < u2; ++i) actual.update(i);
 
   REQUIRE(theta_jaccard_similarity::dissimilarity_test(actual, expected, threshold, seed));
-  REQUIRE_FALSE(theta_jaccard_similarity::dissimilarity_test(actual, actual, threshold));
+  REQUIRE_FALSE(theta_jaccard_similarity::dissimilarity_test(actual, actual, threshold, seed));
 }
 
 } /* namespace datasketches */
