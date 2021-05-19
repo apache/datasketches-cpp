@@ -100,6 +100,28 @@ TEST_CASE("theta jaccard: half overlap estimation mode", "[theta_sketch]") {
   REQUIRE(jc[2] == Approx(0.33).margin(0.01));
 }
 
+TEST_CASE("theta jaccard: half overlap estimation mode custom seed", "[theta_sketch]") {
+  const uint64_t seed = 123;
+  auto sk_a = update_theta_sketch::builder().set_seed(seed).build();
+  auto sk_b = update_theta_sketch::builder().set_seed(seed).build();
+  for (int i = 0; i < 10000; ++i) {
+    sk_a.update(i);
+    sk_b.update(i + 5000);
+  }
+
+  // update sketches
+  auto jc = theta_jaccard_similarity::jaccard(sk_a, sk_b, seed);
+  REQUIRE(jc[0] == Approx(0.33).margin(0.01));
+  REQUIRE(jc[1] == Approx(0.33).margin(0.01));
+  REQUIRE(jc[2] == Approx(0.33).margin(0.01));
+
+  // compact sketches
+  jc = theta_jaccard_similarity::jaccard(sk_a.compact(), sk_b.compact(), seed);
+  REQUIRE(jc[0] == Approx(0.33).margin(0.01));
+  REQUIRE(jc[1] == Approx(0.33).margin(0.01));
+  REQUIRE(jc[2] == Approx(0.33).margin(0.01));
+}
+
 /**
  * The distribution is quite tight, about +/- 0.7%, which is pretty good since the accuracy of the
  * underlying sketch is about +/- 1.56%.
@@ -120,6 +142,23 @@ TEST_CASE("theta jaccard: similarity test", "[theta_sketch]") {
   REQUIRE(theta_jaccard_similarity::similarity_test(actual, actual, threshold));
 }
 
+TEST_CASE("theta jaccard: similarity test custom seed", "[theta_sketch]") {
+  const int8_t min_lg_k = 12;
+  const int u1 = 1 << 20;
+  const int u2 = static_cast<int>(u1 * 0.95);
+  const double threshold = 0.943;
+  const uint64_t seed = 1234;
+
+  auto expected = update_theta_sketch::builder().set_lg_k(min_lg_k).set_seed(seed).build();
+  for (int i = 0; i < u1; ++i) expected.update(i);
+
+  auto actual = update_theta_sketch::builder().set_lg_k(min_lg_k).set_seed(seed).build();
+  for (int i = 0; i < u2; ++i) actual.update(i);
+
+  REQUIRE(theta_jaccard_similarity::similarity_test(actual, expected, threshold, seed));
+  REQUIRE(theta_jaccard_similarity::similarity_test(actual, actual, threshold, seed));
+}
+
 /**
  * The distribution is much looser here, about +/- 14%. This is due to the fact that intersections loose accuracy
  * as the ratio of intersection to the union becomes a small number.
@@ -138,6 +177,23 @@ TEST_CASE("theta jaccard: dissimilarity test", "[theta_sketch]") {
 
   REQUIRE(theta_jaccard_similarity::dissimilarity_test(actual, expected, threshold));
   REQUIRE_FALSE(theta_jaccard_similarity::dissimilarity_test(actual, actual, threshold));
+}
+
+TEST_CASE("theta jaccard: dissimilarity test custom seed", "[theta_sketch]") {
+  const int8_t min_lg_k = 12;
+  const int u1 = 1 << 20;
+  const int u2 = static_cast<int>(u1 * 0.05);
+  const double threshold = 0.061;
+  const uint64_t seed = 1234;
+
+  auto expected = update_theta_sketch::builder().set_lg_k(min_lg_k).set_seed(seed).build();
+  for (int i = 0; i < u1; ++i) expected.update(i);
+
+  auto actual = update_theta_sketch::builder().set_lg_k(min_lg_k).set_seed(seed).build();
+  for (int i = 0; i < u2; ++i) actual.update(i);
+
+  REQUIRE(theta_jaccard_similarity::dissimilarity_test(actual, expected, threshold, seed));
+  REQUIRE_FALSE(theta_jaccard_similarity::dissimilarity_test(actual, actual, threshold, seed));
 }
 
 } /* namespace datasketches */

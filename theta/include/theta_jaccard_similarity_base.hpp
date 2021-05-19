@@ -46,20 +46,21 @@ public:
    *
    * @param sketch_a given sketch A
    * @param sketch_b given sketch B
+   * @param seed for the hash function that was used to create the sketch
    * @return a double array {LowerBound, Estimate, UpperBound} of the Jaccard index.
    * The Upper and Lower bounds are for a confidence interval of 95.4% or +/- 2 standard deviations.
    */
   template<typename SketchA, typename SketchB>
-  static std::array<double, 3> jaccard(const SketchA& sketch_a, const SketchB& sketch_b) {
+  static std::array<double, 3> jaccard(const SketchA& sketch_a, const SketchB& sketch_b, uint64_t seed = DEFAULT_SEED) {
     if (reinterpret_cast<const void*>(&sketch_a) == reinterpret_cast<const void*>(&sketch_b)) return {1, 1, 1};
     if (sketch_a.is_empty() && sketch_b.is_empty()) return {1, 1, 1};
     if (sketch_a.is_empty() || sketch_b.is_empty()) return {0, 0, 0};
 
-    auto union_ab = compute_union(sketch_a, sketch_b);
+    auto union_ab = compute_union(sketch_a, sketch_b, seed);
     if (identical_sets(sketch_a, sketch_b, union_ab)) return {1, 1, 1};
 
     // intersection
-    Intersection i;
+    Intersection i(seed);
     i.update(sketch_a);
     i.update(sketch_b);
     i.update(union_ab); // ensures that intersection is a subset of the union
@@ -76,15 +77,16 @@ public:
    * Returns true if the two given sketches are equivalent.
    * @param sketch_a the given sketch A
    * @param sketch_b the given sketch B
+   * @param seed for the hash function that was used to create the sketch
    * @return true if the two given sketches are exactly equal
    */
   template<typename SketchA, typename SketchB>
-  static bool exactly_equal(const SketchA& sketch_a, const SketchB& sketch_b) {
+  static bool exactly_equal(const SketchA& sketch_a, const SketchB& sketch_b, uint64_t seed = DEFAULT_SEED) {
     if (reinterpret_cast<const void*>(&sketch_a) == reinterpret_cast<const void*>(&sketch_b)) return true;
     if (sketch_a.is_empty() && sketch_b.is_empty()) return true;
     if (sketch_a.is_empty() || sketch_b.is_empty()) return false;
 
-    auto union_ab = compute_union(sketch_a, sketch_b);
+    auto union_ab = compute_union(sketch_a, sketch_b, seed);
     if (identical_sets(sketch_a, sketch_b, union_ab)) return true;
     return false;
   }
@@ -99,12 +101,13 @@ public:
    * @param actual the sketch to be tested
    * @param expected the reference sketch that is considered to be correct
    * @param threshold a real value between zero and one
+   * @param seed for the hash function that was used to create the sketch
    * @return true if the similarity of the two sketches is greater than the given threshold
    * with at least 97.7% confidence
    */
   template<typename SketchA, typename SketchB>
-  static bool similarity_test(const SketchA& actual, const SketchB& expected, double threshold) {
-    auto jc = jaccard(actual, expected);
+  static bool similarity_test(const SketchA& actual, const SketchB& expected, double threshold, uint64_t seed = DEFAULT_SEED) {
+    auto jc = jaccard(actual, expected, seed);
     return jc[0] >= threshold;
   }
 
@@ -118,23 +121,24 @@ public:
    * @param actual the sketch to be tested
    * @param expected the reference sketch that is considered to be correct
    * @param threshold a real value between zero and one
+   * @param seed for the hash function that was used to create the sketch
    * @return true if the dissimilarity of the two sketches is greater than the given threshold
    * with at least 97.7% confidence
    */
   template<typename SketchA, typename SketchB>
-  static bool dissimilarity_test(const SketchA& actual, const SketchB& expected, double threshold) {
-    auto jc = jaccard(actual, expected);
+  static bool dissimilarity_test(const SketchA& actual, const SketchB& expected, double threshold, uint64_t seed = DEFAULT_SEED) {
+    auto jc = jaccard(actual, expected, seed);
     return jc[2] <= threshold;
   }
 
 private:
 
   template<typename SketchA, typename SketchB>
-  static typename Union::CompactSketch compute_union(const SketchA& sketch_a, const SketchB& sketch_b) {
+  static typename Union::CompactSketch compute_union(const SketchA& sketch_a, const SketchB& sketch_b, uint64_t seed) {
     const auto count_a = sketch_a.get_num_retained();
     const auto count_b = sketch_b.get_num_retained();
     const uint8_t lg_k = std::min(std::max(log2(ceiling_power_of_2(count_a + count_b)), theta_constants::MIN_LG_K), theta_constants::MAX_LG_K);
-    auto u = typename Union::builder().set_lg_k(lg_k).build();
+    auto u = typename Union::builder().set_lg_k(lg_k).set_seed(seed).build();
     u.update(sketch_a);
     u.update(sketch_b);
     return u.get_result(false);
