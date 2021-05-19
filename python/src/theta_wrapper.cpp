@@ -64,8 +64,8 @@ compact_theta_sketch compact_theta_sketch_deserialize(py::bytes skBytes, uint64_
   return compact_theta_sketch::deserialize(skStr.c_str(), skStr.length(), seed);
 }
 
-py::list theta_jaccard_sim_computation(const theta_sketch& sketch_a, const theta_sketch& sketch_b) {
-  return py::cast(theta_jaccard_similarity::jaccard(sketch_a, sketch_b));
+py::list theta_jaccard_sim_computation(const theta_sketch& sketch_a, const theta_sketch& sketch_b, uint64_t seed) {
+  return py::cast(theta_jaccard_similarity::jaccard(sketch_a, sketch_b, seed));
 }
 
 }
