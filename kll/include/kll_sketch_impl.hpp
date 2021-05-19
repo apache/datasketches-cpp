@@ -771,7 +771,7 @@ std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantil
   using AllocCalc = typename std::allocator_traits<A>::template rebind_alloc<kll_quantile_calculator<T, C, A>>;
   AllocCalc alloc(allocator_);
   std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> quantile_calculator(
-    new (alloc.allocate(1)) kll_quantile_calculator<T, C, A>(items_, levels_.data(), num_levels_, n_, allocator_),
+    new (alloc.allocate(1)) kll_quantile_calculator<T, C, A>(*this),
     [&alloc](kll_quantile_calculator<T, C, A>* ptr){ ptr->~kll_quantile_calculator<T, C, A>(); alloc.deallocate(ptr, 1); }
   );
   return quantile_calculator;
