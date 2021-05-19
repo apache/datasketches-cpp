@@ -153,18 +153,18 @@ void init_theta(py::module &m) {
   
   py::class_<theta_jaccard_similarity>(m, "theta_jaccard_similarity")
      .def_static("jaccard", &dspy::theta_jaccard_sim_computation,
-                 py::arg("sketch_a"), py::arg("sketch_b"),
+                 py::arg("sketch_a"), py::arg("sketch_b"), py::arg("seed")=DEFAULT_SEED,
                  "Returns a list with {lower_bound, estimate, upper_bound} of the Jaccard similarity between sketches")
      .def_static("exactly_equal", &theta_jaccard_similarity::exactly_equal<const theta_sketch&, const theta_sketch&>,
-                 py::arg("sketch_a"), py::arg("sketch_b"),
+                 py::arg("sketch_a"), py::arg("sketch_b"), py::arg("seed")=DEFAULT_SEED,
                  "Returns True if sketch_a and sketch_b are equivalent, otherwise False")
      .def_static("similarity_test", &theta_jaccard_similarity::similarity_test<const theta_sketch&, const theta_sketch&>,
-                 py::arg("actual"), py::arg("expected"), py::arg("threshold"),
+                 py::arg("actual"), py::arg("expected"), py::arg("threshold"), py::arg("seed")=DEFAULT_SEED,
                  "Tests similarity of an actual sketch against an expected sketch. Computers the lower bound of the Jaccard "
                  "index J_{LB} of the actual and expected sketches. If J_{LB} >= threshold, then the sketches are considered "
                  "to be similar sith a confidence of 97.7% and returns True, otherwise False.")
      .def_static("dissimilarity_test", &theta_jaccard_similarity::dissimilarity_test<const theta_sketch&, const theta_sketch&>,
-                 py::arg("actual"), py::arg("expected"), py::arg("threshold"),
+                 py::arg("actual"), py::arg("expected"), py::arg("threshold"), py::arg("seed")=DEFAULT_SEED,
                  "Tests dissimilarity of an actual sketch against an expected sketch. Computers the lower bound of the Jaccard "
                  "index J_{UB} of the actual and expected sketches. If J_{UB} <= threshold, then the sketches are considered "
                  "to be dissimilar sith a confidence of 97.7% and returns True, otherwise False.")            
