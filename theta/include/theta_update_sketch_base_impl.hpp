@@ -141,8 +141,8 @@ auto theta_update_sketch_base<EN, EK, A>::find(uint64_t key) const -> std::pair<
 
 template<typename EN, typename EK, typename A>
 auto theta_update_sketch_base<EN, EK, A>::find(EN* entries, uint8_t lg_size, uint64_t key) -> std::pair<iterator, bool> {
-  const size_t size = 1 << lg_size;
-  const size_t mask = size - 1;
+  const uint32_t size = 1 << lg_size;
+  const uint32_t mask = size - 1;
   const uint32_t stride = get_stride(key, lg_size);
   uint32_t index = static_cast<uint32_t>(key) & mask;
   // search for duplicate or zero
