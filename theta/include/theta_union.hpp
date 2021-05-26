@@ -35,13 +35,13 @@ public:
   using CompactSketch = compact_theta_sketch_alloc<Allocator>;
   using resize_factor = theta_constants::resize_factor;
 
-  struct pass_through_policy {
-    uint64_t operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
+  struct nop_policy {
+    void operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
+      unused(internal_entry);
       unused(incoming_entry);
-      return internal_entry;
     }
   };
-  using State = theta_union_base<Entry, ExtractKey, pass_through_policy, Sketch, CompactSketch, Allocator>;
+  using State = theta_union_base<Entry, ExtractKey, nop_policy, Sketch, CompactSketch, Allocator>;
 
   // No constructor here. Use builder instead.
   class builder;

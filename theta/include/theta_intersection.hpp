@@ -41,6 +41,11 @@ public:
   };
   using State = theta_intersection_base<Entry, ExtractKey, pass_through_policy, Sketch, CompactSketch, Allocator>;
 
+  /*
+   * Constructor
+   * @param seed for the hash function that was used to create the sketch
+   * @param allocator to use for allocating and deallocating memory
+   */
   explicit theta_intersection_alloc(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**

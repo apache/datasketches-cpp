@@ -232,10 +232,10 @@ void theta_update_sketch_base<EN, EK, A>::rebuild() {
   const size_t num_old_entries = num_entries_;
   entries_ = allocator_.allocate(size);
   for (size_t i = 0; i < size; ++i) EK()(entries_[i]) = 0;
-  num_entries_ = 0;
+  num_entries_ = nominal_size;
   // relies on consolidating non-empty entries to the front
   for (size_t i = 0; i < nominal_size; ++i) {
-    insert(find(EK()(old_entries[i])).first, std::move(old_entries[i])); // consider a special insert with no comparison
+    new (find(EK()(old_entries[i])).first) EN(std::move(old_entries[i]));
     old_entries[i].~EN();
   }
   for (size_t i = nominal_size; i < num_old_entries; ++i) old_entries[i].~EN();
