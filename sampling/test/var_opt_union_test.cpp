@@ -40,8 +40,8 @@ static constexpr double EPS = 1e-13;
 
 static var_opt_sketch<int> create_unweighted_sketch(uint32_t k, uint64_t n) {
   var_opt_sketch<int> sk(k);
-  for (int i = 0; i < n; ++i) {
-    sk.update(i, 1.0);
+  for (uint64_t i = 0; i < n; ++i) {
+    sk.update(static_cast<int>(i), 1.0);
   }
   return sk;
 }
@@ -193,7 +193,7 @@ TEST_CASE("varopt union: two exact sketches", "[var_opt_union]") {
   u.update(sk2);
 
   var_opt_sketch<int> result = u.get_result();
-  REQUIRE(result.get_n() == 2 * n);
+  REQUIRE(result.get_n() == 2ULL * n);
   REQUIRE(result.get_k() == k);
 }
 
