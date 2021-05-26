@@ -43,7 +43,7 @@ void theta_union_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   if (sketch.get_theta64() < union_theta_) union_theta_ = sketch.get_theta64();
   for (auto& entry: sketch) {
     const uint64_t hash = EK()(entry);
-    if (hash < union_theta_) {
+    if (hash < union_theta_ && hash < table_.theta_) {
       auto result = table_.find(hash);
       if (!result.second) {
         table_.insert(result.first, conditional_forward<SS>(entry));

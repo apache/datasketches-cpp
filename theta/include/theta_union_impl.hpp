@@ -24,7 +24,7 @@ namespace datasketches {
 
 template<typename A>
 theta_union_alloc<A>::theta_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const A& allocator):
-state_(lg_cur_size, lg_nom_size, rf, theta, seed, pass_through_policy(), allocator)
+state_(lg_cur_size, lg_nom_size, rf, theta, seed, nop_policy(), allocator)
 {}
 
 template<typename A>
