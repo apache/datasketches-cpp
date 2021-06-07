@@ -24,7 +24,7 @@ namespace datasketches {
 
 template<typename A>
 theta_intersection_alloc<A>::theta_intersection_alloc(uint64_t seed, const A& allocator):
-state_(seed, pass_through_policy(), allocator)
+state_(seed, nop_policy(), allocator)
 {}
 
 template<typename A>
