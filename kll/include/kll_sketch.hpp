@@ -387,6 +387,33 @@ class kll_sketch {
     size_t get_serialized_size_bytes() const;
 
     /**
+     * Returns upper bound on the serialized size of a sketch given a parameter <em>k</em> and stream
+     * length. The resulting size is an overestimate to make sure actual sketches don't exceed it.
+     * This method can be used if allocation of storage is necessary beforehand, but it is not
+     * optimal.
+     * This method is for arithmetic types (integral and floating point)
+     * @param k parameter that controls size of the sketch and accuracy of estimates
+     * @param n stream length
+     * @return upper bound on the serialized size
+     */
+    template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+    static size_t get_max_serialized_size_bytes(uint16_t k, uint64_t n);
+
+    /**
+     * Returns upper bound on the serialized size of a sketch given a parameter <em>k</em> and stream
+     * length. The resulting size is an overestimate to make sure actual sketches don't exceed it.
+     * This method can be used if allocation of storage is necessary beforehand, but it is not
+     * optimal.
+     * This method is for all other non-arithmetic types, and it takes a max size of an item as input.
+     * @param k parameter that controls size of the sketch and accuracy of estimates
+     * @param n stream length
+     * @param max_item_size_bytes maximum size of an item in bytes
+     * @return upper bound on the serialized size
+     */
+    template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+    static size_t get_max_serialized_size_bytes(uint16_t k, uint64_t n, size_t max_item_size_bytes);
+
+    /**
      * This method serializes the sketch into a given stream in a binary form
      * @param os output stream
      */
