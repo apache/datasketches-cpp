@@ -33,13 +33,13 @@ public:
   using Sketch = theta_sketch_alloc<Allocator>;
   using CompactSketch = compact_theta_sketch_alloc<Allocator>;
 
-  struct pass_through_policy {
-    uint64_t operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
+  struct nop_policy {
+    void operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
       unused(incoming_entry);
-      return internal_entry;
+      unused(internal_entry);
     }
   };
-  using State = theta_intersection_base<Entry, ExtractKey, pass_through_policy, Sketch, CompactSketch, Allocator>;
+  using State = theta_intersection_base<Entry, ExtractKey, nop_policy, Sketch, CompactSketch, Allocator>;
 
   /*
    * Constructor
