@@ -384,6 +384,26 @@ size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes() const {
   return size;
 }
 
+// implementation for fixed-size arithmetic types (integral and floating point)
+template<typename T, typename C, typename S, typename A>
+template<typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
+size_t kll_sketch<T, C, S, A>::get_max_serialized_size_bytes(uint16_t k, uint64_t n) {
+  const uint8_t num_levels = kll_helper::ub_on_num_levels(n);
+  const uint32_t max_num_retained = kll_helper::compute_total_capacity(k, DEFAULT_M, num_levels);
+  // the last integer in the levels_ array is not serialized because it can be derived
+  return DATA_START + num_levels * sizeof(uint32_t) + (max_num_retained + 2) * sizeof(TT);
+}
+
+// implementation for all other types
+template<typename T, typename C, typename S, typename A>
+template<typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
+size_t kll_sketch<T, C, S, A>::get_max_serialized_size_bytes(uint16_t k, uint64_t n, size_t max_item_size_bytes) {
+  const uint8_t num_levels = kll_helper::ub_on_num_levels(n);
+  const uint32_t max_num_retained = kll_helper::compute_total_capacity(k, DEFAULT_M, num_levels);
+  // the last integer in the levels_ array is not serialized because it can be derived
+  return DATA_START + num_levels * sizeof(uint32_t) + (max_num_retained + 2) * max_item_size_bytes;
+}
+
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::serialize(std::ostream& os) const {
   const bool is_single_item = n_ == 1;

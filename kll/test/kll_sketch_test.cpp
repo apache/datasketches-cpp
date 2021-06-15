@@ -686,6 +686,22 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     }
   }
 
+  SECTION("max serialized size arithmetic type") {
+    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 10) == 1968);
+    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 100) == 2316);
+    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 1000) == 2440);
+    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 1000000) == 2800);
+    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 1000000000) == 3160);
+  }
+
+  SECTION("max serialized size non-arithmetic type") {
+    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 10, 4) == 1968);
+    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 100, 4) == 2316);
+    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 1000, 4) == 2440);
+    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000, 4) == 2800);
+    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000000, 4) == 3160);
+  }
+
   // cleanup
   if (test_allocator_total_bytes != 0) {
     REQUIRE(test_allocator_total_bytes == 0);
