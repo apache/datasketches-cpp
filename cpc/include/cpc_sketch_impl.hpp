@@ -53,9 +53,7 @@ first_interesting_column(0),
 kxp(1 << lg_k),
 hip_est_accum(0)
 {
-  if (lg_k < CPC_MIN_LG_K || lg_k > CPC_MAX_LG_K) {
-    throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
-  }
+  check_lg_k(lg_k);
 }
 
 template<typename A>
@@ -679,6 +677,21 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
   get_compressor<A>().uncompress(compressed, uncompressed, lg_k, num_coupons);
   return cpc_sketch_alloc(lg_k, num_coupons, first_interesting_column, std::move(uncompressed.table),
       std::move(uncompressed.window), has_hip, kxp, hip_est_accum, seed);
+}
+
+template<typename A>
+size_t cpc_sketch_alloc<A>::get_max_serialized_size_bytes(uint8_t lg_k) {
+  check_lg_k(lg_k);
+  if (lg_k <= 19) return empirical_max_size_bytes[lg_k - 4] + 40;
+  const uint32_t k = 1 << lg_k;
+  return (int) (0.6 * k) + 40; // 0.6 = 4.8 / 8.0
+}
+
+template<typename A>
+void cpc_sketch_alloc<A>::check_lg_k(uint8_t lg_k) {
+  if (lg_k < CPC_MIN_LG_K || lg_k > CPC_MAX_LG_K) {
+    throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
+  }
 }
 
 template<typename A>

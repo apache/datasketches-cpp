@@ -235,6 +235,17 @@ public:
    */
   static cpc_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
 
+  /**
+   * The actual size of a compressed CPC sketch has a small random variance, but the following
+   * empirically measured size should be large enough for at least 99.9 percent of sketches.
+   *
+   * <p>For small values of <i>n</i> the size can be much smaller.
+   *
+   * @param lg_k the given value of lg_k.
+   * @return the estimated maximum compressed serialized size of a sketch.
+   */
+  static size_t get_max_serialized_size_bytes(uint8_t lg_k);
+
   // for internal use
   uint32_t get_num_coupons() const;
 
@@ -247,6 +258,31 @@ private:
   static const uint8_t FAMILY = 16;
 
   enum flags { IS_BIG_ENDIAN, IS_COMPRESSED, HAS_HIP, HAS_TABLE, HAS_WINDOW };
+
+  /*
+   * These empirical values for the 99.9th percentile of size in bytes were measured using 100,000
+   * trials. The value for each trial is the maximum of 5*16=80 measurements that were equally
+   * spaced over values of the quantity C/K between 3.0 and 8.0. This table does not include the
+   * worst-case space for the preamble, which is added by the function.
+   */
+  static constexpr size_t empirical_max_size_bytes[]  = {
+      24,     // lgK = 4
+      36,     // lgK = 5
+      56,     // lgK = 6
+      100,    // lgK = 7
+      180,    // lgK = 8
+      344,    // lgK = 9
+      660,    // lgK = 10
+      1292,   // lgK = 11
+      2540,   // lgK = 12
+      5020,   // lgK = 13
+      9968,   // lgK = 14
+      19836,  // lgK = 15
+      39532,  // lgK = 16
+      78880,  // lgK = 17
+      157516, // lgK = 18
+      314656  // lgK = 19
+  };
 
   // Note: except for brief transitional moments, these sketches always obey
   // the following strict mapping between the flavor of a sketch and the
@@ -302,6 +338,8 @@ private:
   static uint8_t get_preamble_ints(uint32_t num_coupons, bool has_hip, bool has_table, bool has_window);
   inline void write_hip(std::ostream& os) const;
   inline size_t copy_hip_to_mem(void* dst) const;
+
+  static void check_lg_k(uint8_t lg_k);
 
   friend cpc_compressor<A>;
   friend cpc_union_alloc<A>;
