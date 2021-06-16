@@ -686,22 +686,22 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
  * worst-case space for the preamble, which is added by the function.
  */
 static const size_t CPC_EMPIRICAL_MAX_SIZE_BYTES[]  = {
-    24,     // lgK = 4
-    36,     // lgK = 5
-    56,     // lgK = 6
-    100,    // lgK = 7
-    180,    // lgK = 8
-    344,    // lgK = 9
-    660,    // lgK = 10
-    1292,   // lgK = 11
-    2540,   // lgK = 12
-    5020,   // lgK = 13
-    9968,   // lgK = 14
-    19836,  // lgK = 15
-    39532,  // lgK = 16
-    78880,  // lgK = 17
-    157516, // lgK = 18
-    314656  // lgK = 19
+    24,     // lg_k = 4
+    36,     // lg_k = 5
+    56,     // lg_k = 6
+    100,    // lg_k = 7
+    180,    // lg_k = 8
+    344,    // lg_k = 9
+    660,    // lg_k = 10
+    1292,   // lg_k = 11
+    2540,   // lg_k = 12
+    5020,   // lg_k = 13
+    9968,   // lg_k = 14
+    19836,  // lg_k = 15
+    39532,  // lg_k = 16
+    78880,  // lg_k = 17
+    157516, // lg_k = 18
+    314656  // lg_k = 19
 };
 
 template<typename A>
