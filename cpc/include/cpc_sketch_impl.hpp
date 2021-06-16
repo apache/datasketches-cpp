@@ -679,10 +679,35 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
       std::move(uncompressed.window), has_hip, kxp, hip_est_accum, seed);
 }
 
+/*
+ * These empirical values for the 99.9th percentile of size in bytes were measured using 100,000
+ * trials. The value for each trial is the maximum of 5*16=80 measurements that were equally
+ * spaced over values of the quantity C/K between 3.0 and 8.0. This table does not include the
+ * worst-case space for the preamble, which is added by the function.
+ */
+static const size_t CPC_EMPIRICAL_MAX_SIZE_BYTES[]  = {
+    24,     // lgK = 4
+    36,     // lgK = 5
+    56,     // lgK = 6
+    100,    // lgK = 7
+    180,    // lgK = 8
+    344,    // lgK = 9
+    660,    // lgK = 10
+    1292,   // lgK = 11
+    2540,   // lgK = 12
+    5020,   // lgK = 13
+    9968,   // lgK = 14
+    19836,  // lgK = 15
+    39532,  // lgK = 16
+    78880,  // lgK = 17
+    157516, // lgK = 18
+    314656  // lgK = 19
+};
+
 template<typename A>
 size_t cpc_sketch_alloc<A>::get_max_serialized_size_bytes(uint8_t lg_k) {
   check_lg_k(lg_k);
-  if (lg_k <= 19) return empirical_max_size_bytes[lg_k - 4] + 40;
+  if (lg_k <= 19) return CPC_EMPIRICAL_MAX_SIZE_BYTES[lg_k - 4] + 40;
   const uint32_t k = 1 << lg_k;
   return (int) (0.6 * k) + 40; // 0.6 = 4.8 / 8.0
 }
