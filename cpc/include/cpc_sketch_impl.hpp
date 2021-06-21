@@ -685,6 +685,7 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
  * spaced over values of the quantity C/K between 3.0 and 8.0. This table does not include the
  * worst-case space for the preamble, which is added by the function.
  */
+static const uint8_t CPC_EMPIRICAL_SIZE_MAX_LGK = 19;
 static const size_t CPC_EMPIRICAL_MAX_SIZE_BYTES[]  = {
     24,     // lg_k = 4
     36,     // lg_k = 5
@@ -703,13 +704,15 @@ static const size_t CPC_EMPIRICAL_MAX_SIZE_BYTES[]  = {
     157516, // lg_k = 18
     314656  // lg_k = 19
 };
+static const double CPC_EMPIRICAL_MAX_SIZE_FACTOR = 0.6; // 0.6 = 4.8 / 8.0
+static const size_t CPC_MAX_PREAMBLE_SIZE_BYTES = 40;
 
 template<typename A>
 size_t cpc_sketch_alloc<A>::get_max_serialized_size_bytes(uint8_t lg_k) {
   check_lg_k(lg_k);
-  if (lg_k <= 19) return CPC_EMPIRICAL_MAX_SIZE_BYTES[lg_k - 4] + 40;
+  if (lg_k <= CPC_EMPIRICAL_SIZE_MAX_LGK) return CPC_EMPIRICAL_MAX_SIZE_BYTES[lg_k - CPC_MIN_LG_K] + CPC_MAX_PREAMBLE_SIZE_BYTES;
   const uint32_t k = 1 << lg_k;
-  return (int) (0.6 * k) + 40; // 0.6 = 4.8 / 8.0
+  return (int) (CPC_EMPIRICAL_MAX_SIZE_FACTOR * k) + CPC_MAX_PREAMBLE_SIZE_BYTES;
 }
 
 template<typename A>
