@@ -53,9 +53,7 @@ first_interesting_column(0),
 kxp(1 << lg_k),
 hip_est_accum(0)
 {
-  if (lg_k < CPC_MIN_LG_K || lg_k > CPC_MAX_LG_K) {
-    throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
-  }
+  check_lg_k(lg_k);
 }
 
 template<typename A>
@@ -679,6 +677,49 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
   get_compressor<A>().uncompress(compressed, uncompressed, lg_k, num_coupons);
   return cpc_sketch_alloc(lg_k, num_coupons, first_interesting_column, std::move(uncompressed.table),
       std::move(uncompressed.window), has_hip, kxp, hip_est_accum, seed);
+}
+
+/*
+ * These empirical values for the 99.9th percentile of size in bytes were measured using 100,000
+ * trials. The value for each trial is the maximum of 5*16=80 measurements that were equally
+ * spaced over values of the quantity C/K between 3.0 and 8.0. This table does not include the
+ * worst-case space for the preamble, which is added by the function.
+ */
+static const uint8_t CPC_EMPIRICAL_SIZE_MAX_LGK = 19;
+static const size_t CPC_EMPIRICAL_MAX_SIZE_BYTES[]  = {
+    24,     // lg_k = 4
+    36,     // lg_k = 5
+    56,     // lg_k = 6
+    100,    // lg_k = 7
+    180,    // lg_k = 8
+    344,    // lg_k = 9
+    660,    // lg_k = 10
+    1292,   // lg_k = 11
+    2540,   // lg_k = 12
+    5020,   // lg_k = 13
+    9968,   // lg_k = 14
+    19836,  // lg_k = 15
+    39532,  // lg_k = 16
+    78880,  // lg_k = 17
+    157516, // lg_k = 18
+    314656  // lg_k = 19
+};
+static const double CPC_EMPIRICAL_MAX_SIZE_FACTOR = 0.6; // 0.6 = 4.8 / 8.0
+static const size_t CPC_MAX_PREAMBLE_SIZE_BYTES = 40;
+
+template<typename A>
+size_t cpc_sketch_alloc<A>::get_max_serialized_size_bytes(uint8_t lg_k) {
+  check_lg_k(lg_k);
+  if (lg_k <= CPC_EMPIRICAL_SIZE_MAX_LGK) return CPC_EMPIRICAL_MAX_SIZE_BYTES[lg_k - CPC_MIN_LG_K] + CPC_MAX_PREAMBLE_SIZE_BYTES;
+  const uint32_t k = 1 << lg_k;
+  return (int) (CPC_EMPIRICAL_MAX_SIZE_FACTOR * k) + CPC_MAX_PREAMBLE_SIZE_BYTES;
+}
+
+template<typename A>
+void cpc_sketch_alloc<A>::check_lg_k(uint8_t lg_k) {
+  if (lg_k < CPC_MIN_LG_K || lg_k > CPC_MAX_LG_K) {
+    throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
+  }
 }
 
 template<typename A>

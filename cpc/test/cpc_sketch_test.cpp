@@ -398,4 +398,9 @@ TEST_CASE("cpc sketch: update string equivalence", "[cpc_sketch]") {
   REQUIRE(sketch.get_estimate() == Approx(1).margin(RELATIVE_ERROR_FOR_LG_K_11));
 }
 
+TEST_CASE("cpc sketch: max serialized size", "[cpc_sketch]") {
+  REQUIRE(cpc_sketch::get_max_serialized_size_bytes(4) == 24 + 40);
+  REQUIRE(cpc_sketch::get_max_serialized_size_bytes(26) == static_cast<size_t>((0.6 * (1 << 26)) + 40));
+}
+
 } /* namespace datasketches */
