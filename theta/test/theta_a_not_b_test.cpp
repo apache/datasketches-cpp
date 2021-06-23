@@ -167,6 +167,70 @@ TEST_CASE("theta a-not-b: estimation mode half overlap", "[theta_a_not_b]") {
   REQUIRE(result.get_estimate() == Approx(5000).margin(5000 * 0.02));
 }
 
+TEST_CASE("theta a-not-b: estimation mode half overlap wrapped compact", "[theta_a_not_b]") {
+  update_theta_sketch a = update_theta_sketch::builder().build();
+  int value = 0;
+  for (int i = 0; i < 10000; i++) a.update(value++);
+  auto bytes_a = a.compact().serialize();
+
+  update_theta_sketch b = update_theta_sketch::builder().build();
+  value = 5000;
+  for (int i = 0; i < 10000; i++) b.update(value++);
+  auto bytes_b = b.compact().serialize();
+
+  theta_a_not_b a_not_b;
+
+  auto result = a_not_b.compute(
+    wrapped_compact_theta_sketch::wrap(bytes_a.data(), bytes_a.size()),
+    wrapped_compact_theta_sketch::wrap(bytes_b.data(), bytes_b.size())
+  );
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE(result.is_estimation_mode());
+  REQUIRE(result.get_estimate() == Approx(5000).margin(5000 * 0.02));
+}
+
+template<typename V>
+std::vector<char> foo(V&& v) {
+  std::vector<char> vv;
+  std::copy(forward_begin(v), forward_end(v), std::back_inserter(vv));
+  return vv;
+}
+
+class vec {
+public:
+  vec(std::vector<char>& other) {
+    for (auto c: other) v.push_back(c);
+  }
+  std::vector<char>::iterator begin() { return v.begin(); }
+  std::vector<char>::iterator end() { return v.end(); }
+private:
+  std::vector<char> v;
+};
+
+class const_vec {
+public:
+  const_vec(const char* s, size_t size): ptr(s), sz(size) {}
+  const char* begin() const { return ptr; }
+  const char* end() const { return ptr + sz; }
+private:
+  const char* ptr;
+  size_t sz;
+};
+
+const std::vector<char> clone(std::vector<char>& other) {
+  return std::vector<char>(other);
+}
+
+TEST_CASE() {
+  std::string s("abcd");
+  std::vector<char> v1;
+  for (auto c: s) v1.push_back(c);
+  REQUIRE(v1.size() == 4);
+  //auto v2 = foo(clone(v1));
+  auto v2 = foo(const_vec(v1.data(), v1.size()));
+  REQUIRE(v2.size() == 4);
+}
+
 TEST_CASE("theta a-not-b: estimation mode disjoint", "[theta_a_not_b]") {
   update_theta_sketch a = update_theta_sketch::builder().build();
   int value = 0;
