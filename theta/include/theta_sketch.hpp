@@ -311,7 +311,8 @@ public:
   // - as a result of a set operation
   // - by deserializing a previously serialized compact sketch
 
-  compact_theta_sketch_alloc(const Base& other, bool ordered);
+  template<typename Other>
+  compact_theta_sketch_alloc(const Other& other, bool ordered);
   compact_theta_sketch_alloc(const compact_theta_sketch_alloc&) = default;
   compact_theta_sketch_alloc(compact_theta_sketch_alloc&&) noexcept = default;
   virtual ~compact_theta_sketch_alloc() = default;
@@ -387,10 +388,50 @@ public:
     update_theta_sketch_alloc build() const;
 };
 
+// This is to wrap a buffer containing a serialized compact sketch and use it in a set operation avoiding some cost of deserialization.
+// It does not take the ownership of the buffer.
+
+template<typename Allocator = std::allocator<uint64_t>>
+class wrapped_compact_theta_sketch_alloc {
+public:
+  using const_iterator = const uint64_t*;
+
+  Allocator get_allocator() const;
+  bool is_empty() const;
+  bool is_ordered() const;
+  uint64_t get_theta64() const;
+  uint32_t get_num_retained() const;
+  uint16_t get_seed_hash() const;
+
+  const_iterator begin() const;
+  const_iterator end() const;
+
+  /**
+   * This method wraps a serialized compact sketch as an array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param seed the seed for the hash function that was used to create the sketch
+   * @return an instance of the sketch
+   */
+  static const wrapped_compact_theta_sketch_alloc wrap(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, bool dump_on_error = false);
+
+private:
+  bool is_empty_;
+  bool is_ordered_;
+  uint16_t seed_hash_;
+  uint32_t num_entries_;
+  uint64_t theta_;
+  const uint64_t* entries_;
+
+  wrapped_compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint32_t num_entries,
+      uint64_t theta, const uint64_t* entries);
+};
+
 // aliases with default allocator for convenience
 using theta_sketch = theta_sketch_alloc<std::allocator<uint64_t>>;
 using update_theta_sketch = update_theta_sketch_alloc<std::allocator<uint64_t>>;
 using compact_theta_sketch = compact_theta_sketch_alloc<std::allocator<uint64_t>>;
+using wrapped_compact_theta_sketch = wrapped_compact_theta_sketch_alloc<std::allocator<uint64_t>>;
 
 } /* namespace datasketches */
 

@@ -26,6 +26,7 @@
 #include "serde.hpp"
 #include "binomial_bounds.hpp"
 #include "theta_helpers.hpp"
+#include "compact_theta_sketch_parser.hpp"
 
 namespace datasketches {
 
@@ -246,7 +247,8 @@ update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::builder::build() cons
 // compact sketch
 
 template<typename A>
-compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(const Base& other, bool ordered):
+template<typename Other>
+compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(const Other& other, bool ordered):
 is_empty_(other.is_empty()),
 is_ordered_(other.is_ordered() || ordered),
 seed_hash_(other.get_seed_hash()),
@@ -472,7 +474,65 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const v
   return compact_theta_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries));
 }
 
+// wrapped compact sketch
+
+template<typename A>
+wrapped_compact_theta_sketch_alloc<A>::wrapped_compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint32_t num_entries,
+    uint64_t theta, const uint64_t* entries):
+is_empty_(is_empty),
+is_ordered_(is_ordered),
+seed_hash_(seed_hash),
+num_entries_(num_entries),
+theta_(theta),
+entries_(entries)
+{}
+
+template<typename A>
+const wrapped_compact_theta_sketch_alloc<A> wrapped_compact_theta_sketch_alloc<A>::wrap(const void* bytes, size_t size, uint64_t seed, bool dump_on_error) {
+  auto data = compact_theta_sketch_parser<true>::parse(bytes, size, seed, dump_on_error);
+  return wrapped_compact_theta_sketch_alloc(data.is_empty, data.is_ordered, data.seed_hash, data.num_entries, data.theta, data.entries);
+}
+
+template<typename A>
+A wrapped_compact_theta_sketch_alloc<A>::get_allocator() const {
+  return A();
+}
+
+template<typename A>
+bool wrapped_compact_theta_sketch_alloc<A>::is_empty() const {
+  return is_empty_;
+}
+
+template<typename A>
+bool wrapped_compact_theta_sketch_alloc<A>::is_ordered() const {
+  return is_ordered_;
+}
+
+template<typename A>
+uint64_t wrapped_compact_theta_sketch_alloc<A>::get_theta64() const {
+  return theta_;
+}
+
+template<typename A>
+uint32_t wrapped_compact_theta_sketch_alloc<A>::get_num_retained() const {
+  return static_cast<uint32_t>(num_entries_);
+}
+
+template<typename A>
+uint16_t wrapped_compact_theta_sketch_alloc<A>::get_seed_hash() const {
+  return seed_hash_;
+}
+
+template<typename A>
+auto wrapped_compact_theta_sketch_alloc<A>::begin() const -> const_iterator {
+  return entries_;
+}
+
+template<typename A>
+auto wrapped_compact_theta_sketch_alloc<A>::end() const -> const_iterator {
+  return entries_ + num_entries_;
+}
+
 } /* namespace datasketches */
 
 #endif
-

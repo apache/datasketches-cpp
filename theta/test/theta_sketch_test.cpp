@@ -238,4 +238,40 @@ TEST_CASE("theta sketch: deserialize compact single item buffer overrun", "[thet
   REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 }
 
+TEST_CASE("theta sketch: conversion constructor and wrapped compact", "[theta_sketch]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  const int n = 8192;
+  for (int i = 0; i < n; i++) update_sketch.update(i);
+
+  // unordered
+  auto unordered_compact1 = update_sketch.compact(false);
+  compact_theta_sketch unordered_compact2(update_sketch, false);
+  auto it = unordered_compact1.begin();
+  for (auto entry: unordered_compact2) {
+    REQUIRE(*it == entry);
+    ++it;
+  }
+
+  // ordered
+  auto ordered_compact1 = update_sketch.compact();
+  compact_theta_sketch ordered_compact2(update_sketch, true);
+  it = ordered_compact1.begin();
+  for (auto entry: ordered_compact2) {
+    REQUIRE(*it == entry);
+    ++it;
+  }
+
+  // wrapped compact
+  auto bytes = ordered_compact1.serialize();
+  auto ordered_compact3 = wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size());
+  it = ordered_compact1.begin();
+  for (auto entry: ordered_compact3) {
+    REQUIRE(*it == entry);
+    ++it;
+  }
+
+  // seed mismatch
+  REQUIRE_THROWS_AS(wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size(), 0), std::invalid_argument);
+}
+
 } /* namespace datasketches */

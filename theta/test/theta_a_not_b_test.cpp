@@ -167,6 +167,28 @@ TEST_CASE("theta a-not-b: estimation mode half overlap", "[theta_a_not_b]") {
   REQUIRE(result.get_estimate() == Approx(5000).margin(5000 * 0.02));
 }
 
+TEST_CASE("theta a-not-b: estimation mode half overlap wrapped compact", "[theta_a_not_b]") {
+  update_theta_sketch a = update_theta_sketch::builder().build();
+  int value = 0;
+  for (int i = 0; i < 10000; i++) a.update(value++);
+  auto bytes_a = a.compact().serialize();
+
+  update_theta_sketch b = update_theta_sketch::builder().build();
+  value = 5000;
+  for (int i = 0; i < 10000; i++) b.update(value++);
+  auto bytes_b = b.compact().serialize();
+
+  theta_a_not_b a_not_b;
+
+  auto result = a_not_b.compute(
+    wrapped_compact_theta_sketch::wrap(bytes_a.data(), bytes_a.size()),
+    wrapped_compact_theta_sketch::wrap(bytes_b.data(), bytes_b.size())
+  );
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE(result.is_estimation_mode());
+  REQUIRE(result.get_estimate() == Approx(5000).margin(5000 * 0.02));
+}
+
 TEST_CASE("theta a-not-b: estimation mode disjoint", "[theta_a_not_b]") {
   update_theta_sketch a = update_theta_sketch::builder().build();
   int value = 0;
