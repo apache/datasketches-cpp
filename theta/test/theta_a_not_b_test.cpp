@@ -189,48 +189,6 @@ TEST_CASE("theta a-not-b: estimation mode half overlap wrapped compact", "[theta
   REQUIRE(result.get_estimate() == Approx(5000).margin(5000 * 0.02));
 }
 
-template<typename V>
-std::vector<char> foo(V&& v) {
-  std::vector<char> vv;
-  std::copy(forward_begin(v), forward_end(v), std::back_inserter(vv));
-  return vv;
-}
-
-class vec {
-public:
-  vec(std::vector<char>& other) {
-    for (auto c: other) v.push_back(c);
-  }
-  std::vector<char>::iterator begin() { return v.begin(); }
-  std::vector<char>::iterator end() { return v.end(); }
-private:
-  std::vector<char> v;
-};
-
-class const_vec {
-public:
-  const_vec(const char* s, size_t size): ptr(s), sz(size) {}
-  const char* begin() const { return ptr; }
-  const char* end() const { return ptr + sz; }
-private:
-  const char* ptr;
-  size_t sz;
-};
-
-const std::vector<char> clone(std::vector<char>& other) {
-  return std::vector<char>(other);
-}
-
-TEST_CASE() {
-  std::string s("abcd");
-  std::vector<char> v1;
-  for (auto c: s) v1.push_back(c);
-  REQUIRE(v1.size() == 4);
-  //auto v2 = foo(clone(v1));
-  auto v2 = foo(const_vec(v1.data(), v1.size()));
-  REQUIRE(v2.size() == 4);
-}
-
 TEST_CASE("theta a-not-b: estimation mode disjoint", "[theta_a_not_b]") {
   update_theta_sketch a = update_theta_sketch::builder().build();
   int value = 0;
