@@ -26,9 +26,9 @@
 namespace datasketches {
 
 template<bool dummy>
-auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uint64_t seed) -> compact_theta_sketch_data {
+auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uint64_t seed, bool dump_on_error) -> compact_theta_sketch_data {
   if (size < 8) throw std::invalid_argument("at least 8 bytes expected, actual " + std::to_string(size)
-      + ", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size));
+      + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size)) : ""));
   checker<true>::check_serial_version(reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_SERIAL_VERSION_BYTE], COMPACT_SKETCH_SERIAL_VERSION);
   checker<true>::check_sketch_type(reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_TYPE_BYTE], COMPACT_SKETCH_TYPE);
   uint64_t theta = theta_constants::MAX_THETA;
@@ -49,9 +49,10 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
   const size_t entries_start_u64 = has_theta ? COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 : COMPACT_SKETCH_ENTRIES_EXACT_U64;
   const uint64_t* entries = reinterpret_cast<const uint64_t*>(ptr) + entries_start_u64;
   const size_t expected_size_bytes = (entries_start_u64 + num_entries) * sizeof(uint64_t);
-  if (size < expected_size_bytes)
-    throw std::invalid_argument(std::to_string(expected_size_bytes)
-        + " bytes expected, actual " + std::to_string(size) + ", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size));
+  if (size < expected_size_bytes) {
+    throw std::invalid_argument(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
+        + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size)) : ""));
+  }
   const bool is_ordered = reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_FLAGS_BYTE] & (1 << COMPACT_SKETCH_IS_ORDERED_FLAG);
   return {false, is_ordered, seed_hash, num_entries, theta, entries};
 }

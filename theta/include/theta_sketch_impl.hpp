@@ -488,8 +488,8 @@ entries_(entries)
 {}
 
 template<typename A>
-const wrapped_compact_theta_sketch_alloc<A> wrapped_compact_theta_sketch_alloc<A>::wrap(const void* bytes, size_t size, uint64_t seed) {
-  auto data = compact_theta_sketch_parser<true>::parse(bytes, size, seed);
+const wrapped_compact_theta_sketch_alloc<A> wrapped_compact_theta_sketch_alloc<A>::wrap(const void* bytes, size_t size, uint64_t seed, bool dump_on_error) {
+  auto data = compact_theta_sketch_parser<true>::parse(bytes, size, seed, dump_on_error);
   return wrapped_compact_theta_sketch_alloc(data.is_empty, data.is_ordered, data.seed_hash, data.num_entries, data.theta, data.entries);
 }
 

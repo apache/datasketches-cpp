@@ -413,7 +413,7 @@ public:
    * @param seed the seed for the hash function that was used to create the sketch
    * @return an instance of the sketch
    */
-  static const wrapped_compact_theta_sketch_alloc wrap(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED);
+  static const wrapped_compact_theta_sketch_alloc wrap(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, bool dump_on_error = false);
 
 private:
   bool is_empty_;

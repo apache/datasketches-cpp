@@ -36,7 +36,7 @@ public:
     const uint64_t* entries;
   };
 
-  static compact_theta_sketch_data parse(const void* ptr, size_t size, uint64_t seed);
+  static compact_theta_sketch_data parse(const void* ptr, size_t size, uint64_t seed, bool dump_on_error = false);
 
 private:
   // offsets are in sizeof(type)
