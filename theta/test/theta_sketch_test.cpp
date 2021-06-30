@@ -269,6 +269,9 @@ TEST_CASE("theta sketch: conversion constructor and wrapped compact", "[theta_sk
     REQUIRE(*it == entry);
     ++it;
   }
+
+  // seed mismatch
+  REQUIRE_THROWS_AS(wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size(), 0), std::invalid_argument);
 }
 
 } /* namespace datasketches */
