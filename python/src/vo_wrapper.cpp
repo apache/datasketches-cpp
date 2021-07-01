@@ -32,7 +32,7 @@ namespace python {
 template<typename T>
 py::list vo_sketch_get_samples(const var_opt_sketch<T>& sk) {
   py::list list;
-  for (auto& item : sk) {
+  for (auto item : sk) {
     py::tuple t = py::make_tuple(item.first, item.second);
     list.append(t);
   }
@@ -57,7 +57,7 @@ std::string vo_sketch_to_string(const var_opt_sketch<T>& sk, bool print_items) {
     ss << sk.to_string();
     ss << "### VarOpt Sketch Items" << std::endl;
     int i = 0;
-    for (auto& item : sk) {
+    for (auto item : sk) {
       // item.second is always a double
       // item.first is an arbitrary py::object, so get the value by
       // using internal str() method then casting to C++ std::string
