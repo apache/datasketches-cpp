@@ -30,10 +30,10 @@ class reqTest(unittest.TestCase):
       req.update(0.0)
 
       # 0 should be near the median
-      self.assertAlmostEqual(0.5, req.get_rank(0.0), delta=0.03)
+      self.assertAlmostEqual(0.5, req.get_rank(0.0), delta=0.045)
       
       # the median should be near 0
-      self.assertAlmostEqual(0.0, req.get_quantile(0.5), delta=0.03)
+      self.assertAlmostEqual(0.0, req.get_quantile(0.5), delta=0.045)
 
       # we also track the min/max independently from the rest of the data
       # which lets us know the full observed data range

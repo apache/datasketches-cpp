@@ -39,9 +39,9 @@ class VectorOfKllSketchesTest(unittest.TestCase):
         kll.update(dat)
 
       # 0 should be near the median
-      np.testing.assert_allclose(0.5, kll.get_ranks(0.0), atol=0.025)
+      np.testing.assert_allclose(0.5, kll.get_ranks(0.0), atol=0.035)
       # the median should be near 0
-      np.testing.assert_allclose(0.0, kll.get_quantiles(0.5), atol=0.025)
+      np.testing.assert_allclose(0.0, kll.get_quantiles(0.5), atol=0.035)
       # we also track the min/max independently from the rest of the data
       # which lets us know the full observed data range
       np.testing.assert_allclose(kll.get_min_values(), smin)
@@ -118,9 +118,9 @@ class VectorOfKllSketchesTest(unittest.TestCase):
         kll.update(dat)
 
       # 0 should be near the median
-      np.testing.assert_allclose(0.5, kll.get_ranks(0.0), atol=0.025)
+      np.testing.assert_allclose(0.5, kll.get_ranks(0.0), atol=0.035)
       # the median should be near 0
-      np.testing.assert_allclose(0.0, kll.get_quantiles(0.5), atol=0.025)
+      np.testing.assert_allclose(0.0, kll.get_quantiles(0.5), atol=0.035)
       # we also track the min/max independently from the rest of the data
       # which lets us know the full observed data range
       np.testing.assert_allclose(kll.get_min_values(), smin)
