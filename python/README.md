@@ -26,7 +26,7 @@ If you cloned without `--recursive`, you can add the submodule post-checkout usi
 
 ### Installing
 
-Assuming you have already checked out the library and any dependent submodules, install by simply replacing the lsat
+Assuming you have already checked out the library and any dependent submodules, install by simply replacing the last
 line of the build command with `python setup.py install`.
 
 ### Unit tests
