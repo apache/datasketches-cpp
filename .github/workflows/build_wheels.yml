@@ -36,18 +36,18 @@ jobs:
         with:
           submodules: true
           persist-credentials: false
-	  
+
       - name: Set up Python 3.x
         uses: actions/setup-python@v2
         with:
           python-version: '3.8' # 3.x grabs latest minor version of python3, but not always fully supported (dependencies)
-	  
+           
       - name: Install Python dependencies
         run: python -m pip install --upgrade pip setuptools wheel numpy tox pytest cibuildwheel==2.1.1 twine
-	
+        
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
 
       - uses: actions/upload-artifact@v2
         with:
-	  path: ./wheelhouse/*.whl
+          path: ./wheelhouse/*.whl
