@@ -1,6 +1,12 @@
 name: Build Python Wheels
 
-on: [push, pull_request]
+on:
+  # run when we tag a release
+  release:
+    types:
+      - "created"
+  # also allow manual runs
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
