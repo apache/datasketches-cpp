@@ -1,19 +1,19 @@
 name: Build Python Wheels
 
 on:
+  # allow manual runs
+  workflow_dispatch:
   # run when we tag a release
   release:
     types:
       - "created"
-  # also allow manual runs
-  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.config.name }}
+    name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
