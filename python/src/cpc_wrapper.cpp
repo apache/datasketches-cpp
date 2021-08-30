@@ -53,7 +53,7 @@ void init_cpc(py::module &m) {
   using namespace datasketches;
 
   py::class_<cpc_sketch>(m, "cpc_sketch")
-    .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k")=CPC_DEFAULT_LG_K, py::arg("seed")=DEFAULT_SEED)
+    .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k")=cpc_constants::DEFAULT_LG_K, py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_sketch&>())
     .def("__str__", &cpc_sketch::to_string,
          "Produces a string summary of the sketch")
