@@ -51,18 +51,23 @@ struct subset_summary {
   double total_sketch_weight;
 };
 
-enum resize_factor { X1 = 0, X2, X4, X8 };
-
 template <typename T, typename S, typename A> class var_opt_union; // forward declaration
+
+namespace var_opt_constants {
+    const resize_factor DEFAULT_RESIZE_FACTOR = resize_factor::X8;
+    const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2; 
+}
 
 template <typename T, typename S = serde<T>, typename A = std::allocator<T>>
 class var_opt_sketch {
 
   public:
-    static const resize_factor DEFAULT_RESIZE_FACTOR = X8;
-    static const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2;
+    static const resize_factor DEFAULT_RESIZE_FACTOR = var_opt_constants::DEFAULT_RESIZE_FACTOR;
+    static const uint32_t MAX_K = var_opt_constants::MAX_K;
 
-    explicit var_opt_sketch(uint32_t k, resize_factor rf = DEFAULT_RESIZE_FACTOR, const A& allocator = A());
+    explicit var_opt_sketch(uint32_t k,
+      resize_factor rf = var_opt_constants::DEFAULT_RESIZE_FACTOR,
+      const A& allocator = A());
     var_opt_sketch(const var_opt_sketch& other);
     var_opt_sketch(var_opt_sketch&& other) noexcept;
 

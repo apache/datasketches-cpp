@@ -29,6 +29,8 @@ namespace datasketches {
 
 static const uint64_t DEFAULT_SEED = 9001;
 
+enum resize_factor { X1 = 0, X2, X4, X8 };
+
 template<typename A> using AllocChar = typename std::allocator_traits<A>::template rebind_alloc<char>;
 template<typename A> using string = std::basic_string<char, std::char_traits<char>, AllocChar<A>>;
 

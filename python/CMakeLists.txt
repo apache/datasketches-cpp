@@ -22,9 +22,12 @@ else()
   set(PYBIND11_CPP_STANDARD -std=c++11)
 endif()
 
-add_subdirectory(pybind11)
+find_package(Python3 COMPONENTS Interpreter Development)
+find_package(pybind11 CONFIG)
+#add_subdirectory(pybind11)
 
-pybind11_add_module(python MODULE EXCLUDE_FROM_ALL SYSTEM THIN_LTO)
+#pybind11_add_module(python MODULE EXCLUDE_FROM_ALL SYSTEM THIN_LTO)
+pybind11_add_module(python MODULE EXCLUDE_FROM_ALL THIN_LTO)
 
 target_link_libraries(python
   PRIVATE
