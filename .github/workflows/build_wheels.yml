@@ -12,6 +12,30 @@ env:
   BUILD_TYPE: Release
 
 jobs:
+  build_sdist:
+    name: Source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - uses: actions/setup-python@v2
+        name: Install Python
+        with:
+          python-version: '3.8'
+
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip setuptools wheel numpy tox pytest build
+
+      - name: Build sdist
+        run: python setup.py sdist
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: dist/*.tar.gz
+
   build_wheels:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
@@ -46,16 +70,17 @@ jobs:
       - name: Set up Python 3.x
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8' # 3.x grabs latest minor version of python3, but not always fully supported (dependencies)
+          python-version: '3.8'
            
       - name: Install Python dependencies
-        run: python -m pip install --upgrade pip setuptools wheel numpy tox pytest cibuildwheel==2.1.1 twine
+        run: python -m pip install --upgrade pip setuptools wheel numpy tox pytest build cibuildwheel==2.1.1 twine
         
       - name: Build wheels
-        run: python -m cibuildwheel --output-dir wheelhouse
+        run: python -m cibuildwheel --output-dir dist
         env:
           CIBW_SKIP: "*-win32"
+          CIBW_ARCHS_MACOS: "x86_64 universal2"
 
       - uses: actions/upload-artifact@v2
         with:
-          path: ./wheelhouse/*.whl
+          path: ./dist/*.whl

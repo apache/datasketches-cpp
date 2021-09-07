@@ -1,8 +1,10 @@
 [build-system]
 requires = ["wheel",
             "setuptools >= 30.3.0",
-            "setuptools_scm",
-            "cmake >= 3.12"]
+            "cmake >= 3.12",
+            "pip >= 10.0",
+            "pybind11[global] >= 2.6.0"]
+build-backend = "setuptools.build_meta"
 
 [tool.tox]
 legacy_tox_ini = """
@@ -12,6 +14,7 @@ envlist = py3
 [testenv]
 deps = pytest
        numpy
+       pybind11 >= 2.6.0
 changedir = python/tests
 commands = pytest
 """

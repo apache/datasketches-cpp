@@ -15,16 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# TODO: Can we force python version >= 3.0?
+find_package(Python3 COMPONENTS Interpreter Development)
+
+# only Windows+MSVC seems to have trouble locating pybind11
 if (MSVC)
-  set(PYBIND11_CPP_STANDARD /std:c++11)
-else()
-  set(PYBIND11_CPP_STANDARD -std=c++11)
+  execute_process(COMMAND cmd.exe /c ${CMAKE_CURRENT_SOURCE_DIR}/pybind11Path.cmd "${Python3_EXECUTABLE}"
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      OUTPUT_VARIABLE EXTRA_PACKAGE_PATH)
+  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${EXTRA_PACKAGE_PATH})
 endif()
 
-add_subdirectory(pybind11)
+find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(python MODULE EXCLUDE_FROM_ALL SYSTEM THIN_LTO)
+pybind11_add_module(python MODULE EXCLUDE_FROM_ALL THIN_LTO)
 
 target_link_libraries(python
   PRIVATE

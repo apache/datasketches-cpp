@@ -271,7 +271,11 @@ void theta_update_sketch_base<EN, EK, A>::consolidate_non_empty(EN* entries, siz
 
 template<typename Derived, typename Allocator>
 theta_base_builder<Derived, Allocator>::theta_base_builder(const Allocator& allocator):
-allocator_(allocator), lg_k_(DEFAULT_LG_K), rf_(DEFAULT_RESIZE_FACTOR), p_(1), seed_(DEFAULT_SEED) {}
+allocator_(allocator),
+lg_k_(theta_constants::DEFAULT_LG_K),
+rf_(theta_constants::DEFAULT_RESIZE_FACTOR),
+p_(1),
+seed_(DEFAULT_SEED) {}
 
 template<typename Derived, typename Allocator>
 Derived& theta_base_builder<Derived, Allocator>::set_lg_k(uint8_t lg_k) {

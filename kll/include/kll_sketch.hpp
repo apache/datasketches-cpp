@@ -153,6 +153,10 @@ template<typename A> using vector_u32 = std::vector<uint32_t, AllocU32<A>>;
 template<typename A> using AllocD = typename std::allocator_traits<A>::template rebind_alloc<double>;
 template<typename A> using vector_d = std::vector<double, AllocD<A>>;
 
+namespace kll_constants {
+  const uint16_t DEFAULT_K = 200;
+}
+
 template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
 class kll_sketch {
   public:
@@ -160,11 +164,12 @@ class kll_sketch {
     using comparator = C;
 
     static const uint8_t DEFAULT_M = 8;
-    static const uint16_t DEFAULT_K = 200;
+    // TODO: Redundant and deprecated. Will be remove din next major version.
+    static const uint16_t DEFAULT_K = kll_constants::DEFAULT_K;
     static const uint16_t MIN_K = DEFAULT_M;
     static const uint16_t MAX_K = (1 << 16) - 1;
 
-    explicit kll_sketch(uint16_t k = DEFAULT_K, const A& allocator = A());
+    explicit kll_sketch(uint16_t k = kll_constants::DEFAULT_K, const A& allocator = A());
     kll_sketch(const kll_sketch& other);
     kll_sketch(kll_sketch&& other) noexcept;
     ~kll_sketch();

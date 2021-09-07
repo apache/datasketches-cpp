@@ -116,7 +116,7 @@ void bind_kll_sketch(py::module &m, const char* name) {
   using namespace datasketches;
 
   py::class_<kll_sketch<T>>(m, name)
-    .def(py::init<uint16_t>(), py::arg("k")=kll_sketch<T>::DEFAULT_K)
+    .def(py::init<uint16_t>(), py::arg("k")=kll_constants::DEFAULT_K)
     .def(py::init<const kll_sketch<T>&>())
     .def("update", (void (kll_sketch<T>::*)(const T&)) &kll_sketch<T>::update, py::arg("item"),
          "Updates the sketch with the given value")
