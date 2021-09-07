@@ -21,14 +21,19 @@
 #define THETA_CONSTANTS_HPP_
 
 #include <climits>
+#include "common_defs.hpp"
 
 namespace datasketches {
 
 namespace theta_constants {
-  enum resize_factor { X1, X2, X4, X8 };
-  static const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
-  static const uint8_t MIN_LG_K = 5;
-  static const uint8_t MAX_LG_K = 26;
+  using resize_factor = datasketches::resize_factor;
+  //enum resize_factor { X1, X2, X4, X8 };
+  const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
+  const uint8_t MIN_LG_K = 5;
+  const uint8_t MAX_LG_K = 26;
+
+  const uint8_t DEFAULT_LG_K = 12;
+  const resize_factor DEFAULT_RESIZE_FACTOR = resize_factor::X8;
 }
 
 } /* namespace datasketches */
