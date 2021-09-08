@@ -91,7 +91,7 @@ setup(
     packages=find_packages('python'), # python pacakges only in this dir
     package_dir={'':'python'},
     # may need to add all source paths for sdist packages w/o MANIFEST.in
-    ext_modules=[CMakeExtension('datasketches')],
+    ext_modules=[CMakeExtension('_datasketches')],
     cmdclass={'build_ext': CMakeBuild},
     install_requires=['numpy', 'pybind11 >= 2.6.0'],
     zip_safe=False

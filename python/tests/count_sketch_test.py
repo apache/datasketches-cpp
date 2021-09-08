@@ -16,10 +16,8 @@
 # under the License.
 
 import unittest
-import sys
-import os
-sys.path.append(os.path.abspath('../src'))
-from count_sketch import CountSketch  # TODO  -- There is probably a better way to do this??
+
+from datasketches import CountSketch
 import numpy as np
 
 

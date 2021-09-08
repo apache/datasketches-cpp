@@ -30,7 +30,7 @@ void init_vo(py::module& m);
 void init_req(py::module& m);
 void init_vector_of_kll(py::module& m);
 
-PYBIND11_MODULE(datasketches, m) {
+PYBIND11_MODULE(_datasketches, m) {
   init_hll(m);
   init_kll(m);
   init_fi(m);
