@@ -67,7 +67,7 @@ public:
    * @param lg_k base 2 logarithm of the number of bins in the sketch
    * @param seed for hash function
    */
-  explicit cpc_sketch_alloc(uint8_t lg_k = CPC_DEFAULT_LG_K, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
+  explicit cpc_sketch_alloc(uint8_t lg_k = cpc_constants::DEFAULT_LG_K, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
 
   using allocator_type = A;
   A get_allocator() const;
