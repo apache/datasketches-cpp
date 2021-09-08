@@ -17,7 +17,7 @@
 
 import numpy as np
 from random import randint, seed
-from datasketches.streaming_heap import StreamingHeap
+from .streaming_heap import StreamingHeap
 
 
 class CountSketch:
