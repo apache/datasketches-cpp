@@ -575,7 +575,7 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
   check_preamble_ints(preamble_ints, flags_byte);
   check_serial_version(serial_version);
   check_family_id(family_id);
-  ensure_minimum_memory(size, 1ULL << preamble_ints);
+  ensure_minimum_memory(size, preamble_ints * sizeof(uint32_t));
 
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
   if (is_empty) return kll_sketch<T, C, S, A>(k, allocator);
