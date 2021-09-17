@@ -375,7 +375,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_max_value() == 3.0);
   }
 
-  SECTION("bytes serialize deserialize one item") {
+  SECTION("bytes serialize deserialize three items") {
     kll_float_sketch sketch(200, 0);
     sketch.update(1.0f);
     sketch.update(2.0f);
