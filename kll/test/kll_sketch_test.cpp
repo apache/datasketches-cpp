@@ -279,6 +279,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
     auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
+    REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch.get_n());
@@ -304,7 +305,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }
 
-  SECTION("serialize deserialize one item") {
+  SECTION("stream serialize deserialize one item") {
     kll_float_sketch sketch(200, 0);
     sketch.update(1.0f);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
@@ -313,6 +314,24 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
+    REQUIRE_FALSE(sketch2.is_empty());
+    REQUIRE_FALSE(sketch2.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == 1);
+    REQUIRE(sketch2.get_num_retained() == 1);
+    REQUIRE(sketch2.get_min_value() == 1.0);
+    REQUIRE(sketch2.get_max_value() == 1.0);
+    REQUIRE(sketch2.get_quantile(0.5) == 1.0);
+    REQUIRE(sketch2.get_rank(1) == 0.0);
+    REQUIRE(sketch2.get_rank(2) == 1.0);
+  }
+
+  SECTION("bytes serialize deserialize one item") {
+    kll_float_sketch sketch(200, 0);
+    sketch.update(1.0f);
+    auto bytes = sketch.serialize();
+    REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
+    auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), 0);
+    REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
     REQUIRE_FALSE(sketch2.is_empty());
     REQUIRE_FALSE(sketch2.is_estimation_mode());
     REQUIRE(sketch2.get_n() == 1);
@@ -335,6 +354,42 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch.get_num_retained() == 1);
     REQUIRE(sketch.get_min_value() == 1.0);
     REQUIRE(sketch.get_max_value() == 1.0);
+  }
+
+  SECTION("stream serialize deserialize three items") {
+    kll_float_sketch sketch(200, 0);
+    sketch.update(1.0f);
+    sketch.update(2.0f);
+    sketch.update(3.0f);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch.serialize(s);
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
+    auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
+    REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
+    REQUIRE(s.tellg() == s.tellp());
+    REQUIRE_FALSE(sketch2.is_empty());
+    REQUIRE_FALSE(sketch2.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == 3);
+    REQUIRE(sketch2.get_num_retained() == 3);
+    REQUIRE(sketch2.get_min_value() == 1.0);
+    REQUIRE(sketch2.get_max_value() == 3.0);
+  }
+
+  SECTION("bytes serialize deserialize three items") {
+    kll_float_sketch sketch(200, 0);
+    sketch.update(1.0f);
+    sketch.update(2.0f);
+    sketch.update(3.0f);
+    auto bytes = sketch.serialize();
+    REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
+    auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), 0);
+    REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
+    REQUIRE_FALSE(sketch2.is_empty());
+    REQUIRE_FALSE(sketch2.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == 3);
+    REQUIRE(sketch2.get_num_retained() == 3);
+    REQUIRE(sketch2.get_min_value() == 1.0);
+    REQUIRE(sketch2.get_max_value() == 3.0);
   }
 
   SECTION("stream serialize deserialize many floats") {
@@ -700,6 +755,15 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 1000, 4) == 2440);
     REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000, 4) == 2800);
     REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000000, 4) == 3160);
+  }
+
+  SECTION("issue #236") {
+    kll_sketch<int8_t> kll;
+    kll.update(1);
+    kll.update(2);
+    kll.update(3);
+    auto blob = kll.serialize();
+    auto kll2 = kll_sketch<int8_t>::deserialize(blob.data(), blob.size());
   }
 
   // cleanup

@@ -350,7 +350,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
   check_serial_version(serial_version);
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
-  ensure_minimum_memory(size, 1ULL << preamble_longs);
+  ensure_minimum_memory(size, preamble_longs * sizeof(uint64_t));
 
   frequent_items_sketch<T, W, H, E, S, A> sketch(lg_max_size, lg_cur_size, allocator);
   if (!is_empty) {
