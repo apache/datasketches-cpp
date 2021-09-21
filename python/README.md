@@ -23,33 +23,33 @@ Having installed the library, loading the Apache Datasketches library in Python 
 ## Available Sketch Classes
 
 - KLL (Absolute Error Quantiles)
-    - `kll_ints_sketch`
-    - `kll_floats_sketch`
+  - `kll_ints_sketch`
+  - `kll_floats_sketch`
 - REQ (Relative Error Quantiles)
-    - `req_ints_sketch`
-    - `req_floats_sketch`
+  - `req_ints_sketch`
+  - `req_floats_sketch`
 - Frequent Items
-    - `frequent_strings_sketch`
-    - Error types are `frequent_items_error_type.{NO_FALSE_NEGATIVES | NO_FALSE_POSITIVES}`
+  - `frequent_strings_sketch`
+  - Error types are `frequent_items_error_type.{NO_FALSE_NEGATIVES | NO_FALSE_POSITIVES}`
 - Theta
-    - `update_theta_sketch`
-    - `compact_theta_sketch` (cannot be instantiated directly)
-    - `theta_union`
-    - `theta_intersection`
-    - `theta_a_not_b`
+  - `update_theta_sketch`
+  - `compact_theta_sketch` (cannot be instantiated directly)
+  - `theta_union`
+  - `theta_intersection`
+  - `theta_a_not_b`
 - HLL
-    - `hll_sketch`
-    - `hll_union`
-    - Target HLL types are `tgt_hll_type.{HLL_4 | HLL_6 | HLL_8}`
+  - `hll_sketch`
+  - `hll_union`
+  - Target HLL types are `tgt_hll_type.{HLL_4 | HLL_6 | HLL_8}`
 - CPC
-    - `cpc_sketch`
-    - `cpc_union`
+  - `cpc_sketch`
+  - `cpc_union`
 - VarOpt Sampling
-    - `var_opt_sketch`
-    - `var_opt_union`
+  - `var_opt_sketch`
+  - `var_opt_union`
 - Vector of KLL
-    - `vector_of_kll_ints_sketches`
-    - `vector_of_kll_floats_sketches`
+  - `vector_of_kll_ints_sketches`
+  - `vector_of_kll_floats_sketches`
 
 ## Known Differences from C++
 
