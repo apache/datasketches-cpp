@@ -10,7 +10,7 @@ This package provides a variety of sketches as described below. Wherever a speci
 
 ## Building and Installation
 
-Once cloned, the library can be installed by running `python -m pip install .` which will also install the necessary dependencies, namely [pybind11](https://github.com/pybind/pybind11) and numpy.
+Once cloned, the library can be installed by running `python -m pip install .` in the project root directory, which will also install the necessary dependencies, namely [pybind11](https://github.com/pybind/pybind11) and numpy.
 
 If you prefer to call the `setup.py` build script directly, you must first install `pybind11[global]`, as well as any other dependencies listed under the build-system section in `pyproject.toml`.
 
