@@ -1,4 +1,4 @@
-<img src="https://datasketches.apache.org/img/datasketches-HorizontalColor-1.svg" width="75%" alt="Apache DataSketchs Logo">
+<img src="https://raw.githubusercontent.com/apache/datasketches-website/master/logos/svg/datasketches-HorizontalColor-TM.svg" width="75%" alt="Apache DataSketchs Logo">
 
 # The Apache DataSketches Library for Python
 
@@ -16,7 +16,7 @@ Once cloned, the library can be installed by running `python -m pip install .` i
 
 If you prefer to call the `setup.py` build script directly, you must first install `pybind11[global]`, as well as any other dependencies listed under the build-system section in `pyproject.toml`.
 
-The library is also available (or soon will be) from PyPI via `python -m pip install datasketches`.
+The library is also available from PyPI via `python -m pip install datasketches`.
 
 ## Usage
 
