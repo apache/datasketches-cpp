@@ -84,10 +84,11 @@ setup(
     version='3.3.0.dev0',
     author='Apache DataSketches Developers',
     author_email='dev@datasketches.apache.org',
-    description='A wrapper for the C++ Apache DataSketches library',
+    description='The Apache DataSketches Library for Python',
     license='Apache License 2.0',
     url='http://datasketches.apache.org',
     long_description=open('python/README.md').read(),
+    long_description_content_type='text/markdown',
     packages=find_packages('python'), # python pacakges only in this dir
     package_dir={'':'python'},
     # may need to add all source paths for sdist packages w/o MANIFEST.in

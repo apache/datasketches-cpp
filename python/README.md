@@ -1,4 +1,6 @@
-# Python Wrapper for Apache DataSketches
+<img src="https://datasketches.apache.org/img/datasketches-HorizontalColor-1.svg" width="75%" alt="Apache DataSketchs Logo">
+
+# The Apache DataSketches Library for Python
 
 This is the official version of the [Apache DataSketches](https://datasketches.apache.org) Python library.
 
@@ -66,7 +68,8 @@ The only developer-specific instructions relate to running unit tests.
 ### Unit tests
 
 The Python unit tests are run with `tox`. To ensure you have all the needed package, from the package base directory run:
-```
+
+```bash
 python -m pip install --upgrade tox
 tox
 ```
