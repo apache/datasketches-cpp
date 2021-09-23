@@ -14,7 +14,6 @@ envlist = py3
 [testenv]
 deps = pytest
        numpy
-       pybind11 >= 2.6.0
 changedir = python/tests
 commands = pytest
 """
