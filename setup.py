@@ -81,8 +81,8 @@ class CMakeBuild(build_ext):
 
 setup(
     name='datasketches',
-    version='3.3.0.dev0',
-    author='Apache DataSketches Developers',
+    version='3.2.0.1',
+    author='Apache Software Foundation',
     author_email='dev@datasketches.apache.org',
     description='The Apache DataSketches Library for Python',
     license='Apache License 2.0',
@@ -94,6 +94,6 @@ setup(
     # may need to add all source paths for sdist packages w/o MANIFEST.in
     ext_modules=[CMakeExtension('datasketches')],
     cmdclass={'build_ext': CMakeBuild},
-    install_requires=['numpy', 'pybind11 >= 2.6.0'],
+    install_requires=['numpy'],
     zip_safe=False
 )
