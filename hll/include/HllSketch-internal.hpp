@@ -249,7 +249,7 @@ string<A> hll_sketch_alloc<A>::to_string(const bool summary,
   std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
   if (summary) {
     os << "### HLL sketch summary:" << std::endl
-       << "  Log Config K   : " << get_lg_config_k() << std::endl
+       << "  Log Config K   : " << std::to_string(get_lg_config_k()) << std::endl
        << "  Hll Target     : " << type_as_string() << std::endl
        << "  Current Mode   : " << mode_as_string() << std::endl
        << "  LB             : " << get_lower_bound(1) << std::endl
@@ -258,7 +258,7 @@ string<A> hll_sketch_alloc<A>::to_string(const bool summary,
        << "  OutOfOrder flag: " << (is_out_of_order_flag() ? "true" : "false") << std::endl;
     if (get_current_mode() == HLL) {
       HllArray<A>* hllArray = (HllArray<A>*) sketch_impl;
-      os << "  CurMin         : " << hllArray->getCurMin() << std::endl
+      os << "  CurMin         : " << std::to_string(hllArray->getCurMin()) << std::endl
          << "  NumAtCurMin    : " << hllArray->getNumAtCurMin() << std::endl
          << "  HipAccum       : " << hllArray->getHipAccum() << std::endl
          << "  KxQ0           : " << hllArray->getKxQ0() << std::endl
