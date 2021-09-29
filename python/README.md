@@ -1,4 +1,6 @@
-# Python Wrapper for Apache DataSketches
+<img src="https://raw.githubusercontent.com/apache/datasketches-website/master/logos/svg/datasketches-HorizontalColor-TM.svg" width="75%" alt="Apache DataSketchs Logo">
+
+# The Apache DataSketches Library for Python
 
 This is the official version of the [Apache DataSketches](https://datasketches.apache.org) Python library.
 
@@ -10,15 +12,15 @@ This package provides a variety of sketches as described below. Wherever a speci
 
 ## Building and Installation
 
-Once cloned, the library can be installed by running `python -m pip install .` in the project root directory, which will also install the necessary dependencies, namely [pybind11](https://github.com/pybind/pybind11) and numpy.
+Once cloned, the library can be installed by running `python -m pip install .` in the project root directory, which will also install the necessary dependencies, namely numpy and [pybind11[global]](https://github.com/pybind/pybind11).
 
 If you prefer to call the `setup.py` build script directly, you must first install `pybind11[global]`, as well as any other dependencies listed under the build-system section in `pyproject.toml`.
 
-The library is also available (or soon will be) from PyPI via `python -m pip install datasketches`.
+The library is also available from PyPI via `python -m pip install datasketches`.
 
 ## Usage
 
-Having installed the library, loading the Apache Datasketches library in Python is simple: `import datasketches`.
+Having installed the library, loading the Apache Datasketches Library in Python is simple: `import datasketches`.
 
 ## Available Sketch Classes
 
@@ -66,7 +68,14 @@ The only developer-specific instructions relate to running unit tests.
 ### Unit tests
 
 The Python unit tests are run with `tox`. To ensure you have all the needed package, from the package base directory run:
-```
+
+```bash
 python -m pip install --upgrade tox
 tox
 ```
+
+## License
+
+The Apache DataSketches Library is distrubted under an Apache 2.0 License.
+
+There may be precompiled binaries provided as a convenience and distributed through PyPI via [https://pypi.org/project/datasketches/] contain compiled code from [pybind11](https://github.com/pybind/pybind11), which is distributed under a BSD license.
