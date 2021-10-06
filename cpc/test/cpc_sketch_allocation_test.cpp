@@ -25,6 +25,7 @@
 #include <catch.hpp>
 
 #include "cpc_sketch.hpp"
+#include "cpc_union.hpp"
 #include "test_allocator.hpp"
 
 namespace datasketches {
@@ -232,6 +233,22 @@ TEST_CASE("cpc sketch allocation: serialize deserialize sliding, bytes", "[cpc_s
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);
+}
+
+using cpc_union_test_alloc = cpc_union_alloc<test_allocator<uint8_t>>;
+
+TEST_CASE("cpc sketch allocation: union") {
+  cpc_sketch_test_alloc s1(11, DEFAULT_SEED, 0);
+  s1.update(1);
+
+  cpc_sketch_test_alloc s2(11, DEFAULT_SEED, 0);
+  s2.update(2);
+
+  cpc_union_test_alloc u(11, DEFAULT_SEED, 0);
+  u.update(s1);
+  u.update(s2);
+  auto s3 = u.get_result();
+  REQUIRE_FALSE(s3.is_empty());
 }
 
 } /* namespace datasketches */
