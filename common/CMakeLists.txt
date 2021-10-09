@@ -43,3 +43,15 @@ target_sources(common
     ${CMAKE_CURRENT_SOURCE_DIR}/include/ceiling_power_of_2.hpp
 )
 
+install(FILES 
+			include/common_defs.hpp
+			include/memory_operations.hpp
+			include/MurmurHash3.h
+			include/serde.hpp
+			include/count_zeros.hpp
+			include/inv_pow2_table.hpp
+			include/binomial_bounds.hpp
+			include/conditional_back_inserter.hpp
+			include/conditional_forward.hpp
+			include/ceiling_power_of_2.hpp
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
