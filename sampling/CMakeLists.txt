@@ -39,4 +39,6 @@ install(TARGETS sampling
 install(FILES 
 		include/var_opt_sketch.hpp
 		include/var_opt_sketch_impl.hpp
+		include/var_opt_union.hpp
+		include/var_opt_union_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
