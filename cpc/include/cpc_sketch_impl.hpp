@@ -401,7 +401,7 @@ string<A> cpc_sketch_alloc<A>::to_string() const {
     os << "   window offset  : " << std::to_string(window_offset) << std::endl;
   }
   os << "### End sketch summary" << std::endl;
-  return string<A>(os.str(), sliding_window.get_allocator());
+  return string<A>(os.str().c_str(), sliding_window.get_allocator());
 }
 
 template<typename A>

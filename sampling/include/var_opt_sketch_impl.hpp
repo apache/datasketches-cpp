@@ -742,7 +742,7 @@ string<A> var_opt_sketch<T,S,A>::to_string() const {
   os << "   Current size : " << curr_items_alloc_ << std::endl;
   os << "   Resize factor: " << (1 << rf_) << std::endl;
   os << "### END SKETCH SUMMARY" << std::endl;
-  return string<A>(os.str(), allocator_);
+  return string<A>(os.str().c_str(), allocator_);
 }
 
 template<typename T, typename S, typename A>
@@ -756,7 +756,7 @@ string<A> var_opt_sketch<T,S,A>::items_to_string() const {
     os << idx << ": " << record.first << "\twt = " << record.second << std::endl;
     ++idx;
   }
-  return string<A>(os.str(), allocator_);
+  return string<A>(os.str().c_str(), allocator_);
 }
 
 template<typename T, typename S, typename A>
@@ -780,7 +780,7 @@ string<A> var_opt_sketch<T,S,A>::items_to_string(bool print_gap) const {
       ++display_idx;
     }
   }
-  return string<A>(os.str(), allocator_);
+  return string<A>(os.str().c_str(), allocator_);
 }
 
 template<typename T, typename S, typename A>

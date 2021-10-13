@@ -1071,7 +1071,7 @@ string<A> kll_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items)
     }
     os << "### End sketch data" << std::endl;
   }
-  return string<A>(os.str(), allocator_);
+  return string<A>(os.str().c_str(), allocator_);
 }
 
 template <typename T, typename C, typename S, typename A>

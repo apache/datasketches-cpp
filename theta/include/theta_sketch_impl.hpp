@@ -82,7 +82,7 @@ string<A> theta_sketch_alloc<A>::to_string(bool detail) const {
     }
     os << "### End retained entries" << std::endl;
   }
-  return string<A>(os.str(), get_allocator());
+  return string<A>(os.str().c_str(), get_allocator());
 }
 
 // update sketch

@@ -340,7 +340,7 @@ string<A> hll_sketch_alloc<A>::to_string(const bool summary,
     }
   }
 
-  return string<A>(os.str(), sketch_impl->getAllocator());
+  return string<A>(os.str().c_str(), sketch_impl->getAllocator());
 }
 
 template<typename A>

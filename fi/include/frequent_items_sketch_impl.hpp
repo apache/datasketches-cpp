@@ -446,7 +446,7 @@ string<A> frequent_items_sketch<T, W, H, E, S, A>::to_string(bool print_items) c
     }
     os << "### End items" << std::endl;
   }
-  return string<A>(os.str(), map.get_allocator());
+  return string<A>(os.str().c_str(), map.get_allocator());
 }
 
 // version for integral signed type

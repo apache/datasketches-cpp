@@ -304,7 +304,7 @@ string<A> var_opt_union<T,S,A>::to_string() const {
   os << "   Gadget Summary:" << std::endl;
   os << gadget_.to_string();
   os << "### END VarOpt Union SUMMARY" << std::endl;
-  return string<A>(os.str(), gadget_.allocator_);
+  return string<A>(os.str().c_str(), gadget_.allocator_);
 }
 
 template<typename T, typename S, typename A>
