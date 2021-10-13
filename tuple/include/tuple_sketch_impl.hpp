@@ -53,7 +53,9 @@ double tuple_sketch<S, A>::get_upper_bound(uint8_t num_std_devs) const {
 
 template<typename S, typename A>
 string<A> tuple_sketch<S, A>::to_string(bool detail) const {
-  ostrstream os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
   os << "### Tuple sketch summary:" << std::endl;
   os << "   num retained entries : " << get_num_retained() << std::endl;
   os << "   seed hash            : " << get_seed_hash() << std::endl;
@@ -74,7 +76,7 @@ string<A> tuple_sketch<S, A>::to_string(bool detail) const {
     }
     os << "### End retained entries" << std::endl;
   }
-  return os.str();
+  return string<A>(os.str(), get_allocator());
 }
 
 // update sketch
@@ -238,7 +240,7 @@ compact_tuple_sketch<S, A> update_tuple_sketch<S, U, P, A>::compact(bool ordered
 }
 
 template<typename S, typename U, typename P, typename A>
-void update_tuple_sketch<S, U, P, A>::print_specifics(ostrstream& os) const {
+void update_tuple_sketch<S, U, P, A>::print_specifics(std::ostringstream& os) const {
   os << "   lg nominal size      : " << (int) map_.lg_nom_size_ << std::endl;
   os << "   lg current size      : " << (int) map_.lg_cur_size_ << std::endl;
   os << "   resize factor        : " << (1 << map_.rf_) << std::endl;
@@ -554,7 +556,7 @@ auto compact_tuple_sketch<S, A>::end() const -> const_iterator {
 }
 
 template<typename S, typename A>
-void compact_tuple_sketch<S, A>::print_specifics(ostrstream&) const {}
+void compact_tuple_sketch<S, A>::print_specifics(std::ostringstream&) const {}
 
 // builder
 

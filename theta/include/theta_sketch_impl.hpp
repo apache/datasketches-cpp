@@ -59,7 +59,9 @@ double theta_sketch_alloc<A>::get_upper_bound(uint8_t num_std_devs) const {
 
 template<typename A>
 string<A> theta_sketch_alloc<A>::to_string(bool detail) const {
-  ostrstream os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
   os << "### Theta sketch summary:" << std::endl;
   os << "   num retained entries : " << get_num_retained() << std::endl;
   os << "   seed hash            : " << get_seed_hash() << std::endl;
@@ -80,7 +82,7 @@ string<A> theta_sketch_alloc<A>::to_string(bool detail) const {
     }
     os << "### End retained entries" << std::endl;
   }
-  return os.str();
+  return string<A>(os.str(), get_allocator());
 }
 
 // update sketch
@@ -228,7 +230,7 @@ compact_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::compact(bool ordered
 }
 
 template<typename A>
-void update_theta_sketch_alloc<A>::print_specifics(ostrstream& os) const {
+void update_theta_sketch_alloc<A>::print_specifics(std::ostringstream& os) const {
   os << "   lg nominal size      : " << static_cast<int>(table_.lg_nom_size_) << std::endl;
   os << "   lg current size      : " << static_cast<int>(table_.lg_cur_size_) << std::endl;
   os << "   resize factor        : " << (1 << table_.rf_) << std::endl;
@@ -321,7 +323,7 @@ auto compact_theta_sketch_alloc<A>::end() const -> const_iterator {
 }
 
 template<typename A>
-void compact_theta_sketch_alloc<A>::print_specifics(ostrstream&) const {}
+void compact_theta_sketch_alloc<A>::print_specifics(std::ostringstream&) const {}
 
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {

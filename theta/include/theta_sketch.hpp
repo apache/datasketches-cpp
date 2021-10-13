@@ -131,8 +131,7 @@ public:
   virtual const_iterator end() const = 0;
 
 protected:
-  using ostrstream = std::basic_ostringstream<char, std::char_traits<char>, AllocChar<Allocator>>;
-  virtual void print_specifics(ostrstream& os) const = 0;
+  virtual void print_specifics(std::ostringstream& os) const = 0;
 };
 
 // forward declaration
@@ -288,8 +287,7 @@ private:
   update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta,
       uint64_t seed, const Allocator& allocator);
 
-  using ostrstream = typename Base::ostrstream;
-  virtual void print_specifics(ostrstream& os) const;
+  virtual void print_specifics(std::ostringstream& os) const;
 };
 
 // compact sketch
@@ -377,8 +375,7 @@ private:
   uint64_t theta_;
   std::vector<uint64_t, Allocator> entries_;
 
-  using ostrstream = typename Base::ostrstream;
-  virtual void print_specifics(ostrstream& os) const;
+  virtual void print_specifics(std::ostringstream& os) const;
 };
 
 template<typename Allocator>

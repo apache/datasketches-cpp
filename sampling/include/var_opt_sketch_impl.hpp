@@ -731,8 +731,10 @@ void var_opt_sketch<T,S,A>::update(T&& item, double weight) {
 
 template<typename T, typename S, typename A>
 string<A> var_opt_sketch<T,S,A>::to_string() const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
-  os << "### VarOpt SUMMARY: " << std::endl;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
+  os << "### VarOpt SUMMARY:" << std::endl;
   os << "   k            : " << k_ << std::endl;
   os << "   h            : " << h_ << std::endl;
   os << "   r            : " << r_ << std::endl;
@@ -740,24 +742,28 @@ string<A> var_opt_sketch<T,S,A>::to_string() const {
   os << "   Current size : " << curr_items_alloc_ << std::endl;
   os << "   Resize factor: " << (1 << rf_) << std::endl;
   os << "### END SKETCH SUMMARY" << std::endl;
-  return os.str();
+  return string<A>(os.str(), allocator_);
 }
 
 template<typename T, typename S, typename A>
 string<A> var_opt_sketch<T,S,A>::items_to_string() const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
   os << "### Sketch Items" << std::endl;
   int idx = 0;
   for (auto record : *this) {
     os << idx << ": " << record.first << "\twt = " << record.second << std::endl;
     ++idx;
   }
-  return os.str();
+  return string<A>(os.str(), allocator_);
 }
 
 template<typename T, typename S, typename A>
 string<A> var_opt_sketch<T,S,A>::items_to_string(bool print_gap) const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
   os << "### Sketch Items" << std::endl;
   const uint32_t array_length = (n_ < k_ ? n_ : k_ + 1);
   for (uint32_t i = 0, display_idx = 0; i < array_length; ++i) {
@@ -774,7 +780,7 @@ string<A> var_opt_sketch<T,S,A>::items_to_string(bool print_gap) const {
       ++display_idx;
     }
   }
-  return os.str();
+  return string<A>(os.str(), allocator_);
 }
 
 template<typename T, typename S, typename A>

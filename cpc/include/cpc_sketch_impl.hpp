@@ -381,7 +381,9 @@ void cpc_sketch_alloc<A>::refresh_kxp(const uint64_t* bit_matrix) {
 
 template<typename A>
 string<A> cpc_sketch_alloc<A>::to_string() const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
   os << "### CPC sketch summary:" << std::endl;
   os << "   lg_k           : " << std::to_string(lg_k) << std::endl;
   os << "   seed hash      : " << std::hex << compute_seed_hash(seed) << std::dec << std::endl;
@@ -392,14 +394,14 @@ string<A> cpc_sketch_alloc<A>::to_string() const {
     os << "   HIP estimate   : " << hip_est_accum << std::endl;
     os << "   kxp            : " << kxp << std::endl;
   }
-  os << "   intresting col : " << std::to_string(first_interesting_column) << std::endl;
+  os << "   interesting col: " << std::to_string(first_interesting_column) << std::endl;
   os << "   table entries  : " << surprising_value_table.get_num_items() << std::endl;
   os << "   window         : " << (sliding_window.size() == 0 ? "not " : "") <<  "allocated" << std::endl;
   if (sliding_window.size() > 0) {
     os << "   window offset  : " << std::to_string(window_offset) << std::endl;
   }
   os << "### End sketch summary" << std::endl;
-  return os.str();
+  return string<A>(os.str(), sliding_window.get_allocator());
 }
 
 template<typename A>
