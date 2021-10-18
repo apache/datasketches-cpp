@@ -25,10 +25,8 @@ Installing the latest cmake on OSX: brew install cmake
 Building and running unit tests using cmake for OSX and Linux:
 
 ```
-	$ cd build
-	$ cmake ..
-	$ make
-	$ make test
+	$ cmake -S . -B build/Release -DCMAKE_BUILD_TYPE=Release
+	$ cmake --build build/Release -t test
 ```
 
 Building and running unit tests using cmake for Windows from the command line:
@@ -39,4 +37,25 @@ Building and running unit tests using cmake for Windows from the command line:
 	$ cd ..
 	$ cmake --build build --config Release
 	$ cmake --build build --config Release --target RUN_TESTS
+```
+
+To install a local distribution (OSX and Linux), use the following command. The
+CMAKE_INSTALL_PREFIX variable controls the destination. If not specified, it 
+defaults to installing in /usr (/usr/include, /usr/lib, etc). In the command below,
+the installation will be in /tmp/install/DataSketches (/tmp/install/DataSketches/include,
+/tmp/install/DataSketches/lib, etc)
+
+```
+	$ cmake -S . -B build/Release -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/install/DataSketches
+	$ cmake --build build/Release -t install
+```
+
+To generate an installable package using cmake's built in cpack packaging tool,
+use the following command. The type of packaging is controlled by the CPACK_GENERATOR
+variable (semi-colon separated list). Cmake usually supports packaging types such as RPM,
+DEB, STGZ, TGZ, TZ, ZIP, etc.
+
+```
+	$ cmake3 -S . -B build/Release -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR="RPM;STGZ;TGZ" 
+	$ cmake3 --build build/Release -t package
 ```
