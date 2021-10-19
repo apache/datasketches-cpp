@@ -421,7 +421,9 @@ void frequent_items_sketch<T, W, H, E, S, A>::check_size(uint8_t lg_cur_size, ui
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
 string<A> frequent_items_sketch<T, W, H, E, S, A>::to_string(bool print_items) const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
   os << "### Frequent items sketch summary:" << std::endl;
   os << "   lg cur map size  : " << (int) map.get_lg_cur_size() << std::endl;
   os << "   lg max map size  : " << (int) map.get_lg_max_size() << std::endl;
@@ -444,7 +446,7 @@ string<A> frequent_items_sketch<T, W, H, E, S, A>::to_string(bool print_items) c
     }
     os << "### End items" << std::endl;
   }
-  return os.str();
+  return string<A>(os.str().c_str(), map.get_allocator());
 }
 
 // version for integral signed type

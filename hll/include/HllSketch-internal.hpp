@@ -246,7 +246,9 @@ string<A> hll_sketch_alloc<A>::to_string(const bool summary,
                                          const bool detail,
                                          const bool aux_detail,
                                          const bool all) const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::stringstream os;
   if (summary) {
     os << "### HLL sketch summary:" << std::endl
        << "  Log Config K   : " << std::to_string(get_lg_config_k()) << std::endl
@@ -338,7 +340,7 @@ string<A> hll_sketch_alloc<A>::to_string(const bool summary,
     }
   }
 
-  return os.str();
+  return string<A>(os.str().c_str(), sketch_impl->getAllocator());
 }
 
 template<typename A>

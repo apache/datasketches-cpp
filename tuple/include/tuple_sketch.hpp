@@ -153,8 +153,7 @@ public:
   virtual const_iterator end() const = 0;
 
 protected:
-  using ostrstream = std::basic_ostringstream<char, std::char_traits<char>, AllocChar<Allocator>>;
-  virtual void print_specifics(ostrstream& os) const = 0;
+  virtual void print_specifics(std::ostringstream& os) const = 0;
 
   static uint16_t get_seed_hash(uint64_t seed);
 
@@ -344,8 +343,7 @@ protected:
   // for builder
   update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
 
-  using ostrstream = typename Base::ostrstream;
-  virtual void print_specifics(ostrstream& os) const;
+  virtual void print_specifics(std::ostringstream& os) const;
 };
 
 // compact sketch
@@ -473,8 +471,7 @@ protected:
     bool destroy_;
   };
 
-  using ostrstream = typename Base::ostrstream;
-  virtual void print_specifics(ostrstream& os) const;
+  virtual void print_specifics(std::ostringstream& os) const;
 
 };
 

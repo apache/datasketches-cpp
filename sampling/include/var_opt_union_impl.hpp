@@ -295,14 +295,16 @@ void var_opt_union<T,S,A>::reset() {
 
 template<typename T, typename S, typename A>
 string<A> var_opt_union<T,S,A>::to_string() const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
-  os << "### VarOpt Union SUMMARY: " << std::endl;
-  os << " . n             : " << n_ << std::endl;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
+  os << "### VarOpt Union SUMMARY:" << std::endl;
+  os << "   n             : " << n_ << std::endl;
   os << "   Max k         : " << max_k_ << std::endl;
-  os << "   Gadget Summary: " << std::endl;
+  os << "   Gadget Summary:" << std::endl;
   os << gadget_.to_string();
-  os << "### END VarOpt Union SUMMARY: " << std::endl;
-  return os.str();
+  os << "### END VarOpt Union SUMMARY" << std::endl;
+  return string<A>(os.str().c_str(), gadget_.allocator_);
 }
 
 template<typename T, typename S, typename A>

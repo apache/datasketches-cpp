@@ -1023,7 +1023,9 @@ void kll_sketch<T, C, S, A>::check_family_id(uint8_t family_id) {
 
 template <typename T, typename C, typename S, typename A>
 string<A> kll_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items) const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
   os << "### KLL sketch summary:" << std::endl;
   os << "   K              : " << k_ << std::endl;
   os << "   min K          : " << min_k_ << std::endl;
@@ -1069,7 +1071,7 @@ string<A> kll_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items)
     }
     os << "### End sketch data" << std::endl;
   }
-  return os.str();
+  return string<A>(os.str().c_str(), allocator_);
 }
 
 template <typename T, typename C, typename S, typename A>
