@@ -439,9 +439,15 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
   read<uint8_t>(is); // unused
   const auto flags_byte = read<uint8_t>(is);
   const auto seed_hash = read<uint16_t>(is);
-  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+  if (serial_version != SERIAL_VERSION && serial_version != SERIAL_VERSION_LEGACY) {
+    throw std::invalid_argument("serial version mismatch: expected " + std::to_string(SERIAL_VERSION) + " or "
+        + std::to_string(SERIAL_VERSION_LEGACY) + ", actual " + std::to_string(serial_version));
+  }
   checker<true>::check_sketch_family(family, SKETCH_FAMILY);
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
+  if (type != SKETCH_TYPE && type != SKETCH_TYPE_LEGACY) {
+    throw std::invalid_argument("sketch type mismatch: expected " + std::to_string(SKETCH_TYPE) + " or "
+        + std::to_string(SKETCH_TYPE_LEGACY) + ", actual " + std::to_string(type));
+  }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
@@ -494,9 +500,15 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   ptr += copy_from_mem(ptr, flags_byte);
   uint16_t seed_hash;
   ptr += copy_from_mem(ptr, seed_hash);
-  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+  if (serial_version != SERIAL_VERSION && serial_version != SERIAL_VERSION_LEGACY) {
+    throw std::invalid_argument("serial version mismatch: expected " + std::to_string(SERIAL_VERSION) + " or "
+        + std::to_string(SERIAL_VERSION_LEGACY) + ", actual " + std::to_string(serial_version));
+  }
   checker<true>::check_sketch_family(family, SKETCH_FAMILY);
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
+  if (type != SKETCH_TYPE && type != SKETCH_TYPE_LEGACY) {
+    throw std::invalid_argument("sketch type mismatch: expected " + std::to_string(SKETCH_TYPE) + " or "
+        + std::to_string(SKETCH_TYPE_LEGACY) + ", actual " + std::to_string(type));
+  }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
