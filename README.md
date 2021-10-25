@@ -59,3 +59,41 @@ DEB, STGZ, TGZ, TZ, ZIP, etc.
 	$ cmake3 -S . -B build/Release -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR="RPM;STGZ;TGZ" 
 	$ cmake3 --build build/Release -t package
 ```
+
+The DataSketches project can be included in other projects' CMakeLists.txt files in one of two ways.
+If DataSketches has been installed on the host (using an RPM, DEB, "make install" into /usr/local, or some 
+way, then CMake's `find_package` command can be used like this:
+
+```
+	find_package(DataSketches 3.2 REQUIRED)
+	target_link_library(my_dependent_target PUBLIC ${DATASKETCHES_LIB})
+```
+
+If you don't have DataSketches installed locally, dependent projects can pull it directly
+from GitHub using CMake's `ExternalProject` module. The code would look something like this:
+
+```
+	cmake_policy(SET CMP0097 NEW)
+	include(ExternalProject)
+	ExternalProject_Add(datasketches
+	    GIT_REPOSITORY https://github.com/apache/datasketches-cpp.git
+	    GIT_TAG 3.2.0
+	    GIT_SHALLOW true
+	    GIT_SUBMODULES ""
+	    INSTALL_DIR /tmp/datasketches-prefix
+	   	CMAKE_ARGS -DBUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=/tmp/datasketches-prefix
+
+		# Override the install command to add DESTDIR
+		# This is necessary to work around an oddity in the RPM (but not other) package
+		# generation, as CMake otherwise picks up the Datasketch files when building
+		# an RPM for a dependent package. (RPM scans the directory for files in addition to installing
+		# those files referenced in an "install" rule in the cmake file)
+	    INSTALL_COMMAND env DESTDIR= ${CMAKE_COMMAND} --build . --target install
+	)
+	ExternalProject_Get_property(datasketches INSTALL_DIR)
+	set(datasketches_INSTALL_DIR ${INSTALL_DIR})
+	message("Source dir of datasketches = ${datasketches_INSTALL_DIR}")
+	target_include_directories(my_dependent_target 
+								PRIVATE ${datasketches_INSTALL_DIR}/include/DataSketches)
+	add_dependencies(my_dependent_target datasketches)
+```
