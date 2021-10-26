@@ -365,9 +365,11 @@ public:
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
   using comparator = compare_by_key<ExtractKey>;
 
-  static const uint8_t SERIAL_VERSION = 1;
+  static const uint8_t SERIAL_VERSION_LEGACY = 1;
+  static const uint8_t SERIAL_VERSION = 3;
   static const uint8_t SKETCH_FAMILY = 9;
-  static const uint8_t SKETCH_TYPE = 5;
+  static const uint8_t SKETCH_TYPE = 1;
+  static const uint8_t SKETCH_TYPE_LEGACY = 5;
   enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
 
   // Instances of this type can be obtained:
