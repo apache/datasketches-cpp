@@ -17,7 +17,7 @@
 
 cmake_minimum_required(VERSION 3.12.0)
 project(DataSketches
-        VERSION 0.12.0
+        VERSION 3.2.0
         LANGUAGES CXX)
 
 include(GNUInstallDirs)
@@ -126,11 +126,29 @@ endif()
 
 # # Installation
 install(TARGETS datasketches
-  EXPORT ${PROJCT_NAME}
+  EXPORT ${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
 )
 
+# Packaging
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+configure_package_config_file(
+    cmake/DataSketchesConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfig.cmake"
+    INSTALL_DESTINATION lib/DataSketches/cmake
+)
+install(EXPORT ${PROJECT_NAME} DESTINATION lib/DataSketches/cmake)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfigVersion.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfig.cmake"
+        DESTINATION lib/DataSketches/cmake)
+
+
 #set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 #set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-#include(CPack)
+include(CPack)

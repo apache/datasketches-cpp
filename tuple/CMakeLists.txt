@@ -32,41 +32,26 @@ target_include_directories(tuple
 target_link_libraries(tuple INTERFACE common theta)
 target_compile_features(tuple INTERFACE cxx_std_11)
 
-set(tuple_HEADERS "")
-list(APPEND tuple_HEADERS "include/tuple_sketch.hpp;include/tuple_sketch_impl.hpp")
-list(APPEND tuple_HEADERS "include/tuple_union.hpp;include/tuple_union_impl.hpp")
-list(APPEND tuple_HEADERS "include/tuple_intersection.hpp;include/tuple_intersection_impl.hpp")
-list(APPEND tuple_HEADERS "include/tuple_a_not_b.hpp;include/tuple_a_not_b_impl.hpp")
-list(APPEND tuple_HEADERS "include/tuple_jaccard_similarity.hpp")
-list(APPEND tuple_HEADERS "include/array_of_doubles_sketch.hpp;include/array_of_doubles_sketch_impl.hpp")
-list(APPEND tuple_HEADERS "include/array_of_doubles_union.hpp;include/array_of_doubles_union_impl.hpp")
-list(APPEND tuple_HEADERS "include/array_of_doubles_intersection.hpp;include/array_of_doubles_intersection_impl.hpp")
-list(APPEND tuple_HEADERS "include/array_of_doubles_a_not_b.hpp;include/array_of_doubles_a_not_b_impl.hpp")
-
 install(TARGETS tuple
   EXPORT ${PROJECT_NAME}
 )
 
-install(FILES ${tuple_HEADERS}
+install(FILES 
+		include/tuple_sketch.hpp
+		include/tuple_sketch_impl.hpp
+		include/tuple_union.hpp
+		include/tuple_union_impl.hpp
+		include/tuple_intersection.hpp
+		include/tuple_intersection_impl.hpp
+		include/tuple_a_not_b.hpp
+		include/tuple_a_not_b_impl.hpp
+		include/tuple_jaccard_similarity.hpp
+		include/array_of_doubles_sketch.hpp
+		include/array_of_doubles_sketch_impl.hpp
+		include/array_of_doubles_union.hpp
+		include/array_of_doubles_union_impl.hpp
+		include/array_of_doubles_intersection.hpp
+		include/array_of_doubles_intersection_impl.hpp
+		include/array_of_doubles_a_not_b.hpp
+		include/array_of_doubles_a_not_b_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
-
-target_sources(tuple
-  INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_sketch.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_sketch_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_union.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_union_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_intersection.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_intersection_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_a_not_b.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_a_not_b_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/tuple_jaccard_similarity.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_sketch.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_sketch_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_union.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_union_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_intersection.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_intersection_impl.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_a_not_b.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/array_of_doubles_a_not_b_impl.hpp
-)

@@ -9,11 +9,14 @@ global-exclude .git*
 
 recursive-include python/pybind11 *
 
+graft cmake
 graft common
 graft cpc
 graft fi
 graft hll
 graft kll
+graft req
 graft theta
+graft tuple
 graft sampling
 graft python
