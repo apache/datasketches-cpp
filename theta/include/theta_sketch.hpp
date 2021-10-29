@@ -25,14 +25,12 @@
 namespace datasketches {
 
 template<typename Allocator = std::allocator<uint64_t>>
-class theta_sketch_alloc {
+class base_theta_sketch_alloc {
 public:
   using Entry = uint64_t;
   using ExtractKey = trivial_extract_key;
-  using iterator = theta_iterator<Entry, ExtractKey>;
-  using const_iterator = theta_const_iterator<Entry, ExtractKey>;
 
-  virtual ~theta_sketch_alloc() = default;
+  virtual ~base_theta_sketch_alloc() = default;
 
   /**
    * @return allocator
@@ -104,6 +102,22 @@ public:
    */
   virtual string<Allocator> to_string(bool print_items = false) const;
 
+protected:
+  virtual void print_specifics(std::ostringstream& os) const = 0;
+  virtual void print_items(std::ostringstream& os) const = 0;
+};
+
+template<typename Allocator = std::allocator<uint64_t>>
+class theta_sketch_alloc: public base_theta_sketch_alloc<Allocator> {
+public:
+  using Base = theta_sketch_alloc<Allocator>;
+  using Entry = typename Base::Entry;
+  using ExtractKey = typename Base::ExtractKey;
+  using iterator = theta_iterator<Entry, ExtractKey>;
+  using const_iterator = theta_const_iterator<Entry, ExtractKey>;
+
+  virtual ~theta_sketch_alloc() = default;
+
   /**
    * Iterator over hash values in this sketch.
    * @return begin iterator
@@ -131,7 +145,7 @@ public:
   virtual const_iterator end() const = 0;
 
 protected:
-  virtual void print_specifics(std::ostringstream& os) const = 0;
+  virtual void print_items(std::ostringstream& os) const;
 };
 
 // forward declaration
@@ -389,7 +403,7 @@ public:
 // It does not take the ownership of the buffer.
 
 template<typename Allocator = std::allocator<uint64_t>>
-class wrapped_compact_theta_sketch_alloc {
+class wrapped_compact_theta_sketch_alloc : public base_theta_sketch_alloc<Allocator> {
 public:
   using const_iterator = const uint64_t*;
 
@@ -411,6 +425,10 @@ public:
    * @return an instance of the sketch
    */
   static const wrapped_compact_theta_sketch_alloc wrap(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, bool dump_on_error = false);
+
+protected:
+  virtual void print_specifics(std::ostringstream& os) const;
+  virtual void print_items(std::ostringstream& os) const;
 
 private:
   bool is_empty_;
