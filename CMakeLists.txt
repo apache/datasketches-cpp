@@ -142,6 +142,7 @@ configure_package_config_file(
     cmake/DataSketchesConfig.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfig.cmake"
     INSTALL_DESTINATION lib/DataSketches/cmake
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
 install(EXPORT ${PROJECT_NAME} DESTINATION lib/DataSketches/cmake)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfigVersion.cmake"
