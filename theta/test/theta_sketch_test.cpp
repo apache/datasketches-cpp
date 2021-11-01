@@ -269,6 +269,12 @@ TEST_CASE("theta sketch: conversion constructor and wrapped compact", "[theta_sk
     REQUIRE(*it == entry);
     ++it;
   }
+  REQUIRE(ordered_compact3.get_estimate() == ordered_compact1.get_estimate());
+  REQUIRE(ordered_compact3.get_lower_bound(1) == ordered_compact1.get_lower_bound(1));
+  REQUIRE(ordered_compact3.get_upper_bound(1) == ordered_compact1.get_upper_bound(1));
+  REQUIRE(ordered_compact3.is_estimation_mode() == ordered_compact1.is_estimation_mode());
+  REQUIRE(ordered_compact3.get_theta() == ordered_compact1.get_theta());
+
 
   // seed mismatch
   REQUIRE_THROWS_AS(wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size(), 0), std::invalid_argument);

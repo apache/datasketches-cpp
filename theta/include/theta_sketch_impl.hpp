@@ -31,59 +31,65 @@
 namespace datasketches {
 
 template<typename A>
-bool theta_sketch_alloc<A>::is_estimation_mode() const {
+bool base_theta_sketch_alloc<A>::is_estimation_mode() const {
   return get_theta64() < theta_constants::MAX_THETA && !is_empty();
 }
 
 template<typename A>
-double theta_sketch_alloc<A>::get_theta() const {
+double base_theta_sketch_alloc<A>::get_theta() const {
   return static_cast<double>(get_theta64()) / theta_constants::MAX_THETA;
 }
 
 template<typename A>
-double theta_sketch_alloc<A>::get_estimate() const {
+double base_theta_sketch_alloc<A>::get_estimate() const {
   return get_num_retained() / get_theta();
 }
 
 template<typename A>
-double theta_sketch_alloc<A>::get_lower_bound(uint8_t num_std_devs) const {
+double base_theta_sketch_alloc<A>::get_lower_bound(uint8_t num_std_devs) const {
   if (!is_estimation_mode()) return get_num_retained();
   return binomial_bounds::get_lower_bound(get_num_retained(), get_theta(), num_std_devs);
 }
 
 template<typename A>
-double theta_sketch_alloc<A>::get_upper_bound(uint8_t num_std_devs) const {
+double base_theta_sketch_alloc<A>::get_upper_bound(uint8_t num_std_devs) const {
   if (!is_estimation_mode()) return get_num_retained();
   return binomial_bounds::get_upper_bound(get_num_retained(), get_theta(), num_std_devs);
 }
 
 template<typename A>
-string<A> theta_sketch_alloc<A>::to_string(bool detail) const {
+string<A> base_theta_sketch_alloc<A>::to_string(bool print_details) const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
   os << "### Theta sketch summary:" << std::endl;
-  os << "   num retained entries : " << get_num_retained() << std::endl;
-  os << "   seed hash            : " << get_seed_hash() << std::endl;
-  os << "   empty?               : " << (is_empty() ? "true" : "false") << std::endl;
-  os << "   ordered?             : " << (is_ordered() ? "true" : "false") << std::endl;
-  os << "   estimation mode?     : " << (is_estimation_mode() ? "true" : "false") << std::endl;
-  os << "   theta (fraction)     : " << get_theta() << std::endl;
-  os << "   theta (raw 64-bit)   : " << get_theta64() << std::endl;
+  os << "   num retained entries : " << this->get_num_retained() << std::endl;
+  os << "   seed hash            : " << this->get_seed_hash() << std::endl;
+  os << "   empty?               : " << (this->is_empty() ? "true" : "false") << std::endl;
+  os << "   ordered?             : " << (this->is_ordered() ? "true" : "false") << std::endl;
+  os << "   estimation mode?     : " << (this->is_estimation_mode() ? "true" : "false") << std::endl;
+  os << "   theta (fraction)     : " << this->get_theta() << std::endl;
+  os << "   theta (raw 64-bit)   : " << this->get_theta64() << std::endl;
   os << "   estimate             : " << this->get_estimate() << std::endl;
   os << "   lower bound 95% conf : " << this->get_lower_bound(2) << std::endl;
   os << "   upper bound 95% conf : " << this->get_upper_bound(2) << std::endl;
   print_specifics(os);
   os << "### End sketch summary" << std::endl;
-  if (detail) {
+  if (print_details) {
+      print_items(os);
+  }
+  return string<A>(os.str().c_str(), this->get_allocator());
+}
+
+template<typename A>
+void theta_sketch_alloc<A>::print_items(std::ostringstream& os) const {
     os << "### Retained entries" << std::endl;
     for (const auto& hash: *this) {
       os << hash << std::endl;
     }
     os << "### End retained entries" << std::endl;
-  }
-  return string<A>(os.str().c_str(), get_allocator());
 }
+
 
 // update sketch
 
@@ -533,6 +539,18 @@ auto wrapped_compact_theta_sketch_alloc<A>::begin() const -> const_iterator {
 template<typename A>
 auto wrapped_compact_theta_sketch_alloc<A>::end() const -> const_iterator {
   return entries_ + num_entries_;
+}
+
+template<typename A>
+void wrapped_compact_theta_sketch_alloc<A>::print_specifics(std::ostringstream&) const {}
+
+template<typename A>
+void wrapped_compact_theta_sketch_alloc<A>::print_items(std::ostringstream& os) const {
+    os << "### Retained entries" << std::endl;
+    for (const auto& hash: *this) {
+      os << hash << std::endl;
+    }
+    os << "### End retained entries" << std::endl;
 }
 
 } /* namespace datasketches */
