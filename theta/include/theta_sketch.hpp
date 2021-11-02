@@ -27,8 +27,6 @@ namespace datasketches {
 template<typename Allocator = std::allocator<uint64_t>>
 class base_theta_sketch_alloc {
 public:
-  using Entry = uint64_t;
-  using ExtractKey = trivial_extract_key;
 
   virtual ~base_theta_sketch_alloc() = default;
 
@@ -110,9 +108,8 @@ protected:
 template<typename Allocator = std::allocator<uint64_t>>
 class theta_sketch_alloc: public base_theta_sketch_alloc<Allocator> {
 public:
-  using Base = theta_sketch_alloc<Allocator>;
-  using Entry = typename Base::Entry;
-  using ExtractKey = typename Base::ExtractKey;
+  using Entry = uint64_t;
+  using ExtractKey = trivial_extract_key;
   using iterator = theta_iterator<Entry, ExtractKey>;
   using const_iterator = theta_const_iterator<Entry, ExtractKey>;
 
@@ -283,6 +280,11 @@ public:
   void trim();
 
   /**
+   * Reset the sketch to the initial empty state
+   */
+  void reset();
+
+  /**
    * Converts this sketch to a compact sketch (ordered or unordered).
    * @param ordered optional flag to specify if ordered sketch should be produced
    * @return compact sketch
@@ -298,8 +300,8 @@ private:
   theta_table table_;
 
   // for builder
-  update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta,
-      uint64_t seed, const Allocator& allocator);
+  update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p,
+      uint64_t theta, uint64_t seed, const Allocator& allocator);
 
   virtual void print_specifics(std::ostringstream& os) const;
 };

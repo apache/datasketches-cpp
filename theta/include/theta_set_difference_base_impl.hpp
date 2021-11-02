@@ -53,7 +53,7 @@ CS theta_set_difference_base<EN, EK, CS, A>::compute(FwdSketch&& a, const Sketch
           conditional_back_inserter(entries, key_less_than<uint64_t, EN, EK>(theta)), comparator());
     } else { // hash-based
       const uint8_t lg_size = lg_size_from_count(b.get_num_retained(), hash_table::REBUILD_THRESHOLD);
-      hash_table table(lg_size, lg_size, hash_table::resize_factor::X1, 0, 0, allocator_); // theta and seed are not used here
+      hash_table table(lg_size, lg_size, hash_table::resize_factor::X1, 1, 0, 0, allocator_); // theta and seed are not used here
       for (const auto& entry: b) {
         const uint64_t hash = EK()(entry);
         if (hash < theta) {

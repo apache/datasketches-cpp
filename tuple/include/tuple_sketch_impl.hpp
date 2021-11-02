@@ -82,9 +82,9 @@ string<A> tuple_sketch<S, A>::to_string(bool detail) const {
 // update sketch
 
 template<typename S, typename U, typename P, typename A>
-update_tuple_sketch<S, U, P, A>::update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
+update_tuple_sketch<S, U, P, A>::update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
 policy_(policy),
-map_(lg_cur_size, lg_nom_size, rf, theta, seed, allocator)
+map_(lg_cur_size, lg_nom_size, rf, p, theta, seed, allocator)
 {}
 
 template<typename S, typename U, typename P, typename A>
@@ -212,6 +212,11 @@ void update_tuple_sketch<S, U, P, A>::update(const void* key, size_t length, UU&
 template<typename S, typename U, typename P, typename A>
 void update_tuple_sketch<S, U, P, A>::trim() {
   map_.trim();
+}
+
+template<typename S, typename U, typename P, typename A>
+void update_tuple_sketch<S, U, P, A>::reset() {
+  map_.reset();
 }
 
 template<typename S, typename U, typename P, typename A>
@@ -582,7 +587,7 @@ tuple_base_builder<builder, P, A>(policy, allocator) {}
 
 template<typename S, typename U, typename P, typename A>
 auto update_tuple_sketch<S, U, P, A>::builder::build() const -> update_tuple_sketch {
-  return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
+  return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 
 } /* namespace datasketches */

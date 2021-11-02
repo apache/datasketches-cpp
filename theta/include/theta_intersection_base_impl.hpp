@@ -29,7 +29,7 @@ template<typename EN, typename EK, typename P, typename S, typename CS, typename
 theta_intersection_base<EN, EK, P, S, CS, A>::theta_intersection_base(uint64_t seed, const P& policy, const A& allocator):
 policy_(policy),
 is_valid_(false),
-table_(0, 0, resize_factor::X1, theta_constants::MAX_THETA, seed, allocator, false)
+table_(0, 0, resize_factor::X1, 1, theta_constants::MAX_THETA, seed, allocator, false)
 {}
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
@@ -42,13 +42,13 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   if (is_valid_ && table_.num_entries_ == 0) return;
   if (sketch.get_num_retained() == 0) {
     is_valid_ = true;
-    table_ = hash_table(0, 0, resize_factor::X1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
+    table_ = hash_table(0, 0, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
     return;
   }
   if (!is_valid_) { // first update, copy or move incoming sketch
     is_valid_ = true;
     const uint8_t lg_size = lg_size_from_count(sketch.get_num_retained(), theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
-    table_ = hash_table(lg_size, lg_size, resize_factor::X1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
+    table_ = hash_table(lg_size, lg_size, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
     for (auto& entry: sketch) {
       auto result = table_.find(EK()(entry));
       if (result.second) {
@@ -83,11 +83,11 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
       throw std::invalid_argument(" fewer keys than expected, possibly corrupted input sketch");
     }
     if (match_count == 0) {
-      table_ = hash_table(0, 0, resize_factor::X1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
+      table_ = hash_table(0, 0, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
       if (table_.theta_ == theta_constants::MAX_THETA) table_.is_empty_ = true;
     } else {
       const uint8_t lg_size = lg_size_from_count(match_count, theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
-      table_ = hash_table(lg_size, lg_size, resize_factor::X1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
+      table_ = hash_table(lg_size, lg_size, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
       for (uint32_t i = 0; i < match_count; i++) {
         auto result = table_.find(EK()(matched_entries[i]));
         table_.insert(result.first, std::move(matched_entries[i]));

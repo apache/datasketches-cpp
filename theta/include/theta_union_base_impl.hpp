@@ -28,9 +28,9 @@ namespace datasketches {
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
 theta_union_base<EN, EK, P, S, CS, A>::theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
-    uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
+    float p, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
 policy_(policy),
-table_(lg_cur_size, lg_nom_size, rf, theta, seed, allocator),
+table_(lg_cur_size, lg_nom_size, rf, p, theta, seed, allocator),
 union_theta_(table_.theta_)
 {}
 
@@ -82,6 +82,12 @@ CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
 const P& theta_union_base<EN, EK, P, S, CS, A>::get_policy() const {
   return policy_;
+}
+
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
+void theta_union_base<EN, EK, P, S, CS, A>::reset() {
+  table_.reset();
+  union_theta_ = table_.theta_;
 }
 
 } /* namespace datasketches */

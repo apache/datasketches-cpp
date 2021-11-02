@@ -36,6 +36,17 @@ const std::string inputPath = TEST_BINARY_INPUT_PATH;
 const std::string inputPath = "test/";
 #endif
 
+TEST_CASE("aod sketch: reset", "[tuple_sketch]") {
+  auto update_sketch = update_array_of_doubles_sketch::builder().build();
+  std::vector<double> a = {1};
+  update_sketch.update(1, a);
+  REQUIRE(!update_sketch.is_empty());
+  REQUIRE(update_sketch.get_num_retained() == 1);
+  update_sketch.reset();
+  REQUIRE(update_sketch.is_empty());
+  REQUIRE(update_sketch.get_num_retained() == 0);
+}
+
 TEST_CASE("aod sketch: serialization compatibility with java - empty", "[tuple_sketch]") {
   auto update_sketch = update_array_of_doubles_sketch::builder().build();
   REQUIRE(update_sketch.is_empty());
@@ -263,6 +274,11 @@ TEST_CASE("aod union: half overlap", "[tuple_sketch]") {
   u.update(update_sketch2);
   auto result = u.get_result();
   REQUIRE(result.get_estimate() == Approx(1500).margin(0.01));
+
+  u.reset();
+  result = u.get_result();
+  REQUIRE(result.is_empty());
+  REQUIRE(result.get_num_retained() == 0);
 }
 
 TEST_CASE("aod intersection: half overlap", "[tuple_sketch]") {
