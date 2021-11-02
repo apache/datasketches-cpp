@@ -258,7 +258,10 @@ template<typename EN, typename EK, typename A>
 void theta_update_sketch_base<EN, EK, A>::reset() {
   const size_t cur_size = 1ULL << lg_cur_size_;
   for (size_t i = 0; i < cur_size; ++i) {
-    if (EK()(entries_[i]) != 0) entries_[i].~EN();
+    if (EK()(entries_[i]) != 0) {
+      entries_[i].~EN();
+      EK()(entries_[i]) = 0;
+    }
   }
   const uint8_t starting_lg_size = theta_build_helper<true>::starting_sub_multiple(
       lg_nom_size_ + 1, theta_constants::MIN_LG_K, static_cast<uint8_t>(rf_));
@@ -268,8 +271,6 @@ void theta_update_sketch_base<EN, EK, A>::reset() {
     const size_t new_size = 1ULL << starting_lg_size;
     entries_ = allocator_.allocate(new_size);
     for (size_t i = 0; i < new_size; ++i) EK()(entries_[i]) = 0;
-  } else {
-    for (size_t i = 0; i < cur_size; ++i) EK()(entries_[i]) = 0;
   }
   num_entries_ = 0;
   theta_ = theta_build_helper<true>::starting_theta_from_p(p_);
