@@ -60,11 +60,16 @@ public:
    */
   CompactSketch get_result(bool ordered = true) const;
 
+  /**
+   * Reset the union to the initial empty state
+   */
+  void reset();
+
 private:
   State state_;
 
   // for builder
-  theta_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const Allocator& allocator);
+  theta_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Allocator& allocator);
 };
 
 template<typename A>

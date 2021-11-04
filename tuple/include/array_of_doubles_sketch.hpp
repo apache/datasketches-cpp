@@ -122,7 +122,7 @@ public:
 
 private:
   // for builder
-  update_array_of_doubles_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta,
+  update_array_of_doubles_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta,
       uint64_t seed, const array_of_doubles_update_policy<A>& policy, const A& allocator);
 };
 

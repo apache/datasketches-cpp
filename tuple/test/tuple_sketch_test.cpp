@@ -151,6 +151,16 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
       ++it;
     }
   }
+
+  update_sketch.reset();
+  REQUIRE(update_sketch.is_empty());
+  REQUIRE(!update_sketch.is_estimation_mode());
+  REQUIRE(update_sketch.get_estimate() == 0);
+  REQUIRE(update_sketch.get_lower_bound(1) == 0);
+  REQUIRE(update_sketch.get_upper_bound(1) == 0);
+  REQUIRE(update_sketch.get_theta() == 1);
+  REQUIRE(update_sketch.get_num_retained() == 0);
+  REQUIRE(!update_sketch.is_ordered());
 }
 
 template<typename T>

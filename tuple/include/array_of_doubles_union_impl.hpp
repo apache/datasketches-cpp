@@ -20,8 +20,8 @@
 namespace datasketches {
 
 template<typename A>
-array_of_doubles_union_alloc<A>::array_of_doubles_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const Policy& policy, const A& allocator):
-Base(lg_cur_size, lg_nom_size, rf, theta, seed, policy, allocator)
+array_of_doubles_union_alloc<A>::array_of_doubles_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Policy& policy, const A& allocator):
+Base(lg_cur_size, lg_nom_size, rf, p, theta, seed, policy, allocator)
 {}
 
 template<typename A>
@@ -37,7 +37,7 @@ tuple_base_builder<builder, Policy, A>(policy, allocator) {}
 
 template<typename A>
 array_of_doubles_union_alloc<A> array_of_doubles_union_alloc<A>::builder::build() const {
-  return array_of_doubles_union_alloc<A>(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
+  return array_of_doubles_union_alloc<A>(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 
 } /* namespace datasketches */

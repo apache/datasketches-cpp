@@ -95,8 +95,8 @@ void theta_sketch_alloc<A>::print_items(std::ostringstream& os) const {
 
 template<typename A>
 update_theta_sketch_alloc<A>::update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
-    uint64_t theta, uint64_t seed, const A& allocator):
-table_(lg_cur_size, lg_nom_size, rf, theta, seed, allocator)
+    float p, uint64_t theta, uint64_t seed, const A& allocator):
+table_(lg_cur_size, lg_nom_size, rf, p, theta, seed, allocator)
 {}
 
 template<typename A>
@@ -211,6 +211,11 @@ void update_theta_sketch_alloc<A>::trim() {
 }
 
 template<typename A>
+void update_theta_sketch_alloc<A>::reset() {
+  table_.reset();
+}
+
+template<typename A>
 auto update_theta_sketch_alloc<A>::begin() -> iterator {
   return iterator(table_.entries_, 1 << table_.lg_cur_size_, 0);
 }
@@ -249,7 +254,7 @@ update_theta_sketch_alloc<A>::builder::builder(const A& allocator): theta_base_b
 
 template<typename A>
 update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::builder::build() const {
-  return update_theta_sketch_alloc(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->allocator_);
+  return update_theta_sketch_alloc(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->allocator_);
 }
 
 // compact sketch

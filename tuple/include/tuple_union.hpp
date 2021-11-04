@@ -80,11 +80,16 @@ public:
    */
   CompactSketch get_result(bool ordered = true) const;
 
+  /**
+   * Reset the union to the initial empty state
+   */
+  void reset();
+
 protected:
   State state_;
 
   // for builder
-  tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
+  tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
 };
 
 template<typename S, typename P, typename A>

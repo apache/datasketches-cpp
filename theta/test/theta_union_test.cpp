@@ -51,35 +51,41 @@ TEST_CASE("theta union: non empty no retained keys", "[theta_union]") {
 }
 
 TEST_CASE("theta union: exact mode half overlap", "[theta_union]") {
-  update_theta_sketch sketch1 = update_theta_sketch::builder().build();
+  auto sketch1 = update_theta_sketch::builder().build();
   int value = 0;
   for (int i = 0; i < 1000; i++) sketch1.update(value++);
 
-  update_theta_sketch sketch2 = update_theta_sketch::builder().build();
+  auto sketch2 = update_theta_sketch::builder().build();
   value = 500;
   for (int i = 0; i < 1000; i++) sketch2.update(value++);
 
-  theta_union u = theta_union::builder().build();
+  auto u = theta_union::builder().build();
   u.update(sketch1);
   u.update(sketch2);
-  compact_theta_sketch sketch3 = u.get_result();
+  auto sketch3 = u.get_result();
   REQUIRE_FALSE(sketch3.is_empty());
   REQUIRE_FALSE(sketch3.is_estimation_mode());
   REQUIRE(sketch3.get_estimate() == 1500.0);
+
+  u.reset();
+  sketch3 = u.get_result();
+  REQUIRE(sketch3.get_num_retained() == 0);
+  REQUIRE(sketch3.is_empty());
+  REQUIRE_FALSE(sketch3.is_estimation_mode());
 }
 
 TEST_CASE("theta union: exact mode half overlap wrapped compact", "[theta_union]") {
-  update_theta_sketch sketch1 = update_theta_sketch::builder().build();
+  auto sketch1 = update_theta_sketch::builder().build();
   int value = 0;
   for (int i = 0; i < 1000; i++) sketch1.update(value++);
   auto bytes1 = sketch1.compact().serialize();
 
-  update_theta_sketch sketch2 = update_theta_sketch::builder().build();
+  auto sketch2 = update_theta_sketch::builder().build();
   value = 500;
   for (int i = 0; i < 1000; i++) sketch2.update(value++);
   auto bytes2 = sketch2.compact().serialize();
 
-  theta_union u = theta_union::builder().build();
+  auto u = theta_union::builder().build();
   u.update(wrapped_compact_theta_sketch::wrap(bytes1.data(), bytes1.size()));
   u.update(wrapped_compact_theta_sketch::wrap(bytes2.data(), bytes2.size()));
   compact_theta_sketch sketch3 = u.get_result();
@@ -89,22 +95,28 @@ TEST_CASE("theta union: exact mode half overlap wrapped compact", "[theta_union]
 }
 
 TEST_CASE("theta union: estimation mode half overlap", "[theta_union]") {
-  update_theta_sketch sketch1 = update_theta_sketch::builder().build();
+  auto sketch1 = update_theta_sketch::builder().build();
   int value = 0;
   for (int i = 0; i < 10000; i++) sketch1.update(value++);
 
-  update_theta_sketch sketch2 = update_theta_sketch::builder().build();
+  auto sketch2 = update_theta_sketch::builder().build();
   value = 5000;
   for (int i = 0; i < 10000; i++) sketch2.update(value++);
 
-  theta_union u = theta_union::builder().build();
+  auto u = theta_union::builder().build();
   u.update(sketch1);
   u.update(sketch2);
-  compact_theta_sketch sketch3 = u.get_result();
+  auto sketch3 = u.get_result();
   REQUIRE_FALSE(sketch3.is_empty());
   REQUIRE(sketch3.is_estimation_mode());
   REQUIRE(sketch3.get_estimate() == Approx(15000).margin(15000 * 0.01));
   //std::cerr << sketch3.to_string(true);
+
+  u.reset();
+  sketch3 = u.get_result();
+  REQUIRE(sketch3.get_num_retained() == 0);
+  REQUIRE(sketch3.is_empty());
+  REQUIRE_FALSE(sketch3.is_estimation_mode());
 }
 
 TEST_CASE("theta union: seed mismatch", "[theta_union]") {
