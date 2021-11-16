@@ -42,6 +42,8 @@ void init_cpc(py::module &m) {
          "Updates the sketch with the given 64-bit floating point")
     .def<void (cpc_sketch::*)(const std::string&)>("update", &cpc_sketch::update, py::arg("datum"),
          "Updates the sketch with the given string")
+    .def("get_lg_k", &cpc_sketch::get_lg_k,
+         "Returns configured lg_k of this sketch")
     .def("is_empty", &cpc_sketch::is_empty,
          "Returns True if the sketch is empty, otherwise False")
     .def("get_estimate", &cpc_sketch::get_estimate,
