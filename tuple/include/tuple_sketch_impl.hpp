@@ -104,7 +104,7 @@ bool update_tuple_sketch<S, U, P, A>::is_ordered() const {
 
 template<typename S, typename U, typename P, typename A>
 uint64_t update_tuple_sketch<S, U, P, A>::get_theta64() const {
-  return map_.theta_;
+  return is_empty() ? theta_constants::MAX_THETA : map_.theta_;
 }
 
 template<typename S, typename U, typename P, typename A>

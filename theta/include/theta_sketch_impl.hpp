@@ -116,7 +116,7 @@ bool update_theta_sketch_alloc<A>::is_ordered() const {
 
 template<typename A>
 uint64_t update_theta_sketch_alloc<A>::get_theta64() const {
-  return table_.theta_;
+  return is_empty() ? theta_constants::MAX_THETA : table_.theta_;
 }
 
 template<typename A>
@@ -268,9 +268,11 @@ seed_hash_(other.get_seed_hash()),
 theta_(other.get_theta64()),
 entries_(other.get_allocator())
 {
-  entries_.reserve(other.get_num_retained());
-  std::copy(other.begin(), other.end(), std::back_inserter(entries_));
-  if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end());
+  if (!other.is_empty()) {
+    entries_.reserve(other.get_num_retained());
+    std::copy(other.begin(), other.end(), std::back_inserter(entries_));
+    if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end());
+  }
 }
 
 template<typename A>

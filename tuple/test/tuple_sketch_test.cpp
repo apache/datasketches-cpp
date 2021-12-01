@@ -34,7 +34,6 @@ std::ostream& operator<<(std::ostream& os, const three_doubles& tuple) {
 
 #include <catch.hpp>
 #include <tuple_sketch.hpp>
-//#include <test_type.hpp>
 
 namespace datasketches {
 
@@ -43,9 +42,11 @@ TEST_CASE("tuple sketch float: builder", "[tuple_sketch]") {
   builder.set_lg_k(10).set_p(0.5f).set_resize_factor(theta_constants::resize_factor::X2).set_seed(123);
   auto sketch = builder.build();
   REQUIRE(sketch.get_lg_k() == 10);
-  REQUIRE(sketch.get_theta() == 0.5);
+  REQUIRE(sketch.get_theta() == 1.0); // empty sketch should have theta 1.0
   REQUIRE(sketch.get_rf() == theta_constants::resize_factor::X2);
   REQUIRE(sketch.get_seed_hash() == compute_seed_hash(123));
+  sketch.update(1, 0);
+  REQUIRE(sketch.get_theta() == 0.5); // theta = p
 }
 
 TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {

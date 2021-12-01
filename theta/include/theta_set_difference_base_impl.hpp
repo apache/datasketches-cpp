@@ -36,7 +36,7 @@ seed_hash_(compute_seed_hash(seed))
 template<typename EN, typename EK, typename CS, typename A>
 template<typename FwdSketch, typename Sketch>
 CS theta_set_difference_base<EN, EK, CS, A>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const {
-  if (a.is_empty() || a.get_num_retained() == 0 || b.is_empty()) return CS(a, ordered);
+  if (a.is_empty() || (a.get_num_retained() > 0 && b.is_empty())) return CS(a, true);
   if (a.get_seed_hash() != seed_hash_) throw std::invalid_argument("A seed hash mismatch");
   if (b.get_seed_hash() != seed_hash_) throw std::invalid_argument("B seed hash mismatch");
 

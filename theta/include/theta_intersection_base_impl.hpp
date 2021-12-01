@@ -38,7 +38,7 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   if (table_.is_empty_) return;
   if (!sketch.is_empty() && sketch.get_seed_hash() != compute_seed_hash(table_.seed_)) throw std::invalid_argument("seed hash mismatch");
   table_.is_empty_ |= sketch.is_empty();
-  table_.theta_ = std::min(table_.theta_, sketch.get_theta64());
+  table_.theta_ = table_.is_empty_ ? theta_constants::MAX_THETA : std::min(table_.theta_, sketch.get_theta64());
   if (is_valid_ && table_.num_entries_ == 0) return;
   if (sketch.get_num_retained() == 0) {
     is_valid_ = true;

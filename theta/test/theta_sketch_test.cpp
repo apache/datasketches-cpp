@@ -71,7 +71,7 @@ TEST_CASE("theta sketch: non empty no retained keys", "[theta_sketch]") {
   update_sketch.reset();
   REQUIRE(update_sketch.is_empty());
   REQUIRE_FALSE(update_sketch.is_estimation_mode());
-  REQUIRE(update_sketch.get_theta() == Approx(0.001));
+  REQUIRE(update_sketch.get_theta() == 1.0);
   REQUIRE(update_sketch.get_estimate() == 0.0);
   REQUIRE(update_sketch.get_lower_bound(1) == 0.0);
   REQUIRE(update_sketch.get_upper_bound(1) == 0.0);
