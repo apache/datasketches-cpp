@@ -39,6 +39,7 @@ TEST_CASE("theta sketch: empty", "[theta_sketch]") {
   REQUIRE(update_sketch.get_estimate() == 0.0);
   REQUIRE(update_sketch.get_lower_bound(1) == 0.0);
   REQUIRE(update_sketch.get_upper_bound(1) == 0.0);
+  REQUIRE(update_sketch.is_ordered());
 
   compact_theta_sketch compact_sketch = update_sketch.compact();
   REQUIRE(compact_sketch.is_empty());
@@ -47,6 +48,10 @@ TEST_CASE("theta sketch: empty", "[theta_sketch]") {
   REQUIRE(compact_sketch.get_estimate() == 0.0);
   REQUIRE(compact_sketch.get_lower_bound(1) == 0.0);
   REQUIRE(compact_sketch.get_upper_bound(1) == 0.0);
+  REQUIRE(compact_sketch.is_ordered());
+
+  // empty is forced to be ordered
+  REQUIRE(update_sketch.compact(false).is_ordered());
 }
 
 TEST_CASE("theta sketch: non empty no retained keys", "[theta_sketch]") {
@@ -86,6 +91,7 @@ TEST_CASE("theta sketch: single item", "[theta_sketch]") {
   REQUIRE(update_sketch.get_estimate() == 1.0);
   REQUIRE(update_sketch.get_lower_bound(1) == 1.0);
   REQUIRE(update_sketch.get_upper_bound(1) == 1.0);
+  REQUIRE(update_sketch.is_ordered()); // one item is ordered
 
   compact_theta_sketch compact_sketch = update_sketch.compact();
   REQUIRE_FALSE(compact_sketch.is_empty());
@@ -94,6 +100,10 @@ TEST_CASE("theta sketch: single item", "[theta_sketch]") {
   REQUIRE(compact_sketch.get_estimate() == 1.0);
   REQUIRE(compact_sketch.get_lower_bound(1) == 1.0);
   REQUIRE(compact_sketch.get_upper_bound(1) == 1.0);
+  REQUIRE(compact_sketch.is_ordered());
+
+  // single item is forced to be ordered
+  REQUIRE(update_sketch.compact(false).is_ordered());
 }
 
 TEST_CASE("theta sketch: resize exact", "[theta_sketch]") {
@@ -105,6 +115,7 @@ TEST_CASE("theta sketch: resize exact", "[theta_sketch]") {
   REQUIRE(update_sketch.get_estimate() == 2000.0);
   REQUIRE(update_sketch.get_lower_bound(1) == 2000.0);
   REQUIRE(update_sketch.get_upper_bound(1) == 2000.0);
+  REQUIRE_FALSE(update_sketch.is_ordered());
 
   compact_theta_sketch compact_sketch = update_sketch.compact();
   REQUIRE_FALSE(compact_sketch.is_empty());
@@ -113,6 +124,7 @@ TEST_CASE("theta sketch: resize exact", "[theta_sketch]") {
   REQUIRE(compact_sketch.get_estimate() == 2000.0);
   REQUIRE(compact_sketch.get_lower_bound(1) == 2000.0);
   REQUIRE(compact_sketch.get_upper_bound(1) == 2000.0);
+  REQUIRE(compact_sketch.is_ordered());
 
   update_sketch.reset();
   REQUIRE(update_sketch.is_empty());
@@ -121,6 +133,8 @@ TEST_CASE("theta sketch: resize exact", "[theta_sketch]") {
   REQUIRE(update_sketch.get_estimate() == 0.0);
   REQUIRE(update_sketch.get_lower_bound(1) == 0.0);
   REQUIRE(update_sketch.get_upper_bound(1) == 0.0);
+  REQUIRE(update_sketch.is_ordered());
+
 }
 
 TEST_CASE("theta sketch: estimation", "[theta_sketch]") {

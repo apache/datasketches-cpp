@@ -111,7 +111,7 @@ bool update_theta_sketch_alloc<A>::is_empty() const {
 
 template<typename A>
 bool update_theta_sketch_alloc<A>::is_ordered() const {
-  return false;
+  return table_.num_entries_ > 1 ? false : true;
 }
 
 template<typename A>
@@ -279,7 +279,7 @@ template<typename A>
 compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta,
     std::vector<uint64_t, A>&& entries):
 is_empty_(is_empty),
-is_ordered_(is_ordered),
+is_ordered_(is_ordered || (entries.size() <= 1ULL)),
 seed_hash_(seed_hash),
 theta_(theta),
 entries_(std::move(entries))
