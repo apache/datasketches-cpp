@@ -88,36 +88,46 @@ update_theta_sketch build_sketch(SkType skType, float p, uint64_t value) {
 void checks(
   update_theta_sketch& a,
   update_theta_sketch& b,
-  double resultInterTheta,
-  uint32_t resultInterCount,
-  bool resultInterEmpty,
-  double resultAnotbTheta,
-  uint32_t resultAnotbCount,
-  bool resultAnotbEmpty
+  double expectedIntersectTheta,
+  uint32_t expectedIntersectCount,
+  bool expectedIntersectEmpty,
+  double expectedAnotbTheta,
+  uint32_t expectedAnotbCount,
+  bool expectedAnotbEmpty,
+  double expectedUnionTheta,
+  uint32_t expectedUnionCount,
+  bool expectedUnionEmpty
 ) {
   {
     theta_intersection inter;
     inter.update(a);
     inter.update(b);
     auto csk = inter.get_result();
-    check_result("Intersection update sketches", csk, resultInterTheta, resultInterCount, resultInterEmpty);
+    check_result("Intersection update sketches", csk, expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty);
   }
   {
     theta_intersection inter;
     inter.update(a.compact());
     inter.update(b.compact());
     auto csk = inter.get_result();
-    check_result("Intersection compact sketches", csk, resultInterTheta, resultInterCount, resultInterEmpty);
+    check_result("Intersection compact sketches", csk, expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty);
   }
   {
     theta_a_not_b a_not_b;
     auto csk = a_not_b.compute(a, b);
-    check_result("AnotB update sketches", csk, resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+    check_result("AnotB update sketches", csk, expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty);
   }
   {
     theta_a_not_b a_not_b;
     auto csk = a_not_b.compute(a.compact(), b.compact());
-    check_result("AnotB compact sketches", csk, resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+    check_result("AnotB compact sketches", csk, expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty);
+  }
+  {
+    auto u = theta_union::builder().build();
+    u.update(a);
+    u.update(b);
+    auto csk = u.get_result();
+    check_result("Union update sketches", csk, expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
   }
 }
 
@@ -125,57 +135,77 @@ void checks(
 TEST_CASE("empty empty") {
   auto a = build_sketch(SkType::EMPTY, 0, 0);
   auto b = build_sketch(SkType::EMPTY, 0, 0);
-  const double resultInterTheta = 1.0;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = true;
-  const double resultAnotbTheta = 1.0;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = true;
+  const double expectedIntersectTheta = 1.0;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = true;
+  const double expectedAnotbTheta = 1.0;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = true;
+  const double expectedUnionTheta = 1.0;
+  const int expectedUnionCount = 0;
+  const bool expectedUnionEmpty = true;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("empty exact") {
   auto a = build_sketch(SkType::EMPTY, 0, 0);
   auto b = build_sketch(SkType::EXACT, 0, GT_MIDP_V);
-  const double resultInterTheta = 1.0;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = true;
-  const double resultAnotbTheta = 1.0;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = true;
+  const double expectedIntersectTheta = 1.0;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = true;
+  const double expectedAnotbTheta = 1.0;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = true;
+  const double expectedUnionTheta = 1.0;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("empty degenerate") {
   auto a = build_sketch(SkType::EMPTY, 0, 0);
   auto b = build_sketch(SkType::DEGENERATE, LOWP, GT_LOWP_V);
-  const double resultInterTheta = 1.0;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = true;
-  const double resultAnotbTheta = 1.0;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = true;
+  const double expectedIntersectTheta = 1.0;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = true;
+  const double expectedAnotbTheta = 1.0;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = true;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 0;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("empty estimation") {
   auto a = build_sketch(SkType::EMPTY, 0, 0);
   auto b = build_sketch(SkType::ESTIMATION, LOWP, LT_LOWP_V);
-  const double resultInterTheta = 1.0;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = true;
-  const double resultAnotbTheta = 1.0;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = true;
+  const double expectedIntersectTheta = 1.0;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = true;
+  const double expectedAnotbTheta = 1.0;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = true;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 // ---
@@ -183,57 +213,77 @@ TEST_CASE("empty estimation") {
 TEST_CASE("exact empty") {
   auto a = build_sketch(SkType::EXACT, 0, GT_MIDP_V);
   auto b = build_sketch(SkType::EMPTY, 0, 0);
-  const double resultInterTheta = 1.0;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = true;
-  const double resultAnotbTheta = 1.0;
-  const int resultAnotbCount = 1;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = 1.0;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = true;
+  const double expectedAnotbTheta = 1.0;
+  const int expectedAnotbCount = 1;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = 1.0;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("exact exact") {
   auto a = build_sketch(SkType::EXACT, 0, GT_MIDP_V);
   auto b = build_sketch(SkType::EXACT, 0, GT_MIDP_V);
-  const double resultInterTheta = 1.0;
-  const int resultInterCount = 1;
-  const bool resultInterEmpty = false;
-  const double resultAnotbTheta = 1.0;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = true;
+  const double expectedIntersectTheta = 1.0;
+  const int expectedIntersectCount = 1;
+  const bool expectedIntersectEmpty = false;
+  const double expectedAnotbTheta = 1.0;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = true;
+  const double expectedUnionTheta = 1.0;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("exact degenerate") {
   auto a = build_sketch(SkType::EXACT, 0, LT_LOWP_V);
   auto b = build_sketch(SkType::DEGENERATE, LOWP, GT_LOWP_V); //entries = 0
-  const double resultInterTheta = LOWP_THETA;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = false;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 1;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = LOWP_THETA;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = false;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 1;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("exact estimation") {
   auto a = build_sketch(SkType::EXACT, 0, LT_LOWP_V);
   auto b = build_sketch(SkType::ESTIMATION, LOWP, LT_LOWP_V);
-  const double resultInterTheta = LOWP_THETA;
-  const int resultInterCount = 1;
-  const bool resultInterEmpty = false;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = LOWP_THETA;
+  const int expectedIntersectCount = 1;
+  const bool expectedIntersectEmpty = false;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 // ---
@@ -241,57 +291,77 @@ TEST_CASE("exact estimation") {
 TEST_CASE("estimation empty") {
   auto a = build_sketch(SkType::ESTIMATION, LOWP, LT_LOWP_V);
   auto b = build_sketch(SkType::EMPTY, 0, 0);
-  const double resultInterTheta = 1.0;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = true;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 1;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = 1.0;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = true;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 1;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("estimation exact") {
   auto a = build_sketch(SkType::ESTIMATION, LOWP, LT_LOWP_V);
   auto b = build_sketch(SkType::EXACT, 0, LT_LOWP_V);
-  const double resultInterTheta = LOWP_THETA;
-  const int resultInterCount = 1;
-  const bool resultInterEmpty = false;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = LOWP_THETA;
+  const int expectedIntersectCount = 1;
+  const bool expectedIntersectEmpty = false;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("estimation degenerate") {
   auto a = build_sketch(SkType::ESTIMATION, MIDP, LT_LOWP_V);
   auto b = build_sketch(SkType::DEGENERATE, LOWP, GT_LOWP_V);
-  const double resultInterTheta = LOWP_THETA;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = false;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 1;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = LOWP_THETA;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = false;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 1;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("estimation estimation") {
   auto a = build_sketch(SkType::ESTIMATION, MIDP, LT_LOWP_V);
   auto b = build_sketch(SkType::ESTIMATION, LOWP, LT_LOWP_V);
-  const double resultInterTheta = LOWP_THETA;
-  const int resultInterCount = 1;
-  const bool resultInterEmpty = false;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = LOWP_THETA;
+  const int expectedIntersectCount = 1;
+  const bool expectedIntersectEmpty = false;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 // ---
@@ -299,57 +369,77 @@ TEST_CASE("estimation estimation") {
 TEST_CASE("degenerate empty") {
   auto a = build_sketch(SkType::DEGENERATE, LOWP, GT_LOWP_V); //entries = 0
   auto b = build_sketch(SkType::EMPTY, 0, 0);
-  const double resultInterTheta = 1.0;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = true;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = 1.0;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = true;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 0;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("degenerate exact") {
   auto a = build_sketch(SkType::DEGENERATE, LOWP, GT_LOWP_V); //entries = 0
   auto b = build_sketch(SkType::EXACT, 0, LT_LOWP_V);
-  const double resultInterTheta = LOWP_THETA;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = false;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = LOWP_THETA;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = false;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("degenerate degenerate") {
   auto a = build_sketch(SkType::DEGENERATE, MIDP, GT_MIDP_V); //entries = 0
   auto b = build_sketch(SkType::DEGENERATE, LOWP, GT_LOWP_V);
-  const double resultInterTheta = LOWP_THETA;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = false;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = LOWP_THETA;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = false;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 0;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 TEST_CASE("degenerate estimation") {
   auto a = build_sketch(SkType::DEGENERATE, MIDP, GT_MIDP_V); //entries = 0
   auto b = build_sketch(SkType::ESTIMATION, LOWP, LT_LOWP_V);
-  const double resultInterTheta = LOWP_THETA;
-  const int resultInterCount = 0;
-  const bool resultInterEmpty = false;
-  const double resultAnotbTheta = LOWP_THETA;
-  const int resultAnotbCount = 0;
-  const bool resultAnotbEmpty = false;
+  const double expectedIntersectTheta = LOWP_THETA;
+  const int expectedIntersectCount = 0;
+  const bool expectedIntersectEmpty = false;
+  const double expectedAnotbTheta = LOWP_THETA;
+  const int expectedAnotbCount = 0;
+  const bool expectedAnotbEmpty = false;
+  const double expectedUnionTheta = LOWP_THETA;
+  const int expectedUnionCount = 1;
+  const bool expectedUnionEmpty = false;
 
-  checks(a, b, resultInterTheta, resultInterCount, resultInterEmpty,
-      resultAnotbTheta, resultAnotbCount, resultAnotbEmpty);
+  checks(a, b,
+      expectedIntersectTheta, expectedIntersectCount, expectedIntersectEmpty,
+      expectedAnotbTheta, expectedAnotbCount, expectedAnotbEmpty,
+      expectedUnionTheta, expectedUnionCount, expectedUnionEmpty);
 }
 
 } /* namespace datasketches */
