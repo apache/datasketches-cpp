@@ -457,7 +457,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
           read(is, entries.data(), sizeof(uint64_t) * entries.size());
       if (!is.good())
           throw std::runtime_error("error reading from std::istream");
-      return compact_theta_sketch_alloc(is_empty, false, seed_hash, theta, std::move(entries));
+      return compact_theta_sketch_alloc(is_empty, true, seed_hash, theta, std::move(entries));
   }
   case 2: {
       checker<true>::check_sketch_type(type, SKETCH_TYPE);
@@ -495,7 +495,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
               read(is, entries.data(), sizeof(uint64_t) * entries.size());
               if (!is.good())
                   throw std::runtime_error("error reading from std::istream");
-              return compact_theta_sketch_alloc(false, false, seed_hash, theta, std::move(entries));
+              return compact_theta_sketch_alloc(false, true, seed_hash, theta, std::move(entries));
           }
       } else {
           throw std::invalid_argument(std::to_string(preamble_longs) + " longs of premable, but expected 1, 2, or 3");
@@ -504,6 +504,8 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
   default:
       // this should always fail since the valid cases are handled above
       checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+      // this throw is never reached, because check_serial_version will throw an informative exception.
+      // This is only here to avoid a compiler warning about a path without a return value.
       throw std::invalid_argument("unexpected sketch serialization version");
   }
 }

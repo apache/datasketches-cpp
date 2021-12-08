@@ -75,7 +75,7 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
         throw std::invalid_argument(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
             + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size)) : ""));
       }
-      return {false, false, seed_hash, num_entries, theta, entries};
+      return {false, true, seed_hash, num_entries, theta, entries};
   }
   case 2:  {
       uint8_t preamble_size =  reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_PRE_LONGS_BYTE];
@@ -110,7 +110,7 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
             throw std::invalid_argument(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
                 + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size)) : ""));
           }
-          return {false, false, seed_hash, num_entries, theta, entries};
+          return {false, true, seed_hash, num_entries, theta, entries};
       } else {
           throw std::invalid_argument(std::to_string(preamble_size) + " longs of premable, but expected 1, 2, or 3");
       }
@@ -118,6 +118,8 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
   default:
       // this should always fail since the valid cases are handled above
       checker<true>::check_serial_version(reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_SERIAL_VERSION_BYTE], COMPACT_SKETCH_SERIAL_VERSION);
+      // this throw is never reached, because check_serial_version will throw an informative exception.
+      // This is only here to avoid a compiler warning about a path without a return value.
       throw std::invalid_argument("unexpected sketch serialization version");
   }
 }

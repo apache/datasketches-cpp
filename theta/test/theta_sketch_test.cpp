@@ -251,7 +251,7 @@ TEST_CASE("theta sketch: deserialize compact v1 estimation from java", "[theta_s
   auto sketch = compact_theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.is_estimation_mode());
-//  REQUIRE(sketch.is_ordered());     // v1 sketches may not be ordered
+  REQUIRE(sketch.is_ordered());
   REQUIRE(sketch.get_num_retained() == 4342);
   REQUIRE(sketch.get_theta() == Approx(0.531700444213199).margin(1e-10));
   REQUIRE(sketch.get_estimate() == Approx(8166.25234614053).margin(1e-10));
@@ -287,7 +287,7 @@ TEST_CASE("theta sketch: deserialize compact v2 estimation from java", "[theta_s
   auto sketch = compact_theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.is_estimation_mode());
-//  REQUIRE(sketch.is_ordered());     // v1 sketches may not be ordered
+  REQUIRE(sketch.is_ordered());
   REQUIRE(sketch.get_num_retained() == 4342);
   REQUIRE(sketch.get_theta() == Approx(0.531700444213199).margin(1e-10));
   REQUIRE(sketch.get_estimate() == Approx(8166.25234614053).margin(1e-10));
