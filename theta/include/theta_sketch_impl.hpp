@@ -413,33 +413,101 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
   const auto preamble_longs = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto type = read<uint8_t>(is);
-  read<uint16_t>(is); // unused
-  const auto flags_byte = read<uint8_t>(is);
-  const auto seed_hash = read<uint16_t>(is);
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
-  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
-  const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
-  if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+  switch (serial_version) {
+  case SERIAL_VERSION: {
+      read<uint16_t>(is); // unused
+      const auto flags_byte = read<uint8_t>(is);
+      const auto seed_hash = read<uint16_t>(is);
+      checker<true>::check_sketch_type(type, SKETCH_TYPE);
+      checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+      const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
+      if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
-  uint64_t theta = theta_constants::MAX_THETA;
-  uint32_t num_entries = 0;
-  if (!is_empty) {
-    if (preamble_longs == 1) {
-      num_entries = 1;
-    } else {
-      num_entries = read<uint32_t>(is);
-      read<uint32_t>(is); // unused
-      if (preamble_longs > 2) {
-        theta = read<uint64_t>(is);
+      uint64_t theta = theta_constants::MAX_THETA;
+      uint32_t num_entries = 0;
+      if (!is_empty) {
+        if (preamble_longs == 1) {
+          num_entries = 1;
+        } else {
+          num_entries = read<uint32_t>(is);
+          read<uint32_t>(is); // unused
+          if (preamble_longs > 2) {
+            theta = read<uint64_t>(is);
+          }
+        }
       }
-    }
-  }
-  std::vector<uint64_t, A> entries(num_entries, 0, allocator);
-  if (!is_empty) read(is, entries.data(), sizeof(uint64_t) * entries.size());
+      std::vector<uint64_t, A> entries(num_entries, 0, allocator);
+      if (!is_empty) read(is, entries.data(), sizeof(uint64_t) * entries.size());
 
-  const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  if (!is.good()) throw std::runtime_error("error reading from std::istream");
-  return compact_theta_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries));
+      const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
+      if (!is.good()) throw std::runtime_error("error reading from std::istream");
+      return compact_theta_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries));
+  }
+  case 1: {
+      const auto seed_hash = compute_seed_hash(seed);
+      checker<true>::check_sketch_type(type, SKETCH_TYPE);
+      read<uint8_t>(is); // unused
+      read<uint32_t>(is); // unused
+      const auto num_entries = read<uint32_t>(is);
+      read<uint32_t>(is); //unused
+      const auto theta = read<uint64_t>(is);
+      std::vector<uint64_t> entries(num_entries, 0, allocator);
+      bool is_empty = (num_entries == 0) && (theta == theta_constants::MAX_THETA);
+      if (!is_empty)
+          read(is, entries.data(), sizeof(uint64_t) * entries.size());
+      if (!is.good())
+          throw std::runtime_error("error reading from std::istream");
+      return compact_theta_sketch_alloc(is_empty, true, seed_hash, theta, std::move(entries));
+  }
+  case 2: {
+      checker<true>::check_sketch_type(type, SKETCH_TYPE);
+      read<uint8_t>(is); // unused
+      read<uint16_t>(is); // unused
+      const uint16_t seed_hash = read<uint16_t>(is);
+      checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+      if (preamble_longs == 1) {
+          if (!is.good())
+              throw std::runtime_error("error reading from std::istream");
+          std::vector<uint64_t> entries(0, 0, allocator);
+          return compact_theta_sketch_alloc(true, true, seed_hash, theta_constants::MAX_THETA, std::move(entries));
+      } else if (preamble_longs == 2) {
+          const uint32_t num_entries = read<uint32_t>(is);
+          read<uint32_t>(is); // unused
+          std::vector<uint64_t> entries(num_entries, 0, allocator);
+          if (num_entries == 0) {
+              return compact_theta_sketch_alloc(true, true, seed_hash, theta_constants::MAX_THETA, std::move(entries));
+          }
+          read(is, entries.data(), entries.size() * sizeof(uint64_t));
+          if (!is.good())
+              throw std::runtime_error("error reading from std::istream");
+          return compact_theta_sketch_alloc(false, true, seed_hash, theta_constants::MAX_THETA, std::move(entries));
+      } else if (preamble_longs == 3) {
+          const uint32_t num_entries = read<uint32_t>(is);
+          read<uint32_t>(is); // unused
+          const auto theta = read<uint64_t>(is);
+          bool is_empty = (num_entries == 0) && (theta == theta_constants::MAX_THETA);
+          std::vector<uint64_t> entries(num_entries, 0, allocator);
+          if (is_empty) {
+              if (!is.good())
+                  throw std::runtime_error("error reading from std::istream");
+              return compact_theta_sketch_alloc(true, true, seed_hash, theta, std::move(entries));
+          } else {
+              read(is, entries.data(), sizeof(uint64_t) * entries.size());
+              if (!is.good())
+                  throw std::runtime_error("error reading from std::istream");
+              return compact_theta_sketch_alloc(false, true, seed_hash, theta, std::move(entries));
+          }
+      } else {
+          throw std::invalid_argument(std::to_string(preamble_longs) + " longs of premable, but expected 1, 2, or 3");
+      }
+  }
+  default:
+      // this should always fail since the valid cases are handled above
+      checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+      // this throw is never reached, because check_serial_version will throw an informative exception.
+      // This is only here to avoid a compiler warning about a path without a return value.
+      throw std::invalid_argument("unexpected sketch serialization version");
+  }
 }
 
 template<typename A>

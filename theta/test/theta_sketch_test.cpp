@@ -17,8 +17,10 @@
  * under the License.
  */
 
+#include <istream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 #include <catch.hpp>
 #include <theta_sketch.hpp>
@@ -164,6 +166,34 @@ TEST_CASE("theta sketch: deserialize compact empty from java", "[theta_sketch]")
   REQUIRE(sketch.get_upper_bound(1) == 0.0);
 }
 
+TEST_CASE("theta sketch: deserialize compact v1 empty from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_empty_from_java_v1.sk", std::ios::binary);
+  auto sketch = compact_theta_sketch::deserialize(is);
+  REQUIRE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE(sketch.get_theta() == 1.0);
+  REQUIRE(sketch.get_estimate() == 0.0);
+  REQUIRE(sketch.get_lower_bound(1) == 0.0);
+  REQUIRE(sketch.get_upper_bound(1) == 0.0);
+}
+
+TEST_CASE("theta sketch: deserialize compact v2 empty from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_empty_from_java_v2.sk", std::ios::binary);
+  auto sketch = compact_theta_sketch::deserialize(is);
+  REQUIRE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE(sketch.get_theta() == 1.0);
+  REQUIRE(sketch.get_estimate() == 0.0);
+  REQUIRE(sketch.get_lower_bound(1) == 0.0);
+  REQUIRE(sketch.get_upper_bound(1) == 0.0);
+}
+
 TEST_CASE("theta sketch: deserialize single item from java", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
@@ -182,6 +212,78 @@ TEST_CASE("theta sketch: deserialize compact estimation from java", "[theta_sket
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(inputPath + "theta_compact_estimation_from_java.sk", std::ios::binary);
+  auto sketch = compact_theta_sketch::deserialize(is);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.is_estimation_mode());
+  REQUIRE(sketch.is_ordered());
+  REQUIRE(sketch.get_num_retained() == 4342);
+  REQUIRE(sketch.get_theta() == Approx(0.531700444213199).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(8166.25234614053).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(7996.956955317471).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(8339.090301078124).margin(1e-10));
+
+  // the same construction process in Java must have produced exactly the same sketch
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  const int n = 8192;
+  for (int i = 0; i < n; i++) update_sketch.update(i);
+  REQUIRE(sketch.get_num_retained() == update_sketch.get_num_retained());
+  REQUIRE(sketch.get_theta() == Approx(update_sketch.get_theta()).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(update_sketch.get_estimate()).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(1) == Approx(update_sketch.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(1) == Approx(update_sketch.get_upper_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(update_sketch.get_lower_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(update_sketch.get_upper_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(3) == Approx(update_sketch.get_lower_bound(3)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(3) == Approx(update_sketch.get_upper_bound(3)).margin(1e-10));
+  compact_theta_sketch compact_sketch = update_sketch.compact();
+  // the sketches are ordered, so the iteration sequence must match exactly
+  auto iter = sketch.begin();
+  for (const auto& key: compact_sketch) {
+    REQUIRE(*iter == key);
+    ++iter;
+  }
+}
+
+TEST_CASE("theta sketch: deserialize compact v1 estimation from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_estimation_from_java_v1.sk", std::ios::binary);
+  auto sketch = compact_theta_sketch::deserialize(is);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.is_estimation_mode());
+  REQUIRE(sketch.is_ordered());
+  REQUIRE(sketch.get_num_retained() == 4342);
+  REQUIRE(sketch.get_theta() == Approx(0.531700444213199).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(8166.25234614053).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(7996.956955317471).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(8339.090301078124).margin(1e-10));
+
+  // the same construction process in Java must have produced exactly the same sketch
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  const int n = 8192;
+  for (int i = 0; i < n; i++) update_sketch.update(i);
+  REQUIRE(sketch.get_num_retained() == update_sketch.get_num_retained());
+  REQUIRE(sketch.get_theta() == Approx(update_sketch.get_theta()).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(update_sketch.get_estimate()).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(1) == Approx(update_sketch.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(1) == Approx(update_sketch.get_upper_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(update_sketch.get_lower_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(update_sketch.get_upper_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(3) == Approx(update_sketch.get_lower_bound(3)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(3) == Approx(update_sketch.get_upper_bound(3)).margin(1e-10));
+  compact_theta_sketch compact_sketch = update_sketch.compact();
+  // the sketches are ordered, so the iteration sequence must match exactly
+  auto iter = sketch.begin();
+  for (const auto& key: compact_sketch) {
+    REQUIRE(*iter == key);
+    ++iter;
+  }
+}
+
+TEST_CASE("theta sketch: deserialize compact v2 estimation from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_estimation_from_java_v2.sk", std::ios::binary);
   auto sketch = compact_theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.is_estimation_mode());
@@ -294,6 +396,236 @@ TEST_CASE("theta sketch: conversion constructor and wrapped compact", "[theta_sk
 
   // seed mismatch
   REQUIRE_THROWS_AS(wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size(), 0), std::invalid_argument);
+}
+
+TEST_CASE("theta sketch: wrap compact empty from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_empty_from_java.sk", std::ios::binary | std::ios::ate);
+
+  std::vector<uint8_t> buf;
+  if(is) {
+      auto size = is.tellg();
+      buf.reserve(size);
+      buf.assign(size, 0);
+      is.seekg(0, std::ios_base::beg);
+      is.read((char*)(buf.data()), buf.size());
+  }
+
+  auto sketch = wrapped_compact_theta_sketch::wrap(buf.data(), buf.size());
+  REQUIRE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE(sketch.get_theta() == 1.0);
+  REQUIRE(sketch.get_estimate() == 0.0);
+  REQUIRE(sketch.get_lower_bound(1) == 0.0);
+  REQUIRE(sketch.get_upper_bound(1) == 0.0);
+}
+
+TEST_CASE("theta sketch: wrap compact v1 empty from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_empty_from_java_v1.sk", std::ios::binary | std::ios::ate);
+
+  std::vector<uint8_t> buf;
+  if(is) {
+      auto size = is.tellg();
+      buf.reserve(size);
+      buf.assign(size, 0);
+      is.seekg(0, std::ios_base::beg);
+      is.read((char*)(buf.data()), buf.size());
+  }
+
+  auto sketch = wrapped_compact_theta_sketch::wrap(buf.data(), buf.size());
+  REQUIRE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE(sketch.get_theta() == 1.0);
+  REQUIRE(sketch.get_estimate() == 0.0);
+  REQUIRE(sketch.get_lower_bound(1) == 0.0);
+  REQUIRE(sketch.get_upper_bound(1) == 0.0);
+}
+
+TEST_CASE("theta sketch: wrap compact v2 empty from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_empty_from_java_v2.sk", std::ios::binary | std::ios::ate);
+
+  std::vector<uint8_t> buf;
+  if(is) {
+      auto size = is.tellg();
+      buf.reserve(size);
+      buf.assign(size, 0);
+      is.seekg(0, std::ios_base::beg);
+      is.read((char*)(buf.data()), buf.size());
+  }
+
+  auto sketch = wrapped_compact_theta_sketch::wrap(buf.data(), buf.size());
+  REQUIRE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE(sketch.get_theta() == 1.0);
+  REQUIRE(sketch.get_estimate() == 0.0);
+  REQUIRE(sketch.get_lower_bound(1) == 0.0);
+  REQUIRE(sketch.get_upper_bound(1) == 0.0);
+}
+
+TEST_CASE("theta sketch: wrap single item from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_single_item_from_java.sk", std::ios::binary | std::ios::ate);
+  std::vector<uint8_t> buf;
+  if(is) {
+      auto size = is.tellg();
+      buf.reserve(size);
+      buf.assign(size, 0);
+      is.seekg(0, std::ios_base::beg);
+      is.read((char*)(buf.data()), buf.size());
+  }
+
+  auto sketch = wrapped_compact_theta_sketch::wrap(buf.data(), buf.size());
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_num_retained() == 1);
+  REQUIRE(sketch.get_theta() == 1.0);
+  REQUIRE(sketch.get_estimate() == 1.0);
+  REQUIRE(sketch.get_lower_bound(1) == 1.0);
+  REQUIRE(sketch.get_upper_bound(1) == 1.0);
+}
+
+TEST_CASE("theta sketch: wrap compact estimation from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_estimation_from_java.sk", std::ios::binary | std::ios::ate);
+  std::vector<uint8_t> buf;
+  if(is) {
+      auto size = is.tellg();
+      buf.reserve(size);
+      buf.assign(size, 0);
+      is.seekg(0, std::ios_base::beg);
+      is.read((char*)(buf.data()), buf.size());
+  }
+
+  auto sketch = wrapped_compact_theta_sketch::wrap(buf.data(), buf.size());
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.is_estimation_mode());
+  REQUIRE(sketch.is_ordered());
+  REQUIRE(sketch.get_num_retained() == 4342);
+  REQUIRE(sketch.get_theta() == Approx(0.531700444213199).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(8166.25234614053).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(7996.956955317471).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(8339.090301078124).margin(1e-10));
+
+  // the same construction process in Java must have produced exactly the same sketch
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  const int n = 8192;
+  for (int i = 0; i < n; i++) update_sketch.update(i);
+  REQUIRE(sketch.get_num_retained() == update_sketch.get_num_retained());
+  REQUIRE(sketch.get_theta() == Approx(update_sketch.get_theta()).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(update_sketch.get_estimate()).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(1) == Approx(update_sketch.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(1) == Approx(update_sketch.get_upper_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(update_sketch.get_lower_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(update_sketch.get_upper_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(3) == Approx(update_sketch.get_lower_bound(3)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(3) == Approx(update_sketch.get_upper_bound(3)).margin(1e-10));
+  compact_theta_sketch compact_sketch = update_sketch.compact();
+  // the sketches are ordered, so the iteration sequence must match exactly
+  auto iter = sketch.begin();
+  for (const auto& key: compact_sketch) {
+    REQUIRE(*iter == key);
+    ++iter;
+  }
+}
+
+TEST_CASE("theta sketch: wrap compact v1 estimation from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_estimation_from_java_v1.sk", std::ios::binary | std::ios::ate);
+  std::vector<uint8_t> buf;
+  if(is) {
+      auto size = is.tellg();
+      buf.reserve(size);
+      buf.assign(size, 0);
+      is.seekg(0, std::ios_base::beg);
+      is.read((char*)(buf.data()), buf.size());
+  }
+
+  auto sketch = wrapped_compact_theta_sketch::wrap(buf.data(), buf.size());
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.is_estimation_mode());
+//  REQUIRE(sketch.is_ordered());       // v1 may not be ordered
+  REQUIRE(sketch.get_num_retained() == 4342);
+  REQUIRE(sketch.get_theta() == Approx(0.531700444213199).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(8166.25234614053).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(7996.956955317471).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(8339.090301078124).margin(1e-10));
+
+  // the same construction process in Java must have produced exactly the same sketch
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  const int n = 8192;
+  for (int i = 0; i < n; i++) update_sketch.update(i);
+  REQUIRE(sketch.get_num_retained() == update_sketch.get_num_retained());
+  REQUIRE(sketch.get_theta() == Approx(update_sketch.get_theta()).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(update_sketch.get_estimate()).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(1) == Approx(update_sketch.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(1) == Approx(update_sketch.get_upper_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(update_sketch.get_lower_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(update_sketch.get_upper_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(3) == Approx(update_sketch.get_lower_bound(3)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(3) == Approx(update_sketch.get_upper_bound(3)).margin(1e-10));
+  compact_theta_sketch compact_sketch = update_sketch.compact();
+  // the sketches are ordered, so the iteration sequence must match exactly
+  auto iter = sketch.begin();
+  for (const auto& key: compact_sketch) {
+    REQUIRE(*iter == key);
+    ++iter;
+  }
+}
+
+TEST_CASE("theta sketch: wrap compact v2 estimation from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_estimation_from_java_v2.sk", std::ios::binary | std::ios::ate);
+  std::vector<uint8_t> buf;
+  if(is) {
+      auto size = is.tellg();
+      buf.reserve(size);
+      buf.assign(size, 0);
+      is.seekg(0, std::ios_base::beg);
+      is.read((char*)(buf.data()), buf.size());
+  }
+
+  auto sketch = wrapped_compact_theta_sketch::wrap(buf.data(), buf.size());
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.is_estimation_mode());
+//  REQUIRE(sketch.is_ordered());       // v1 may not be ordered
+  REQUIRE(sketch.get_num_retained() == 4342);
+  REQUIRE(sketch.get_theta() == Approx(0.531700444213199).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(8166.25234614053).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(7996.956955317471).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(8339.090301078124).margin(1e-10));
+
+  // the same construction process in Java must have produced exactly the same sketch
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  const int n = 8192;
+  for (int i = 0; i < n; i++) update_sketch.update(i);
+  REQUIRE(sketch.get_num_retained() == update_sketch.get_num_retained());
+  REQUIRE(sketch.get_theta() == Approx(update_sketch.get_theta()).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(update_sketch.get_estimate()).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(1) == Approx(update_sketch.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(1) == Approx(update_sketch.get_upper_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(update_sketch.get_lower_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(update_sketch.get_upper_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(3) == Approx(update_sketch.get_lower_bound(3)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(3) == Approx(update_sketch.get_upper_bound(3)).margin(1e-10));
+  compact_theta_sketch compact_sketch = update_sketch.compact();
+  // the sketches are ordered, so the iteration sequence must match exactly
+  auto iter = sketch.begin();
+  for (const auto& key: compact_sketch) {
+    REQUIRE(*iter == key);
+    ++iter;
+  }
 }
 
 } /* namespace datasketches */
