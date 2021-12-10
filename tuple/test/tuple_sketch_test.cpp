@@ -34,7 +34,6 @@ std::ostream& operator<<(std::ostream& os, const three_doubles& tuple) {
 
 #include <catch.hpp>
 #include <tuple_sketch.hpp>
-//#include <test_type.hpp>
 
 namespace datasketches {
 
@@ -43,9 +42,11 @@ TEST_CASE("tuple sketch float: builder", "[tuple_sketch]") {
   builder.set_lg_k(10).set_p(0.5f).set_resize_factor(theta_constants::resize_factor::X2).set_seed(123);
   auto sketch = builder.build();
   REQUIRE(sketch.get_lg_k() == 10);
-  REQUIRE(sketch.get_theta() == 0.5);
+  REQUIRE(sketch.get_theta() == 1.0); // empty sketch should have theta 1.0
   REQUIRE(sketch.get_rf() == theta_constants::resize_factor::X2);
   REQUIRE(sketch.get_seed_hash() == compute_seed_hash(123));
+  sketch.update(1, 0);
+  REQUIRE(sketch.get_theta() == 0.5); // theta = p
 }
 
 TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {
@@ -58,7 +59,7 @@ TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {
   REQUIRE(update_sketch.get_upper_bound(1) == 0);
   REQUIRE(update_sketch.get_theta() == 1);
   REQUIRE(update_sketch.get_num_retained() == 0);
-  REQUIRE(!update_sketch.is_ordered());
+  REQUIRE(update_sketch.is_ordered());
 
   auto compact_sketch = update_sketch.compact();
   std::cout << "sizeof(compact_tuple_sketch<float>)=" << sizeof(compact_sketch) << std::endl;
@@ -70,6 +71,33 @@ TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {
   REQUIRE(compact_sketch.get_theta() == 1);
   REQUIRE(compact_sketch.get_num_retained() == 0);
   REQUIRE(compact_sketch.is_ordered());
+
+  // empty is forced to be ordered
+  REQUIRE(update_sketch.compact(false).is_ordered());
+}
+
+TEST_CASE("tuple sketch: single item", "[theta_sketch]") {
+  auto update_sketch = update_tuple_sketch<float>::builder().build();
+  update_sketch.update(1, 1.0f);
+  REQUIRE_FALSE(update_sketch.is_empty());
+  REQUIRE_FALSE(update_sketch.is_estimation_mode());
+  REQUIRE(update_sketch.get_theta() == 1.0);
+  REQUIRE(update_sketch.get_estimate() == 1.0);
+  REQUIRE(update_sketch.get_lower_bound(1) == 1.0);
+  REQUIRE(update_sketch.get_upper_bound(1) == 1.0);
+  REQUIRE(update_sketch.is_ordered()); // one item is ordered
+
+  auto compact_sketch = update_sketch.compact();
+  REQUIRE_FALSE(compact_sketch.is_empty());
+  REQUIRE_FALSE(compact_sketch.is_estimation_mode());
+  REQUIRE(compact_sketch.get_theta() == 1.0);
+  REQUIRE(compact_sketch.get_estimate() == 1.0);
+  REQUIRE(compact_sketch.get_lower_bound(1) == 1.0);
+  REQUIRE(compact_sketch.get_upper_bound(1) == 1.0);
+  REQUIRE(compact_sketch.is_ordered());
+
+  // single item is forced to be ordered
+  REQUIRE(update_sketch.compact(false).is_ordered());
 }
 
 TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
@@ -78,14 +106,14 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
   update_sketch.update(2, 2.0f);
   update_sketch.update(1, 1.0f);
 //  std::cout << update_sketch.to_string(true);
-  REQUIRE(!update_sketch.is_empty());
-  REQUIRE(!update_sketch.is_estimation_mode());
+  REQUIRE_FALSE(update_sketch.is_empty());
+  REQUIRE_FALSE(update_sketch.is_estimation_mode());
   REQUIRE(update_sketch.get_estimate() == 2);
   REQUIRE(update_sketch.get_lower_bound(1) == 2);
   REQUIRE(update_sketch.get_upper_bound(1) == 2);
   REQUIRE(update_sketch.get_theta() == 1);
   REQUIRE(update_sketch.get_num_retained() == 2);
-  REQUIRE(!update_sketch.is_ordered());
+  REQUIRE_FALSE(update_sketch.is_ordered());
   int count = 0;
   for (const auto& entry: update_sketch) {
     REQUIRE(entry.second == 2);
@@ -95,8 +123,8 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
 
   auto compact_sketch = update_sketch.compact();
 //  std::cout << compact_sketch.to_string(true);
-  REQUIRE(!compact_sketch.is_empty());
-  REQUIRE(!compact_sketch.is_estimation_mode());
+  REQUIRE_FALSE(compact_sketch.is_empty());
+  REQUIRE_FALSE(compact_sketch.is_estimation_mode());
   REQUIRE(compact_sketch.get_estimate() == 2);
   REQUIRE(compact_sketch.get_lower_bound(1) == 2);
   REQUIRE(compact_sketch.get_upper_bound(1) == 2);
@@ -154,13 +182,13 @@ TEST_CASE("tuple sketch float: exact mode", "[tuple_sketch]") {
 
   update_sketch.reset();
   REQUIRE(update_sketch.is_empty());
-  REQUIRE(!update_sketch.is_estimation_mode());
+  REQUIRE_FALSE(update_sketch.is_estimation_mode());
   REQUIRE(update_sketch.get_estimate() == 0);
   REQUIRE(update_sketch.get_lower_bound(1) == 0);
   REQUIRE(update_sketch.get_upper_bound(1) == 0);
   REQUIRE(update_sketch.get_theta() == 1);
   REQUIRE(update_sketch.get_num_retained() == 0);
-  REQUIRE(!update_sketch.is_ordered());
+  REQUIRE(update_sketch.is_ordered());
 }
 
 template<typename T>

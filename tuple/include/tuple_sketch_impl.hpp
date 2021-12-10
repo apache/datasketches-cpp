@@ -99,12 +99,12 @@ bool update_tuple_sketch<S, U, P, A>::is_empty() const {
 
 template<typename S, typename U, typename P, typename A>
 bool update_tuple_sketch<S, U, P, A>::is_ordered() const {
-  return false;
+  return map_.num_entries_ > 1 ? false : true;;
 }
 
 template<typename S, typename U, typename P, typename A>
 uint64_t update_tuple_sketch<S, U, P, A>::get_theta64() const {
-  return map_.theta_;
+  return is_empty() ? theta_constants::MAX_THETA : map_.theta_;
 }
 
 template<typename S, typename U, typename P, typename A>
@@ -257,7 +257,7 @@ template<typename S, typename A>
 compact_tuple_sketch<S, A>::compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta,
     std::vector<Entry, AllocEntry>&& entries):
 is_empty_(is_empty),
-is_ordered_(is_ordered),
+is_ordered_(is_ordered || (entries.size() <= 1ULL)),
 seed_hash_(seed_hash),
 theta_(theta),
 entries_(std::move(entries))

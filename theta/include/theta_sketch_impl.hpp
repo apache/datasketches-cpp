@@ -111,12 +111,12 @@ bool update_theta_sketch_alloc<A>::is_empty() const {
 
 template<typename A>
 bool update_theta_sketch_alloc<A>::is_ordered() const {
-  return false;
+  return table_.num_entries_ > 1 ? false : true;
 }
 
 template<typename A>
 uint64_t update_theta_sketch_alloc<A>::get_theta64() const {
-  return table_.theta_;
+  return is_empty() ? theta_constants::MAX_THETA : table_.theta_;
 }
 
 template<typename A>
@@ -268,16 +268,18 @@ seed_hash_(other.get_seed_hash()),
 theta_(other.get_theta64()),
 entries_(other.get_allocator())
 {
-  entries_.reserve(other.get_num_retained());
-  std::copy(other.begin(), other.end(), std::back_inserter(entries_));
-  if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end());
+  if (!other.is_empty()) {
+    entries_.reserve(other.get_num_retained());
+    std::copy(other.begin(), other.end(), std::back_inserter(entries_));
+    if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end());
+  }
 }
 
 template<typename A>
 compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta,
     std::vector<uint64_t, A>&& entries):
 is_empty_(is_empty),
-is_ordered_(is_ordered),
+is_ordered_(is_ordered || (entries.size() <= 1ULL)),
 seed_hash_(seed_hash),
 theta_(theta),
 entries_(std::move(entries))
