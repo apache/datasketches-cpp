@@ -222,6 +222,38 @@ TEST_CASE("theta sketch: deserialize single item from java", "[theta_sketch]") {
   REQUIRE(sketch.get_upper_bound(1) == 1.0);
 }
 
+TEST_CASE("theta sketch: deserialize compact exact from java", "[theta_sketch]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(inputPath + "theta_compact_exact_from_java.sk", std::ios::binary);
+  auto sketch = compact_theta_sketch::deserialize(is);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.is_ordered());
+  REQUIRE(sketch.get_num_retained() == 100);
+
+  // the same construction process in Java must have produced exactly the same sketch
+  auto update_sketch = update_theta_sketch::builder().build();
+  const int n = 100;
+  for (int i = 0; i < n; i++) update_sketch.update(i);
+  REQUIRE(sketch.get_num_retained() == update_sketch.get_num_retained());
+  REQUIRE(sketch.get_theta() == Approx(update_sketch.get_theta()).margin(1e-10));
+  REQUIRE(sketch.get_estimate() == Approx(update_sketch.get_estimate()).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(1) == Approx(update_sketch.get_lower_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(1) == Approx(update_sketch.get_upper_bound(1)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(2) == Approx(update_sketch.get_lower_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(2) == Approx(update_sketch.get_upper_bound(2)).margin(1e-10));
+  REQUIRE(sketch.get_lower_bound(3) == Approx(update_sketch.get_lower_bound(3)).margin(1e-10));
+  REQUIRE(sketch.get_upper_bound(3) == Approx(update_sketch.get_upper_bound(3)).margin(1e-10));
+  compact_theta_sketch compact_sketch = update_sketch.compact();
+  // the sketches are ordered, so the iteration sequence must match exactly
+  auto iter = sketch.begin();
+  for (const auto& key: compact_sketch) {
+    REQUIRE(*iter == key);
+    ++iter;
+  }
+}
+
 TEST_CASE("theta sketch: deserialize compact estimation from java", "[theta_sketch]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
