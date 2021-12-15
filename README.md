@@ -91,7 +91,7 @@ from GitHub using CMake's `ExternalProject` module. The code would look somethin
         GIT_SHALLOW true
         GIT_SUBMODULES ""
         INSTALL_DIR /tmp/datasketches-prefix
-           CMAKE_ARGS -DBUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=/tmp/datasketches-prefix
+        CMAKE_ARGS -DBUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=/tmp/datasketches-prefix
 
         # Override the install command to add DESTDIR
         # This is necessary to work around an oddity in the RPM (but not other) package
