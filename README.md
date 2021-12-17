@@ -26,7 +26,7 @@ Building and running unit tests using cmake for OSX and Linux:
 
 ```
     $ cmake -S . -B build/Release -DCMAKE_BUILD_TYPE=Release
-    $ cmake --build build/Release -t test
+    $ cmake --build build/Release -t all test
 ```
 
 Building and running unit tests using cmake for Windows from the command line:
