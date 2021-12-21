@@ -453,7 +453,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
       const auto num_entries = read<uint32_t>(is);
       read<uint32_t>(is); //unused
       const auto theta = read<uint64_t>(is);
-      std::vector<uint64_t> entries(num_entries, 0, allocator);
+      std::vector<uint64_t, A> entries(num_entries, 0, allocator);
       bool is_empty = (num_entries == 0) && (theta == theta_constants::MAX_THETA);
       if (!is_empty)
           read(is, entries.data(), sizeof(uint64_t) * entries.size());
@@ -470,12 +470,12 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
       if (preamble_longs == 1) {
           if (!is.good())
               throw std::runtime_error("error reading from std::istream");
-          std::vector<uint64_t> entries(0, 0, allocator);
+          std::vector<uint64_t, A> entries(0, 0, allocator);
           return compact_theta_sketch_alloc(true, true, seed_hash, theta_constants::MAX_THETA, std::move(entries));
       } else if (preamble_longs == 2) {
           const uint32_t num_entries = read<uint32_t>(is);
           read<uint32_t>(is); // unused
-          std::vector<uint64_t> entries(num_entries, 0, allocator);
+          std::vector<uint64_t, A> entries(num_entries, 0, allocator);
           if (num_entries == 0) {
               return compact_theta_sketch_alloc(true, true, seed_hash, theta_constants::MAX_THETA, std::move(entries));
           }
@@ -488,7 +488,7 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
           read<uint32_t>(is); // unused
           const auto theta = read<uint64_t>(is);
           bool is_empty = (num_entries == 0) && (theta == theta_constants::MAX_THETA);
-          std::vector<uint64_t> entries(num_entries, 0, allocator);
+          std::vector<uint64_t, A> entries(num_entries, 0, allocator);
           if (is_empty) {
               if (!is.good())
                   throw std::runtime_error("error reading from std::istream");
@@ -514,47 +514,8 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
 
 template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed, const A& allocator) {
-  ensure_minimum_memory(size, 8);
-  const char* ptr = static_cast<const char*>(bytes);
-  const char* base = ptr;
-  uint8_t preamble_longs;
-  ptr += copy_from_mem(ptr, preamble_longs);
-  uint8_t serial_version;
-  ptr += copy_from_mem(ptr, serial_version);
-  uint8_t type;
-  ptr += copy_from_mem(ptr, type);
-  ptr += sizeof(uint16_t); // unused
-  uint8_t flags_byte;
-  ptr += copy_from_mem(ptr, flags_byte);
-  uint16_t seed_hash;
-  ptr += copy_from_mem(ptr, seed_hash);
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
-  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
-  const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
-  if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
-
-  uint64_t theta = theta_constants::MAX_THETA;
-  uint32_t num_entries = 0;
-  if (!is_empty) {
-    if (preamble_longs == 1) {
-      num_entries = 1;
-    } else {
-      ensure_minimum_memory(size, 8); // read the first prelong before this method
-      ptr += copy_from_mem(ptr, num_entries);
-      ptr += sizeof(uint32_t); // unused
-      if (preamble_longs > 2) {
-        ensure_minimum_memory(size, (preamble_longs - 1) << 3);
-        ptr += copy_from_mem(ptr, theta);
-      }
-    }
-  }
-  const size_t entries_size_bytes = sizeof(uint64_t) * num_entries;
-  check_memory_size(ptr - base + entries_size_bytes, size);
-  std::vector<uint64_t, A> entries(num_entries, 0, allocator);
-  if (!is_empty) ptr += copy_from_mem(ptr, entries.data(), entries_size_bytes);
-
-  const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  return compact_theta_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries));
+  auto data = compact_theta_sketch_parser<true>::parse(bytes, size, seed, false);
+  return compact_theta_sketch_alloc(data.is_empty, data.is_ordered, data.seed_hash, data.theta, std::vector<uint64_t, A>(data.entries, data.entries + data.num_entries, allocator));
 }
 
 // wrapped compact sketch

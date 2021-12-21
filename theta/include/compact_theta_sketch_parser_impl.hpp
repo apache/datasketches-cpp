@@ -27,7 +27,7 @@ namespace datasketches {
 
 template<bool dummy>
 auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uint64_t seed, bool dump_on_error) -> compact_theta_sketch_data {
-  if (size < 8) throw std::invalid_argument("at least 8 bytes expected, actual " + std::to_string(size)
+  if (size < 8) throw std::out_of_range("at least 8 bytes expected, actual " + std::to_string(size)
       + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size)) : ""));
 
   uint8_t serial_version = reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_SERIAL_VERSION_BYTE];
@@ -43,10 +43,11 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
       checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
       const bool has_theta = reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_PRE_LONGS_BYTE] > 2;
       if (has_theta) {
-        if (size < 16) throw std::invalid_argument("at least 16 bytes expected, actual " + std::to_string(size));
+        if (size < 16) throw std::out_of_range("at least 16 bytes expected, actual " + std::to_string(size));
         theta = reinterpret_cast<const uint64_t*>(ptr)[COMPACT_SKETCH_THETA_U64];
       }
       if (reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_PRE_LONGS_BYTE] == 1) {
+        if (size < 16) throw std::out_of_range("at least 16 bytes expected, actual " + std::to_string(size));
         return {false, true, seed_hash, 1, theta, reinterpret_cast<const uint64_t*>(ptr) + COMPACT_SKETCH_SINGLE_ENTRY_U64};
       }
       const uint32_t num_entries = reinterpret_cast<const uint32_t*>(ptr)[COMPACT_SKETCH_NUM_ENTRIES_U32];
@@ -54,7 +55,7 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
       const uint64_t* entries = reinterpret_cast<const uint64_t*>(ptr) + entries_start_u64;
       const size_t expected_size_bytes = (entries_start_u64 + num_entries) * sizeof(uint64_t);
       if (size < expected_size_bytes) {
-        throw std::invalid_argument(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
+        throw std::out_of_range(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
             + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size)) : ""));
       }
       const bool is_ordered = reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_FLAGS_BYTE] & (1 << COMPACT_SKETCH_IS_ORDERED_FLAG);
@@ -72,7 +73,7 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
       const uint64_t* entries = reinterpret_cast<const uint64_t*>(ptr) + COMPACT_SKETCH_ENTRIES_ESTIMATION_U64;
       const size_t expected_size_bytes = (COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 + num_entries) * sizeof(uint64_t);
       if (size < expected_size_bytes) {
-        throw std::invalid_argument(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
+        throw std::out_of_range(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
             + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size)) : ""));
       }
       return {false, true, seed_hash, num_entries, theta, entries};
@@ -91,7 +92,7 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
           } else {
               const size_t expected_size_bytes = (preamble_size + num_entries) << 3;
               if (size < expected_size_bytes) {
-                  throw std::invalid_argument(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
+                  throw std::out_of_range(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
                       + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size)) : ""));
               }
               const uint64_t* entries = reinterpret_cast<const uint64_t*>(ptr) + COMPACT_SKETCH_ENTRIES_EXACT_U64;
@@ -107,7 +108,7 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
           const uint64_t* entries = reinterpret_cast<const uint64_t*>(ptr) + COMPACT_SKETCH_ENTRIES_ESTIMATION_U64;
           const size_t expected_size_bytes = (COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 + num_entries) * sizeof(uint64_t);
           if (size < expected_size_bytes) {
-            throw std::invalid_argument(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
+            throw std::out_of_range(std::to_string(expected_size_bytes) + " bytes expected, actual " + std::to_string(size)
                 + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), size)) : ""));
           }
           return {false, true, seed_hash, num_entries, theta, entries};
