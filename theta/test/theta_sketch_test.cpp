@@ -394,11 +394,38 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalence", "[
   }
 }
 
-TEST_CASE("theta sketch: deserialize compact single item buffer overrun", "[theta_sketch]") {
+TEST_CASE("theta sketch: deserialize empty buffer overrun", "[theta_sketch]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  auto bytes = update_sketch.compact().serialize();
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+}
+
+TEST_CASE("theta sketch: deserialize single item buffer overrun", "[theta_sketch]") {
   update_theta_sketch update_sketch = update_theta_sketch::builder().build();
   update_sketch.update(1);
   auto bytes = update_sketch.compact().serialize();
   REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), 7), std::out_of_range);
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+}
+
+TEST_CASE("theta sketch: deserialize exact mode buffer overrun", "[theta_sketch]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  for (int i = 0; i < 1000; ++i) update_sketch.update(i);
+  auto bytes = update_sketch.compact().serialize();
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), 7), std::out_of_range);
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), 8), std::out_of_range);
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), 16), std::out_of_range);
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+}
+
+TEST_CASE("theta sketch: deserialize estimation mode buffer overrun", "[theta_sketch]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  for (int i = 0; i < 10000; ++i) update_sketch.update(i);
+  auto bytes = update_sketch.compact().serialize();
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), 7), std::out_of_range);
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), 8), std::out_of_range);
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), 16), std::out_of_range);
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), 24), std::out_of_range);
   REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 }
 
