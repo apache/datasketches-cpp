@@ -210,6 +210,7 @@ template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
 auto req_sketch<T, C, S, A>::get_PMF(const T* split_points, uint32_t size) const -> vector_double {
   auto buckets = get_CDF<inclusive>(split_points, size);
+  if (is_empty()) return buckets;
   for (uint32_t i = size; i > 0; --i) {
     buckets[i] -= buckets[i - 1];
   }
