@@ -35,7 +35,7 @@ namespace datasketches {
  * and nearly optimal accuracy per retained item.
  * See <a href="https://arxiv.org/abs/1603.05346v2">Optimal Quantile Approximation in Streams</a>.
  *
- * <p>This is a stochastic streaming sketch that enables near-real time analysis of the
+ * <p>This is a stochastic streaming sketch that enables near real-time analysis of the
  * approximate distribution of values from a very large stream in a single pass, requiring only
  * that the values are comparable.
  * The analysis is obtained using <i>get_quantile()</i> or <i>get_quantiles()</i> functions or the
@@ -157,7 +157,12 @@ namespace kll_constants {
   const uint16_t DEFAULT_K = 200;
 }
 
-template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
+template <
+  typename T,
+  typename C = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
+  typename S = serde<T>,
+  typename A = std::allocator<T>
+>
 class kll_sketch {
   public:
     using value_type = T;
@@ -309,6 +314,9 @@ class kll_sketch {
     /**
      * Returns an approximation to the normalized (fractional) rank of the given value from 0 to 1,
      * inclusive.
+     * With the template parameter inclusive=true the weight of the given value is included into the rank.
+     * Otherwise the rank equals the sum of the weights of all values that are less than the given value
+     * according to the comparator C.
      *
      * <p>The resulting approximation has a probabilistic guarantee that can be obtained from the
      * get_normalized_rank_error(false) function.
@@ -318,6 +326,7 @@ class kll_sketch {
      * @param value to be ranked
      * @return an approximate rank of the given value
      */
+    template<bool inclusive = false>
     double get_rank(const T& value) const;
 
     /**
@@ -338,9 +347,12 @@ class kll_sketch {
      *
      * @return an array of m+1 doubles each of which is an approximation
      * to the fraction of the input stream values (the mass) that fall into one of those intervals.
-     * The definition of an "interval" is inclusive of the left split point and exclusive of the right
-     * split point, with the exception that the last interval will include maximum value.
+     * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
+     * split point, with the exception that the last interval will include the maximum value.
+     * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
+     * split point.
      */
+    template<bool inclusive = false>
     vector_d<A> get_PMF(const T* split_points, uint32_t size) const;
 
     /**
@@ -364,6 +376,7 @@ class kll_sketch {
      * CDF array is the sum of the returned values in positions 0 through j of the returned PMF
      * array.
      */
+    template<bool inclusive = false>
     vector_d<A> get_CDF(const T* split_points, uint32_t size) const;
 
     /**
@@ -536,11 +549,16 @@ class kll_sketch {
     void add_empty_top_level_to_completely_full_sketch();
     void sort_level_zero();
     std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> get_quantile_calculator();
+
+    template<bool inclusive>
     vector_d<A> get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
+    template<bool inclusive>
     void increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
         const T* split_points, uint32_t size, double* buckets) const;
+    template<bool inclusive>
     void increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
         const T* split_points, uint32_t size, double* buckets) const;
+
     template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);
     void populate_work_arrays(const kll_sketch& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
     void populate_work_arrays(kll_sketch&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);

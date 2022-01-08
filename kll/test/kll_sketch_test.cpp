@@ -90,7 +90,9 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch.get_n() == 1);
     REQUIRE(sketch.get_num_retained() == 1);
     REQUIRE(sketch.get_rank(1.0f) == 0.0);
+    REQUIRE(sketch.get_rank<true>(1.0f) == 1.0);
     REQUIRE(sketch.get_rank(2.0f) == 1.0);
+    REQUIRE(sketch.get_rank(std::numeric_limits<float>::infinity()) == 1.0);
     REQUIRE(sketch.get_min_value() == 1.0);
     REQUIRE(sketch.get_max_value() == 1.0);
     REQUIRE(sketch.get_quantile(0.5) == 1.0);
@@ -142,8 +144,10 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(quantiles[2] == n - 1 );
 
     for (uint32_t i = 0; i < n; i++) {
-      const double trueRank = (double) i / n;
-      REQUIRE(sketch.get_rank(static_cast<float>(i)) == trueRank);
+      const double true_rank = (double) i / n;
+      REQUIRE(sketch.get_rank(static_cast<float>(i)) == true_rank);
+      const double true_rank_inclusive = (double) (i + 1) / n;
+      REQUIRE(sketch.get_rank<true>(static_cast<float>(i)) == true_rank_inclusive);
     }
 
     // the alternative method must produce the same result

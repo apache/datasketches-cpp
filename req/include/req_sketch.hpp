@@ -28,7 +28,7 @@ namespace datasketches {
 
 template<
   typename T,
-  typename Comparator = std::less<T>,
+  typename Comparator = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
   typename SerDe = serde<T>,
   typename Allocator = std::allocator<T>
 >
@@ -123,7 +123,6 @@ public:
    * @param item to be ranked
    * @return an approximate rank of the given item
    */
-
   template<bool inclusive = false>
   double get_rank(const T& item) const;
 
