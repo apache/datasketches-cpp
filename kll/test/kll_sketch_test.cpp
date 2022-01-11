@@ -245,20 +245,38 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
       sketch.update(static_cast<float>(i));
       values[i] = static_cast<float>(i);
     }
+    { // inclusive=false (default)
+      const auto ranks(sketch.get_CDF(values, n));
+      const auto pmf(sketch.get_PMF(values, n));
 
-    const auto ranks(sketch.get_CDF(values, n));
-    const auto pmf(sketch.get_PMF(values, n));
-
-    double subtotal_pmf(0);
-    for (int i = 0; i < n; i++) {
-      if (sketch.get_rank(values[i]) != ranks[i]) {
-        std::cerr << "checking rank vs CDF for value " << i << std::endl;
-        REQUIRE(sketch.get_rank(values[i]) == ranks[i]);
+      double subtotal_pmf = 0;
+      for (int i = 0; i < n; i++) {
+        if (sketch.get_rank(values[i]) != ranks[i]) {
+          std::cerr << "checking rank vs CDF for value " << i << std::endl;
+          REQUIRE(sketch.get_rank(values[i]) == ranks[i]);
+        }
+        subtotal_pmf += pmf[i];
+        if (abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
+          std::cerr << "CDF vs PMF for value " << i << std::endl;
+          REQUIRE(ranks[i] == Approx(subtotal_pmf).margin(NUMERIC_NOISE_TOLERANCE));
+        }
       }
-      subtotal_pmf += pmf[i];
-      if (abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
-        std::cerr << "CDF vs PMF for value " << i << std::endl;
-        REQUIRE(ranks[i] == Approx(subtotal_pmf).margin(NUMERIC_NOISE_TOLERANCE));
+    }
+    {  // inclusive=true
+      const auto ranks(sketch.get_CDF<true>(values, n));
+      const auto pmf(sketch.get_PMF<true>(values, n));
+
+      double subtotal_pmf = 0;
+      for (int i = 0; i < n; i++) {
+        if (sketch.get_rank<true>(values[i]) != ranks[i]) {
+          std::cerr << "checking rank vs CDF for value " << i << std::endl;
+          REQUIRE(sketch.get_rank(values[i]) == ranks[i]);
+        }
+        subtotal_pmf += pmf[i];
+        if (abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
+          std::cerr << "CDF vs PMF for value " << i << std::endl;
+          REQUIRE(ranks[i] == Approx(subtotal_pmf).margin(NUMERIC_NOISE_TOLERANCE));
+        }
       }
     }
   }
