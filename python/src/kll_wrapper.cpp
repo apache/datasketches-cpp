@@ -51,6 +51,14 @@ double kll_sketch_generic_normalized_rank_error(uint16_t k, bool pmf) {
 }
 
 template<typename T>
+double kll_sketch_get_rank(const kll_sketch<T>& sk, const T& item, bool inclusive) {
+  if (inclusive)
+    return sk.template get_rank<true>(item);
+  else
+    return sk.template get_rank<false>(item);
+}
+
+template<typename T>
 py::list kll_sketch_get_quantiles(const kll_sketch<T>& sk,
                                   std::vector<double>& fractions) {
   size_t nQuantiles = fractions.size();
@@ -67,9 +75,12 @@ py::list kll_sketch_get_quantiles(const kll_sketch<T>& sk,
 
 template<typename T>
 py::list kll_sketch_get_pmf(const kll_sketch<T>& sk,
-                            std::vector<T>& split_points) {
+                            std::vector<T>& split_points,
+                            bool inclusive) {
   size_t nPoints = split_points.size();
-  auto result = sk.get_PMF(&split_points[0], nPoints);
+  auto result = inclusive ?
+      sk.template get_PMF<true>(&split_points[0], nPoints)
+    : sk.template get_PMF<false>(&split_points[0], nPoints);
 
   py::list list(nPoints + 1);
   for (size_t i = 0; i <= nPoints; ++i) {
@@ -81,9 +92,12 @@ py::list kll_sketch_get_pmf(const kll_sketch<T>& sk,
 
 template<typename T>
 py::list kll_sketch_get_cdf(const kll_sketch<T>& sk,
-                            std::vector<T>& split_points) {
+                            std::vector<T>& split_points,
+                            bool inclusive) {
   size_t nPoints = split_points.size();
-  auto result = sk.get_CDF(&split_points[0], nPoints);
+  auto result = inclusive ?
+      sk.template get_CDF<true>(&split_points[0], nPoints)
+    : sk.template get_CDF<false>(&split_points[0], nPoints);
 
   py::list list(nPoints + 1);
   for (size_t i = 0; i <= nPoints; ++i) {
@@ -159,12 +173,14 @@ void bind_kll_sketch(py::module &m, const char* name) {
          "a single query. It is strongly recommend that this method be used instead of multiple calls "
          "to get_quantile().\n"
          "If the sketch is empty this returns an empty vector.")
-    .def("get_rank", &kll_sketch<T>::get_rank, py::arg("value"),
+    .def("get_rank", &dspy::kll_sketch_get_rank<T>, py::arg("value"), py::arg("inclusive")=false,
          "Returns an approximation to the normalized (fractional) rank of the given value from 0 to 1, inclusive.\n"
          "The resulting approximation has a probabilistic guarantee that can be obtained from the "
          "get_normalized_rank_error(False) function.\n"
+         "With the parameter inclusive=true the weight of the given value is included into the rank."
+         "Otherwise the rank equals the sum of the weights of values less than the given value.\n"
          "If the sketch is empty this returns nan.")
-    .def("get_pmf", &dspy::kll_sketch_get_pmf<T>, py::arg("split_points"),
+    .def("get_pmf", &dspy::kll_sketch_get_pmf<T>, py::arg("split_points"), py::arg("inclusive")=false,
          "Returns an approximation to the Probability Mass Function (PMF) of the input stream "
          "given a set of split points (values).\n"
          "The resulting approximations have a probabilistic guarantee that can be obtained from the "
@@ -172,11 +188,13 @@ void bind_kll_sketch(py::module &m, const char* name) {
          "If the sketch is empty this returns an empty vector.\n"
          "split_points is an array of m unique, monotonically increasing float values "
          "that divide the real number line into m+1 consecutive disjoint intervals.\n"
-         "The definition of an 'interval' is inclusive of the left split point (or minimum value) and "
+         "If the parameter inclusive=false, the definition of an 'interval' is inclusive of the left split point (or minimum value) and "
          "exclusive of the right split point, with the exception that the last interval will include "
          "the maximum value.\n"
+         "If the parameter inclusive=true, the definition of an 'interval' is exclusive of the left split point (or minimum value) and "
+         "inclusive of the right split point.\n"
          "It is not necessary to include either the min or max values in these split points.")
-    .def("get_cdf", &dspy::kll_sketch_get_cdf<T>, py::arg("split_points"),
+    .def("get_cdf", &dspy::kll_sketch_get_cdf<T>, py::arg("split_points"), py::arg("inclusive")=false,
          "Returns an approximation to the Cumulative Distribution Function (CDF), which is the "
          "cumulative analog of the PMF, of the input stream given a set of split points (values).\n"
          "The resulting approximations have a probabilistic guarantee that can be obtained from the "
@@ -184,9 +202,11 @@ void bind_kll_sketch(py::module &m, const char* name) {
          "If the sketch is empty this returns an empty vector.\n"
          "split_points is an array of m unique, monotonically increasing float values "
          "that divide the real number line into m+1 consecutive disjoint intervals.\n"
-         "The definition of an 'interval' is inclusive of the left split point (or minimum value) and "
+         "If the parameter inclusive=false, the definition of an 'interval' is inclusive of the left split point (or minimum value) and "
          "exclusive of the right split point, with the exception that the last interval will include "
          "the maximum value.\n"
+         "If the parameter inclusive=true, the definition of an 'interval' is exclusive of the left split point (or minimum value) and "
+         "inclusive of the right split point.\n"
          "It is not necessary to include either the min or max values in these split points.")
     .def("normalized_rank_error", (double (kll_sketch<T>::*)(bool) const) &kll_sketch<T>::get_normalized_rank_error,
          py::arg("as_pmf"),

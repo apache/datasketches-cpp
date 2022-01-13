@@ -320,6 +320,7 @@ std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(uint32_t num) const {
 }
 
 template<typename T, typename C, typename S, typename A>
+template<bool inclusive>
 double kll_sketch<T, C, S, A>::get_rank(const T& value) const {
   if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
   uint8_t level = 0;
@@ -329,7 +330,7 @@ double kll_sketch<T, C, S, A>::get_rank(const T& value) const {
     const auto from_index(levels_[level]);
     const auto to_index(levels_[level + 1]); // exclusive
     for (uint32_t i = from_index; i < to_index; i++) {
-      if (C()(items_[i], value)) {
+      if (inclusive ? !C()(value, items_[i]) : C()(items_[i], value)) {
         total += weight;
       } else if ((level > 0) || is_level_zero_sorted_) {
         break; // levels above 0 are sorted, no point comparing further
@@ -342,13 +343,15 @@ double kll_sketch<T, C, S, A>::get_rank(const T& value) const {
 }
 
 template<typename T, typename C, typename S, typename A>
+template<bool inclusive>
 vector_d<A> kll_sketch<T, C, S, A>::get_PMF(const T* split_points, uint32_t size) const {
-  return get_PMF_or_CDF(split_points, size, false);
+  return get_PMF_or_CDF<inclusive>(split_points, size, false);
 }
 
 template<typename T, typename C, typename S, typename A>
+template<bool inclusive>
 vector_d<A> kll_sketch<T, C, S, A>::get_CDF(const T* split_points, uint32_t size) const {
-  return get_PMF_or_CDF(split_points, size, true);
+  return get_PMF_or_CDF<inclusive>(split_points, size, true);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -798,6 +801,7 @@ std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantil
 }
 
 template<typename T, typename C, typename S, typename A>
+template<bool inclusive>
 vector_d<A> kll_sketch<T, C, S, A>::get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const {
   if (is_empty()) return vector_d<A>(allocator_);
   kll_helper::validate_values<T, C>(split_points, size);
@@ -808,9 +812,9 @@ vector_d<A> kll_sketch<T, C, S, A>::get_PMF_or_CDF(const T* split_points, uint32
     const auto from_index = levels_[level];
     const auto to_index = levels_[level + 1]; // exclusive
     if ((level == 0) && !is_level_zero_sorted_) {
-      increment_buckets_unsorted_level(from_index, to_index, weight, split_points, size, buckets.data());
+      increment_buckets_unsorted_level<inclusive>(from_index, to_index, weight, split_points, size, buckets.data());
     } else {
-      increment_buckets_sorted_level(from_index, to_index, weight, split_points, size, buckets.data());
+      increment_buckets_sorted_level<inclusive>(from_index, to_index, weight, split_points, size, buckets.data());
     }
     level++;
     weight *= 2;
@@ -831,13 +835,14 @@ vector_d<A> kll_sketch<T, C, S, A>::get_PMF_or_CDF(const T* split_points, uint32
 }
 
 template<typename T, typename C, typename S, typename A>
+template<bool inclusive>
 void kll_sketch<T, C, S, A>::increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
     const T* split_points, uint32_t size, double* buckets) const
 {
   for (uint32_t i = from_index; i < to_index; i++) {
     uint32_t j;
     for (j = 0; j < size; j++) {
-      if (C()(items_[i], split_points[j])) {
+      if (inclusive ? !C()(split_points[j], items_[i]) : C()(items_[i], split_points[j])) {
         break;
       }
     }
@@ -846,13 +851,14 @@ void kll_sketch<T, C, S, A>::increment_buckets_unsorted_level(uint32_t from_inde
 }
 
 template<typename T, typename C, typename S, typename A>
+template<bool inclusive>
 void kll_sketch<T, C, S, A>::increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
     const T* split_points, uint32_t size, double* buckets) const
 {
   uint32_t i = from_index;
   uint32_t j = 0;
   while ((i <  to_index) && (j < size)) {
-    if (C()(items_[i], split_points[j])) {
+    if (inclusive ? !C()(split_points[j], items_[i]) : C()(items_[i], split_points[j])) {
       buckets[j] += weight; // this sample goes into this bucket
       i++; // move on to next sample and see whether it also goes into this bucket
     } else {
