@@ -23,6 +23,7 @@
 #include <cmath>
 #include <algorithm>
 #include <stdexcept>
+#include <iomanip>
 
 #include "common_defs.hpp"
 #include "count_zeros.hpp"
@@ -563,7 +564,7 @@ void quantiles_sketch<T, C, S, A>::merge_two_size_k_buffers(Level& src_1, Level&
   
   // TODO: probably actually doing copies given Level&?
   while (it1 != end1 && it2 != end2) {
-    if (C()(*it1, *it2) < 0) {
+    if (C()(*it1, *it2)) {
       dst.push_back(std::move(*it2++));
     } else {
       dst.push_back(std::move(*it1++));
