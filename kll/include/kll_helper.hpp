@@ -26,9 +26,6 @@
 
 namespace datasketches {
 
-static std::independent_bits_engine<std::mt19937, 1, uint32_t>
-  random_bit(static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count()));
-
 #ifdef KLL_VALIDATION
 extern uint32_t kll_next_offset;
 #endif
