@@ -22,7 +22,6 @@
 
 #include <random>
 #include <stdexcept>
-#include <chrono>
 
 namespace datasketches {
 
