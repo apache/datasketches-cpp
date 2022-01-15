@@ -215,8 +215,9 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
     // test rank
     for (int i = 0; i < n; i++) {
-      const double trueRank = (double) i / n;
-      REQUIRE(sketch.get_rank(static_cast<float>(i)) == Approx(trueRank).margin(RANK_EPS_FOR_K_128));
+      const double trueRank = static_cast<float>(i) / n;
+      const double sketchRank = sketch.get_rank(static_cast<float>(i));
+      REQUIRE(sketchRank == Approx(trueRank).margin(RANK_EPS_FOR_K_128));
     }
 
     // test quantiles at every 0.1 percentage point

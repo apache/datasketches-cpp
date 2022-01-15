@@ -358,38 +358,20 @@ double quantiles_sketch<T, C, S, A>::get_rank(const T& value) const {
   if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
   uint64_t weight = 1;
   uint64_t total = 0;
-  if (inclusive) {
-    for (const T &item: base_buffer_) {
-      if (!C()(value, item)) {
-        total += weight;
-      }
-    }
-  } else {
-    for (const T &item: base_buffer_) {
-      if (C()(item, value)) {
-        total += weight;
-      }
-    }
+  for (const T &item: base_buffer_) {
+    if (inclusive ? !C()(value, item) : C()(item, value))
+      total += weight;
   }
 
   weight *= 2;
   for (uint8_t level = 0; level < levels_.size(); ++level, weight *= 2) {
     if (levels_[level].empty()) { continue; }
     const T* data = levels_[level].data();
-    if (inclusive) {
-      for (uint16_t i = 0; i < k_; ++i) {
-        if (C()(value, data[i]))
-          break; // levels are sorted, no point comparing further
-        else
-          total += weight;
-      }
-    } else {
-      for (uint16_t i = 0; i < k_; ++i) {
-        if (C()(data[i], value))
-          total += weight;
-        else
-          break; // levels are sorted, no point comparing further
-      }
+    for (uint16_t i = 0; i < k_; ++i) {
+      if (inclusive ? !C()(value, data[i]) : C()(data[i], value))
+        total += weight;
+      else
+        break;  // levels are sorted, no point comparing further
     }
   }
   return (double) total / n_;
@@ -477,7 +459,7 @@ void quantiles_sketch<T, C, S, A>::process_full_base_buffer() {
 
   std::sort(base_buffer_.begin(), base_buffer_.end(), C());
   in_place_propagate_carry(0,
-                           levels_[0], // unused here, but 0 is guaranted to exist
+                           levels_[0], // unused here, but 0 is guaranteed to exist
                            base_buffer_,
                            true, *this);
   base_buffer_.clear();                       
@@ -528,9 +510,6 @@ void quantiles_sketch<T, C, S, A>::in_place_propagate_carry(uint8_t starting_lev
     sketch.levels_[lvl].clear();
     sketch.levels_[ending_level].clear();
     zip_buffer(buf_size_2k, sketch.levels_[ending_level]);
-    // to release the discarded objects
-    //Arrays.fill(levelsArr, (2 + lvl) * k, (2 + lvl + 1) * k, null);
-    sketch.levels_[lvl].clear();
   } // end of loop over lower levels
 
   // update bit pattern with binary-arithmetic ripple carry
@@ -547,6 +526,7 @@ void quantiles_sketch<T, C, S, A>::zip_buffer(Level& buf_in, Level& buf_out) {
   uint32_t rand_offset = random_bit();
 #endif
   assert(buf_in.size() == 2 * buf_out.capacity());
+  assert(buf_out.size() == 0);
   size_t k = buf_out.capacity();
   for (uint32_t i = rand_offset, o = 0; o < k; i += 2, ++o) {
     buf_out.push_back(std::move(buf_in[i]));
@@ -558,6 +538,7 @@ template<typename T, typename C, typename S, typename A>
 void quantiles_sketch<T, C, S, A>::merge_two_size_k_buffers(Level& src_1, Level& src_2, Level& dst) {
   assert(src_1.size() == src_2.size());
   assert(src_1.size() * 2 == dst.capacity());
+  assert(dst.size() == 0);
 
   auto end1 = src_1.end(), end2 = src_2.end();
   auto it1 = src_1.begin(), it2 = src_2.begin();
@@ -565,9 +546,9 @@ void quantiles_sketch<T, C, S, A>::merge_two_size_k_buffers(Level& src_1, Level&
   // TODO: probably actually doing copies given Level&?
   while (it1 != end1 && it2 != end2) {
     if (C()(*it1, *it2)) {
-      dst.push_back(std::move(*it2++));
-    } else {
       dst.push_back(std::move(*it1++));
+    } else {
+      dst.push_back(std::move(*it2++));
     }
   }
 
