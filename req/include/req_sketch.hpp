@@ -22,7 +22,7 @@
 
 #include "req_common.hpp"
 #include "req_compactor.hpp"
-#include "req_quantile_calculator.hpp"
+#include "quantile_calculator.hpp"
 
 namespace datasketches {
 
@@ -310,7 +310,7 @@ private:
   static double get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
   static bool is_exact_rank(uint16_t k, uint8_t num_levels, double rank, uint64_t n, bool hra);
 
-  using QuantileCalculator = req_quantile_calculator<T, Comparator, Allocator>;
+  using QuantileCalculator = quantile_calculator<T, Comparator, Allocator>;
   using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
   class calculator_deleter;
   using QuantileCalculatorPtr = typename std::unique_ptr<QuantileCalculator, calculator_deleter>;

@@ -17,19 +17,19 @@
  * under the License.
  */
 
-#ifndef REQ_QUANTILE_CALCULATOR_IMPL_HPP_
-#define REQ_QUANTILE_CALCULATOR_IMPL_HPP_
+#ifndef QUANTILE_CALCULATOR_IMPL_HPP_
+#define QUANTILE_CALCULATOR_IMPL_HPP_
 
 namespace datasketches {
 
 template<typename T, typename C, typename A>
-req_quantile_calculator<T, C, A>::req_quantile_calculator(uint64_t n, const A& allocator):
+quantile_calculator<T, C, A>::quantile_calculator(uint64_t n, const A& allocator):
 n_(n),
 entries_(allocator)
 {}
 
 template<typename T, typename C, typename A>
-void req_quantile_calculator<T, C, A>::add(const T* begin, const T* end, uint8_t lg_weight) {
+void quantile_calculator<T, C, A>::add(const T* begin, const T* end, uint8_t lg_weight) {
   if (entries_.capacity() < entries_.size() + std::distance(begin, end)) entries_.reserve(entries_.size() + std::distance(begin, end));
   const size_t size_before = entries_.size();
   for (auto it = begin; it != end; ++it) entries_.push_back(Entry(it, 1 << lg_weight));
@@ -38,7 +38,7 @@ void req_quantile_calculator<T, C, A>::add(const T* begin, const T* end, uint8_t
 
 template<typename T, typename C, typename A>
 template<bool inclusive>
-void req_quantile_calculator<T, C, A>::convert_to_cummulative() {
+void quantile_calculator<T, C, A>::convert_to_cummulative() {
   uint64_t subtotal = 0;
   for (auto& entry: entries_) {
     const uint64_t new_subtotal = subtotal + entry.second;
@@ -48,7 +48,7 @@ void req_quantile_calculator<T, C, A>::convert_to_cummulative() {
 }
 
 template<typename T, typename C, typename A>
-const T* req_quantile_calculator<T, C, A>::get_quantile(double rank) const {
+const T* quantile_calculator<T, C, A>::get_quantile(double rank) const {
   uint64_t weight = static_cast<uint64_t>(rank * n_);
   auto it = std::lower_bound(entries_.begin(), entries_.end(), Entry(nullptr, weight), compare_pairs_by_second());
   if (it == entries_.end()) return entries_[entries_.size() - 1].first;

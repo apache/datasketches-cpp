@@ -42,6 +42,4 @@ install(FILES
 		include/req_sketch_impl.hpp
 		include/req_compactor.hpp
 		include/req_compactor_impl.hpp
-		include/req_quantile_calculator.hpp
-		include/req_quantile_calculator_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

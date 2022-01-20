@@ -24,7 +24,7 @@
 #include <memory>
 #include <vector>
 
-#include "../../req/include/req_quantile_calculator.hpp"
+#include "quantile_calculator.hpp"
 #include "common_defs.hpp"
 #include "serde.hpp"
 
@@ -463,7 +463,7 @@ private:
   T* min_value_;
   T* max_value_;
 
-  using QuantileCalculator = req_quantile_calculator<T, Comparator, Allocator>;
+  using QuantileCalculator = quantile_calculator<T, Comparator, Allocator>;
   using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
   class calculator_deleter;
   using QuantileCalculatorPtr = typename std::unique_ptr<QuantileCalculator, calculator_deleter>;

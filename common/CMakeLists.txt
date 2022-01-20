@@ -43,4 +43,6 @@ install(FILES
 			include/conditional_forward.hpp
 			include/ceiling_power_of_2.hpp
 			include/bounds_binomial_proportions.hpp
+			include/quantiles_calculator.hpp
+			include/quantiles_calculator_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

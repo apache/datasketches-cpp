@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef REQ_QUANTILE_CALCULATOR_HPP_
-#define REQ_QUANTILE_CALCULATOR_HPP_
+#ifndef QUANTILE_CALCULATOR_HPP_
+#define QUANTILE_CALCULATOR_HPP_
 
 #include <functional>
 
@@ -29,9 +29,9 @@ template<
   typename Comparator,
   typename Allocator
 >
-class req_quantile_calculator {
+class quantile_calculator {
 public:
-  req_quantile_calculator(uint64_t n, const Allocator& allocator);
+  quantile_calculator(uint64_t n, const Allocator& allocator);
 
   void add(const T* begin, const T* end, uint8_t lg_weight);
 
@@ -64,6 +64,6 @@ private:
 
 } /* namespace datasketches */
 
-#include "req_quantile_calculator_impl.hpp"
+#include "quantile_calculator_impl.hpp"
 
 #endif

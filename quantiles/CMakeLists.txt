@@ -39,10 +39,4 @@ install(TARGETS quantiles
 install(FILES
     include/quantiles_sketch.hpp
     include/quantiles_sketch_impl.hpp
-    #include/quantiles_level.hpp
-    #include/quantiles_level_impl.hpp
-    include/quantiles_helper.hpp
-    include/quantiles_helper_impl.hpp
-    include/quantiles_quantile_calculator.hpp
-    include/quantiles_quantile_calculator_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
