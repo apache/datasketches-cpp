@@ -266,43 +266,44 @@ T kll_sketch<T, C, S, A>::get_max_value() const {
 }
 
 template<typename T, typename C, typename S, typename A>
-T kll_sketch<T, C, S, A>::get_quantile(double fraction) const {
+template<bool inclusive>
+const T& kll_sketch<T, C, S, A>::get_quantile(double rank) const {
   if (is_empty()) return get_invalid_value();
-  if (fraction == 0.0) return *min_value_;
-  if (fraction == 1.0) return *max_value_;
-  if ((fraction < 0.0) || (fraction > 1.0)) {
+  if (rank == 0.0) return *min_value_;
+  if (rank == 1.0) return *max_value_;
+  if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Fraction cannot be less than zero or greater than 1.0");
   }
-  // has side effect of sorting level zero if needed
-  auto quantile_calculator(const_cast<kll_sketch*>(this)->get_quantile_calculator());
-  return quantile_calculator->get_quantile(fraction);
+  // may have a side effect of sorting level zero if needed
+  return get_sorted_view<inclusive>(true).get_quantile(rank);
 }
 
 template<typename T, typename C, typename S, typename A>
-std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(const double* fractions, uint32_t size) const {
+template<bool inclusive>
+std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(const double* ranks, uint32_t size) const {
   std::vector<T, A> quantiles(allocator_);
   if (is_empty()) return quantiles;
-  std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> quantile_calculator;
   quantiles.reserve(size);
+
+  // may have a side effect of sorting level zero if needed
+  auto view = get_sorted_view<inclusive>(true);
+
   for (uint32_t i = 0; i < size; i++) {
-    const double fraction = fractions[i];
-    if ((fraction < 0.0) || (fraction > 1.0)) {
+    const double rank = ranks[i];
+    if ((rank < 0.0) || (rank > 1.0)) {
       throw std::invalid_argument("Fraction cannot be less than zero or greater than 1.0");
     }
-    if      (fraction == 0.0) quantiles.push_back(*min_value_);
-    else if (fraction == 1.0) quantiles.push_back(*max_value_);
+    else if (rank == 0.0) quantiles.push_back(*min_value_);
+    else if (rank == 1.0) quantiles.push_back(*max_value_);
     else {
-      if (!quantile_calculator) {
-        // has side effect of sorting level zero if needed
-        quantile_calculator = const_cast<kll_sketch*>(this)->get_quantile_calculator();
-      }
-      quantiles.push_back(quantile_calculator->get_quantile(fraction));
+      quantiles.push_back(view.get_quantile(rank));
     }
   }
   return quantiles;
 }
 
 template<typename T, typename C, typename S, typename A>
+template<bool inclusive>
 std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(uint32_t num) const {
   if (is_empty()) return std::vector<T, A>(allocator_);
   if (num == 0) {
@@ -316,7 +317,7 @@ std::vector<T, A> kll_sketch<T, C, S, A>::get_quantiles(uint32_t num) const {
   if (num > 1) {
     fractions[num - 1] = 1.0;
   }
-  return get_quantiles(fractions.data(), num);
+  return get_quantiles<inclusive>(fractions.data(), num);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -789,15 +790,19 @@ void kll_sketch<T, C, S, A>::sort_level_zero() {
 }
 
 template<typename T, typename C, typename S, typename A>
-std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> kll_sketch<T, C, S, A>::get_quantile_calculator() {
-  sort_level_zero();
-  using AllocCalc = typename std::allocator_traits<A>::template rebind_alloc<kll_quantile_calculator<T, C, A>>;
-  AllocCalc alloc(allocator_);
-  std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> quantile_calculator(
-    new (alloc.allocate(1)) kll_quantile_calculator<T, C, A>(*this),
-    [&alloc](kll_quantile_calculator<T, C, A>* ptr){ ptr->~kll_quantile_calculator<T, C, A>(); alloc.deallocate(ptr, 1); }
-  );
-  return quantile_calculator;
+template<bool inclusive>
+quantile_sketch_sorted_view<T, C, A> kll_sketch<T, C, S, A>::get_sorted_view(bool cumulative) const {
+  const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
+  quantile_sketch_sorted_view<T, C, A> view(allocator_);
+  uint8_t level = 0;
+  while (level < num_levels_) {
+    const auto from = items_ + levels_[level];
+    const auto to = items_ + levels_[level + 1]; // exclusive
+    view.add(from, to, 1 << level);
+    ++level;
+  }
+  if (cumulative) view.template convert_to_cummulative<inclusive>();
+  return view;
 }
 
 template<typename T, typename C, typename S, typename A>

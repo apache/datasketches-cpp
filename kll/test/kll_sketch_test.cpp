@@ -788,6 +788,52 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     auto kll2 = kll_sketch<int8_t>::deserialize(blob.data(), blob.size());
   }
 
+  SECTION("sorted view") {
+    kll_sketch<int> kll;
+    kll.update(2);
+    kll.update(3);
+    kll.update(1);
+
+    { // non-cumulative, using operator->
+      auto view = kll.get_sorted_view(false);
+      REQUIRE(view.size() == 3);
+      auto it = view.begin();
+      REQUIRE(it->first == 1);
+      REQUIRE(it->second == 1);
+      ++it;
+      REQUIRE(it->first == 2);
+      REQUIRE(it->second == 1);
+      ++it;
+      REQUIRE(it->first == 3);
+      REQUIRE(it->second == 1);
+    }
+    { // cumulative, non-inclusive, using operator->
+      auto view = kll.get_sorted_view(true);
+      REQUIRE(view.size() == 3);
+      auto it = view.begin();
+      REQUIRE(it->first == 1);
+      REQUIRE(it->second == 0);
+      ++it;
+      REQUIRE(it->first == 2);
+      REQUIRE(it->second == 1);
+      ++it;
+      REQUIRE(it->first == 3);
+      REQUIRE(it->second == 2);
+    }
+    { // cumulative, inclusive, using operator*
+      auto view = kll.get_sorted_view<true>(true);
+      REQUIRE(view.size() == 3);
+      auto it = view.begin();
+      REQUIRE((*it).first == 1);
+      REQUIRE((*it).second == 1);
+      ++it;
+      REQUIRE((*it).first == 2);
+      REQUIRE((*it).second == 2);
+      ++it;
+      REQUIRE((*it).first == 3);
+      REQUIRE((*it).second == 3);
+    }
+  }
   // cleanup
   if (test_allocator_total_bytes != 0) {
     REQUIRE(test_allocator_total_bytes == 0);

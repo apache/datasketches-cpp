@@ -24,7 +24,7 @@
 #include <memory>
 #include <vector>
 
-#include "kll_quantile_calculator.hpp"
+#include "quantile_sketch_sorted_view.hpp"
 #include "common_defs.hpp"
 #include "serde.hpp"
 
@@ -271,10 +271,12 @@ class kll_sketch {
      * These are also called normalized ranks or fractional ranks.
      * If fraction = 0.0, the true minimum value of the stream is returned.
      * If fraction = 1.0, the true maximum value of the stream is returned.
+     * If the parameter inclusive=true, the given rank is considered inclusive (includes the weight of an item)
      *
      * @return the approximation to the value at the given fraction
      */
-    T get_quantile(double fraction) const;
+    template<bool inclusive = false>
+    const T& get_quantile(double fraction) const;
 
     /**
      * This is a more efficient multiple-query version of get_quantile().
@@ -290,10 +292,12 @@ class kll_sketch {
      * @param fractions given array of fractional positions in the hypothetical sorted stream.
      * These are also called normalized ranks or fractional ranks.
      * These fractions must be in the interval [0.0, 1.0], inclusive.
+     * If the parameter inclusive=true, the given fractions are considered inclusive (include weights of items)
      *
      * @return array of approximations to the given fractions in the same order as given fractions
      * in the input array.
      */
+    template<bool inclusive = false>
     std::vector<T, A> get_quantiles(const double* fractions, uint32_t size) const;
 
     /**
@@ -309,6 +313,7 @@ class kll_sketch {
      *
      * @return array of approximations to the given number of evenly-spaced fractional ranks.
      */
+    template<bool inclusive = false>
     std::vector<T, A> get_quantiles(uint32_t num) const;
 
     /**
@@ -485,6 +490,9 @@ class kll_sketch {
     const_iterator begin() const;
     const_iterator end() const;
 
+    template<bool inclusive = false>
+    quantile_sketch_sorted_view<T, C, A> get_sorted_view(bool cumulative) const;
+
     #ifdef KLL_VALIDATION
     uint8_t get_num_levels() { return num_levels_; }
     uint32_t* get_levels() { return levels_; }
@@ -528,8 +536,6 @@ class kll_sketch {
     T* max_value_;
     bool is_level_zero_sorted_;
 
-    friend class kll_quantile_calculator<T, C, A>;
-
     // for deserialization
     class item_deleter;
     class items_deleter;
@@ -548,7 +554,6 @@ class kll_sketch {
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
     void sort_level_zero();
-    std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> get_quantile_calculator();
 
     template<bool inclusive>
     vector_d<A> get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
@@ -573,8 +578,9 @@ class kll_sketch {
 
     // implementations for floating point types
     template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
-    static TT get_invalid_value() {
-      return std::numeric_limits<TT>::quiet_NaN();
+    static const TT& get_invalid_value() {
+      static TT value = std::numeric_limits<TT>::quiet_NaN();
+      return value;
     }
 
     template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
@@ -584,7 +590,7 @@ class kll_sketch {
 
     // implementations for all other types
     template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
-    static TT get_invalid_value() {
+    static const TT& get_invalid_value() {
       throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
     }
 
