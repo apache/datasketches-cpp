@@ -62,7 +62,7 @@ const T& quantile_sketch_sorted_view<T, C, A>::get_quantile(double rank) const {
 
 template<typename T, typename C, typename A>
 auto quantile_sketch_sorted_view<T, C, A>::begin() const -> const_iterator {
-  return const_iterator(entries_.begin());
+  return entries_.begin();
 }
 
 template<typename T, typename C, typename A>
