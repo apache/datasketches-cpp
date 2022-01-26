@@ -23,6 +23,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include <cmath>
 
 #include "quantile_sketch_sorted_view.hpp"
 #include "common_defs.hpp"
