@@ -35,7 +35,7 @@ template<typename Iterator>
 void quantile_sketch_sorted_view<T, C, A>::add(Iterator first, Iterator last, uint64_t weight) {
   if (entries_.capacity() < entries_.size() + std::distance(first, last)) entries_.reserve(entries_.size() + std::distance(first, last));
   const size_t size_before = entries_.size();
-  for (auto it = first; it != last; ++it) entries_.push_back(Entry(&*it, weight));
+  for (auto it = first; it != last; ++it) entries_.push_back(Entry(ref_helper(*it), weight));
   if (size_before > 0) std::inplace_merge(entries_.begin(), entries_.begin() + size_before, entries_.end(), compare_pairs_by_first_ptr<C>());
 }
 
@@ -55,9 +55,9 @@ template<typename T, typename C, typename A>
 const T& quantile_sketch_sorted_view<T, C, A>::get_quantile(double rank) const {
   if (total_weight_ == 0) throw std::invalid_argument("supported for cumulative weight only");
   uint64_t weight = static_cast<uint64_t>(rank * total_weight_);
-  auto it = std::lower_bound(entries_.begin(), entries_.end(), Entry(nullptr, weight), compare_pairs_by_second());
-  if (it == entries_.end()) return *(entries_[entries_.size() - 1].first);
-  return *(it->first);
+  auto it = std::lower_bound(entries_.begin(), entries_.end(), make_dummy_entry<T>(weight), compare_pairs_by_second());
+  if (it == entries_.end()) return deref_helper(entries_[entries_.size() - 1].first);
+  return deref_helper(it->first);
 }
 
 template<typename T, typename C, typename A>
