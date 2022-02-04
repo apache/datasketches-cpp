@@ -31,7 +31,7 @@ template<
 >
 class quantile_sketch_sorted_view {
 public:
-  using Entry = typename std::conditional<std::is_integral<T>::value, std::pair<T, uint64_t>, std::pair<const T*, uint64_t>>::type;
+  using Entry = typename std::conditional<std::is_arithmetic<T>::value, std::pair<T, uint64_t>, std::pair<const T*, uint64_t>>::type;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using Container = std::vector<Entry, AllocEntry>;
 
@@ -56,10 +56,9 @@ private:
   static inline const T& deref_helper(const T* t) { return *t; }
   static inline const T& deref_helper(const T& t) { return t; }
 
-  template<typename C>
   struct compare_pairs_by_first_ptr {
     bool operator()(const Entry& a, const Entry& b) {
-      return C()(deref_helper(a.first), deref_helper(b.first));
+      return Comparator()(deref_helper(a.first), deref_helper(b.first));
     }
   };
 
@@ -69,16 +68,16 @@ private:
     }
   };
 
-  template<typename TT = T, typename std::enable_if<std::is_integral<TT>::value, int>::type = 0>
+  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   static inline T ref_helper(const T& t) { return t; }
 
-  template<typename TT = T, typename std::enable_if<!std::is_integral<TT>::value, int>::type = 0>
+  template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
   static inline const T* ref_helper(const T& t) { return std::addressof(t); }
 
-  template<typename TT = T, typename std::enable_if<std::is_integral<TT>::value, int>::type = 0>
+  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   static inline Entry make_dummy_entry(uint64_t weight) { return Entry(0, weight); }
 
-  template<typename TT = T, typename std::enable_if<!std::is_integral<TT>::value, int>::type = 0>
+  template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
   static inline Entry make_dummy_entry(uint64_t weight) { return Entry(nullptr, weight); }
 
   uint64_t total_weight_;
@@ -89,14 +88,14 @@ template<typename T, typename C, typename A>
 class quantile_sketch_sorted_view<T, C, A>::const_iterator: public quantile_sketch_sorted_view<T, C, A>::Container::const_iterator {
 public:
   using Base = typename quantile_sketch_sorted_view<T, C, A>::Container::const_iterator;
-  using value_type = typename std::conditional<std::is_integral<T>::value, typename Base::value_type, std::pair<const T&, const uint64_t>>::type;
+  using value_type = typename std::conditional<std::is_arithmetic<T>::value, typename Base::value_type, std::pair<const T&, const uint64_t>>::type;
 
   const_iterator(const Base& it): Base(it) {}
 
-  template<typename TT = T, typename std::enable_if<std::is_integral<TT>::value, int>::type = 0>
+  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   value_type operator*() const { return Base::operator*(); }
 
-  template<typename TT = T, typename std::enable_if<!std::is_integral<TT>::value, int>::type = 0>
+  template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
   value_type operator*() const { return value_type(*(Base::operator*().first), Base::operator*().second); }
 
   class return_value_holder {
@@ -107,10 +106,10 @@ public:
     value_type value_;
   };
 
-  template<typename TT = T, typename std::enable_if<std::is_integral<TT>::value, int>::type = 0>
+  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   const value_type* operator->() const { return Base::operator->(); }
 
-  template<typename TT = T, typename std::enable_if<!std::is_integral<TT>::value, int>::type = 0>
+  template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
   return_value_holder operator->() const { return **this; }
 };
 

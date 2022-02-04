@@ -36,7 +36,7 @@ void quantile_sketch_sorted_view<T, C, A>::add(Iterator first, Iterator last, ui
   if (entries_.capacity() < entries_.size() + std::distance(first, last)) entries_.reserve(entries_.size() + std::distance(first, last));
   const size_t size_before = entries_.size();
   for (auto it = first; it != last; ++it) entries_.push_back(Entry(ref_helper(*it), weight));
-  if (size_before > 0) std::inplace_merge(entries_.begin(), entries_.begin() + size_before, entries_.end(), compare_pairs_by_first_ptr<C>());
+  if (size_before > 0) std::inplace_merge(entries_.begin(), entries_.begin() + size_before, entries_.end(), compare_pairs_by_first_ptr());
 }
 
 template<typename T, typename C, typename A>
