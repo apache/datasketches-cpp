@@ -59,6 +59,10 @@ jobs:
         env:
           CIBW_BUILD: "cp36-* cp37-* cp38-* cp39-*"
           CIBW_BEFORE_BUILD: "rm -fr python/datasketches.* && rm -fr build/* && pip install cython"
-      - uses: actions/upload-artifact@v2
-        with:
-          path: ./dist/*.whl
+      - name: Publish Python
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          pip install twine
+          python -m twine upload dist/*.whl
