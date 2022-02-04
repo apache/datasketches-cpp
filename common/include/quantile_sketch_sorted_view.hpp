@@ -53,11 +53,8 @@ public:
   const T& get_quantile(double rank) const;
 
 private:
-  template<typename TT = T>
-  static inline const TT& deref_helper(const TT* t) { return *t; }
-
-  template<typename TT = T>
-  static inline const TT& deref_helper(const TT& t) { return t; }
+  static inline const T& deref_helper(const T* t) { return *t; }
+  static inline const T& deref_helper(const T& t) { return t; }
 
   template<typename C>
   struct compare_pairs_by_first_ptr {
