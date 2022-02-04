@@ -592,7 +592,7 @@ class kll_sketch {
     // implementations for all other types
     template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
     static const TT& get_invalid_value() {
-      throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
+      throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of value");
     }
 
     template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
