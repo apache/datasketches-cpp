@@ -52,7 +52,7 @@ void quantile_sketch_sorted_view<T, C, A>::convert_to_cummulative() {
 }
 
 template<typename T, typename C, typename A>
-const T& quantile_sketch_sorted_view<T, C, A>::get_quantile(double rank) const {
+auto quantile_sketch_sorted_view<T, C, A>::get_quantile(double rank) const -> quantile_return_type {
   if (total_weight_ == 0) throw std::invalid_argument("supported for cumulative weight only");
   uint64_t weight = static_cast<uint64_t>(rank * total_weight_);
   auto it = std::lower_bound(entries_.begin(), entries_.end(), make_dummy_entry<T>(weight), compare_pairs_by_second());

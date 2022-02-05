@@ -50,11 +50,12 @@ public:
   size_t size() const;
 
   // makes sense only with cumulative weight
-  const T& get_quantile(double rank) const;
+  using quantile_return_type = typename std::conditional<std::is_arithmetic<T>::value, T, const T&>::type;
+  quantile_return_type get_quantile(double rank) const;
 
 private:
   static inline const T& deref_helper(const T* t) { return *t; }
-  static inline const T& deref_helper(const T& t) { return t; }
+  static inline T deref_helper(T t) { return t; }
 
   struct compare_pairs_by_first_ptr {
     bool operator()(const Entry& a, const Entry& b) {

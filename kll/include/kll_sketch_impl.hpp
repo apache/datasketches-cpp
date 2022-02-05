@@ -267,7 +267,7 @@ T kll_sketch<T, C, S, A>::get_max_value() const {
 
 template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
-const T& kll_sketch<T, C, S, A>::get_quantile(double rank) const {
+auto kll_sketch<T, C, S, A>::get_quantile(double rank) const -> quantile_return_type {
   if (is_empty()) return get_invalid_value();
   if (rank == 0.0) return *min_value_;
   if (rank == 1.0) return *max_value_;
