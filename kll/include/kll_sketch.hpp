@@ -276,7 +276,7 @@ class kll_sketch {
      *
      * @return the approximation to the value at the given fraction
      */
-    using quantile_return_type = typename std::conditional<std::is_arithmetic<T>::value, T, const T&>::type;
+    using quantile_return_type = typename quantile_sketch_sorted_view<T, C, A>::quantile_return_type;
     template<bool inclusive = false>
     quantile_return_type get_quantile(double fraction) const;
 
