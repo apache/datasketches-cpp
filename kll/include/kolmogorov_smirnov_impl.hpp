@@ -22,23 +22,17 @@
 
 namespace datasketches {
 
-// type resolver
-template<typename T, typename C, typename S, typename A>
-kll_quantile_calculator<T, C, A> make_quantile_calculator(const kll_sketch<T, C, S, A>& sketch) {
-  return kll_quantile_calculator<T, C, A>(sketch);
-}
-
 template<typename Sketch>
 double kolmogorov_smirnov::delta(const Sketch& sketch1, const Sketch& sketch2) {
   using Comparator = typename Sketch::comparator;
-  auto calc1 = make_quantile_calculator(sketch1);
-  auto calc2 = make_quantile_calculator(sketch2);
-  auto it1 = calc1.begin();
-  auto it2 = calc2.begin();
+  auto view1 = sketch1.get_sorted_view(true);
+  auto view2 = sketch2.get_sorted_view(true);
+  auto it1 = view1.begin();
+  auto it2 = view2.begin();
   const auto n1 = sketch1.get_n();
   const auto n2 = sketch2.get_n();
   double delta = 0;
-  while (it1 != calc1.end() && it2 != calc2.end()) {
+  while (it1 != view1.end() && it2 != view2.end()) {
     const double norm_cum_wt1 = static_cast<double>((*it1).second) / n1;
     const double norm_cum_wt2 = static_cast<double>((*it2).second) / n2;
     delta = std::max(delta, std::abs(norm_cum_wt1 - norm_cum_wt2));
@@ -51,8 +45,8 @@ double kolmogorov_smirnov::delta(const Sketch& sketch1, const Sketch& sketch2) {
       ++it2;
     }
   }
-  const double norm_cum_wt1 = it1 == calc1.end() ? 1 : static_cast<double>((*it1).second) / n1;
-  const double norm_cum_wt2 = it2 == calc2.end() ? 1 : static_cast<double>((*it2).second) / n2;
+  const double norm_cum_wt1 = it1 == view1.end() ? 1 : static_cast<double>((*it1).second) / n1;
+  const double norm_cum_wt2 = it2 == view2.end() ? 1 : static_cast<double>((*it2).second) / n2;
   delta = std::max(delta, std::abs(norm_cum_wt1 - norm_cum_wt2));
   return delta;
 }

@@ -41,8 +41,6 @@ install(FILES
 		include/kll_sketch_impl.hpp	
 		include/kll_helper.hpp
 		include/kll_helper_impl.hpp
-		include/kll_quantile_calculator.hpp
-		include/kll_quantile_calculator_impl.hpp
 		include/kolmogorov_smirnov.hpp
 		include/kolmogorov_smirnov_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

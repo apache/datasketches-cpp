@@ -46,7 +46,7 @@ TEST_CASE("kolmogorov-smirnov same distribution", "[kll_sketch]") {
     sketch1.update(x);
     sketch2.update(x);
   }
-  REQUIRE(kolmogorov_smirnov::delta(sketch1, sketch2) == Approx(0).margin(0.01));
+  REQUIRE(kolmogorov_smirnov::delta(sketch1, sketch2) == Approx(0).margin(0.02));
   REQUIRE_FALSE(kolmogorov_smirnov::test(sketch1, sketch2, 0.01));
 }
 
