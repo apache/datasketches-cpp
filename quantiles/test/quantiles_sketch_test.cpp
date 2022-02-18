@@ -276,7 +276,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       }
     }
   }
-/*
+  /*
   SECTION("deserialize from java") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);

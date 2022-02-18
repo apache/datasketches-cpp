@@ -430,29 +430,29 @@ private:
   using Level = std::vector<T, Allocator>;
   using AllocLevel = typename std::allocator_traits<Allocator>::template rebind_alloc<Level>;
 
-  // TODO: FIX THIS!
   /* Serialized sketch layout:
-   *  Adr:
-   *      ||    7    |   6   |    5   |    4   |    3   |    2    |    1   |      0       |
-   *  0   || unused  |   M   |--------K--------|  Flags |  FamID  | SerVer | PreambleInts |
-   *      ||   15    |   14  |   13   |   12   |   11   |   10    |    9   |      8       |
-   *  1   ||-----------------------------------N------------------------------------------|
-   *      ||   23    |   22  |   21   |   20   |   19   |    18   |   17   |      16      |
-   *  2   ||---------------data----------------|-unused-|numLevels|-------min K-----------|
+   * Long || Start Byte Adr:
+   * Adr:
+   *      ||       0        |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+   *  0   || Preamble_Longs | SerVer | FamID  |  Flags |----- K ---------|---- unused -----|
+   *
+   *      ||       8        |    9   |   10   |   11   |   12   |   13   |   14   |   15   |
+   *  1   ||---------------------------Items Seen Count (N)--------------------------------|
+   *
+   * Long 3 is the start of data, beginning with serialized min and max values, followed by
+   * the sketch data buffers.
    */
 
   static const size_t EMPTY_SIZE_BYTES = 8;
-  static const size_t DATA_START_SINGLE_ITEM = 8;
-  static const size_t DATA_START = 20;
-
   static const uint8_t SERIAL_VERSION_2 = 1;
   static const uint8_t SERIAL_VERSION_3 = 2;
   static const uint8_t FAMILY = 15;
 
-  enum flags { IS_EMPTY, IS_LEVEL_ZERO_SORTED, IS_SINGLE_ITEM };
+  enum flags { RESERVED0, RESERVED1, IS_EMPTY, IS_COMPACT, IS_SORTED };
 
-  static const uint8_t PREAMBLE_LONGS_SHORT = 1; // for empty and single item
+  static const uint8_t PREAMBLE_LONGS_SHORT = 1; // for empty
   static const uint8_t PREAMBLE_LONGS_FULL = 2;
+  static const size_t DATA_START = 16;
 
   Allocator allocator_;
   uint16_t k_;
@@ -462,6 +462,7 @@ private:
   std::vector<Level, AllocLevel> levels_;
   T* min_value_;
   T* max_value_;
+  bool is_sorted_;
 
   using QuantileCalculator = quantile_calculator<T, Comparator, Allocator>;
   using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
