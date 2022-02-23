@@ -892,9 +892,9 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(O&& other, uint64_t final_n) {
 }
 
 // this leaves items_ uninitialized (all objects moved out and destroyed)
-// this version copies objects from the incoming sketch
 template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {
+template<typename FwdSk>
+void kll_sketch<T, C, S, A>::populate_work_arrays(FwdSk&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {
   worklevels[0] = 0;
 
   // the level zero data from "other" was already inserted into "this"
@@ -909,32 +909,9 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
     if ((self_pop > 0) && (other_pop == 0)) {
       kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], true);
     } else if ((self_pop == 0) && (other_pop > 0)) {
-      kll_helper::copy_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl]);
-    } else if ((self_pop > 0) && (other_pop > 0)) {
-      kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
-    }
-  }
-}
-
-// this leaves items_ uninitialized (all objects moved out and destroyed)
-// this version moves objects from the incoming sketch
-template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::populate_work_arrays(kll_sketch&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {
-  worklevels[0] = 0;
-
-  // the level zero data from "other" was already inserted into "this"
-  kll_helper::move_construct<T>(items_, levels_[0], levels_[1], workbuf, 0, true);
-  worklevels[1] = safe_level_size(0);
-
-  for (uint8_t lvl = 1; lvl < provisional_num_levels; lvl++) {
-    const uint32_t self_pop = safe_level_size(lvl);
-    const uint32_t other_pop = other.safe_level_size(lvl);
-    worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;
-
-    if ((self_pop > 0) && (other_pop == 0)) {
-      kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], true);
-    } else if ((self_pop == 0) && (other_pop > 0)) {
-      kll_helper::move_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl], false);
+      for (auto i = other.levels_[lvl], j = worklevels[lvl]; i < other.levels_[lvl] + other_pop; ++i, ++j) {
+        new (&workbuf[j]) T(conditional_forward<FwdSk>(other.items_[i]));
+      }
     } else if ((self_pop > 0) && (other_pop > 0)) {
       kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
     }

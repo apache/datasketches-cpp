@@ -555,8 +555,10 @@ class kll_sketch {
         const T* split_points, uint32_t size, double* buckets) const;
 
     template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);
-    void populate_work_arrays(const kll_sketch& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
-    void populate_work_arrays(kll_sketch&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
+
+    template<typename FwdSk>
+    void populate_work_arrays(FwdSk&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
+
     void assert_correct_total_weight() const;
     uint32_t safe_level_size(uint8_t level) const;
     uint32_t get_num_retained_above_level_zero() const;
