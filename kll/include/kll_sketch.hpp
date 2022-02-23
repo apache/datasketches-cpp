@@ -187,28 +187,16 @@ class kll_sketch {
      * This method takes lvalue.
      * @param value an item from a stream of items
      */
-    void update(const T& value);
-
-    /**
-     * Updates this sketch with the given data item.
-     * This method takes rvalue.
-     * @param value an item from a stream of items
-     */
-    void update(T&& value);
+    template<typename FwdT>
+    void update(FwdT&& value);
 
     /**
      * Merges another sketch into this one.
      * This method takes lvalue.
      * @param other sketch to merge into this one
      */
-    void merge(const kll_sketch& other);
-
-    /**
-     * Merges another sketch into this one.
-     * This method takes rvalue.
-     * @param other sketch to merge into this one
-     */
-    void merge(kll_sketch&& other);
+    template<typename FwdSk>
+    void merge(FwdSk&& other);
 
     /**
      * Returns true if this sketch is empty.

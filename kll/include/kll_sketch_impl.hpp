@@ -24,6 +24,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include "conditional_forward.hpp"
 #include "memory_operations.hpp"
 #include "kll_helper.hpp"
 
@@ -146,19 +147,12 @@ kll_sketch<T, C, S, A>::~kll_sketch() {
 }
 
 template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::update(const T& value) {
+template<typename FwdT>
+void kll_sketch<T, C, S, A>::update(FwdT&& value) {
   if (!check_update_value(value)) { return; }
   update_min_max(value);
   const uint32_t index = internal_update();
-  new (&items_[index]) T(value);
-}
-
-template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::update(T&& value) {
-  if (!check_update_value(value)) { return; }
-  update_min_max(value);
-  const uint32_t index = internal_update();
-  new (&items_[index]) T(std::move(value));
+  new (&items_[index]) T(std::forward<FwdT>(value));
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -181,7 +175,8 @@ uint32_t kll_sketch<T, C, S, A>::internal_update() {
 }
 
 template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::merge(const kll_sketch& other) {
+template<typename FwdSk>
+void kll_sketch<T, C, S, A>::merge(FwdSk&& other) {
   if (other.is_empty()) return;
   if (m_ != other.m_) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
@@ -196,33 +191,9 @@ void kll_sketch<T, C, S, A>::merge(const kll_sketch& other) {
   const uint64_t final_n = n_ + other.n_;
   for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
     const uint32_t index = internal_update();
-    new (&items_[index]) T(other.items_[i]);
+    new (&items_[index]) T(conditional_forward<FwdSk>(other.items_[i]));
   }
   if (other.num_levels_ >= 2) merge_higher_levels(other, final_n);
-  n_ = final_n;
-  if (other.is_estimation_mode()) min_k_ = std::min(min_k_, other.min_k_);
-  assert_correct_total_weight();
-}
-
-template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::merge(kll_sketch&& other) {
-  if (other.is_empty()) return;
-  if (m_ != other.m_) {
-    throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
-  }
-  if (is_empty()) {
-    min_value_ = new (allocator_.allocate(1)) T(std::move(*other.min_value_));
-    max_value_ = new (allocator_.allocate(1)) T(std::move(*other.max_value_));
-  } else {
-    if (C()(*other.min_value_, *min_value_)) *min_value_ = std::move(*other.min_value_);
-    if (C()(*max_value_, *other.max_value_)) *max_value_ = std::move(*other.max_value_);
-  }
-  const uint64_t final_n = n_ + other.n_;
-  for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
-    const uint32_t index = internal_update();
-    new (&items_[index]) T(std::move(other.items_[i]));
-  }
-  if (other.num_levels_ >= 2) merge_higher_levels(std::forward<kll_sketch>(other), final_n);
   n_ = final_n;
   if (other.is_estimation_mode()) min_k_ = std::min(min_k_, other.min_k_);
   assert_correct_total_weight();
