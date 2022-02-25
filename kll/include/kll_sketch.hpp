@@ -184,7 +184,6 @@ class kll_sketch {
 
     /**
      * Updates this sketch with the given data item.
-     * This method takes lvalue.
      * @param value an item from a stream of items
      */
     template<typename FwdT>
@@ -192,7 +191,6 @@ class kll_sketch {
 
     /**
      * Merges another sketch into this one.
-     * This method takes lvalue.
      * @param other sketch to merge into this one
      */
     template<typename FwdSk>
