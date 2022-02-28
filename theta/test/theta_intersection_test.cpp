@@ -21,6 +21,8 @@
 
 #include <theta_intersection.hpp>
 
+#include <stdexcept>
+
 namespace datasketches {
 
 TEST_CASE("theta intersection: invalid", "[theta_intersection]") {

@@ -21,6 +21,8 @@
 
 #include <theta_union.hpp>
 
+#include <stdexcept>
+
 namespace datasketches {
 
 TEST_CASE("theta union: empty", "[theta_union]") {

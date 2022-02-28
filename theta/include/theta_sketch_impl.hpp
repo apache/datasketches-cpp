@@ -22,6 +22,7 @@
 
 #include <sstream>
 #include <vector>
+#include <stdexcept>
 
 #include "serde.hpp"
 #include "binomial_bounds.hpp"

@@ -18,6 +18,7 @@
  */
 
 #include <sstream>
+#include <stdexcept>
 
 #include "binomial_bounds.hpp"
 #include "theta_helpers.hpp"

@@ -24,6 +24,7 @@
 
 #include <cstring>
 #include <exception>
+#include <stdexcept>
 
 namespace datasketches {
 

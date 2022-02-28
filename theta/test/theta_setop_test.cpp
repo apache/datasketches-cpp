@@ -18,6 +18,7 @@
  */
 
 #include <sstream>
+#include <stdexcept>
 
 #include <catch.hpp>
 #include <theta_union.hpp>

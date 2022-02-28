@@ -23,6 +23,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <stdexcept>
 
 #include "theta_helpers.hpp"
 

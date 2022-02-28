@@ -24,6 +24,7 @@
 
 #include <cmath>
 #include <sstream>
+#include <stdexcept>
 
 namespace datasketches {
 

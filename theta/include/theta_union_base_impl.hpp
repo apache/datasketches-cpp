@@ -21,6 +21,7 @@
 #define THETA_UNION_BASE_IMPL_HPP_
 
 #include <algorithm>
+#include <stdexcept>
 
 #include "conditional_forward.hpp"
 

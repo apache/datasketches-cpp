@@ -22,6 +22,7 @@
 #include <catch.hpp>
 #include <tuple_intersection.hpp>
 #include <theta_sketch.hpp>
+#include <stdexcept>
 
 namespace datasketches {
 

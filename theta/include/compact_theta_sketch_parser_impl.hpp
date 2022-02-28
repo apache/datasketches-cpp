@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <stdexcept>
 
 namespace datasketches {
 

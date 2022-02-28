@@ -19,6 +19,7 @@
 
 #include <catch.hpp>
 #include <sstream>
+#include <stdexcept>
 
 #include "frequent_items_sketch.hpp"
 #include "test_type.hpp"

@@ -21,6 +21,7 @@
 #define THETA_A_SET_DIFFERENCE_BASE_IMPL_HPP_
 
 #include <algorithm>
+#include <stdexcept>
 
 #include "conditional_back_inserter.hpp"
 #include "conditional_forward.hpp"

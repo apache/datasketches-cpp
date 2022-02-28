@@ -20,6 +20,7 @@
 #include <catch.hpp>
 #include <sstream>
 #include <fstream>
+#include <stdexcept>
 
 #include "frequent_items_sketch.hpp"
 

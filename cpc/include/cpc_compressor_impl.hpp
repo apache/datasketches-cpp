@@ -23,6 +23,7 @@
 #define CPC_COMPRESSOR_IMPL_HPP_
 
 #include <memory>
+#include <stdexcept>
 
 #include "compression_data.hpp"
 #include "cpc_util.hpp"
