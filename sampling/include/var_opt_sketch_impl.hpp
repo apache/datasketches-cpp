@@ -25,6 +25,7 @@
 #include <cmath>
 #include <random>
 #include <algorithm>
+#include <stdexcept>
 
 #include "var_opt_sketch.hpp"
 #include "serde.hpp"

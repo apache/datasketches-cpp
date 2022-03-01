@@ -21,6 +21,7 @@
 #define KLL_HELPER_IMPL_HPP_
 
 #include <algorithm>
+#include <stdexcept>
 
 namespace datasketches {
 

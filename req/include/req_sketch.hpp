@@ -24,6 +24,8 @@
 #include "req_compactor.hpp"
 #include "req_quantile_calculator.hpp"
 
+#include <stdexcept>
+
 namespace datasketches {
 
 template<

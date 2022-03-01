@@ -21,6 +21,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <stdexcept>
 
 #include <catch.hpp>
 #include <theta_sketch.hpp>

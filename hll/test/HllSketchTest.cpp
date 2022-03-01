@@ -17,6 +17,8 @@
  * under the License.
  */
 
+#include <stdexcept>
+
 #include "hll.hpp"
 
 #include <catch.hpp>

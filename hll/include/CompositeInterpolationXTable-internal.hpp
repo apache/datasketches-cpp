@@ -24,6 +24,7 @@
 #include "CompositeInterpolationXTable.hpp"
 
 #include <exception>
+#include <stdexcept>
 
 namespace datasketches {
 

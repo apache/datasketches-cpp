@@ -24,6 +24,7 @@
 #include <pybind11/numpy.h>
 #include <sstream>
 #include <vector>
+#include <stdexcept>
 
 namespace py = pybind11;
 

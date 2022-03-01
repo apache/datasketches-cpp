@@ -18,6 +18,7 @@
  */
 
 #include <iostream>
+#include <stdexcept>
 
 #include <catch.hpp>
 #include <tuple_union.hpp>

@@ -21,6 +21,8 @@
 
 #include <theta_a_not_b.hpp>
 
+#include <stdexcept>
+
 namespace datasketches {
 
 TEST_CASE("theta a-not-b: empty", "[theta_a_not_b]") {

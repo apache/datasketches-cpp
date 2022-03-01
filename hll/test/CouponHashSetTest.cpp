@@ -26,6 +26,7 @@
 #include <cmath>
 #include <string>
 #include <exception>
+#include <stdexcept>
 
 namespace datasketches {
 

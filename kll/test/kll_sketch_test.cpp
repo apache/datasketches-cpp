@@ -22,6 +22,7 @@
 #include <cstring>
 #include <sstream>
 #include <fstream>
+#include <stdexcept>
 
 #include <kll_sketch.hpp>
 #include <test_allocator.hpp>

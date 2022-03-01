@@ -20,6 +20,8 @@
 #ifndef _HLLSKETCHIMPLFACTORY_HPP_
 #define _HLLSKETCHIMPLFACTORY_HPP_
 
+#include <stdexcept>
+
 #include "HllUtil.hpp"
 #include "HllSketchImpl.hpp"
 #include "CouponList.hpp"

@@ -21,6 +21,8 @@
 
 #include "cpc_union.hpp"
 
+#include <stdexcept>
+
 namespace datasketches {
 
 static const double RELATIVE_ERROR_FOR_LG_K_11 = 0.02;

@@ -19,6 +19,7 @@
 
 #include <catch.hpp>
 #include <sstream>
+#include <stdexcept>
 
 #include "hll.hpp"
 

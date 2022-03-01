@@ -24,6 +24,7 @@
 #include <fstream>
 #include <sstream>
 #include <limits>
+#include <stdexcept>
 
 namespace datasketches {
 
