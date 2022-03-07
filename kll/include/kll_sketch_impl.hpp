@@ -182,11 +182,11 @@ void kll_sketch<T, C, S, A>::merge(FwdSk&& other) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
   }
   if (is_empty()) {
-    min_value_ = new (allocator_.allocate(1)) T(*other.min_value_);
-    max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
+    min_value_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.min_value_));
+    max_value_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.max_value_));
   } else {
-    if (C()(*other.min_value_, *min_value_)) *min_value_ = *other.min_value_;
-    if (C()(*max_value_, *other.max_value_)) *max_value_ = *other.max_value_;
+    if (C()(*other.min_value_, *min_value_)) *min_value_ = conditional_forward<FwdSk>(*other.min_value_);
+    if (C()(*max_value_, *other.max_value_)) *max_value_ = conditional_forward<FwdSk>(*other.max_value_);
   }
   const uint64_t final_n = n_ + other.n_;
   for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
