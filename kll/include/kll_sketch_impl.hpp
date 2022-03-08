@@ -25,6 +25,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "conditional_forward.hpp"
 #include "memory_operations.hpp"
 #include "kll_helper.hpp"
 
@@ -147,19 +148,12 @@ kll_sketch<T, C, S, A>::~kll_sketch() {
 }
 
 template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::update(const T& value) {
+template<typename FwdT>
+void kll_sketch<T, C, S, A>::update(FwdT&& value) {
   if (!check_update_value(value)) { return; }
   update_min_max(value);
   const uint32_t index = internal_update();
-  new (&items_[index]) T(value);
-}
-
-template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::update(T&& value) {
-  if (!check_update_value(value)) { return; }
-  update_min_max(value);
-  const uint32_t index = internal_update();
-  new (&items_[index]) T(std::move(value));
+  new (&items_[index]) T(std::forward<FwdT>(value));
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -182,48 +176,25 @@ uint32_t kll_sketch<T, C, S, A>::internal_update() {
 }
 
 template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::merge(const kll_sketch& other) {
+template<typename FwdSk>
+void kll_sketch<T, C, S, A>::merge(FwdSk&& other) {
   if (other.is_empty()) return;
   if (m_ != other.m_) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
   }
   if (is_empty()) {
-    min_value_ = new (allocator_.allocate(1)) T(*other.min_value_);
-    max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
+    min_value_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.min_value_));
+    max_value_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.max_value_));
   } else {
-    if (C()(*other.min_value_, *min_value_)) *min_value_ = *other.min_value_;
-    if (C()(*max_value_, *other.max_value_)) *max_value_ = *other.max_value_;
+    if (C()(*other.min_value_, *min_value_)) *min_value_ = conditional_forward<FwdSk>(*other.min_value_);
+    if (C()(*max_value_, *other.max_value_)) *max_value_ = conditional_forward<FwdSk>(*other.max_value_);
   }
   const uint64_t final_n = n_ + other.n_;
   for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
     const uint32_t index = internal_update();
-    new (&items_[index]) T(other.items_[i]);
+    new (&items_[index]) T(conditional_forward<FwdSk>(other.items_[i]));
   }
   if (other.num_levels_ >= 2) merge_higher_levels(other, final_n);
-  n_ = final_n;
-  if (other.is_estimation_mode()) min_k_ = std::min(min_k_, other.min_k_);
-  assert_correct_total_weight();
-}
-
-template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::merge(kll_sketch&& other) {
-  if (other.is_empty()) return;
-  if (m_ != other.m_) {
-    throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
-  }
-  if (is_empty()) {
-    min_value_ = new (allocator_.allocate(1)) T(std::move(*other.min_value_));
-    max_value_ = new (allocator_.allocate(1)) T(std::move(*other.max_value_));
-  } else {
-    if (C()(*other.min_value_, *min_value_)) *min_value_ = std::move(*other.min_value_);
-    if (C()(*max_value_, *other.max_value_)) *max_value_ = std::move(*other.max_value_);
-  }
-  const uint64_t final_n = n_ + other.n_;
-  for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
-    const uint32_t index = internal_update();
-    new (&items_[index]) T(std::move(other.items_[i]));
-  }
-  if (other.num_levels_ >= 2) merge_higher_levels(std::forward<kll_sketch>(other), final_n);
   n_ = final_n;
   if (other.is_estimation_mode()) min_k_ = std::min(min_k_, other.min_k_);
   assert_correct_total_weight();
@@ -922,9 +893,9 @@ void kll_sketch<T, C, S, A>::merge_higher_levels(O&& other, uint64_t final_n) {
 }
 
 // this leaves items_ uninitialized (all objects moved out and destroyed)
-// this version copies objects from the incoming sketch
 template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {
+template<typename FwdSk>
+void kll_sketch<T, C, S, A>::populate_work_arrays(FwdSk&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {
   worklevels[0] = 0;
 
   // the level zero data from "other" was already inserted into "this"
@@ -939,32 +910,9 @@ void kll_sketch<T, C, S, A>::populate_work_arrays(const kll_sketch& other, T* wo
     if ((self_pop > 0) && (other_pop == 0)) {
       kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], true);
     } else if ((self_pop == 0) && (other_pop > 0)) {
-      kll_helper::copy_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl]);
-    } else if ((self_pop > 0) && (other_pop > 0)) {
-      kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
-    }
-  }
-}
-
-// this leaves items_ uninitialized (all objects moved out and destroyed)
-// this version moves objects from the incoming sketch
-template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::populate_work_arrays(kll_sketch&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {
-  worklevels[0] = 0;
-
-  // the level zero data from "other" was already inserted into "this"
-  kll_helper::move_construct<T>(items_, levels_[0], levels_[1], workbuf, 0, true);
-  worklevels[1] = safe_level_size(0);
-
-  for (uint8_t lvl = 1; lvl < provisional_num_levels; lvl++) {
-    const uint32_t self_pop = safe_level_size(lvl);
-    const uint32_t other_pop = other.safe_level_size(lvl);
-    worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;
-
-    if ((self_pop > 0) && (other_pop == 0)) {
-      kll_helper::move_construct<T>(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], true);
-    } else if ((self_pop == 0) && (other_pop > 0)) {
-      kll_helper::move_construct<T>(other.items_, other.levels_[lvl], other.levels_[lvl] + other_pop, workbuf, worklevels[lvl], false);
+      for (auto i = other.levels_[lvl], j = worklevels[lvl]; i < other.levels_[lvl] + other_pop; ++i, ++j) {
+        new (&workbuf[j]) T(conditional_forward<FwdSk>(other.items_[i]));
+      }
     } else if ((self_pop > 0) && (other_pop > 0)) {
       kll_helper::merge_sorted_arrays<T, C>(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);
     }
