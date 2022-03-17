@@ -765,7 +765,7 @@ template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
 quantile_sketch_sorted_view<T, C, A> kll_sketch<T, C, S, A>::get_sorted_view(bool cumulative) const {
   const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
-  quantile_sketch_sorted_view<T, C, A> view(allocator_);
+  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), allocator_);
   uint8_t level = 0;
   while (level < num_levels_) {
     const auto from = items_ + levels_[level];

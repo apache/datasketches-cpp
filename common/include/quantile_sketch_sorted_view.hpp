@@ -35,7 +35,7 @@ public:
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using Container = std::vector<Entry, AllocEntry>;
 
-  quantile_sketch_sorted_view(const Allocator& allocator);
+  quantile_sketch_sorted_view(uint32_t num, const Allocator& allocator);
 
   template<typename Iterator>
   void add(Iterator begin, Iterator end, uint64_t weight);
@@ -58,13 +58,13 @@ private:
   static inline T deref_helper(T t) { return t; }
 
   struct compare_pairs_by_first_ptr {
-    bool operator()(const Entry& a, const Entry& b) {
+    bool operator()(const Entry& a, const Entry& b) const {
       return Comparator()(deref_helper(a.first), deref_helper(b.first));
     }
   };
 
   struct compare_pairs_by_second {
-    bool operator()(const Entry& a, const Entry& b) {
+    bool operator()(const Entry& a, const Entry& b) const {
       return a.second < b.second;
     }
   };
