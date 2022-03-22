@@ -44,7 +44,7 @@ void quantile_sketch_sorted_view<T, C, A>::add(Iterator first, Iterator last, ui
     std::merge(
         entries_.begin(), entries_.begin() + size_before,
         entries_.begin() + size_before, entries_.end(),
-        std::back_inserter(tmp), compare_pairs_by_first_ptr()
+        std::back_inserter(tmp), compare_pairs_by_first()
     );
     std::swap(tmp, entries_);
   }

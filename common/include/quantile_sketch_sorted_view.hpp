@@ -57,7 +57,7 @@ private:
   static inline const T& deref_helper(const T* t) { return *t; }
   static inline T deref_helper(T t) { return t; }
 
-  struct compare_pairs_by_first_ptr {
+  struct compare_pairs_by_first {
     bool operator()(const Entry& a, const Entry& b) const {
       return Comparator()(deref_helper(a.first), deref_helper(b.first));
     }
