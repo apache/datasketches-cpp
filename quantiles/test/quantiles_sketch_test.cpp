@@ -289,13 +289,13 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch.get_min_value() == 0.0);
     REQUIRE(sketch.get_max_value() == 999999.0);
   }
-
+*/
   SECTION("stream serialize deserialize empty") {
-    kll_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(200, 0);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
+    auto sketch2 = quantiles_float_sketch::deserialize(s, test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
@@ -307,7 +307,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }
-
+/*
   SECTION("bytes serialize deserialize empty") {
     kll_float_sketch sketch(200, 0);
     auto bytes = sketch.serialize();
@@ -322,14 +322,14 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }
-
+*/
   SECTION("stream serialize deserialize one item") {
-    kll_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(200, 0);
     sketch.update(1.0f);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
+    auto sketch2 = quantiles_float_sketch::deserialize(s, test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE_FALSE(sketch2.is_empty());
@@ -342,7 +342,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_rank(1) == 0.0);
     REQUIRE(sketch2.get_rank(2) == 1.0);
   }
-
+/*
   SECTION("bytes serialize deserialize one item") {
     kll_float_sketch sketch(200, 0);
     sketch.update(1.0f);
@@ -373,16 +373,16 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch.get_min_value() == 1.0);
     REQUIRE(sketch.get_max_value() == 1.0);
   }
-
+*/
   SECTION("stream serialize deserialize three items") {
-    kll_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(200, 0);
     sketch.update(1.0f);
     sketch.update(2.0f);
     sketch.update(3.0f);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
+    auto sketch2 = quantiles_float_sketch::deserialize(s, test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE_FALSE(sketch2.is_empty());
@@ -392,7 +392,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_min_value() == 1.0);
     REQUIRE(sketch2.get_max_value() == 3.0);
   }
-
+/*
   SECTION("bytes serialize deserialize three items") {
     kll_float_sketch sketch(200, 0);
     sketch.update(1.0f);
@@ -409,15 +409,15 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_min_value() == 1.0);
     REQUIRE(sketch2.get_max_value() == 3.0);
   }
-
+*/
   SECTION("stream serialize deserialize many floats") {
-    kll_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(200, 0);
     const int n = 1000;
     for (int i = 0; i < n; i++) sketch.update(static_cast<float>(i));
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(s, test_allocator<float>(0));
+    auto sketch2 = quantiles_float_sketch::deserialize(s, test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
@@ -432,7 +432,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_rank(0) == sketch.get_rank(0));
     REQUIRE(sketch2.get_rank(static_cast<float>(n)) == sketch.get_rank(static_cast<float>(n)));
   }
-
+/*
   SECTION("bytes serialize deserialize many floats") {
     kll_float_sketch sketch(200, 0);
     const int n = 1000;

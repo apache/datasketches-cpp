@@ -110,6 +110,21 @@ quantiles_sketch<T, C, S, A>& quantiles_sketch<T, C, S, A>::operator=(quantiles_
   return *this;
 }
 
+template<typename T, typename C, typename S, typename A>
+quantiles_sketch<T, C, S, A>::quantiles_sketch(uint16_t k, uint64_t n, uint64_t bit_pattern,
+      Level&& base_buffer, VectorLevels&& levels,
+      std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value,
+      bool is_sorted, const A& allocator) :
+allocator_(allocator),
+k_(k),
+n_(n),
+bit_pattern_(bit_pattern),
+base_buffer_(std::move(base_buffer)),
+levels_(std::move(levels)),
+min_value_(min_value.release()),
+max_value_(max_value.release()),
+is_sorted_(is_sorted)
+{}
 
 template<typename T, typename C, typename S, typename A>
 quantiles_sketch<T, C, S, A>::~quantiles_sketch() {
@@ -150,10 +165,10 @@ void quantiles_sketch<T, C, S, A>::update(FwdT&& item) {
 }
 
 template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::serialize(std::ostream& os) const {
+void quantiles_sketch<T, C, S, A>::serialize(std::ostream& os, const S& serde) const {
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_SHORT : PREAMBLE_LONGS_FULL;
   write(os, preamble_longs);
-  const uint8_t ser_ver = SERIAL_VERSION_3;
+  const uint8_t ser_ver = SERIAL_VERSION;
   write(os, ser_ver);
   const uint8_t family = FAMILY;
   write(os, family);
@@ -173,22 +188,22 @@ void quantiles_sketch<T, C, S, A>::serialize(std::ostream& os) const {
     write(os, n_);
 
     // min and max
-    S().serialize(os, min_value_, 1);
-    S().serialize(os, max_value_, 1);
+    serde.serialize(os, min_value_, 1);
+    serde.serialize(os, max_value_, 1);
 
     // base buffer items
-    S().serialize(os, base_buffer_.data(), base_buffer_.size());
+    serde.serialize(os, base_buffer_.data(), base_buffer_.size());
 
     // levels, only when data is present
     for (Level lvl : levels_) {
       if (lvl.size() > 0)
-        S().serialize(os, lvl.data(), lvl.size());
+        serde.serialize(os, lvl.data(), lvl.size());
     }
   }
 }
 
 template<typename T, typename C, typename S, typename A>
-auto quantiles_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
+auto quantiles_sketch<T, C, S, A>::serialize(unsigned header_size_bytes, const S& serde) const -> vector_bytes {
   const size_t size = get_serialized_size_bytes() + header_size_bytes;
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
@@ -196,7 +211,7 @@ auto quantiles_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const -
   
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_SHORT : PREAMBLE_LONGS_FULL;
   ptr += copy_to_mem(preamble_longs, ptr);
-  const uint8_t ser_ver = SERIAL_VERSION_3;
+  const uint8_t ser_ver = SERIAL_VERSION;
   ptr += copy_to_mem(ser_ver, ptr);
   const uint8_t family = FAMILY;
   ptr += copy_to_mem(family, ptr);
@@ -212,26 +227,143 @@ auto quantiles_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const -
   ptr += sizeof(uint16_t); // 2 unused bytes
   
   if (!is_empty()) {
+
     ptr += copy_to_mem(n_, ptr);
     
     // min and max
-    ptr += S().serialize(ptr, end_ptr - ptr, min_value_, 1);
-    ptr += S().serialize(ptr, end_ptr - ptr, max_value_, 1);
+    ptr += serde.serialize(ptr, end_ptr - ptr, min_value_, 1);
+    ptr += serde.serialize(ptr, end_ptr - ptr, max_value_, 1);
  
     // base buffer items
     if (base_buffer_.size() > 0)
-      ptr += S().serialize(ptr, end_ptr - ptr, base_buffer_.data(), base_buffer_.size());
+      ptr += serde.serialize(ptr, end_ptr - ptr, base_buffer_.data(), base_buffer_.size());
     
     // levels, only when data is present
     for (Level lvl : levels_) {
       if (lvl.size() > 0)
-        ptr += S().serialize(ptr, end_ptr - ptr, lvl.data(), lvl.size());
+        ptr += serde.serialize(ptr, end_ptr - ptr, lvl.data(), lvl.size());
     }
   }
 
   return bytes;
 }
 
+template<typename T, typename C, typename S, typename A>
+auto quantiles_sketch<T, C, S, A>::deserialize(std::istream &is, const S& serde, const A &allocator) -> quantiles_sketch {
+  const auto preamble_longs = read<uint8_t>(is);
+  const auto serial_version = read<uint8_t>(is);
+  const auto family_id = read<uint8_t>(is);
+  const auto flags_byte = read<uint8_t>(is);
+  const auto k = read<uint16_t>(is);
+  read<uint16_t>(is); // unused
+
+  check_serial_version(serial_version); // a little redundant with the next line, but explicit checks
+  check_family_id(family_id);
+  check_header_validity(preamble_longs, flags_byte, serial_version);
+
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+  const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+  if (is_empty) {
+    return quantiles_sketch(k, allocator);
+  }
+
+  const auto items_seen = read<uint64_t>(is);
+
+  const bool is_compact = (flags_byte & (1 << flags::IS_COMPACT)) > 0;
+  const bool is_sorted = (flags_byte & (1 << flags::IS_SORTED)) > 0;
+
+  A alloc(allocator);
+  auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
+  std::unique_ptr<T, decltype(item_buffer_deleter)> min_value_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> max_value_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, item_deleter> min_value(nullptr, item_deleter(allocator));
+  std::unique_ptr<T, item_deleter> max_value(nullptr, item_deleter(allocator));
+
+  serde.deserialize(is, min_value_buffer.get(), 1);
+  // serde call did not throw, repackage with destrtuctor
+  min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
+  serde.deserialize(is, max_value_buffer.get(), 1);
+  // serde call did not throw, repackage with destrtuctor
+  max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
+
+  // allocate buffers as needed
+  const uint8_t levels_needed = compute_levels_needed(k, items_seen);
+  const uint64_t bit_pattern = compute_bit_pattern(k, items_seen);
+
+  // Java provides a compact storage layout for a sketch of primitive doubles. The C++ version
+  // does not currently operate sketches in compact mode, but will only serialize as compact
+  // to avoid complications around serialization of empty values for generic type T. We also need
+  // to be able to ingest either serialized format from Java.
+
+  // load base buffer
+  const uint32_t bb_items = compute_base_buffer_items(k, items_seen);
+  uint32_t items_to_read = is_compact ? bb_items : 2 * k;
+  Level base_buffer = deserialize_array(is, allocator, items_to_read, 2 * k);
+  
+  // populate vector of Levels directly
+  VectorLevels levels(allocator);
+  levels.reserve(levels_needed);
+  if (levels_needed > 0) {
+    uint64_t working_pattern = bit_pattern;
+    for (size_t i = 0; i < levels_needed; ++i, working_pattern >>= 1) {
+     
+      if ((working_pattern & 0x01) == 1) {
+        Level level = deserialize_array(is, allocator, k, k);
+        levels.push_back(std::move(level));
+      } else {
+        Level level(allocator);
+        level.reserve(k);
+        levels.push_back(std::move(level));
+      }
+    }
+  }
+
+  return quantiles_sketch(k, items_seen, bit_pattern,
+    std::move(base_buffer), std::move(levels), std::move(min_value), std::move(max_value), is_sorted, allocator);
+}
+
+template<typename T, typename C, typename S, typename A>
+auto quantiles_sketch<T, C, S, A>::deserialize_array(std::istream& is, uint32_t num_items, uint32_t capacity, const S& serde, const A& allocator) -> Level {
+  A alloc(allocator);
+  std::unique_ptr<T, items_deleter> items(alloc.allocate(num_items), items_deleter(allocator, false, num_items));
+  serde.deserialize(is, items.get(), num_items);
+  // serde did not throw, enable destructors
+  items.get_deleter().set_destroy(true);
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+
+  // succesfully read, now put into a Level
+  Level level(allocator);
+  level.reserve(capacity);
+  level.insert(level.begin(),
+               std::make_move_iterator(items.get()),
+               std::make_move_iterator(items.get() + num_items));
+  return level;
+}
+
+/*
+template<typename T, typename C, typename S, typename A>
+auto quantiles_sketch<T, C, S, A>::deserialize(const void* bytes, size_t size, const S& serde, const A &allocator) -> quantiles_sketch {
+
+}
+*/
+
+template<typename T, typename C, typename S, typename A>
+auto quantiles_sketch<T, C, S, A>::deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capacity, const S& serder, const A& allocator) -> Level {
+  A alloc(allocator);
+  std::unique_ptr<T, items_deleter> items(alloc.allocate(num), items_deleter(allocator, false, num));
+  serde.deserialize(is, items.get(), num);
+  // serde did not throw, enable destructors
+  items.get_deleter().set_destroy(true);
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+
+  // succesfully read, now put into a Level
+  Level level(allocator);
+  level.reserve(capacity);
+  level.insert(level.begin(),
+               std::make_move_iterator(items.get()),
+               std::make_move_iterator(items.get() + num_items));
+  return level;
+}
 
 template<typename T, typename C, typename S, typename A>
 string<A> quantiles_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items) const {
@@ -331,12 +463,12 @@ size_t quantiles_sketch<T, C, S, A>::get_serialized_size_bytes() const {
 // implementation for all other types
 template<typename T, typename C, typename S, typename A>
 template<typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
-size_t quantiles_sketch<T, C, S, A>::get_serialized_size_bytes() const {
+size_t quantiles_sketch<T, C, S, A>::get_serialized_size_bytes(const S& serde) const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
   size_t size = DATA_START;
-  size += S().size_of_item(*min_value_);
-  size += S().size_of_item(*max_value_);
-  for (auto it: *this) size += S().size_of_item(it.first);
+  size += serde.size_of_item(*min_value_);
+  size += serde.size_of_item(*max_value_);
+  for (auto it: *this) size += serde.size_of_item(it.first);
   return size;
 }
 
@@ -355,7 +487,7 @@ double quantiles_sketch<T, C, S, A>::get_normalized_rank_error(uint16_t k, bool 
 template<typename T, typename C, typename S, typename A>
 class quantiles_sketch<T, C, S, A>::calculator_deleter {
   public:
-  calculator_deleter(const AllocCalc& allocator): allocator_(allocator) {}
+  explicit calculator_deleter(const AllocCalc& allocator): allocator_(allocator) {}
   void operator() (QuantileCalculator* ptr) {
     if (ptr != nullptr) {
       ptr->~QuantileCalculator();
@@ -530,6 +662,56 @@ uint8_t quantiles_sketch<T, C, S, A>::compute_levels_needed(const uint16_t k, co
   return static_cast<uint8_t>(64U) - count_leading_zeros_in_u64(n / (2 * k));
 }
 
+template<typename T, typename C, typename S, typename A>
+void quantiles_sketch<T, C, S, A>::check_serial_version(uint8_t serial_version) {
+  if (serial_version == SERIAL_VERSION || serial_version == SERIAL_VERSION_1 || serial_version == SERIAL_VERSION_2)
+    return;
+  else
+    throw std::invalid_argument("Possible corruption. Unrecognized serialization version: " + std::to_string(serial_version));
+}
+
+template<typename T, typename C, typename S, typename A>
+void quantiles_sketch<T, C, S, A>::check_family_id(uint8_t family_id) {
+  if (family_id == FAMILY)
+    return;
+  else
+    throw std::invalid_argument("Possible corruption. Family id does not indicate quantiles sketch: " + std::to_string(family_id));
+}
+
+template<typename T, typename C, typename S, typename A>
+void quantiles_sketch<T, C, S, A>::check_header_validity(uint8_t preamble_longs, uint8_t flags_byte, uint8_t serial_version) {
+  bool empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+  bool compact = (flags_byte & (1 << flags::IS_COMPACT)) > 0;
+
+  uint8_t sw = (compact ? 1 : 0) + (2 * (empty ? 1 : 0))
+               + (4 * (serial_version & 0xF)) + (32 * (preamble_longs & 0x3F));
+  bool valid = true;
+  
+  switch (sw) { // exhaustive list and description of all valid cases
+      case 38  : break; //!compact,  empty, serVer = 1, preLongs = 1; always stored as not compact
+      case 164 : break; //!compact, !empty, serVer = 1, preLongs = 5; always stored as not compact
+      case 42  : break; //!compact,  empty, serVer = 2, preLongs = 1; always stored as compact
+      case 72  : break; //!compact, !empty, serVer = 2, preLongs = 2; always stored as compact
+      case 47  : break; // compact,  empty, serVer = 3, preLongs = 1;
+      case 46  : break; //!compact,  empty, serVer = 3, preLongs = 1;
+      case 79  : break; // compact,  empty, serVer = 3, preLongs = 2;
+      case 78  : break; //!compact,  empty, serVer = 3, preLongs = 2;
+      case 77  : break; // compact, !empty, serVer = 3, preLongs = 2;
+      case 76  : break; //!compact, !empty, serVer = 3, preLongs = 2;
+      default : //all other case values are invalid
+        valid = false;
+  }
+
+  if (!valid) {
+    std::ostringstream os;
+    os << "Possible sketch corruption. Inconsistent state: "
+       << "preamble_longs = " << preamble_longs
+       << ", empty = " << (empty ? "true" : "false")
+       << ", serialization_version = " << serial_version
+       << ", compact = " << (compact ? "true" : "false");
+    throw std::invalid_argument(os.str());
+  }
+}
 
 template <typename T, typename C, typename S, typename A>
 typename quantiles_sketch<T, C, S, A>::const_iterator quantiles_sketch<T, C, S, A>::begin() const {
@@ -668,6 +850,40 @@ int quantiles_sketch<T, C, S, A>::lowest_zero_bit_starting_at(uint64_t bits, uin
   return pos;
 }
 
+template<typename T, typename C, typename S, typename A>
+class quantiles_sketch<T, C, S, A>::item_deleter {
+  public:
+  item_deleter(const A& allocator): allocator_(allocator) {}
+  void operator() (T* ptr) {
+    if (ptr != nullptr) {
+      ptr->~T();
+      allocator_.deallocate(ptr, 1);
+    }
+  }
+  private:
+  A allocator_;
+};
+
+template<typename T, typename C, typename S, typename A>
+class quantiles_sketch<T, C, S, A>::items_deleter {
+  public:
+  items_deleter(const A& allocator, bool destroy, size_t num): allocator_(allocator), destroy_(destroy), num_(num) {}
+  void operator() (T* ptr) {
+    if (ptr != nullptr) {
+      if (destroy_) {
+        for (size_t i = 0; i < num_; ++i) {
+          ptr[i].~T();
+        }
+      }
+      allocator_.deallocate(ptr, num_);
+    }
+  }
+  void set_destroy(bool destroy) { destroy_ = destroy; }
+  private:
+  A allocator_;
+  bool destroy_;
+  size_t num_;
+};
 
 
 // quantiles_sketch::const_iterator implementation

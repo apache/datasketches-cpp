@@ -360,13 +360,13 @@ public:
    * @return size in bytes needed to serialize this sketch
    */
   template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-  size_t get_serialized_size_bytes() const;
+  size_t get_serialized_size_bytes(const S& serde = S()) const;
 
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
    */
-  void serialize(std::ostream& os) const;
+  void serialize(std::ostream& os, const SerDe& serde = S()) const;
 
   // This is a convenience alias for users
   // The type returned by the following serialize method
@@ -379,14 +379,14 @@ public:
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
    */
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& serde = S()) const;
 
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
    * @return an instance of a sketch
    */
-  static quantiles_sketch<T, C, S, A> deserialize(std::istream& is, const A& allocator = A());
+  static quantiles_sketch<T, C, S, A> deserialize(std::istream& is, const SerDe& serde = S(), const A& allocator = A());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
@@ -394,7 +394,7 @@ public:
    * @param size the size of the array
    * @return an instance of a sketch
    */
-  static quantiles_sketch<T, C, S, A> deserialize(const void* bytes, size_t size, const A& allocator = A());
+  static quantiles_sketch<T, C, S, A> deserialize(const void* bytes, size_t size, const SerDe& serde = S(), const A& allocator = A());
 
   /**
    * Gets the normalized rank error for this sketch. Constants were derived as the best fit to 99 percentile
@@ -429,6 +429,7 @@ public:
 private:
   using Level = std::vector<T, Allocator>;
   using AllocLevel = typename std::allocator_traits<Allocator>::template rebind_alloc<Level>;
+  using VectorLevels = std::vector<Level, AllocLevel>;
 
   /* Serialized sketch layout:
    * Long || Start Byte Adr:
@@ -444,8 +445,9 @@ private:
    */
 
   static const size_t EMPTY_SIZE_BYTES = 8;
-  static const uint8_t SERIAL_VERSION_2 = 1;
-  static const uint8_t SERIAL_VERSION_3 = 2;
+  static const uint8_t SERIAL_VERSION_1 = 1;
+  static const uint8_t SERIAL_VERSION_2 = 2;
+  static const uint8_t SERIAL_VERSION = 3;
   static const uint8_t FAMILY = 15;
 
   enum flags { RESERVED0, RESERVED1, IS_EMPTY, IS_COMPACT, IS_SORTED };
@@ -459,7 +461,7 @@ private:
   uint64_t n_;
   uint64_t bit_pattern_;
   Level base_buffer_;
-  std::vector<Level, AllocLevel> levels_;
+  VectorLevels levels_;
   T* min_value_;
   T* max_value_;
   bool is_sorted_;
@@ -474,9 +476,10 @@ private:
   // for deserialization
   class item_deleter;
   class items_deleter;
-  quantiles_sketch(uint16_t k, uint16_t base_buffer_count, uint32_t items_size, uint64_t n, uint8_t bit_pattern,
-      std::unique_ptr<T, items_deleter> items, std::unique_ptr<T, item_deleter> min_value,
-      std::unique_ptr<T, item_deleter> max_value);
+  quantiles_sketch(uint16_t k, uint64_t n, uint64_t bit_pattern,
+      Level&& base_buffer, VectorLevels&& levels,
+      std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value,
+      bool is_sorted, const Allocator& allocator = Allocator());
 
   void grow_base_buffer();
   void process_full_base_buffer();
@@ -491,10 +494,11 @@ private:
   static void zip_buffer(Level& buf_in, Level& buf_out);
   static void merge_two_size_k_buffers(Level& arr_in_1, Level& arr_in_2, Level& arr_out);
 
-  vector_double get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
+  static Level deserialize_array(std::istream& is, uint32_t num_items, uint32_t capcacity, const S& serde, const Allocator& allocator);
+  static Level deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capcacity, const S& serde, const Allocator& allocator);
 
-  static void check_preamble_longs(uint8_t preamble_ints, uint8_t flags_byte);
   static void check_serial_version(uint8_t serial_version);
+  static void check_header_validity(uint8_t preamble_longs, uint8_t flags_byte, uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
 
   static uint32_t compute_retained_items(uint16_t k, uint64_t n);
