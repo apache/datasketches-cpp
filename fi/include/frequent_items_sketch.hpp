@@ -46,7 +46,7 @@ template<
   typename W = uint64_t,
   typename H = std::hash<T>,
   typename E = std::equal_to<T>,
-  typename S = serde<T>,
+  typename S = serde<T>, // deprecated, to be removed in the next major version
   typename A = std::allocator<T>
 >
 class frequent_items_sketch {
@@ -232,13 +232,22 @@ public:
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
+   *
+   * Deprecated, to be removed in the next major version
    */
   void serialize(std::ostream& os) const;
+
+  /**
+   * This method serializes the sketch into a given stream in a binary form
+   * @param os output stream
+   * @param instance of a SerDe
+   */
+  template<typename SerDe = serde<T>>
+  void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
   // This is a convenience alias for users
   // The type returned by the following serialize method
   using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
-
 
   /**
    * This method serializes the sketch as a vector of bytes.
@@ -247,23 +256,64 @@ public:
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
    * @return serialized sketch as a vector of bytes
+   *
+   * Deprecated, to be removed in the next major version
    */
   vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
   /**
+   * This method serializes the sketch as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is a blank space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * @param header_size_bytes space to reserve in front of the sketch
+   * @param instance of a SerDe
+   * @return serialized sketch as a vector of bytes
+   */
+  template<typename SerDe = serde<T>>
+  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
+
+  /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
+   * @param instance of an Allocator
    * @return an instance of the sketch
+   *
+   * Deprecated, to be removed in the next major version
    */
   static frequent_items_sketch deserialize(std::istream& is, const A& allocator = A());
+
+  /**
+   * This method deserializes a sketch from a given stream.
+   * @param is input stream
+   * @param instance of a SerDe
+   * @param instance of an Allocator
+   * @return an instance of the sketch
+   */
+  template<typename SerDe = serde<T>>
+  static frequent_items_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
+   * @param instance of an Allocator
    * @return an instance of the sketch
+   *
+   * Deprecated, to be removed in the next major version
    */
   static frequent_items_sketch deserialize(const void* bytes, size_t size, const A& allocator = A());
+
+  /**
+   * This method deserializes a sketch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param instance of a SerDe
+   * @param instance of an Allocator
+   * @return an instance of the sketch
+   */
+  template<typename SerDe = serde<T>>
+  static frequent_items_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
 
   /**
    * Returns a human readable summary of this sketch

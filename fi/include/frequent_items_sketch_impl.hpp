@@ -162,6 +162,12 @@ frequent_items_sketch<T, W, H, E, S, A>::get_frequent_items(frequent_items_error
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
 void frequent_items_sketch<T, W, H, E, S, A>::serialize(std::ostream& os) const {
+  serialize(os, S());
+}
+
+template<typename T, typename W, typename H, typename E, typename S, typename A>
+template<typename SerDe>
+void frequent_items_sketch<T, W, H, E, S, A>::serialize(std::ostream& os, const SerDe& sd) const {
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NONEMPTY;
   write(os, preamble_longs);
   const uint8_t serial_version = SERIAL_VERSION;
@@ -199,7 +205,7 @@ void frequent_items_sketch<T, W, H, E, S, A>::serialize(std::ostream& os) const 
     }
     write(os, weights, sizeof(W) * num_items);
     aw.deallocate(weights, num_items);
-    S().serialize(os, items, num_items);
+    sd.serialize(os, items, num_items);
     for (i = 0; i < num_items; i++) items[i].~T();
     alloc.deallocate(items, num_items);
   }
@@ -215,6 +221,12 @@ size_t frequent_items_sketch<T, W, H, E, S, A>::get_serialized_size_bytes() cons
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
 auto frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
+  return serialize(header_size_bytes, S());
+}
+
+template<typename T, typename W, typename H, typename E, typename S, typename A>
+template<typename SerDe>
+auto frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_size_bytes, const SerDe& sd) const -> vector_bytes {
   const size_t size = header_size_bytes + get_serialized_size_bytes();
   vector_bytes bytes(size, 0, map.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
@@ -256,7 +268,7 @@ auto frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_size_byt
     ptr += copy_to_mem(weights, ptr, sizeof(W) * num_items);
     aw.deallocate(weights, num_items);
     const size_t bytes_remaining = end_ptr - ptr;
-    ptr += S().serialize(ptr, bytes_remaining, items, num_items);
+    ptr += sd.serialize(ptr, bytes_remaining, items, num_items);
     for (i = 0; i < num_items; i++) items[i].~T();
     alloc.deallocate(items, num_items);
   }
@@ -285,6 +297,12 @@ private:
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
 frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>::deserialize(std::istream& is, const A& allocator) {
+  return deserialize(is, S(), allocator);
+}
+
+template<typename T, typename W, typename H, typename E, typename S, typename A>
+template<typename SerDe>
+frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
   const auto preamble_longs = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -313,7 +331,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     read(is, weights.data(), sizeof(W) * num_items);
     A alloc(allocator);
     std::unique_ptr<T, items_deleter> items(alloc.allocate(num_items), items_deleter(num_items, false, alloc));
-    S().deserialize(is, items.get(), num_items);
+    sd.deserialize(is, items.get(), num_items);
     items.get_deleter().set_destroy(true); // serde did not throw, so the items must be constructed
     for (uint32_t i = 0; i < num_items; i++) {
       sketch.update(std::move(items.get()[i]), weights[i]);
@@ -328,6 +346,12 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
 frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>::deserialize(const void* bytes, size_t size, const A& allocator) {
+  return deserialize(bytes, size, S(), allocator);
+}
+
+template<typename T, typename W, typename H, typename E, typename S, typename A>
+template<typename SerDe>
+frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* base = static_cast<const char*>(bytes);
@@ -371,7 +395,7 @@ frequent_items_sketch<T, W, H, E, S, A> frequent_items_sketch<T, W, H, E, S, A>:
     A alloc(allocator);
     std::unique_ptr<T, items_deleter> items(alloc.allocate(num_items), items_deleter(num_items, false, alloc));
     const size_t bytes_remaining = size - (ptr - base);
-    ptr += S().deserialize(ptr, bytes_remaining, items.get(), num_items);
+    ptr += sd.deserialize(ptr, bytes_remaining, items.get(), num_items);
     items.get_deleter().set_destroy(true); // serde did not throw, so the items must be constructed
     for (uint32_t i = 0; i < num_items; i++) {
       sketch.update(std::move(items.get()[i]), weights[i]);
