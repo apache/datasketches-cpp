@@ -298,7 +298,7 @@ auto quantiles_sketch<T, C, S, A>::deserialize(std::istream &is, const S& serde,
   // load base buffer
   const uint32_t bb_items = compute_base_buffer_items(k, items_seen);
   uint32_t items_to_read = is_compact ? bb_items : 2 * k;
-  Level base_buffer = deserialize_array(is, allocator, items_to_read, 2 * k);
+  Level base_buffer = deserialize_array(is, items_to_read, 2 * k, serde, allocator);
   
   // populate vector of Levels directly
   VectorLevels levels(allocator);
@@ -308,7 +308,7 @@ auto quantiles_sketch<T, C, S, A>::deserialize(std::istream &is, const S& serde,
     for (size_t i = 0; i < levels_needed; ++i, working_pattern >>= 1) {
      
       if ((working_pattern & 0x01) == 1) {
-        Level level = deserialize_array(is, allocator, k, k);
+        Level level = deserialize_array(is, k, k, serde, allocator);
         levels.push_back(std::move(level));
       } else {
         Level level(allocator);
@@ -337,32 +337,115 @@ auto quantiles_sketch<T, C, S, A>::deserialize_array(std::istream& is, uint32_t 
   level.insert(level.begin(),
                std::make_move_iterator(items.get()),
                std::make_move_iterator(items.get() + num_items));
-  return level;
+  return std::move(level);
 }
 
-/*
 template<typename T, typename C, typename S, typename A>
 auto quantiles_sketch<T, C, S, A>::deserialize(const void* bytes, size_t size, const S& serde, const A &allocator) -> quantiles_sketch {
+  ensure_minimum_memory(size, 8);
+  const char* ptr = static_cast<const char*>(bytes);
+  const char* end_ptr = static_cast<const char*>(bytes) + size;
 
+  uint8_t preamble_longs;
+  ptr += copy_from_mem(ptr, preamble_longs);
+  uint8_t serial_version;
+  ptr += copy_from_mem(ptr, serial_version);
+  uint8_t family_id;
+  ptr += copy_from_mem(ptr, family_id);
+  uint8_t flags_byte;
+  ptr += copy_from_mem(ptr, flags_byte);
+  uint16_t k;
+  ptr += copy_from_mem(ptr, k);
+  uint16_t unused;
+  ptr += copy_from_mem(ptr, unused);
+
+  check_serial_version(serial_version); // a little redundant with the next line, but explicit checks
+  check_family_id(family_id);
+  check_header_validity(preamble_longs, flags_byte, serial_version);
+
+  const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+  if (is_empty) {
+    return quantiles_sketch(k, allocator);
+  }
+
+  ensure_minimum_memory(size, 16);
+  uint64_t items_seen;
+  ptr += copy_from_mem(ptr, items_seen);
+
+  const bool is_compact = (flags_byte & (1 << flags::IS_COMPACT)) > 0;
+  const bool is_sorted = (flags_byte & (1 << flags::IS_SORTED)) > 0;
+
+  A alloc(allocator);
+  auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
+  std::unique_ptr<T, decltype(item_buffer_deleter)> min_value_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> max_value_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, item_deleter> min_value(nullptr, item_deleter(allocator));
+  std::unique_ptr<T, item_deleter> max_value(nullptr, item_deleter(allocator));
+
+  ptr += serde.deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
+  // serde call did not throw, repackage with destrtuctor
+  min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
+  ptr += serde.deserialize(ptr, end_ptr - ptr, max_value_buffer.get(), 1);
+  // serde call did not throw, repackage with destrtuctor
+  max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
+
+  // allocate buffers as needed
+  const uint8_t levels_needed = compute_levels_needed(k, items_seen);
+  const uint64_t bit_pattern = compute_bit_pattern(k, items_seen);
+
+  // Java provides a compact storage layout for a sketch of primitive doubles. The C++ version
+  // does not currently operate sketches in compact mode, but will only serialize as compact
+  // to avoid complications around serialization of empty values for generic type T. We also need
+  // to be able to ingest either serialized format from Java.
+
+  // load base buffer
+  const uint32_t bb_items = compute_base_buffer_items(k, items_seen);
+  uint32_t items_to_read = is_compact ? bb_items : 2 * k;
+  auto base_buffer_pair = deserialize_array(ptr, end_ptr - ptr, items_to_read, 2 * k, serde, allocator);
+  ptr += base_buffer_pair.second;
+  
+  // populate vector of Levels directly
+  VectorLevels levels(allocator);
+  levels.reserve(levels_needed);
+  if (levels_needed > 0) {
+    uint64_t working_pattern = bit_pattern;
+    for (size_t i = 0; i < levels_needed; ++i, working_pattern >>= 1) {
+     
+      if ((working_pattern & 0x01) == 1) {
+        auto pair = deserialize_array(ptr, end_ptr - ptr, k, k, serde, allocator);
+        ptr += pair.second;
+        levels.push_back(std::move(pair.first));
+      } else {
+        Level level(allocator);
+        level.reserve(k);
+        levels.push_back(std::move(level));
+      }
+    }
+  }
+
+  return quantiles_sketch(k, items_seen, bit_pattern,
+    std::move(base_buffer_pair.first), std::move(levels), std::move(min_value), std::move(max_value), is_sorted, allocator);
 }
-*/
 
 template<typename T, typename C, typename S, typename A>
-auto quantiles_sketch<T, C, S, A>::deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capacity, const S& serder, const A& allocator) -> Level {
+auto quantiles_sketch<T, C, S, A>::deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capacity, const S& serde, const A& allocator)
+  -> std::pair<Level, size_t> {
+  const char* ptr = static_cast<const char*>(bytes);
+  const char* end_ptr = static_cast<const char*>(bytes) + size;
   A alloc(allocator);
-  std::unique_ptr<T, items_deleter> items(alloc.allocate(num), items_deleter(allocator, false, num));
-  serde.deserialize(is, items.get(), num);
+  std::unique_ptr<T, items_deleter> items(alloc.allocate(num_items), items_deleter(allocator, false, num_items));
+  ptr += serde.deserialize(ptr, end_ptr - ptr, items.get(), num_items);
   // serde did not throw, enable destructors
   items.get_deleter().set_destroy(true);
-  if (!is.good()) throw std::runtime_error("error reading from std::istream");
-
+  
   // succesfully read, now put into a Level
   Level level(allocator);
   level.reserve(capacity);
   level.insert(level.begin(),
                std::make_move_iterator(items.get()),
                std::make_move_iterator(items.get() + num_items));
-  return level;
+  
+  return std::pair<Level, size_t>(std::move(level), ptr - static_cast<const char*>(bytes));
 }
 
 template<typename T, typename C, typename S, typename A>

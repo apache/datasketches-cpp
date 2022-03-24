@@ -495,7 +495,7 @@ private:
   static void merge_two_size_k_buffers(Level& arr_in_1, Level& arr_in_2, Level& arr_out);
 
   static Level deserialize_array(std::istream& is, uint32_t num_items, uint32_t capcacity, const S& serde, const Allocator& allocator);
-  static Level deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capcacity, const S& serde, const Allocator& allocator);
+  static std::pair<Level, size_t> deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capcacity, const S& serde, const Allocator& allocator);
 
   static void check_serial_version(uint8_t serial_version);
   static void check_header_validity(uint8_t preamble_longs, uint8_t flags_byte, uint8_t serial_version);

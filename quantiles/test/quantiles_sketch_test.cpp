@@ -295,7 +295,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = quantiles_float_sketch::deserialize(s, test_allocator<float>(0));
+    auto sketch2 = quantiles_float_sketch::deserialize(s, serde<float>(), test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
@@ -307,11 +307,11 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }
-/*
+
   SECTION("bytes serialize deserialize empty") {
-    kll_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(200, 0);
     auto bytes = sketch.serialize();
-    auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), 0);
+    auto sketch2 = quantiles_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), 0);
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -322,34 +322,16 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }
-*/
+
   SECTION("stream serialize deserialize one item") {
     quantiles_float_sketch sketch(200, 0);
     sketch.update(1.0f);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = quantiles_float_sketch::deserialize(s, test_allocator<float>(0));
+    auto sketch2 = quantiles_float_sketch::deserialize(s, serde<float>(), test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
-    REQUIRE_FALSE(sketch2.is_empty());
-    REQUIRE_FALSE(sketch2.is_estimation_mode());
-    REQUIRE(sketch2.get_n() == 1);
-    REQUIRE(sketch2.get_num_retained() == 1);
-    REQUIRE(sketch2.get_min_value() == 1.0);
-    REQUIRE(sketch2.get_max_value() == 1.0);
-    REQUIRE(sketch2.get_quantile(0.5) == 1.0);
-    REQUIRE(sketch2.get_rank(1) == 0.0);
-    REQUIRE(sketch2.get_rank(2) == 1.0);
-  }
-/*
-  SECTION("bytes serialize deserialize one item") {
-    kll_float_sketch sketch(200, 0);
-    sketch.update(1.0f);
-    auto bytes = sketch.serialize();
-    REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), 0);
-    REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
     REQUIRE_FALSE(sketch2.is_empty());
     REQUIRE_FALSE(sketch2.is_estimation_mode());
     REQUIRE(sketch2.get_n() == 1);
@@ -361,11 +343,29 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_rank(2) == 1.0);
   }
 
+  SECTION("bytes serialize deserialize one item") {
+    quantiles_float_sketch sketch(200, 0);
+    sketch.update(1.0f);
+    auto bytes = sketch.serialize();
+    REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
+    auto sketch2 = quantiles_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), 0);
+    REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
+    REQUIRE_FALSE(sketch2.is_empty());
+    REQUIRE_FALSE(sketch2.is_estimation_mode());
+    REQUIRE(sketch2.get_n() == 1);
+    REQUIRE(sketch2.get_num_retained() == 1);
+    REQUIRE(sketch2.get_min_value() == 1.0);
+    REQUIRE(sketch2.get_max_value() == 1.0);
+    REQUIRE(sketch2.get_quantile(0.5) == 1.0);
+    REQUIRE(sketch2.get_rank(1) == 0.0);
+    REQUIRE(sketch2.get_rank(2) == 1.0);
+  }
+/*
   SECTION("deserialize one item v1") {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.sk", std::ios::binary);
-    auto sketch = kll_float_sketch::deserialize(is, test_allocator<float>(0));
+    auto sketch = quantiles_float_sketch::deserialize(is, serde<float>(), test_allocator<float>(0));
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE_FALSE(sketch.is_estimation_mode());
     REQUIRE(sketch.get_n() == 1);
@@ -382,7 +382,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = quantiles_float_sketch::deserialize(s, test_allocator<float>(0));
+    auto sketch2 = quantiles_float_sketch::deserialize(s, serde<float>(), test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE_FALSE(sketch2.is_empty());
@@ -392,15 +392,15 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_min_value() == 1.0);
     REQUIRE(sketch2.get_max_value() == 3.0);
   }
-/*
+
   SECTION("bytes serialize deserialize three items") {
-    kll_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(200, 0);
     sketch.update(1.0f);
     sketch.update(2.0f);
     sketch.update(3.0f);
     auto bytes = sketch.serialize();
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), 0);
+    auto sketch2 = quantiles_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), 0);
     REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
     REQUIRE_FALSE(sketch2.is_empty());
     REQUIRE_FALSE(sketch2.is_estimation_mode());
@@ -409,7 +409,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_min_value() == 1.0);
     REQUIRE(sketch2.get_max_value() == 3.0);
   }
-*/
+
   SECTION("stream serialize deserialize many floats") {
     quantiles_float_sketch sketch(200, 0);
     const int n = 1000;
@@ -417,7 +417,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = quantiles_float_sketch::deserialize(s, test_allocator<float>(0));
+    auto sketch2 = quantiles_float_sketch::deserialize(s, serde<float>(), test_allocator<float>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
@@ -432,14 +432,13 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_rank(0) == sketch.get_rank(0));
     REQUIRE(sketch2.get_rank(static_cast<float>(n)) == sketch.get_rank(static_cast<float>(n)));
   }
-/*
   SECTION("bytes serialize deserialize many floats") {
-    kll_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(200, 0);
     const int n = 1000;
     for (int i = 0; i < n; i++) sketch.update(static_cast<float>(i));
     auto bytes = sketch.serialize();
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), 0);
+    auto sketch2 = quantiles_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), 0);
     REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -452,18 +451,18 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
     REQUIRE(sketch2.get_rank(0) == sketch.get_rank(0));
     REQUIRE(sketch2.get_rank(static_cast<float>(n)) == sketch.get_rank(static_cast<float>(n)));
-    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), 7), std::out_of_range);
-    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), 15), std::out_of_range);
-    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+    REQUIRE_THROWS_AS(quantiles_sketch<int>::deserialize(bytes.data(), 7), std::out_of_range);
+    REQUIRE_THROWS_AS(quantiles_sketch<int>::deserialize(bytes.data(), 15), std::out_of_range);
+    REQUIRE_THROWS_AS(quantiles_sketch<int>::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
   }
 
   SECTION("bytes serialize deserialize many ints") {
-    kll_sketch<int> sketch;
+    quantiles_sketch<int> sketch;
     const int n = 1000;
     for (int i = 0; i < n; i++) sketch.update(i);
     auto bytes = sketch.serialize();
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_sketch<int>::deserialize(bytes.data(), bytes.size());
+    auto sketch2 = quantiles_sketch<int>::deserialize(bytes.data(), bytes.size());
     REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -476,23 +475,11 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
     REQUIRE(sketch2.get_rank(0) == sketch.get_rank(0));
     REQUIRE(sketch2.get_rank(n) == sketch.get_rank(n));
-    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), 7), std::out_of_range);
-    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), 15), std::out_of_range);
-    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+    REQUIRE_THROWS_AS(quantiles_sketch<int>::deserialize(bytes.data(), 7), std::out_of_range);
+    REQUIRE_THROWS_AS(quantiles_sketch<int>::deserialize(bytes.data(), 15), std::out_of_range);
+    REQUIRE_THROWS_AS(quantiles_sketch<int>::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
   }
 
-  SECTION("floor of log2 of fraction") {
-    REQUIRE(kll_helper::floor_of_log2_of_fraction(0, 1) == 0);
-    REQUIRE(kll_helper::floor_of_log2_of_fraction(1, 2) == 0);
-    REQUIRE(kll_helper::floor_of_log2_of_fraction(2, 2) == 0);
-    REQUIRE(kll_helper::floor_of_log2_of_fraction(3, 2) == 0);
-    REQUIRE(kll_helper::floor_of_log2_of_fraction(4, 2) == 1);
-    REQUIRE(kll_helper::floor_of_log2_of_fraction(5, 2) == 1);
-    REQUIRE(kll_helper::floor_of_log2_of_fraction(6, 2) == 1);
-    REQUIRE(kll_helper::floor_of_log2_of_fraction(7, 2) == 1);
-    REQUIRE(kll_helper::floor_of_log2_of_fraction(8, 2) == 2);
-  }
-*/
   SECTION("out of order split points, float") {
     quantiles_float_sketch sketch(200, 0);
     sketch.update(0); // has too be non-empty to reach the check
