@@ -147,12 +147,10 @@ namespace quantiles_constants {
 
 template <typename T,
           typename Comparator = std::less<T>,
-          typename SerDe = serde<T>,
           typename Allocator = std::allocator<T>>
 class quantiles_sketch {
 public:
   using C = Comparator;
-  using S = SerDe;
   using A = Allocator;
   using AllocDouble = typename std::allocator_traits<Allocator>::template rebind_alloc<double>;
   using vector_double = std::vector<double, AllocDouble>;
@@ -351,7 +349,7 @@ public:
    * This version is for fixed-size arithmetic types (integral and floating point).
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+  template<typename SerDe = serde<T>, typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   size_t get_serialized_size_bytes() const;
 
   /**
@@ -359,14 +357,15 @@ public:
    * This version is for all other types and can be expensive since every item needs to be looked at.
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-  size_t get_serialized_size_bytes(const S& serde = S()) const;
+  template<typename SerDe = serde<T>, typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes(const SerDe& serde = SerDe()) const;
 
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
    */
-  void serialize(std::ostream& os, const SerDe& serde = S()) const;
+  template<typename SerDe = serde<T>>
+  void serialize(std::ostream& os, const SerDe& serde = SerDe()) const;
 
   // This is a convenience alias for users
   // The type returned by the following serialize method
@@ -379,14 +378,16 @@ public:
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
    */
-  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& serde = S()) const;
+  template<typename SerDe = serde<T>>
+  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& serde = SerDe()) const;
 
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
    * @return an instance of a sketch
    */
-  static quantiles_sketch<T, C, S, A> deserialize(std::istream& is, const SerDe& serde = S(), const A& allocator = A());
+  template<typename SerDe = serde<T>>
+  static quantiles_sketch<T, C, A> deserialize(std::istream& is, const SerDe& serde = SerDe(), const A& allocator = A());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
@@ -394,7 +395,8 @@ public:
    * @param size the size of the array
    * @return an instance of a sketch
    */
-  static quantiles_sketch<T, C, S, A> deserialize(const void* bytes, size_t size, const SerDe& serde = S(), const A& allocator = A());
+  template<typename SerDe = serde<T>>
+  static quantiles_sketch<T, C, A> deserialize(const void* bytes, size_t size, const SerDe& serde = SerDe(), const A& allocator = A());
 
   /**
    * Gets the normalized rank error for this sketch. Constants were derived as the best fit to 99 percentile
@@ -490,11 +492,14 @@ private:
   // buffers should be pre-sized to target capacity as appropriate
   static void in_place_propagate_carry(uint8_t starting_level, Level& buf_size_k,
                                        Level& buf_size_2k, bool apply_as_update,
-                                       quantiles_sketch<T,C,S,A>& sketch);
+                                       quantiles_sketch<T,C,A>& sketch);
   static void zip_buffer(Level& buf_in, Level& buf_out);
   static void merge_two_size_k_buffers(Level& arr_in_1, Level& arr_in_2, Level& arr_out);
 
+  template<typename S>
   static Level deserialize_array(std::istream& is, uint32_t num_items, uint32_t capcacity, const S& serde, const Allocator& allocator);
+  
+  template<typename S>
   static std::pair<Level, size_t> deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capcacity, const S& serde, const Allocator& allocator);
 
   static void check_serial_version(uint8_t serial_version);
@@ -562,8 +567,8 @@ private:
 };
 
 
-template<typename T, typename C, typename S, typename A>
-class quantiles_sketch<T, C, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+template<typename T, typename C, typename A>
+class quantiles_sketch<T, C, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
 public:
   const_iterator& operator++();
   const_iterator& operator++(int);
@@ -571,7 +576,7 @@ public:
   bool operator!=(const const_iterator& other) const;
   std::pair<const T&, const uint64_t> operator*() const;
 private:
-  friend class quantiles_sketch<T, C, S, A>;
+  friend class quantiles_sketch<T, C, A>;
   using Level = std::vector<T, A>;
   using AllocLevel = typename std::allocator_traits<A>::template rebind_alloc<Level>;
   Level base_buffer_;

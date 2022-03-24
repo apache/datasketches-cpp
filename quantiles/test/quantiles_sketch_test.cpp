@@ -38,9 +38,9 @@ static std::string testBinaryInputPath = "test/";
 #endif
 
 // typical usage would be just quantiles_sketch<float> or quantiles_sketch<std::string>, but here we use test_allocator
-using quantiles_float_sketch = quantiles_sketch<float, std::less<float>, serde<float>, test_allocator<float>>;
+using quantiles_float_sketch = quantiles_sketch<float, std::less<float>, test_allocator<float>>;
 // let std::string use the default allocator for simplicity, otherwise we need to define "less" and "serde"
-using quantiles_string_sketch = quantiles_sketch<std::string, std::less<std::string>, serde<std::string>, test_allocator<std::string>>;
+using quantiles_string_sketch = quantiles_sketch<std::string, std::less<std::string>, test_allocator<std::string>>;
 
 TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 

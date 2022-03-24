@@ -31,8 +31,8 @@
 
 namespace datasketches {
 
-template<typename T, typename C, typename S, typename A>
-quantiles_sketch<T, C, S, A>::quantiles_sketch(uint16_t k, const A& allocator):
+template<typename T, typename C, typename A>
+quantiles_sketch<T, C, A>::quantiles_sketch(uint16_t k, const A& allocator):
 allocator_(allocator),
 k_(k),
 n_(0),
@@ -49,8 +49,8 @@ is_sorted_(true)
   base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k));
 }
 
-template<typename T, typename C, typename S, typename A>
-quantiles_sketch<T, C, S, A>::quantiles_sketch(const quantiles_sketch& other):
+template<typename T, typename C, typename A>
+quantiles_sketch<T, C, A>::quantiles_sketch(const quantiles_sketch& other):
 allocator_(other.allocator_),
 k_(other.k_),
 n_(other.n_),
@@ -65,8 +65,8 @@ is_sorted_(other.is_sorted_)
   if (other.max_value_ != nullptr) max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
 }
 
-template<typename T, typename C, typename S, typename A>
-quantiles_sketch<T, C, S, A>::quantiles_sketch(quantiles_sketch&& other) noexcept:
+template<typename T, typename C, typename A>
+quantiles_sketch<T, C, A>::quantiles_sketch(quantiles_sketch&& other) noexcept:
 allocator_(other.allocator_),
 k_(other.k_),
 n_(other.n_),
@@ -81,9 +81,9 @@ is_sorted_(other.is_sorted_)
   other.max_value_ = nullptr;
 }
 
-template<typename T, typename C, typename S, typename A>
-quantiles_sketch<T, C, S, A>& quantiles_sketch<T, C, S, A>::operator=(const quantiles_sketch& other) {
-  quantiles_sketch<T, C, S, A> copy(other);
+template<typename T, typename C, typename A>
+quantiles_sketch<T, C, A>& quantiles_sketch<T, C, A>::operator=(const quantiles_sketch& other) {
+  quantiles_sketch<T, C, A> copy(other);
   std::swap(allocator_, copy.allocator_);
   std::swap(k_, copy.k_);
   std::swap(n_, copy.n_);
@@ -96,8 +96,8 @@ quantiles_sketch<T, C, S, A>& quantiles_sketch<T, C, S, A>::operator=(const quan
   return *this;
 }
 
-template<typename T, typename C, typename S, typename A>
-quantiles_sketch<T, C, S, A>& quantiles_sketch<T, C, S, A>::operator=(quantiles_sketch&& other) noexcept {
+template<typename T, typename C, typename A>
+quantiles_sketch<T, C, A>& quantiles_sketch<T, C, A>::operator=(quantiles_sketch&& other) noexcept {
   std::swap(allocator_, other.allocator_);
   std::swap(k_, other.k_);
   std::swap(n_, other.n_);
@@ -110,8 +110,8 @@ quantiles_sketch<T, C, S, A>& quantiles_sketch<T, C, S, A>::operator=(quantiles_
   return *this;
 }
 
-template<typename T, typename C, typename S, typename A>
-quantiles_sketch<T, C, S, A>::quantiles_sketch(uint16_t k, uint64_t n, uint64_t bit_pattern,
+template<typename T, typename C, typename A>
+quantiles_sketch<T, C, A>::quantiles_sketch(uint16_t k, uint64_t n, uint64_t bit_pattern,
       Level&& base_buffer, VectorLevels&& levels,
       std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value,
       bool is_sorted, const A& allocator) :
@@ -126,8 +126,8 @@ max_value_(max_value.release()),
 is_sorted_(is_sorted)
 {}
 
-template<typename T, typename C, typename S, typename A>
-quantiles_sketch<T, C, S, A>::~quantiles_sketch() {
+template<typename T, typename C, typename A>
+quantiles_sketch<T, C, A>::~quantiles_sketch() {
   if (min_value_ != nullptr) {
     min_value_->~T();
     allocator_.deallocate(min_value_, 1);
@@ -138,9 +138,9 @@ quantiles_sketch<T, C, S, A>::~quantiles_sketch() {
   }
 }
 
-template<typename T, typename C, typename S, typename A>
+template<typename T, typename C, typename A>
 template<typename FwdT>
-void quantiles_sketch<T, C, S, A>::update(FwdT&& item) {
+void quantiles_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_value(item)) { return; }
   if (is_empty()) {
     min_value_ = new (allocator_.allocate(1)) T(item);
@@ -164,8 +164,9 @@ void quantiles_sketch<T, C, S, A>::update(FwdT&& item) {
     process_full_base_buffer();
 }
 
-template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::serialize(std::ostream& os, const S& serde) const {
+template<typename T, typename C, typename A>
+template<typename S>
+void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const S& serde) const {
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_SHORT : PREAMBLE_LONGS_FULL;
   write(os, preamble_longs);
   const uint8_t ser_ver = SERIAL_VERSION;
@@ -202,8 +203,9 @@ void quantiles_sketch<T, C, S, A>::serialize(std::ostream& os, const S& serde) c
   }
 }
 
-template<typename T, typename C, typename S, typename A>
-auto quantiles_sketch<T, C, S, A>::serialize(unsigned header_size_bytes, const S& serde) const -> vector_bytes {
+template<typename T, typename C, typename A>
+template<typename S>
+auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const S& serde) const -> vector_bytes {
   const size_t size = get_serialized_size_bytes() + header_size_bytes;
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
@@ -248,8 +250,9 @@ auto quantiles_sketch<T, C, S, A>::serialize(unsigned header_size_bytes, const S
   return bytes;
 }
 
-template<typename T, typename C, typename S, typename A>
-auto quantiles_sketch<T, C, S, A>::deserialize(std::istream &is, const S& serde, const A &allocator) -> quantiles_sketch {
+template<typename T, typename C, typename A>
+template<typename S>
+auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const S& serde, const A &allocator) -> quantiles_sketch {
   const auto preamble_longs = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -322,8 +325,9 @@ auto quantiles_sketch<T, C, S, A>::deserialize(std::istream &is, const S& serde,
     std::move(base_buffer), std::move(levels), std::move(min_value), std::move(max_value), is_sorted, allocator);
 }
 
-template<typename T, typename C, typename S, typename A>
-auto quantiles_sketch<T, C, S, A>::deserialize_array(std::istream& is, uint32_t num_items, uint32_t capacity, const S& serde, const A& allocator) -> Level {
+template<typename T, typename C, typename A>
+template<typename S>
+auto quantiles_sketch<T, C, A>::deserialize_array(std::istream& is, uint32_t num_items, uint32_t capacity, const S& serde, const A& allocator) -> Level {
   A alloc(allocator);
   std::unique_ptr<T, items_deleter> items(alloc.allocate(num_items), items_deleter(allocator, false, num_items));
   serde.deserialize(is, items.get(), num_items);
@@ -340,8 +344,9 @@ auto quantiles_sketch<T, C, S, A>::deserialize_array(std::istream& is, uint32_t 
   return std::move(level);
 }
 
-template<typename T, typename C, typename S, typename A>
-auto quantiles_sketch<T, C, S, A>::deserialize(const void* bytes, size_t size, const S& serde, const A &allocator) -> quantiles_sketch {
+template<typename T, typename C, typename A>
+template<typename S>
+auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, const S& serde, const A &allocator) -> quantiles_sketch {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
@@ -427,8 +432,9 @@ auto quantiles_sketch<T, C, S, A>::deserialize(const void* bytes, size_t size, c
     std::move(base_buffer_pair.first), std::move(levels), std::move(min_value), std::move(max_value), is_sorted, allocator);
 }
 
-template<typename T, typename C, typename S, typename A>
-auto quantiles_sketch<T, C, S, A>::deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capacity, const S& serde, const A& allocator)
+template<typename T, typename C, typename A>
+template<typename S>
+auto quantiles_sketch<T, C, A>::deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capacity, const S& serde, const A& allocator)
   -> std::pair<Level, size_t> {
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
@@ -448,8 +454,8 @@ auto quantiles_sketch<T, C, S, A>::deserialize_array(const void* bytes, size_t s
   return std::pair<Level, size_t>(std::move(level), ptr - static_cast<const char*>(bytes));
 }
 
-template<typename T, typename C, typename S, typename A>
-string<A> quantiles_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items) const {
+template<typename T, typename C, typename A>
+string<A> quantiles_sketch<T, C, A>::to_string(bool print_levels, bool print_items) const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
@@ -498,55 +504,55 @@ string<A> quantiles_sketch<T, C, S, A>::to_string(bool print_levels, bool print_
   return string<A>(os.str().c_str(), allocator_);
 }
 
-template<typename T, typename C, typename S, typename A>
-uint16_t quantiles_sketch<T, C, S, A>::get_k() const {
+template<typename T, typename C, typename A>
+uint16_t quantiles_sketch<T, C, A>::get_k() const {
   return k_;
 }
 
-template<typename T, typename C, typename S, typename A>
-uint64_t quantiles_sketch<T, C, S, A>::get_n() const {
+template<typename T, typename C, typename A>
+uint64_t quantiles_sketch<T, C, A>::get_n() const {
   return n_;
 }
 
-template<typename T, typename C, typename S, typename A>
-bool quantiles_sketch<T, C, S, A>::is_empty() const {
+template<typename T, typename C, typename A>
+bool quantiles_sketch<T, C, A>::is_empty() const {
   return n_ == 0;
 }
 
-template<typename T, typename C, typename S, typename A>
-bool quantiles_sketch<T, C, S, A>::is_estimation_mode() const {
+template<typename T, typename C, typename A>
+bool quantiles_sketch<T, C, A>::is_estimation_mode() const {
   return bit_pattern_ != 0;
 }
 
-template<typename T, typename C, typename S, typename A>
-uint32_t quantiles_sketch<T, C, S, A>::get_num_retained() const {
+template<typename T, typename C, typename A>
+uint32_t quantiles_sketch<T, C, A>::get_num_retained() const {
   return compute_retained_items(k_, n_);
 }
 
-template<typename T, typename C, typename S, typename A>
-const T& quantiles_sketch<T, C, S, A>::get_min_value() const {
+template<typename T, typename C, typename A>
+const T& quantiles_sketch<T, C, A>::get_min_value() const {
   if (is_empty()) return get_invalid_value();
   return *min_value_;
 }
 
-template<typename T, typename C, typename S, typename A>
-const T& quantiles_sketch<T, C, S, A>::get_max_value() const {
+template<typename T, typename C, typename A>
+const T& quantiles_sketch<T, C, A>::get_max_value() const {
   if (is_empty()) return get_invalid_value();
   return *max_value_;
 }
 
 // implementation for fixed-size arithmetic types (integral and floating point)
-template<typename T, typename C, typename S, typename A>
-template<typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
-size_t quantiles_sketch<T, C, S, A>::get_serialized_size_bytes() const {
+template<typename T, typename C, typename A>
+template<typename S, typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
+size_t quantiles_sketch<T, C, A>::get_serialized_size_bytes() const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
   return DATA_START + ((get_num_retained() + 2) * sizeof(TT));
 }
 
 // implementation for all other types
-template<typename T, typename C, typename S, typename A>
-template<typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
-size_t quantiles_sketch<T, C, S, A>::get_serialized_size_bytes(const S& serde) const {
+template<typename T, typename C, typename A>
+template<typename S, typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
+size_t quantiles_sketch<T, C, A>::get_serialized_size_bytes(const S& serde) const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
   size_t size = DATA_START;
   size += serde.size_of_item(*min_value_);
@@ -555,20 +561,20 @@ size_t quantiles_sketch<T, C, S, A>::get_serialized_size_bytes(const S& serde) c
   return size;
 }
 
-template<typename T, typename C, typename S, typename A>
-double quantiles_sketch<T, C, S, A>::get_normalized_rank_error(bool is_pmf) const {
+template<typename T, typename C, typename A>
+double quantiles_sketch<T, C, A>::get_normalized_rank_error(bool is_pmf) const {
   return get_normalized_rank_error(k_, is_pmf);
 }
 
-template<typename T, typename C, typename S, typename A>
-double quantiles_sketch<T, C, S, A>::get_normalized_rank_error(uint16_t k, bool is_pmf) {
+template<typename T, typename C, typename A>
+double quantiles_sketch<T, C, A>::get_normalized_rank_error(uint16_t k, bool is_pmf) {
   return is_pmf
       ? 1.854 / std::pow(k, 0.9657)
       : 1.576 / std::pow(k, 0.9726);
 }
 
-template<typename T, typename C, typename S, typename A>
-class quantiles_sketch<T, C, S, A>::calculator_deleter {
+template<typename T, typename C, typename A>
+class quantiles_sketch<T, C, A>::calculator_deleter {
   public:
   explicit calculator_deleter(const AllocCalc& allocator): allocator_(allocator) {}
   void operator() (QuantileCalculator* ptr) {
@@ -581,9 +587,9 @@ class quantiles_sketch<T, C, S, A>::calculator_deleter {
   AllocCalc allocator_;
 };
 
-template<typename T, typename C, typename S, typename A>
+template<typename T, typename C, typename A>
 template<bool inclusive>
-auto quantiles_sketch<T, C, S, A>::get_quantile_calculator() const -> QuantileCalculatorPtr {
+auto quantiles_sketch<T, C, A>::get_quantile_calculator() const -> QuantileCalculatorPtr {
   // allow side effect of sorting the base buffer
   // can't set the sorted flag since this is a const method
   if (!is_sorted_) {
@@ -607,9 +613,9 @@ auto quantiles_sketch<T, C, S, A>::get_quantile_calculator() const -> QuantileCa
   return quantile_calculator_ptr;
 }
 
-template<typename T, typename C, typename S, typename A>
+template<typename T, typename C, typename A>
 template<bool inclusive>
-const T& quantiles_sketch<T, C, S, A>::get_quantile(double rank) const {
+const T& quantiles_sketch<T, C, A>::get_quantile(double rank) const {
   if (is_empty()) return get_invalid_value();
   if (rank == 0.0) return *min_value_;
   if (rank == 1.0) return *max_value_;
@@ -619,9 +625,9 @@ const T& quantiles_sketch<T, C, S, A>::get_quantile(double rank) const {
   return *(get_quantile_calculator<inclusive>()->get_quantile(rank));
 }
 
-template<typename T, typename C, typename S, typename A>
+template<typename T, typename C, typename A>
 template<bool inclusive>
-std::vector<T, A> quantiles_sketch<T, C, S, A>::get_quantiles(const double* ranks, uint32_t size) const {
+std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size) const {
   std::vector<T, A> quantiles(allocator_);
   if (is_empty()) return quantiles;
   QuantileCalculatorPtr quantile_calculator_ptr(nullptr, calculator_deleter(allocator_));
@@ -644,9 +650,9 @@ std::vector<T, A> quantiles_sketch<T, C, S, A>::get_quantiles(const double* rank
   return quantiles;
 }
 
-template<typename T, typename C, typename S, typename A>
+template<typename T, typename C, typename A>
 template<bool inclusive>
-std::vector<T, A> quantiles_sketch<T, C, S, A>::get_quantiles(uint32_t num) const {
+std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(uint32_t num) const {
   if (is_empty()) return std::vector<T, A>(allocator_);
   if (num == 0) {
     throw std::invalid_argument("num must be > 0");
@@ -662,9 +668,9 @@ std::vector<T, A> quantiles_sketch<T, C, S, A>::get_quantiles(uint32_t num) cons
   return get_quantiles<inclusive>(fractions.data(), num);
 }
 
-template<typename T, typename C, typename S, typename A>
+template<typename T, typename C, typename A>
 template<bool inclusive>
-double quantiles_sketch<T, C, S, A>::get_rank(const T& value) const {
+double quantiles_sketch<T, C, A>::get_rank(const T& value) const {
   if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
   uint64_t weight = 1;
   uint64_t total = 0;
@@ -687,9 +693,9 @@ double quantiles_sketch<T, C, S, A>::get_rank(const T& value) const {
   return (double) total / n_;
 }
 
-template<typename T, typename C, typename S, typename A>
+template<typename T, typename C, typename A>
 template<bool inclusive>
-auto quantiles_sketch<T, C, S, A>::get_PMF(const T* split_points, uint32_t size) const -> vector_double {
+auto quantiles_sketch<T, C, A>::get_PMF(const T* split_points, uint32_t size) const -> vector_double {
   auto buckets = get_CDF<inclusive>(split_points, size);
   if (is_empty()) return buckets;
   for (uint32_t i = size; i > 0; --i) {
@@ -698,9 +704,9 @@ auto quantiles_sketch<T, C, S, A>::get_PMF(const T* split_points, uint32_t size)
   return buckets;
 }
 
-template<typename T, typename C, typename S, typename A>
+template<typename T, typename C, typename A>
 template<bool inclusive>
-auto quantiles_sketch<T, C, S, A>::get_CDF(const T* split_points, uint32_t size) const -> vector_double {
+auto quantiles_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size) const -> vector_double {
   vector_double buckets(allocator_);
   if (is_empty()) return buckets;
   check_split_points(split_points, size);
@@ -710,26 +716,26 @@ auto quantiles_sketch<T, C, S, A>::get_CDF(const T* split_points, uint32_t size)
   return buckets;
 }
 
-template<typename T, typename C, typename S, typename A>
-uint32_t quantiles_sketch<T, C, S, A>::compute_retained_items(const uint16_t k, const uint64_t n) {
+template<typename T, typename C, typename A>
+uint32_t quantiles_sketch<T, C, A>::compute_retained_items(const uint16_t k, const uint64_t n) {
   uint32_t bb_count = compute_base_buffer_items(k, n);
   uint64_t bit_pattern = compute_bit_pattern(k, n);
   uint32_t valid_levels = compute_valid_levels(bit_pattern);
   return bb_count + (k * valid_levels);
 }
 
-template<typename T, typename C, typename S, typename A>
-uint32_t quantiles_sketch<T, C, S, A>::compute_base_buffer_items(const uint16_t k, const uint64_t n) {
+template<typename T, typename C, typename A>
+uint32_t quantiles_sketch<T, C, A>::compute_base_buffer_items(const uint16_t k, const uint64_t n) {
   return n % (static_cast<uint64_t>(2) * k);
 }
 
-template<typename T, typename C, typename S, typename A>
-uint64_t quantiles_sketch<T, C, S, A>::compute_bit_pattern(const uint16_t k, const uint64_t n) {
+template<typename T, typename C, typename A>
+uint64_t quantiles_sketch<T, C, A>::compute_bit_pattern(const uint16_t k, const uint64_t n) {
   return n / (static_cast<uint64_t>(2) * k);
 }
 
-template<typename T, typename C, typename S, typename A>
-uint32_t quantiles_sketch<T, C, S, A>::compute_valid_levels(const uint64_t bit_pattern) {
+template<typename T, typename C, typename A>
+uint32_t quantiles_sketch<T, C, A>::compute_valid_levels(const uint64_t bit_pattern) {
   // TODO: Java's Long.bitCount() probably uses a better method
   uint64_t bp = bit_pattern;
   uint32_t count = 0;
@@ -740,29 +746,29 @@ uint32_t quantiles_sketch<T, C, S, A>::compute_valid_levels(const uint64_t bit_p
   return count;
 }
 
-template<typename T, typename C, typename S, typename A>
-uint8_t quantiles_sketch<T, C, S, A>::compute_levels_needed(const uint16_t k, const uint64_t n) {
+template<typename T, typename C, typename A>
+uint8_t quantiles_sketch<T, C, A>::compute_levels_needed(const uint16_t k, const uint64_t n) {
   return static_cast<uint8_t>(64U) - count_leading_zeros_in_u64(n / (2 * k));
 }
 
-template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::check_serial_version(uint8_t serial_version) {
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::check_serial_version(uint8_t serial_version) {
   if (serial_version == SERIAL_VERSION || serial_version == SERIAL_VERSION_1 || serial_version == SERIAL_VERSION_2)
     return;
   else
     throw std::invalid_argument("Possible corruption. Unrecognized serialization version: " + std::to_string(serial_version));
 }
 
-template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::check_family_id(uint8_t family_id) {
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::check_family_id(uint8_t family_id) {
   if (family_id == FAMILY)
     return;
   else
     throw std::invalid_argument("Possible corruption. Family id does not indicate quantiles sketch: " + std::to_string(family_id));
 }
 
-template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::check_header_validity(uint8_t preamble_longs, uint8_t flags_byte, uint8_t serial_version) {
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::check_header_validity(uint8_t preamble_longs, uint8_t flags_byte, uint8_t serial_version) {
   bool empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
   bool compact = (flags_byte & (1 << flags::IS_COMPACT)) > 0;
 
@@ -796,24 +802,24 @@ void quantiles_sketch<T, C, S, A>::check_header_validity(uint8_t preamble_longs,
   }
 }
 
-template <typename T, typename C, typename S, typename A>
-typename quantiles_sketch<T, C, S, A>::const_iterator quantiles_sketch<T, C, S, A>::begin() const {
-  return quantiles_sketch<T, C, S, A>::const_iterator(base_buffer_, levels_, k_, n_, false);
+template <typename T, typename C, typename A>
+typename quantiles_sketch<T, C, A>::const_iterator quantiles_sketch<T, C, A>::begin() const {
+  return quantiles_sketch<T, C, A>::const_iterator(base_buffer_, levels_, k_, n_, false);
 }
 
-template <typename T, typename C, typename S, typename A>
-typename quantiles_sketch<T, C, S, A>::const_iterator quantiles_sketch<T, C, S, A>::end() const {
-  return quantiles_sketch<T, C, S, A>::const_iterator(base_buffer_, levels_, k_, n_, true);
+template <typename T, typename C, typename A>
+typename quantiles_sketch<T, C, A>::const_iterator quantiles_sketch<T, C, A>::end() const {
+  return quantiles_sketch<T, C, A>::const_iterator(base_buffer_, levels_, k_, n_, true);
 }
 
-template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::grow_base_buffer() {
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::grow_base_buffer() {
   size_t new_size = std::max(std::min(static_cast<size_t>(2 * k_), 2 * base_buffer_.size()), static_cast<size_t>(1));
   base_buffer_.reserve(new_size);
 }
 
-template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::process_full_base_buffer() {
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::process_full_base_buffer() {
   // make sure there will be enough levels for the propagation
   grow_levels_if_needed(); // note: n_ was already incremented by update() before this
 
@@ -827,8 +833,8 @@ void quantiles_sketch<T, C, S, A>::process_full_base_buffer() {
   assert(n_ / (2 * k_) == bit_pattern_);  // internal consistency check
 }
 
-template<typename T, typename C, typename S, typename A>
-bool quantiles_sketch<T, C, S, A>::grow_levels_if_needed() {
+template<typename T, typename C, typename A>
+bool quantiles_sketch<T, C, A>::grow_levels_if_needed() {
   uint8_t levels_needed = compute_levels_needed(k_, n_);
   if (levels_needed == 0)
     return false; // don't need levels and might have small base buffer. Possible during merges.
@@ -843,11 +849,11 @@ bool quantiles_sketch<T, C, S, A>::grow_levels_if_needed() {
   return true;
 }
 
-template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::in_place_propagate_carry(uint8_t starting_level,
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::in_place_propagate_carry(uint8_t starting_level,
                                                             Level& buf_size_k, Level& buf_size_2k, 
                                                             bool apply_as_update,
-                                                            quantiles_sketch<T,C,S,A>& sketch) {
+                                                            quantiles_sketch<T,C,A>& sketch) {
   const uint64_t bit_pattern = sketch.bit_pattern_;
   const int k = sketch.k_;
 
@@ -877,8 +883,8 @@ void quantiles_sketch<T, C, S, A>::in_place_propagate_carry(uint8_t starting_lev
   sketch.bit_pattern_ = bit_pattern + (static_cast<uint64_t>(1) << starting_level);
 }
 
-template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::zip_buffer(Level& buf_in, Level& buf_out) {
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::zip_buffer(Level& buf_in, Level& buf_out) {
 #ifdef QUANTILES_VALIDATION
   static uint32_t next_offset = 0;
   uint32_t rand_offset = next_offset;
@@ -895,8 +901,8 @@ void quantiles_sketch<T, C, S, A>::zip_buffer(Level& buf_in, Level& buf_out) {
   buf_in.clear();
 }
 
-template<typename T, typename C, typename S, typename A>
-void quantiles_sketch<T, C, S, A>::merge_two_size_k_buffers(Level& src_1, Level& src_2, Level& dst) {
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::merge_two_size_k_buffers(Level& src_1, Level& src_2, Level& dst) {
   assert(src_1.size() == src_2.size());
   assert(src_1.size() * 2 == dst.capacity());
   assert(dst.size() == 0);
@@ -921,8 +927,8 @@ void quantiles_sketch<T, C, S, A>::merge_two_size_k_buffers(Level& src_1, Level&
   }
 }
 
-template<typename T, typename C, typename S, typename A>
-int quantiles_sketch<T, C, S, A>::lowest_zero_bit_starting_at(uint64_t bits, uint8_t starting_bit) {
+template<typename T, typename C, typename A>
+int quantiles_sketch<T, C, A>::lowest_zero_bit_starting_at(uint64_t bits, uint8_t starting_bit) {
   uint8_t pos = starting_bit & 0X3F;
   uint64_t my_bits = bits >> pos;
 
@@ -933,8 +939,8 @@ int quantiles_sketch<T, C, S, A>::lowest_zero_bit_starting_at(uint64_t bits, uin
   return pos;
 }
 
-template<typename T, typename C, typename S, typename A>
-class quantiles_sketch<T, C, S, A>::item_deleter {
+template<typename T, typename C, typename A>
+class quantiles_sketch<T, C, A>::item_deleter {
   public:
   item_deleter(const A& allocator): allocator_(allocator) {}
   void operator() (T* ptr) {
@@ -947,8 +953,8 @@ class quantiles_sketch<T, C, S, A>::item_deleter {
   A allocator_;
 };
 
-template<typename T, typename C, typename S, typename A>
-class quantiles_sketch<T, C, S, A>::items_deleter {
+template<typename T, typename C, typename A>
+class quantiles_sketch<T, C, A>::items_deleter {
   public:
   items_deleter(const A& allocator, bool destroy, size_t num): allocator_(allocator), destroy_(destroy), num_(num) {}
   void operator() (T* ptr) {
@@ -971,8 +977,8 @@ class quantiles_sketch<T, C, S, A>::items_deleter {
 
 // quantiles_sketch::const_iterator implementation
 
-template<typename T, typename C, typename S, typename A>
-quantiles_sketch<T, C, S, A>::const_iterator::const_iterator(const Level& base_buffer,
+template<typename T, typename C, typename A>
+quantiles_sketch<T, C, A>::const_iterator::const_iterator(const Level& base_buffer,
                                                              const std::vector<Level, AllocLevel>& levels,
                                                              uint16_t k,
                                                              uint64_t n,
@@ -1006,8 +1012,8 @@ weight_(1)
   }
 }
 
-template<typename T, typename C, typename S, typename A>
-typename quantiles_sketch<T, C, S, A>::const_iterator& quantiles_sketch<T, C, S, A>::const_iterator::operator++() {
+template<typename T, typename C, typename A>
+typename quantiles_sketch<T, C, A>::const_iterator& quantiles_sketch<T, C, A>::const_iterator::operator++() {
   ++index_;
 
   if ((level_ == -1 && index_ == base_buffer_.size() && levels_.size() > 0) || (level_ >= 0 && index_ == k_)) { // go to the next non-empty level
@@ -1022,25 +1028,25 @@ typename quantiles_sketch<T, C, S, A>::const_iterator& quantiles_sketch<T, C, S,
   return *this;
 }
 
-template<typename T, typename C, typename S, typename A>
-typename quantiles_sketch<T, C, S, A>::const_iterator& quantiles_sketch<T, C, S, A>::const_iterator::operator++(int) {
+template<typename T, typename C, typename A>
+typename quantiles_sketch<T, C, A>::const_iterator& quantiles_sketch<T, C, A>::const_iterator::operator++(int) {
   const_iterator tmp(*this);
   operator++();
   return tmp;
 }
 
-template<typename T, typename C, typename S, typename A>
-bool quantiles_sketch<T, C, S, A>::const_iterator::operator==(const const_iterator& other) const {
+template<typename T, typename C, typename A>
+bool quantiles_sketch<T, C, A>::const_iterator::operator==(const const_iterator& other) const {
   return level_ == other.level_ && index_ == other.index_;
 }
 
-template<typename T, typename C, typename S, typename A>
-bool quantiles_sketch<T, C, S, A>::const_iterator::operator!=(const const_iterator& other) const {
+template<typename T, typename C, typename A>
+bool quantiles_sketch<T, C, A>::const_iterator::operator!=(const const_iterator& other) const {
   return !operator==(other);
 }
 
-template<typename T, typename C, typename S, typename A>
-std::pair<const T&, const uint64_t> quantiles_sketch<T, C, S, A>::const_iterator::operator*() const {
+template<typename T, typename C, typename A>
+std::pair<const T&, const uint64_t> quantiles_sketch<T, C, A>::const_iterator::operator*() const {
   return std::pair<const T&, const uint64_t>(level_ == -1 ? base_buffer_[index_] : levels_[level_][index_], weight_);
 }
 
