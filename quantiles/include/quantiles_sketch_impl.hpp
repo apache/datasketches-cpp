@@ -543,7 +543,7 @@ const T& quantiles_sketch<T, C, A>::get_max_value() const {
 
 // implementation for fixed-size arithmetic types (integral and floating point)
 template<typename T, typename C, typename A>
-template<typename S, typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
+template<typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
 size_t quantiles_sketch<T, C, A>::get_serialized_size_bytes() const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
   return DATA_START + ((get_num_retained() + 2) * sizeof(TT));

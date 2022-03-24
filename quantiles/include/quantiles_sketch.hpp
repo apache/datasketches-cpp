@@ -349,7 +349,8 @@ public:
    * This version is for fixed-size arithmetic types (integral and floating point).
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename SerDe = serde<T>, typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+  //template<typename SerDe = serde<T>, typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   size_t get_serialized_size_bytes() const;
 
   /**
