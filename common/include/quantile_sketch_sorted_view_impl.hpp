@@ -26,18 +26,28 @@
 namespace datasketches {
 
 template<typename T, typename C, typename A>
-quantile_sketch_sorted_view<T, C, A>::quantile_sketch_sorted_view(const A& allocator):
+quantile_sketch_sorted_view<T, C, A>::quantile_sketch_sorted_view(uint32_t num, const A& allocator):
 total_weight_(0),
 entries_(allocator)
-{}
+{
+  entries_.reserve(num);
+}
 
 template<typename T, typename C, typename A>
 template<typename Iterator>
 void quantile_sketch_sorted_view<T, C, A>::add(Iterator first, Iterator last, uint64_t weight) {
-  if (entries_.capacity() < entries_.size() + std::distance(first, last)) entries_.reserve(entries_.size() + std::distance(first, last));
   const size_t size_before = entries_.size();
   for (auto it = first; it != last; ++it) entries_.push_back(Entry(ref_helper(*it), weight));
-  if (size_before > 0) std::inplace_merge(entries_.begin(), entries_.begin() + size_before, entries_.end(), compare_pairs_by_first_ptr());
+  if (size_before > 0) {
+    Container tmp(entries_.get_allocator());
+    tmp.reserve(entries_.capacity());
+    std::merge(
+        entries_.begin(), entries_.begin() + size_before,
+        entries_.begin() + size_before, entries_.end(),
+        std::back_inserter(tmp), compare_pairs_by_first()
+    );
+    std::swap(tmp, entries_);
+  }
 }
 
 template<typename T, typename C, typename A>
