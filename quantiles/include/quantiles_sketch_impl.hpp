@@ -165,8 +165,8 @@ void quantiles_sketch<T, C, A>::update(FwdT&& item) {
 }
 
 template<typename T, typename C, typename A>
-template<typename S>
-void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const S& serde) const {
+template<typename SerDe>
+void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& serde) const {
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_SHORT : PREAMBLE_LONGS_FULL;
   write(os, preamble_longs);
   const uint8_t ser_ver = SERIAL_VERSION;
@@ -204,8 +204,8 @@ void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const S& serde) cons
 }
 
 template<typename T, typename C, typename A>
-template<typename S>
-auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const S& serde) const -> vector_bytes {
+template<typename SerDe>
+auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& serde) const -> vector_bytes {
   const size_t size = get_serialized_size_bytes() + header_size_bytes;
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
@@ -251,8 +251,8 @@ auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const S& s
 }
 
 template<typename T, typename C, typename A>
-template<typename S>
-auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const S& serde, const A &allocator) -> quantiles_sketch {
+template<typename SerDe>
+auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde, const A &allocator) -> quantiles_sketch {
   const auto preamble_longs = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -326,8 +326,8 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const S& serde, co
 }
 
 template<typename T, typename C, typename A>
-template<typename S>
-auto quantiles_sketch<T, C, A>::deserialize_array(std::istream& is, uint32_t num_items, uint32_t capacity, const S& serde, const A& allocator) -> Level {
+template<typename SerDe>
+auto quantiles_sketch<T, C, A>::deserialize_array(std::istream& is, uint32_t num_items, uint32_t capacity, const SerDe& serde, const A& allocator) -> Level {
   A alloc(allocator);
   std::unique_ptr<T, items_deleter> items(alloc.allocate(num_items), items_deleter(allocator, false, num_items));
   serde.deserialize(is, items.get(), num_items);
@@ -345,8 +345,8 @@ auto quantiles_sketch<T, C, A>::deserialize_array(std::istream& is, uint32_t num
 }
 
 template<typename T, typename C, typename A>
-template<typename S>
-auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, const S& serde, const A &allocator) -> quantiles_sketch {
+template<typename SerDe>
+auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, const SerDe& serde, const A &allocator) -> quantiles_sketch {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
@@ -433,8 +433,8 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
 }
 
 template<typename T, typename C, typename A>
-template<typename S>
-auto quantiles_sketch<T, C, A>::deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capacity, const S& serde, const A& allocator)
+template<typename SerDe>
+auto quantiles_sketch<T, C, A>::deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capacity, const SerDe& serde, const A& allocator)
   -> std::pair<Level, size_t> {
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
@@ -551,8 +551,8 @@ size_t quantiles_sketch<T, C, A>::get_serialized_size_bytes() const {
 
 // implementation for all other types
 template<typename T, typename C, typename A>
-template<typename S, typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
-size_t quantiles_sketch<T, C, A>::get_serialized_size_bytes(const S& serde) const {
+template<typename SerDe, typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
+size_t quantiles_sketch<T, C, A>::get_serialized_size_bytes(const SerDe& serde) const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
   size_t size = DATA_START;
   size += serde.size_of_item(*min_value_);

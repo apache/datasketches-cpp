@@ -349,7 +349,6 @@ public:
    * This version is for fixed-size arithmetic types (integral and floating point).
    * @return size in bytes needed to serialize this sketch
    */
-  //template<typename SerDe = serde<T>, typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   size_t get_serialized_size_bytes() const;
 
@@ -497,11 +496,11 @@ private:
   static void zip_buffer(Level& buf_in, Level& buf_out);
   static void merge_two_size_k_buffers(Level& arr_in_1, Level& arr_in_2, Level& arr_out);
 
-  template<typename S>
-  static Level deserialize_array(std::istream& is, uint32_t num_items, uint32_t capcacity, const S& serde, const Allocator& allocator);
+  template<typename SerDe>
+  static Level deserialize_array(std::istream& is, uint32_t num_items, uint32_t capcacity, const SerDe& serde, const Allocator& allocator);
   
-  template<typename S>
-  static std::pair<Level, size_t> deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capcacity, const S& serde, const Allocator& allocator);
+  template<typename SerDe>
+  static std::pair<Level, size_t> deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capcacity, const SerDe& serde, const Allocator& allocator);
 
   static void check_serial_version(uint8_t serial_version);
   static void check_header_validity(uint8_t preamble_longs, uint8_t flags_byte, uint8_t serial_version);
