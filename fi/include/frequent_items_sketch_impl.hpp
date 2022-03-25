@@ -212,10 +212,11 @@ void frequent_items_sketch<T, W, H, E, S, A>::serialize(std::ostream& os, const 
 }
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
-size_t frequent_items_sketch<T, W, H, E, S, A>::get_serialized_size_bytes() const {
+template<typename SerDe>
+size_t frequent_items_sketch<T, W, H, E, S, A>::get_serialized_size_bytes(const SerDe& sd) const {
   if (is_empty()) return PREAMBLE_LONGS_EMPTY * sizeof(uint64_t);
   size_t size = PREAMBLE_LONGS_NONEMPTY * sizeof(uint64_t) + map.get_num_active() * sizeof(W);
-  for (auto it: map) size += S().size_of_item(it.first);
+  for (auto it: map) size += sd.size_of_item(it.first);
   return size;
 }
 

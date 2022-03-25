@@ -225,9 +225,11 @@ public:
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This can be expensive since every item needs to be looked at.
+   * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  size_t get_serialized_size_bytes() const;
+  template<typename SerDe = S>
+  size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
    * This method serializes the sketch into a given stream in a binary form
