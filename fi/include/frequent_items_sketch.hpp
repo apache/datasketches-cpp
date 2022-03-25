@@ -234,14 +234,6 @@ public:
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
-   *
-   * Deprecated, to be removed in the next major version
-   */
-  void serialize(std::ostream& os) const;
-
-  /**
-   * This method serializes the sketch into a given stream in a binary form
-   * @param os output stream
    * @param instance of a SerDe
    */
   template<typename SerDe = S>
@@ -250,18 +242,6 @@ public:
   // This is a convenience alias for users
   // The type returned by the following serialize method
   using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
-
-  /**
-   * This method serializes the sketch as a vector of bytes.
-   * An optional header can be reserved in front of the sketch.
-   * It is a blank space of a given size.
-   * This header is used in Datasketches PostgreSQL extension.
-   * @param header_size_bytes space to reserve in front of the sketch
-   * @return serialized sketch as a vector of bytes
-   *
-   * Deprecated, to be removed in the next major version
-   */
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
   /**
    * This method serializes the sketch as a vector of bytes.

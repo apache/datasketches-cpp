@@ -161,11 +161,6 @@ frequent_items_sketch<T, W, H, E, S, A>::get_frequent_items(frequent_items_error
 }
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
-void frequent_items_sketch<T, W, H, E, S, A>::serialize(std::ostream& os) const {
-  serialize(os, S());
-}
-
-template<typename T, typename W, typename H, typename E, typename S, typename A>
 template<typename SerDe>
 void frequent_items_sketch<T, W, H, E, S, A>::serialize(std::ostream& os, const SerDe& sd) const {
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NONEMPTY;
@@ -221,14 +216,9 @@ size_t frequent_items_sketch<T, W, H, E, S, A>::get_serialized_size_bytes(const 
 }
 
 template<typename T, typename W, typename H, typename E, typename S, typename A>
-auto frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
-  return serialize(header_size_bytes, S());
-}
-
-template<typename T, typename W, typename H, typename E, typename S, typename A>
 template<typename SerDe>
 auto frequent_items_sketch<T, W, H, E, S, A>::serialize(unsigned header_size_bytes, const SerDe& sd) const -> vector_bytes {
-  const size_t size = header_size_bytes + get_serialized_size_bytes();
+  const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   vector_bytes bytes(size, 0, map.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
   uint8_t* end_ptr = ptr + size;
