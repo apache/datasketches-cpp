@@ -334,8 +334,8 @@ double kll_sketch<T, C, S, A>::get_normalized_rank_error(bool pmf) const {
 
 // implementation for fixed-size arithmetic types (integral and floating point)
 template<typename T, typename C, typename S, typename A>
-template<typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
-size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes() const {
+template<typename TT, typename SerDe, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
+size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes(const SerDe&) const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
   if (num_levels_ == 1 && get_num_retained() == 1) {
     return DATA_START_SINGLE_ITEM + sizeof(TT);
@@ -346,17 +346,17 @@ size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes() const {
 
 // implementation for all other types
 template<typename T, typename C, typename S, typename A>
-template<typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
-size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes() const {
+template<typename TT, typename SerDe, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
+size_t kll_sketch<T, C, S, A>::get_serialized_size_bytes(const SerDe& sd) const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
   if (num_levels_ == 1 && get_num_retained() == 1) {
-    return DATA_START_SINGLE_ITEM + S().size_of_item(items_[levels_[0]]);
+    return DATA_START_SINGLE_ITEM + sd.size_of_item(items_[levels_[0]]);
   }
   // the last integer in the levels_ array is not serialized because it can be derived
   size_t size = DATA_START + num_levels_ * sizeof(uint32_t);
-  size += S().size_of_item(*min_value_);
-  size += S().size_of_item(*max_value_);
-  for (auto it: *this) size += S().size_of_item(it.first);
+  size += sd.size_of_item(*min_value_);
+  size += sd.size_of_item(*max_value_);
+  for (auto it: *this) size += sd.size_of_item(it.first);
   return size;
 }
 
@@ -381,7 +381,8 @@ size_t kll_sketch<T, C, S, A>::get_max_serialized_size_bytes(uint16_t k, uint64_
 }
 
 template<typename T, typename C, typename S, typename A>
-void kll_sketch<T, C, S, A>::serialize(std::ostream& os) const {
+template<typename SerDe>
+void kll_sketch<T, C, S, A>::serialize(std::ostream& os, const SerDe& sd) const {
   const bool is_single_item = n_ == 1;
   const uint8_t preamble_ints(is_empty() || is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
   write(os, preamble_ints);
@@ -406,16 +407,17 @@ void kll_sketch<T, C, S, A>::serialize(std::ostream& os) const {
     write(os, num_levels_);
     write(os, unused);
     write(os, levels_.data(), sizeof(levels_[0]) * num_levels_);
-    S().serialize(os, min_value_, 1);
-    S().serialize(os, max_value_, 1);
+    sd.serialize(os, min_value_, 1);
+    sd.serialize(os, max_value_, 1);
   }
-  S().serialize(os, &items_[levels_[0]], get_num_retained());
+  sd.serialize(os, &items_[levels_[0]], get_num_retained());
 }
 
 template<typename T, typename C, typename S, typename A>
-vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const {
+template<typename SerDe>
+vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes, const SerDe& sd) const {
   const bool is_single_item = n_ == 1;
-  const size_t size = header_size_bytes + get_serialized_size_bytes();
+  const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   vector_u8<A> bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
   const uint8_t* end_ptr = ptr + size;
@@ -441,11 +443,11 @@ vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const
       ptr += copy_to_mem(num_levels_, ptr);
       ptr += sizeof(uint8_t); // unused
       ptr += copy_to_mem(levels_.data(), ptr, sizeof(levels_[0]) * num_levels_);
-      ptr += S().serialize(ptr, end_ptr - ptr, min_value_, 1);
-      ptr += S().serialize(ptr, end_ptr - ptr, max_value_, 1);
+      ptr += sd.serialize(ptr, end_ptr - ptr, min_value_, 1);
+      ptr += sd.serialize(ptr, end_ptr - ptr, max_value_, 1);
     }
     const size_t bytes_remaining = end_ptr - ptr;
-    ptr += S().serialize(ptr, bytes_remaining, &items_[levels_[0]], get_num_retained());
+    ptr += sd.serialize(ptr, bytes_remaining, &items_[levels_[0]], get_num_retained());
   }
   const size_t delta = ptr - bytes.data();
   if (delta != size) throw std::logic_error("serialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
@@ -454,6 +456,12 @@ vector_u8<A> kll_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const
 
 template<typename T, typename C, typename S, typename A>
 kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is, const A& allocator) {
+  return deserialize(is, S(), allocator);
+}
+
+template<typename T, typename C, typename S, typename A>
+template<typename SerDe>
+kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
   const auto preamble_ints = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -501,17 +509,17 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is, con
   std::unique_ptr<T, item_deleter> min_value(nullptr, item_deleter(allocator));
   std::unique_ptr<T, item_deleter> max_value(nullptr, item_deleter(allocator));
   if (!is_single_item) {
-    S().deserialize(is, min_value_buffer.get(), 1);
+    sd.deserialize(is, min_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
-    S().deserialize(is, max_value_buffer.get(), 1);
+    sd.deserialize(is, max_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
   }
   auto items_buffer_deleter = [capacity, &alloc](T* ptr) { alloc.deallocate(ptr, capacity); };
   std::unique_ptr<T, decltype(items_buffer_deleter)> items_buffer(alloc.allocate(capacity), items_buffer_deleter);
   const auto num_items = levels[num_levels] - levels[0];
-  S().deserialize(is, &items_buffer.get()[levels[0]], num_items);
+  sd.deserialize(is, &items_buffer.get()[levels[0]], num_items);
   // serde call did not throw, repackage with destrtuctors
   std::unique_ptr<T, items_deleter> items(items_buffer.release(), items_deleter(levels[0], capacity, allocator));
   const bool is_level_zero_sorted = (flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED)) > 0;
@@ -531,6 +539,12 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(std::istream& is, con
 
 template<typename T, typename C, typename S, typename A>
 kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, size_t size, const A& allocator) {
+  return deserialize(bytes, size, S(), allocator);
+}
+
+template<typename T, typename C, typename S, typename A>
+template<typename SerDe>
+kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_ints;
@@ -587,17 +601,17 @@ kll_sketch<T, C, S, A> kll_sketch<T, C, S, A>::deserialize(const void* bytes, si
   std::unique_ptr<T, item_deleter> min_value(nullptr, item_deleter(allocator));
   std::unique_ptr<T, item_deleter> max_value(nullptr, item_deleter(allocator));
   if (!is_single_item) {
-    ptr += S().deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
+    ptr += sd.deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
-    ptr += S().deserialize(ptr, end_ptr - ptr, max_value_buffer.get(), 1);
+    ptr += sd.deserialize(ptr, end_ptr - ptr, max_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
   }
   auto items_buffer_deleter = [capacity, &alloc](T* ptr) { alloc.deallocate(ptr, capacity); };
   std::unique_ptr<T, decltype(items_buffer_deleter)> items_buffer(alloc.allocate(capacity), items_buffer_deleter);
   const auto num_items = levels[num_levels] - levels[0];
-  ptr += S().deserialize(ptr, end_ptr - ptr, &items_buffer.get()[levels[0]], num_items);
+  ptr += sd.deserialize(ptr, end_ptr - ptr, &items_buffer.get()[levels[0]], num_items);
   // serde call did not throw, repackage with destrtuctors
   std::unique_ptr<T, items_deleter> items(items_buffer.release(), items_deleter(levels[0], capacity, allocator));
   const size_t delta = ptr - static_cast<const char*>(bytes);
