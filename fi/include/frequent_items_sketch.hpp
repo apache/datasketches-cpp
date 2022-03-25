@@ -242,7 +242,7 @@ public:
    * @param os output stream
    * @param instance of a SerDe
    */
-  template<typename SerDe = serde<T>>
+  template<typename SerDe = S>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
   // This is a convenience alias for users
@@ -270,7 +270,7 @@ public:
    * @param instance of a SerDe
    * @return serialized sketch as a vector of bytes
    */
-  template<typename SerDe = serde<T>>
+  template<typename SerDe = S>
   vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
   /**
@@ -290,7 +290,7 @@ public:
    * @param instance of an Allocator
    * @return an instance of the sketch
    */
-  template<typename SerDe = serde<T>>
+  template<typename SerDe = S>
   static frequent_items_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
 
   /**
@@ -312,7 +312,7 @@ public:
    * @param instance of an Allocator
    * @return an instance of the sketch
    */
-  template<typename SerDe = serde<T>>
+  template<typename SerDe = S>
   static frequent_items_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
 
   /**
