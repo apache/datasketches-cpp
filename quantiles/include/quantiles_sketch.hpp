@@ -519,7 +519,7 @@ private:
    * @param starting_bit the zero-based starting bit position. Only the low 6 bits are used.
    * @return the zero-based bit position of the lowest zero bit starting at <i>startingBit</i>.
    */
-  static int lowest_zero_bit_starting_at(uint64_t bits, uint8_t starting_bit);
+  static uint8_t lowest_zero_bit_starting_at(uint64_t bits, uint8_t starting_bit);
 
   // implementations for floating point types
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
@@ -583,10 +583,10 @@ private:
   std::vector<Level, AllocLevel> levels_;
   int level_;
   uint32_t index_;
-  uint16_t k_;
-  uint16_t bb_count_;
+  uint32_t bb_count_;
   uint64_t bit_pattern_;
   uint64_t weight_;
+  uint16_t k_;
   const_iterator(const Level& base_buffer, const std::vector<Level, AllocLevel>& levels, uint16_t k, uint64_t n, bool is_end);
 };
 

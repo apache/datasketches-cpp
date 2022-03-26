@@ -78,7 +78,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
   SECTION("get bad quantile") {
     quantiles_float_sketch sketch(200, 0);
-    sketch.update(0); // has to be non-empty to reach the check
+    sketch.update(0.0); // has to be non-empty to reach the check
     REQUIRE_THROWS_AS(sketch.get_quantile(-1), std::invalid_argument);
   }
 

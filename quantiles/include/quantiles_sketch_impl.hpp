@@ -193,12 +193,12 @@ void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& serde) 
     serde.serialize(os, max_value_, 1);
 
     // base buffer items
-    serde.serialize(os, base_buffer_.data(), base_buffer_.size());
+    serde.serialize(os, base_buffer_.data(), static_cast<unsigned>(base_buffer_.size()));
 
     // levels, only when data is present
     for (Level lvl : levels_) {
       if (lvl.size() > 0)
-        serde.serialize(os, lvl.data(), lvl.size());
+        serde.serialize(os, lvl.data(), static_cast<unsigned>(lvl.size()));
     }
   }
 }
@@ -238,12 +238,12 @@ auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerD
  
     // base buffer items
     if (base_buffer_.size() > 0)
-      ptr += serde.serialize(ptr, end_ptr - ptr, base_buffer_.data(), base_buffer_.size());
+      ptr += serde.serialize(ptr, end_ptr - ptr, base_buffer_.data(), static_cast<unsigned>(base_buffer_.size()));
     
     // levels, only when data is present
     for (Level lvl : levels_) {
       if (lvl.size() > 0)
-        ptr += serde.serialize(ptr, end_ptr - ptr, lvl.data(), lvl.size());
+        ptr += serde.serialize(ptr, end_ptr - ptr, lvl.data(), static_cast<unsigned>(lvl.size()));
     }
   }
 
@@ -602,7 +602,7 @@ auto quantiles_sketch<T, C, A>::get_quantile_calculator() const -> QuantileCalcu
     calculator_deleter(ac)
   );
 
-  uint64_t lg_weight = 0;
+  uint8_t lg_weight = 0;
   quantile_calculator_ptr->add(base_buffer_.data(), base_buffer_.data() + base_buffer_.size(), lg_weight);
   for (auto& level : levels_) {
     ++lg_weight;
@@ -928,7 +928,7 @@ void quantiles_sketch<T, C, A>::merge_two_size_k_buffers(Level& src_1, Level& sr
 }
 
 template<typename T, typename C, typename A>
-int quantiles_sketch<T, C, A>::lowest_zero_bit_starting_at(uint64_t bits, uint8_t starting_bit) {
+uint8_t quantiles_sketch<T, C, A>::lowest_zero_bit_starting_at(uint64_t bits, uint8_t starting_bit) {
   uint8_t pos = starting_bit & 0X3F;
   uint64_t my_bits = bits >> pos;
 
@@ -987,10 +987,10 @@ base_buffer_(base_buffer),
 levels_(levels),
 level_(-1),
 index_(0),
-k_(k),
 bb_count_(compute_base_buffer_items(k, n)),
 bit_pattern_(compute_bit_pattern(k, n)),
-weight_(1)
+weight_(1),
+k_(k)
 {
   if (is_end) {
     // if exact mode: index_ = n is end
@@ -998,7 +998,7 @@ weight_(1)
     if (bit_pattern_ == 0) // only a valid check for exact mode in constructor
       index_ = static_cast<uint32_t>(n);
     else
-      level_ = levels_.size();
+      level_ = static_cast<int>(levels_.size());
   } else { // find first non-empty item
     if (bb_count_ == 0 && bit_pattern_ > 0) {
       level_ = 0;
