@@ -78,7 +78,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
   SECTION("get bad quantile") {
     quantiles_float_sketch sketch(200, 0);
-    sketch.update(0.0); // has to be non-empty to reach the check
+    sketch.update(0.0f); // has to be non-empty to reach the check
     REQUIRE_THROWS_AS(sketch.get_quantile(-1), std::invalid_argument);
   }
 
@@ -114,7 +114,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     sketch.update(std::numeric_limits<float>::quiet_NaN());
     REQUIRE(sketch.is_empty());
 
-    sketch.update(0);
+    sketch.update(0.0f);
     sketch.update(std::numeric_limits<float>::quiet_NaN());
     REQUIRE(sketch.get_n() == 1);
   }
@@ -482,7 +482,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
   SECTION("out of order split points, float") {
     quantiles_float_sketch sketch(200, 0);
-    sketch.update(0); // has too be non-empty to reach the check
+    sketch.update(0.0f); // has too be non-empty to reach the check
     float split_points[2] = {1, 0};
     REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 2), std::invalid_argument);
   }
@@ -496,7 +496,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
   SECTION("NaN split point") {
     quantiles_float_sketch sketch(200, 0);
-    sketch.update(0); // has too be non-empty to reach the check
+    sketch.update(0.0f); // has too be non-empty to reach the check
     float split_points[1] = {std::numeric_limits<float>::quiet_NaN()};
     REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::invalid_argument);
   }
