@@ -45,7 +45,11 @@ template<typename A> using AllocU8 = typename std::allocator_traits<A>::template
  * author Kevin Lang 
  * author Jon Malkin
  */
-template <typename T, typename S = serde<T>, typename A = std::allocator<T>>
+template<
+  typename T,
+  typename S = serde<T>, // deprecated, to be removed in the next major version
+  typename A = std::allocator<T>
+>
 class var_opt_union {
 
 public:
@@ -88,14 +92,16 @@ public:
   /**
    * Computes size needed to serialize the current state of the union.
    * This version is for all other types and can be expensive since every item needs to be looked at.
+   * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  size_t get_serialized_size_bytes() const;
-  
+  template<typename SerDe = S>
+  size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
+
   // This is a convenience alias for users
   // The type returned by the following serialize method
   typedef vector_u8<A> vector_bytes;
-  
+
   /**
    * NOTE: This method may be deprecated in a future version.
    * This method serializes the sketch as a vector of bytes.
@@ -103,32 +109,61 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
+   * @param instance of a SerDe
    */
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+  template<typename SerDe = S>
+  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
   /**
    * NOTE: This method may be deprecated in a future version.
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
+   * @param instance of a SerDe
    */
-  void serialize(std::ostream& os) const;
+  template<typename SerDe = S>
+  void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
   /**
    * NOTE: This method may be deprecated in a future version.
    * This method deserializes a union from a given stream.
    * @param is input stream
+   * @param instance of an Allocator
    * @return an instance of a union
    */
   static var_opt_union deserialize(std::istream& is, const A& allocator = A());
 
   /**
    * NOTE: This method may be deprecated in a future version.
+   * This method deserializes a union from a given stream.
+   * @param is input stream
+   * @param instance of a SerDe
+   * @param instance of an Allocator
+   * @return an instance of a union
+   */
+  template<typename SerDe = S>
+  static var_opt_union deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
+
+  /**
+   * NOTE: This method may be deprecated in a future version.
    * This method deserializes a union from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
+   * @param instance of an Allocator
    * @return an instance of a union
    */
   static var_opt_union deserialize(const void* bytes, size_t size, const A& allocator = A());
+
+  /**
+   * NOTE: This method may be deprecated in a future version.
+   * This method deserializes a union from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param instance of a SerDe
+   * @param instance of an Allocator
+   * @return an instance of a union
+   */
+  template<typename SerDe = S>
+  static var_opt_union deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
 
   /**
    * Prints a summary of the union as a string.
