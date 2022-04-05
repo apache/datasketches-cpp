@@ -20,6 +20,7 @@
 #include <catch.hpp>
 #include <cmath>
 #include <sstream>
+#include <fstream>
 
 #include <quantiles_sketch.hpp>
 #include <test_allocator.hpp>
@@ -49,6 +50,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     quantiles_float_sketch sketch1(quantiles_constants::MIN_K, 0); // this should work
     quantiles_float_sketch sketch2(quantiles_constants::MAX_K, 0); // this should work
     REQUIRE_THROWS_AS(new quantiles_float_sketch(quantiles_constants::MIN_K - 1, 0), std::invalid_argument);
+    REQUIRE_THROWS_AS(new quantiles_float_sketch(40, 0), std::invalid_argument); // not power of 2
     // MAX_K + 1 makes no sense because k is uint16_t
   }
 
@@ -75,7 +77,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("get bad quantile") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(64, 0);
     sketch.update(0.0f); // has to be non-empty to reach the check
     REQUIRE_THROWS_AS(sketch.get_quantile(-1), std::invalid_argument);
   }
@@ -108,7 +110,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("NaN") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(256, 0);
     sketch.update(std::numeric_limits<float>::quiet_NaN());
     REQUIRE(sketch.is_empty());
 
@@ -119,7 +121,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
 
   SECTION("sampling mode") {
-    const uint16_t k = 10;
+    const uint16_t k = 8;
     const uint32_t n = 16 * (2 * k) + 1;
     quantiles_float_sketch sk(k, 0);
     for (uint32_t i = 0; i < n; ++i) {
@@ -170,7 +172,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("10 items") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(128, 0);
     sketch.update(1.0f);
     sketch.update(2.0f);
     sketch.update(3.0f);
@@ -188,7 +190,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("100 items") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(128, 0);
     for (int i = 0; i < 100; ++i) sketch.update(static_cast<float>(i));
     REQUIRE(sketch.get_quantile(0) == 0);
     REQUIRE(sketch.get_quantile(0.01) == 1);
@@ -237,7 +239,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       previous_quantile = quantile;
     }
 
-    std::cout << sketch.to_string();
+    //std::cout << sketch.to_string();
 
     uint32_t count = 0;
     uint64_t total_weight = 0;
@@ -250,7 +252,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("consistency between get_rank and get_PMF/CDF") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(64, 0);
     const int n = 1000;
     float values[n];
     for (int i = 0; i < n; i++) {
@@ -276,7 +278,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("stream serialize deserialize empty") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(128, 0);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
@@ -294,7 +296,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("bytes serialize deserialize empty") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(256, 0);
     auto bytes = sketch.serialize();
     auto sketch2 = quantiles_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), 0);
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
@@ -309,7 +311,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("stream serialize deserialize one item") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(32, 0);
     sketch.update(1.0f);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
@@ -329,7 +331,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("bytes serialize deserialize one item") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(64, 0);
     sketch.update(1.0f);
     auto bytes = sketch.serialize();
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
@@ -347,7 +349,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("stream serialize deserialize three items") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(128, 0);
     sketch.update(1.0f);
     sketch.update(2.0f);
     sketch.update(3.0f);
@@ -366,7 +368,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("bytes serialize deserialize three items") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(128, 0);
     sketch.update(1.0f);
     sketch.update(2.0f);
     sketch.update(3.0f);
@@ -383,7 +385,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("stream serialize deserialize many floats") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(128, 0);
     const int n = 1000;
     for (int i = 0; i < n; i++) sketch.update(static_cast<float>(i));
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
@@ -405,7 +407,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_rank(static_cast<float>(n)) == sketch.get_rank(static_cast<float>(n)));
   }
   SECTION("bytes serialize deserialize many floats") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(128, 0);
     const int n = 1000;
     for (int i = 0; i < n; i++) sketch.update(static_cast<float>(i));
     auto bytes = sketch.serialize();
@@ -453,7 +455,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("out of order split points, float") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(256, 0);
     sketch.update(0.0f); // has too be non-empty to reach the check
     float split_points[2] = {1, 0};
     REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 2), std::invalid_argument);
@@ -467,7 +469,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("NaN split point") {
-    quantiles_float_sketch sketch(200, 0);
+    quantiles_float_sketch sketch(512, 0);
     sketch.update(0.0f); // has too be non-empty to reach the check
     float split_points[1] = {std::numeric_limits<float>::quiet_NaN()};
     REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::invalid_argument);

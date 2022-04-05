@@ -43,9 +43,7 @@ min_value_(nullptr),
 max_value_(nullptr),
 is_sorted_(true)
 {
-  if (k < quantiles_constants::MIN_K || k > quantiles_constants::MAX_K) {
-    throw std::invalid_argument("K must be >= " + std::to_string(quantiles_constants::MIN_K) + " and <= " + std::to_string(quantiles_constants::MAX_K) + ": " + std::to_string(k));
-  }
+  check_k(k_);
   base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k));
 }
 
@@ -268,6 +266,7 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
   const auto k = read<uint16_t>(is);
   read<uint16_t>(is); // unused
 
+  check_k(k);
   check_serial_version(serial_version); // a little redundant with the next line, but explicit checks
   check_family_id(family_id);
   check_header_validity(preamble_longs, flags_byte, serial_version);
@@ -376,6 +375,7 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
   uint16_t unused;
   ptr += copy_from_mem(ptr, unused);
 
+  check_k(k);
   check_serial_version(serial_version); // a little redundant with the next line, but explicit checks
   check_family_id(family_id);
   check_header_validity(preamble_longs, flags_byte, serial_version);
@@ -766,6 +766,15 @@ uint32_t quantiles_sketch<T, C, A>::compute_valid_levels(const uint64_t bit_patt
 template<typename T, typename C, typename A>
 uint8_t quantiles_sketch<T, C, A>::compute_levels_needed(const uint16_t k, const uint64_t n) {
   return static_cast<uint8_t>(64U) - count_leading_zeros_in_u64(n / (2 * k));
+}
+
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::check_k(uint16_t k) {
+  if (k < quantiles_constants::MIN_K || k > quantiles_constants::MAX_K || (k & k - 1) != 0) {
+    throw std::invalid_argument("k must be a power of 2 that is >= "
+      + std::to_string(quantiles_constants::MIN_K) + " and <= "
+      + std::to_string(quantiles_constants::MAX_K) + ". Found: " + std::to_string(k));
+  }
 }
 
 template<typename T, typename C, typename A>

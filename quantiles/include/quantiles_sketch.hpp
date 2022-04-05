@@ -502,6 +502,7 @@ private:
   template<typename SerDe>
   static std::pair<Level, size_t> deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capcacity, const SerDe& serde, const Allocator& allocator);
 
+  static void check_k(uint16_t k);
   static void check_serial_version(uint8_t serial_version);
   static void check_header_validity(uint8_t preamble_longs, uint8_t flags_byte, uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
