@@ -450,7 +450,7 @@ private:
   static const uint8_t SERIAL_VERSION_1 = 1;
   static const uint8_t SERIAL_VERSION_2 = 2;
   static const uint8_t SERIAL_VERSION = 3;
-  static const uint8_t FAMILY = 15;
+  static const uint8_t FAMILY = 8;
 
   enum flags { RESERVED0, RESERVED1, IS_EMPTY, IS_COMPACT, IS_SORTED };
 

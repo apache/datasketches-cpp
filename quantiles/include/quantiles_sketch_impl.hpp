@@ -272,7 +272,7 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
 
   const auto items_seen = read<uint64_t>(is);
 
-  const bool is_compact = (flags_byte & (1 << flags::IS_COMPACT)) > 0;
+  const bool is_compact = (serial_version == 2) | ((flags_byte & (1 << flags::IS_COMPACT)) > 0);
   const bool is_sorted = (flags_byte & (1 << flags::IS_SORTED)) > 0;
 
   A alloc(allocator);
@@ -289,6 +289,10 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
   // serde call did not throw, repackage with destrtuctor
   max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
 
+  if (serial_version == 1) {
+    read<uint64_t>(is); // no longer used
+  }
+
   // allocate buffers as needed
   const uint8_t levels_needed = compute_levels_needed(k, items_seen);
   const uint64_t bit_pattern = compute_bit_pattern(k, items_seen);
@@ -300,7 +304,7 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
 
   // load base buffer
   const uint32_t bb_items = compute_base_buffer_items(k, items_seen);
-  uint32_t items_to_read = is_compact ? bb_items : 2 * k;
+  uint32_t items_to_read = (levels_needed == 0 || is_compact) ? bb_items : 2 * k;
   Level base_buffer = deserialize_array(is, items_to_read, 2 * k, serde, allocator);
   
   // populate vector of Levels directly
@@ -377,7 +381,7 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
   uint64_t items_seen;
   ptr += copy_from_mem(ptr, items_seen);
 
-  const bool is_compact = (flags_byte & (1 << flags::IS_COMPACT)) > 0;
+  const bool is_compact = (serial_version == 2) | ((flags_byte & (1 << flags::IS_COMPACT)) > 0);
   const bool is_sorted = (flags_byte & (1 << flags::IS_SORTED)) > 0;
 
   A alloc(allocator);
@@ -394,6 +398,11 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
   // serde call did not throw, repackage with destrtuctor
   max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
 
+  if (serial_version == 1) {
+    uint64_t unused_long;
+    ptr += copy_from_mem(ptr, unused_long); // no longer used
+  }
+
   // allocate buffers as needed
   const uint8_t levels_needed = compute_levels_needed(k, items_seen);
   const uint64_t bit_pattern = compute_bit_pattern(k, items_seen);
@@ -405,7 +414,7 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
 
   // load base buffer
   const uint32_t bb_items = compute_base_buffer_items(k, items_seen);
-  uint32_t items_to_read = is_compact ? bb_items : 2 * k;
+  uint32_t items_to_read = (levels_needed == 0 || is_compact) ? bb_items : 2 * k;
   auto base_buffer_pair = deserialize_array(ptr, end_ptr - ptr, items_to_read, 2 * k, serde, allocator);
   ptr += base_buffer_pair.second;
   
