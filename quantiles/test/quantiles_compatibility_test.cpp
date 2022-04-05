@@ -111,7 +111,7 @@ TEST_CASE("quantiles compatibility", "[quantiles_compatibility]") {
   SECTION("Qk128_n50_v0.8.3.sk") {
     // file: Qk128_n50_v0.8.3.sk
     // median: 26.0
-    quantiles_decode_and_check(128, 50, "0.8.0", 26.0);
+    quantiles_decode_and_check(128, 50, "0.8.3", 26.0);
   }
 
   SECTION("Qk128_n1000_v0.8.3.sk") {
