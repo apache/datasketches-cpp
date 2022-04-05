@@ -572,9 +572,9 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_min_value() == 0.0f);
     REQUIRE(sketch2.get_max_value() == 999999.0f);
   }
-
+*/
   SECTION("sketch of ints") {
-    kll_sketch<int> sketch;
+    quantiles_sketch<int> sketch;
     REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_min_value(), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_max_value(), std::runtime_error);
@@ -585,7 +585,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
-    auto sketch2 = kll_sketch<int>::deserialize(s);
+    auto sketch2 = quantiles_sketch<int>::deserialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
@@ -602,7 +602,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("sketch of strings stream") {
-    kll_string_sketch sketch1(200, 0);
+    quantiles_string_sketch sketch1(128, 0);
     REQUIRE_THROWS_AS(sketch1.get_quantile(0), std::runtime_error);
     REQUIRE_THROWS_AS(sketch1.get_min_value(), std::runtime_error);
     REQUIRE_THROWS_AS(sketch1.get_max_value(), std::runtime_error);
@@ -617,7 +617,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch1.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch1.get_serialized_size_bytes());
-    auto sketch2 = kll_string_sketch::deserialize(s, test_allocator<std::string>(0));
+    auto sketch2 = quantiles_string_sketch::deserialize(s, serde<std::string>(), test_allocator<std::string>(0));
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch1.is_empty());
@@ -633,15 +633,12 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_rank(std::to_string(n)) == sketch1.get_rank(std::to_string(n)));
 
     // to take a look using hexdump
-    //std::ofstream os("kll-string.sk");
+    //std::ofstream os("quantiles-string.sk");
     //sketch1.serialize(os);
-
-    // debug print
-    //sketch1.to_stream(std::cout);
   }
 
   SECTION("sketch of strings bytes") {
-    kll_string_sketch sketch1(200, 0);
+    quantiles_string_sketch sketch1(128, 0);
     REQUIRE_THROWS_AS(sketch1.get_quantile(0), std::runtime_error);
     REQUIRE_THROWS_AS(sketch1.get_min_value(), std::runtime_error);
     REQUIRE_THROWS_AS(sketch1.get_max_value(), std::runtime_error);
@@ -655,7 +652,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
     auto bytes = sketch1.serialize();
     REQUIRE(bytes.size() == sketch1.get_serialized_size_bytes());
-    auto sketch2 = kll_string_sketch::deserialize(bytes.data(), bytes.size(), 0);
+    auto sketch2 = quantiles_string_sketch::deserialize(bytes.data(), bytes.size(), serde<std::string>(), 0);
     REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
     REQUIRE(sketch2.is_empty() == sketch1.is_empty());
     REQUIRE(sketch2.is_estimation_mode() == sketch1.is_estimation_mode());
@@ -672,14 +669,14 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
 
   SECTION("sketch of strings, single item, bytes") {
-    kll_string_sketch sketch1(200, 0);
+    quantiles_string_sketch sketch1(64, 0);
     sketch1.update("a");
     auto bytes = sketch1.serialize();
     REQUIRE(bytes.size() == sketch1.get_serialized_size_bytes());
-    auto sketch2 = kll_string_sketch::deserialize(bytes.data(), bytes.size(), 0);
+    auto sketch2 = quantiles_string_sketch::deserialize(bytes.data(), bytes.size(), serde<std::string>(), 0);
     REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
   }
-*/
+
   SECTION("copy") {
     quantiles_sketch<int> sketch1;
     const int n(1000);
