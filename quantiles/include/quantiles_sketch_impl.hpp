@@ -174,10 +174,14 @@ void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& serde) 
   const uint8_t family = FAMILY;
   write(os, family);
 
+  // side-effect: sort base buffer since always compact
+  // can't set is_sorted_ since const method
+  std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), C());
+
   // empty, ordered, compact are valid flags
   const uint8_t flags_byte(
       (is_empty() ? 1 << flags::IS_EMPTY : 0)
-    | (is_sorted_ ? 1 << flags::IS_SORTED : 0)
+    | (1 << flags::IS_SORTED) // always sorted as side effect noted above
     | (1 << flags::IS_COMPACT) // always compact -- could be optional for numeric types?
   );
   write(os, flags_byte);
@@ -218,11 +222,15 @@ auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerD
   const uint8_t family = FAMILY;
   ptr += copy_to_mem(family, ptr);
 
+  // side-effect: sort base buffer since always compact
+  // can't set is_sorted_ since const method
+  std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), C());
+
   // empty, ordered, compact are valid flags
   const uint8_t flags_byte(
       (is_empty() ? 1 << flags::IS_EMPTY : 0)
-    | (is_sorted_ ? 1 << flags::IS_SORTED : 0)
-    | (1 << flags::IS_COMPACT) // always compact -- could be optional for numeric types?
+    | (1 << flags::IS_SORTED) // always sorted as side effect noted above
+    | (1 << flags::IS_COMPACT) // always compact
   );
   ptr += copy_to_mem(flags_byte, ptr);
   ptr += copy_to_mem(k_, ptr);
@@ -345,7 +353,7 @@ auto quantiles_sketch<T, C, A>::deserialize_array(std::istream& is, uint32_t num
   level.insert(level.begin(),
                std::make_move_iterator(items.get()),
                std::make_move_iterator(items.get() + num_items));
-  return std::move(level);
+  return level;
 }
 
 template<typename T, typename C, typename A>

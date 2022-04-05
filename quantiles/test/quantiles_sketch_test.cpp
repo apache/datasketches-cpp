@@ -274,20 +274,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       }
     }
   }
-  /*
-  SECTION("deserialize from java") {
-    std::ifstream is;
-    is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "kll_sketch_from_java.sk", std::ios::binary);
-    auto sketch = kll_float_sketch::deserialize(is, test_allocator<float>(0));
-    REQUIRE_FALSE(sketch.is_empty());
-    REQUIRE(sketch.is_estimation_mode());
-    REQUIRE(sketch.get_n() == 1000000);
-    REQUIRE(sketch.get_num_retained() == 614);
-    REQUIRE(sketch.get_min_value() == 0.0);
-    REQUIRE(sketch.get_max_value() == 999999.0);
-  }
-*/
+
   SECTION("stream serialize deserialize empty") {
     quantiles_float_sketch sketch(200, 0);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
@@ -358,20 +345,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_rank(1) == 0.0);
     REQUIRE(sketch2.get_rank(2) == 1.0);
   }
-/*
-  SECTION("deserialize one item v1") {
-    std::ifstream is;
-    is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "kll_sketch_float_one_item_v1.sk", std::ios::binary);
-    auto sketch = quantiles_float_sketch::deserialize(is, serde<float>(), test_allocator<float>(0));
-    REQUIRE_FALSE(sketch.is_empty());
-    REQUIRE_FALSE(sketch.is_estimation_mode());
-    REQUIRE(sketch.get_n() == 1);
-    REQUIRE(sketch.get_num_retained() == 1);
-    REQUIRE(sketch.get_min_value() == 1.0);
-    REQUIRE(sketch.get_max_value() == 1.0);
-  }
-*/
+
   SECTION("stream serialize deserialize three items") {
     quantiles_float_sketch sketch(200, 0);
     sketch.update(1.0f);
@@ -745,30 +719,22 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 /*
   SECTION("max serialized size arithmetic type") {
-    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 10) == 1968);
-    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 100) == 2316);
-    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 1000) == 2440);
-    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 1000000) == 2800);
-    REQUIRE(kll_sketch<float>::get_max_serialized_size_bytes(200, 1000000000) == 3160);
+    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(128, 10) == 1968);
+    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(128, 100) == 2316);
+    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(128, 1000) == 2440);
+    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(256, 1000000) == 2800);
+    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(256, 1000000000) == 3160);
   }
 
   SECTION("max serialized size non-arithmetic type") {
-    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 10, 4) == 1968);
-    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 100, 4) == 2316);
-    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 1000, 4) == 2440);
-    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000, 4) == 2800);
-    REQUIRE(kll_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000000, 4) == 3160);
-  }
-
-  SECTION("issue #236") {
-    kll_sketch<int8_t> kll;
-    kll.update(1);
-    kll.update(2);
-    kll.update(3);
-    auto blob = kll.serialize();
-    auto kll2 = kll_sketch<int8_t>::deserialize(blob.data(), blob.size());
+    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 10, 4) == 1968);
+    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 100, 4) == 2316);
+    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 1000, 4) == 2440);
+    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000, 4) == 2800);
+    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000000, 4) == 3160);
   }
 */
+
   // cleanup
   if (test_allocator_total_bytes != 0) {
     REQUIRE(test_allocator_total_bytes == 0);
