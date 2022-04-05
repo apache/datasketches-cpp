@@ -19,9 +19,7 @@
 
 #include <catch.hpp>
 #include <cmath>
-#include <cstring>
 #include <sstream>
-#include <fstream>
 
 #include <quantiles_sketch.hpp>
 #include <test_allocator.hpp>

@@ -19,7 +19,6 @@
 
 #include <catch.hpp>
 #include <cmath>
-#include <cstring>
 #include <sstream>
 #include <fstream>
 
@@ -41,7 +40,7 @@ static std::string testBinaryInputPath = "test/";
 // typical usage would be just quantiles_sketch<double>, but here we use test_allocator
 using quantiles_double_sketch = quantiles_sketch<double, std::less<double>, test_allocator<double>>;
 
-static void quantiles_decode_and_check(uint16_t k, uint64_t n, std::string version,
+static void quantiles_decode_and_check(uint16_t k, uint64_t n, const std::string& version,
                                        double expected_median) {
   const double median_rank = 0.5;
 
