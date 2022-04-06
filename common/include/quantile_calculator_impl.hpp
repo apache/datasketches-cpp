@@ -20,6 +20,8 @@
 #ifndef QUANTILE_CALCULATOR_IMPL_HPP_
 #define QUANTILE_CALCULATOR_IMPL_HPP_
 
+#include <algorithm>
+
 namespace datasketches {
 
 template<typename T, typename C, typename A>
