@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <iomanip>
+#include <sstream>
 
 #include "common_defs.hpp"
 #include "count_zeros.hpp"
@@ -267,7 +268,7 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
   read<uint16_t>(is); // unused
 
   check_k(k);
-  check_serial_version(serial_version); // a little redundant with the next line, but explicit checks
+  check_serial_version(serial_version); // a little redundant with the header check
   check_family_id(family_id);
   check_header_validity(preamble_longs, flags_byte, serial_version);
 
@@ -376,7 +377,7 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
   ptr += copy_from_mem(ptr, unused);
 
   check_k(k);
-  check_serial_version(serial_version); // a little redundant with the next line, but explicit checks
+  check_serial_version(serial_version); // a little redundant with the header check
   check_family_id(family_id);
   check_header_validity(preamble_longs, flags_byte, serial_version);
 

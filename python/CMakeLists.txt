@@ -40,6 +40,7 @@ target_link_libraries(python
     theta
     sampling
     req
+    quantiles
     pybind11::module
 )
 
@@ -63,5 +64,6 @@ target_sources(python
     src/theta_wrapper.cpp
     src/vo_wrapper.cpp
     src/req_wrapper.cpp
+    src/quantiles_wrapper.cpp
     src/vector_of_kll.cpp
 )
