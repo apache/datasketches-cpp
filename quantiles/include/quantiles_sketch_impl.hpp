@@ -20,6 +20,7 @@
 #ifndef _QUANTILES_SKETCH_IMPL_HPP_
 #define _QUANTILES_SKETCH_IMPL_HPP_
 
+#include <cassert>
 #include <cmath>
 #include <algorithm>
 #include <stdexcept>

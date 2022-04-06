@@ -75,8 +75,8 @@ py::list quantiles_sketch_get_quantiles(const quantiles_sketch<T>& sk,
                                   bool inclusive) {
   size_t n_quantiles = fractions.size();
   auto result = inclusive
-     ? sk.template get_quantiles<true>(&fractions[0], n_quantiles)
-     : sk.template get_quantiles<false>(&fractions[0], n_quantiles);
+     ? sk.template get_quantiles<true>(&fractions[0], static_cast<uint32_t>(n_quantiles))
+     : sk.template get_quantiles<false>(&fractions[0], static_cast<uint32_t>(n_quantiles));
 
   // returning as std::vector<> would copy values to a list anyway
   py::list list(n_quantiles);
