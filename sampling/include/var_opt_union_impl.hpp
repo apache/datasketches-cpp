@@ -294,7 +294,7 @@ std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header
     ptr += copy_to_mem(outer_tau_numer_, ptr);
     ptr += copy_to_mem(outer_tau_denom_, ptr);
 
-    auto gadget_bytes = gadget_.serialize(header_size_bytes, sd);
+    auto gadget_bytes = gadget_.serialize(0, sd);
     ptr += copy_to_mem(gadget_bytes.data(), ptr, gadget_bytes.size() * sizeof(uint8_t));
   }
 
