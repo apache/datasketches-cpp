@@ -474,15 +474,30 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     float split_points[1] = {std::numeric_limits<float>::quiet_NaN()};
     REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::invalid_argument);
   }
+
+  SECTION("merge, manual testing") {
+    quantiles_float_sketch sk1(32, 0);
+    quantiles_float_sketch sk2(256, 0);
+    const int n = 10000;
+    for (int i = 0; i < n; i++) {
+      //sk1.update(static_cast<float>(i));
+      sk2.update(static_cast<float>((2 * n) - i - 1));
+    }
+
+    //std::cout << "Min: " << sk1.get_min_value() << std::endl;
+    //std::cout << "Max: " << sk1.get_max_value() << std::endl;
+    std::cout << "Merging..." << std::endl;
+    sk1.merge(sk2);
+    std::cout << "Min: " << sk1.get_min_value() << std::endl;
+    std::cout << "Max: " << sk1.get_max_value() << std::endl;
+
+    std::cout << "n: " << sk1.get_n() << std::endl;
+  }
+
 /*
   SECTION("merge") {
     quantiles_float_sketch sketch1(128, 0);
     quantiles_float_sketch sketch2(128, 0);
-    const int n = 10000;
-    for (int i = 0; i < n; i++) {
-      sketch1.update(static_cast<float>(i));
-      sketch2.update(static_cast<float>((2 * n) - i - 1));
-    }
 
     REQUIRE(sketch1.get_min_value() == 0.0f);
     REQUIRE(sketch1.get_max_value() == n - 1);
@@ -575,6 +590,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_max_value() == 999999.0f);
   }
 */
+
   SECTION("sketch of ints") {
     quantiles_sketch<int> sketch;
     REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
@@ -668,7 +684,6 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_rank(std::to_string(0)) == sketch1.get_rank(std::to_string(0)));
     REQUIRE(sketch2.get_rank(std::to_string(n)) == sketch1.get_rank(std::to_string(n)));
   }
-
 
   SECTION("sketch of strings, single item, bytes") {
     quantiles_string_sketch sketch1(64, 0);

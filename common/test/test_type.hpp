@@ -20,7 +20,9 @@
 #ifndef CLASS_TEST_TYPE_HPP_
 #define CLASS_TEST_TYPE_HPP_
 
+#include <cstring>
 #include <iostream>
+#include "memory_operations.hpp"
 
 namespace datasketches {
 

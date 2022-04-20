@@ -40,6 +40,13 @@ template<typename A> using string = std::basic_string<char, std::char_traits<cha
 static std::independent_bits_engine<std::mt19937, 1, uint32_t>
   random_bit(static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count()));
 
+// common random declarations
+namespace random_utils {
+  static std::random_device rd; // possibly unsafe in MinGW with GCC < 9.2
+  static std::mt19937_64 rand(rd());
+  static std::uniform_real_distribution<> next_double(0.0, 1.0);
+}
+
 
 // utility function to hide unused compiler warning
 // usually has no additional cost

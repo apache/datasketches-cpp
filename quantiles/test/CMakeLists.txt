@@ -18,6 +18,7 @@
 add_executable(quantiles_test)
 
 target_link_libraries(quantiles_test quantiles common_test)
+#target_link_libraries(quantiles_test quantiles common)
 
 set_target_properties(quantiles_test PROPERTIES
   CXX_STANDARD 11
@@ -40,7 +41,5 @@ target_sources(quantiles_test
   PRIVATE
     quantiles_sketch_test.cpp
     quantiles_compatibility_test.cpp
-    #quantiles_sketch_custom_type_test.cpp
-    #quantiles_sketch_validation.cpp
-    #kolmogorov_smirnov_test.cpp
+    #simple_test.cpp
 )

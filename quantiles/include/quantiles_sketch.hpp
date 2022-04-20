@@ -494,6 +494,7 @@ private:
                                        Level& buf_size_2k, bool apply_as_update,
                                        quantiles_sketch<T,C,A>& sketch);
   static void zip_buffer(Level& buf_in, Level& buf_out);
+  static void zip_buffer_with_stride(Level& buf_in, Level& buf_out, uint16_t stride);
   static void merge_two_size_k_buffers(Level& arr_in_1, Level& arr_in_2, Level& arr_out);
 
   template<typename SerDe>
@@ -512,6 +513,9 @@ private:
   static uint64_t compute_bit_pattern(uint16_t k, uint64_t n);
   static uint32_t compute_valid_levels(uint64_t bit_pattern);
   static uint8_t compute_levels_needed(uint16_t k, uint64_t n);
+
+  template<typename FwdT>
+  void downsampling_merge(FwdT&& other);
 
   /**
    * Returns the zero-based bit position of the lowest zero bit of <i>bits</i> starting at
