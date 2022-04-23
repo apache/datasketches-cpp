@@ -574,7 +574,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch1.get_max_value() == n - 1);
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n / 2).margin(n / 2 * RANK_EPS_FOR_K_128));
 
-    sketch2.update(0);
+    sketch2.update(static_cast<float>(0));
     sketch1.merge(sketch2);
     // rank error should not be affected by a merge with a sketch in exact mode with lower k
     REQUIRE(sketch1.get_normalized_rank_error(true) == rank_error_before_merge);

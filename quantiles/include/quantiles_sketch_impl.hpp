@@ -1112,8 +1112,8 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch<T,C,A>& tgt,
   }
   assert(!src.is_empty());
 
-  const uint32_t downsample_factor = src.get_k() / tgt.get_k();
-  const uint32_t lg_sample_factor = count_trailing_zeros_in_u32(downsample_factor);
+  const uint16_t downsample_factor = src.get_k() / tgt.get_k();
+  const uint8_t lg_sample_factor = count_trailing_zeros_in_u32(downsample_factor);
 
   uint64_t new_n = src.get_n() + tgt.get_n();
 
