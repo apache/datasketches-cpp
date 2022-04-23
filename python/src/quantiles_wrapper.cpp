@@ -150,8 +150,8 @@ void bind_quantiles_sketch(py::module &m, const char* name) {
          "Updates the sketch with the given value")
     .def("update", &dspy::quantiles_sketch_update<T>, py::arg("array"),
          "Updates the sketch with the values in the given array")
-    //.def("merge", (void (quantiles_sketch<T>::*)(const quantiles_sketch<T>&)) &quantiles_sketch<T>::merge, py::arg("sketch"),
-    //     "Merges the provided sketch into the this one")
+    .def("merge", (void (quantiles_sketch<T>::*)(const quantiles_sketch<T>&)) &quantiles_sketch<T>::merge, py::arg("sketch"),
+         "Merges the provided sketch into the this one")
     .def("__str__", &quantiles_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
          "Produces a string summary of the sketch")
     .def("to_string", &quantiles_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,

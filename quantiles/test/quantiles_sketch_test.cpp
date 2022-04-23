@@ -475,29 +475,14 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::invalid_argument);
   }
 
-  SECTION("merge, manual testing") {
-    quantiles_float_sketch sk1(32, 0);
-    quantiles_float_sketch sk2(256, 0);
-    const int n = 10000;
-    for (int i = 0; i < n; i++) {
-      //sk1.update(static_cast<float>(i));
-      sk2.update(static_cast<float>((2 * n) - i - 1));
-    }
-
-    //std::cout << "Min: " << sk1.get_min_value() << std::endl;
-    //std::cout << "Max: " << sk1.get_max_value() << std::endl;
-    std::cout << "Merging..." << std::endl;
-    sk1.merge(sk2);
-    std::cout << "Min: " << sk1.get_min_value() << std::endl;
-    std::cout << "Max: " << sk1.get_max_value() << std::endl;
-
-    std::cout << "n: " << sk1.get_n() << std::endl;
-  }
-
-/*
   SECTION("merge") {
     quantiles_float_sketch sketch1(128, 0);
     quantiles_float_sketch sketch2(128, 0);
+    const int n = 10000;
+    for (int i = 0; i < n; i++) {
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>((2 * n) - i - 1));
+    }
 
     REQUIRE(sketch1.get_min_value() == 0.0f);
     REQUIRE(sketch1.get_max_value() == n - 1);
@@ -512,6 +497,30 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch1.get_max_value() == 2.0f * n - 1);
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
   }
+
+  SECTION("merge from const") {
+    quantiles_float_sketch sketch1(128, 0);
+    quantiles_float_sketch sketch2(128, 0);
+    const int n = 10000;
+    for (int i = 0; i < n; i++) {
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>((2 * n) - i - 1));
+    }
+
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == n - 1);
+    REQUIRE(sketch2.get_min_value() == n);
+    REQUIRE(sketch2.get_max_value() == 2.0f * n - 1);
+
+    sketch1.merge(const_cast<const quantiles_float_sketch&>(sketch2));
+
+    REQUIRE_FALSE(sketch1.is_empty());
+    REQUIRE(sketch1.get_n() == 2 * n);
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == 2.0f * n - 1);
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
+  }
+
 
   SECTION("merge lower k") {
     quantiles_float_sketch sketch1(256, 0);
@@ -543,12 +552,12 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch1.get_n() == 2 * n);
     REQUIRE(sketch1.get_min_value() == 0.0f);
     REQUIRE(sketch1.get_max_value() == 2.0f * n - 1);
-    REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_200));
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
   }
 
   SECTION("merge exact mode, lower k") {
-    kll_float_sketch sketch1(256, 0);
-    kll_float_sketch sketch2(128, 0);
+    quantiles_float_sketch sketch1(256, 0);
+    quantiles_float_sketch sketch2(128, 0);
     const int n = 10000;
     for (int i = 0; i < n; i++) {
       sketch1.update(static_cast<float>(i));
@@ -563,7 +572,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch1.get_n() == n);
     REQUIRE(sketch1.get_min_value() == 0.0f);
     REQUIRE(sketch1.get_max_value() == n - 1);
-    REQUIRE(sketch1.get_quantile(0.5) == Approx(n / 2).margin(n / 2 * RANK_EPS_FOR_K_200));
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(n / 2).margin(n / 2 * RANK_EPS_FOR_K_128));
 
     sketch2.update(0);
     sketch1.merge(sketch2);
@@ -572,8 +581,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("merge min value from other") {
-    kll_float_sketch sketch1(200, 0);
-    kll_float_sketch sketch2(200, 0);
+    quantiles_float_sketch sketch1(128, 0);
+    quantiles_float_sketch sketch2(128, 0);
     sketch1.update(1.0f);
     sketch2.update(2.0f);
     sketch2.merge(sketch1);
@@ -582,14 +591,13 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("merge min and max values from other") {
-    kll_float_sketch sketch1(200, 0);
+    quantiles_float_sketch sketch1(128, 0);
     for (int i = 0; i < 1000000; i++) sketch1.update(static_cast<float>(i));
-    kll_float_sketch sketch2(200, 0);
+    quantiles_float_sketch sketch2(128, 0);
     sketch2.merge(sketch1);
     REQUIRE(sketch2.get_min_value() == 0.0f);
     REQUIRE(sketch2.get_max_value() == 999999.0f);
   }
-*/
 
   SECTION("sketch of ints") {
     quantiles_sketch<int> sketch;

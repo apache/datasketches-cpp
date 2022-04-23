@@ -41,5 +41,4 @@ target_sources(quantiles_test
   PRIVATE
     quantiles_sketch_test.cpp
     quantiles_compatibility_test.cpp
-    #simple_test.cpp
 )
