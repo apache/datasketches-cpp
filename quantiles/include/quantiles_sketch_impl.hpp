@@ -208,25 +208,6 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
     }
     *this = sk_copy;
   }
-
-/*
-  // update min/max values
-  // can't just check is_empty() since min/max might not have been set if
-  // there were no base buffer items added via update()
-  if (min_value_ == nullptr) {
-    min_value_ = new (allocator_.allocate(1)) T(*other.min_value_);
-  } else {
-    if (C()(*other.min_value_, *min_value_))
-      *min_value_ = conditional_forward<FwdSk>(*other.min_value_);
-  }
-
-  if (max_value_ == nullptr) {
-    max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
-  } else {
-    if (C()(*max_value_, *other.max_value_))
-      *max_value_ = conditional_forward<FwdSk>(*other.max_value_);
-  }
-  */
 }
 
 template<typename T, typename C, typename A>

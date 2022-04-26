@@ -599,6 +599,139 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.get_max_value() == 999999.0f);
   }
 
+  SECTION("merge: two empty") {
+    quantiles_float_sketch sk1(128, 0);
+    quantiles_float_sketch sk2(64, 0);
+    sk1.merge(sk2);
+    REQUIRE(sk1.get_n() == 0);
+    REQUIRE(sk1.get_k() == 128);
+
+    sk2.merge(const_cast<const quantiles_float_sketch&>(sk1));
+    REQUIRE(sk2.get_n() == 0);
+    REQUIRE(sk2.get_k() == 64);
+  }
+
+  SECTION("merge: exact as input") {
+    const uint16_t k = 128;
+    quantiles_float_sketch sketch1(2 * k, 0);
+    quantiles_float_sketch sketch2(k, 0);
+
+    for (int i = 0; i < k / 2; i++) {
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>(i));
+    }
+
+    for (int i = 0; i < 100 * k; i++) {
+      sketch1.update(static_cast<float>(i));
+    }
+    
+    sketch1.merge(sketch2);
+    REQUIRE(sketch1.get_n() == 101 * k);
+    REQUIRE(sketch1.get_k() == 2 * k); // no reason to have shrunk
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == static_cast<float>(100 * k - 1));
+  }
+
+  SECTION("merge: src estimation, tgt exact, tgt.k > src.k") {
+    const uint16_t k = 128;
+    quantiles_float_sketch sketch1(2 * k, 0);
+    quantiles_float_sketch sketch2(k, 0);
+
+    for (int i = 0; i < k / 2; i++) {
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>(i));
+    }
+    
+    for (int i = 0; i < 100 * k; i++) {
+      sketch2.update(static_cast<float>(i));
+    }
+
+    sketch1.merge(sketch2);
+    REQUIRE(sketch1.get_n() == 101 * k);
+    REQUIRE(sketch1.get_k() == k); // no reason to have shrunk
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == static_cast<float>(100 * k - 1));
+  }
+
+  SECTION("merge: both estimation, tgt.k < src.k") {
+    const uint16_t k = 128;
+    quantiles_float_sketch sketch1(k, 0);
+    quantiles_float_sketch sketch2(2 * k, 0);
+
+    for (int i = 0; i < 100 * k; i++) {
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>(-i));
+    }
+    
+    sketch1.merge(sketch2);
+    REQUIRE(sketch1.get_n() == 200 * k);
+    REQUIRE(sketch1.get_k() == k); // no reason to have shrunk
+    REQUIRE(sketch1.get_min_value() == static_cast<float>(-100 * k + 1));
+    REQUIRE(sketch1.get_max_value() == static_cast<float>(100 * k - 1));
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(0.0).margin(100 * k * RANK_EPS_FOR_K_128));
+  }
+
+  SECTION("merge: src estimation, tgt exact, equal k") {
+    const uint16_t k = 128;
+    quantiles_float_sketch sketch1(k, 0);
+    quantiles_float_sketch sketch2(k, 0);
+
+    for (int i = 0; i < k / 2; i++) {
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>(k - i - 1));
+    }
+    
+    for (int i = k; i < 100 * k; i++) {
+      sketch2.update(static_cast<float>(i));
+    }
+
+    sketch1.merge(sketch2);
+    REQUIRE(sketch1.get_n() == 100 * k);
+    REQUIRE(sketch1.get_k() == k);
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == static_cast<float>(100 * k - 1));
+    float n = 100 * k - 1;
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(n / 2).margin(n / 2 * RANK_EPS_FOR_K_128));
+  }
+
+  SECTION("merge: both estimation, no base buffer, same k") {
+    const uint16_t k = 128;
+    quantiles_float_sketch sketch1(k, 0);
+    quantiles_float_sketch sketch2(k, 0);
+
+    uint64_t n = 2 * k;
+    for (uint64_t i = 0; i < n; i++) {
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>(2 * n - i - 1));
+    }
+    
+    sketch1.merge(sketch2);
+    REQUIRE(sketch1.get_n() == 2 * n);
+    REQUIRE(sketch1.get_k() == k);
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == static_cast<float>(2 * n - 1));
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
+  }
+
+  SECTION("merge: both estimation, no base buffer, tgt.k < src.k") {
+    const uint16_t k = 128;
+    quantiles_float_sketch sketch1(k, 0);
+    quantiles_float_sketch sketch2(2 * k, 0);
+
+    uint64_t n = 4 * k;
+    for (uint64_t i = 0; i < n; i++) {
+      sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>(2 * n - i - 1));
+    }
+    
+    sketch1.merge(sketch2);
+    REQUIRE(sketch1.get_n() == 2 * n);
+    REQUIRE(sketch1.get_k() == k);
+    REQUIRE(sketch1.get_min_value() == 0.0f);
+    REQUIRE(sketch1.get_max_value() == static_cast<float>(2 * n - 1));
+    REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
+  }
+
   SECTION("sketch of ints") {
     quantiles_sketch<int> sketch;
     REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
