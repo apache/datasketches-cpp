@@ -738,7 +738,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_THROWS_AS(sketch.get_min_value(), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_max_value(), std::runtime_error);
 
-    const int n = 1000;
+    const int n = 10000;
     for (int i = 0; i < n; i++) sketch.update(i);
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
@@ -803,11 +803,11 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_THROWS_AS(sketch1.get_max_value(), std::runtime_error);
     REQUIRE(sketch1.get_serialized_size_bytes() == 8);
 
-    const int n = 1000;
+    const int n = 10000;
     for (int i = 0; i < n; i++) sketch1.update(std::to_string(i));
 
     REQUIRE(sketch1.get_min_value() == std::string("0"));
-    REQUIRE(sketch1.get_max_value() == std::string("999"));
+    REQUIRE(sketch1.get_max_value() == std::string("9999"));
 
     auto bytes = sketch1.serialize();
     REQUIRE(bytes.size() == sketch1.get_serialized_size_bytes());
