@@ -51,8 +51,8 @@ double quantiles_sketch_generic_normalized_rank_error(uint16_t k, bool pmf) {
 
 template<typename T>
 double quantiles_sketch_get_rank(const quantiles_sketch<T>& sk,
-                           const T& item,
-                           bool inclusive) {
+                                 const T& item,
+                                 bool inclusive) {
   if (inclusive)
     return sk.template get_rank<true>(item);
   else
@@ -61,8 +61,8 @@ double quantiles_sketch_get_rank(const quantiles_sketch<T>& sk,
 
 template<typename T>
 T quantiles_sketch_get_quantile(const quantiles_sketch<T>& sk,
-                          double rank,
-                          bool inclusive) {
+                                double rank,
+                                bool inclusive) {
   if (inclusive)
     return T(sk.template get_quantile<true>(rank));
   else
@@ -71,8 +71,8 @@ T quantiles_sketch_get_quantile(const quantiles_sketch<T>& sk,
 
 template<typename T>
 py::list quantiles_sketch_get_quantiles(const quantiles_sketch<T>& sk,
-                                  std::vector<double>& fractions,
-                                  bool inclusive) {
+                                        std::vector<double>& fractions,
+                                        bool inclusive) {
   size_t n_quantiles = fractions.size();
   auto result = inclusive
      ? sk.template get_quantiles<true>(&fractions[0], static_cast<uint32_t>(n_quantiles))
@@ -89,8 +89,8 @@ py::list quantiles_sketch_get_quantiles(const quantiles_sketch<T>& sk,
 
 template<typename T>
 py::list quantiles_sketch_get_pmf(const quantiles_sketch<T>& sk,
-                            std::vector<T>& split_points,
-                            bool inclusive) {
+                                  std::vector<T>& split_points,
+                                  bool inclusive) {
   size_t n_points = split_points.size();
   auto result = inclusive
      ? sk.template get_PMF<true>(&split_points[0], n_points)
@@ -106,8 +106,8 @@ py::list quantiles_sketch_get_pmf(const quantiles_sketch<T>& sk,
 
 template<typename T>
 py::list quantiles_sketch_get_cdf(const quantiles_sketch<T>& sk,
-                            std::vector<T>& split_points,
-                            bool inclusive) {
+                                  std::vector<T>& split_points,
+                                  bool inclusive) {
   size_t n_points = split_points.size();
   auto result = inclusive
      ? sk.template get_CDF<true>(&split_points[0], n_points)
