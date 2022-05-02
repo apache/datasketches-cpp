@@ -60,7 +60,7 @@ TEST_CASE("frequent items: custom type", "[frequent_items_sketch]") {
   REQUIRE(sketch.get_maximum_error() == sketch2.get_maximum_error());
 
   auto bytes = sketch.serialize();
-  auto sketch3 = frequent_test_type_sketch::deserialize(bytes.data(), bytes.size(), 0);
+  auto sketch3 = frequent_test_type_sketch::deserialize(bytes.data(), bytes.size(), alloc(0));
   REQUIRE_FALSE(sketch3.is_empty());
   REQUIRE(sketch3.get_total_weight() == 17);
   REQUIRE(sketch3.get_estimate(1) == 10);
