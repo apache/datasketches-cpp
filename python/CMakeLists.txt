@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(Python3 COMPONENTS Interpreter Development.Module)
+find_package(Python3 COMPONENTS Interpreter Development)
 
 # only Windows+MSVC seems to have trouble locating pybind11
 if (MSVC)

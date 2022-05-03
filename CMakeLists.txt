@@ -15,9 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required(VERSION 3.18.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(DataSketches
-        VERSION 3.3.0
+        VERSION 3.4.0
         LANGUAGES CXX)
 
 include(GNUInstallDirs)
