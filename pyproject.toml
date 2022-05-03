@@ -1,7 +1,7 @@
 [build-system]
 requires = ["wheel",
             "setuptools >= 30.3.0",
-            "cmake >= 3.12",
+            "cmake >= 3.18",
             "pip >= 10.0",
             "pybind11[global] >= 2.6.0"]
 build-backend = "setuptools.build_meta"
