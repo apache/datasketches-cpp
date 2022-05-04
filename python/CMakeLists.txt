@@ -15,10 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
+message("CMAKE_VERSION: " ${CMAKE_VERSION})
 message("Python_EXECUTABLE: " ${Python_EXECUTABLE})
 message("Python_ROOT_DIR: " ${Python_ROOT_DIR})
 
-find_package(Python COMPONENTS Interpreter Development)
+find_package(Python3 COMPONENTS Interpreter Development)
 
 message("Python version: " ${Python_VERSION})
 
