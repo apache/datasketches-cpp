@@ -23,7 +23,7 @@ endif()
 
 # only Windows+MSVC seems to have trouble locating pybind11
 if (MSVC)
-  execute_process(COMMAND cmd.exe /c ${CMAKE_CURRENT_SOURCE_DIR}/pybind11Path.cmd "${Python_EXECUTABLE}"
+  execute_process(COMMAND cmd.exe /c ${CMAKE_CURRENT_SOURCE_DIR}/pybind11Path.cmd "${Python3_EXECUTABLE}"
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       OUTPUT_STRIP_TRAILING_WHITESPACE
       OUTPUT_VARIABLE EXTRA_PACKAGE_PATH)
