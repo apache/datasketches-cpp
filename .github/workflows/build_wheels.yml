@@ -40,18 +40,18 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        #- {
-        #    name: "MacOS 10.15",
-        #    os: macos-latest
-        #  }
+        - {
+            name: "MacOS 10.15",
+            os: macos-latest
+          }
         - {
             name: "Ubuntu Latest",
             os: ubuntu-latest
           }
-        #- {
-        #    name: "Windows Latest",
-        #    os: windows-latest
-        #  }
+        - {
+            name: "Windows Latest",
+            os: windows-latest
+          }
             
     steps:
       - name: Checkout
@@ -69,8 +69,7 @@ jobs:
         run: python -m cibuildwheel --output-dir dist
         env:
           CIBW_BEFORE_BUILD: python -m pip install cmake>=3.18
-          CIBW_BUILD_VERBOSITY: 3
-          CIBW_SKIP: "*-win32 pp*-macosx* muslinux* *i686"
+          CIBW_SKIP: "*-win32 pp*-macosx*"
           CIBW_ARCHS_MACOS: "x86_64 arm64 universal2"
 
       - uses: actions/upload-artifact@v2

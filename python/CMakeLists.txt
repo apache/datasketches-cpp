@@ -15,13 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-message("CMAKE_VERSION: " ${CMAKE_VERSION})
-message("Python_EXECUTABLE: " ${Python_EXECUTABLE})
-message("Python_ROOT_DIR: " ${Python_ROOT_DIR})
-
-find_package(Python3 COMPONENTS Interpreter Development)
-
-message("Python version: " ${Python_VERSION})
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18.0")
+find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+else()
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+endif()
 
 # only Windows+MSVC seems to have trouble locating pybind11
 if (MSVC)
@@ -33,9 +31,6 @@ if (MSVC)
 endif()
 
 find_package(pybind11 CONFIG REQUIRED)
-message("PYBIND11_PYTHON_VERSION: " ${PYBIND11_PYTHON_VERSION})
-message("pybind11_INCLUDE_DIR: " ${pybind11_INCLUDE_DIR})
-message("pybind11_INCLUDE_DIRS: " ${pybind11_INCLUDE_DIRS})
 
 pybind11_add_module(python MODULE EXCLUDE_FROM_ALL THIN_LTO)
 
