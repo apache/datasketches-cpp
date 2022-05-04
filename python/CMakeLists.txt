@@ -15,7 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
+message("Python_EXECUTABLE: " ${Python_EXECUTABLE})
+message("Python_ROOT_DIR: " ${Python_ROOT_DIR})
+
 find_package(Python COMPONENTS Interpreter Development)
+
 message("Python version: " ${Python_VERSION})
 
 # only Windows+MSVC seems to have trouble locating pybind11
