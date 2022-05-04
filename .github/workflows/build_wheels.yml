@@ -24,7 +24,7 @@ jobs:
           python-version: '3.x'
 
       - name: Build sdist
-        run: python setup.py sdist
+        run: python -m build --sdist
 
       - uses: actions/upload-artifact@v2
         with:
@@ -37,18 +37,18 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - {
-            name: "MacOS 10.15",
-            os: macos-latest
-          }
+        #- {
+        #    name: "MacOS 10.15",
+        #    os: macos-latest
+        #  }
         - {
             name: "Ubuntu Latest",
             os: ubuntu-latest
           }
-        - {
-            name: "Windows Latest",
-            os: windows-latest
-          }
+        #- {
+        #    name: "Windows Latest",
+        #    os: windows-latest
+        #  }
             
     steps:
       - name: Checkout
@@ -65,7 +65,8 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel --output-dir dist
         env:
-          CIBW_SKIP: "*-win32 pp*-macosx*"
+          CIBW_BUILD_VERBOSITY: -vvv
+          CIBW_SKIP: "*-win32 pp*-macosx* muslinux* *i686"
           CIBW_ARCHS_MACOS: "x86_64 arm64 universal2"
 
       - uses: actions/upload-artifact@v2

@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(Python COMPONENTS Interpreter Development)
+message("Python version: " ${Python_VERSION})
+
 # only Windows+MSVC seems to have trouble locating pybind11
 if (MSVC)
   execute_process(COMMAND cmd.exe /c ${CMAKE_CURRENT_SOURCE_DIR}/pybind11Path.cmd "${Python_EXECUTABLE}"
@@ -24,8 +27,10 @@ if (MSVC)
   set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${EXTRA_PACKAGE_PATH})
 endif()
 
-set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
+message("PYBIND11_PYTHON_VERSION: " ${PYBIND11_PYTHON_VERSION})
+message("pybind11_INCLUDE_DIR: " ${pybind11_INCLUDE_DIR})
+message("pybind11_INCLUDE_DIRS: " ${pybind11_INCLUDE_DIRS})
 
 pybind11_add_module(python MODULE EXCLUDE_FROM_ALL THIN_LTO)
 
