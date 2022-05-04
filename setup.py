@@ -53,6 +53,7 @@ class CMakeBuild(build_ext):
         # ensure we use a consistent python version
         cmake_args += ['-DPython_EXECUTABLE=' + sys.executable]
         cmake_args += ['-DPython_ROOT_DIR=' + os.path.dirname(sys.executable)]
+        cmake_args += ['--trace-expand']
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
