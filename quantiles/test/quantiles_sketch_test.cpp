@@ -24,6 +24,7 @@
 
 #include <quantiles_sketch.hpp>
 #include <test_allocator.hpp>
+#include <common_defs.hpp>
 
 namespace datasketches {
 
@@ -38,7 +39,6 @@ static std::string testBinaryInputPath = "test/";
 
 // typical usage would be just quantiles_sketch<float> or quantiles_sketch<std::string>, but here we use test_allocator
 using quantiles_float_sketch = quantiles_sketch<float, std::less<float>, test_allocator<float>>;
-// let std::string use the default allocator for simplicity, otherwise we need to define "less" and "serde"
 using quantiles_string_sketch = quantiles_sketch<std::string, std::less<std::string>, test_allocator<std::string>>;
 
 TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
@@ -71,7 +71,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch.get_CDF(split_points, 1).empty());
 
     for (auto it: sketch) {
-      (void) it; // to suppress "unused" warning
+      unused(it);
       FAIL("should be no iterations over an empty sketch");
     }
   }
@@ -275,6 +275,23 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
         REQUIRE(ranks[i] == Approx(subtotal_pmf).margin(NUMERIC_NOISE_TOLERANCE));
       }
     }
+  }
+
+  SECTION("get_rank<inclusive>() true vs false") {
+    quantiles_float_sketch sketch(32, 0);
+    const int n = 100;
+    for (int i = 1; i <= n; i++) {
+      sketch.update(static_cast<float>(i));
+    }
+
+    // using knowledge of internal structure: query values
+    // still in the base buffer to avoid randomness
+    REQUIRE(sketch.get_rank<false>(80) == 0.79);
+    REQUIRE(sketch.get_rank<true>(80) == 0.80);
+
+    // value pushed into higher level
+    REQUIRE(sketch.get_rank<false>(50) <= 0.50);
+    REQUIRE(sketch.get_rank<true>(50) == 0.50);
   }
 
   SECTION("stream serialize deserialize empty") {
@@ -872,23 +889,6 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       REQUIRE(sketch3.get_rank(i) == (double) i / n);
     }
   }
-/*
-  SECTION("max serialized size arithmetic type") {
-    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(128, 10) == 1968);
-    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(128, 100) == 2316);
-    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(128, 1000) == 2440);
-    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(256, 1000000) == 2800);
-    REQUIRE(quantiles_sketch<float>::get_max_serialized_size_bytes(256, 1000000000) == 3160);
-  }
-
-  SECTION("max serialized size non-arithmetic type") {
-    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 10, 4) == 1968);
-    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 100, 4) == 2316);
-    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 1000, 4) == 2440);
-    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000, 4) == 2800);
-    REQUIRE(quantiles_sketch<std::string>::get_max_serialized_size_bytes(200, 1000000000, 4) == 3160);
-  }
-*/
 
   // cleanup
   if (test_allocator_total_bytes != 0) {

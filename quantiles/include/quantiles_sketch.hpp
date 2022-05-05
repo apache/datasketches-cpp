@@ -116,18 +116,18 @@ Table Guide for DoublesSketch Size in Bytes and Approximate Error:
  * <p>There is more documentation available on
  * <a href="https://datasketches.apache.org">datasketches.apache.org</a>.</p>
  *
- * <p>This is an implementation of the Low Discrepancy Mergeable Quantiles Sketch, using double
- * values, described in section 3.2 of the journal version of the paper "Mergeable Summaries"
+ * <p>This is an implementation of the Low Discrepancy Mergeable Quantiles Sketch
+ * described in section 3.2 of the journal version of the paper "Mergeable Summaries"
  * by Agarwal, Cormode, Huang, Phillips, Wei, and Yi.
  * <a href="http://dblp.org/rec/html/journals/tods/AgarwalCHPWY13"></a></p>
  *
- * <p>This algorithm is independent of the distribution of values, which can be anywhere in the
- * range of the IEEE-754 64-bit doubles.
+ * <p>This algorithm is independent of the distribution of values and
+ * requires only that the values be comparable.</p
  *
  * <p>This algorithm intentionally inserts randomness into the sampling process for values that
  * ultimately get retained in the sketch. The results produced by this algorithm are not
  * deterministic. For example, if the same stream is inserted into two different instances of this
- * sketch, the answers obtained from the two sketches may not be be identical.</p>
+ * sketch, the answers obtained from the two sketches may not be identical.</p>
  *
  * <p>Similarly, there may be directional inconsistencies. For example, the resulting array of
  * values obtained from getQuantiles(fractions[]) input into the reverse directional query
@@ -314,8 +314,10 @@ public:
    *
    * @return an array of m+1 doubles each of which is an approximation
    * to the fraction of the input stream values (the mass) that fall into one of those intervals.
-   * The definition of an "interval" is inclusive of the left split point and exclusive of the right
-   * split point, with the exception that the last interval will include maximum value.
+   * When <em>inclusive=false</em> (the default), the definition of an "interval" is inclusive
+   * of the left split point and exclusive of the right split point. When <em>inclusive=true</em>,
+   * an "interval" is exclusive of the left split point and inclusive of the right. In both cases,
+   * the last interval will include maximum value.
    */
   template<bool inclusive = false>
   vector_double get_PMF(const T* split_points, uint32_t size) const;
@@ -331,9 +333,10 @@ public:
    *
    * @param split_points an array of <i>m</i> unique, monotonically increasing values
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
-   * The definition of an "interval" is inclusive of the left split point (or minimum value) and
-   * exclusive of the right split point, with the exception that the last interval will include
-   * the maximum value.
+   * When <em>inclusive=false</em> (the default), the definition of an "interval" is inclusive
+   * of the left split point and exclusive of the right split point. When <em>inclusive=true</em>,
+   * an "interval" is exclusive of the left split point and inclusive of the right. In both cases,
+   * the last interval will include maximum value.
    * It is not necessary to include either the min or max values in these split points.
    *
    * @return an array of m+1 double values, which are a consecutive approximation to the CDF
