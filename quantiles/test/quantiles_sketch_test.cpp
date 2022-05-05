@@ -277,21 +277,34 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     }
   }
 
-  SECTION("get_rank<inclusive>() true vs false") {
-    quantiles_float_sketch sketch(32, 0);
+  SECTION("inclusive true vs false") {
+    quantiles_sketch<int> sketch(32);
     const int n = 100;
     for (int i = 1; i <= n; i++) {
-      sketch.update(static_cast<float>(i));
+      sketch.update(i);
     }
 
-    // using knowledge of internal structure: query values
-    // still in the base buffer to avoid randomness
+    // get_rank()
+    // using knowledge of internal structure
+    // value still in the base buffer to avoid randomness
     REQUIRE(sketch.get_rank<false>(80) == 0.79);
     REQUIRE(sketch.get_rank<true>(80) == 0.80);
 
     // value pushed into higher level
-    REQUIRE(sketch.get_rank<false>(50) <= 0.50);
+    REQUIRE(sketch.get_rank<false>(50) == Approx(0.49).margin(0.01));
     REQUIRE(sketch.get_rank<true>(50) == 0.50);
+  
+    // get_quantile()
+    // value still in base buffer
+    REQUIRE(sketch.get_quantile<false>(0.70) == 71);
+    REQUIRE(sketch.get_quantile<true>(0.70) == 70);
+  
+    // value pushed into higher levell
+    int quantile = sketch.get_quantile<false>(0.30);
+    if (quantile != 31 && quantile != 32) { FAIL(); }
+    
+    quantile = sketch.get_quantile<true>(0.30);
+    if (quantile != 29 && quantile != 30) { FAIL(); }
   }
 
   SECTION("stream serialize deserialize empty") {
