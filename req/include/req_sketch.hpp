@@ -135,9 +135,10 @@ public:
    *
    * @param split_points an array of <i>m</i> unique, monotonically increasing values
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
-   * The definition of an "interval" is inclusive of the left split point (or minimum value) and
-   * exclusive of the right split point, with the exception that the last interval will include
-   * the maximum value.
+   * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
+   * split point, with the exception that the last interval will include the maximum value.
+   * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
+   * split point.
    * It is not necessary to include either the min or max values in these split points.
    *
    * @return an array of m+1 doubles each of which is an approximation

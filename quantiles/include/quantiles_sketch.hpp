@@ -283,7 +283,9 @@ public:
 
   /**
    * Returns an approximation to the normalized (fractional) rank of the given value from 0 to 1,
-   * inclusive.
+   * inclusive. When template parameter <em>inclusive=false</em> (the default), only elements strictly
+   * less than the provided value are included in the rank estimate. With <em>inclusive=true</em>,
+   * the rank estimate includes elements less than or equal to the provided value.
    *
    * <p>The resulting approximation has a probabilistic guarantee that can be obtained from the
    * get_normalized_rank_error(false) function.
@@ -307,17 +309,19 @@ public:
    *
    * @param split_points an array of <i>m</i> unique, monotonically increasing values
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
-   * The definition of an "interval" is inclusive of the left split point (or minimum value) and
-   * exclusive of the right split point, with the exception that the last interval will include
-   * the maximum value.
+   * If the template parameter <em>inclusive=false</em> (the default), the definition of an "interval"
+   * is inclusive of the left split point and exclusive of the right
+   * split point, with the exception that the last interval will include the maximum value.
+   * If the template parameter <em>inclusive=true</em>, the definition of an "interval" is exclusive of
+   * the left split point and inclusive of the right split point.
    * It is not necessary to include either the min or max values in these split points.
    *
    * @return an array of m+1 doubles each of which is an approximation
    * to the fraction of the input stream values (the mass) that fall into one of those intervals.
    * When <em>inclusive=false</em> (the default), the definition of an "interval" is inclusive
-   * of the left split point and exclusive of the right split point. When <em>inclusive=true</em>,
-   * an "interval" is exclusive of the left split point and inclusive of the right. In both cases,
-   * the last interval will include maximum value.
+   * of the left split point and exclusive of the right split point, with the exception that the last
+   * interval will include the maximum value. When <em>inclusive=true</em>,
+   * an "interval" is exclusive of the left split point and inclusive of the right.
    */
   template<bool inclusive = false>
   vector_double get_PMF(const T* split_points, uint32_t size) const;
@@ -333,16 +337,22 @@ public:
    *
    * @param split_points an array of <i>m</i> unique, monotonically increasing values
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
-   * When <em>inclusive=false</em> (the default), the definition of an "interval" is inclusive
-   * of the left split point and exclusive of the right split point. When <em>inclusive=true</em>,
-   * an "interval" is exclusive of the left split point and inclusive of the right. In both cases,
-   * the last interval will include maximum value.
+   * If the template parameter <em>inclusive=false</em> (the default), the definition of an "interval" is
+   * inclusive of the left split point and exclusive of the right
+   * split point, with the exception that the last interval will include the maximum value.
+   * If the template parameter <em>inclusive=true</em>, the definition of an "interval" is exclusive of
+   * the left split point and inclusive of the right split point.
    * It is not necessary to include either the min or max values in these split points.
    *
    * @return an array of m+1 double values, which are a consecutive approximation to the CDF
    * of the input stream given the split_points. The value at array position j of the returned
    * CDF array is the sum of the returned values in positions 0 through j of the returned PMF
    * array.
+   * When <em>inclusive=false</em> (the default), the definition of an "interval" is inclusive
+   * of the left split point and exclusive of the right split point, with the exception that the last
+   * interval will include the maximum value. When <em>inclusive=true</em>,
+   * an "interval" is exclusive of the left split point and inclusive of the right.
+
    */
   template<bool inclusive = false>
   vector_double get_CDF(const T* split_points, uint32_t size) const;
