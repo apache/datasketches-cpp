@@ -20,7 +20,6 @@
 #ifndef _QUANTILES_SKETCH_IMPL_HPP_
 #define _QUANTILES_SKETCH_IMPL_HPP_
 
-#include <cassert>
 #include <cmath>
 #include <algorithm>
 #include <stdexcept>
@@ -904,7 +903,10 @@ void quantiles_sketch<T, C, A>::process_full_base_buffer() {
                            true, *this);
   base_buffer_.clear();
   is_sorted_ = true;
-  assert(n_ / (2 * k_) == bit_pattern_);  // internal consistency check
+  if (n_ / (2 * k_) != bit_pattern_) {
+    throw std::logic_error("Internal error: n / 2k (" + std::to_string(n_ / 2 * k_)
+      + " != bit_pattern " + std::to_string(bit_pattern_));
+  }
 }
 
 template<typename T, typename C, typename A>
@@ -946,7 +948,9 @@ void quantiles_sketch<T, C, A>::in_place_propagate_carry(uint8_t starting_level,
   }
 
   for (uint64_t lvl = starting_level; lvl < ending_level; lvl++) {
-    assert((bit_pattern & (static_cast<uint64_t>(1) << lvl)) > 0); // internal consistency check
+    if ((bit_pattern & (static_cast<uint64_t>(1) << lvl)) == 0) {
+      throw std::logic_error("unexpected empty level in bit_pattern");
+    }
     merge_two_size_k_buffers(
         sketch.levels_[lvl],
         sketch.levels_[ending_level],
@@ -969,8 +973,12 @@ void quantiles_sketch<T, C, A>::zip_buffer(Level& buf_in, Level& buf_out) {
 #else
   uint32_t rand_offset = random_bit();
 #endif
-  assert(buf_in.size() == 2 * buf_out.capacity());
-  assert(buf_out.size() == 0);
+  if ((buf_in.size() != 2 * buf_out.capacity())
+    || (buf_out.size() > 0)) {
+      throw std::logic_error("zip_buffer requires buf_in.size() == "
+        "2*buf_out.capacity() and empty buf_out");
+  }
+
   size_t k = buf_out.capacity();
   for (uint32_t i = rand_offset, o = 0; o < k; i += 2, ++o) {
     buf_out.push_back(std::move(buf_in[i]));
@@ -985,8 +993,12 @@ void quantiles_sketch<T, C, A>::zip_buffer_with_stride(FwdV&& buf_in, Level& buf
   std::uniform_int_distribution<uint16_t> dist(0, stride - 1);
   uint16_t rand_offset = dist(random_utils::rand);
   
-  assert(buf_in.size() == stride * buf_out.capacity());
-  assert(buf_out.size() == 0);
+  if ((buf_in.size() != stride * buf_out.capacity())
+    || (buf_out.size() > 0)) {
+      throw std::logic_error("zip_buffer_with_stride requires buf_in.size() == "
+        "stride*buf_out.capacity() and empty buf_out");
+  }
+  
   size_t k = buf_out.capacity();
   for (uint16_t i = rand_offset, o = 0; o < k; i += stride, ++o) {
     buf_out.push_back(conditional_forward<FwdV>(buf_in[i]));
@@ -997,9 +1009,11 @@ void quantiles_sketch<T, C, A>::zip_buffer_with_stride(FwdV&& buf_in, Level& buf
 
 template<typename T, typename C, typename A>
 void quantiles_sketch<T, C, A>::merge_two_size_k_buffers(Level& src_1, Level& src_2, Level& dst) {
-  assert(src_1.size() == src_2.size());
-  assert(src_1.size() * 2 == dst.capacity());
-  assert(dst.size() == 0);
+  if (src_1.size() != src_2.size()
+    || src_1.size() * 2 != dst.capacity()
+    || dst.size() != 0) {
+      throw std::logic_error("Input invariants violated in merge_two_size_k_buffers()");
+  }
 
   auto end1 = src_1.end(), end2 = src_2.end();
   auto it1 = src_1.begin(), it2 = src_2.begin();
@@ -1016,7 +1030,7 @@ void quantiles_sketch<T, C, A>::merge_two_size_k_buffers(Level& src_1, Level& sr
   if (it1 != end1) {
     dst.insert(dst.end(), it1, end1);
   } else {
-    assert(it2 != end2);
+    if (it2 == end2) { throw std::logic_error("it2 unexpectedly already at end of range"); }
     dst.insert(dst.end(), it2, end2);
   }
 }
@@ -1028,7 +1042,9 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch<T,C,A>& tgt, Fwd
   if (src.get_k() != tgt.get_k()) {
     throw std::invalid_argument("src.get_k() != tgt.get_k()");
   }
-  assert(!src.is_empty());
+  if (src.is_empty()) {
+    return;
+  }
 
   uint64_t new_n = src.get_n() + tgt.get_n();
 
@@ -1064,7 +1080,9 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch<T,C,A>& tgt, Fwd
     }
   }
   tgt.n_ = new_n;
-  assert((tgt.get_n() / (2 * tgt.get_k())) == tgt.bit_pattern_); // internal consistency check
+  if ((tgt.get_n() / (2 * tgt.get_k())) != tgt.bit_pattern_) {
+    throw std::logic_error("Faailed internal consistency check after standard_merge()");
+  }
 
   // update min/max values
   // can't just check is_empty() since min/max might not have been set if
@@ -1091,7 +1109,9 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch<T,C,A>& tgt,
   if (src.get_k() % tgt.get_k() != 0) {
     throw std::invalid_argument("src.get_k() is not a multiple of tgt.get_k()");
   }
-  assert(!src.is_empty());
+  if (src.is_empty()) {
+    return;
+  }
 
   const uint16_t downsample_factor = src.get_k() / tgt.get_k();
   const uint8_t lg_sample_factor = count_trailing_zeros_in_u32(downsample_factor);
@@ -1137,7 +1157,9 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch<T,C,A>& tgt,
     }
   }
   tgt.n_ = new_n;
-  assert((tgt.get_n() / (2 * tgt.get_k())) == tgt.bit_pattern_); // internal consistency check
+  if ((tgt.get_n() / (2 * tgt.get_k())) != tgt.bit_pattern_) {
+    throw std::logic_error("Failed internal consistency check after downsampling_merge()");
+  }
 
   // update min/max values
   // can't just check is_empty() since min/max might not have been set if
