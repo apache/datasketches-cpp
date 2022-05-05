@@ -325,6 +325,11 @@ public:
   void trim();
 
   /**
+   * Reset the sketch to the initial empty state
+   */
+  void reset();
+
+  /**
    * Converts this sketch to a compact sketch (ordered or unordered).
    * @param ordered optional flag to specify if ordered sketch should be produced
    * @return compact sketch
@@ -341,7 +346,7 @@ protected:
   tuple_map map_;
 
   // for builder
-  update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
+  update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
 
   virtual void print_specifics(std::ostringstream& os) const;
 };
@@ -393,9 +398,23 @@ public:
   virtual uint32_t get_num_retained() const;
   virtual uint16_t get_seed_hash() const;
 
+  /**
+   * This method serializes the sketch into a given stream in a binary form
+   * @param os output stream
+   * @param instance of a SerDe
+   */
   template<typename SerDe = serde<Summary>>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
+  /**
+   * This method serializes the sketch as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is a blank space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * @param header_size_bytes space to reserve in front of the sketch
+   * @param instance of a SerDe
+   * @return serialized sketch as a vector of bytes
+   */
   template<typename SerDe = serde<Summary>>
   vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
@@ -409,6 +428,7 @@ public:
    * @param is input stream
    * @param seed the seed for the hash function that was used to create the sketch
    * @param instance of a SerDe
+   * @param instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<Summary>>
@@ -421,6 +441,7 @@ public:
    * @param size the size of the array
    * @param seed the seed for the hash function that was used to create the sketch
    * @param instance of a SerDe
+   * @param instance of an Allocator
    * @return an instance of the sketch
    */
   template<typename SerDe = serde<Summary>>

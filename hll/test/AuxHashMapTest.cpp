@@ -19,6 +19,7 @@
 
 #include <catch.hpp>
 #include <memory>
+#include <stdexcept>
 
 #include "AuxHashMap.hpp"
 

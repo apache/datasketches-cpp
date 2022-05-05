@@ -39,7 +39,7 @@ TEST_CASE("varopt allocation test", "[var_opt_sketch]") {
     var_opt_test_sketch sk1(10, var_opt_test_sketch::DEFAULT_RESIZE_FACTOR, 0);
     for (int i = 0; i < 100; ++i) sk1.update(i);
     auto bytes1 = sk1.serialize();
-    auto sk2 = var_opt_test_sketch::deserialize(bytes1.data(), bytes1.size(), 0);
+    auto sk2 = var_opt_test_sketch::deserialize(bytes1.data(), bytes1.size(), test_type_serde(), 0);
 
     std::stringstream ss;
     sk1.serialize(ss);
@@ -51,7 +51,7 @@ TEST_CASE("varopt allocation test", "[var_opt_sketch]") {
     u1.update(sk3);
 
     auto bytes2 = u1.serialize();
-    auto u2 = var_opt_test_union::deserialize(bytes2.data(), bytes2.size(), 0);
+    auto u2 = var_opt_test_union::deserialize(bytes2.data(), bytes2.size(), test_type_serde(), 0);
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);

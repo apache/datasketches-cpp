@@ -21,6 +21,7 @@
 #include <cstring>
 #include <sstream>
 #include <fstream>
+#include <stdexcept>
 
 #include <catch.hpp>
 

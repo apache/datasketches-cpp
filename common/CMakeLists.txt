@@ -45,4 +45,6 @@ install(FILES
 			include/bounds_binomial_proportions.hpp
 			include/quantile_calculator.hpp
 			include/quantile_calculator_impl.hpp
+			include/quantile_sketch_sorted_view.hpp
+			include/quantile_sketch_sorted_view_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

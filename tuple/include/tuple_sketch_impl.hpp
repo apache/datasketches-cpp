@@ -18,6 +18,7 @@
  */
 
 #include <sstream>
+#include <stdexcept>
 
 #include "binomial_bounds.hpp"
 #include "theta_helpers.hpp"
@@ -82,9 +83,9 @@ string<A> tuple_sketch<S, A>::to_string(bool detail) const {
 // update sketch
 
 template<typename S, typename U, typename P, typename A>
-update_tuple_sketch<S, U, P, A>::update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
+update_tuple_sketch<S, U, P, A>::update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
 policy_(policy),
-map_(lg_cur_size, lg_nom_size, rf, theta, seed, allocator)
+map_(lg_cur_size, lg_nom_size, rf, p, theta, seed, allocator)
 {}
 
 template<typename S, typename U, typename P, typename A>
@@ -99,12 +100,12 @@ bool update_tuple_sketch<S, U, P, A>::is_empty() const {
 
 template<typename S, typename U, typename P, typename A>
 bool update_tuple_sketch<S, U, P, A>::is_ordered() const {
-  return false;
+  return map_.num_entries_ > 1 ? false : true;;
 }
 
 template<typename S, typename U, typename P, typename A>
 uint64_t update_tuple_sketch<S, U, P, A>::get_theta64() const {
-  return map_.theta_;
+  return is_empty() ? theta_constants::MAX_THETA : map_.theta_;
 }
 
 template<typename S, typename U, typename P, typename A>
@@ -215,6 +216,11 @@ void update_tuple_sketch<S, U, P, A>::trim() {
 }
 
 template<typename S, typename U, typename P, typename A>
+void update_tuple_sketch<S, U, P, A>::reset() {
+  map_.reset();
+}
+
+template<typename S, typename U, typename P, typename A>
 auto update_tuple_sketch<S, U, P, A>::begin() -> iterator {
   return iterator(map_.entries_, 1 << map_.lg_cur_size_, 0);
 }
@@ -252,7 +258,7 @@ template<typename S, typename A>
 compact_tuple_sketch<S, A>::compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta,
     std::vector<Entry, AllocEntry>&& entries):
 is_empty_(is_empty),
-is_ordered_(is_ordered),
+is_ordered_(is_ordered || (entries.size() <= 1ULL)),
 seed_hash_(seed_hash),
 theta_(theta),
 entries_(std::move(entries))
@@ -582,7 +588,7 @@ tuple_base_builder<builder, P, A>(policy, allocator) {}
 
 template<typename S, typename U, typename P, typename A>
 auto update_tuple_sketch<S, U, P, A>::builder::build() const -> update_tuple_sketch {
-  return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
+  return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 
 } /* namespace datasketches */

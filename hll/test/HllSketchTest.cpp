@@ -17,6 +17,8 @@
  * under the License.
  */
 
+#include <stdexcept>
+
 #include "hll.hpp"
 
 #include <catch.hpp>
@@ -378,6 +380,63 @@ TEST_CASE("hll sketch: deserialize HLL mode buffer overrun", "[hll_sketch]") {
       ss.str(std::string((char*)bytes.data(), bytes.size() - 1));
       REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(ss, alloc(0)), std::ios_base::failure);
     }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+}
+
+TEST_CASE("hll sketch: bytes serialize-deserialize-serialize list mode") {
+  test_allocator_total_bytes = 0;
+  {
+    hll_sketch_test_alloc s1(10, target_hll_type::HLL_4, false, 0);
+    s1.update(1);
+    s1.update(2);
+    s1.update(3);
+    std::cout << s1.to_string();
+    auto bytes1 = s1.serialize_compact();
+    auto s2 = hll_sketch_test_alloc::deserialize(bytes1.data(), bytes1.size(), 0);
+    auto bytes2 = s2.serialize_compact();
+    REQUIRE(bytes1 == bytes2);
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+}
+
+TEST_CASE("hll sketch: updatable bytes serialize-deserialize-serialize set mode") {
+  test_allocator_total_bytes = 0;
+  {
+    hll_sketch_test_alloc s1(10, target_hll_type::HLL_4, false, 0);
+    for (int i = 0; i < 10; ++i) s1.update(i);
+    std::cout << s1.to_string();
+    auto bytes1 = s1.serialize_updatable();
+    auto s2 = hll_sketch_test_alloc::deserialize(bytes1.data(), bytes1.size(), 0);
+
+    auto bytes2 = s2.serialize_updatable();
+    REQUIRE(bytes1 == bytes2);
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+}
+
+TEST_CASE("hll sketch: compact bytes serialize-deserialize-serialize set mode") {
+  test_allocator_total_bytes = 0;
+  {
+    hll_sketch_test_alloc s1(10, target_hll_type::HLL_4, false, 0);
+    for (int i = 0; i < 10; ++i) s1.update(i);
+    std::cout << s1.to_string();
+    auto bytes1 = s1.serialize_compact();
+    auto s2 = hll_sketch_test_alloc::deserialize(bytes1.data(), bytes1.size(), 0);
+
+    // cannot just compare bytes here
+    // hash set does not preserve the order after reconstruction in compact mode
+    // add more to push them to HLL mode
+    for (int i = 10; i < 100; ++i) {
+      s1.update(i);
+      s2.update(i);
+    }
+    std::cout << s1.to_string();
+    std::cout << s2.to_string();
+
+    auto bytes2 = s1.serialize_compact();
+    auto bytes3 = s2.serialize_compact();
+    REQUIRE(bytes2 == bytes3);
   }
   REQUIRE(test_allocator_total_bytes == 0);
 }

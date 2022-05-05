@@ -24,6 +24,7 @@
 
 #include <cstring>
 #include <exception>
+#include <stdexcept>
 
 namespace datasketches {
 
@@ -113,10 +114,9 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len, const 
   } else {
     sketch->coupons_.resize(1ULL << lgArrInts);
     sketch->couponCount_ = couponCount;
-    // only need to read valid coupons, unlike in stream case
     std::memcpy(sketch->coupons_.data(),
                 data + hll_constants::HASH_SET_INT_ARR_START,
-                couponCount * sizeof(uint32_t));
+                couponsInArray * sizeof(uint32_t));
   }
 
   return sketch;

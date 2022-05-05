@@ -64,6 +64,11 @@ py::list fi_sketch_get_frequent_items(const frequent_items_sketch<T>& sk,
   return list;
 }
 
+template<typename T>
+size_t fi_sketch_get_serialized_size_bytes(const frequent_items_sketch<T>& sk) {
+  return sk.get_serialized_size_bytes();
+}
+
 }
 }
 
@@ -104,7 +109,7 @@ void bind_fi_sketch(py::module &m, const char* name) {
          "Returns the epsilon value used to compute a priori error for a given log2(max_map_size)")
     .def_static("get_apriori_error", &frequent_items_sketch<T>::get_apriori_error, py::arg("lg_max_map_size"), py::arg("estimated_total_weight"),
          "Returns the estimated a priori error given the max_map_size for the sketch and the estimated_total_stream_weight.")
-    .def("get_serialized_size_bytes", &frequent_items_sketch<T>::get_serialized_size_bytes,
+    .def("get_serialized_size_bytes", &dspy::fi_sketch_get_serialized_size_bytes<T>,
          "Computes the size needed to serialize the current state of the sketch. This can be expensive since every item needs to be looked at.")
     .def("serialize", &dspy::fi_sketch_serialize<T>, "Serializes the sketch into a bytes object")
     .def_static("deserialize", &dspy::fi_sketch_deserialize<T>, "Reads a bytes object and returns the corresponding frequent_strings_sketch")

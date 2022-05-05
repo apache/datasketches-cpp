@@ -23,6 +23,7 @@
 #include <cmath>
 #include <string>
 #include <exception>
+#include <stdexcept>
 
 #include "hll.hpp"
 #include "CouponList.hpp"

@@ -18,6 +18,7 @@
  */
 
 #include <iostream>
+#include <stdexcept>
 
 #include <catch.hpp>
 #include <tuple_union.hpp>
@@ -81,6 +82,13 @@ TEST_CASE("tuple_union float: simple case", "[tuple union]") {
   u.update(update_sketch2);
   auto result = u.get_result();
   REQUIRE(result.get_num_retained() == 3);
+
+  u.reset();
+  result = u.get_result();
+  REQUIRE(result.is_empty());
+  REQUIRE(result.get_num_retained() == 0);
+  REQUIRE(!result.is_estimation_mode());
+  REQUIRE(result.get_estimate() == 0);
 }
 
 TEST_CASE("tuple_union float: exact mode half overlap", "[tuple union]") {

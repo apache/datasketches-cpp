@@ -21,6 +21,7 @@
 #define THETA_A_SET_DIFFERENCE_BASE_IMPL_HPP_
 
 #include <algorithm>
+#include <stdexcept>
 
 #include "conditional_back_inserter.hpp"
 #include "conditional_forward.hpp"
@@ -36,7 +37,7 @@ seed_hash_(compute_seed_hash(seed))
 template<typename EN, typename EK, typename CS, typename A>
 template<typename FwdSketch, typename Sketch>
 CS theta_set_difference_base<EN, EK, CS, A>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const {
-  if (a.is_empty() || a.get_num_retained() == 0 || b.is_empty()) return CS(a, ordered);
+  if (a.is_empty() || (a.get_num_retained() > 0 && b.is_empty())) return CS(a, ordered);
   if (a.get_seed_hash() != seed_hash_) throw std::invalid_argument("A seed hash mismatch");
   if (b.get_seed_hash() != seed_hash_) throw std::invalid_argument("B seed hash mismatch");
 
@@ -53,7 +54,7 @@ CS theta_set_difference_base<EN, EK, CS, A>::compute(FwdSketch&& a, const Sketch
           conditional_back_inserter(entries, key_less_than<uint64_t, EN, EK>(theta)), comparator());
     } else { // hash-based
       const uint8_t lg_size = lg_size_from_count(b.get_num_retained(), hash_table::REBUILD_THRESHOLD);
-      hash_table table(lg_size, lg_size, hash_table::resize_factor::X1, 0, 0, allocator_); // theta and seed are not used here
+      hash_table table(lg_size, lg_size, hash_table::resize_factor::X1, 1, 0, 0, allocator_); // theta and seed are not used here
       for (const auto& entry: b) {
         const uint64_t hash = EK()(entry);
         if (hash < theta) {

@@ -43,4 +43,5 @@ target_sources(theta_test
     theta_intersection_test.cpp
     theta_a_not_b_test.cpp
     theta_jaccard_similarity_test.cpp
+    theta_setop_test.cpp
 )

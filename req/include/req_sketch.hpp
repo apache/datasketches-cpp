@@ -24,12 +24,14 @@
 #include "req_compactor.hpp"
 #include "quantile_calculator.hpp"
 
+#include <stdexcept>
+
 namespace datasketches {
 
 template<
   typename T,
-  typename Comparator = std::less<T>,
-  typename SerDe = serde<T>,
+  typename Comparator = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
+  typename S = serde<T>, // deprecated, to be removed in the next major version
   typename Allocator = std::allocator<T>
 >
 class req_sketch {
@@ -123,7 +125,6 @@ public:
    * @param item to be ranked
    * @return an approximate rank of the given item
    */
-
   template<bool inclusive = false>
   double get_rank(const T& item) const;
 
@@ -222,24 +223,28 @@ public:
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This version is for fixed-size arithmetic types (integral and floating point).
+   * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-  size_t get_serialized_size_bytes() const;
+  template<typename TT = T, typename SerDe = S, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This version is for all other types and can be expensive since every item needs to be looked at.
+   * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-  size_t get_serialized_size_bytes() const;
+  template<typename TT = T, typename SerDe = S, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
+   * @param instance of a SerDe
    */
-  void serialize(std::ostream& os) const;
+  template<typename SerDe = S>
+  void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
   // This is a convenience alias for users
   // The type returned by the following serialize method
@@ -251,23 +256,52 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
+   * @param instance of a SerDe
    */
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+  template<typename SerDe = S>
+  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
+   * @param instance of an Allocator
    * @return an instance of a sketch
+   *
+   * Deprecated, to be removed in the next major version
    */
   static req_sketch deserialize(std::istream& is, const Allocator& allocator = Allocator());
+
+  /**
+   * This method deserializes a sketch from a given stream.
+   * @param is input stream
+   * @param instance of a SerDe
+   * @param instance of an Allocator
+   * @return an instance of a sketch
+   */
+  template<typename SerDe = S>
+  static req_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
+   * @param instance of an Allocator
    * @return an instance of a sketch
+   *
+   * Deprecated, to be removed in the next major version
    */
   static req_sketch deserialize(const void* bytes, size_t size, const Allocator& allocator = Allocator());
+
+  /**
+   * This method deserializes a sketch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param instance of a SerDe
+   * @param instance of an Allocator
+   * @return an instance of a sketch
+   */
+  template<typename SerDe = S>
+  static req_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
   /**
    * Prints a summary of the sketch.

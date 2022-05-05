@@ -22,6 +22,7 @@
 
 #include <sstream>
 #include <vector>
+#include <stdexcept>
 
 #include "serde.hpp"
 #include "binomial_bounds.hpp"
@@ -95,8 +96,8 @@ void theta_sketch_alloc<A>::print_items(std::ostringstream& os) const {
 
 template<typename A>
 update_theta_sketch_alloc<A>::update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
-    uint64_t theta, uint64_t seed, const A& allocator):
-table_(lg_cur_size, lg_nom_size, rf, theta, seed, allocator)
+    float p, uint64_t theta, uint64_t seed, const A& allocator):
+table_(lg_cur_size, lg_nom_size, rf, p, theta, seed, allocator)
 {}
 
 template<typename A>
@@ -111,12 +112,12 @@ bool update_theta_sketch_alloc<A>::is_empty() const {
 
 template<typename A>
 bool update_theta_sketch_alloc<A>::is_ordered() const {
-  return false;
+  return table_.num_entries_ > 1 ? false : true;
 }
 
 template<typename A>
 uint64_t update_theta_sketch_alloc<A>::get_theta64() const {
-  return table_.theta_;
+  return is_empty() ? theta_constants::MAX_THETA : table_.theta_;
 }
 
 template<typename A>
@@ -211,6 +212,11 @@ void update_theta_sketch_alloc<A>::trim() {
 }
 
 template<typename A>
+void update_theta_sketch_alloc<A>::reset() {
+  table_.reset();
+}
+
+template<typename A>
 auto update_theta_sketch_alloc<A>::begin() -> iterator {
   return iterator(table_.entries_, 1 << table_.lg_cur_size_, 0);
 }
@@ -249,7 +255,7 @@ update_theta_sketch_alloc<A>::builder::builder(const A& allocator): theta_base_b
 
 template<typename A>
 update_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::builder::build() const {
-  return update_theta_sketch_alloc(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->allocator_);
+  return update_theta_sketch_alloc(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->allocator_);
 }
 
 // compact sketch
@@ -263,16 +269,18 @@ seed_hash_(other.get_seed_hash()),
 theta_(other.get_theta64()),
 entries_(other.get_allocator())
 {
-  entries_.reserve(other.get_num_retained());
-  std::copy(other.begin(), other.end(), std::back_inserter(entries_));
-  if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end());
+  if (!other.is_empty()) {
+    entries_.reserve(other.get_num_retained());
+    std::copy(other.begin(), other.end(), std::back_inserter(entries_));
+    if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end());
+  }
 }
 
 template<typename A>
 compact_theta_sketch_alloc<A>::compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta,
     std::vector<uint64_t, A>&& entries):
 is_empty_(is_empty),
-is_ordered_(is_ordered),
+is_ordered_(is_ordered || (entries.size() <= 1ULL)),
 seed_hash_(seed_hash),
 theta_(theta),
 entries_(std::move(entries))
@@ -408,78 +416,107 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
   const auto preamble_longs = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto type = read<uint8_t>(is);
-  read<uint16_t>(is); // unused
-  const auto flags_byte = read<uint8_t>(is);
-  const auto seed_hash = read<uint16_t>(is);
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
-  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
-  const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
-  if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+  switch (serial_version) {
+  case SERIAL_VERSION: {
+      read<uint16_t>(is); // unused
+      const auto flags_byte = read<uint8_t>(is);
+      const auto seed_hash = read<uint16_t>(is);
+      checker<true>::check_sketch_type(type, SKETCH_TYPE);
+      checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+      const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
+      if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
-  uint64_t theta = theta_constants::MAX_THETA;
-  uint32_t num_entries = 0;
-  if (!is_empty) {
-    if (preamble_longs == 1) {
-      num_entries = 1;
-    } else {
-      num_entries = read<uint32_t>(is);
-      read<uint32_t>(is); // unused
-      if (preamble_longs > 2) {
-        theta = read<uint64_t>(is);
+      uint64_t theta = theta_constants::MAX_THETA;
+      uint32_t num_entries = 0;
+      if (!is_empty) {
+        if (preamble_longs == 1) {
+          num_entries = 1;
+        } else {
+          num_entries = read<uint32_t>(is);
+          read<uint32_t>(is); // unused
+          if (preamble_longs > 2) {
+            theta = read<uint64_t>(is);
+          }
+        }
       }
-    }
-  }
-  std::vector<uint64_t, A> entries(num_entries, 0, allocator);
-  if (!is_empty) read(is, entries.data(), sizeof(uint64_t) * entries.size());
+      std::vector<uint64_t, A> entries(num_entries, 0, allocator);
+      if (!is_empty) read(is, entries.data(), sizeof(uint64_t) * entries.size());
 
-  const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  if (!is.good()) throw std::runtime_error("error reading from std::istream");
-  return compact_theta_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries));
+      const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
+      if (!is.good()) throw std::runtime_error("error reading from std::istream");
+      return compact_theta_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries));
+  }
+  case 1: {
+      const auto seed_hash = compute_seed_hash(seed);
+      checker<true>::check_sketch_type(type, SKETCH_TYPE);
+      read<uint8_t>(is); // unused
+      read<uint32_t>(is); // unused
+      const auto num_entries = read<uint32_t>(is);
+      read<uint32_t>(is); //unused
+      const auto theta = read<uint64_t>(is);
+      std::vector<uint64_t, A> entries(num_entries, 0, allocator);
+      bool is_empty = (num_entries == 0) && (theta == theta_constants::MAX_THETA);
+      if (!is_empty)
+          read(is, entries.data(), sizeof(uint64_t) * entries.size());
+      if (!is.good())
+          throw std::runtime_error("error reading from std::istream");
+      return compact_theta_sketch_alloc(is_empty, true, seed_hash, theta, std::move(entries));
+  }
+  case 2: {
+      checker<true>::check_sketch_type(type, SKETCH_TYPE);
+      read<uint8_t>(is); // unused
+      read<uint16_t>(is); // unused
+      const uint16_t seed_hash = read<uint16_t>(is);
+      checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+      if (preamble_longs == 1) {
+          if (!is.good())
+              throw std::runtime_error("error reading from std::istream");
+          std::vector<uint64_t, A> entries(0, 0, allocator);
+          return compact_theta_sketch_alloc(true, true, seed_hash, theta_constants::MAX_THETA, std::move(entries));
+      } else if (preamble_longs == 2) {
+          const uint32_t num_entries = read<uint32_t>(is);
+          read<uint32_t>(is); // unused
+          std::vector<uint64_t, A> entries(num_entries, 0, allocator);
+          if (num_entries == 0) {
+              return compact_theta_sketch_alloc(true, true, seed_hash, theta_constants::MAX_THETA, std::move(entries));
+          }
+          read(is, entries.data(), entries.size() * sizeof(uint64_t));
+          if (!is.good())
+              throw std::runtime_error("error reading from std::istream");
+          return compact_theta_sketch_alloc(false, true, seed_hash, theta_constants::MAX_THETA, std::move(entries));
+      } else if (preamble_longs == 3) {
+          const uint32_t num_entries = read<uint32_t>(is);
+          read<uint32_t>(is); // unused
+          const auto theta = read<uint64_t>(is);
+          bool is_empty = (num_entries == 0) && (theta == theta_constants::MAX_THETA);
+          std::vector<uint64_t, A> entries(num_entries, 0, allocator);
+          if (is_empty) {
+              if (!is.good())
+                  throw std::runtime_error("error reading from std::istream");
+              return compact_theta_sketch_alloc(true, true, seed_hash, theta, std::move(entries));
+          } else {
+              read(is, entries.data(), sizeof(uint64_t) * entries.size());
+              if (!is.good())
+                  throw std::runtime_error("error reading from std::istream");
+              return compact_theta_sketch_alloc(false, true, seed_hash, theta, std::move(entries));
+          }
+      } else {
+          throw std::invalid_argument(std::to_string(preamble_longs) + " longs of premable, but expected 1, 2, or 3");
+      }
+  }
+  default:
+      // this should always fail since the valid cases are handled above
+      checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+      // this throw is never reached, because check_serial_version will throw an informative exception.
+      // This is only here to avoid a compiler warning about a path without a return value.
+      throw std::invalid_argument("unexpected sketch serialization version");
+  }
 }
 
 template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed, const A& allocator) {
-  ensure_minimum_memory(size, 8);
-  const char* ptr = static_cast<const char*>(bytes);
-  const char* base = ptr;
-  uint8_t preamble_longs;
-  ptr += copy_from_mem(ptr, preamble_longs);
-  uint8_t serial_version;
-  ptr += copy_from_mem(ptr, serial_version);
-  uint8_t type;
-  ptr += copy_from_mem(ptr, type);
-  ptr += sizeof(uint16_t); // unused
-  uint8_t flags_byte;
-  ptr += copy_from_mem(ptr, flags_byte);
-  uint16_t seed_hash;
-  ptr += copy_from_mem(ptr, seed_hash);
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
-  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
-  const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
-  if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
-
-  uint64_t theta = theta_constants::MAX_THETA;
-  uint32_t num_entries = 0;
-  if (!is_empty) {
-    if (preamble_longs == 1) {
-      num_entries = 1;
-    } else {
-      ensure_minimum_memory(size, 8); // read the first prelong before this method
-      ptr += copy_from_mem(ptr, num_entries);
-      ptr += sizeof(uint32_t); // unused
-      if (preamble_longs > 2) {
-        ensure_minimum_memory(size, (preamble_longs - 1) << 3);
-        ptr += copy_from_mem(ptr, theta);
-      }
-    }
-  }
-  const size_t entries_size_bytes = sizeof(uint64_t) * num_entries;
-  check_memory_size(ptr - base + entries_size_bytes, size);
-  std::vector<uint64_t, A> entries(num_entries, 0, allocator);
-  if (!is_empty) ptr += copy_from_mem(ptr, entries.data(), entries_size_bytes);
-
-  const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  return compact_theta_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries));
+  auto data = compact_theta_sketch_parser<true>::parse(bytes, size, seed, false);
+  return compact_theta_sketch_alloc(data.is_empty, data.is_ordered, data.seed_hash, data.theta, std::vector<uint64_t, A>(data.entries, data.entries + data.num_entries, allocator));
 }
 
 // wrapped compact sketch

@@ -15,7 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(Python3 COMPONENTS Interpreter Development)
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18.0")
+find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+else()
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+endif()
 
 # only Windows+MSVC seems to have trouble locating pybind11
 if (MSVC)

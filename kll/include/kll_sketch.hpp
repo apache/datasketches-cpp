@@ -23,8 +23,9 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include <cmath>
 
-#include "kll_quantile_calculator.hpp"
+#include "quantile_sketch_sorted_view.hpp"
 #include "common_defs.hpp"
 #include "serde.hpp"
 
@@ -35,7 +36,7 @@ namespace datasketches {
  * and nearly optimal accuracy per retained item.
  * See <a href="https://arxiv.org/abs/1603.05346v2">Optimal Quantile Approximation in Streams</a>.
  *
- * <p>This is a stochastic streaming sketch that enables near-real time analysis of the
+ * <p>This is a stochastic streaming sketch that enables near real-time analysis of the
  * approximate distribution of values from a very large stream in a single pass, requiring only
  * that the values are comparable.
  * The analysis is obtained using <i>get_quantile()</i> or <i>get_quantiles()</i> functions or the
@@ -157,7 +158,12 @@ namespace kll_constants {
   const uint16_t DEFAULT_K = 200;
 }
 
-template <typename T, typename C = std::less<T>, typename S = serde<T>, typename A = std::allocator<T>>
+template <
+  typename T,
+  typename C = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
+  typename S = serde<T>, // deprecated, to be removed in the next major version
+  typename A = std::allocator<T>
+>
 class kll_sketch {
   public:
     using value_type = T;
@@ -178,31 +184,17 @@ class kll_sketch {
 
     /**
      * Updates this sketch with the given data item.
-     * This method takes lvalue.
      * @param value an item from a stream of items
      */
-    void update(const T& value);
-
-    /**
-     * Updates this sketch with the given data item.
-     * This method takes rvalue.
-     * @param value an item from a stream of items
-     */
-    void update(T&& value);
+    template<typename FwdT>
+    void update(FwdT&& value);
 
     /**
      * Merges another sketch into this one.
-     * This method takes lvalue.
      * @param other sketch to merge into this one
      */
-    void merge(const kll_sketch& other);
-
-    /**
-     * Merges another sketch into this one.
-     * This method takes rvalue.
-     * @param other sketch to merge into this one
-     */
-    void merge(kll_sketch&& other);
+    template<typename FwdSk>
+    void merge(FwdSk&& other);
 
     /**
      * Returns true if this sketch is empty.
@@ -266,10 +258,13 @@ class kll_sketch {
      * These are also called normalized ranks or fractional ranks.
      * If fraction = 0.0, the true minimum value of the stream is returned.
      * If fraction = 1.0, the true maximum value of the stream is returned.
+     * If the parameter inclusive=true, the given rank is considered inclusive (includes the weight of an item)
      *
      * @return the approximation to the value at the given fraction
      */
-    T get_quantile(double fraction) const;
+    using quantile_return_type = typename quantile_sketch_sorted_view<T, C, A>::quantile_return_type;
+    template<bool inclusive = false>
+    quantile_return_type get_quantile(double fraction) const;
 
     /**
      * This is a more efficient multiple-query version of get_quantile().
@@ -285,10 +280,12 @@ class kll_sketch {
      * @param fractions given array of fractional positions in the hypothetical sorted stream.
      * These are also called normalized ranks or fractional ranks.
      * These fractions must be in the interval [0.0, 1.0], inclusive.
+     * If the parameter inclusive=true, the given fractions are considered inclusive (include weights of items)
      *
      * @return array of approximations to the given fractions in the same order as given fractions
      * in the input array.
      */
+    template<bool inclusive = false>
     std::vector<T, A> get_quantiles(const double* fractions, uint32_t size) const;
 
     /**
@@ -304,11 +301,15 @@ class kll_sketch {
      *
      * @return array of approximations to the given number of evenly-spaced fractional ranks.
      */
+    template<bool inclusive = false>
     std::vector<T, A> get_quantiles(uint32_t num) const;
 
     /**
      * Returns an approximation to the normalized (fractional) rank of the given value from 0 to 1,
      * inclusive.
+     * With the template parameter inclusive=true the weight of the given value is included into the rank.
+     * Otherwise the rank equals the sum of the weights of all values that are less than the given value
+     * according to the comparator C.
      *
      * <p>The resulting approximation has a probabilistic guarantee that can be obtained from the
      * get_normalized_rank_error(false) function.
@@ -318,6 +319,7 @@ class kll_sketch {
      * @param value to be ranked
      * @return an approximate rank of the given value
      */
+    template<bool inclusive = false>
     double get_rank(const T& value) const;
 
     /**
@@ -338,9 +340,12 @@ class kll_sketch {
      *
      * @return an array of m+1 doubles each of which is an approximation
      * to the fraction of the input stream values (the mass) that fall into one of those intervals.
-     * The definition of an "interval" is inclusive of the left split point and exclusive of the right
-     * split point, with the exception that the last interval will include maximum value.
+     * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
+     * split point, with the exception that the last interval will include the maximum value.
+     * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
+     * split point.
      */
+    template<bool inclusive = false>
     vector_d<A> get_PMF(const T* split_points, uint32_t size) const;
 
     /**
@@ -364,6 +369,7 @@ class kll_sketch {
      * CDF array is the sum of the returned values in positions 0 through j of the returned PMF
      * array.
      */
+    template<bool inclusive = false>
     vector_d<A> get_CDF(const T* split_points, uint32_t size) const;
 
     /**
@@ -380,16 +386,17 @@ class kll_sketch {
      * This version is for fixed-size arithmetic types (integral and floating point).
      * @return size in bytes needed to serialize this sketch
      */
-    template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-    size_t get_serialized_size_bytes() const;
+    template<typename TT = T, typename SerDe = S, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+    size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
     /**
      * Computes size needed to serialize the current state of the sketch.
      * This version is for all other types and can be expensive since every item needs to be looked at.
+     * @param instance of a SerDe
      * @return size in bytes needed to serialize this sketch
      */
-    template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-    size_t get_serialized_size_bytes() const;
+    template<typename TT = T, typename SerDe = S, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+    size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
     /**
      * Returns upper bound on the serialized size of a sketch given a parameter <em>k</em> and stream
@@ -421,8 +428,11 @@ class kll_sketch {
     /**
      * This method serializes the sketch into a given stream in a binary form
      * @param os output stream
+     * @param instance of a SerDe
+     *
      */
-    void serialize(std::ostream& os) const;
+    template<typename SerDe = S>
+    void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
     // This is a convenience alias for users
     // The type returned by the following serialize method
@@ -434,23 +444,52 @@ class kll_sketch {
      * It is a blank space of a given size.
      * This header is used in Datasketches PostgreSQL extension.
      * @param header_size_bytes space to reserve in front of the sketch
+     * @param instance of a SerDe
      */
-    vector_bytes serialize(unsigned header_size_bytes = 0) const;
+    template<typename SerDe = S>
+    vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
     /**
      * This method deserializes a sketch from a given stream.
      * @param is input stream
+     * @param instance of an Allocator
      * @return an instance of a sketch
+     *
+     * Deprecated, to be removed in the next major version
      */
     static kll_sketch<T, C, S, A> deserialize(std::istream& is, const A& allocator = A());
+
+    /**
+     * This method deserializes a sketch from a given stream.
+     * @param is input stream
+     * @param instance of a SerDe
+     * @param instance of an Allocator
+     * @return an instance of a sketch
+     */
+    template<typename SerDe = S>
+    static kll_sketch<T, C, S, A> deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
 
     /**
      * This method deserializes a sketch from a given array of bytes.
      * @param bytes pointer to the array of bytes
      * @param size the size of the array
+     * @param instance of an Allocator
      * @return an instance of a sketch
+     *
+     * Deprecated, to be removed in the next major version
      */
     static kll_sketch<T, C, S, A> deserialize(const void* bytes, size_t size, const A& allocator = A());
+
+    /**
+     * This method deserializes a sketch from a given array of bytes.
+     * @param bytes pointer to the array of bytes
+     * @param size the size of the array
+     * @param instance of a SerDe
+     * @param instance of an Allocator
+     * @return an instance of a sketch
+     */
+    template<typename SerDe = S>
+    static kll_sketch<T, C, S, A> deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
 
     /*
      * Gets the normalized rank error given k and pmf.
@@ -471,6 +510,9 @@ class kll_sketch {
     class const_iterator;
     const_iterator begin() const;
     const_iterator end() const;
+
+    template<bool inclusive = false>
+    quantile_sketch_sorted_view<T, C, A> get_sorted_view(bool cumulative) const;
 
     #ifdef KLL_VALIDATION
     uint8_t get_num_levels() { return num_levels_; }
@@ -515,8 +557,6 @@ class kll_sketch {
     T* max_value_;
     bool is_level_zero_sorted_;
 
-    friend class kll_quantile_calculator<T, C, A>;
-
     // for deserialization
     class item_deleter;
     class items_deleter;
@@ -535,15 +575,21 @@ class kll_sketch {
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
     void sort_level_zero();
-    std::unique_ptr<kll_quantile_calculator<T, C, A>, std::function<void(kll_quantile_calculator<T, C, A>*)>> get_quantile_calculator();
+
+    template<bool inclusive>
     vector_d<A> get_PMF_or_CDF(const T* split_points, uint32_t size, bool is_CDF) const;
+    template<bool inclusive>
     void increment_buckets_unsorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
         const T* split_points, uint32_t size, double* buckets) const;
+    template<bool inclusive>
     void increment_buckets_sorted_level(uint32_t from_index, uint32_t to_index, uint64_t weight,
         const T* split_points, uint32_t size, double* buckets) const;
+
     template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);
-    void populate_work_arrays(const kll_sketch& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
-    void populate_work_arrays(kll_sketch&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
+
+    template<typename FwdSk>
+    void populate_work_arrays(FwdSk&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
+
     void assert_correct_total_weight() const;
     uint32_t safe_level_size(uint8_t level) const;
     uint32_t get_num_retained_above_level_zero() const;
@@ -555,8 +601,9 @@ class kll_sketch {
 
     // implementations for floating point types
     template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
-    static TT get_invalid_value() {
-      return std::numeric_limits<TT>::quiet_NaN();
+    static const TT& get_invalid_value() {
+      static TT value = std::numeric_limits<TT>::quiet_NaN();
+      return value;
     }
 
     template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
@@ -566,8 +613,8 @@ class kll_sketch {
 
     // implementations for all other types
     template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
-    static TT get_invalid_value() {
-      throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
+    static const TT& get_invalid_value() {
+      throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of value");
     }
 
     template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>

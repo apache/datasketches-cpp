@@ -23,16 +23,20 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <stdexcept>
+
+#include "theta_helpers.hpp"
 
 namespace datasketches {
 
 template<typename EN, typename EK, typename A>
-theta_update_sketch_base<EN, EK, A>::theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const A& allocator, bool is_empty):
+theta_update_sketch_base<EN, EK, A>::theta_update_sketch_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const A& allocator, bool is_empty):
 allocator_(allocator),
 is_empty_(is_empty),
 lg_cur_size_(lg_cur_size),
 lg_nom_size_(lg_nom_size),
 rf_(rf),
+p_(p),
 num_entries_(0),
 theta_(theta),
 seed_(seed),
@@ -52,6 +56,7 @@ is_empty_(other.is_empty_),
 lg_cur_size_(other.lg_cur_size_),
 lg_nom_size_(other.lg_nom_size_),
 rf_(other.rf_),
+p_(other.p_),
 num_entries_(other.num_entries_),
 theta_(other.theta_),
 seed_(other.seed_),
@@ -77,6 +82,7 @@ is_empty_(other.is_empty_),
 lg_cur_size_(other.lg_cur_size_),
 lg_nom_size_(other.lg_nom_size_),
 rf_(other.rf_),
+p_(other.p_),
 num_entries_(other.num_entries_),
 theta_(other.theta_),
 seed_(other.seed_),
@@ -105,6 +111,7 @@ theta_update_sketch_base<EN, EK, A>& theta_update_sketch_base<EN, EK, A>::operat
   std::swap(lg_cur_size_, copy.lg_cur_size_);
   std::swap(lg_nom_size_, copy.lg_nom_size_);
   std::swap(rf_, copy.rf_);
+  std::swap(p_, copy.p_);
   std::swap(num_entries_, copy.num_entries_);
   std::swap(theta_, copy.theta_);
   std::swap(seed_, copy.seed_);
@@ -119,6 +126,7 @@ theta_update_sketch_base<EN, EK, A>& theta_update_sketch_base<EN, EK, A>::operat
   std::swap(lg_cur_size_, other.lg_cur_size_);
   std::swap(lg_nom_size_, other.lg_nom_size_);
   std::swap(rf_, other.rf_);
+  std::swap(p_, other.p_);
   std::swap(num_entries_, other.num_entries_);
   std::swap(theta_, other.theta_);
   std::swap(seed_, other.seed_);
@@ -248,6 +256,29 @@ void theta_update_sketch_base<EN, EK, A>::trim() {
 }
 
 template<typename EN, typename EK, typename A>
+void theta_update_sketch_base<EN, EK, A>::reset() {
+  const size_t cur_size = 1ULL << lg_cur_size_;
+  for (size_t i = 0; i < cur_size; ++i) {
+    if (EK()(entries_[i]) != 0) {
+      entries_[i].~EN();
+      EK()(entries_[i]) = 0;
+    }
+  }
+  const uint8_t starting_lg_size = theta_build_helper<true>::starting_sub_multiple(
+      lg_nom_size_ + 1, theta_constants::MIN_LG_K, static_cast<uint8_t>(rf_));
+  if (starting_lg_size != lg_cur_size_) {
+    allocator_.deallocate(entries_, cur_size);
+    lg_cur_size_ = starting_lg_size;
+    const size_t new_size = 1ULL << starting_lg_size;
+    entries_ = allocator_.allocate(new_size);
+    for (size_t i = 0; i < new_size; ++i) EK()(entries_[i]) = 0;
+  }
+  num_entries_ = 0;
+  theta_ = theta_build_helper<true>::starting_theta_from_p(p_);
+  is_empty_ = true;
+}
+
+template<typename EN, typename EK, typename A>
 void theta_update_sketch_base<EN, EK, A>::consolidate_non_empty(EN* entries, size_t size, size_t num) {
   // find the first empty slot
   size_t i = 0;
@@ -310,18 +341,12 @@ Derived& theta_base_builder<Derived, Allocator>::set_seed(uint64_t seed) {
 
 template<typename Derived, typename Allocator>
 uint64_t theta_base_builder<Derived, Allocator>::starting_theta() const {
-  if (p_ < 1) return static_cast<uint64_t>(theta_constants::MAX_THETA * p_);
-  return theta_constants::MAX_THETA;
+  return theta_build_helper<true>::starting_theta_from_p(p_);
 }
 
 template<typename Derived, typename Allocator>
 uint8_t theta_base_builder<Derived, Allocator>::starting_lg_size() const {
-  return starting_sub_multiple(lg_k_ + 1, MIN_LG_K, static_cast<uint8_t>(rf_));
-}
-
-template<typename Derived, typename Allocator>
-uint8_t theta_base_builder<Derived, Allocator>::starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf) {
-  return (lg_tgt <= lg_min) ? lg_min : (lg_rf == 0) ? lg_tgt : ((lg_tgt - lg_min) % lg_rf) + lg_min;
+  return theta_build_helper<true>::starting_sub_multiple(lg_k_ + 1, MIN_LG_K, static_cast<uint8_t>(rf_));
 }
 
 // iterator

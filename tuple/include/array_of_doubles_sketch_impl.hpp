@@ -21,8 +21,8 @@ namespace datasketches {
 
 template<typename A>
 update_array_of_doubles_sketch_alloc<A>::update_array_of_doubles_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
-    uint64_t theta, uint64_t seed, const array_of_doubles_update_policy<A>& policy, const A& allocator):
-Base(lg_cur_size, lg_nom_size, rf, theta, seed, policy, allocator) {}
+    float p, uint64_t theta, uint64_t seed, const array_of_doubles_update_policy<A>& policy, const A& allocator):
+Base(lg_cur_size, lg_nom_size, rf, p, theta, seed, policy, allocator) {}
 
 
 template<typename A>
@@ -43,7 +43,7 @@ tuple_base_builder<builder, array_of_doubles_update_policy<A>, A>(policy, alloca
 
 template<typename A>
 update_array_of_doubles_sketch_alloc<A> update_array_of_doubles_sketch_alloc<A>::builder::build() const {
-  return update_array_of_doubles_sketch_alloc<A>(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
+  return update_array_of_doubles_sketch_alloc<A>(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 
 // compact sketch

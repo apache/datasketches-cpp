@@ -24,6 +24,7 @@
 #include <fstream>
 #include <sstream>
 #include <limits>
+#include <stdexcept>
 
 namespace datasketches {
 
@@ -51,6 +52,10 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
   REQUIRE(std::isnan(sketch.get_quantile(1)));
   const double ranks[3] {0, 0.5, 1};
   REQUIRE(sketch.get_quantiles(ranks, 3).size() == 0);
+
+  const float split_points[1] {0};
+  REQUIRE(sketch.get_CDF(split_points, 1).empty());
+  REQUIRE(sketch.get_PMF(split_points, 1).empty());
 }
 
 TEST_CASE("req sketch: single value, lra", "[req_sketch]") {

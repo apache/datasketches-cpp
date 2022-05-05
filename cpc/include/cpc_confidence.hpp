@@ -23,6 +23,7 @@
 #define CPC_CONFIDENCE_HPP_
 
 #include <cmath>
+#include <stdexcept>
 
 #include "cpc_sketch.hpp"
 
