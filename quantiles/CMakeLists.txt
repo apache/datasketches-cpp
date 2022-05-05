@@ -15,36 +15,28 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(common INTERFACE)
+add_library(quantiles INTERFACE)
+
+add_library(${PROJECT_NAME}::QUANTILES ALIAS quantiles)
 
 if (BUILD_TESTS)
   add_subdirectory(test)
 endif()
 
-target_include_directories(common
+target_include_directories(quantiles
   INTERFACE
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
 )
 
-target_compile_features(common INTERFACE cxx_std_11)
+target_link_libraries(quantiles INTERFACE common)
+target_compile_features(quantiles INTERFACE cxx_std_11)
 
-install(TARGETS common EXPORT ${PROJECT_NAME})
+install(TARGETS quantiles
+  EXPORT ${PROJECT_NAME}
+)
 
-install(FILES 
-			include/common_defs.hpp
-			include/memory_operations.hpp
-			include/MurmurHash3.h
-			include/serde.hpp
-			include/count_zeros.hpp
-			include/inv_pow2_table.hpp
-			include/binomial_bounds.hpp
-			include/conditional_back_inserter.hpp
-			include/conditional_forward.hpp
-			include/ceiling_power_of_2.hpp
-			include/bounds_binomial_proportions.hpp
-			include/quantile_calculator.hpp
-			include/quantile_calculator_impl.hpp
-			include/quantile_sketch_sorted_view.hpp
-			include/quantile_sketch_sorted_view_impl.hpp
+install(FILES
+    include/quantiles_sketch.hpp
+    include/quantiles_sketch_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

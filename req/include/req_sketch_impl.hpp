@@ -246,7 +246,7 @@ template<bool inclusive>
 std::vector<T, A> req_sketch<T, C, S, A>::get_quantiles(const double* ranks, uint32_t size) const {
   std::vector<T, A> quantiles(allocator_);
   if (is_empty()) return quantiles;
-  QuantileCalculatorPtr quantile_calculator(nullptr, calculator_deleter(allocator_));
+  QuantileCalculatorPtr quantile_calculator_ptr(nullptr, calculator_deleter(allocator_));
   quantiles.reserve(size);
   for (uint32_t i = 0; i < size; ++i) {
     const double rank = ranks[i];
@@ -256,11 +256,11 @@ std::vector<T, A> req_sketch<T, C, S, A>::get_quantiles(const double* ranks, uin
     if      (rank == 0.0) quantiles.push_back(*min_value_);
     else if (rank == 1.0) quantiles.push_back(*max_value_);
     else {
-      if (!quantile_calculator) {
+      if (!quantile_calculator_ptr) {
         // has side effect of sorting level zero if needed
-        quantile_calculator = const_cast<req_sketch*>(this)->get_quantile_calculator<inclusive>();
+        quantile_calculator_ptr = const_cast<req_sketch*>(this)->get_quantile_calculator<inclusive>();
       }
-      quantiles.push_back(*(quantile_calculator->get_quantile(rank)));
+      quantiles.push_back(*(quantile_calculator_ptr->get_quantile(rank)));
     }
   }
   return quantiles;
@@ -287,16 +287,16 @@ auto req_sketch<T, C, S, A>::get_quantile_calculator() const -> QuantileCalculat
     const_cast<Compactor&>(compactors_[0]).sort(); // allow this side effect
   }
   AllocCalc ac(allocator_);
-  QuantileCalculatorPtr quantile_calculator(
-    new (ac.allocate(1)) req_quantile_calculator<T, C, A>(n_, ac),
+  QuantileCalculatorPtr quantile_calculator_ptr(
+    new (ac.allocate(1)) quantile_calculator<T, C, A>(n_, ac),
     calculator_deleter(ac)
   );
 
   for (auto& compactor: compactors_) {
-    quantile_calculator->add(compactor.begin(), compactor.end(), compactor.get_lg_weight());
+    quantile_calculator_ptr->add(compactor.begin(), compactor.end(), compactor.get_lg_weight());
   }
-  quantile_calculator->template convert_to_cummulative<inclusive>();
-  return quantile_calculator;
+  quantile_calculator_ptr->template convert_to_cummulative<inclusive>();
+  return quantile_calculator_ptr;
 }
 
 template<typename T, typename C, typename S, typename A>

@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "common_defs.hpp"
+
 namespace datasketches {
 
 bool kll_helper::is_even(uint32_t value) {

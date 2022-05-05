@@ -15,31 +15,29 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(req INTERFACE)
+add_executable(quantiles_test)
 
-add_library(${PROJECT_NAME}::REQ ALIAS req)
+target_link_libraries(quantiles_test quantiles common common_test)
 
-if (BUILD_TESTS)
-  add_subdirectory(test)
-endif()
-
-target_include_directories(req
-  INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+set_target_properties(quantiles_test PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
 )
 
-target_link_libraries(req INTERFACE common)
-target_compile_features(req INTERFACE cxx_std_11)
-
-install(TARGETS req
-  EXPORT ${PROJECT_NAME}
+file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" QUANTILES_TEST_BINARY_PATH)
+string(APPEND QUANTILES_TEST_BINARY_PATH "/")
+target_compile_definitions(quantiles_test
+  PRIVATE
+    TEST_BINARY_INPUT_PATH="${QUANTILES_TEST_BINARY_PATH}"
 )
 
-install(FILES 
-		include/req_common.hpp
-		include/req_sketch.hpp
-		include/req_sketch_impl.hpp
-		include/req_compactor.hpp
-		include/req_compactor_impl.hpp
-  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
+add_test(
+  NAME quantiles_test
+  COMMAND quantiles_test
+)
+
+target_sources(quantiles_test
+  PRIVATE
+    quantiles_sketch_test.cpp
+    quantiles_compatibility_test.cpp
+)

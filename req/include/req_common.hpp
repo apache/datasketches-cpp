@@ -21,16 +21,11 @@
 #define REQ_COMMON_HPP_
 
 #include <random>
-#include <chrono>
 
 #include "serde.hpp"
 #include "common_defs.hpp"
 
 namespace datasketches {
-
-// TODO: have a common random bit with KLL
-static std::independent_bits_engine<std::mt19937, 1, unsigned>
-  req_random_bit(static_cast<unsigned>(std::chrono::system_clock::now().time_since_epoch().count()));
 
 namespace req_constants {
   static const uint16_t MIN_K = 4;

@@ -1698,16 +1698,6 @@ bool var_opt_sketch<T, S, A>::iterator::get_mark() const {
   return sk_->marks_ == nullptr ? false : sk_->marks_[idx_];
 }
 
-
-
-// ******************** MOVE TO COMMON UTILS AREA EVENTUALLY *********************
-
-namespace random_utils {
-  static std::random_device rd; // possibly unsafe in MinGW with GCC < 9.2
-  static std::mt19937_64 rand(rd());
-  static std::uniform_real_distribution<> next_double(0.0, 1.0);
-}
-
 /**
  * Checks if target sampling allocation is more than 50% of max sampling size.
  * If so, returns max sampling size, otherwise passes through target size.

@@ -22,7 +22,7 @@
 
 #include "req_common.hpp"
 #include "req_compactor.hpp"
-#include "req_quantile_calculator.hpp"
+#include "quantile_calculator.hpp"
 
 #include <stdexcept>
 
@@ -136,9 +136,10 @@ public:
    *
    * @param split_points an array of <i>m</i> unique, monotonically increasing values
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
-   * The definition of an "interval" is inclusive of the left split point (or minimum value) and
-   * exclusive of the right split point, with the exception that the last interval will include
-   * the maximum value.
+   * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
+   * split point, with the exception that the last interval will include the maximum value.
+   * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
+   * split point.
    * It is not necessary to include either the min or max values in these split points.
    *
    * @return an array of m+1 doubles each of which is an approximation
@@ -344,7 +345,7 @@ private:
   static double get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
   static bool is_exact_rank(uint16_t k, uint8_t num_levels, double rank, uint64_t n, bool hra);
 
-  using QuantileCalculator = req_quantile_calculator<T, Comparator, Allocator>;
+  using QuantileCalculator = quantile_calculator<T, Comparator, Allocator>;
   using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
   class calculator_deleter;
   using QuantileCalculatorPtr = typename std::unique_ptr<QuantileCalculator, calculator_deleter>;
