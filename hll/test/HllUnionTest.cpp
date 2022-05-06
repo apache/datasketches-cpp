@@ -26,6 +26,7 @@
 namespace datasketches {
 
 static void println(std::string& str) {
+  unused(str);
   //std::cout << str << "\n";
 }
 

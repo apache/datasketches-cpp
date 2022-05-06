@@ -129,7 +129,14 @@ levels_(std::move(levels)),
 min_value_(min_value.release()),
 max_value_(max_value.release()),
 is_sorted_(is_sorted)
-{}
+{
+  uint32_t item_count = base_buffer_.size();
+  for (Level& lvl : levels_) {
+    item_count += lvl.size();
+  }
+  if (item_count != compute_retained_items(k_, n_))
+    throw std::logic_error("Item count does not match value computed from k, n");
+}
 
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::~quantiles_sketch() {
@@ -359,15 +366,18 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
   // load base buffer
   const uint32_t bb_items = compute_base_buffer_items(k, items_seen);
   uint32_t items_to_read = (levels_needed == 0 || is_compact) ? bb_items : 2 * k;
-  Level base_buffer = deserialize_array(is, items_to_read, 2 * k, serde, allocator);
-  
+  Level base_buffer = deserialize_array(is, bb_items, 2 * k, serde, allocator);
+  if (items_to_read > bb_items) { // either equal or greater, never read fewer items
+    // read remaining items, but don't store them
+    deserialize_array(is, items_to_read - bb_items, items_to_read - bb_items, serde, allocator);
+  }
+
   // populate vector of Levels directly
   VectorLevels levels(allocator);
   levels.reserve(levels_needed);
   if (levels_needed > 0) {
     uint64_t working_pattern = bit_pattern;
     for (size_t i = 0; i < levels_needed; ++i, working_pattern >>= 1) {
-     
       if ((working_pattern & 0x01) == 1) {
         Level level = deserialize_array(is, k, k, serde, allocator);
         levels.push_back(std::move(level));
@@ -470,9 +480,14 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
   // load base buffer
   const uint32_t bb_items = compute_base_buffer_items(k, items_seen);
   uint32_t items_to_read = (levels_needed == 0 || is_compact) ? bb_items : 2 * k;
-  auto base_buffer_pair = deserialize_array(ptr, end_ptr - ptr, items_to_read, 2 * k, serde, allocator);
+  auto base_buffer_pair = deserialize_array(ptr, end_ptr - ptr, bb_items, 2 * k, serde, allocator);
   ptr += base_buffer_pair.second;
-  
+  if (items_to_read > bb_items) { // either equal or greater, never read fewer items
+    // read remaining items, only use to advance the pointer
+    auto extras = deserialize_array(ptr, end_ptr - ptr, items_to_read - bb_items, items_to_read - bb_items, serde, allocator);
+    ptr += extras.second;
+  }
+
   // populate vector of Levels directly
   VectorLevels levels(allocator);
   levels.reserve(levels_needed);
@@ -638,55 +653,38 @@ double quantiles_sketch<T, C, A>::get_normalized_rank_error(uint16_t k, bool is_
 }
 
 template<typename T, typename C, typename A>
-class quantiles_sketch<T, C, A>::calculator_deleter {
-  public:
-  explicit calculator_deleter(const AllocCalc& allocator): allocator_(allocator) {}
-  void operator() (QuantileCalculator* ptr) {
-    if (ptr != nullptr) {
-      ptr->~QuantileCalculator();
-      allocator_.deallocate(ptr, 1);
-    }
-  }
-  private:
-  AllocCalc allocator_;
-};
-
-template<typename T, typename C, typename A>
 template<bool inclusive>
-auto quantiles_sketch<T, C, A>::get_quantile_calculator() const -> QuantileCalculatorPtr {
-  // allow side effect of sorting the base buffer
-  // can't set the sorted flag since this is a const method
+quantile_sketch_sorted_view<T, C, A> quantiles_sketch<T, C, A>::get_sorted_view(bool cumulative) const {
+  // allow side-effect of sorting the base buffer; can't set the flag since
+  // this is a const method
   if (!is_sorted_) {
     std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), C());
   }
+  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), allocator_);
 
-  AllocCalc ac(allocator_);
-  QuantileCalculatorPtr quantile_calculator_ptr(
-    new (ac.allocate(1)) quantile_calculator<T, C, A>(n_, ac),
-    calculator_deleter(ac)
-  );
-
-  uint8_t lg_weight = 0;
-  quantile_calculator_ptr->add(base_buffer_.data(), base_buffer_.data() + base_buffer_.size(), lg_weight);
+  uint64_t weight = 1;
+  view.add(base_buffer_.begin(), base_buffer_.end(), weight);
   for (auto& level : levels_) {
-    ++lg_weight;
+    weight <<= 1;
     if (level.empty()) { continue; }
-    quantile_calculator_ptr->add(level.data(), level.data() + k_, lg_weight);
+    view.add(level.begin(), level.end(), weight);
   }
-  quantile_calculator_ptr->template convert_to_cummulative<inclusive>();
-  return quantile_calculator_ptr;
+
+  if (cumulative) view.template convert_to_cummulative<inclusive>();
+  return view;
 }
 
 template<typename T, typename C, typename A>
 template<bool inclusive>
-const T& quantiles_sketch<T, C, A>::get_quantile(double rank) const {
+auto quantiles_sketch<T, C, A>::get_quantile(double rank) const -> quantile_return_type {
   if (is_empty()) return get_invalid_value();
   if (rank == 0.0) return *min_value_;
   if (rank == 1.0) return *max_value_;
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Rank cannot be less than zero or greater than 1.0");
   }
-  return *(get_quantile_calculator<inclusive>()->get_quantile(rank));
+  // possible side-effect: sorting base buffer
+  return get_sorted_view<inclusive>(true).get_quantile(rank);
 }
 
 template<typename T, typename C, typename A>
@@ -694,8 +692,11 @@ template<bool inclusive>
 std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size) const {
   std::vector<T, A> quantiles(allocator_);
   if (is_empty()) return quantiles;
-  QuantileCalculatorPtr quantile_calculator_ptr(nullptr, calculator_deleter(allocator_));
   quantiles.reserve(size);
+
+  // possible side-effect: sorting base buffer
+  auto view = get_sorted_view<inclusive>(true);
+
   for (uint32_t i = 0; i < size; ++i) {
     const double rank = ranks[i];
     if ((rank < 0.0) || (rank > 1.0)) {
@@ -704,11 +705,7 @@ std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(const double* ranks, 
     if      (rank == 0.0) quantiles.push_back(*min_value_);
     else if (rank == 1.0) quantiles.push_back(*max_value_);
     else {
-      if (!quantile_calculator_ptr) {
-        // has side effect of sorting level zero if needed
-        quantile_calculator_ptr = const_cast<quantiles_sketch*>(this)->get_quantile_calculator<inclusive>();
-      }
-      quantiles.push_back(*(quantile_calculator_ptr->get_quantile(rank)));
+      quantiles.push_back(view.get_quantile(rank));
     }
   }
   return quantiles;

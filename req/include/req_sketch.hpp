@@ -22,7 +22,7 @@
 
 #include "req_common.hpp"
 #include "req_compactor.hpp"
-#include "quantile_calculator.hpp"
+#include "quantile_sketch_sorted_view.hpp"
 
 #include <stdexcept>
 
@@ -180,8 +180,9 @@ public:
    * @param rank the given normalized rank
    * @return approximate quantile given the normalized rank
    */
+  using quantile_return_type = typename quantile_sketch_sorted_view<T, Comparator, Allocator>::quantile_return_type;
   template<bool inclusive = false>
-  const T& get_quantile(double rank) const;
+  quantile_return_type get_quantile(double rank) const;
 
   /**
    * Returns an array of quantiles that correspond to the given array of normalized ranks.
@@ -314,6 +315,9 @@ public:
   const_iterator begin() const;
   const_iterator end() const;
 
+  template<bool inclusive = false>
+  quantile_sketch_sorted_view<T, Comparator, Allocator> get_sorted_view(bool cumulative) const;
+
 private:
   Allocator allocator_;
   uint16_t k_;
@@ -344,13 +348,6 @@ private:
   static double get_rank_lb(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
   static double get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
   static bool is_exact_rank(uint16_t k, uint8_t num_levels, double rank, uint64_t n, bool hra);
-
-  using QuantileCalculator = quantile_calculator<T, Comparator, Allocator>;
-  using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
-  class calculator_deleter;
-  using QuantileCalculatorPtr = typename std::unique_ptr<QuantileCalculator, calculator_deleter>;
-  template<bool inclusive>
-  QuantileCalculatorPtr get_quantile_calculator() const;
 
   // for deserialization
   class item_deleter;
