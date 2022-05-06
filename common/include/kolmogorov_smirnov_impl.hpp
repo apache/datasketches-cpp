@@ -24,7 +24,7 @@ namespace datasketches {
 
 template<typename Sketch>
 double kolmogorov_smirnov::delta(const Sketch& sketch1, const Sketch& sketch2) {
-  using Comparator = typename Sketch::comparator;
+  auto comparator = sketch1.get_comparator(); // assuming the same comparator in sketch2
   auto view1 = sketch1.get_sorted_view(true);
   auto view2 = sketch2.get_sorted_view(true);
   auto it1 = view1.begin();
@@ -36,9 +36,9 @@ double kolmogorov_smirnov::delta(const Sketch& sketch1, const Sketch& sketch2) {
     const double norm_cum_wt1 = static_cast<double>((*it1).second) / n1;
     const double norm_cum_wt2 = static_cast<double>((*it2).second) / n2;
     delta = std::max(delta, std::abs(norm_cum_wt1 - norm_cum_wt2));
-    if (Comparator()((*it1).first, (*it2).first)) {
+    if (comparator((*it1).first, (*it2).first)) {
       ++it1;
-    } else if (Comparator()((*it2).first, (*it1).first)) {
+    } else if (comparator((*it2).first, (*it1).first)) {
       ++it2;
     } else {
       ++it1;

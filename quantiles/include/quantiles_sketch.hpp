@@ -146,14 +146,13 @@ namespace quantiles_constants {
 }
 
 template <typename T,
-          typename Comparator = std::less<T>,
+          typename Comparator = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
           typename Allocator = std::allocator<T>>
 class quantiles_sketch {
 public:
-  using C = Comparator;
-  using A = Allocator;
-  using AllocDouble = typename std::allocator_traits<Allocator>::template rebind_alloc<double>;
-  using vector_double = std::vector<double, AllocDouble>;
+  using value_type = T;
+  using comparator = Comparator;
+  using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
 
   explicit quantiles_sketch(uint16_t k = quantiles_constants::DEFAULT_K, const Allocator& allocator = Allocator());
   quantiles_sketch(const quantiles_sketch& other);
@@ -223,6 +222,12 @@ public:
   const T& get_max_value() const;
 
   /**
+   * Returns an instance of the comparator for this sketch.
+   * @return comparator
+   */
+  Comparator get_comparator() const;
+
+  /**
    * Returns an approximation to the value of the data item
    * that would be preceded by the given fraction of a hypothetical sorted
    * version of the input stream so far.
@@ -241,7 +246,7 @@ public:
    *
    * @return the approximation to the value at the given rank
    */
-  using quantile_return_type = typename quantile_sketch_sorted_view<T, C, A>::quantile_return_type;
+  using quantile_return_type = typename quantile_sketch_sorted_view<T, Comparator, Allocator>::quantile_return_type;
   template<bool inclusive = false>
   quantile_return_type get_quantile(double rank) const;
 
@@ -361,14 +366,16 @@ public:
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This version is for fixed-size arithmetic types (integral and floating point).
+   * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-  size_t get_serialized_size_bytes() const;
+  template<typename SerDe = serde<T>, typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes(const SerDe& serde = SerDe()) const;
 
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This version is for all other types and can be expensive since every item needs to be looked at.
+   * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
   template<typename SerDe = serde<T>, typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
@@ -377,6 +384,7 @@ public:
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
+   * @param instance of a SerDe
    */
   template<typename SerDe = serde<T>>
   void serialize(std::ostream& os, const SerDe& serde = SerDe()) const;
@@ -391,6 +399,8 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
+   * @param instance of a SerDe
+   * @return serialized sketch as a vector of bytes
    */
   template<typename SerDe = serde<T>>
   vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& serde = SerDe()) const;
@@ -398,19 +408,23 @@ public:
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
+   * @param instance of a SerDe
+   * @param instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<T>>
-  static quantiles_sketch<T, C, A> deserialize(std::istream& is, const SerDe& serde = SerDe(), const A& allocator = A());
+  static quantiles_sketch deserialize(std::istream& is, const SerDe& serde = SerDe(), const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
+   * @param instance of a SerDe
+   * @param instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<T>>
-  static quantiles_sketch<T, C, A> deserialize(const void* bytes, size_t size, const SerDe& serde = SerDe(), const A& allocator = A());
+  static quantiles_sketch deserialize(const void* bytes, size_t size, const SerDe& serde = SerDe(), const Allocator& allocator = Allocator());
 
   /**
    * Gets the normalized rank error for this sketch. Constants were derived as the best fit to 99 percentile
@@ -436,23 +450,22 @@ public:
    * @param print_levels if true include information about levels
    * @param print_items if true include sketch data
    */
-  string<A> to_string(bool print_levels = false, bool print_items = false) const;
+  string<Allocator> to_string(bool print_levels = false, bool print_items = false) const;
 
   class const_iterator;
   const_iterator begin() const;
   const_iterator end() const;
 
   template<bool inclusive = false>
-  quantile_sketch_sorted_view<T, C, A> get_sorted_view(bool cumulative) const;
+  quantile_sketch_sorted_view<T, Comparator, Allocator> get_sorted_view(bool cumulative) const;
 
 private:
   using Level = std::vector<T, Allocator>;
-  using AllocLevel = typename std::allocator_traits<Allocator>::template rebind_alloc<Level>;
-  using VectorLevels = std::vector<Level, AllocLevel>;
+  using VectorLevels = std::vector<Level, typename std::allocator_traits<Allocator>::template rebind_alloc<Level>>;
 
   /* Serialized sketch layout:
-   * Long || Start Byte Adr:
-   * Adr:
+   * Long || Start Byte Addr:
+   * Addr:
    *      ||       0        |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
    *  0   || Preamble_Longs | SerVer | FamID  |  Flags |----- K ---------|---- unused -----|
    *
@@ -503,7 +516,7 @@ private:
   template<typename FwdV>
   static void in_place_propagate_carry(uint8_t starting_level, FwdV&& buf_size_k,
                                        Level& buf_size_2k, bool apply_as_update,
-                                       quantiles_sketch<T,C,A>& sketch);
+                                       quantiles_sketch& sketch);
   static void zip_buffer(Level& buf_in, Level& buf_out);
   static void merge_two_size_k_buffers(Level& arr_in_1, Level& arr_in_2, Level& arr_out);
 
@@ -529,7 +542,7 @@ private:
   * src is modified only if elements can be moved out of it.
   */
   template<typename FwdSk>
-  static void standard_merge(quantiles_sketch<T,C,A>& tgt, FwdSk&& src);
+  static void standard_merge(quantiles_sketch& tgt, FwdSk&& src);
 
  /**
   * Merges the src sketch into the tgt sketch with a smaller value of K.
@@ -538,7 +551,7 @@ private:
   * src is modified only if elements can be moved out of it.
   */
   template<typename FwdSk>
-  static void downsampling_merge(quantiles_sketch<T,C,A>& tgt, FwdSk&& src);
+  static void downsampling_merge(quantiles_sketch& tgt, FwdSk&& src);
 
   template<typename FwdV>
   static void zip_buffer_with_stride(FwdV&& buf_in, Level& buf_out, uint16_t stride);
