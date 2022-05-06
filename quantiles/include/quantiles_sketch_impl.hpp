@@ -129,7 +129,14 @@ levels_(std::move(levels)),
 min_value_(min_value.release()),
 max_value_(max_value.release()),
 is_sorted_(is_sorted)
-{}
+{
+  uint32_t item_count = base_buffer_.size();
+  for (Level& lvl : levels_) {
+    item_count += lvl.size();
+  }
+  if (item_count != compute_retained_items(k_, n_))
+    throw std::logic_error("Item count does not match value computed from k, n");
+}
 
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::~quantiles_sketch() {
@@ -371,7 +378,6 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
   if (levels_needed > 0) {
     uint64_t working_pattern = bit_pattern;
     for (size_t i = 0; i < levels_needed; ++i, working_pattern >>= 1) {
-     
       if ((working_pattern & 0x01) == 1) {
         Level level = deserialize_array(is, k, k, serde, allocator);
         levels.push_back(std::move(level));
