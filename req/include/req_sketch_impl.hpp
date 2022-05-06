@@ -231,14 +231,15 @@ auto req_sketch<T, C, S, A>::get_CDF(const T* split_points, uint32_t size) const
 
 template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
-const T& req_sketch<T, C, S, A>::get_quantile(double rank) const {
+auto req_sketch<T, C, S, A>::get_quantile(double rank) const -> quantile_return_type {
   if (is_empty()) return get_invalid_value();
   if (rank == 0.0) return *min_value_;
   if (rank == 1.0) return *max_value_;
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Rank cannot be less than zero or greater than 1.0");
   }
-  return *(get_quantile_calculator<inclusive>()->get_quantile(rank));
+  // possible side-effect of sorting level zero
+  return get_sorted_view<inclusive>(true).get_quantile(rank);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -246,8 +247,11 @@ template<bool inclusive>
 std::vector<T, A> req_sketch<T, C, S, A>::get_quantiles(const double* ranks, uint32_t size) const {
   std::vector<T, A> quantiles(allocator_);
   if (is_empty()) return quantiles;
-  QuantileCalculatorPtr quantile_calculator_ptr(nullptr, calculator_deleter(allocator_));
   quantiles.reserve(size);
+
+  // possible side-effect of sorting level zero
+  auto view = get_sorted_view<inclusive>(true);
+
   for (uint32_t i = 0; i < size; ++i) {
     const double rank = ranks[i];
     if ((rank < 0.0) || (rank > 1.0)) {
@@ -256,47 +260,26 @@ std::vector<T, A> req_sketch<T, C, S, A>::get_quantiles(const double* ranks, uin
     if      (rank == 0.0) quantiles.push_back(*min_value_);
     else if (rank == 1.0) quantiles.push_back(*max_value_);
     else {
-      if (!quantile_calculator_ptr) {
-        // has side effect of sorting level zero if needed
-        quantile_calculator_ptr = const_cast<req_sketch*>(this)->get_quantile_calculator<inclusive>();
-      }
-      quantiles.push_back(*(quantile_calculator_ptr->get_quantile(rank)));
+      quantiles.push_back(view.get_quantile(rank));
     }
   }
   return quantiles;
 }
 
 template<typename T, typename C, typename S, typename A>
-class req_sketch<T, C, S, A>::calculator_deleter {
-  public:
-  calculator_deleter(const AllocCalc& allocator): allocator_(allocator) {}
-  void operator() (QuantileCalculator* ptr) {
-    if (ptr != nullptr) {
-      ptr->~QuantileCalculator();
-      allocator_.deallocate(ptr, 1);
-    }
-  }
-  private:
-  AllocCalc allocator_;
-};
-
-template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
-auto req_sketch<T, C, S, A>::get_quantile_calculator() const -> QuantileCalculatorPtr {
+quantile_sketch_sorted_view<T, C, A> req_sketch<T, C, S, A>::get_sorted_view(bool cumulative) const {
   if (!compactors_[0].is_sorted()) {
     const_cast<Compactor&>(compactors_[0]).sort(); // allow this side effect
   }
-  AllocCalc ac(allocator_);
-  QuantileCalculatorPtr quantile_calculator_ptr(
-    new (ac.allocate(1)) quantile_calculator<T, C, A>(n_, ac),
-    calculator_deleter(ac)
-  );
+  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), allocator_);
 
   for (auto& compactor: compactors_) {
-    quantile_calculator_ptr->add(compactor.begin(), compactor.end(), compactor.get_lg_weight());
+    view.add(compactor.begin(), compactor.end(), 1 << compactor.get_lg_weight());
   }
-  quantile_calculator_ptr->template convert_to_cummulative<inclusive>();
-  return quantile_calculator_ptr;
+
+  if (cumulative) view.template convert_to_cummulative<inclusive>();
+  return view;
 }
 
 template<typename T, typename C, typename S, typename A>

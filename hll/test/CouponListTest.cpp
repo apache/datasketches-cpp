@@ -32,6 +32,7 @@
 namespace datasketches {
 
 void println_string(std::string str) {
+  unused(str);
   //std::cout << str << std::endl;
 }
 

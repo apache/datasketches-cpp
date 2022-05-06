@@ -62,7 +62,6 @@ static void quantiles_decode_and_check(uint16_t k, uint64_t n, const std::string
     (std::istreambuf_iterator<char>(infile)),
     (std::istreambuf_iterator<char>()));
   infile.close();
-
   auto sketch_bytes = quantiles_double_sketch::deserialize(bytes.data(), bytes.size(), serde<double>(), 0);
   REQUIRE(sketch_bytes.get_quantile(median_rank) == expected_median);
 }

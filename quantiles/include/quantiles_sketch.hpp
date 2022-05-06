@@ -24,7 +24,7 @@
 #include <memory>
 #include <vector>
 
-#include "quantile_calculator.hpp"
+#include "quantile_sketch_sorted_view.hpp"
 #include "common_defs.hpp"
 #include "serde.hpp"
 
@@ -241,8 +241,9 @@ public:
    *
    * @return the approximation to the value at the given rank
    */
+  using quantile_return_type = typename quantile_sketch_sorted_view<T, C, A>::quantile_return_type;
   template<bool inclusive = false>
-  const T& get_quantile(double rank) const;
+  quantile_return_type get_quantile(double rank) const;
 
   /**
    * This is a more efficient multiple-query version of get_quantile().
@@ -441,6 +442,9 @@ public:
   const_iterator begin() const;
   const_iterator end() const;
 
+  template<bool inclusive = false>
+  quantile_sketch_sorted_view<T, C, A> get_sorted_view(bool cumulative) const;
+
 private:
   using Level = std::vector<T, Allocator>;
   using AllocLevel = typename std::allocator_traits<Allocator>::template rebind_alloc<Level>;
@@ -480,13 +484,6 @@ private:
   T* min_value_;
   T* max_value_;
   bool is_sorted_;
-
-  using QuantileCalculator = quantile_calculator<T, Comparator, Allocator>;
-  using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
-  class calculator_deleter;
-  using QuantileCalculatorPtr = typename std::unique_ptr<QuantileCalculator, calculator_deleter>;
-  template<bool inclusive>
-  QuantileCalculatorPtr get_quantile_calculator() const;
 
   // for deserialization
   class item_deleter;
