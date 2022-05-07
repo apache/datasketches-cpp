@@ -88,7 +88,7 @@ TEST_CASE("kolmogorov-smirnov slightly different distributions", "[quantiles_ske
 }
 
 TEST_CASE("kolmogorov-smirnov slightly different distributions high resolution", "[quantiles_sketch]") {
-  const uint16_t k = 4096;
+  const uint16_t k = 8192;
   quantiles_sketch<double> sketch1(k);
   quantiles_sketch<double> sketch2(k);
   std::default_random_engine rand;
