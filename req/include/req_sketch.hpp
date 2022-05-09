@@ -116,6 +116,12 @@ public:
   const T& get_max_value() const;
 
   /**
+   * Returns an instance of the comparator for this sketch.
+   * @return comparator
+   */
+  Comparator get_comparator() const;
+
+  /**
    * Returns an approximation to the normalized (fractional) rank of the given item from 0 to 1 inclusive.
    * With the template parameter inclusive=true the weight of the given item is included into the rank.
    * Otherwise the rank equals the sum of the weights of items less than the given item according to the Comparator.

@@ -20,6 +20,9 @@
 #ifndef KOLMOGOROV_SMIRNOV_IMPL_HPP_
 #define KOLMOGOROV_SMIRNOV_IMPL_HPP_
 
+#include <cmath>
+#include <algorithm>
+
 namespace datasketches {
 
 template<typename Sketch>

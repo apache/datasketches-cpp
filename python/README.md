@@ -27,6 +27,11 @@ Having installed the library, loading the Apache Datasketches Library in Python 
 - KLL (Absolute Error Quantiles)
   - `kll_ints_sketch`
   - `kll_floats_sketch`
+  - `kll_doubles_sketch`
+- Quantiles (Absolute Error Quantiles, inferior algorithm)
+  - `quantiles_ints_sketch`
+  - `quantiles_floats_sketch`
+  - `quantiles_doubles_sketch`
 - REQ (Relative Error Quantiles)
   - `req_ints_sketch`
   - `req_floats_sketch`
@@ -52,6 +57,8 @@ Having installed the library, loading the Apache Datasketches Library in Python 
 - Vector of KLL
   - `vector_of_kll_ints_sketches`
   - `vector_of_kll_floats_sketches`
+- Kolmogorov-Smirnov Test
+  - `ks_test` applied to a pair of matched-type Absolute Error quantiles sketches
 
 ## Known Differences from C++
 

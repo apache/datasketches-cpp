@@ -69,5 +69,6 @@ target_sources(python
     src/vo_wrapper.cpp
     src/req_wrapper.cpp
     src/quantiles_wrapper.cpp
+    src/ks_wrapper.cpp
     src/vector_of_kll.cpp
 )
