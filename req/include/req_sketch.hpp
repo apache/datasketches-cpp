@@ -36,10 +36,11 @@ template<
 >
 class req_sketch {
 public:
+  using value_type = T;
+  using comparator = Comparator;
   using Compactor = req_compactor<T, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
-  using AllocDouble = typename std::allocator_traits<Allocator>::template rebind_alloc<double>;
-  using vector_double = std::vector<double, AllocDouble>;
+  using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
 
   /**
    * Constructor
