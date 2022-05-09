@@ -243,6 +243,12 @@ class kll_sketch {
     T get_max_value() const;
 
     /**
+     * Returns an instance of the comparator for this sketch.
+     * @return comparator
+     */
+    C get_comparator() const;
+
+    /**
      * Returns an approximation to the value of the data item
      * that would be preceded by the given fraction of a hypothetical sorted
      * version of the input stream so far.
@@ -384,6 +390,7 @@ class kll_sketch {
     /**
      * Computes size needed to serialize the current state of the sketch.
      * This version is for fixed-size arithmetic types (integral and floating point).
+     * @param instance of a SerDe
      * @return size in bytes needed to serialize this sketch
      */
     template<typename TT = T, typename SerDe = S, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
@@ -429,7 +436,6 @@ class kll_sketch {
      * This method serializes the sketch into a given stream in a binary form
      * @param os output stream
      * @param instance of a SerDe
-     *
      */
     template<typename SerDe = S>
     void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
@@ -445,6 +451,7 @@ class kll_sketch {
      * This header is used in Datasketches PostgreSQL extension.
      * @param header_size_bytes space to reserve in front of the sketch
      * @param instance of a SerDe
+     * @return serialized sketch as a vector of bytes
      */
     template<typename SerDe = S>
     vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
@@ -457,7 +464,7 @@ class kll_sketch {
      *
      * Deprecated, to be removed in the next major version
      */
-    static kll_sketch<T, C, S, A> deserialize(std::istream& is, const A& allocator = A());
+    static kll_sketch deserialize(std::istream& is, const A& allocator = A());
 
     /**
      * This method deserializes a sketch from a given stream.
@@ -467,7 +474,7 @@ class kll_sketch {
      * @return an instance of a sketch
      */
     template<typename SerDe = S>
-    static kll_sketch<T, C, S, A> deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
+    static kll_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
 
     /**
      * This method deserializes a sketch from a given array of bytes.
@@ -478,7 +485,7 @@ class kll_sketch {
      *
      * Deprecated, to be removed in the next major version
      */
-    static kll_sketch<T, C, S, A> deserialize(const void* bytes, size_t size, const A& allocator = A());
+    static kll_sketch deserialize(const void* bytes, size_t size, const A& allocator = A());
 
     /**
      * This method deserializes a sketch from a given array of bytes.
@@ -489,7 +496,7 @@ class kll_sketch {
      * @return an instance of a sketch
      */
     template<typename SerDe = S>
-    static kll_sketch<T, C, S, A> deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
+    static kll_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
 
     /*
      * Gets the normalized rank error given k and pmf.
@@ -522,7 +529,7 @@ class kll_sketch {
 
   private:
     /* Serialized sketch layout:
-     *  Adr:
+     *  Addr:
      *      ||    7    |   6   |    5   |    4   |    3   |    2    |    1   |      0       |
      *  0   || unused  |   M   |--------K--------|  Flags |  FamID  | SerVer | PreambleInts |
      *      ||   15    |   14  |   13   |   12   |   11   |   10    |    9   |      8       |

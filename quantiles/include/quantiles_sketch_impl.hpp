@@ -194,7 +194,7 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
     if (k_ == other.get_k()) {
       standard_merge(*this, other);
     } else if (k_ > other.get_k()) {
-      quantiles_sketch<T, C, A> sk_copy(other);
+      quantiles_sketch sk_copy(other);
       downsampling_merge(sk_copy, *this);
       *this = sk_copy;
     } else { // k_ < other.get_k()
@@ -202,7 +202,7 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
     }
   } else {
     // exact or empty
-    quantiles_sketch<T, C, A> sk_copy(other);
+    quantiles_sketch sk_copy(other);
     if (k_ <= other.get_k()) {
       if (!is_empty()) {
         for (uint16_t i = 0; i < base_buffer_.size(); ++i) {
@@ -262,7 +262,7 @@ void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& serde) 
 template<typename T, typename C, typename A>
 template<typename SerDe>
 auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& serde) const -> vector_bytes {
-  const size_t size = get_serialized_size_bytes() + header_size_bytes;
+  const size_t size = get_serialized_size_bytes(serde) + header_size_bytes;
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
   const uint8_t* end_ptr = ptr + size;
@@ -548,7 +548,6 @@ string<A> quantiles_sketch<T, C, A>::to_string(bool print_levels, bool print_ite
   os << "   Levels (w/o BB): " << levels_.size() << std::endl;
   os << "   Used Levels    : " << compute_valid_levels(bit_pattern_) << std::endl;
   os << "   Retained items : " << get_num_retained() << std::endl;
-  os << "   Storage bytes  : " << get_serialized_size_bytes() << std::endl;
   if (!is_empty()) {
     os << "   Min value      : " << *min_value_ << std::endl;
     os << "   Max value      : " << *max_value_ << std::endl;
@@ -620,10 +619,15 @@ const T& quantiles_sketch<T, C, A>::get_max_value() const {
   return *max_value_;
 }
 
+template<typename T, typename C, typename A>
+C quantiles_sketch<T, C, A>::get_comparator() const {
+  return C();
+}
+
 // implementation for fixed-size arithmetic types (integral and floating point)
 template<typename T, typename C, typename A>
-template<typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
-size_t quantiles_sketch<T, C, A>::get_serialized_size_bytes() const {
+template<typename SerDe, typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
+size_t quantiles_sketch<T, C, A>::get_serialized_size_bytes(const SerDe&) const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
   return DATA_START + ((get_num_retained() + 2) * sizeof(TT));
 }
@@ -927,7 +931,7 @@ template<typename FwdV>
 void quantiles_sketch<T, C, A>::in_place_propagate_carry(uint8_t starting_level,
                                                          FwdV&& buf_size_k, Level& buf_size_2k, 
                                                          bool apply_as_update,
-                                                         quantiles_sketch<T,C,A>& sketch) {
+                                                         quantiles_sketch& sketch) {
   const uint64_t bit_pattern = sketch.bit_pattern_;
   const int k = sketch.k_;
 
@@ -1035,7 +1039,7 @@ void quantiles_sketch<T, C, A>::merge_two_size_k_buffers(Level& src_1, Level& sr
 
 template<typename T, typename C, typename A>
 template<typename FwdSk>
-void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch<T,C,A>& tgt, FwdSk&& src) { 
+void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch& tgt, FwdSk&& src) {
   if (src.get_k() != tgt.get_k()) {
     throw std::invalid_argument("src.get_k() != tgt.get_k()");
   }
@@ -1050,7 +1054,7 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch<T,C,A>& tgt, Fwd
     tgt.update(conditional_forward<FwdSk>(src.base_buffer_[i]));
   }
 
-  // check (after moving raw items) if we need to extetend levels array
+  // check (after moving raw items) if we need to extend levels array
   uint8_t levels_needed = compute_levels_needed(tgt.get_k(), new_n);
   if (levels_needed > tgt.levels_.size()) {
     tgt.levels_.reserve(levels_needed);
@@ -1078,11 +1082,11 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch<T,C,A>& tgt, Fwd
   }
   tgt.n_ = new_n;
   if ((tgt.get_n() / (2 * tgt.get_k())) != tgt.bit_pattern_) {
-    throw std::logic_error("Faailed internal consistency check after standard_merge()");
+    throw std::logic_error("Failed internal consistency check after standard_merge()");
   }
 
-  // update min/max values
-  // can't just check is_empty() since min/max might not have been set if
+  // update min and max values
+  // can't just check is_empty() since min and max might not have been set if
   // there were no base buffer items added via update()
   if (tgt.min_value_ == nullptr) {
     tgt.min_value_ = new (tgt.allocator_.allocate(1)) T(*src.min_value_);
@@ -1102,7 +1106,7 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch<T,C,A>& tgt, Fwd
 
 template<typename T, typename C, typename A>
 template<typename FwdSk>
-void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch<T,C,A>& tgt, FwdSk&& src) { 
+void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch& tgt, FwdSk&& src) {
   if (src.get_k() % tgt.get_k() != 0) {
     throw std::invalid_argument("src.get_k() is not a multiple of tgt.get_k()");
   }
@@ -1120,7 +1124,7 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch<T,C,A>& tgt,
     tgt.update(conditional_forward<FwdSk>(src.base_buffer_[i]));
   }
 
-  // check (after moving raw items) if we need to extetend levels array
+  // check (after moving raw items) if we need to extend levels array
   uint8_t levels_needed = compute_levels_needed(tgt.get_k(), new_n);
   if (levels_needed > tgt.levels_.size()) {
     tgt.levels_.reserve(levels_needed);
@@ -1158,8 +1162,8 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch<T,C,A>& tgt,
     throw std::logic_error("Failed internal consistency check after downsampling_merge()");
   }
 
-  // update min/max values
-  // can't just check is_empty() since min/max might not have been set if
+  // update min and max values
+  // can't just check is_empty() since min and max might not have been set if
   // there were no base buffer items added via update()
   if (tgt.min_value_ == nullptr) {
     tgt.min_value_ = new (tgt.allocator_.allocate(1)) T(*src.min_value_);

@@ -238,6 +238,11 @@ T kll_sketch<T, C, S, A>::get_max_value() const {
 }
 
 template<typename T, typename C, typename S, typename A>
+C kll_sketch<T, C, S, A>::get_comparator() const {
+  return C();
+}
+
+template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
 auto kll_sketch<T, C, S, A>::get_quantile(double rank) const -> quantile_return_type {
   if (is_empty()) return get_invalid_value();
@@ -1013,7 +1018,6 @@ string<A> kll_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items)
   os << "   Sorted         : " << (is_level_zero_sorted_ ? "true" : "false") << std::endl;
   os << "   Capacity items : " << items_size_ << std::endl;
   os << "   Retained items : " << get_num_retained() << std::endl;
-  os << "   Storage bytes  : " << get_serialized_size_bytes() << std::endl;
   if (!is_empty()) {
     os << "   Min value      : " << *min_value_ << std::endl;
     os << "   Max value      : " << *max_value_ << std::endl;
