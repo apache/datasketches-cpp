@@ -16,7 +16,7 @@
 # under the License.
 
 import unittest
-from datasketches import quantiles_ints_sketch, quantiles_floats_sketch, quantiles_doubles_sketch
+from datasketches import quantiles_ints_sketch, quantiles_floats_sketch, quantiles_doubles_sketch, ks_test
 import numpy as np
 
 class QuantilesTest(unittest.TestCase):
@@ -73,6 +73,13 @@ class QuantilesTest(unittest.TestCase):
       self.assertEqual(quantiles.get_quantile(0.7), new_quantiles.get_quantile(0.7))
       self.assertEqual(quantiles.get_rank(0.0), new_quantiles.get_rank(0.0))
 
+      # If we create a new sketch with a very different distribution, a Kolmogorov-Smirnov Test
+      # of the two should return True: we can reject the null hypothesis that the sketches
+      # come from the same distributions.
+      unif_quantiles = quantiles_floats_sketch(k)
+      unif_quantiles.update(np.random.uniform(10, 20, size=n-1))
+      self.assertTrue(ks_test(quantiles, unif_quantiles, 0.001))
+
     def test_quantiles_ints_sketch(self):
         k = 128
         n = 10
@@ -109,14 +116,8 @@ class QuantilesTest(unittest.TestCase):
         sk_bytes = quantiles.serialize()
         self.assertTrue(isinstance(quantiles_ints_sketch.deserialize(sk_bytes), quantiles_ints_sketch))
 
-    def test_quantiles_floats_sketch(self):
-      # already tested ints and it's templatized, so just make sure it instantiates properly
-      k = 256
-      quantiles = quantiles_floats_sketch(k)
-      self.assertTrue(quantiles.is_empty())
-
     def test_quantiles_doubles_sketch(self):
-      # already tested ints and it's templatized, so just make sure it instantiates properly
+      # already tested floats and ints and it's templatized, so just make sure it instantiates properly
       k = 128
       quantiles = quantiles_doubles_sketch(k)
       self.assertTrue(quantiles.is_empty())

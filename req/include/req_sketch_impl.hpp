@@ -197,6 +197,11 @@ const T& req_sketch<T, C, S, A>::get_max_value() const {
 }
 
 template<typename T, typename C, typename S, typename A>
+C req_sketch<T, C, S, A>::get_comparator() const {
+  return C();
+}
+
+template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
 double req_sketch<T, C, S, A>::get_rank(const T& item) const {
   uint64_t weight = 0;

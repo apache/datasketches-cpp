@@ -16,7 +16,7 @@
 # under the License.
 
 import unittest
-from datasketches import kll_ints_sketch, kll_floats_sketch
+from datasketches import kll_ints_sketch, kll_floats_sketch, kll_doubles_sketch, ks_test
 import numpy as np
 
 class KllTest(unittest.TestCase):
@@ -73,6 +73,12 @@ class KllTest(unittest.TestCase):
       self.assertEqual(kll.get_quantile(0.7), new_kll.get_quantile(0.7))
       self.assertEqual(kll.get_rank(0.0), new_kll.get_rank(0.0))
 
+      # A Kolmogorov-Smirnov Test of kll and new_kll should match, even for
+      # a fairly small p-value -- cannot reject the null hypothesis that
+      # they come from the same distribution (since they do)
+      self.assertFalse(ks_test(kll, new_kll, 0.001))
+
+
     def test_kll_ints_sketch(self):
         k = 100
         n = 10
@@ -109,10 +115,10 @@ class KllTest(unittest.TestCase):
         sk_bytes = kll.serialize()
         self.assertTrue(isinstance(kll_ints_sketch.deserialize(sk_bytes), kll_ints_sketch))
 
-    def test_kll_floats_sketch(self):
-      # already tested ints and it's templatized, so just make sure it instantiates properly
+    def test_kll_doubles_sketch(self):
+      # already tested float and ints and it's templatized, so just make sure it instantiates properly
       k = 75
-      kll = kll_floats_sketch(k)
+      kll = kll_doubles_sketch(k)
       self.assertTrue(kll.is_empty())
 
 if __name__ == '__main__':
