@@ -81,7 +81,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name='datasketches',
-    version='3.4.0.dev0',
+    version='3.5.0.dev0',
     author='Apache Software Foundation',
     author_email='dev@datasketches.apache.org',
     description='The Apache DataSketches Library for Python',
