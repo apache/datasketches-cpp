@@ -155,9 +155,9 @@ is_sorted_(false)
                 || std::is_constructible<From, T>::value,
                 "Copy constructor across types requires std::is_convertible or std::is_constructible");
 
-  if (other.is_empty()) {
-    base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k_));
-  } else {
+  base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k_));
+
+  if (!other.is_empty()) {
     min_value_ = new (allocator_.allocate(1)) T(other.get_min_value());
     max_value_ = new (allocator_.allocate(1)) T(other.get_max_value());
 
@@ -190,12 +190,8 @@ is_sorted_(false)
     // validate that ordering within each level is preserved
     // base_buffer_ can be considered unsorted for this purpose
     for (int i = 0; i < num_levels; ++i) {
-      Level* level = &levels_[i];
-      size_t num_items = level->size();
-      for (size_t j = 1; j < num_items; ++j) {
-        if (C()(level->at(j), level->at(j - 1))) {
-          throw std::logic_error("Copy construction across types produces invalid sorting");
-        }
+      if (!std::is_sorted(levels_[i].begin(), levels_[i].end(), C())) {
+        throw std::logic_error("Copy construction across types produces invalid sorting");
       }
     }
   }
