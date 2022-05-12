@@ -69,7 +69,7 @@ max_value_(nullptr),
 is_level_zero_sorted_(other.is_level_zero_sorted_)
 {
   items_ = allocator_.allocate(items_size_);
-  std::copy(&other.items_[levels_[0]], &other.items_[levels_[num_levels_]], &items_[levels_[0]]);
+  std::copy(other.items_ + levels_[0], other.items_ + levels_[num_levels_], items_ + levels_[0]);
   if (other.min_value_ != nullptr) min_value_ = new (allocator_.allocate(1)) T(*other.min_value_);
   if (other.max_value_ != nullptr) max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
 }
@@ -305,8 +305,8 @@ double kll_sketch<T, C, S, A>::get_rank(const T& value) const {
   uint64_t weight = 1;
   uint64_t total = 0;
   while (level < num_levels_) {
-    const auto from_index(levels_[level]);
-    const auto to_index(levels_[level + 1]); // exclusive
+    const auto from_index = levels_[level];
+    const auto to_index = levels_[level + 1]; // exclusive
     for (uint32_t i = from_index; i < to_index; i++) {
       if (inclusive ? !C()(value, items_[i]) : C()(items_[i], value)) {
         total += weight;
@@ -694,7 +694,7 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
   // level zero might not be sorted, so we must sort it if we wish to compact it
   // sort_level_zero() is not used here because of the adjustment for odd number of items
   if ((level == 0) && !is_level_zero_sorted_) {
-    std::sort(&items_[adj_beg], &items_[adj_beg + adj_pop], C());
+    std::sort(items_ + adj_beg, items_ + adj_beg + adj_pop, C());
   }
   if (pop_above == 0) {
     kll_helper::randomly_halve_up(items_, adj_beg, adj_pop);
@@ -717,7 +717,7 @@ void kll_sketch<T, C, S, A>::compress_while_updating(void) {
   // so that the freed-up space can be used by level zero
   if (level > 0) {
     const uint32_t amount = raw_beg - levels_[0];
-    std::move_backward(&items_[levels_[0]], &items_[levels_[0] + amount], &items_[levels_[0] + half_adj_pop + amount]);
+    std::move_backward(items_ + levels_[0], items_ + levels_[0] + amount, items_ + levels_[0] + half_adj_pop + amount);
     for (uint8_t lvl = 0; lvl < level; lvl++) levels_[lvl] += half_adj_pop;
   }
   for (uint32_t i = 0; i < half_adj_pop; i++) items_[i + destroy_beg].~T();
@@ -775,7 +775,7 @@ void kll_sketch<T, C, S, A>::add_empty_top_level_to_completely_full_sketch() {
 template<typename T, typename C, typename S, typename A>
 void kll_sketch<T, C, S, A>::sort_level_zero() {
   if (!is_level_zero_sorted_) {
-    std::sort(&items_[levels_[0]], &items_[levels_[1]], C());
+    std::sort(items_ + levels_[0], items_ + levels_[1], C());
     is_level_zero_sorted_ = true;
   }
 }
