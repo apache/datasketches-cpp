@@ -139,6 +139,70 @@ is_sorted_(is_sorted)
 }
 
 template<typename T, typename C, typename A>
+template<typename From, typename FC, typename FA>
+quantiles_sketch<T, C, A>::quantiles_sketch(const quantiles_sketch<From, FC, FA>& other, const A& allocator) :
+allocator_(allocator),
+k_(other.get_k()),
+n_(other.get_n()),
+bit_pattern_(compute_bit_pattern(other.get_k(), other.get_n())),
+base_buffer_(allocator),
+levels_(allocator),
+min_value_(nullptr),
+max_value_(nullptr),
+is_sorted_(false)
+{
+  static_assert(std::is_convertible<From, T>::value
+                || std::is_constructible<From, T>::value,
+                "Copy constructor across types requires std::is_convertible or std::is_constructible");
+
+  if (other.is_empty()) {
+    base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k_));
+  } else {
+    min_value_ = new (allocator_.allocate(1)) T(other.get_min_value());
+    max_value_ = new (allocator_.allocate(1)) T(other.get_max_value());
+
+    // reserve space in levels
+    uint8_t num_levels = compute_levels_needed(k_, n_);
+    levels_.reserve(num_levels);
+    for (int i = 0; i < num_levels; ++i) {
+      Level level(allocator);
+      level.reserve(k_);
+      levels_.push_back(std::move(level));
+    }
+
+    // iterate through points, assigning to the correct level as needed
+    for (auto pair : other) {
+      uint64_t wt = pair.second;
+      if (wt == 1) {
+        base_buffer_.push_back(pair.first);
+        // resize where needed as if adding points via update()
+        if (base_buffer_.size() + 1 > base_buffer_.capacity()) {
+          size_t new_size = std::max(std::min(static_cast<size_t>(2 * k_), 2 * base_buffer_.size()), static_cast<size_t>(1));
+          base_buffer_.reserve(new_size);
+        }
+      }
+      else {
+        uint8_t idx = count_trailing_zeros_in_u64(pair.second) - 1;
+        levels_[idx].push_back(pair.first);
+      }
+    }
+
+    // validate that ordering within each level is preserved
+    // base_buffer_ can be considered unsorted for this purpose
+    for (int i = 0; i < num_levels; ++i) {
+      Level* level = &levels_[i];
+      size_t num_items = level->size();
+      for (size_t j = 1; j < num_items; ++j) {
+        if (C()(level->at(j), level->at(j - 1))) {
+          throw std::logic_error("Copy construction across types produces invalid sorting");
+        }
+      }
+    }
+  }
+}
+
+
+template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::~quantiles_sketch() {
   if (min_value_ != nullptr) {
     min_value_->~T();

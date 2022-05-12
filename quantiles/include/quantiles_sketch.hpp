@@ -161,6 +161,9 @@ public:
   quantiles_sketch& operator=(const quantiles_sketch& other);
   quantiles_sketch& operator=(quantiles_sketch&& other) noexcept;
 
+  template<typename From, typename FC, typename FA>
+  explicit quantiles_sketch(const quantiles_sketch<From, FC, FA>& other, const Allocator& allocator = Allocator());
+
   /**
    * Updates this sketch with the given data item.
    * @param value an item from a stream of items

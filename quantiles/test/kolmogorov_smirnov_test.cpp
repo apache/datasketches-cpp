@@ -82,7 +82,7 @@ TEST_CASE("kolmogorov-smirnov slightly different distributions", "[quantiles_ske
   const double delta = kolmogorov_smirnov::delta(sketch1, sketch2);
   REQUIRE(delta == Approx(0.02).margin(0.01));
   const double threshold = kolmogorov_smirnov::threshold(sketch1, sketch2, 0.05);
-  std::cout << "delta=" << delta << ", threshold=" << threshold << "\n";
+
   REQUIRE_FALSE(delta > threshold);
   REQUIRE_FALSE(kolmogorov_smirnov::test(sketch1, sketch2, 0.05));
 }
@@ -102,7 +102,7 @@ TEST_CASE("kolmogorov-smirnov slightly different distributions high resolution",
   const double delta = kolmogorov_smirnov::delta(sketch1, sketch2);
   REQUIRE(delta == Approx(0.02).margin(0.01));
   const double threshold = kolmogorov_smirnov::threshold(sketch1, sketch2, 0.05);
-  std::cout << "delta=" << delta << ", threshold=" << threshold << "\n";
+
   REQUIRE(delta > threshold);
   REQUIRE(kolmogorov_smirnov::test(sketch1, sketch2, 0.05));
 }

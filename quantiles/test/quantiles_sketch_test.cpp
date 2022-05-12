@@ -903,6 +903,37 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     }
   }
 
+  SECTION("Type converting copy constructor") {
+    const uint16_t k = 8;
+    const int n = 403;
+    quantiles_sketch<double> sk_double(k);
+    
+    quantiles_sketch<float> sk_float(k);
+    REQUIRE(sk_float.is_empty());
+    
+    for (int i = 0; i < n; ++i) sk_double.update(i + .01);
+
+    quantiles_sketch<int> sk_int(sk_double);
+    REQUIRE(sk_double.get_n() == sk_int.get_n());
+    REQUIRE(sk_double.get_k() == sk_int.get_k());
+    REQUIRE(sk_double.get_num_retained() == sk_int.get_num_retained());
+
+    auto sv_double = sk_double.get_sorted_view(false);
+    std::vector<std::pair<double, uint64_t>> vec_double(sv_double.begin(), sv_double.end()); 
+
+    auto sv_int = sk_int.get_sorted_view(false);
+    std::vector<std::pair<int, uint64_t>> vec_int(sv_int.begin(), sv_int.end()); 
+
+    REQUIRE(vec_double.size() == vec_int.size());
+    
+    for (size_t i = 0; i < vec_int.size(); ++i) {
+      // known truncation with conversion so approximate result
+      REQUIRE(vec_double[i].first == Approx(vec_int[i].first).margin(0.1));
+      // exact equality for weights
+      REQUIRE(vec_double[i].second == vec_int[i].second);
+    }
+  }
+
   // cleanup
   if (test_allocator_total_bytes != 0) {
     REQUIRE(test_allocator_total_bytes == 0);
