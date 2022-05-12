@@ -170,7 +170,7 @@ class kll_sketch {
     using comparator = C;
 
     static const uint8_t DEFAULT_M = 8;
-    // TODO: Redundant and deprecated. Will be remove din next major version.
+    // TODO: Redundant and deprecated. Will be removed in next major version.
     static const uint16_t DEFAULT_K = kll_constants::DEFAULT_K;
     static const uint16_t MIN_K = DEFAULT_M;
     static const uint16_t MAX_K = (1 << 16) - 1;
