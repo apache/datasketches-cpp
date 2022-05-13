@@ -182,7 +182,7 @@ is_sorted_(false)
         }
       }
       else {
-        uint8_t idx = count_trailing_zeros_in_u64(pair.second) - 1;
+        const uint8_t idx = count_trailing_zeros_in_u64(pair.second) - 1;
         levels_[idx].push_back(pair.first);
       }
     }
