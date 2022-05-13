@@ -162,7 +162,7 @@ is_sorted_(false)
     max_value_ = new (allocator_.allocate(1)) T(other.get_max_value());
 
     // reserve space in levels
-    uint8_t num_levels = compute_levels_needed(k_, n_);
+    const uint8_t num_levels = compute_levels_needed(k_, n_);
     levels_.reserve(num_levels);
     for (int i = 0; i < num_levels; ++i) {
       Level level(allocator);
@@ -172,7 +172,7 @@ is_sorted_(false)
 
     // iterate through points, assigning to the correct level as needed
     for (auto pair : other) {
-      uint64_t wt = pair.second;
+      const uint64_t wt = pair.second;
       if (wt == 1) {
         base_buffer_.push_back(pair.first);
         // resize where needed as if adding points via update()
