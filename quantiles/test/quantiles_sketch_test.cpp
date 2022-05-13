@@ -908,7 +908,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     const int n = 403;
     quantiles_sketch<double> sk_double(k);
     
-    quantiles_sketch<float> sk_float(k);
+    quantiles_sketch<float> sk_float(k, sk_double.get_allocator());
     REQUIRE(sk_float.is_empty());
     
     for (int i = 0; i < n; ++i) sk_double.update(i + .01);

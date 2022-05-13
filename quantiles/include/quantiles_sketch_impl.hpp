@@ -684,6 +684,11 @@ C quantiles_sketch<T, C, A>::get_comparator() const {
   return C();
 }
 
+template<typename T, typename C, typename A>
+A quantiles_sketch<T, C, A>::get_allocator() const {
+  return allocator_;
+}
+
 // implementation for fixed-size arithmetic types (integral and floating point)
 template<typename T, typename C, typename A>
 template<typename SerDe, typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
