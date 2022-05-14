@@ -139,6 +139,66 @@ is_sorted_(is_sorted)
 }
 
 template<typename T, typename C, typename A>
+template<typename From, typename FC, typename FA>
+quantiles_sketch<T, C, A>::quantiles_sketch(const quantiles_sketch<From, FC, FA>& other, const A& allocator) :
+allocator_(allocator),
+k_(other.get_k()),
+n_(other.get_n()),
+bit_pattern_(compute_bit_pattern(other.get_k(), other.get_n())),
+base_buffer_(allocator),
+levels_(allocator),
+min_value_(nullptr),
+max_value_(nullptr),
+is_sorted_(false)
+{
+  static_assert(std::is_convertible<From, T>::value
+                || std::is_constructible<From, T>::value,
+                "Copy constructor across types requires std::is_convertible or std::is_constructible");
+
+  base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k_));
+
+  if (!other.is_empty()) {
+    min_value_ = new (allocator_.allocate(1)) T(other.get_min_value());
+    max_value_ = new (allocator_.allocate(1)) T(other.get_max_value());
+
+    // reserve space in levels
+    const uint8_t num_levels = compute_levels_needed(k_, n_);
+    levels_.reserve(num_levels);
+    for (int i = 0; i < num_levels; ++i) {
+      Level level(allocator);
+      level.reserve(k_);
+      levels_.push_back(std::move(level));
+    }
+
+    // iterate through points, assigning to the correct level as needed
+    for (auto pair : other) {
+      const uint64_t wt = pair.second;
+      if (wt == 1) {
+        base_buffer_.push_back(pair.first);
+        // resize where needed as if adding points via update()
+        if (base_buffer_.size() + 1 > base_buffer_.capacity()) {
+          const size_t new_size = std::max(std::min(static_cast<size_t>(2 * k_), 2 * base_buffer_.size()), static_cast<size_t>(1));
+          base_buffer_.reserve(new_size);
+        }
+      }
+      else {
+        const uint8_t idx = count_trailing_zeros_in_u64(pair.second) - 1;
+        levels_[idx].push_back(pair.first);
+      }
+    }
+
+    // validate that ordering within each level is preserved
+    // base_buffer_ can be considered unsorted for this purpose
+    for (int i = 0; i < num_levels; ++i) {
+      if (!std::is_sorted(levels_[i].begin(), levels_[i].end(), C())) {
+        throw std::logic_error("Copy construction across types produces invalid sorting");
+      }
+    }
+  }
+}
+
+
+template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::~quantiles_sketch() {
   if (min_value_ != nullptr) {
     min_value_->~T();
@@ -238,7 +298,7 @@ void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& serde) 
   );
   write(os, flags_byte);
   write(os, k_);
-  uint16_t unused = 0;
+  const uint16_t unused = 0;
   write(os, unused);
 
   if (!is_empty()) {
@@ -624,6 +684,11 @@ C quantiles_sketch<T, C, A>::get_comparator() const {
   return C();
 }
 
+template<typename T, typename C, typename A>
+A quantiles_sketch<T, C, A>::get_allocator() const {
+  return allocator_;
+}
+
 // implementation for fixed-size arithmetic types (integral and floating point)
 template<typename T, typename C, typename A>
 template<typename SerDe, typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
@@ -783,9 +848,9 @@ auto quantiles_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size) co
 
 template<typename T, typename C, typename A>
 uint32_t quantiles_sketch<T, C, A>::compute_retained_items(const uint16_t k, const uint64_t n) {
-  uint32_t bb_count = compute_base_buffer_items(k, n);
-  uint64_t bit_pattern = compute_bit_pattern(k, n);
-  uint32_t valid_levels = compute_valid_levels(bit_pattern);
+  const uint32_t bb_count = compute_base_buffer_items(k, n);
+  const uint64_t bit_pattern = compute_bit_pattern(k, n);
+  const uint32_t valid_levels = compute_valid_levels(bit_pattern);
   return bb_count + (k * valid_levels);
 }
 
@@ -843,11 +908,11 @@ void quantiles_sketch<T, C, A>::check_family_id(uint8_t family_id) {
 
 template<typename T, typename C, typename A>
 void quantiles_sketch<T, C, A>::check_header_validity(uint8_t preamble_longs, uint8_t flags_byte, uint8_t serial_version) {
-  bool empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
-  bool compact = (flags_byte & (1 << flags::IS_COMPACT)) > 0;
+  const bool empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+  const bool compact = (flags_byte & (1 << flags::IS_COMPACT)) > 0;
 
-  uint8_t sw = (compact ? 1 : 0) + (2 * (empty ? 1 : 0))
-               + (4 * (serial_version & 0xF)) + (32 * (preamble_longs & 0x3F));
+  const uint8_t sw = (compact ? 1 : 0) + (2 * (empty ? 1 : 0))
+                     + (4 * (serial_version & 0xF)) + (32 * (preamble_longs & 0x3F));
   bool valid = true;
   
   switch (sw) { // exhaustive list and description of all valid cases
@@ -888,7 +953,7 @@ typename quantiles_sketch<T, C, A>::const_iterator quantiles_sketch<T, C, A>::en
 
 template<typename T, typename C, typename A>
 void quantiles_sketch<T, C, A>::grow_base_buffer() {
-  size_t new_size = std::max(std::min(static_cast<size_t>(2 * k_), 2 * base_buffer_.size()), static_cast<size_t>(1));
+  const size_t new_size = std::max(std::min(static_cast<size_t>(2 * k_), 2 * base_buffer_.size()), static_cast<size_t>(1));
   base_buffer_.reserve(new_size);
 }
 
@@ -912,7 +977,7 @@ void quantiles_sketch<T, C, A>::process_full_base_buffer() {
 
 template<typename T, typename C, typename A>
 bool quantiles_sketch<T, C, A>::grow_levels_if_needed() {
-  uint8_t levels_needed = compute_levels_needed(k_, n_);
+  const uint8_t levels_needed = compute_levels_needed(k_, n_);
   if (levels_needed == 0)
     return false; // don't need levels and might have small base buffer. Possible during merges.
 
@@ -992,7 +1057,7 @@ template<typename FwdV>
 void quantiles_sketch<T, C, A>::zip_buffer_with_stride(FwdV&& buf_in, Level& buf_out, uint16_t stride) {
   // Random offset in range [0, stride)
   std::uniform_int_distribution<uint16_t> dist(0, stride - 1);
-  uint16_t rand_offset = dist(random_utils::rand);
+  const uint16_t rand_offset = dist(random_utils::rand);
   
   if ((buf_in.size() != stride * buf_out.capacity())
     || (buf_out.size() > 0)) {
@@ -1000,7 +1065,7 @@ void quantiles_sketch<T, C, A>::zip_buffer_with_stride(FwdV&& buf_in, Level& buf
         "stride*buf_out.capacity() and empty buf_out");
   }
   
-  size_t k = buf_out.capacity();
+  const size_t k = buf_out.capacity();
   for (uint16_t i = rand_offset, o = 0; o < k; i += stride, ++o) {
     buf_out.push_back(conditional_forward<FwdV>(buf_in[i]));
   }
@@ -1117,7 +1182,7 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch& tgt, FwdSk&
   const uint16_t downsample_factor = src.get_k() / tgt.get_k();
   const uint8_t lg_sample_factor = count_trailing_zeros_in_u32(downsample_factor);
 
-  uint64_t new_n = src.get_n() + tgt.get_n();
+  const uint64_t new_n = src.get_n() + tgt.get_n();
 
   // move items from src's base buffer
   for (uint16_t i = 0; i < src.base_buffer_.size(); ++i) {
@@ -1125,7 +1190,7 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch& tgt, FwdSk&
   }
 
   // check (after moving raw items) if we need to extend levels array
-  uint8_t levels_needed = compute_levels_needed(tgt.get_k(), new_n);
+  const uint8_t levels_needed = compute_levels_needed(tgt.get_k(), new_n);
   if (levels_needed > tgt.levels_.size()) {
     tgt.levels_.reserve(levels_needed);
     while (tgt.levels_.size() < levels_needed) {

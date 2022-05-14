@@ -151,6 +151,7 @@ template <typename T,
 class quantiles_sketch {
 public:
   using value_type = T;
+  using allocator_type = Allocator;
   using comparator = Comparator;
   using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
 
@@ -160,6 +161,9 @@ public:
   ~quantiles_sketch();
   quantiles_sketch& operator=(const quantiles_sketch& other);
   quantiles_sketch& operator=(quantiles_sketch&& other) noexcept;
+
+  template<typename From, typename FC, typename FA>
+  explicit quantiles_sketch(const quantiles_sketch<From, FC, FA>& other, const Allocator& allocator = Allocator());
 
   /**
    * Updates this sketch with the given data item.
@@ -226,6 +230,12 @@ public:
    * @return comparator
    */
   Comparator get_comparator() const;
+
+  /**
+   * Returns the allocator for this sketch.
+   * @return allocator
+   */
+  allocator_type get_allocator() const;
 
   /**
    * Returns an approximation to the value of the data item
