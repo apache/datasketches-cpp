@@ -12,15 +12,17 @@ This package provides a variety of sketches as described below. Wherever a speci
 
 ## Building and Installation
 
-Once cloned, the library can be installed by running `python -m pip install .` in the project root directory, which will also install the necessary dependencies, namely numpy and [pybind11[global]](https://github.com/pybind/pybind11).
+Once cloned, the library can be installed by running `python3 -m pip install .` in the project root directory -- not the python subdirectory -- which will also install the necessary dependencies, namely numpy and [pybind11[global]](https://github.com/pybind/pybind11).
 
-If you prefer to call the `setup.py` build script directly, you must first install `pybind11[global]`, as well as any other dependencies listed under the build-system section in `pyproject.toml`.
+If you prefer to call the `setup.py` build script directly, which is discoraged, you must first install `pybind11[global]`, as well as any other dependencies listed under the build-system section in `pyproject.toml`.
 
-The library is also available from PyPI via `python -m pip install datasketches`.
+The library is also available from PyPI via `python3 -m pip install datasketches`.
 
 ## Usage
 
 Having installed the library, loading the Apache Datasketches Library in Python is simple: `import datasketches`.
+
+The unit tests are mostly structured in a tutorial style and can be used as a reference example for how to feed data into and query the different types of sketches.
 
 ## Available Sketch Classes
 
@@ -74,12 +76,7 @@ The only developer-specific instructions relate to running unit tests.
 
 ### Unit tests
 
-The Python unit tests are run with `tox`. To ensure you have all the needed package, from the package base directory run:
-
-```bash
-python -m pip install --upgrade tox
-tox
-```
+The Python unit tests are run via `tox`, with no arguments, from the project root directory -- not the python subdirectory. Tox creates a temporary virtual environment in which to build and run teh unit tests. In the event you are missing the necessary pacakge, tox may be installed with `python3 -m pip install --upgrade tox`.
 
 ## License
 
