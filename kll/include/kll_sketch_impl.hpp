@@ -184,6 +184,8 @@ is_level_zero_sorted_(false)
         levels_.resize(num_levels_ + 1);
         levels_[level] = index;
         levels_[num_levels_] = items_size_;
+      } else if (level < num_levels_ - 1 || level > num_levels_) {
+        throw std::invalid_argument("corrupt source sketch");
       }
       ++index;
     }
