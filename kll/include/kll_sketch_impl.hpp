@@ -26,6 +26,7 @@
 #include <stdexcept>
 
 #include "conditional_forward.hpp"
+#include "count_zeros.hpp"
 #include "memory_operations.hpp"
 #include "kll_helper.hpp"
 
@@ -69,7 +70,7 @@ max_value_(nullptr),
 is_level_zero_sorted_(other.is_level_zero_sorted_)
 {
   items_ = allocator_.allocate(items_size_);
-  std::copy(other.items_ + levels_[0], other.items_ + levels_[num_levels_], items_ + levels_[0]);
+  for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
   if (other.min_value_ != nullptr) min_value_ = new (allocator_.allocate(1)) T(*other.min_value_);
   if (other.max_value_ != nullptr) max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
 }
@@ -148,6 +149,50 @@ kll_sketch<T, C, S, A>::~kll_sketch() {
 }
 
 template<typename T, typename C, typename S, typename A>
+template<typename TT, typename CC, typename AA>
+kll_sketch<T, C, S, A>::kll_sketch(const kll_sketch<TT, CC, AA>& other, const A& allocator):
+allocator_(allocator),
+k_(other.get_k()),
+m_(DEFAULT_M),
+min_k_(other.get_min_k()),
+n_(other.get_n()),
+num_levels_(1),
+levels_(2, 0, allocator),
+items_(nullptr),
+items_size_(other.get_capacity()),
+min_value_(nullptr),
+max_value_(nullptr),
+is_level_zero_sorted_(false)
+{
+  static_assert(
+    std::is_constructible<T, TT>::value,
+    "Type converting constructor requires new type to be constructible from existing type"
+  );
+  items_ = allocator_.allocate(items_size_);
+  levels_[0] = items_size_ - other.get_num_retained();
+  levels_[1] = items_size_;
+
+  if (!other.is_empty()) {
+    min_value_ = new (allocator_.allocate(1)) T(other.get_min_value());
+    max_value_ = new (allocator_.allocate(1)) T(other.get_max_value());
+    size_t index = levels_[0];
+    for (auto pair: other) {
+      new (&items_[index]) T(pair.first);
+      const uint8_t level = count_trailing_zeros_in_u64(pair.second);
+      if (level == num_levels_) {
+        ++num_levels_;
+        levels_.resize(num_levels_ + 1);
+        levels_[level] = index;
+        levels_[num_levels_] = items_size_;
+      }
+      ++index;
+    }
+  }
+  check_sorting();
+  assert_correct_total_weight();
+}
+
+template<typename T, typename C, typename S, typename A>
 template<typename FwdT>
 void kll_sketch<T, C, S, A>::update(FwdT&& value) {
   if (!check_update_value(value)) { return; }
@@ -211,6 +256,11 @@ uint16_t kll_sketch<T, C, S, A>::get_k() const {
 }
 
 template<typename T, typename C, typename S, typename A>
+uint16_t kll_sketch<T, C, S, A>::get_min_k() const {
+  return min_k_;
+}
+
+template<typename T, typename C, typename S, typename A>
 uint64_t kll_sketch<T, C, S, A>::get_n() const {
   return n_;
 }
@@ -218,6 +268,11 @@ uint64_t kll_sketch<T, C, S, A>::get_n() const {
 template<typename T, typename C, typename S, typename A>
 uint32_t kll_sketch<T, C, S, A>::get_num_retained() const {
   return levels_[num_levels_] - levels_[0];
+}
+
+template<typename T, typename C, typename S, typename A>
+uint32_t kll_sketch<T, C, S, A>::get_capacity() const {
+  return items_size_;
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -781,16 +836,26 @@ void kll_sketch<T, C, S, A>::sort_level_zero() {
 }
 
 template<typename T, typename C, typename S, typename A>
+void kll_sketch<T, C, S, A>::check_sorting() const {
+  // not checking level 0
+  for (uint8_t level = 1; level < num_levels_; ++level) {
+    const auto from = items_ + levels_[level];
+    const auto to = items_ + levels_[level + 1];
+    if (!std::is_sorted(from, to, C())) {
+      throw std::logic_error("levels must be sorted");
+    }
+  }
+}
+
+template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
 quantile_sketch_sorted_view<T, C, A> kll_sketch<T, C, S, A>::get_sorted_view(bool cumulative) const {
   const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
   quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), allocator_);
-  uint8_t level = 0;
-  while (level < num_levels_) {
+  for (uint8_t level = 0; level < num_levels_; ++level) {
     const auto from = items_ + levels_[level];
     const auto to = items_ + levels_[level + 1]; // exclusive
     view.add(from, to, 1 << level);
-    ++level;
   }
   if (cumulative) view.template convert_to_cummulative<inclusive>();
   return view;

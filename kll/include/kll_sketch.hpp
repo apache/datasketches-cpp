@@ -182,6 +182,14 @@ class kll_sketch {
     kll_sketch& operator=(const kll_sketch& other);
     kll_sketch& operator=(kll_sketch&& other);
 
+    /*
+     * Type converting constructor.
+     * @param other sketch of a different type
+     * @param allocator instance of an Allocator
+     */
+    template<typename TT, typename CC, typename AA>
+    explicit kll_sketch(const kll_sketch<TT, CC, AA> & other, const A& allocator = A());
+
     /**
      * Updates this sketch with the given data item.
      * @param value an item from a stream of items
@@ -209,6 +217,13 @@ class kll_sketch {
     uint16_t get_k() const;
 
     /**
+     * Returns min_k, which is an internal parameter for error estimation
+     * after merging sketches with different k.
+     * @return parameter min_k
+     */
+    uint16_t get_min_k() const;
+
+    /**
      * Returns the length of the input stream.
      * @return stream length
      */
@@ -219,6 +234,13 @@ class kll_sketch {
      * @return the number of retained items
      */
     uint32_t get_num_retained() const;
+
+    /**
+     * Returns the current capacity in items allocated by the sketch.
+     * For internal use.
+     * @return the capacity
+     */
+    uint32_t get_capacity() const;
 
     /**
      * Returns true if this sketch is in estimation mode.
@@ -390,7 +412,7 @@ class kll_sketch {
     /**
      * Computes size needed to serialize the current state of the sketch.
      * This version is for fixed-size arithmetic types (integral and floating point).
-     * @param instance of a SerDe
+     * @param serde instance of a SerDe
      * @return size in bytes needed to serialize this sketch
      */
     template<typename TT = T, typename SerDe = S, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
@@ -399,7 +421,7 @@ class kll_sketch {
     /**
      * Computes size needed to serialize the current state of the sketch.
      * This version is for all other types and can be expensive since every item needs to be looked at.
-     * @param instance of a SerDe
+     * @param serde instance of a SerDe
      * @return size in bytes needed to serialize this sketch
      */
     template<typename TT = T, typename SerDe = S, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
@@ -459,7 +481,7 @@ class kll_sketch {
     /**
      * This method deserializes a sketch from a given stream.
      * @param is input stream
-     * @param instance of an Allocator
+     * @param allocator instance of an Allocator
      * @return an instance of a sketch
      *
      * Deprecated, to be removed in the next major version
@@ -469,8 +491,8 @@ class kll_sketch {
     /**
      * This method deserializes a sketch from a given stream.
      * @param is input stream
-     * @param instance of a SerDe
-     * @param instance of an Allocator
+     * @param serge instance of a SerDe
+     * @param allocator instance of an Allocator
      * @return an instance of a sketch
      */
     template<typename SerDe = S>
@@ -480,7 +502,7 @@ class kll_sketch {
      * This method deserializes a sketch from a given array of bytes.
      * @param bytes pointer to the array of bytes
      * @param size the size of the array
-     * @param instance of an Allocator
+     * @param allocator instance of an Allocator
      * @return an instance of a sketch
      *
      * Deprecated, to be removed in the next major version
@@ -491,8 +513,8 @@ class kll_sketch {
      * This method deserializes a sketch from a given array of bytes.
      * @param bytes pointer to the array of bytes
      * @param size the size of the array
-     * @param instance of a SerDe
-     * @param instance of an Allocator
+     * @param serde instance of a SerDe
+     * @param allocator instance of an Allocator
      * @return an instance of a sketch
      */
     template<typename SerDe = S>
@@ -605,6 +627,8 @@ class kll_sketch {
     static void check_preamble_ints(uint8_t preamble_ints, uint8_t flags_byte);
     static void check_serial_version(uint8_t serial_version);
     static void check_family_id(uint8_t family_id);
+
+    void check_sorting() const;
 
     // implementations for floating point types
     template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>

@@ -39,9 +39,9 @@ static std::string testBinaryInputPath = "test/";
 #endif
 
 // typical usage would be just kll_sketch<float> or kll_sketch<std::string>, but here we use test_allocator
-typedef kll_sketch<float, std::less<float>, serde<float>, test_allocator<float>> kll_float_sketch;
+using kll_float_sketch = kll_sketch<float, std::less<float>, serde<float>, test_allocator<float>>;
 // let std::string use the default allocator for simplicity, otherwise we need to define "less" and "serde"
-typedef kll_sketch<std::string, std::less<std::string>, serde<std::string>, test_allocator<std::string>> kll_string_sketch;
+using kll_string_sketch = kll_sketch<std::string, std::less<std::string>, serde<std::string>, test_allocator<std::string>>;
 
 TEST_CASE("kll sketch", "[kll_sketch]") {
 
@@ -75,7 +75,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
       (void) it; // to suppress "unused" warning
       FAIL("should be no iterations over an empty sketch");
     }
-}
+  }
 
   SECTION("get bad quantile") {
     kll_float_sketch sketch(200, 0);
@@ -835,10 +835,75 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
       REQUIRE((*it).second == 3);
     }
   }
-  // cleanup
-  if (test_allocator_total_bytes != 0) {
-    REQUIRE(test_allocator_total_bytes == 0);
+
+  SECTION("type conversion: empty") {
+    kll_sketch<double> kll_double;
+    kll_sketch<float> kll_float(kll_double);
+    REQUIRE(kll_float.is_empty());
+    REQUIRE(kll_float.get_k() == kll_double.get_k());
+    REQUIRE(kll_float.get_n() == 0);
+    REQUIRE(kll_float.get_num_retained() == 0);
   }
+
+  SECTION("type conversion: over k") {
+    kll_sketch<double> kll_double;
+    for (int i = 0; i < 1000; ++i) kll_double.update(static_cast<double>(i));
+    kll_sketch<float> kll_float(kll_double);
+    REQUIRE(!kll_float.is_empty());
+    REQUIRE(kll_float.get_k() == kll_double.get_k());
+    REQUIRE(kll_float.get_n() == kll_double.get_n());
+    REQUIRE(kll_float.get_num_retained() == kll_double.get_num_retained());
+
+    auto sv_float = kll_float.get_sorted_view(false);
+    auto sv_double = kll_double.get_sorted_view(false);
+    auto sv_float_it = sv_float.begin();
+    auto sv_double_it = sv_double.begin();
+    while (sv_float_it != sv_float.end()) {
+      REQUIRE(sv_double_it != sv_double.end());
+      auto float_pair = *sv_float_it;
+      auto double_pair = *sv_double_it;
+      REQUIRE(float_pair.first == Approx(double_pair.first).margin(0.01));
+      REQUIRE(float_pair.second == double_pair.second);
+      ++sv_float_it;
+      ++sv_double_it;
+    }
+    REQUIRE(sv_double_it == sv_double.end());
+  }
+
+  class A {
+    int val;
+  public:
+    A(int val): val(val) {}
+    int get_val() const { return val; }
+  };
+
+  struct less_A {
+    bool operator()(const A& a1, const A& a2) const { return a1.get_val() < a2.get_val(); }
+  };
+
+  class B {
+    int val;
+  public:
+    explicit B(const A& a): val(a.get_val()) {}
+    int get_val() const { return val; }
+  };
+
+  struct less_B {
+    bool operator()(const B& b1, const B& b2) const { return b1.get_val() < b2.get_val(); }
+  };
+
+  SECTION("type conversion: custom types") {
+    kll_sketch<A, less_A> sa;
+    sa.update(1);
+    sa.update(2);
+    sa.update(3);
+
+    kll_sketch<B, less_B> sb(sa);
+    REQUIRE(sb.get_n() == 3);
+  }
+
+  // cleanup
+  REQUIRE(test_allocator_total_bytes == 0);
 }
 
 } /* namespace datasketches */
