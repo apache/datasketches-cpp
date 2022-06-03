@@ -934,6 +934,38 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     }
   }
 
+  class A {
+    int val;
+  public:
+    A(int val): val(val) {}
+    int get_val() const { return val; }
+  };
+
+  struct less_A {
+    bool operator()(const A& a1, const A& a2) const { return a1.get_val() < a2.get_val(); }
+  };
+
+  class B {
+    int val;
+  public:
+    explicit B(const A& a): val(a.get_val()) {}
+    int get_val() const { return val; }
+  };
+
+  struct less_B {
+    bool operator()(const B& b1, const B& b2) const { return b1.get_val() < b2.get_val(); }
+  };
+
+  SECTION("type conversion: custom types") {
+    quantiles_sketch<A, less_A> sa;
+    sa.update(1);
+    sa.update(2);
+    sa.update(3);
+
+    quantiles_sketch<B, less_B> sb(sa);
+    REQUIRE(sb.get_n() == 3);
+  }
+
   // cleanup
   if (test_allocator_total_bytes != 0) {
     REQUIRE(test_allocator_total_bytes == 0);

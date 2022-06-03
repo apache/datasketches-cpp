@@ -162,6 +162,11 @@ public:
   quantiles_sketch& operator=(const quantiles_sketch& other);
   quantiles_sketch& operator=(quantiles_sketch&& other) noexcept;
 
+  /**
+   * @brief Type converting constructor
+   * @param other quantiles sketch of a different type
+   * @param allocator instance of an Allocator
+   */
   template<typename From, typename FC, typename FA>
   explicit quantiles_sketch(const quantiles_sketch<From, FC, FA>& other, const Allocator& allocator = Allocator());
 

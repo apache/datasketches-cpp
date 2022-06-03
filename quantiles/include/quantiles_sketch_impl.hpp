@@ -151,9 +151,8 @@ min_value_(nullptr),
 max_value_(nullptr),
 is_sorted_(false)
 {
-  static_assert(std::is_convertible<From, T>::value
-                || std::is_constructible<From, T>::value,
-                "Copy constructor across types requires std::is_convertible or std::is_constructible");
+  static_assert(std::is_constructible<T, From>::value,
+                "Type converting constructor requires new type to be constructible from existing type");
 
   base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k_));
 
@@ -174,7 +173,7 @@ is_sorted_(false)
     for (auto pair : other) {
       const uint64_t wt = pair.second;
       if (wt == 1) {
-        base_buffer_.push_back(pair.first);
+        base_buffer_.push_back(T(pair.first));
         // resize where needed as if adding points via update()
         if (base_buffer_.size() + 1 > base_buffer_.capacity()) {
           const size_t new_size = std::max(std::min(static_cast<size_t>(2 * k_), 2 * base_buffer_.size()), static_cast<size_t>(1));
@@ -183,7 +182,7 @@ is_sorted_(false)
       }
       else {
         const uint8_t idx = count_trailing_zeros_in_u64(pair.second) - 1;
-        levels_[idx].push_back(pair.first);
+        levels_[idx].push_back(T(pair.first));
       }
     }
 
