@@ -491,7 +491,7 @@ class kll_sketch {
     /**
      * This method deserializes a sketch from a given stream.
      * @param is input stream
-     * @param serge instance of a SerDe
+     * @param serde instance of a SerDe
      * @param allocator instance of an Allocator
      * @return an instance of a sketch
      */
