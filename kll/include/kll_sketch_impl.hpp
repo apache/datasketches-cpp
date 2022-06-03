@@ -149,8 +149,8 @@ kll_sketch<T, C, S, A>::~kll_sketch() {
 }
 
 template<typename T, typename C, typename S, typename A>
-template<typename TT, typename CC, typename AA>
-kll_sketch<T, C, S, A>::kll_sketch(const kll_sketch<TT, CC, AA>& other, const A& allocator):
+template<typename TT, typename CC, typename SS, typename AA>
+kll_sketch<T, C, S, A>::kll_sketch(const kll_sketch<TT, CC, SS, AA>& other, const A& allocator):
 allocator_(allocator),
 k_(other.get_k()),
 m_(DEFAULT_M),

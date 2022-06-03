@@ -187,8 +187,8 @@ class kll_sketch {
      * @param other sketch of a different type
      * @param allocator instance of an Allocator
      */
-    template<typename TT, typename CC, typename AA>
-    explicit kll_sketch(const kll_sketch<TT, CC, AA> & other, const A& allocator = A());
+    template<typename TT, typename CC, typename SS, typename AA>
+    explicit kll_sketch(const kll_sketch<TT, CC, SS, AA>& other, const A& allocator = A());
 
     /**
      * Updates this sketch with the given data item.
