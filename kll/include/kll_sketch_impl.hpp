@@ -152,46 +152,27 @@ template<typename T, typename C, typename S, typename A>
 template<typename TT, typename CC, typename SS, typename AA>
 kll_sketch<T, C, S, A>::kll_sketch(const kll_sketch<TT, CC, SS, AA>& other, const A& allocator):
 allocator_(allocator),
-k_(other.get_k()),
-m_(DEFAULT_M),
-min_k_(other.get_min_k()),
-n_(other.get_n()),
-num_levels_(1),
-levels_(2, 0, allocator),
+k_(other.k_),
+m_(other.m_),
+min_k_(other.min_k_),
+n_(other.n_),
+num_levels_(other.num_levels_),
+levels_(other.levels_, allocator_),
 items_(nullptr),
-items_size_(other.get_capacity()),
+items_size_(other.items_size_),
 min_value_(nullptr),
 max_value_(nullptr),
-is_level_zero_sorted_(false)
+is_level_zero_sorted_(other.is_level_zero_sorted_)
 {
   static_assert(
     std::is_constructible<T, TT>::value,
     "Type converting constructor requires new type to be constructible from existing type"
   );
   items_ = allocator_.allocate(items_size_);
-  levels_[0] = items_size_ - other.get_num_retained();
-  levels_[1] = items_size_;
-
-  if (!other.is_empty()) {
-    min_value_ = new (allocator_.allocate(1)) T(other.get_min_value());
-    max_value_ = new (allocator_.allocate(1)) T(other.get_max_value());
-    size_t index = levels_[0];
-    for (auto pair: other) {
-      new (&items_[index]) T(pair.first);
-      const uint8_t level = count_trailing_zeros_in_u64(pair.second);
-      if (level == num_levels_) {
-        ++num_levels_;
-        levels_.resize(num_levels_ + 1);
-        levels_[level] = index;
-        levels_[num_levels_] = items_size_;
-      } else if (level < num_levels_ - 1 || level > num_levels_) {
-        throw std::invalid_argument("corrupt source sketch");
-      }
-      ++index;
-    }
-  }
+  for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
+  if (other.min_value_ != nullptr) min_value_ = new (allocator_.allocate(1)) T(*other.min_value_);
+  if (other.max_value_ != nullptr) max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
   check_sorting();
-  assert_correct_total_weight();
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -258,11 +239,6 @@ uint16_t kll_sketch<T, C, S, A>::get_k() const {
 }
 
 template<typename T, typename C, typename S, typename A>
-uint16_t kll_sketch<T, C, S, A>::get_min_k() const {
-  return min_k_;
-}
-
-template<typename T, typename C, typename S, typename A>
 uint64_t kll_sketch<T, C, S, A>::get_n() const {
   return n_;
 }
@@ -270,11 +246,6 @@ uint64_t kll_sketch<T, C, S, A>::get_n() const {
 template<typename T, typename C, typename S, typename A>
 uint32_t kll_sketch<T, C, S, A>::get_num_retained() const {
   return levels_[num_levels_] - levels_[0];
-}
-
-template<typename T, typename C, typename S, typename A>
-uint32_t kll_sketch<T, C, S, A>::get_capacity() const {
-  return items_size_;
 }
 
 template<typename T, typename C, typename S, typename A>

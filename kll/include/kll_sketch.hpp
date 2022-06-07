@@ -217,13 +217,6 @@ class kll_sketch {
     uint16_t get_k() const;
 
     /**
-     * Returns min_k, which is an internal parameter for error estimation
-     * after merging sketches with different k.
-     * @return parameter min_k
-     */
-    uint16_t get_min_k() const;
-
-    /**
      * Returns the length of the input stream.
      * @return stream length
      */
@@ -234,13 +227,6 @@ class kll_sketch {
      * @return the number of retained items
      */
     uint32_t get_num_retained() const;
-
-    /**
-     * Returns the current capacity in items allocated by the sketch.
-     * For internal use.
-     * @return the capacity
-     */
-    uint32_t get_capacity() const;
 
     /**
      * Returns true if this sketch is in estimation mode.
@@ -653,6 +639,9 @@ class kll_sketch {
       return true;
     }
 
+    // for type converting constructor
+    template<typename TT, typename CC, typename SS, typename AA>
+    friend class kll_sketch;
 };
 
 template<typename T, typename C, typename S, typename A>
