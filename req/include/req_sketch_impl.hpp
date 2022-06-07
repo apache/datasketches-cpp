@@ -64,8 +64,8 @@ compactors_(other.compactors_),
 min_value_(nullptr),
 max_value_(nullptr)
 {
-  if (other.min_value_ != nullptr) min_value_ = new (A().allocate(1)) T(*other.min_value_);
-  if (other.max_value_ != nullptr) max_value_ = new (A().allocate(1)) T(*other.max_value_);
+  if (other.min_value_ != nullptr) min_value_ = new (allocator_.allocate(1)) T(*other.min_value_);
+  if (other.max_value_ != nullptr) max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -111,6 +111,33 @@ req_sketch<T, C, S, A>& req_sketch<T, C, S, A>::operator=(req_sketch&& other) {
   std::swap(min_value_, other.min_value_);
   std::swap(max_value_, other.max_value_);
   return *this;
+}
+
+template<typename T, typename C, typename S, typename A>
+template<typename TT, typename CC, typename SS, typename AA>
+req_sketch<T, C, S, A>::req_sketch(const req_sketch<TT, CC, SS, AA>& other, const A& allocator):
+allocator_(allocator),
+k_(other.k_),
+hra_(other.hra_),
+max_nom_size_(other.max_nom_size_),
+num_retained_(other.num_retained_),
+n_(other.n_),
+compactors_(allocator),
+min_value_(nullptr),
+max_value_(nullptr)
+{
+  static_assert(
+    std::is_constructible<T, TT>::value,
+    "Type converting constructor requires new type to be constructible from existing type"
+  );
+  compactors_.reserve(other.compactors_.size());
+  for (const auto& compactor: other.compactors_) {
+    compactors_.push_back(req_compactor<T, C, A>(compactor, allocator_));
+  }
+  if (!other.is_empty()) {
+    min_value_ = new (allocator_.allocate(1)) T(other.get_min_value());
+    max_value_ = new (allocator_.allocate(1)) T(other.get_max_value());
+  }
 }
 
 template<typename T, typename C, typename S, typename A>

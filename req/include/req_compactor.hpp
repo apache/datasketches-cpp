@@ -38,6 +38,9 @@ public:
   req_compactor& operator=(const req_compactor& other);
   req_compactor& operator=(req_compactor&& other);
 
+  template<typename TT, typename CC, typename AA>
+  req_compactor(const req_compactor<TT, CC, AA>& other, const Allocator& allocator);
+
   bool is_sorted() const;
   uint32_t get_num_items() const;
   uint32_t get_nom_capacity() const;
@@ -128,6 +131,9 @@ private:
   template<typename S>
   static std::pair<std::unique_ptr<T, items_deleter>, size_t> deserialize_items(const void* bytes, size_t size, const S& serde, const Allocator& allocator, uint32_t num);
 
+  // for type converting constructor
+  template<typename TT, typename CC, typename AA>
+  friend class req_compactor;
 };
 
 } /* namespace datasketches */

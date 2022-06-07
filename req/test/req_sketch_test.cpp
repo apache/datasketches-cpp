@@ -35,7 +35,7 @@ const std::string input_path = "test/";
 #endif
 
 TEST_CASE("req sketch: empty", "[req_sketch]") {
-  std::cout << "sizeof(req_float_sketch)=" << sizeof(req_sketch<float>) << "\n";
+  //std::cout << "sizeof(req_float_sketch)=" << sizeof(req_sketch<float>) << "\n";
   req_sketch<float> sketch(12);
   REQUIRE(sketch.get_k() == 12);
   REQUIRE(sketch.is_HRA());
@@ -245,7 +245,7 @@ TEST_CASE("req sketch: byte serialize-deserialize single item", "[req_sketch]") 
   auto bytes = sketch.serialize();
   REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
   auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
-  std::cout << sketch2.to_string(true);
+  //std::cout << sketch2.to_string(true);
   REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -282,7 +282,7 @@ TEST_CASE("req sketch: byte serialize-deserialize exact mode", "[req_sketch]") {
   auto bytes = sketch.serialize();
   REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
   auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
-  std::cout << sketch2.to_string(true);
+  //std::cout << sketch2.to_string(true);
   REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
   REQUIRE(sketch2.is_empty() == sketch.is_empty());
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -483,6 +483,40 @@ TEST_CASE("req sketch: merge incompatible HRA and LRA", "[req_sketch]") {
   sketch2.update(1.0f);
 
   REQUIRE_THROWS_AS(sketch1.merge(sketch2), std::invalid_argument);
+}
+
+TEST_CASE("req sketch: type conversion - empty", "[req_sketch]") {
+  req_sketch<double> req_double(12);
+  req_sketch<float> req_float(req_double);
+  REQUIRE(req_float.is_empty());
+  REQUIRE(req_float.get_k() == req_double.get_k());
+  REQUIRE(req_float.get_n() == 0);
+  REQUIRE(req_float.get_num_retained() == 0);
+}
+
+TEST_CASE("req sketch: type conversion - several levels", "[req_sketch]") {
+  req_sketch<double> req_double(12);
+  for (int i = 0; i < 1000; ++i) req_double.update(static_cast<double>(i));
+  req_sketch<float> req_float(req_double);
+  REQUIRE(!req_float.is_empty());
+  REQUIRE(req_float.get_k() == req_double.get_k());
+  REQUIRE(req_float.get_n() == req_double.get_n());
+  REQUIRE(req_float.get_num_retained() == req_double.get_num_retained());
+
+  auto sv_float = req_float.get_sorted_view(false);
+  auto sv_double = req_double.get_sorted_view(false);
+  auto sv_float_it = sv_float.begin();
+  auto sv_double_it = sv_double.begin();
+  while (sv_float_it != sv_float.end()) {
+    REQUIRE(sv_double_it != sv_double.end());
+    auto float_pair = *sv_float_it;
+    auto double_pair = *sv_double_it;
+    REQUIRE(float_pair.first == Approx(double_pair.first).margin(0.01));
+    REQUIRE(float_pair.second == double_pair.second);
+    ++sv_float_it;
+    ++sv_double_it;
+  }
+  REQUIRE(sv_double_it == sv_double.end());
 }
 
 //TEST_CASE("for manual comparison with Java") {
