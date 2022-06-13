@@ -133,6 +133,33 @@ req_compactor<T, C, A>& req_compactor<T, C, A>::operator=(req_compactor&& other)
 }
 
 template<typename T, typename C, typename A>
+template<typename TT, typename CC, typename AA>
+req_compactor<T, C, A>::req_compactor(const req_compactor<TT, CC, AA>& other, const A& allocator):
+allocator_(allocator),
+lg_weight_(other.lg_weight_),
+hra_(other.hra_),
+coin_(other.coin_),
+sorted_(other.sorted_),
+section_size_raw_(other.section_size_raw_),
+section_size_(other.section_size_),
+num_sections_(other.num_sections_),
+state_(other.state_),
+num_items_(other.num_items_),
+capacity_(other.capacity_),
+items_(nullptr)
+{
+  if (other.items_ != nullptr) {
+    items_ = allocator_.allocate(capacity_);
+    const uint32_t from = hra_ ? capacity_ - num_items_ : 0;
+    const uint32_t to = hra_ ? capacity_ : num_items_;
+    for (uint32_t i = from; i < to; ++i) new (items_ + i) T(other.items_[i]);
+    if (sorted_ && !std::is_sorted(items_ + from, items_ + to, C())) {
+      throw std::logic_error("items must be sorted");
+    }
+  }
+}
+
+template<typename T, typename C, typename A>
 bool req_compactor<T, C, A>::is_sorted() const {
   return sorted_;
 }

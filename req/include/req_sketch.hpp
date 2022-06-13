@@ -58,6 +58,14 @@ public:
   req_sketch& operator=(const req_sketch& other);
   req_sketch& operator=(req_sketch&& other);
 
+  /*
+   * Type converting constructor.
+   * @param other sketch of a different type
+   * @param allocator instance of an Allocator
+   */
+  template<typename TT, typename CC, typename SS, typename AA>
+  explicit req_sketch(const req_sketch<TT, CC, SS, AA>& other, const Allocator& allocator = Allocator());
+
   /**
    * Returns configured parameter K
    * @return parameter K
@@ -408,6 +416,9 @@ private:
     }
   }
 
+  // for type converting constructor
+  template<typename TT, typename CC, typename SS, typename AA>
+  friend class req_sketch;
 };
 
 template<typename T, typename C, typename S, typename A>
