@@ -519,6 +519,38 @@ TEST_CASE("req sketch: type conversion - several levels", "[req_sketch]") {
   REQUIRE(sv_double_it == sv_double.end());
 }
 
+class A {
+    int val;
+  public:
+    A(int val): val(val) {}
+    int get_val() const { return val; }
+  };
+
+  struct less_A {
+    bool operator()(const A& a1, const A& a2) const { return a1.get_val() < a2.get_val(); }
+  };
+
+  class B {
+    int val;
+  public:
+    explicit B(const A& a): val(a.get_val()) {}
+    int get_val() const { return val; }
+  };
+
+  struct less_B {
+    bool operator()(const B& b1, const B& b2) const { return b1.get_val() < b2.get_val(); }
+  };
+
+TEST_CASE("req sketch: type conversion - custom types") {
+  req_sketch<A, less_A> sa(4);
+  sa.update(1);
+  sa.update(2);
+  sa.update(3);
+
+  req_sketch<B, less_B> sb(sa);
+  REQUIRE(sb.get_n() == 3);
+}
+
 //TEST_CASE("for manual comparison with Java") {
 //  req_sketch<float> sketch(12, false);
 //  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
