@@ -72,21 +72,45 @@ public:
   double get_estimate() const;
 
   /**
-   * Returns the approximate lower error bound given a number of standard deviations.
-   * This parameter is similar to the number of standard deviations of the normal distribution
-   * and corresponds to approximately 67%, 95% and 99% confidence intervals.
-   * @param num_std_devs number of Standard Deviations (1, 2 or 3)
-   * @return the lower bound
-   */
-  double get_lower_bound(uint8_t num_std_devs) const;
+  * Returns the approximate lower error bound given a number of standard deviations over an arbitrary number of
+  * items stored in the sketch.
+  * This parameter is similar to the number of standard deviations of the normal distribution
+  * and corresponds to approximately 67%, 95% and 99% confidence intervals.
+  * @param num_std_devs number of Standard Deviations (1, 2 or 3)
+  * @param num_subset_entries number of items from {0, 1, ..., get_num_retained()} over which to estimate the bound
+  * @return the lower bound
+  */
+  double get_lower_bound(uint8_t num_std_devs, uint32_t num_subset_entries) const ;
 
   /**
-   * Returns the approximate upper error bound given a number of standard deviations.
-   * This parameter is similar to the number of standard deviations of the normal distribution
-   * and corresponds to approximately 67%, 95% and 99% confidence intervals.
-   * @param num_std_devs number of Standard Deviations (1, 2 or 3)
-   * @return the upper bound
-   */
+  * Returns the approximate lower error bound given a number of standard deviations.
+  * This parameter is similar to the number of standard deviations of the normal distribution
+  * and corresponds to approximately 67%, 95% and 99% confidence intervals.
+  * @param num_std_devs number of Standard Deviations (1, 2 or 3)
+  * @return the lower bound
+  */
+  double get_lower_bound(uint8_t num_std_devs) const;
+
+
+  /**
+  * Returns the approximate upper error bound given a number of standard deviations over an arbitrary number of
+  * items stored in the sketch.
+  * This parameter is similar to the number of standard deviations of the normal distribution
+  * and corresponds to approximately 67%, 95% and 99% confidence intervals.
+  * @param num_std_devs number of Standard Deviations (1, 2 or 3)
+  * @param num_subset_entries number of items from {0, 1, ..., get_num_retained()} over which to estimate the bound
+  * @return the lower bound
+  */
+  double get_upper_bound(uint8_t num_std_devs, uint32_t num_subset_entries) const ;
+
+
+  /**
+  * Returns the approximate upper error bound given a number of standard deviations.
+  * This parameter is similar to the number of standard deviations of the normal distribution
+  * and corresponds to approximately 67%, 95% and 99% confidence intervals.
+  * @param num_std_devs number of Standard Deviations (1, 2 or 3)
+  * @return the upper bound
+  */
   double get_upper_bound(uint8_t num_std_devs) const;
 
   /**
