@@ -23,8 +23,8 @@
 namespace datasketches {
 
 template<typename A>
-theta_union_alloc<A>::theta_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const A& allocator):
-state_(lg_cur_size, lg_nom_size, rf, theta, seed, nop_policy(), allocator)
+theta_union_alloc<A>::theta_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const A& allocator):
+state_(lg_cur_size, lg_nom_size, rf, p, theta, seed, nop_policy(), allocator)
 {}
 
 template<typename A>
@@ -39,13 +39,16 @@ auto theta_union_alloc<A>::get_result(bool ordered) const -> CompactSketch {
 }
 
 template<typename A>
+void theta_union_alloc<A>::reset() {
+  state_.reset();
+}
+
+template<typename A>
 theta_union_alloc<A>::builder::builder(const A& allocator): theta_base_builder<builder, A>(allocator) {}
 
 template<typename A>
 auto theta_union_alloc<A>::builder::build() const -> theta_union_alloc {
-  return theta_union_alloc(
-      this->starting_sub_multiple(this->lg_k_ + 1, this->MIN_LG_K, static_cast<uint8_t>(this->rf_)),
-      this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->allocator_);
+  return theta_union_alloc(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->allocator_);
 }
 
 } /* namespace datasketches */

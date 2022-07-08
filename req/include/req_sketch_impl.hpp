@@ -64,8 +64,8 @@ compactors_(other.compactors_),
 min_value_(nullptr),
 max_value_(nullptr)
 {
-  if (other.min_value_ != nullptr) min_value_ = new (A().allocate(1)) T(*other.min_value_);
-  if (other.max_value_ != nullptr) max_value_ = new (A().allocate(1)) T(*other.max_value_);
+  if (other.min_value_ != nullptr) min_value_ = new (allocator_.allocate(1)) T(*other.min_value_);
+  if (other.max_value_ != nullptr) max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -111,6 +111,33 @@ req_sketch<T, C, S, A>& req_sketch<T, C, S, A>::operator=(req_sketch&& other) {
   std::swap(min_value_, other.min_value_);
   std::swap(max_value_, other.max_value_);
   return *this;
+}
+
+template<typename T, typename C, typename S, typename A>
+template<typename TT, typename CC, typename SS, typename AA>
+req_sketch<T, C, S, A>::req_sketch(const req_sketch<TT, CC, SS, AA>& other, const A& allocator):
+allocator_(allocator),
+k_(other.k_),
+hra_(other.hra_),
+max_nom_size_(other.max_nom_size_),
+num_retained_(other.num_retained_),
+n_(other.n_),
+compactors_(allocator),
+min_value_(nullptr),
+max_value_(nullptr)
+{
+  static_assert(
+    std::is_constructible<T, TT>::value,
+    "Type converting constructor requires new type to be constructible from existing type"
+  );
+  compactors_.reserve(other.compactors_.size());
+  for (const auto& compactor: other.compactors_) {
+    compactors_.push_back(req_compactor<T, C, A>(compactor, allocator_));
+  }
+  if (!other.is_empty()) {
+    min_value_ = new (allocator_.allocate(1)) T(other.get_min_value());
+    max_value_ = new (allocator_.allocate(1)) T(other.get_max_value());
+  }
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -197,6 +224,11 @@ const T& req_sketch<T, C, S, A>::get_max_value() const {
 }
 
 template<typename T, typename C, typename S, typename A>
+C req_sketch<T, C, S, A>::get_comparator() const {
+  return C();
+}
+
+template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
 double req_sketch<T, C, S, A>::get_rank(const T& item) const {
   uint64_t weight = 0;
@@ -210,6 +242,7 @@ template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
 auto req_sketch<T, C, S, A>::get_PMF(const T* split_points, uint32_t size) const -> vector_double {
   auto buckets = get_CDF<inclusive>(split_points, size);
+  if (is_empty()) return buckets;
   for (uint32_t i = size; i > 0; --i) {
     buckets[i] -= buckets[i - 1];
   }
@@ -230,14 +263,15 @@ auto req_sketch<T, C, S, A>::get_CDF(const T* split_points, uint32_t size) const
 
 template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
-const T& req_sketch<T, C, S, A>::get_quantile(double rank) const {
+auto req_sketch<T, C, S, A>::get_quantile(double rank) const -> quantile_return_type {
   if (is_empty()) return get_invalid_value();
   if (rank == 0.0) return *min_value_;
   if (rank == 1.0) return *max_value_;
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Rank cannot be less than zero or greater than 1.0");
   }
-  return *(get_quantile_calculator<inclusive>()->get_quantile(rank));
+  // possible side-effect of sorting level zero
+  return get_sorted_view<inclusive>(true).get_quantile(rank);
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -245,8 +279,11 @@ template<bool inclusive>
 std::vector<T, A> req_sketch<T, C, S, A>::get_quantiles(const double* ranks, uint32_t size) const {
   std::vector<T, A> quantiles(allocator_);
   if (is_empty()) return quantiles;
-  QuantileCalculatorPtr quantile_calculator(nullptr, calculator_deleter(allocator_));
   quantiles.reserve(size);
+
+  // possible side-effect of sorting level zero
+  auto view = get_sorted_view<inclusive>(true);
+
   for (uint32_t i = 0; i < size; ++i) {
     const double rank = ranks[i];
     if ((rank < 0.0) || (rank > 1.0)) {
@@ -255,47 +292,26 @@ std::vector<T, A> req_sketch<T, C, S, A>::get_quantiles(const double* ranks, uin
     if      (rank == 0.0) quantiles.push_back(*min_value_);
     else if (rank == 1.0) quantiles.push_back(*max_value_);
     else {
-      if (!quantile_calculator) {
-        // has side effect of sorting level zero if needed
-        quantile_calculator = const_cast<req_sketch*>(this)->get_quantile_calculator<inclusive>();
-      }
-      quantiles.push_back(*(quantile_calculator->get_quantile(rank)));
+      quantiles.push_back(view.get_quantile(rank));
     }
   }
   return quantiles;
 }
 
 template<typename T, typename C, typename S, typename A>
-class req_sketch<T, C, S, A>::calculator_deleter {
-  public:
-  calculator_deleter(const AllocCalc& allocator): allocator_(allocator) {}
-  void operator() (QuantileCalculator* ptr) {
-    if (ptr != nullptr) {
-      ptr->~QuantileCalculator();
-      allocator_.deallocate(ptr, 1);
-    }
-  }
-  private:
-  AllocCalc allocator_;
-};
-
-template<typename T, typename C, typename S, typename A>
 template<bool inclusive>
-auto req_sketch<T, C, S, A>::get_quantile_calculator() const -> QuantileCalculatorPtr {
+quantile_sketch_sorted_view<T, C, A> req_sketch<T, C, S, A>::get_sorted_view(bool cumulative) const {
   if (!compactors_[0].is_sorted()) {
     const_cast<Compactor&>(compactors_[0]).sort(); // allow this side effect
   }
-  AllocCalc ac(allocator_);
-  QuantileCalculatorPtr quantile_calculator(
-    new (ac.allocate(1)) req_quantile_calculator<T, C, A>(n_, ac),
-    calculator_deleter(ac)
-  );
+  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), allocator_);
 
   for (auto& compactor: compactors_) {
-    quantile_calculator->add(compactor.begin(), compactor.end(), compactor.get_lg_weight());
+    view.add(compactor.begin(), compactor.end(), 1 << compactor.get_lg_weight());
   }
-  quantile_calculator->template convert_to_cummulative<inclusive>();
-  return quantile_calculator;
+
+  if (cumulative) view.template convert_to_cummulative<inclusive>();
+  return view;
 }
 
 template<typename T, typename C, typename S, typename A>
@@ -348,8 +364,8 @@ double req_sketch<T, C, S, A>::relative_rse_factor() {
 
 // implementation for fixed-size arithmetic types (integral and floating point)
 template<typename T, typename C, typename S, typename A>
-template<typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
-size_t req_sketch<T, C, S, A>::get_serialized_size_bytes() const {
+template<typename TT, typename SerDe, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
+size_t req_sketch<T, C, S, A>::get_serialized_size_bytes(const SerDe& sd) const {
   size_t size = PREAMBLE_SIZE_BYTES;
   if (is_empty()) return size;
   if (is_estimation_mode()) {
@@ -358,32 +374,33 @@ size_t req_sketch<T, C, S, A>::get_serialized_size_bytes() const {
   if (n_ == 1) {
     size += sizeof(TT);
   } else {
-    for (const auto& compactor: compactors_) size += compactor.get_serialized_size_bytes(S());
+    for (const auto& compactor: compactors_) size += compactor.get_serialized_size_bytes(sd);
   }
   return size;
 }
 
 // implementation for all other types
 template<typename T, typename C, typename S, typename A>
-template<typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
-size_t req_sketch<T, C, S, A>::get_serialized_size_bytes() const {
+template<typename TT, typename SerDe, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
+size_t req_sketch<T, C, S, A>::get_serialized_size_bytes(const SerDe& sd) const {
   size_t size = PREAMBLE_SIZE_BYTES;
   if (is_empty()) return size;
   if (is_estimation_mode()) {
     size += sizeof(n_);
-    size += S().size_of_item(*min_value_);
-    size += S().size_of_item(*max_value_);
+    size += sd.size_of_item(*min_value_);
+    size += sd.size_of_item(*max_value_);
   }
   if (n_ == 1) {
-    size += S().size_of_item(*compactors_[0].begin());
+    size += sd.size_of_item(*compactors_[0].begin());
   } else {
-    for (const auto& compactor: compactors_) size += compactor.get_serialized_size_bytes(S());
+    for (const auto& compactor: compactors_) size += compactor.get_serialized_size_bytes(sd);
   }
   return size;
 }
 
 template<typename T, typename C, typename S, typename A>
-void req_sketch<T, C, S, A>::serialize(std::ostream& os) const {
+template<typename SerDe>
+void req_sketch<T, C, S, A>::serialize(std::ostream& os, const SerDe& sd) const {
   const uint8_t preamble_ints = is_estimation_mode() ? 4 : 2;
   write(os, preamble_ints);
   const uint8_t serial_version = SERIAL_VERSION;
@@ -406,19 +423,20 @@ void req_sketch<T, C, S, A>::serialize(std::ostream& os) const {
   if (is_empty()) return;
   if (is_estimation_mode()) {
     write(os, n_);
-    S().serialize(os, min_value_, 1);
-    S().serialize(os, max_value_, 1);
+    sd.serialize(os, min_value_, 1);
+    sd.serialize(os, max_value_, 1);
   }
   if (raw_items) {
-    S().serialize(os, compactors_[0].begin(), num_raw_items);
+    sd.serialize(os, compactors_[0].begin(), num_raw_items);
   } else {
-    for (const auto& compactor: compactors_) compactor.serialize(os, S());
+    for (const auto& compactor: compactors_) compactor.serialize(os, sd);
   }
 }
 
 template<typename T, typename C, typename S, typename A>
-auto req_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
-  const size_t size = header_size_bytes + get_serialized_size_bytes();
+template<typename SerDe>
+auto req_sketch<T, C, S, A>::serialize(unsigned header_size_bytes, const SerDe& sd) const -> vector_bytes {
+  const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
   const uint8_t* end_ptr = ptr + size;
@@ -445,13 +463,13 @@ auto req_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const -> vect
   if (!is_empty()) {
     if (is_estimation_mode()) {
       ptr += copy_to_mem(n_, ptr);
-      ptr += S().serialize(ptr, end_ptr - ptr, min_value_, 1);
-      ptr += S().serialize(ptr, end_ptr - ptr, max_value_, 1);
+      ptr += sd.serialize(ptr, end_ptr - ptr, min_value_, 1);
+      ptr += sd.serialize(ptr, end_ptr - ptr, max_value_, 1);
     }
     if (raw_items) {
-      ptr += S().serialize(ptr, end_ptr - ptr, compactors_[0].begin(), num_raw_items);
+      ptr += sd.serialize(ptr, end_ptr - ptr, compactors_[0].begin(), num_raw_items);
     } else {
-      for (const auto& compactor: compactors_) ptr += compactor.serialize(ptr, end_ptr - ptr, S());
+      for (const auto& compactor: compactors_) ptr += compactor.serialize(ptr, end_ptr - ptr, sd);
     }
   }
   return bytes;
@@ -459,6 +477,12 @@ auto req_sketch<T, C, S, A>::serialize(unsigned header_size_bytes) const -> vect
 
 template<typename T, typename C, typename S, typename A>
 req_sketch<T, C, S, A> req_sketch<T, C, S, A>::deserialize(std::istream& is, const A& allocator) {
+  return deserialize(is, S(), allocator);
+}
+
+template<typename T, typename C, typename S, typename A>
+template<typename SerDe>
+req_sketch<T, C, S, A> req_sketch<T, C, S, A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
   const auto preamble_ints = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -490,19 +514,19 @@ req_sketch<T, C, S, A> req_sketch<T, C, S, A>::deserialize(std::istream& is, con
   uint64_t n = 1;
   if (num_levels > 1) {
     n = read<uint64_t>(is);
-    S().deserialize(is, min_value_buffer.get(), 1);
+    sd.deserialize(is, min_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
-    S().deserialize(is, max_value_buffer.get(), 1);
+    sd.deserialize(is, max_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
   }
 
   if (raw_items) {
-    compactors.push_back(Compactor::deserialize(is, S(), allocator, is_level_0_sorted, k, num_raw_items, hra));
+    compactors.push_back(Compactor::deserialize(is, sd, allocator, is_level_0_sorted, k, num_raw_items, hra));
   } else {
     for (size_t i = 0; i < num_levels; ++i) {
-      compactors.push_back(Compactor::deserialize(is, S(), allocator, i == 0 ? is_level_0_sorted : true, hra));
+      compactors.push_back(Compactor::deserialize(is, sd, allocator, i == 0 ? is_level_0_sorted : true, hra));
     }
   }
   if (num_levels == 1) {
@@ -529,6 +553,12 @@ req_sketch<T, C, S, A> req_sketch<T, C, S, A>::deserialize(std::istream& is, con
 
 template<typename T, typename C, typename S, typename A>
 req_sketch<T, C, S, A> req_sketch<T, C, S, A>::deserialize(const void* bytes, size_t size, const A& allocator) {
+  return deserialize(bytes, size, S(), allocator);
+}
+
+template<typename T, typename C, typename S, typename A>
+template<typename SerDe>
+req_sketch<T, C, S, A> req_sketch<T, C, S, A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
@@ -571,21 +601,21 @@ req_sketch<T, C, S, A> req_sketch<T, C, S, A>::deserialize(const void* bytes, si
   if (num_levels > 1) {
     ensure_minimum_memory(end_ptr - ptr, sizeof(n));
     ptr += copy_from_mem(ptr, n);
-    ptr += S().deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
+    ptr += sd.deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
-    ptr += S().deserialize(ptr, end_ptr - ptr, max_value_buffer.get(), 1);
+    ptr += sd.deserialize(ptr, end_ptr - ptr, max_value_buffer.get(), 1);
     // serde call did not throw, repackage with destrtuctor
     max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
   }
 
   if (raw_items) {
-    auto pair = Compactor::deserialize(ptr, end_ptr - ptr, S(), allocator, is_level_0_sorted, k, num_raw_items, hra);
+    auto pair = Compactor::deserialize(ptr, end_ptr - ptr, sd, allocator, is_level_0_sorted, k, num_raw_items, hra);
     compactors.push_back(std::move(pair.first));
     ptr += pair.second;
   } else {
     for (size_t i = 0; i < num_levels; ++i) {
-      auto pair = Compactor::deserialize(ptr, end_ptr - ptr, S(), allocator, i == 0 ? is_level_0_sorted : true, hra);
+      auto pair = Compactor::deserialize(ptr, end_ptr - ptr, sd, allocator, i == 0 ? is_level_0_sorted : true, hra);
       compactors.push_back(std::move(pair.first));
       ptr += pair.second;
     }
@@ -653,7 +683,9 @@ void req_sketch<T, C, S, A>::compress() {
 
 template<typename T, typename C, typename S, typename A>
 string<A> req_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items) const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
   os << "### REQ sketch summary:" << std::endl;
   os << "   K              : " << k_ << std::endl;
   os << "   High Rank Acc  : " << (hra_ ? "true" : "false") << std::endl;
@@ -693,7 +725,7 @@ string<A> req_sketch<T, C, S, A>::to_string(bool print_levels, bool print_items)
     }
     os << "### End sketch data" << std::endl;
   }
-  return os.str();
+  return string<A>(os.str().c_str(), allocator_);
 }
 
 template<typename T, typename C, typename S, typename A>

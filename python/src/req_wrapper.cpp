@@ -24,6 +24,7 @@
 #include <pybind11/numpy.h>
 #include <sstream>
 #include <vector>
+#include <stdexcept>
 
 namespace py = pybind11;
 
@@ -194,6 +195,8 @@ void bind_req_sketch(py::module &m, const char* name) {
          "Returns an approximation to the normalized (fractional) rank of the given value from 0 to 1, inclusive.\n"
          "The resulting approximation has a probabilistic guarantee that can be obtained from the "
          "get_normalized_rank_error(False) function.\n"
+         "With the parameter inclusive=true the weight of the given item is included into the rank."
+         "Otherwise the rank equals the sum of the weights of items less than the given item.\n"
          "If the sketch is empty this returns nan.")
     .def("get_pmf", &dspy::req_sketch_get_pmf<T>, py::arg("split_points"), py::arg("inclusive")=false,
          "Returns an approximation to the Probability Mass Function (PMF) of the input stream "
@@ -203,9 +206,11 @@ void bind_req_sketch(py::module &m, const char* name) {
          "If the sketch is empty this returns an empty vector.\n"
          "split_points is an array of m unique, monotonically increasing float values "
          "that divide the real number line into m+1 consecutive disjoint intervals.\n"
-         "The definition of an 'interval' is inclusive of the left split point (or minimum value) and "
+         "If the parameter inclusive=false, the definition of an 'interval' is inclusive of the left split point (or minimum value) and "
          "exclusive of the right split point, with the exception that the last interval will include "
          "the maximum value.\n"
+         "If the parameter inclusive=true, the definition of an 'interval' is exclusive of the left split point (or minimum value) and "
+         "inclusive of the right split point.\n"
          "It is not necessary to include either the min or max values in these split points.")
     .def("get_cdf", &dspy::req_sketch_get_cdf<T>, py::arg("split_points"), py::arg("inclusive")=false,
          "Returns an approximation to the Cumulative Distribution Function (CDF), which is the "
@@ -215,9 +220,11 @@ void bind_req_sketch(py::module &m, const char* name) {
          "If the sketch is empty this returns an empty vector.\n"
          "split_points is an array of m unique, monotonically increasing float values "
          "that divide the real number line into m+1 consecutive disjoint intervals.\n"
-         "The definition of an 'interval' is inclusive of the left split point (or minimum value) and "
+         "If the parameter inclusive=false, the definition of an 'interval' is inclusive of the left split point (or minimum value) and "
          "exclusive of the right split point, with the exception that the last interval will include "
          "the maximum value.\n"
+         "If the parameter inclusive=true, the definition of an 'interval' is exclusive of the left split point (or minimum value) and "
+         "inclusive of the right split point.\n"
          "It is not necessary to include either the min or max values in these split points.")
     .def("get_rank_lower_bound", &req_sketch<T>::get_rank_lower_bound, py::arg("rank"), py::arg("num_std_dev"),
          "Returns an approximate lower bound on the given normalized rank.\n"

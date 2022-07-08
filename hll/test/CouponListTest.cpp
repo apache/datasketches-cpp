@@ -23,6 +23,7 @@
 #include <cmath>
 #include <string>
 #include <exception>
+#include <stdexcept>
 
 #include "hll.hpp"
 #include "CouponList.hpp"
@@ -31,6 +32,7 @@
 namespace datasketches {
 
 void println_string(std::string str) {
+  unused(str);
   //std::cout << str << std::endl;
 }
 

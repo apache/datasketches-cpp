@@ -24,19 +24,26 @@
 #include <pybind11/numpy.h>
 #include <sstream>
 #include <vector>
+#include <stdexcept>
 
 namespace py = pybind11;
 
 namespace datasketches {
 
+namespace vector_of_kll_constants {
+  static const uint32_t DEFAULT_K = kll_constants::DEFAULT_K;
+  static const uint32_t DEFAULT_D = 1;
+}
+
 // Wrapper class for Numpy compatibility
 template <typename T, typename C = std::less<T>, typename S = serde<T>>
 class vector_of_kll_sketches {
   public:
-    static const uint32_t DEFAULT_K = kll_sketch<T, C, S>::DEFAULT_K;
-    static const uint32_t DEFAULT_D = 1;
+    // TODO: Redundant and deprecated. Will be removed in next major version release.
+    static const uint32_t DEFAULT_K = vector_of_kll_constants::DEFAULT_K;
+    static const uint32_t DEFAULT_D = vector_of_kll_constants::DEFAULT_D;
 
-    explicit vector_of_kll_sketches(uint32_t k = DEFAULT_K, uint32_t d = DEFAULT_D);
+    explicit vector_of_kll_sketches(uint32_t k = vector_of_kll_constants::DEFAULT_K, uint32_t d = vector_of_kll_constants::DEFAULT_D);
     vector_of_kll_sketches(const vector_of_kll_sketches& other);
     vector_of_kll_sketches(vector_of_kll_sketches&& other) noexcept;
     vector_of_kll_sketches<T,C,S>& operator=(const vector_of_kll_sketches& other);
@@ -432,8 +439,8 @@ void bind_vector_of_kll_sketches(py::module &m, const char* name) {
   using namespace datasketches;
 
   py::class_<vector_of_kll_sketches<T>>(m, name)
-    .def(py::init<uint32_t, uint32_t>(), py::arg("k")=vector_of_kll_sketches<T>::DEFAULT_K, 
-                                         py::arg("d")=vector_of_kll_sketches<T>::DEFAULT_D)
+    .def(py::init<uint32_t, uint32_t>(), py::arg("k")=vector_of_kll_constants::DEFAULT_K, 
+                                         py::arg("d")=vector_of_kll_constants::DEFAULT_D)
     .def(py::init<const vector_of_kll_sketches<T>&>())
     // allow user to retrieve k or d, in case it's instantiated w/ defaults
     .def("get_k", &vector_of_kll_sketches<T>::get_k,

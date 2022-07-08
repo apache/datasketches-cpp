@@ -24,6 +24,7 @@
 
 #include <cmath>
 #include <sstream>
+#include <stdexcept>
 
 namespace datasketches {
 
@@ -129,6 +130,12 @@ var_opt_union<T,S,A>& var_opt_union<T,S,A>::operator=(var_opt_union&& other) {
 
 template<typename T, typename S, typename A>
 var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const A& allocator) {
+  return deserialize(is, S(), allocator);
+}
+
+template<typename T, typename S, typename A>
+template<typename SerDe>
+var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
   const auto preamble_longs = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -155,7 +162,7 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const A
   const auto outer_tau_numer = read<double>(is);
   const auto outer_tau_denom = read<uint64_t>(is);
 
-  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(is, allocator);
+  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(is, sd, allocator);
 
   if (!is.good())
     throw std::runtime_error("error reading from std::istream"); 
@@ -165,6 +172,12 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const A
 
 template<typename T, typename S, typename A>
 var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t size, const A& allocator) {
+  return deserialize(bytes, size, S(), allocator);
+}
+
+template<typename T, typename S, typename A>
+template<typename SerDe>
+var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
@@ -199,22 +212,24 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t
   ptr += copy_from_mem(ptr, outer_tau_denom);
 
   const size_t gadget_size = size - (PREAMBLE_LONGS_NON_EMPTY << 3);
-  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(ptr, gadget_size, allocator);
+  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(ptr, gadget_size, sd, allocator);
 
   return var_opt_union<T,S,A>(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
 }
 
 template<typename T, typename S, typename A>
-size_t var_opt_union<T,S,A>::get_serialized_size_bytes() const {
+template<typename SerDe>
+size_t var_opt_union<T,S,A>::get_serialized_size_bytes(const SerDe& sd) const {
   if (n_ == 0) {
     return PREAMBLE_LONGS_EMPTY << 3;
   } else {
-    return (PREAMBLE_LONGS_NON_EMPTY << 3) + gadget_.get_serialized_size_bytes();
+    return (PREAMBLE_LONGS_NON_EMPTY << 3) + gadget_.get_serialized_size_bytes(sd);
   }
 }
 
 template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::serialize(std::ostream& os) const {
+template<typename SerDe>
+void var_opt_union<T,S,A>::serialize(std::ostream& os, const SerDe& sd) const {
   bool empty = (n_ == 0);
 
   const uint8_t serialization_version(SER_VER);
@@ -240,13 +255,14 @@ void var_opt_union<T,S,A>::serialize(std::ostream& os) const {
     write(os, n_);
     write(os, outer_tau_numer_);
     write(os, outer_tau_denom_);
-    gadget_.serialize(os);
+    gadget_.serialize(os, sd);
   }
 }
 
 template<typename T, typename S, typename A>
-std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header_size_bytes) const {
-  const size_t size = header_size_bytes + get_serialized_size_bytes();
+template<typename SerDe>
+std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header_size_bytes, const SerDe& sd) const {
+  const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   std::vector<uint8_t, AllocU8<A>> bytes(size, 0, gadget_.allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
@@ -278,7 +294,7 @@ std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header
     ptr += copy_to_mem(outer_tau_numer_, ptr);
     ptr += copy_to_mem(outer_tau_denom_, ptr);
 
-    auto gadget_bytes = gadget_.serialize();
+    auto gadget_bytes = gadget_.serialize(0, sd);
     ptr += copy_to_mem(gadget_bytes.data(), ptr, gadget_bytes.size() * sizeof(uint8_t));
   }
 
@@ -295,14 +311,16 @@ void var_opt_union<T,S,A>::reset() {
 
 template<typename T, typename S, typename A>
 string<A> var_opt_union<T,S,A>::to_string() const {
-  std::basic_ostringstream<char, std::char_traits<char>, AllocChar<A>> os;
-  os << "### VarOpt Union SUMMARY: " << std::endl;
-  os << " . n             : " << n_ << std::endl;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
+  os << "### VarOpt Union SUMMARY:" << std::endl;
+  os << "   n             : " << n_ << std::endl;
   os << "   Max k         : " << max_k_ << std::endl;
-  os << "   Gadget Summary: " << std::endl;
+  os << "   Gadget Summary:" << std::endl;
   os << gadget_.to_string();
-  os << "### END VarOpt Union SUMMARY: " << std::endl;
-  return os.str();
+  os << "### END VarOpt Union SUMMARY" << std::endl;
+  return string<A>(os.str().c_str(), gadget_.allocator_);
 }
 
 template<typename T, typename S, typename A>

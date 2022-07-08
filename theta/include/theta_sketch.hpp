@@ -25,14 +25,10 @@
 namespace datasketches {
 
 template<typename Allocator = std::allocator<uint64_t>>
-class theta_sketch_alloc {
+class base_theta_sketch_alloc {
 public:
-  using Entry = uint64_t;
-  using ExtractKey = trivial_extract_key;
-  using iterator = theta_iterator<Entry, ExtractKey>;
-  using const_iterator = theta_const_iterator<Entry, ExtractKey>;
 
-  virtual ~theta_sketch_alloc() = default;
+  virtual ~base_theta_sketch_alloc() = default;
 
   /**
    * @return allocator
@@ -104,6 +100,21 @@ public:
    */
   virtual string<Allocator> to_string(bool print_items = false) const;
 
+protected:
+  virtual void print_specifics(std::ostringstream& os) const = 0;
+  virtual void print_items(std::ostringstream& os) const = 0;
+};
+
+template<typename Allocator = std::allocator<uint64_t>>
+class theta_sketch_alloc: public base_theta_sketch_alloc<Allocator> {
+public:
+  using Entry = uint64_t;
+  using ExtractKey = trivial_extract_key;
+  using iterator = theta_iterator<Entry, ExtractKey>;
+  using const_iterator = theta_const_iterator<Entry, ExtractKey>;
+
+  virtual ~theta_sketch_alloc() = default;
+
   /**
    * Iterator over hash values in this sketch.
    * @return begin iterator
@@ -131,8 +142,7 @@ public:
   virtual const_iterator end() const = 0;
 
 protected:
-  using ostrstream = std::basic_ostringstream<char, std::char_traits<char>, AllocChar<Allocator>>;
-  virtual void print_specifics(ostrstream& os) const = 0;
+  virtual void print_items(std::ostringstream& os) const;
 };
 
 // forward declaration
@@ -270,6 +280,11 @@ public:
   void trim();
 
   /**
+   * Reset the sketch to the initial empty state
+   */
+  void reset();
+
+  /**
    * Converts this sketch to a compact sketch (ordered or unordered).
    * @param ordered optional flag to specify if ordered sketch should be produced
    * @return compact sketch
@@ -285,11 +300,10 @@ private:
   theta_table table_;
 
   // for builder
-  update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta,
-      uint64_t seed, const Allocator& allocator);
+  update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p,
+      uint64_t theta, uint64_t seed, const Allocator& allocator);
 
-  using ostrstream = typename Base::ostrstream;
-  virtual void print_specifics(ostrstream& os) const;
+  virtual void print_specifics(std::ostringstream& os) const;
 };
 
 // compact sketch
@@ -377,8 +391,7 @@ private:
   uint64_t theta_;
   std::vector<uint64_t, Allocator> entries_;
 
-  using ostrstream = typename Base::ostrstream;
-  virtual void print_specifics(ostrstream& os) const;
+  virtual void print_specifics(std::ostringstream& os) const;
 };
 
 template<typename Allocator>
@@ -392,7 +405,7 @@ public:
 // It does not take the ownership of the buffer.
 
 template<typename Allocator = std::allocator<uint64_t>>
-class wrapped_compact_theta_sketch_alloc {
+class wrapped_compact_theta_sketch_alloc : public base_theta_sketch_alloc<Allocator> {
 public:
   using const_iterator = const uint64_t*;
 
@@ -414,6 +427,10 @@ public:
    * @return an instance of the sketch
    */
   static const wrapped_compact_theta_sketch_alloc wrap(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, bool dump_on_error = false);
+
+protected:
+  virtual void print_specifics(std::ostringstream& os) const;
+  virtual void print_items(std::ostringstream& os) const;
 
 private:
   bool is_empty_;

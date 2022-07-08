@@ -18,6 +18,7 @@
  */
 
 #include <sstream>
+#include <stdexcept>
 
 #include "binomial_bounds.hpp"
 #include "theta_helpers.hpp"
@@ -67,7 +68,9 @@ double tuple_sketch<S, A>::get_upper_bound(uint8_t num_std_devs) const {
 
 template<typename S, typename A>
 string<A> tuple_sketch<S, A>::to_string(bool detail) const {
-  ostrstream os;
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
   os << "### Tuple sketch summary:" << std::endl;
   os << "   num retained entries : " << get_num_retained() << std::endl;
   os << "   seed hash            : " << get_seed_hash() << std::endl;
@@ -88,15 +91,15 @@ string<A> tuple_sketch<S, A>::to_string(bool detail) const {
     }
     os << "### End retained entries" << std::endl;
   }
-  return os.str();
+  return string<A>(os.str().c_str(), get_allocator());
 }
 
 // update sketch
 
 template<typename S, typename U, typename P, typename A>
-update_tuple_sketch<S, U, P, A>::update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
+update_tuple_sketch<S, U, P, A>::update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
 policy_(policy),
-map_(lg_cur_size, lg_nom_size, rf, theta, seed, allocator)
+map_(lg_cur_size, lg_nom_size, rf, p, theta, seed, allocator)
 {}
 
 template<typename S, typename U, typename P, typename A>
@@ -111,12 +114,12 @@ bool update_tuple_sketch<S, U, P, A>::is_empty() const {
 
 template<typename S, typename U, typename P, typename A>
 bool update_tuple_sketch<S, U, P, A>::is_ordered() const {
-  return false;
+  return map_.num_entries_ > 1 ? false : true;;
 }
 
 template<typename S, typename U, typename P, typename A>
 uint64_t update_tuple_sketch<S, U, P, A>::get_theta64() const {
-  return map_.theta_;
+  return is_empty() ? theta_constants::MAX_THETA : map_.theta_;
 }
 
 template<typename S, typename U, typename P, typename A>
@@ -227,6 +230,11 @@ void update_tuple_sketch<S, U, P, A>::trim() {
 }
 
 template<typename S, typename U, typename P, typename A>
+void update_tuple_sketch<S, U, P, A>::reset() {
+  map_.reset();
+}
+
+template<typename S, typename U, typename P, typename A>
 auto update_tuple_sketch<S, U, P, A>::begin() -> iterator {
   return iterator(map_.entries_, 1 << map_.lg_cur_size_, 0);
 }
@@ -252,7 +260,7 @@ compact_tuple_sketch<S, A> update_tuple_sketch<S, U, P, A>::compact(bool ordered
 }
 
 template<typename S, typename U, typename P, typename A>
-void update_tuple_sketch<S, U, P, A>::print_specifics(ostrstream& os) const {
+void update_tuple_sketch<S, U, P, A>::print_specifics(std::ostringstream& os) const {
   os << "   lg nominal size      : " << (int) map_.lg_nom_size_ << std::endl;
   os << "   lg current size      : " << (int) map_.lg_cur_size_ << std::endl;
   os << "   resize factor        : " << (1 << map_.rf_) << std::endl;
@@ -264,7 +272,7 @@ template<typename S, typename A>
 compact_tuple_sketch<S, A>::compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta,
     std::vector<Entry, AllocEntry>&& entries):
 is_empty_(is_empty),
-is_ordered_(is_ordered),
+is_ordered_(is_ordered || (entries.size() <= 1ULL)),
 seed_hash_(seed_hash),
 theta_(theta),
 entries_(std::move(entries))
@@ -451,9 +459,15 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
   read<uint8_t>(is); // unused
   const auto flags_byte = read<uint8_t>(is);
   const auto seed_hash = read<uint16_t>(is);
-  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+  if (serial_version != SERIAL_VERSION && serial_version != SERIAL_VERSION_LEGACY) {
+    throw std::invalid_argument("serial version mismatch: expected " + std::to_string(SERIAL_VERSION) + " or "
+        + std::to_string(SERIAL_VERSION_LEGACY) + ", actual " + std::to_string(serial_version));
+  }
   checker<true>::check_sketch_family(family, SKETCH_FAMILY);
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
+  if (type != SKETCH_TYPE && type != SKETCH_TYPE_LEGACY) {
+    throw std::invalid_argument("sketch type mismatch: expected " + std::to_string(SKETCH_TYPE) + " or "
+        + std::to_string(SKETCH_TYPE_LEGACY) + ", actual " + std::to_string(type));
+  }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
@@ -506,9 +520,15 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   ptr += copy_from_mem(ptr, flags_byte);
   uint16_t seed_hash;
   ptr += copy_from_mem(ptr, seed_hash);
-  checker<true>::check_serial_version(serial_version, SERIAL_VERSION);
+  if (serial_version != SERIAL_VERSION && serial_version != SERIAL_VERSION_LEGACY) {
+    throw std::invalid_argument("serial version mismatch: expected " + std::to_string(SERIAL_VERSION) + " or "
+        + std::to_string(SERIAL_VERSION_LEGACY) + ", actual " + std::to_string(serial_version));
+  }
   checker<true>::check_sketch_family(family, SKETCH_FAMILY);
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
+  if (type != SKETCH_TYPE && type != SKETCH_TYPE_LEGACY) {
+    throw std::invalid_argument("sketch type mismatch: expected " + std::to_string(SKETCH_TYPE) + " or "
+        + std::to_string(SKETCH_TYPE_LEGACY) + ", actual " + std::to_string(type));
+  }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
 
@@ -568,7 +588,7 @@ auto compact_tuple_sketch<S, A>::end() const -> const_iterator {
 }
 
 template<typename S, typename A>
-void compact_tuple_sketch<S, A>::print_specifics(ostrstream&) const {}
+void compact_tuple_sketch<S, A>::print_specifics(std::ostringstream&) const {}
 
 // builder
 
@@ -582,7 +602,7 @@ tuple_base_builder<builder, P, A>(policy, allocator) {}
 
 template<typename S, typename U, typename P, typename A>
 auto update_tuple_sketch<S, U, P, A>::builder::build() const -> update_tuple_sketch {
-  return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
+  return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 
 } /* namespace datasketches */

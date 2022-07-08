@@ -22,22 +22,25 @@
 
 #include "req_common.hpp"
 #include "req_compactor.hpp"
-#include "req_quantile_calculator.hpp"
+#include "quantile_sketch_sorted_view.hpp"
+
+#include <stdexcept>
 
 namespace datasketches {
 
 template<
   typename T,
-  typename Comparator = std::less<T>,
-  typename SerDe = serde<T>,
+  typename Comparator = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
+  typename S = serde<T>, // deprecated, to be removed in the next major version
   typename Allocator = std::allocator<T>
 >
 class req_sketch {
 public:
+  using value_type = T;
+  using comparator = Comparator;
   using Compactor = req_compactor<T, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
-  using AllocDouble = typename std::allocator_traits<Allocator>::template rebind_alloc<double>;
-  using vector_double = std::vector<double, AllocDouble>;
+  using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
 
   /**
    * Constructor
@@ -54,6 +57,14 @@ public:
   req_sketch(req_sketch&& other) noexcept;
   req_sketch& operator=(const req_sketch& other);
   req_sketch& operator=(req_sketch&& other);
+
+  /*
+   * Type converting constructor.
+   * @param other sketch of a different type
+   * @param allocator instance of an Allocator
+   */
+  template<typename TT, typename CC, typename SS, typename AA>
+  explicit req_sketch(const req_sketch<TT, CC, SS, AA>& other, const Allocator& allocator = Allocator());
 
   /**
    * Returns configured parameter K
@@ -114,6 +125,12 @@ public:
   const T& get_max_value() const;
 
   /**
+   * Returns an instance of the comparator for this sketch.
+   * @return comparator
+   */
+  Comparator get_comparator() const;
+
+  /**
    * Returns an approximation to the normalized (fractional) rank of the given item from 0 to 1 inclusive.
    * With the template parameter inclusive=true the weight of the given item is included into the rank.
    * Otherwise the rank equals the sum of the weights of items less than the given item according to the Comparator.
@@ -123,7 +140,6 @@ public:
    * @param item to be ranked
    * @return an approximate rank of the given item
    */
-
   template<bool inclusive = false>
   double get_rank(const T& item) const;
 
@@ -135,9 +151,10 @@ public:
    *
    * @param split_points an array of <i>m</i> unique, monotonically increasing values
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
-   * The definition of an "interval" is inclusive of the left split point (or minimum value) and
-   * exclusive of the right split point, with the exception that the last interval will include
-   * the maximum value.
+   * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
+   * split point, with the exception that the last interval will include the maximum value.
+   * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
+   * split point.
    * It is not necessary to include either the min or max values in these split points.
    *
    * @return an array of m+1 doubles each of which is an approximation
@@ -178,8 +195,9 @@ public:
    * @param rank the given normalized rank
    * @return approximate quantile given the normalized rank
    */
+  using quantile_return_type = typename quantile_sketch_sorted_view<T, Comparator, Allocator>::quantile_return_type;
   template<bool inclusive = false>
-  const T& get_quantile(double rank) const;
+  quantile_return_type get_quantile(double rank) const;
 
   /**
    * Returns an array of quantiles that correspond to the given array of normalized ranks.
@@ -221,24 +239,28 @@ public:
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This version is for fixed-size arithmetic types (integral and floating point).
+   * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-  size_t get_serialized_size_bytes() const;
+  template<typename TT = T, typename SerDe = S, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This version is for all other types and can be expensive since every item needs to be looked at.
+   * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-  size_t get_serialized_size_bytes() const;
+  template<typename TT = T, typename SerDe = S, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+  size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
+   * @param instance of a SerDe
    */
-  void serialize(std::ostream& os) const;
+  template<typename SerDe = S>
+  void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
   // This is a convenience alias for users
   // The type returned by the following serialize method
@@ -250,23 +272,52 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
+   * @param instance of a SerDe
    */
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+  template<typename SerDe = S>
+  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
+   * @param instance of an Allocator
    * @return an instance of a sketch
+   *
+   * Deprecated, to be removed in the next major version
    */
   static req_sketch deserialize(std::istream& is, const Allocator& allocator = Allocator());
+
+  /**
+   * This method deserializes a sketch from a given stream.
+   * @param is input stream
+   * @param instance of a SerDe
+   * @param instance of an Allocator
+   * @return an instance of a sketch
+   */
+  template<typename SerDe = S>
+  static req_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
+   * @param instance of an Allocator
    * @return an instance of a sketch
+   *
+   * Deprecated, to be removed in the next major version
    */
   static req_sketch deserialize(const void* bytes, size_t size, const Allocator& allocator = Allocator());
+
+  /**
+   * This method deserializes a sketch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param instance of a SerDe
+   * @param instance of an Allocator
+   * @return an instance of a sketch
+   */
+  template<typename SerDe = S>
+  static req_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
   /**
    * Prints a summary of the sketch.
@@ -278,6 +329,9 @@ public:
   class const_iterator;
   const_iterator begin() const;
   const_iterator end() const;
+
+  template<bool inclusive = false>
+  quantile_sketch_sorted_view<T, Comparator, Allocator> get_sorted_view(bool cumulative) const;
 
 private:
   Allocator allocator_;
@@ -309,13 +363,6 @@ private:
   static double get_rank_lb(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
   static double get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
   static bool is_exact_rank(uint16_t k, uint8_t num_levels, double rank, uint64_t n, bool hra);
-
-  using QuantileCalculator = req_quantile_calculator<T, Comparator, Allocator>;
-  using AllocCalc = typename std::allocator_traits<Allocator>::template rebind_alloc<QuantileCalculator>;
-  class calculator_deleter;
-  using QuantileCalculatorPtr = typename std::unique_ptr<QuantileCalculator, calculator_deleter>;
-  template<bool inclusive>
-  QuantileCalculatorPtr get_quantile_calculator() const;
 
   // for deserialization
   class item_deleter;
@@ -369,6 +416,9 @@ private:
     }
   }
 
+  // for type converting constructor
+  template<typename TT, typename CC, typename SS, typename AA>
+  friend class req_sketch;
 };
 
 template<typename T, typename C, typename S, typename A>

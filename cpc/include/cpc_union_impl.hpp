@@ -22,6 +22,8 @@
 
 #include "count_zeros.hpp"
 
+#include <stdexcept>
+
 namespace datasketches {
 
 template<typename A>
@@ -34,7 +36,7 @@ bit_matrix(allocator)
   if (lg_k < CPC_MIN_LG_K || lg_k > CPC_MAX_LG_K) {
     throw std::invalid_argument("lg_k must be >= " + std::to_string(CPC_MIN_LG_K) + " and <= " + std::to_string(CPC_MAX_LG_K) + ": " + std::to_string(lg_k));
   }
-  accumulator = new (AllocCpc().allocate(1)) cpc_sketch_alloc<A>(lg_k, seed, allocator);
+  accumulator = new (AllocCpc(allocator).allocate(1)) cpc_sketch_alloc<A>(lg_k, seed, allocator);
 }
 
 template<typename A>
@@ -45,7 +47,7 @@ accumulator(other.accumulator),
 bit_matrix(other.bit_matrix)
 {
   if (accumulator != nullptr) {
-    accumulator = new (AllocCpc().allocate(1)) cpc_sketch_alloc<A>(*other.accumulator);
+    accumulator = new (AllocCpc(accumulator->get_allocator()).allocate(1)) cpc_sketch_alloc<A>(*other.accumulator);
   }
 }
 
@@ -62,8 +64,9 @@ bit_matrix(std::move(other.bit_matrix))
 template<typename A>
 cpc_union_alloc<A>::~cpc_union_alloc() {
   if (accumulator != nullptr) {
+    AllocCpc allocator(accumulator->get_allocator());
     accumulator->~cpc_sketch_alloc<A>();
-    AllocCpc().deallocate(accumulator, 1);
+    allocator.deallocate(accumulator, 1);
   }
 }
 
@@ -181,7 +184,7 @@ template<typename A>
 cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_accumulator() const {
   if (lg_k != accumulator->get_lg_k()) throw std::logic_error("lg_k != accumulator->lg_k");
   if (accumulator->get_num_coupons() == 0) {
-    return cpc_sketch_alloc<A>(lg_k, seed);
+    return cpc_sketch_alloc<A>(lg_k, seed, accumulator->get_allocator());
   }
   if (accumulator->determine_flavor() != cpc_sketch_alloc<A>::flavor::SPARSE) throw std::logic_error("wrong flavor");
   cpc_sketch_alloc<A> copy(*accumulator);
@@ -242,8 +245,9 @@ cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_bit_matrix() const {
 template<typename A>
 void cpc_union_alloc<A>::switch_to_bit_matrix() {
   bit_matrix = accumulator->build_bit_matrix();
+  AllocCpc allocator(accumulator->get_allocator());
   accumulator->~cpc_sketch_alloc<A>();
-  AllocCpc().deallocate(accumulator, 1);
+  allocator.deallocate(accumulator, 1);
   accumulator = nullptr;
 }
 
@@ -324,7 +328,7 @@ void cpc_union_alloc<A>::reduce_k(uint8_t new_lg_k) {
     if (bit_matrix.size() > 0) throw std::logic_error("bit_matrix is not expected");
     if (!accumulator->is_empty()) {
       cpc_sketch_alloc<A> old_accumulator(*accumulator);
-      *accumulator = cpc_sketch_alloc<A>(new_lg_k, seed);
+      *accumulator = cpc_sketch_alloc<A>(new_lg_k, seed, old_accumulator.get_allocator());
       walk_table_updating_sketch(old_accumulator.surprising_value_table);
     }
     lg_k = new_lg_k;

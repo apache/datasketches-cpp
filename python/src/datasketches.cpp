@@ -28,6 +28,8 @@ void init_cpc(py::module& m);
 void init_theta(py::module& m);
 void init_vo(py::module& m);
 void init_req(py::module& m);
+void init_quantiles(py::module& m);
+void init_kolmogorov_smirnov(py::module& m);
 void init_vector_of_kll(py::module& m);
 
 PYBIND11_MODULE(datasketches, m) {
@@ -38,5 +40,7 @@ PYBIND11_MODULE(datasketches, m) {
   init_theta(m);
   init_vo(m);
   init_req(m);
+  init_quantiles(m);
+  init_kolmogorov_smirnov(m);
   init_vector_of_kll(m);
 }

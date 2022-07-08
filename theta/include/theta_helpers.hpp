@@ -49,6 +49,21 @@ public:
   }
 };
 
+template<bool dummy>
+class theta_build_helper{
+public:
+  // consistent way of initializing theta from p
+  // avoids multiplication if p == 1 since it might not yield MAX_THETA exactly
+  static uint64_t starting_theta_from_p(float p) {
+    if (p < 1) return static_cast<uint64_t>(theta_constants::MAX_THETA * p);
+    return theta_constants::MAX_THETA;
+  }
+
+  static uint8_t starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf) {
+    return (lg_tgt <= lg_min) ? lg_min : (lg_rf == 0) ? lg_tgt : ((lg_tgt - lg_min) % lg_rf) + lg_min;
+  }
+};
+
 } /* namespace datasketches */
 
 #endif

@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include <string>
+#include <stdexcept>
 
 #include "bounds_binomial_proportions.hpp"
 

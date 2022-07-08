@@ -49,8 +49,9 @@ class CMakeBuild(build_ext):
             os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args =  ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir]
         cmake_args += ['-DWITH_PYTHON=True']
+        cmake_args += ['-DCMAKE_CXX_STANDARD=11']
         # ensure we use a consistent python version
-        cmake_args += ['-DPYTHON_EXECUTABLE=' + sys.executable]
+        cmake_args += ['-DPython3_EXECUTABLE=' + sys.executable]
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
@@ -59,7 +60,8 @@ class CMakeBuild(build_ext):
                            cfg.upper(),
                            extdir)]
             if sys.maxsize > 2**32:
-                cmake_args += ['-A', 'x64']
+                cmake_args += ['-T', 'host=x64']
+                cmake_args += ['-DCMAKE_GENERATOR_PLATFORM=x64']
                 build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
@@ -74,23 +76,24 @@ class CMakeBuild(build_ext):
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args,
                               cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.', '--target', 'python'] + build_args,
-                              cwd=self.build_temp)
+                              cwd=self.build_temp, env=env)
         print() # add an empty line to pretty print
 
 setup(
     name='datasketches',
-    version='3.2.0.dev0',
-    author='Apache DataSketches Developers',
+    version='3.5.0.dev0',
+    author='Apache Software Foundation',
     author_email='dev@datasketches.apache.org',
-    description='A wrapper for the C++ Apache DataSketches library',
+    description='The Apache DataSketches Library for Python',
     license='Apache License 2.0',
     url='http://datasketches.apache.org',
     long_description=open('python/README.md').read(),
+    long_description_content_type='text/markdown',
     packages=find_packages('python'), # python pacakges only in this dir
     package_dir={'':'python'},
     # may need to add all source paths for sdist packages w/o MANIFEST.in
     ext_modules=[CMakeExtension('datasketches')],
     cmdclass={'build_ext': CMakeBuild},
-    setup_requires=['setuptools_scm','tox-setuptools'],
+    install_requires=['numpy'],
     zip_safe=False
 )

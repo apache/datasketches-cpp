@@ -32,17 +32,13 @@ target_include_directories(sampling
 target_link_libraries(sampling INTERFACE common)
 target_compile_features(sampling INTERFACE cxx_std_11)
 
-set(sampling_HEADERS "include/var_opt_sketch.hpp;include/var_opt_sketch_impl.hpp")
-
 install(TARGETS sampling
   EXPORT ${PROJECT_NAME}
 )
 
-install(FILES ${sampling_HEADERS}
+install(FILES 
+		include/var_opt_sketch.hpp
+		include/var_opt_sketch_impl.hpp
+		include/var_opt_union.hpp
+		include/var_opt_union_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
-
-target_sources(sampling
-  INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/var_opt_sketch.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/var_opt_sketch_impl.hpp
-)

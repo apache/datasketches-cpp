@@ -26,6 +26,7 @@
 
 #include "count_zeros.hpp"
 #include "conditional_forward.hpp"
+#include "common_defs.hpp"
 
 #include <iomanip>
 
@@ -129,6 +130,33 @@ req_compactor<T, C, A>& req_compactor<T, C, A>::operator=(req_compactor&& other)
   std::swap(capacity_, other.capacity_);
   std::swap(items_, other.items_);
   return *this;
+}
+
+template<typename T, typename C, typename A>
+template<typename TT, typename CC, typename AA>
+req_compactor<T, C, A>::req_compactor(const req_compactor<TT, CC, AA>& other, const A& allocator):
+allocator_(allocator),
+lg_weight_(other.lg_weight_),
+hra_(other.hra_),
+coin_(other.coin_),
+sorted_(other.sorted_),
+section_size_raw_(other.section_size_raw_),
+section_size_(other.section_size_),
+num_sections_(other.num_sections_),
+state_(other.state_),
+num_items_(other.num_items_),
+capacity_(other.capacity_),
+items_(nullptr)
+{
+  if (other.items_ != nullptr) {
+    items_ = allocator_.allocate(capacity_);
+    const uint32_t from = hra_ ? capacity_ - num_items_ : 0;
+    const uint32_t to = hra_ ? capacity_ : num_items_;
+    for (uint32_t i = from; i < to; ++i) new (items_ + i) T(other.items_[i]);
+    if (sorted_ && !std::is_sorted(items_ + from, items_ + to, C())) {
+      throw std::logic_error("items must be sorted");
+    }
+  }
 }
 
 template<typename T, typename C, typename A>
@@ -245,7 +273,7 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& nex
   if (compaction_range.second - compaction_range.first < 2) throw std::logic_error("compaction range error");
 
   if ((state_ & 1) == 1) { coin_ = !coin_; } // for odd flip coin;
-  else { coin_ = req_random_bit(); } // random coin flip
+  else { coin_ = random_bit(); } // random coin flip
 
   const auto num = (compaction_range.second - compaction_range.first) / 2;
   next.ensure_space(num);
@@ -451,7 +479,7 @@ req_compactor<T, C, A>::req_compactor(bool hra, uint8_t lg_weight, bool sorted, 
 allocator_(allocator),
 lg_weight_(lg_weight),
 hra_(hra),
-coin_(req_random_bit()),
+coin_(random_bit()),
 sorted_(sorted),
 section_size_raw_(section_size_raw),
 section_size_(nearest_even(section_size_raw)),

@@ -22,6 +22,7 @@
 #include <catch.hpp>
 #include <tuple_a_not_b.hpp>
 #include <theta_sketch.hpp>
+#include <stdexcept>
 
 namespace datasketches {
 

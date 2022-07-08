@@ -27,6 +27,7 @@
 #include <fstream>
 #include <cmath>
 #include <random>
+#include <stdexcept>
 
 #ifdef TEST_BINARY_INPUT_PATH
 static std::string testBinaryInputPath = TEST_BINARY_INPUT_PATH;

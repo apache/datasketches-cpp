@@ -15,9 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required(VERSION 3.12.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(DataSketches
-        VERSION 0.12.0
+        VERSION 3.5.0
         LANGUAGES CXX)
 
 include(GNUInstallDirs)
@@ -34,6 +34,8 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_MACOSX_RPATH ON)
+
+set(CMAKE_CXX_STANDARD 11)
 
 # enable compiler warnings globally
 # derived from https://foonathan.net/blog/2018/10/17/cmake-warnings.html
@@ -104,12 +106,13 @@ add_subdirectory(theta)
 add_subdirectory(sampling)
 add_subdirectory(tuple)
 add_subdirectory(req)
+add_subdirectory(quantiles)
 
 if (WITH_PYTHON)
   add_subdirectory(python)
 endif()
 
-target_link_libraries(datasketches INTERFACE hll cpc kll fi theta sampling)
+target_link_libraries(datasketches INTERFACE hll cpc kll fi theta sampling req quantiles)
 
 if (COVERAGE)
   find_program(LCOV_PATH NAMES "lcov")
@@ -124,11 +127,30 @@ endif()
 
 # # Installation
 install(TARGETS datasketches
-  EXPORT ${PROJCT_NAME}
+  EXPORT ${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
 )
 
+# Packaging
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+configure_package_config_file(
+    cmake/DataSketchesConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfig.cmake"
+    INSTALL_DESTINATION lib/DataSketches/cmake
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR
+)
+install(EXPORT ${PROJECT_NAME} DESTINATION lib/DataSketches/cmake)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfigVersion.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfig.cmake"
+        DESTINATION lib/DataSketches/cmake)
+
+
 #set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 #set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-#include(CPack)
+include(CPack)
