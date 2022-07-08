@@ -42,7 +42,6 @@ double tuple_sketch<S, A>::get_estimate() const {
 
 template<typename S, typename A>
 double tuple_sketch<S, A>::get_lower_bound(uint8_t num_std_devs, uint32_t num_subset_entries) const {
-    if (is_empty()) num_subset_entries = 0 ; // When the sketch is empty we don't keep information for >0 identifiers.
     num_subset_entries = std::min(num_subset_entries, get_num_retained()) ;
     if (!is_estimation_mode()) return num_subset_entries;
     return binomial_bounds::get_lower_bound(num_subset_entries, get_theta(), num_std_devs);
@@ -55,7 +54,6 @@ double tuple_sketch<S, A>::get_lower_bound(uint8_t num_std_devs) const {
 
 template<typename S, typename A>
 double tuple_sketch<S, A>::get_upper_bound(uint8_t num_std_devs, uint32_t num_subset_entries) const {
-    if (is_empty()) num_subset_entries = 0 ; // When the sketch is empty we don't keep information for >0 identifiers.
     num_subset_entries = std::min(num_subset_entries, get_num_retained()) ;
     if (!is_estimation_mode()) return num_subset_entries;
     return binomial_bounds::get_upper_bound(num_subset_entries, get_theta(), num_std_devs);
