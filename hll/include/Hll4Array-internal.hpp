@@ -267,10 +267,10 @@ void Hll4Array<A>::shiftToBiggerCurMin() {
     for (const auto coupon: *auxHashMap_) {
       slotNum = HllUtil<A>::getLow26(coupon) & configKmask;
       oldActualVal = HllUtil<A>::getValue(coupon);
-      newShiftedVal = oldActualVal - newCurMin;
-      if (newShiftedVal < 0) {
+      if (oldActualVal < newCurMin) {
         throw std::logic_error("oldActualVal < newCurMin when incrementing curMin");
       }
+      newShiftedVal = oldActualVal - newCurMin;
 
       if (getSlot(slotNum) != hll_constants::AUX_TOKEN) {
         throw std::logic_error("getSlot(slotNum) != AUX_TOKEN for item in auxiliary hash map");
