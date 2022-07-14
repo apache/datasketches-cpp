@@ -7,8 +7,6 @@ global-include *.bin
 
 global-exclude .git*
 
-recursive-include python/pybind11 *
-
 graft cmake
 graft common
 graft cpc
