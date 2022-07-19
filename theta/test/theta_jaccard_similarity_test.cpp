@@ -19,7 +19,7 @@
 
 #include <iostream>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include "theta_jaccard_similarity.hpp"
 

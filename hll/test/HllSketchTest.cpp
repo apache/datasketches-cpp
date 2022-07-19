@@ -21,7 +21,7 @@
 
 #include "hll.hpp"
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <test_allocator.hpp>
 
 namespace datasketches {
