@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <kll_sketch.hpp>
 #include <kll_helper.hpp>

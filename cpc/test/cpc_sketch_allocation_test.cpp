@@ -22,7 +22,7 @@
 #include <sstream>
 #include <fstream>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include "cpc_sketch.hpp"
 #include "cpc_union.hpp"

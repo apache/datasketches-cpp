@@ -255,10 +255,8 @@ APPENDIX B: Additional licenses relevant to this product.
     =============================================================
     Boost License  (https://www.boost.org/LICENSE_1_0.txt)
     =============================================================
-    Original source code:
-      https://github.com/catchorg/Catch2/blob/master/single_include/catch2/catch.hpp
-    ------------------------------------------------------------- 
-    Copyright (c) 2020 Two Blue Cubes Ltd. All rights reserved.
+    Original source:
+       https://github.com/catchorg/Catch2/blob/v2.x/LICENSE.txt
 
     Boost Software License - Version 1.0 - August 17th, 2003
     
@@ -285,8 +283,8 @@ APPENDIX B: Additional licenses relevant to this product.
     DEALINGS IN THE SOFTWARE.
     -------------------------------------------------------------
     Code Locations:
-      * https://github.com/apache/datasketches-cpp/blob/master/common/test/catch.hpp
-    that is adapted from the above.
+    Found in the Catch2 unit test code that is downloaded from github.com as part
+    of CMake configuration if configured to build tests.
 
 
     =============================================================

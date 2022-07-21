@@ -20,7 +20,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <tuple_union.hpp>
 #include <theta_sketch.hpp>
 

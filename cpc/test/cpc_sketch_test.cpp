@@ -23,7 +23,7 @@
 #include <fstream>
 #include <stdexcept>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include "cpc_sketch.hpp"
 
