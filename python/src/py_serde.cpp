@@ -17,21 +17,23 @@
  * under the License.
  */
 
-#include "py_serde.hpp"
+#include <cstring>
 #include "memory_operations.hpp"
+
+#include "py_serde.hpp"
 
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
 void init_serde(py::module& m) {
-  py::class_<datasketches::py_object_serde, datasketches::PyObjectSerde /* <--- trampoline*/>(m, "PyObjectSerde")
+  py::class_<datasketches::py_object_serde, datasketches::PyObjectSerDe /* <--- trampoline*/>(m, "PyObjectSerDe")
     .def(py::init<>())
     .def("get_size", &datasketches::py_object_serde::get_size, py::arg("item"),
         "Returns the size in bytes of an item")
-    .def("to_bytes", &datasketches::py_object_serde::to_bytes, py::args("item"),
+    .def("to_bytes", &datasketches::py_object_serde::to_bytes, py::arg("item"),
         "Retuns a bytes object with a serialized version of an item")
-    .def("from_bytes", &datasketches::py_object_serde::from_bytes, py::args("data"), py::args("offset"),
+    .def("from_bytes", &datasketches::py_object_serde::from_bytes, py::arg("data"), py::arg("offset"),
         "Reads a bytes object starting from the given offest and returns a tuple of the reconstructed "
         "object and the number of additional bytes read")
     ;
@@ -56,7 +58,6 @@ namespace datasketches {
   }
 
   size_t py_object_serde::deserialize(const void* ptr, size_t capacity, py::object* items, unsigned num) const {
-    // items allocated but not initialized
     size_t bytes_read = 0;
     unsigned i = 0;
     bool failure = false;
@@ -64,21 +65,20 @@ namespace datasketches {
     py::bytes bytes(static_cast<const char*>(ptr), capacity);
     for (; i < num && !failure; ++i) {
       py::tuple bytes_and_len = from_bytes(bytes, bytes_read);
+      if (bytes_and_len.size() != 2) {
+        throw py::value_error("from_bytes() must return a tuple of size 2. Found: "
+          + std::to_string(bytes_and_len.size()));
+      }
       size_t num_bytes = py::cast<size_t>(bytes_and_len[1]);
+      check_memory_size(bytes_read + num_bytes, capacity);
+      
       ptr = static_cast<const char*>(ptr) + num_bytes;
       bytes_read += num_bytes;
-      if (bytes_read > capacity) {
-          failure = true;
-          break;
-      }
       new (&items[i]) py::object(py::cast<py::object>(bytes_and_len[0]));
-
-      if (failure) {
-        // assume these are ref-counted and do nothing? that seems problematic?
-        // using this for a consistent error message
-        check_memory_size(bytes_read, capacity);
-      }
+      // TODO: if something goes wrong, do we leak memory? Maybe ref counting
+      // of py::objects will handle it?
     }
+
     return bytes_read;
   }
 

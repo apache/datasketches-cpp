@@ -30,27 +30,37 @@ namespace datasketches {
 namespace python {
 
 template<typename T>
-var_opt_sketch<T> vo_sketch_deserialize(py::bytes& skBytes, py_object_serde *sd) {
+var_opt_sketch<T> vo_sketch_deserialize(py::bytes& skBytes, py_object_serde& sd) {
   std::string skStr = skBytes; // implicit cast
-  return var_opt_sketch<T>::deserialize(skStr.c_str(), skStr.length(), *sd);
+  return var_opt_sketch<T>::deserialize(skStr.c_str(), skStr.length(), sd);
 }
 
 template<typename T>
-py::object vo_sketch_serialize(const var_opt_sketch<T>& sk, py_object_serde *sd) {
-  auto serResult = sk.serialize(0, *sd);
+py::object vo_sketch_serialize(const var_opt_sketch<T>& sk, py_object_serde& sd) {
+  auto serResult = sk.serialize(0, sd);
   return py::bytes((char*)serResult.data(), serResult.size());
 }
 
 template<typename T>
-var_opt_union<T> vo_union_deserialize(py::bytes& uBytes, py_object_serde *sd) {
+size_t vo_sketch_size_bytes(const var_opt_sketch<T>& sk, py_object_serde& sd) {
+  return sk.get_serialized_size_bytes(sd);
+}
+
+template<typename T>
+var_opt_union<T> vo_union_deserialize(py::bytes& uBytes, py_object_serde& sd) {
   std::string uStr = uBytes; // implicit cast
-  return var_opt_union<T>::deserialize(uStr.c_str(), uStr.length(), *sd);
+  return var_opt_union<T>::deserialize(uStr.c_str(), uStr.length(), sd);
 }
 
 template<typename T>
-py::object vo_union_serialize(const var_opt_union<T>& u, py_object_serde *sd) {
-  auto serResult = u.serialize(0, *sd);
+py::object vo_union_serialize(const var_opt_union<T>& u, py_object_serde& sd) {
+  auto serResult = u.serialize(0, sd);
   return py::bytes((char*)serResult.data(), serResult.size());
+}
+
+template<typename T>
+size_t vo_union_size_bytes(const var_opt_union<T>& u, py_object_serde& sd) {
+  return u.get_serialized_size_bytes(sd);
 }
 
 template<typename T>
@@ -126,8 +136,8 @@ void bind_vo_sketch(py::module &m, const char* name) {
     .def("estimate_subset_sum", &dspy::vo_sketch_estimate_subset_sum<T>,
          "Applies a provided predicate to the sketch and returns the estimated total weight matching the predicate, as well "
          "as upper and lower bounds on the estimate and the total weight processed by the sketch")
-    //.def("get_serialized_size_bytes", &var_opt_sketch<T>::get_serialized_size_bytes, py::arg("serde"),
-    //     "Computes the size in bytes needed to serialize the current sketch")
+    .def("get_serialized_size_bytes", &dspy::vo_sketch_size_bytes<T>, py::arg("serde"),
+         "Computes the size in bytes needed to serialize the current sketch")
     .def("serialize", &dspy::vo_sketch_serialize<T>, py::arg("serde"), "Serialize the var opt sketch using the provided serde")
     .def_static("deserialize", &dspy::vo_sketch_deserialize<T>, py::arg("bytes"), py::arg("serde"),
          "Constructs a var opt sketch from the given bytes using the provided serde")
@@ -150,8 +160,8 @@ void bind_vo_union(py::module &m, const char* name) {
          "Returns a sketch corresponding to the union result")
     .def("reset", &var_opt_union<T>::reset,
          "Resets the union to the empty state")
-    //.def("get_serialized_size_bytes", &var_opt_union<T>::get_serialized_size_bytes, py::arg("serde"),
-    //     "Computes the size in bytes needed to serialize the current sketch")
+    .def("get_serialized_size_bytes", &dspy::vo_union_size_bytes<T>, py::arg("serde"),
+         "Computes the size in bytes needed to serialize the current sketch")
     .def("serialize", &dspy::vo_union_serialize<T>, py::arg("serde"), "Serialize the var opt union using the provided serde")
     .def_static("deserialize", &dspy::vo_union_deserialize<T>, py::arg("bytes"), py::arg("serde"),
          "Constructs a var opt union from the given bytes using the provided serde")

@@ -16,7 +16,7 @@
 # under the License.
  
 import unittest
-from datasketches import var_opt_sketch, var_opt_union
+from datasketches import var_opt_sketch, var_opt_union, PyIntsSerDe, PyStringsSerDe
 
 class VoTest(unittest.TestCase):
   def test_vo_example(self):
@@ -96,6 +96,30 @@ class VoTest(unittest.TestCase):
     # to_string() is provided as a convenience to avoid direct
     # calls to __str__() with parameters.
     print(result.to_string(True))
+
+    # finally, we can serialize the sketch by providing an
+    # appropriate serde class.
+    expected_size = result.get_serialized_size_bytes(PyIntsSerDe())
+    b = result.serialize(PyIntsSerDe())
+    self.assertEqual(expected_size, len(b))
+
+    # if we try to deserialize with the wrong serde, things break
+    try:
+      var_opt_sketch.deserialize(b, PyStringsSerDe())
+      self.fail()
+    except:
+      # expected; do nothing
+      self.assertTrue(True)
+      
+    # using the correct serde gives us back a copy of the original
+    rebuilt = var_opt_sketch.deserialize(b, PyIntsSerDe())
+    self.assertEqual(result.k, rebuilt.k)
+    self.assertEqual(result.num_samples, rebuilt.num_samples)
+    self.assertEqual(result.n, rebuilt.n)
+    summary1 = result.estimate_subset_sum(geq_zero)
+    summary2 = rebuilt.estimate_subset_sum(geq_zero)
+    self.assertEqual(summary1['estimate'], summary2['estimate'])
+    self.assertEqual(summary1['total_sketch_weight'], summary2['total_sketch_weight'])
 
 if __name__ == '__main__':
   unittest.main()

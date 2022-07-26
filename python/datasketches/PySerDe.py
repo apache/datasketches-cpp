@@ -15,13 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from _datasketches import PyObjectSerde
+from _datasketches import PyObjectSerDe
 
 import struct
 
 # This file provides several Python SerDe implementation examples.
 #
-# Each implementation must extend the PyObjectSerde class and define
+# Each implementation must extend the PyObjectSerDe class and define
 # three methods:
 #   * get_size(item) returns an int of the number of bytes needed to
 #     serialize the given item
@@ -37,7 +37,7 @@ import struct
 # This format allows pre-allocating each string, at the cost of
 # additional storage. Using this format, the serialized string consumes
 # 4 + len(item) bytes.
-class PyStringsSerDe(PyObjectSerde):
+class PyStringsSerDe(PyObjectSerDe):
   def get_size(self, item):
     return int(4 + len(item))
 
@@ -56,7 +56,7 @@ class PyStringsSerDe(PyObjectSerde):
 
 # Implements an integer-encoding scheme where each integer is written
 # as a 32-bit (4 byte) little-endian value.
-class PyIntsSerDe(PyObjectSerde):
+class PyIntsSerDe(PyObjectSerDe):
   def get_size(self, item):
     return int(4)
 
@@ -68,7 +68,7 @@ class PyIntsSerDe(PyObjectSerde):
     return (val, 4)
 
 
-class PyLongsSerDe(PyObjectSerde):
+class PyLongsSerDe(PyObjectSerDe):
   def get_size(self, item):
     return int(8)
 
@@ -80,7 +80,7 @@ class PyLongsSerDe(PyObjectSerde):
     return (val, 8)
 
 
-class PyFloatsSerDe(PyObjectSerde):
+class PyFloatsSerDe(PyObjectSerDe):
   def get_size(self, item):
     return int(4)
 
@@ -92,7 +92,7 @@ class PyFloatsSerDe(PyObjectSerde):
     return (val, 4)
 
 
-class PyDoublesSerDe(PyObjectSerde):
+class PyDoublesSerDe(PyObjectSerDe):
   def get_size(self, item):
     return int(8)
 

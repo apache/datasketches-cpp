@@ -17,6 +17,6 @@
 
 name = 'datasketches'
 
-from .PySerDe import PyFloatsSerDe, PyStringsSerDe
+from .PySerDe import *
 
 from _datasketches import *
