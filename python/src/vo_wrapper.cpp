@@ -19,15 +19,39 @@
 
 #include "var_opt_sketch.hpp"
 #include "var_opt_union.hpp"
+#include "py_serde.hpp"
 
 #include <pybind11/pybind11.h>
-#include <pybind11/functional.h>
-#include <sstream>
 
 namespace py = pybind11;
 
 namespace datasketches {
+
 namespace python {
+
+template<typename T>
+var_opt_sketch<T> vo_sketch_deserialize(py::bytes& skBytes, py_object_serde *sd) {
+  std::string skStr = skBytes; // implicit cast
+  return var_opt_sketch<T>::deserialize(skStr.c_str(), skStr.length(), *sd);
+}
+
+template<typename T>
+py::object vo_sketch_serialize(const var_opt_sketch<T>& sk, py_object_serde *sd) {
+  auto serResult = sk.serialize(0, *sd);
+  return py::bytes((char*)serResult.data(), serResult.size());
+}
+
+template<typename T>
+var_opt_union<T> vo_union_deserialize(py::bytes& uBytes, py_object_serde *sd) {
+  std::string uStr = uBytes; // implicit cast
+  return var_opt_union<T>::deserialize(uStr.c_str(), uStr.length(), *sd);
+}
+
+template<typename T>
+py::object vo_union_serialize(const var_opt_union<T>& u, py_object_serde *sd) {
+  auto serResult = u.serialize(0, *sd);
+  return py::bytes((char*)serResult.data(), serResult.size());
+}
 
 template<typename T>
 py::list vo_sketch_get_samples(const var_opt_sketch<T>& sk) {
@@ -96,17 +120,17 @@ void bind_vo_sketch(py::module &m, const char* name) {
     .def_property_readonly("num_samples", &var_opt_sketch<T>::get_num_samples,
          "Returns the number of samples currently in the sketch")
     .def("get_samples", &dspy::vo_sketch_get_samples<T>,
-         "Retyrns the set of samples in the sketch")
+         "Returns the set of samples in the sketch")
     .def("is_empty", &var_opt_sketch<T>::is_empty,
          "Returns True if the sketch is empty, otherwise False")
     .def("estimate_subset_sum", &dspy::vo_sketch_estimate_subset_sum<T>,
          "Applies a provided predicate to the sketch and returns the estimated total weight matching the predicate, as well "
          "as upper and lower bounds on the estimate and the total weight processed by the sketch")
-    // As of writing, not yet clear how to serialize arbitrary python objects,
-    // especially in any sort of language-portable way
-    //.def("get_serialized_size_bytes", &var_opt_sketch<T>::get_serialized_size_bytes)
-    //.def("serialize", &dspy::vo_sketch_serialize<T>)
-    //.def_static("deserialize", &dspy::vo_sketch_deserialize<T>)
+    //.def("get_serialized_size_bytes", &var_opt_sketch<T>::get_serialized_size_bytes, py::arg("serde"),
+    //     "Computes the size in bytes needed to serialize the current sketch")
+    .def("serialize", &dspy::vo_sketch_serialize<T>, py::arg("serde"), "Serialize the var opt sketch using the provided serde")
+    .def_static("deserialize", &dspy::vo_sketch_deserialize<T>, py::arg("bytes"), py::arg("serde"),
+         "Constructs a var opt sketch from the given bytes using the provided serde")
     ;
 }
 
@@ -126,11 +150,11 @@ void bind_vo_union(py::module &m, const char* name) {
          "Returns a sketch corresponding to the union result")
     .def("reset", &var_opt_union<T>::reset,
          "Resets the union to the empty state")
-    // As of writing, not yet clear how to serialize arbitrary python objects,
-    // especially in any sort of language-portable way
-    //.def("get_serialized_size_bytes", &var_opt_sketch<T>::get_serialized_size_bytes)
-    //.def("serialize", &dspy::vo_union_serialize<T>)
-    //.def_static("deserialize", &dspy::vo_union_deserialize<T>)
+    //.def("get_serialized_size_bytes", &var_opt_union<T>::get_serialized_size_bytes, py::arg("serde"),
+    //     "Computes the size in bytes needed to serialize the current sketch")
+    .def("serialize", &dspy::vo_union_serialize<T>, py::arg("serde"), "Serialize the var opt union using the provided serde")
+    .def_static("deserialize", &dspy::vo_union_deserialize<T>, py::arg("bytes"), py::arg("serde"),
+         "Constructs a var opt union from the given bytes using the provided serde")
     ;
 }
 

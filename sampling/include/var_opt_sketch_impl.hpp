@@ -1704,7 +1704,7 @@ bool var_opt_sketch<T, S, A>::iterator::get_mark() const {
  */
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::get_adjusted_size(uint32_t max_size, uint32_t resize_target) {
-  if (max_size - (resize_target << 1) < 0L) {
+  if (max_size < (resize_target << 1)) {
     return max_size;
   }
   return resize_target;

@@ -1,0 +1,86 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+#include "py_serde.hpp"
+#include "memory_operations.hpp"
+
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
+
+void init_serde(py::module& m) {
+  py::class_<datasketches::py_object_serde, datasketches::PyObjectSerde /* <--- trampoline*/>(m, "PyObjectSerde")
+    .def(py::init<>())
+    .def("get_size", &datasketches::py_object_serde::get_size, py::arg("item"),
+        "Returns the size in bytes of an item")
+    .def("to_bytes", &datasketches::py_object_serde::to_bytes, py::args("item"),
+        "Retuns a bytes object with a serialized version of an item")
+    .def("from_bytes", &datasketches::py_object_serde::from_bytes, py::args("data"), py::args("offset"),
+        "Reads a bytes object starting from the given offest and returns a tuple of the reconstructed "
+        "object and the number of additional bytes read")
+    ;
+}    
+
+namespace datasketches {
+  size_t py_object_serde::size_of_item(const py::object& item) const {
+    return get_size(item);
+  }
+
+  size_t py_object_serde::serialize(void* ptr, size_t capacity, const py::object* items, unsigned num) const {
+    size_t bytes_written = 0;
+    pybind11::gil_scoped_acquire acquire;
+    for (unsigned i = 0; i < num; ++i) {
+      std::string bytes = to_bytes(items[i]); // implicit cast from py::bytes
+      check_memory_size(bytes_written + bytes.size(), capacity);
+      memcpy(ptr, bytes.c_str(), bytes.size());
+      ptr = static_cast<char*>(ptr) + bytes.size();
+      bytes_written += bytes.size();
+    }
+    return bytes_written;
+  }
+
+  size_t py_object_serde::deserialize(const void* ptr, size_t capacity, py::object* items, unsigned num) const {
+    // items allocated but not initialized
+    size_t bytes_read = 0;
+    unsigned i = 0;
+    bool failure = false;
+    pybind11::gil_scoped_acquire acquire;
+    py::bytes bytes(static_cast<const char*>(ptr), capacity);
+    for (; i < num && !failure; ++i) {
+      py::tuple bytes_and_len = from_bytes(bytes, bytes_read);
+      size_t num_bytes = py::cast<size_t>(bytes_and_len[1]);
+      ptr = static_cast<const char*>(ptr) + num_bytes;
+      bytes_read += num_bytes;
+      if (bytes_read > capacity) {
+          failure = true;
+          break;
+      }
+      new (&items[i]) py::object(py::cast<py::object>(bytes_and_len[0]));
+
+      if (failure) {
+        // assume these are ref-counted and do nothing? that seems problematic?
+        // using this for a consistent error message
+        check_memory_size(bytes_read, capacity);
+      }
+    }
+    return bytes_read;
+  }
+
+
+} // namespace datasketches

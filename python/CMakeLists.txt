@@ -50,7 +50,13 @@ target_link_libraries(python
 
 set_target_properties(python PROPERTIES
   PREFIX ""
-  OUTPUT_NAME datasketches
+  OUTPUT_NAME _datasketches
+)
+
+target_include_directories(python
+  PUBLIC
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 # ensure we make a .so on Mac rather than .dylib
@@ -71,4 +77,5 @@ target_sources(python
     src/quantiles_wrapper.cpp
     src/ks_wrapper.cpp
     src/vector_of_kll.cpp
+    src/py_serde.cpp
 )
