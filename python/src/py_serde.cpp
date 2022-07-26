@@ -54,6 +54,7 @@ namespace datasketches {
       ptr = static_cast<char*>(ptr) + bytes.size();
       bytes_written += bytes.size();
     }
+    pybind11::gil_scoped_release release;
     return bytes_written;
   }
 
@@ -61,24 +62,49 @@ namespace datasketches {
     size_t bytes_read = 0;
     unsigned i = 0;
     bool failure = false;
+    bool error_from_python = false;
     pybind11::gil_scoped_acquire acquire;
+
+    // copy data into bytes only once
     py::bytes bytes(static_cast<const char*>(ptr), capacity);
     for (; i < num && !failure; ++i) {
-      py::tuple bytes_and_len = from_bytes(bytes, bytes_read);
-      if (bytes_and_len.size() != 2) {
-        throw py::value_error("from_bytes() must return a tuple of size 2. Found: "
-          + std::to_string(bytes_and_len.size()));
+      py::tuple bytes_and_len;
+      try {
+        bytes_and_len = from_bytes(bytes, bytes_read);
+      } catch (py::error_already_set &e) {
+        failure = true;
+        error_from_python = true;
+        break;
       }
-      size_t num_bytes = py::cast<size_t>(bytes_and_len[1]);
-      check_memory_size(bytes_read + num_bytes, capacity);
+
+      // TODO: check bytes_and_len size is exactly 2?
+      size_t length = py::cast<size_t>(bytes_and_len[1]);
+      if (bytes_read + length > capacity) {
+        bytes_read += length; // use this value to report the error
+        failure = true;
+        break;
+      }
       
-      ptr = static_cast<const char*>(ptr) + num_bytes;
-      bytes_read += num_bytes;
       new (&items[i]) py::object(py::cast<py::object>(bytes_and_len[0]));
-      // TODO: if something goes wrong, do we leak memory? Maybe ref counting
-      // of py::objects will handle it?
+      ptr = static_cast<const char*>(ptr) + length;
+      bytes_read += length;
     }
 
+    if (failure) {
+      // clean up what we've allocated
+      for (unsigned j = 0; j < i; ++j) {
+        items[j].dec_ref();
+      }
+
+      if (error_from_python) {
+        throw py::value_error("Error reading value in from_bytes");
+      } else {
+        // this next call will throw
+        check_memory_size(bytes_read, capacity);
+      }
+    }
+
+    pybind11::gil_scoped_release release;
     return bytes_read;
   }
 
