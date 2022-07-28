@@ -305,8 +305,7 @@ class var_opt_sketch {
 
     friend class var_opt_union<T,S,A>;
     var_opt_sketch(const var_opt_sketch& other, bool as_sketch, uint64_t adjusted_n);
-    var_opt_sketch(T* data, double* weights, size_t len, uint32_t k, uint64_t n, uint32_t h_count, uint32_t r_count, double total_wt_r, const A& allocator);
-
+    
     string<A> items_to_string(bool print_gap) const;
 
     // internal-use-only update

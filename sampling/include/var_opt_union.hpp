@@ -171,7 +171,6 @@ public:
    */
   string<A> to_string() const;
 
-
 private:
   typedef typename std::allocator_traits<A>::template rebind_alloc<var_opt_sketch<T,S,A>> AllocSketch;
 

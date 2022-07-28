@@ -97,7 +97,6 @@ std::string vo_sketch_to_string(const var_opt_sketch<T>& sk, bool print_items) {
       // using internal str() method then casting to C++ std::string
       py::str item_pystr(item.first);
       std::string item_str = py::cast<std::string>(item_pystr);
-      // item.second is guaranteed to be a double
       ss << i++ << ": " << item_str << "\twt = " << item.second << std::endl;
     }
     return ss.str();
@@ -137,10 +136,10 @@ void bind_vo_sketch(py::module &m, const char* name) {
          "Applies a provided predicate to the sketch and returns the estimated total weight matching the predicate, as well "
          "as upper and lower bounds on the estimate and the total weight processed by the sketch")
     .def("get_serialized_size_bytes", &dspy::vo_sketch_size_bytes<T>, py::arg("serde"),
-         "Computes the size in bytes needed to serialize the current sketch")
+        "Computes the size in bytes needed to serialize the current sketch")
     .def("serialize", &dspy::vo_sketch_serialize<T>, py::arg("serde"), "Serialize the var opt sketch using the provided serde")
     .def_static("deserialize", &dspy::vo_sketch_deserialize<T>, py::arg("bytes"), py::arg("serde"),
-         "Constructs a var opt sketch from the given bytes using the provided serde")
+        "Constructs a var opt sketch from the given bytes using the provided serde")
     ;
 }
 
