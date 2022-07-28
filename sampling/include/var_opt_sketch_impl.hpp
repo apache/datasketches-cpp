@@ -936,14 +936,8 @@ void var_opt_sketch<T,S,A>::decrease_k_by_1() {
     const uint32_t old_final_r_idx = (h_ + 1 + r_) - 1;
     if (old_final_r_idx != k_) throw std::logic_error("gadget in invalid state");
     
-    // need construct an item if gap has never been filled; copy target data into place to
-    // avoid an implicit requirement for a default constructor
-    // TODO: is this ok? can we run into problems with the copy?
-    if (!filled_data_) {
-      new (&data_[old_gap_idx]) T(data_[old_final_r_idx]);
-      filled_data_ = true;
-    }
     swap_values(old_final_r_idx, old_gap_idx);
+    filled_data_ = true; // we just filled the gap, and no need to check previous state
 
     // now we pull an item out of H; any item is ok, but if we grab the rightmost and then
     // reduce h_, the heap invariant will be preserved (and the gap will be restored), plus
