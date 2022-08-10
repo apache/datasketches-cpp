@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_executable(tuple_test)
+add_executable(tuple_test engagement_test.cpp)
 
 target_link_libraries(tuple_test tuple common_test)
 
@@ -45,4 +45,5 @@ target_sources(tuple_test
     tuple_a_not_b_test.cpp
     tuple_jaccard_similarity_test.cpp
     array_of_doubles_sketch_test.cpp
+    engagement_test.cpp
 )
