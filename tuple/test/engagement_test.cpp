@@ -80,9 +80,10 @@ class EngagementTest{
 public:
     int num_std_dev = 2 ;
     void test_always_one_update(){
-        std::cout << "########## Testing ALWAYS ONE policy ##########" << std::endl ;
+        /*
+         * Tests that updates into an update_tuple_sketch sketch only keeps a 1 in the column for stored values.
+         */
         int lgK = 8 ;
-        // Here is where the IntegerSketch should go
         std::vector<datasketches::update_tuple_sketch<int, int, always_one_policy<int>>> sketch_array ;
 
         auto always_one_sketch = always_one_tuple_sketch::builder(always_one_policy<int>()).set_lg_k(lgK).build() ;
@@ -104,7 +105,9 @@ public:
     }
 
     void test_sum_update_policy(){
-        std::cout << "########## Testing SUM policy on UPDATE SKETCH ##########" << std::endl ;
+        /*
+        * Tests that updates into an sum_update_tuple_sketch sum the stored values on updates.
+        */
         int lgK = 8 ;
         auto sum_sketch = sum_update_tuple_sketch::builder().set_lg_k(lgK).build() ;
 
@@ -124,21 +127,20 @@ public:
     }
 
     void test_sum_union_policy(){
-        // Union two update sketches using the sum policy
+        /*
+         * Tests that updates into two sketches of sum_update_tuple_sketch flavour, which have been unioned,
+         * cause the stored values of two of the same keys to be summed.
+         */
         auto sketch1 = sum_update_tuple_sketch::builder().build() ;
         auto sketch2 = sum_update_tuple_sketch::builder().build() ;
 
         sketch1.update(1, 1);
         sketch1.update(2, 1);
         sketch1.update(3, 3);
-        // std::cout << "********** sketch 1 UPDATE SUMMARY **********" << std::endl ;
-        // std::cout << sketch1.to_string(true) << std::endl ;
 
         sketch2.update(1, 2);
         sketch2.update(2, 1);
         sketch2.update(3, 7);
-        // std::cout << "********** sketch 2 UPDATE SUMMARY **********" << std::endl ;
-        // std::cout << sketch2.to_string(true) << std::endl ;
 
         auto union_sketch = sum_union_tuple_sketch::builder().build() ;
         union_sketch.update(sketch1) ;
@@ -153,16 +155,15 @@ public:
         }
         REQUIRE(num_retained == 3);
         REQUIRE(sum == 15); // 1:(1+2) + 2:(1+1) + 3:(3+7) = 15
-
-        // std::cout << "********** UNION SUMMARY **********" << std::endl ;
-        // std::cout << union_result.to_string(true) << std::endl ;
-
     }
 
     void compute_engagement_histogram(){
-        std::cout << "########## Testing ENGAGEMENT ##########" << std::endl ;
+        /*
+         * Returns the estimated histogram from the synthetic data.
+         * On inspection one can verify this agrees with the
+         * https://github.com/apache/datasketches-java/blob/master/src/test/java/org/apache/datasketches/tuple/aninteger/EngagementTest.java
+         */
         int lgK = 8 ;
-        //int K = 1 << lgK ;
         const int days = 30 ;
         int v = 0 ;
         std::set<int> set_array[days];
@@ -170,30 +171,22 @@ public:
 
 
         for(int i=0; i<days ; i++){
-
             auto builder = always_one_tuple_sketch::builder(always_one_policy<int>()) ;
             builder.set_lg_k(lgK) ;
             auto sketch = builder.build() ;
             sketch_array.push_back(sketch);
         }
         REQUIRE(sketch_array.size() == days) ;
-        std::cout << "Size of vector: " << sketch_array.size() << std::endl ;
-
 
         for(int i=0; i<=days; i++){
             int32_t num_ids = get_num_ids(days, i) ;
             int32_t num_days = get_num_days(days, i) ;
 
-            //std::cout << i << "\t" << num_ids << "\t" << num_days << std::endl ;
-            // TO DO: Continue from here and figure out what to do with the tuple sketches.
             int my_v = v++ ;
             for(int d=0 ; d<num_days; d++){
                 for(int id = 0; id < num_ids; id++){
-                    //std::cout << id << " " << my_v << " " << my_v + id << " " << num_ids << std::endl ;
                     set_array[d].insert(my_v + id) ;
                     sketch_array[d].update(my_v + id, 1) ;
-                    //std::cout << "d: " << d << " id: " << id << " my_v + id: " << my_v + id << std::endl ;
-                    // sk_arr[d].update(my_v + id, 1) ; // update the day d sketch with the key my_v + id
                 }
             }
             v += num_ids ;
@@ -216,45 +209,38 @@ private:
         return int(round(exp( (d-i) * log(d) / d ))) ;
     }
 
-    int8_t round_double_to_int(double x){
+    int32_t round_double_to_int(double x){
         return int(std::round(x)) ;
     }
 
-
-    //void union_ops(int lgk, std::vector<datasketches::update_tuple_sketch<int>> sketches){
     void union_ops(int lgk, std::vector<datasketches::update_tuple_sketch<int, int, always_one_policy<int>>> sketches){
         int num_sketches = sketches.size() ;
-        //auto u =  datasketches::tuple_union<int>::builder().set_lg_k(lgk).build() ;
         auto u = sum_union_tuple_sketch::builder().set_lg_k(lgk).build() ;
-
 
         for(auto sk:sketches){
             u.update(sk) ;
         }
         auto union_result = u.get_result() ;
-        std::cout << "Union type: " << typeid(union_result).name() << std::endl ;
-        // std::cout << "The estimate is: " << res.get_estimate() << std::endl ; // agrees with 271.9156532434 from java.
+        // res.get_estimate() should be 271.9156532434.
         std::vector<uint64_t> num_days_arr(num_sketches+1) ;
 
         int num_retained = 0 ;
         int total_sum = 0 ;
 
         for (const auto& entry: union_result) {
-            std::cout << "First: " << entry.first << "\tSecond: " << entry.second << std::endl ;
+//            std::cout << "First: " << entry.first << "\tSecond: " << entry.second << std::endl ;
             int num_days_visited = entry.second ;
             num_retained++ ;
             total_sum += entry.second ;
             num_days_arr[num_days_visited]++;
         }
-        std::cout << "Num retained items: " << num_retained << std::endl ; // This agrees with Java.
-        std::cout << "Sum(retained items): " << total_sum << std::endl ; // This agrees with Java.
+        std::cout << "Num retained items: " << num_retained << std::endl ;
+        std::cout << "Sum(retained items): " << total_sum << std::endl ;
 
         for(int i = 1; i<num_sketches+1; i++){
             std::cout<< "i = " << i << "\tnum_days_arr[i] = " << num_days_arr[i] << std::endl ;
         }
 
-        // *********************** WE AGREE UP TO HERE ***********************
-        // For pretty printing
         int sum_visits = 0;
         double theta = union_result.get_theta();
         std::cout <<"\t\tEngagement Histogram.\t\t\t\n" ;
