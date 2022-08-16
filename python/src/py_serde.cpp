@@ -46,7 +46,7 @@ namespace datasketches {
 
   size_t py_object_serde::serialize(void* ptr, size_t capacity, const py::object* items, unsigned num) const {
     size_t bytes_written = 0;
-    pybind11::gil_scoped_acquire acquire;
+    py::gil_scoped_acquire acquire;
     for (unsigned i = 0; i < num; ++i) {
       std::string bytes = to_bytes(items[i]); // implicit cast from py::bytes
       check_memory_size(bytes_written + bytes.size(), capacity);
@@ -54,7 +54,7 @@ namespace datasketches {
       ptr = static_cast<char*>(ptr) + bytes.size();
       bytes_written += bytes.size();
     }
-    pybind11::gil_scoped_release release;
+    py::gil_scoped_release release;
     return bytes_written;
   }
 
@@ -63,7 +63,7 @@ namespace datasketches {
     unsigned i = 0;
     bool failure = false;
     bool error_from_python = false;
-    pybind11::gil_scoped_acquire acquire;
+    py::gil_scoped_acquire acquire;
 
     // copy data into bytes only once
     py::bytes bytes(static_cast<const char*>(ptr), capacity);
@@ -77,7 +77,6 @@ namespace datasketches {
         break;
       }
 
-      // TODO: check bytes_and_len size is exactly 2?
       size_t length = py::cast<size_t>(bytes_and_len[1]);
       if (bytes_read + length > capacity) {
         bytes_read += length; // use this value to report the error
@@ -104,7 +103,7 @@ namespace datasketches {
       }
     }
 
-    pybind11::gil_scoped_release release;
+    py::gil_scoped_release release;
     return bytes_read;
   }
 
