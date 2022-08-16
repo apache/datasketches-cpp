@@ -121,25 +121,6 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other, bool as_sketc
   }
 
 template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::var_opt_sketch(T* data, double* weights, size_t len,
-    uint32_t k, uint64_t n, uint32_t h_count, uint32_t r_count, double total_wt_r, const A& allocator) :
-  k_(k),
-  h_(h_count),
-  m_(0),
-  r_(r_count),
-  n_(n),
-  total_wt_r_(total_wt_r),
-  rf_(var_opt_constants::DEFAULT_RESIZE_FACTOR),
-  curr_items_alloc_(len),
-  filled_data_(n > k),
-  allocator_(allocator),
-  data_(data),
-  weights_(weights),
-  num_marks_in_h_(0),
-  marks_(nullptr)
-  {}
-
-template<typename T, typename S, typename A>
 var_opt_sketch<T,S,A>::var_opt_sketch(var_opt_sketch&& other) noexcept :
   k_(other.k_),
   h_(other.h_),
@@ -875,7 +856,8 @@ void var_opt_sketch<T,S,A>::update_light(O&& item, double weight, bool mark) {
 
   const uint32_t m_slot = h_; // index of the gap, which becomes the M region
   if (filled_data_) {
-    data_[m_slot] = std::forward<O>(item);
+    if (&data_[m_slot] != &item)
+      data_[m_slot] = std::forward<O>(item);
   } else {
     new (&data_[m_slot]) T(std::forward<O>(item));
     filled_data_ = true;
@@ -952,9 +934,10 @@ void var_opt_sketch<T,S,A>::decrease_k_by_1() {
     // first, slide the R zone to the left by 1, temporarily filling the gap
     const uint32_t old_gap_idx = h_;
     const uint32_t old_final_r_idx = (h_ + 1 + r_) - 1;
-    //if (old_final_r_idx != k_) throw std::logic_error("gadget in invalid state");
+    if (old_final_r_idx != k_) throw std::logic_error("gadget in invalid state");
     
     swap_values(old_final_r_idx, old_gap_idx);
+    filled_data_ = true; // we just filled the gap, and no need to check previous state
 
     // now we pull an item out of H; any item is ok, but if we grab the rightmost and then
     // reduce h_, the heap invariant will be preserved (and the gap will be restored), plus
@@ -1124,7 +1107,8 @@ template<typename T, typename S, typename A>
 template<typename O>
 void var_opt_sketch<T,S,A>::push(O&& item, double wt, bool mark) {
   if (filled_data_) {
-    data_[h_] = std::forward<O>(item);
+    if (&data_[h_] != &item)
+      data_[h_] = std::forward<O>(item);
   } else {
     new (&data_[h_]) T(std::forward<O>(item));
     filled_data_ = true;
@@ -1225,9 +1209,8 @@ void var_opt_sketch<T,S,A>::downsample_candidate_set(double wt_cands, uint32_t n
     weights_[j] = -1.0;
   }
 
-  // The next two lines work even when delete_slot == leftmost_cand_slot
+  // The next line works even when delete_slot == leftmost_cand_slot
   data_[delete_slot] = std::move(data_[leftmost_cand_slot]);
-  // cannot set data_[leftmost_cand_slot] to null since not uisng T*
 
   m_ = 0;
   r_ = num_cands - 1;
@@ -1704,7 +1687,7 @@ bool var_opt_sketch<T, S, A>::iterator::get_mark() const {
  */
 template<typename T, typename S, typename A>
 uint32_t var_opt_sketch<T,S,A>::get_adjusted_size(uint32_t max_size, uint32_t resize_target) {
-  if (max_size - (resize_target << 1) < 0L) {
+  if (max_size < (resize_target << 1)) {
     return max_size;
   }
   return resize_target;
