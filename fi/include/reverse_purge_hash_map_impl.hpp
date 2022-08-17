@@ -71,8 +71,8 @@ states_(nullptr)
       if (other.states_[i] > 0) {
         new (&keys_[i]) K(other.keys_[i]);
         values_[i] = other.values_[i];
+         if (--num == 0) break;
       }
-      if (--num == 0) break;
     }
   }
   std::copy(other.states_, other.states_ + size, states_);
