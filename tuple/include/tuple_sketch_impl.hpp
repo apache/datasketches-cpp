@@ -385,7 +385,7 @@ void compact_tuple_sketch<S, A>::serialize(std::ostream& os, const SerDe& sd) co
   write(os, flags_byte);
   const uint16_t seed_hash = get_seed_hash();
   write(os, seed_hash);
-  if (!this->is_empty()) {
+  if (entries_.size() > 0) {
     if (!is_single_item) {
       const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
       write(os, num_entries);
@@ -430,7 +430,7 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
   ptr += copy_to_mem(flags_byte, ptr);
   const uint16_t seed_hash = get_seed_hash();
   ptr += copy_to_mem(seed_hash, ptr);
-  if (!this->is_empty()) {
+  if (entries_.size() > 0) {
     if (!is_single_item) {
       const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
       ptr += copy_to_mem(num_entries, ptr);
