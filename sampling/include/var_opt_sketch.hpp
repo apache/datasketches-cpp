@@ -51,7 +51,7 @@ struct subset_summary {
   double total_sketch_weight;
 };
 
-template <typename T, typename S, typename A> class var_opt_union; // forward declaration
+template <typename T, typename A> class var_opt_union; // forward declaration
 
 namespace var_opt_constants {
     const resize_factor DEFAULT_RESIZE_FACTOR = resize_factor::X8;
@@ -60,7 +60,6 @@ namespace var_opt_constants {
 
 template<
   typename T,
-  typename S = serde<T>, // deprecated, to be removed in the next major version
   typename A = std::allocator<T>
 >
 class var_opt_sketch {
@@ -142,7 +141,7 @@ class var_opt_sketch {
      * @param instance of a SerDe
      * @return size in bytes needed to serialize this sketch
      */
-    template<typename TT = T, typename SerDe = S, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+    template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
     inline size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
     /**
@@ -151,7 +150,7 @@ class var_opt_sketch {
      * @param instance of a SerDe
      * @return size in bytes needed to serialize this sketch
      */
-    template<typename TT = T, typename SerDe = S, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+    template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
     inline size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
     // This is a convenience alias for users
@@ -166,7 +165,7 @@ class var_opt_sketch {
      * @param header_size_bytes space to reserve in front of the sketch
      * @param instance of a SerDe
      */
-    template<typename SerDe = S>
+    template<typename SerDe = serde<T>>
     vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
     /**
@@ -174,18 +173,8 @@ class var_opt_sketch {
      * @param os output stream
      * @param instance of a SerDe
      */
-    template<typename SerDe = S>
+    template<typename SerDe = serde<T>>
     void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
-
-    /**
-     * This method deserializes a sketch from a given stream.
-     * @param is input stream
-     * @param instance of an Allocator
-     * @return an instance of a sketch
-     *
-     * Deprecated, to be removed in the next major version
-     */
-    static var_opt_sketch deserialize(std::istream& is, const A& allocator = A());
 
     /**
      * This method deserializes a sketch from a given stream.
@@ -194,29 +183,18 @@ class var_opt_sketch {
      * @param instance of an Allocator
      * @return an instance of a sketch
      */
-    template<typename SerDe = S>
+    template<typename SerDe = serde<T>>
     static var_opt_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
 
     /**
      * This method deserializes a sketch from a given array of bytes.
      * @param bytes pointer to the array of bytes
      * @param size the size of the array
-     * @param instance of an Allocator
-     * @return an instance of a sketch
-     *
-     * Deprecated, to be removed in the next major version
-     */
-    static var_opt_sketch deserialize(const void* bytes, size_t size, const A& allocator = A());
-
-    /**
-     * This method deserializes a sketch from a given array of bytes.
-     * @param bytes pointer to the array of bytes
-     * @param size the size of the array
      * @param instance of a SerDe
      * @param instance of an Allocator
      * @return an instance of a sketch
      */
-    template<typename SerDe = S>
+    template<typename SerDe = serde<T>>
     static var_opt_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
 
     /**
@@ -303,7 +281,7 @@ class var_opt_sketch {
                    std::unique_ptr<double, weights_deleter> weights, uint32_t num_marks_in_h,
                    std::unique_ptr<bool, marks_deleter> marks, const A& allocator);
 
-    friend class var_opt_union<T,S,A>;
+    friend class var_opt_union<T, A>;
     var_opt_sketch(const var_opt_sketch& other, bool as_sketch, uint64_t adjusted_n);
     
     string<A> items_to_string(bool print_gap) const;
@@ -367,8 +345,8 @@ class var_opt_sketch {
     class iterator;
 };
 
-template<typename T, typename S, typename A>
-class var_opt_sketch<T, S, A>::const_iterator : public std::iterator<std::input_iterator_tag, T> {
+template<typename T, typename A>
+class var_opt_sketch<T, A>::const_iterator : public std::iterator<std::input_iterator_tag, T> {
 public:
   const_iterator(const const_iterator& other);
   const_iterator& operator++();
@@ -378,29 +356,28 @@ public:
   const std::pair<const T&, const double> operator*() const;
 
 private:
-  friend class var_opt_sketch<T,S,A>;
-  friend class var_opt_union<T,S,A>;
+  friend class var_opt_sketch<T, A>;
+  friend class var_opt_union<T, A>;
 
   // default iterator over full sketch
-  const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end);
+  const_iterator(const var_opt_sketch<T, A>& sk, bool is_end);
   
   // iterates over only one of the H or R region, optionally applying weight correction
   // to R region (can correct for numerical precision issues)
-  const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region);
+  const_iterator(const var_opt_sketch<T, A>& sk, bool is_end, bool use_r_region);
 
   bool get_mark() const;
 
-  const var_opt_sketch<T,S,A>* sk_;
+  const var_opt_sketch<T, A>* sk_;
   double cum_r_weight_; // used for weight correction
   double r_item_wt_;
   size_t idx_;
   const size_t final_idx_;
-//  bool weight_correction_;
 };
 
 // non-const iterator for internal use
-template<typename T, typename S, typename A>
-class var_opt_sketch<T, S, A>::iterator : public std::iterator<std::input_iterator_tag, T> {
+template<typename T, typename A>
+class var_opt_sketch<T, A>::iterator : public std::iterator<std::input_iterator_tag, T> {
 public:
   iterator(const iterator& other);
   iterator& operator++();
@@ -410,16 +387,16 @@ public:
   std::pair<T&, double> operator*();
 
 private:
-  friend class var_opt_sketch<T,S,A>;
-  friend class var_opt_union<T,S,A>;
+  friend class var_opt_sketch<T, A>;
+  friend class var_opt_union<T, A>;
   
   // iterates over only one of the H or R region, applying weight correction
   // if iterating over R region (can correct for numerical precision issues)
-  iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region);
+  iterator(const var_opt_sketch<T, A>& sk, bool is_end, bool use_r_region);
 
   bool get_mark() const;
 
-  const var_opt_sketch<T,S,A>* sk_;
+  const var_opt_sketch<T, A>* sk_;
   double cum_r_weight_; // used for weight correction
   double r_item_wt_;
   size_t idx_;

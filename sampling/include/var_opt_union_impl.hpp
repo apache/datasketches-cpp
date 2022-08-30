@@ -28,17 +28,17 @@
 
 namespace datasketches {
 
-template<typename T, typename S, typename A>
-var_opt_union<T,S,A>::var_opt_union(uint32_t max_k, const A& allocator) :
+template<typename T, typename A>
+var_opt_union<T, A>::var_opt_union(uint32_t max_k, const A& allocator) :
   n_(0),
   outer_tau_numer_(0.0),
   outer_tau_denom_(0),
   max_k_(max_k),
-  gadget_(max_k, var_opt_sketch<T,S,A>::DEFAULT_RESIZE_FACTOR, true, allocator)
+  gadget_(max_k, var_opt_sketch<T, A>::DEFAULT_RESIZE_FACTOR, true, allocator)
 {}
 
-template<typename T, typename S, typename A>
-var_opt_union<T,S,A>::var_opt_union(const var_opt_union& other) :
+template<typename T, typename A>
+var_opt_union<T, A>::var_opt_union(const var_opt_union& other) :
   n_(other.n_),
   outer_tau_numer_(other.outer_tau_numer_),
   outer_tau_denom_(other.outer_tau_denom_),
@@ -46,8 +46,8 @@ var_opt_union<T,S,A>::var_opt_union(const var_opt_union& other) :
   gadget_(other.gadget_)
 {}
 
-template<typename T, typename S, typename A>
-var_opt_union<T,S,A>::var_opt_union(var_opt_union&& other) noexcept :
+template<typename T, typename A>
+var_opt_union<T, A>::var_opt_union(var_opt_union&& other) noexcept :
   n_(other.n_),
   outer_tau_numer_(other.outer_tau_numer_),
   outer_tau_denom_(other.outer_tau_denom_),
@@ -55,9 +55,9 @@ var_opt_union<T,S,A>::var_opt_union(var_opt_union&& other) noexcept :
   gadget_(std::move(other.gadget_))
 {}
 
-template<typename T, typename S, typename A>
-var_opt_union<T,S,A>::var_opt_union(uint64_t n, double outer_tau_numer, uint64_t outer_tau_denom,
-                                    uint32_t max_k, var_opt_sketch<T,S,A>&& gadget) :
+template<typename T, typename A>
+var_opt_union<T, A>::var_opt_union(uint64_t n, double outer_tau_numer, uint64_t outer_tau_denom,
+                                    uint32_t max_k, var_opt_sketch<T, A>&& gadget) :
   n_(n),
   outer_tau_numer_(outer_tau_numer),
   outer_tau_denom_(outer_tau_denom),
@@ -65,12 +65,12 @@ var_opt_union<T,S,A>::var_opt_union(uint64_t n, double outer_tau_numer, uint64_t
   gadget_(gadget)
 {}
 
-template<typename T, typename S, typename A>
-var_opt_union<T,S,A>::~var_opt_union() {}
+template<typename T, typename A>
+var_opt_union<T, A>::~var_opt_union() {}
 
-template<typename T, typename S, typename A>
-var_opt_union<T,S,A>& var_opt_union<T,S,A>::operator=(const var_opt_union& other) {
-  var_opt_union<T,S,A> union_copy(other);
+template<typename T, typename A>
+var_opt_union<T, A>& var_opt_union<T, A>::operator=(const var_opt_union& other) {
+  var_opt_union union_copy(other);
   std::swap(n_, union_copy.n_);
   std::swap(outer_tau_numer_, union_copy.outer_tau_numer_);
   std::swap(outer_tau_denom_, union_copy.outer_tau_denom_);
@@ -79,8 +79,8 @@ var_opt_union<T,S,A>& var_opt_union<T,S,A>::operator=(const var_opt_union& other
   return *this;
 }
 
-template<typename T, typename S, typename A>
-var_opt_union<T,S,A>& var_opt_union<T,S,A>::operator=(var_opt_union&& other) {
+template<typename T, typename A>
+var_opt_union<T, A>& var_opt_union<T, A>::operator=(var_opt_union&& other) {
   std::swap(n_, other.n_);
   std::swap(outer_tau_numer_, other.outer_tau_numer_);
   std::swap(outer_tau_denom_, other.outer_tau_denom_);
@@ -128,14 +128,9 @@ var_opt_union<T,S,A>& var_opt_union<T,S,A>::operator=(var_opt_union&& other) {
  * </pre>
  */
 
-template<typename T, typename S, typename A>
-var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const A& allocator) {
-  return deserialize(is, S(), allocator);
-}
-
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename SerDe>
-var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
+var_opt_union<T, A> var_opt_union<T, A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
   const auto preamble_longs = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -155,29 +150,24 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(std::istream& is, const S
     if (!is.good())
       throw std::runtime_error("error reading from std::istream"); 
     else
-      return var_opt_union<T,S,A>(max_k);
+      return var_opt_union(max_k);
   }
 
   const auto items_seen = read<uint64_t>(is);
   const auto outer_tau_numer = read<double>(is);
   const auto outer_tau_denom = read<uint64_t>(is);
 
-  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(is, sd, allocator);
+  var_opt_sketch<T, A> gadget = var_opt_sketch<T, A>::deserialize(is, sd, allocator);
 
   if (!is.good())
     throw std::runtime_error("error reading from std::istream"); 
 
-  return var_opt_union<T,S,A>(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
+  return var_opt_union(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
 }
 
-template<typename T, typename S, typename A>
-var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t size, const A& allocator) {
-  return deserialize(bytes, size, S(), allocator);
-}
-
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename SerDe>
-var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
+var_opt_union<T, A> var_opt_union<T, A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_longs;
@@ -201,7 +191,7 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t
   bool is_empty = flags & EMPTY_FLAG_MASK;
 
   if (is_empty) {
-    return var_opt_union<T,S,A>(max_k);
+    return var_opt_union<T, A>(max_k);
   }
 
   uint64_t items_seen;
@@ -212,14 +202,14 @@ var_opt_union<T,S,A> var_opt_union<T,S,A>::deserialize(const void* bytes, size_t
   ptr += copy_from_mem(ptr, outer_tau_denom);
 
   const size_t gadget_size = size - (PREAMBLE_LONGS_NON_EMPTY << 3);
-  var_opt_sketch<T,S,A> gadget = var_opt_sketch<T,S,A>::deserialize(ptr, gadget_size, sd, allocator);
+  var_opt_sketch<T, A> gadget = var_opt_sketch<T, A>::deserialize(ptr, gadget_size, sd, allocator);
 
-  return var_opt_union<T,S,A>(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
+  return var_opt_union(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
 }
 
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename SerDe>
-size_t var_opt_union<T,S,A>::get_serialized_size_bytes(const SerDe& sd) const {
+size_t var_opt_union<T, A>::get_serialized_size_bytes(const SerDe& sd) const {
   if (n_ == 0) {
     return PREAMBLE_LONGS_EMPTY << 3;
   } else {
@@ -227,9 +217,9 @@ size_t var_opt_union<T,S,A>::get_serialized_size_bytes(const SerDe& sd) const {
   }
 }
 
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename SerDe>
-void var_opt_union<T,S,A>::serialize(std::ostream& os, const SerDe& sd) const {
+void var_opt_union<T, A>::serialize(std::ostream& os, const SerDe& sd) const {
   bool empty = (n_ == 0);
 
   const uint8_t serialization_version(SER_VER);
@@ -259,9 +249,9 @@ void var_opt_union<T,S,A>::serialize(std::ostream& os, const SerDe& sd) const {
   }
 }
 
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename SerDe>
-std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header_size_bytes, const SerDe& sd) const {
+std::vector<uint8_t, AllocU8<A>> var_opt_union<T, A>::serialize(unsigned header_size_bytes, const SerDe& sd) const {
   const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   std::vector<uint8_t, AllocU8<A>> bytes(size, 0, gadget_.allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
@@ -301,16 +291,16 @@ std::vector<uint8_t, AllocU8<A>> var_opt_union<T,S,A>::serialize(unsigned header
   return bytes;
 }
 
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::reset() {
+template<typename T, typename A>
+void var_opt_union<T, A>::reset() {
   n_ = 0;
   outer_tau_numer_ = 0.0;
   outer_tau_denom_ = 0;
   gadget_.reset();
 }
 
-template<typename T, typename S, typename A>
-string<A> var_opt_union<T,S,A>::to_string() const {
+template<typename T, typename A>
+string<A> var_opt_union<T, A>::to_string() const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
@@ -323,20 +313,20 @@ string<A> var_opt_union<T,S,A>::to_string() const {
   return string<A>(os.str().c_str(), gadget_.allocator_);
 }
 
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::update(const var_opt_sketch<T,S,A>& sk) {
+template<typename T, typename A>
+void var_opt_union<T, A>::update(const var_opt_sketch<T, A>& sk) {
   merge_items(sk);
   resolve_tau(sk);
 }
 
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::update(var_opt_sketch<T,S,A>&& sk) {
+template<typename T, typename A>
+void var_opt_union<T, A>::update(var_opt_sketch<T, A>&& sk) {
   merge_items(std::move(sk));
   resolve_tau(sk); // don't need items, so ok even if they've been moved out
 }
 
-template<typename T, typename S, typename A>
-double var_opt_union<T,S,A>::get_outer_tau() const {
+template<typename T, typename A>
+double var_opt_union<T, A>::get_outer_tau() const {
   if (outer_tau_denom_ == 0) {
     return 0.0;
   } else {
@@ -344,8 +334,8 @@ double var_opt_union<T,S,A>::get_outer_tau() const {
   }
 }
 
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::merge_items(const var_opt_sketch<T,S,A>& sketch) {
+template<typename T, typename A>
+void var_opt_union<T, A>::merge_items(const var_opt_sketch<T, A>& sketch) {
   if (sketch.n_ == 0) {
     return;
   }
@@ -353,8 +343,8 @@ void var_opt_union<T,S,A>::merge_items(const var_opt_sketch<T,S,A>& sketch) {
   n_ += sketch.n_;
 
   // H region const_iterator
-  typename var_opt_sketch<T,S,A>::const_iterator h_itr(sketch, false, false);
-  typename var_opt_sketch<T,S,A>::const_iterator h_end(sketch, true, false);
+  typename var_opt_sketch<T, A>::const_iterator h_itr(sketch, false, false);
+  typename var_opt_sketch<T, A>::const_iterator h_end(sketch, true, false);
   while (h_itr != h_end) {
     std::pair<const T&, const double> sample = *h_itr;
     gadget_.update(sample.first, sample.second, false);
@@ -362,8 +352,8 @@ void var_opt_union<T,S,A>::merge_items(const var_opt_sketch<T,S,A>& sketch) {
   }
 
   // Weight-correcting R region iterator (const_iterator doesn't do the correction)
-  typename var_opt_sketch<T,S,A>::iterator r_itr(sketch, false, true);
-  typename var_opt_sketch<T,S,A>::iterator r_end(sketch, true, true);
+  typename var_opt_sketch<T, A>::iterator r_itr(sketch, false, true);
+  typename var_opt_sketch<T, A>::iterator r_end(sketch, true, true);
   while (r_itr != r_end) {
     std::pair<const T&, const double> sample = *r_itr;
     gadget_.update(sample.first, sample.second, true);
@@ -371,8 +361,8 @@ void var_opt_union<T,S,A>::merge_items(const var_opt_sketch<T,S,A>& sketch) {
   }
 }
 
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::merge_items(var_opt_sketch<T,S,A>&& sketch) {
+template<typename T, typename A>
+void var_opt_union<T, A>::merge_items(var_opt_sketch<T, A>&& sketch) {
   if (sketch.n_ == 0) {
     return;
   }
@@ -380,8 +370,8 @@ void var_opt_union<T,S,A>::merge_items(var_opt_sketch<T,S,A>&& sketch) {
   n_ += sketch.n_;
 
   // H region iterator
-  typename var_opt_sketch<T,S,A>::iterator h_itr(sketch, false, false);
-  typename var_opt_sketch<T,S,A>::iterator h_end(sketch, true, false);
+  typename var_opt_sketch<T, A>::iterator h_itr(sketch, false, false);
+  typename var_opt_sketch<T, A>::iterator h_end(sketch, true, false);
   while (h_itr != h_end) {
     std::pair<T&, double> sample = *h_itr;
     gadget_.update(std::move(sample.first), sample.second, false);
@@ -389,8 +379,8 @@ void var_opt_union<T,S,A>::merge_items(var_opt_sketch<T,S,A>&& sketch) {
   }
 
   // Weight-correcting R region iterator
-  typename var_opt_sketch<T,S,A>::iterator r_itr(sketch, false, true);
-  typename var_opt_sketch<T,S,A>::iterator r_end(sketch, true, true);
+  typename var_opt_sketch<T, A>::iterator r_itr(sketch, false, true);
+  typename var_opt_sketch<T, A>::iterator r_end(sketch, true, true);
   while (r_itr != r_end) {
     std::pair<T&, double> sample = *r_itr;
     gadget_.update(std::move(sample.first), sample.second, true);
@@ -398,8 +388,8 @@ void var_opt_union<T,S,A>::merge_items(var_opt_sketch<T,S,A>&& sketch) {
   }
 }
 
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::resolve_tau(const var_opt_sketch<T,S,A>& sketch) {
+template<typename T, typename A>
+void var_opt_union<T, A>::resolve_tau(const var_opt_sketch<T, A>& sketch) {
   if (sketch.r_ > 0) {
     const double sketch_tau = sketch.get_tau();
     const double outer_tau = get_outer_tau();
@@ -425,8 +415,8 @@ void var_opt_union<T,S,A>::resolve_tau(const var_opt_sketch<T,S,A>& sketch) {
   }
 }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A> var_opt_union<T,S,A>::get_result() const {
+template<typename T, typename A>
+var_opt_sketch<T, A> var_opt_union<T, A>::get_result() const {
   // If no marked items in H, gadget is already valid mathematically. We can return what is
   // basically just a copy of the gadget.
   if (gadget_.num_marks_in_h_ == 0) {
@@ -435,7 +425,7 @@ var_opt_sketch<T,S,A> var_opt_union<T,S,A>::get_result() const {
     // Copy of gadget. This may produce needless copying in the
     // pseudo-exact case below, but should simplify the code without
     // needing to make the gadget a pointer
-    var_opt_sketch<T,S,A> gcopy(gadget_, false, n_);
+    var_opt_sketch<T, A> gcopy(gadget_, false, n_);
 
     // At this point, we know that marked items are present in H. So:
     //   1. Result will necessarily be in estimation mode
@@ -456,15 +446,15 @@ var_opt_sketch<T,S,A> var_opt_union<T,S,A>::get_result() const {
  *
  * @return A shallow copy of the gadget as valid varopt sketch
  */
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A> var_opt_union<T,S,A>::simple_gadget_coercer() const {
+template<typename T, typename A>
+var_opt_sketch<T, A> var_opt_union<T, A>::simple_gadget_coercer() const {
   if (gadget_.num_marks_in_h_ != 0) throw std::logic_error("simple gadget coercer only applies if no marks");
-  return var_opt_sketch<T,S,A>(gadget_, true, n_);
+  return var_opt_sketch<T, A>(gadget_, true, n_);
 }
 
 // this is a condition checked in detect_and_handle_subcase_of_pseudo_exact()
-template<typename T, typename S, typename A>
-bool var_opt_union<T,S,A>::there_exist_unmarked_h_items_lighter_than_target(double threshold) const {
+template<typename T, typename A>
+bool var_opt_union<T, A>::there_exist_unmarked_h_items_lighter_than_target(double threshold) const {
   for (uint32_t i = 0; i < gadget_.h_; ++i) {
     if ((gadget_.weights_[i] < threshold) && !gadget_.marks_[i]) {
       return true;
@@ -473,8 +463,8 @@ bool var_opt_union<T,S,A>::there_exist_unmarked_h_items_lighter_than_target(doub
   return false;
 }
 
-template<typename T, typename S, typename A>
-bool var_opt_union<T,S,A>::detect_and_handle_subcase_of_pseudo_exact(var_opt_sketch<T,S,A>& sk) const {
+template<typename T, typename A>
+bool var_opt_union<T, A>::detect_and_handle_subcase_of_pseudo_exact(var_opt_sketch<T, A>& sk) const {
   // gadget is seemingly exact
   const bool condition1 = gadget_.r_ == 0;
 
@@ -510,8 +500,8 @@ bool var_opt_union<T,S,A>::detect_and_handle_subcase_of_pseudo_exact(var_opt_ske
  *
  * @param sk Copy of the gadget, modified with marked items moved to the reservoir
  */
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk) const {
+template<typename T, typename A>
+void var_opt_union<T, A>::mark_moving_gadget_coercer(var_opt_sketch<T, A>& sk) const {
   const uint32_t result_k = gadget_.h_ + gadget_.r_;
 
   uint32_t result_h = 0;
@@ -583,8 +573,8 @@ void var_opt_union<T,S,A>::mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk)
 }
 
 // this is basically a continuation of get_result(), but modifying the input gadget copy
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::migrate_marked_items_by_decreasing_k(var_opt_sketch<T,S,A>& gcopy) const {
+template<typename T, typename A>
+void var_opt_union<T, A>::migrate_marked_items_by_decreasing_k(var_opt_sketch<T, A>& gcopy) const {
   const uint32_t r_count = gcopy.r_;
   const uint32_t h_count = gcopy.h_;
   const uint32_t k = gcopy.k_;
@@ -616,8 +606,8 @@ void var_opt_union<T,S,A>::migrate_marked_items_by_decreasing_k(var_opt_sketch<T
   gcopy.strip_marks();
 }
 
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags) {
+template<typename T, typename A>
+void var_opt_union<T, A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags) {
   bool is_empty(flags & EMPTY_FLAG_MASK);
   
   if (is_empty) {
@@ -635,8 +625,8 @@ void var_opt_union<T,S,A>::check_preamble_longs(uint8_t preamble_longs, uint8_t 
   }
 }
 
-template<typename T, typename S, typename A>
-void var_opt_union<T,S,A>::check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver) {
+template<typename T, typename A>
+void var_opt_union<T, A>::check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver) {
   if (family_id == FAMILY_ID) {
     if (ser_ver != SER_VER) {
       throw std::invalid_argument("Possible corruption: VarOpt Union serialization version must be "

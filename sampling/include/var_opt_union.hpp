@@ -47,7 +47,6 @@ template<typename A> using AllocU8 = typename std::allocator_traits<A>::template
  */
 template<
   typename T,
-  typename S = serde<T>, // deprecated, to be removed in the next major version
   typename A = std::allocator<T>
 >
 class var_opt_union {
@@ -69,20 +68,20 @@ public:
    * This method takes an lvalue.
    * @param sk a sketch to add to the union
    */
-  void update(const var_opt_sketch<T,S,A>& sk);
+  void update(const var_opt_sketch<T, A>& sk);
   
   /**
    * Updates this union with the given sketch
    * This method takes an rvalue.
    * @param sk a sketch to add to the union
    */
-  void update(var_opt_sketch<T,S,A>&& sk);
+  void update(var_opt_sketch<T, A>&& sk);
 
   /**
    * Gets the varopt sketch resulting from the union of any input sketches.
    * @return a varopt sketch
    */
-  var_opt_sketch<T,S,A> get_result() const;
+  var_opt_sketch<T, A> get_result() const;
   
   /**
    * Resets the union to its default, empty state.
@@ -95,7 +94,7 @@ public:
    * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   // This is a convenience alias for users
@@ -111,7 +110,7 @@ public:
    * @param header_size_bytes space to reserve in front of the sketch
    * @param instance of a SerDe
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
   /**
@@ -120,17 +119,8 @@ public:
    * @param os output stream
    * @param instance of a SerDe
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
-
-  /**
-   * NOTE: This method may be deprecated in a future version.
-   * This method deserializes a union from a given stream.
-   * @param is input stream
-   * @param instance of an Allocator
-   * @return an instance of a union
-   */
-  static var_opt_union deserialize(std::istream& is, const A& allocator = A());
 
   /**
    * NOTE: This method may be deprecated in a future version.
@@ -140,7 +130,7 @@ public:
    * @param instance of an Allocator
    * @return an instance of a union
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   static var_opt_union deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
 
   /**
@@ -148,21 +138,11 @@ public:
    * This method deserializes a union from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @param instance of an Allocator
-   * @return an instance of a union
-   */
-  static var_opt_union deserialize(const void* bytes, size_t size, const A& allocator = A());
-
-  /**
-   * NOTE: This method may be deprecated in a future version.
-   * This method deserializes a union from a given array of bytes.
-   * @param bytes pointer to the array of bytes
-   * @param size the size of the array
    * @param instance of a SerDe
    * @param instance of an Allocator
    * @return an instance of a union
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   static var_opt_union deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
 
   /**
@@ -172,7 +152,7 @@ public:
   string<A> to_string() const;
 
 private:
-  typedef typename std::allocator_traits<A>::template rebind_alloc<var_opt_sketch<T,S,A>> AllocSketch;
+  typedef typename std::allocator_traits<A>::template rebind_alloc<var_opt_sketch<T, A>> AllocSketch;
 
   static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
   static const uint8_t PREAMBLE_LONGS_NON_EMPTY = 4;
@@ -190,10 +170,10 @@ private:
 
   uint32_t max_k_;
 
-  var_opt_sketch<T,S,A> gadget_;
+  var_opt_sketch<T, A> gadget_;
 
   var_opt_union(uint64_t n, double outer_tau_numer, uint64_t outer_tau_denom,
-                uint32_t max_k, var_opt_sketch<T,S,A>&& gadget);
+                uint32_t max_k, var_opt_sketch<T, A>&& gadget);
 
   /*
    IMPORTANT NOTE: the "gadget" in the union object appears to be a varopt sketch,
@@ -249,18 +229,18 @@ private:
    more importantly, this design choice allows us to exactly re-construct the input sketch
    when there is only one of them.
    */
-  inline void merge_items(const var_opt_sketch<T,S,A>& sk);
-  inline void merge_items(var_opt_sketch<T,S,A>&& sk);
-  inline void resolve_tau(const var_opt_sketch<T,S,A>& sketch);
+  inline void merge_items(const var_opt_sketch<T, A>& sk);
+  inline void merge_items(var_opt_sketch<T, A>&& sk);
+  inline void resolve_tau(const var_opt_sketch<T, A>& sketch);
 
   double get_outer_tau() const;
 
-  var_opt_sketch<T,S,A> simple_gadget_coercer() const;
+  var_opt_sketch<T, A> simple_gadget_coercer() const;
 
   bool there_exist_unmarked_h_items_lighter_than_target(double threshold) const;
-  bool detect_and_handle_subcase_of_pseudo_exact(var_opt_sketch<T,S,A>& sk) const;
-  void mark_moving_gadget_coercer(var_opt_sketch<T,S,A>& sk) const;
-  void migrate_marked_items_by_decreasing_k(var_opt_sketch<T,S,A>& sk) const;
+  bool detect_and_handle_subcase_of_pseudo_exact(var_opt_sketch<T, A>& sk) const;
+  void mark_moving_gadget_coercer(var_opt_sketch<T, A>& sk) const;
+  void migrate_marked_items_by_decreasing_k(var_opt_sketch<T, A>& sk) const;
 
   static void check_preamble_longs(uint8_t preamble_longs, uint8_t flags);
   static void check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);

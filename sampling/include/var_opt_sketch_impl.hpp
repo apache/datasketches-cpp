@@ -42,12 +42,12 @@ namespace datasketches {
  * author Kevin Lang 
  * author Jon Malkin
  */
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, const A& allocator) :
-  var_opt_sketch<T,S,A>(k, rf, false, allocator) {}
+template<typename T, typename A>
+var_opt_sketch<T, A>::var_opt_sketch(uint32_t k, resize_factor rf, const A& allocator) :
+  var_opt_sketch(k, rf, false, allocator) {}
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other) :
+template<typename T, typename A>
+var_opt_sketch<T, A>::var_opt_sketch(const var_opt_sketch& other) :
   k_(other.k_),
   h_(other.h_),
   m_(other.m_),
@@ -83,8 +83,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other) :
     }
   }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other, bool as_sketch, uint64_t adjusted_n) :
+template<typename T, typename A>
+var_opt_sketch<T, A>::var_opt_sketch(const var_opt_sketch& other, bool as_sketch, uint64_t adjusted_n) :
   k_(other.k_),
   h_(other.h_),
   m_(other.m_),
@@ -120,8 +120,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(const var_opt_sketch& other, bool as_sketc
     }
   }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::var_opt_sketch(var_opt_sketch&& other) noexcept :
+template<typename T, typename A>
+var_opt_sketch<T, A>::var_opt_sketch(var_opt_sketch&& other) noexcept :
   k_(other.k_),
   h_(other.h_),
   m_(other.m_),
@@ -142,8 +142,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(var_opt_sketch&& other) noexcept :
     other.marks_ = nullptr;
   }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, const A& allocator) :
+template<typename T, typename A>
+var_opt_sketch<T, A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, const A& allocator) :
   k_(k), h_(0), m_(0), r_(0), n_(0), total_wt_r_(0.0), rf_(rf), allocator_(allocator) {
   if (k == 0 || k_ > MAX_K) {
     throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");
@@ -160,8 +160,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadg
   num_marks_in_h_ = 0;
 }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, uint32_t h, uint32_t m, uint32_t r, uint64_t n, double total_wt_r, resize_factor rf,
+template<typename T, typename A>
+var_opt_sketch<T, A>::var_opt_sketch(uint32_t k, uint32_t h, uint32_t m, uint32_t r, uint64_t n, double total_wt_r, resize_factor rf,
                                       uint32_t curr_items_alloc, bool filled_data, std::unique_ptr<T, items_deleter> items,
                                       std::unique_ptr<double, weights_deleter> weights, uint32_t num_marks_in_h,
                                       std::unique_ptr<bool, marks_deleter> marks, const A& allocator) :
@@ -182,8 +182,8 @@ var_opt_sketch<T,S,A>::var_opt_sketch(uint32_t k, uint32_t h, uint32_t m, uint32
 {}
 
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::~var_opt_sketch() {
+template<typename T, typename A>
+var_opt_sketch<T, A>::~var_opt_sketch() {
   if (data_ != nullptr) {
     if (filled_data_) {
       // destroy everything
@@ -213,9 +213,9 @@ var_opt_sketch<T,S,A>::~var_opt_sketch() {
   }
 }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>& var_opt_sketch<T,S,A>::operator=(const var_opt_sketch& other) {
-  var_opt_sketch<T,S,A> sk_copy(other);
+template<typename T, typename A>
+var_opt_sketch<T, A>& var_opt_sketch<T, A>::operator=(const var_opt_sketch& other) {
+  var_opt_sketch sk_copy(other);
   std::swap(k_, sk_copy.k_);
   std::swap(h_, sk_copy.h_);
   std::swap(m_, sk_copy.m_);
@@ -233,8 +233,8 @@ var_opt_sketch<T,S,A>& var_opt_sketch<T,S,A>::operator=(const var_opt_sketch& ot
   return *this;
 }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>& var_opt_sketch<T,S,A>::operator=(var_opt_sketch&& other) {
+template<typename T, typename A>
+var_opt_sketch<T, A>& var_opt_sketch<T, A>::operator=(var_opt_sketch&& other) {
   std::swap(k_, other.k_);
   std::swap(h_, other.h_);
   std::swap(m_, other.m_);
@@ -292,9 +292,9 @@ var_opt_sketch<T,S,A>& var_opt_sketch<T,S,A>::operator=(var_opt_sketch&& other) 
  */
 
 // implementation for fixed-size arithmetic types (integral and floating point)
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename TT, typename SerDe, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
-size_t var_opt_sketch<T,S,A>::get_serialized_size_bytes(const SerDe&) const {
+size_t var_opt_sketch<T, A>::get_serialized_size_bytes(const SerDe&) const {
   if (is_empty()) { return PREAMBLE_LONGS_EMPTY << 3; }
   size_t num_bytes = (r_ == 0 ? PREAMBLE_LONGS_WARMUP : PREAMBLE_LONGS_FULL) << 3;
   num_bytes += h_ * sizeof(double);    // weights
@@ -306,9 +306,9 @@ size_t var_opt_sketch<T,S,A>::get_serialized_size_bytes(const SerDe&) const {
 }
 
 // implementation for all other types
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename TT, typename SerDe, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
-size_t var_opt_sketch<T,S,A>::get_serialized_size_bytes(const SerDe& sd) const {
+size_t var_opt_sketch<T, A>::get_serialized_size_bytes(const SerDe& sd) const {
   if (is_empty()) { return PREAMBLE_LONGS_EMPTY << 3; }
   size_t num_bytes = (r_ == 0 ? PREAMBLE_LONGS_WARMUP : PREAMBLE_LONGS_FULL) << 3;
   num_bytes += h_ * sizeof(double);    // weights
@@ -321,9 +321,9 @@ size_t var_opt_sketch<T,S,A>::get_serialized_size_bytes(const SerDe& sd) const {
   return num_bytes;
 }
 
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename SerDe>
-std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned header_size_bytes, const SerDe& sd) const {
+std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T, A>::serialize(unsigned header_size_bytes, const SerDe& sd) const {
   const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   std::vector<uint8_t, AllocU8<A>> bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
@@ -395,9 +395,9 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T,S,A>::serialize(unsigned heade
   return bytes;
 }
 
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename SerDe>
-void var_opt_sketch<T,S,A>::serialize(std::ostream& os, const SerDe& sd) const {
+void var_opt_sketch<T, A>::serialize(std::ostream& os, const SerDe& sd) const {
   const bool empty = (h_ == 0) && (r_ == 0);
 
   const uint8_t preLongs = (empty ? PREAMBLE_LONGS_EMPTY
@@ -458,14 +458,9 @@ void var_opt_sketch<T,S,A>::serialize(std::ostream& os, const SerDe& sd) const {
   }
 }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size_t size, const A& allocator) {
-  return deserialize(bytes, size, S(), allocator);
-}
-
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename SerDe>
-var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
+var_opt_sketch<T, A> var_opt_sketch<T, A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* base = ptr;
@@ -491,7 +486,7 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
   const bool is_gadget = flags & GADGET_FLAG_MASK;
 
   if (is_empty) {
-    return var_opt_sketch<T,S,A>(k, rf, is_gadget, allocator);
+    return var_opt_sketch(k, rf, is_gadget, allocator);
   }
 
   // second and third prelongs
@@ -559,14 +554,9 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(const void* bytes, size
                         std::move(items), std::move(weights), num_marks_in_h, std::move(marks), allocator);
 }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is, const A& allocator) {
-  return deserialize(is, S(), allocator);
-}
-
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename SerDe>
-var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
+var_opt_sketch<T, A> var_opt_sketch<T, A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
   const auto first_byte = read<uint8_t>(is);
   uint8_t preamble_longs = first_byte & 0x3f;
   const resize_factor rf = static_cast<resize_factor>((first_byte >> 6) & 0x03);
@@ -585,7 +575,7 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is, const
     if (!is.good())
       throw std::runtime_error("error reading from std::istream"); 
     else
-      return var_opt_sketch<T,S,A>(k, rf, is_gadget, allocator);
+      return var_opt_sketch(k, rf, is_gadget, allocator);
   }
 
   // second and third prelongs
@@ -649,13 +639,13 @@ var_opt_sketch<T,S,A> var_opt_sketch<T,S,A>::deserialize(std::istream& is, const
                         std::move(items), std::move(weights), num_marks_in_h, std::move(marks), allocator);
 }
 
-template<typename T, typename S, typename A>
-bool var_opt_sketch<T,S,A>::is_empty() const {
+template<typename T, typename A>
+bool var_opt_sketch<T, A>::is_empty() const {
   return (h_ == 0 && r_ == 0);
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::reset() {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::reset() {
   const uint32_t prev_alloc = curr_items_alloc_;
   const uint32_t ceiling_lg_k = to_log_2(ceiling_power_of_2(k_));
   const uint32_t initial_lg_size = starting_sub_multiple(ceiling_lg_k, rf_, MIN_LG_ARR_ITEMS);
@@ -699,34 +689,34 @@ void var_opt_sketch<T,S,A>::reset() {
   filled_data_ = false;
 }
 
-template<typename T, typename S, typename A>
-uint64_t var_opt_sketch<T,S,A>::get_n() const {
+template<typename T, typename A>
+uint64_t var_opt_sketch<T, A>::get_n() const {
   return n_;
 }
 
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::get_k() const {
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::get_k() const {
   return k_;
 }
 
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::get_num_samples() const {
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::get_num_samples() const {
   const uint32_t num_in_sketch = h_ + r_;
   return (num_in_sketch < k_ ? num_in_sketch : k_);
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::update(const T& item, double weight) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::update(const T& item, double weight) {
   update(item, weight, false);
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::update(T&& item, double weight) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::update(T&& item, double weight) {
   update(std::move(item), weight, false);
 }
 
-template<typename T, typename S, typename A>
-string<A> var_opt_sketch<T,S,A>::to_string() const {
+template<typename T, typename A>
+string<A> var_opt_sketch<T, A>::to_string() const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
@@ -741,8 +731,8 @@ string<A> var_opt_sketch<T,S,A>::to_string() const {
   return string<A>(os.str().c_str(), allocator_);
 }
 
-template<typename T, typename S, typename A>
-string<A> var_opt_sketch<T,S,A>::items_to_string() const {
+template<typename T, typename A>
+string<A> var_opt_sketch<T, A>::items_to_string() const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
@@ -755,8 +745,8 @@ string<A> var_opt_sketch<T,S,A>::items_to_string() const {
   return string<A>(os.str().c_str(), allocator_);
 }
 
-template<typename T, typename S, typename A>
-string<A> var_opt_sketch<T,S,A>::items_to_string(bool print_gap) const {
+template<typename T, typename A>
+string<A> var_opt_sketch<T, A>::items_to_string(bool print_gap) const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
@@ -779,9 +769,9 @@ string<A> var_opt_sketch<T,S,A>::items_to_string(bool print_gap) const {
   return string<A>(os.str().c_str(), allocator_);
 }
 
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename O>
-void var_opt_sketch<T,S,A>::update(O&& item, double weight, bool mark) {
+void var_opt_sketch<T, A>::update(O&& item, double weight, bool mark) {
   if (weight < 0.0 || std::isnan(weight) || std::isinf(weight)) {
     throw std::invalid_argument("Item weights must be nonnegative and finite. Found: "
                                 + std::to_string(weight));
@@ -819,9 +809,9 @@ void var_opt_sketch<T,S,A>::update(O&& item, double weight, bool mark) {
   }
 }
 
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename O>
-void var_opt_sketch<T,S,A>::update_warmup_phase(O&& item, double weight, bool mark) {
+void var_opt_sketch<T, A>::update_warmup_phase(O&& item, double weight, bool mark) {
   // seems overly cautious
   if (r_ > 0 || m_ != 0 || h_ > k_) throw std::logic_error("invalid sketch state during warmup");
 
@@ -849,9 +839,9 @@ void var_opt_sketch<T,S,A>::update_warmup_phase(O&& item, double weight, bool ma
    would appear to the right of the R items in a hypothetical reverse-sorted
    list. It is easy to prove that it is light enough to be part of this
    round's downsampling */
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename O>
-void var_opt_sketch<T,S,A>::update_light(O&& item, double weight, bool mark) {
+void var_opt_sketch<T, A>::update_light(O&& item, double weight, bool mark) {
   if (r_ == 0 || (r_ + h_) != k_) throw std::logic_error("invalid sketch state during light warmup");
 
   const uint32_t m_slot = h_; // index of the gap, which becomes the M region
@@ -877,9 +867,9 @@ void var_opt_sketch<T,S,A>::update_light(O&& item, double weight, bool mark) {
    In other words, it might go into the heap and then come right back out,
    but that should be okay because pseudo_heavy items cannot predominate
    in long streams unless (max wt) / (min wt) > o(exp(N)) */
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename O>
-void var_opt_sketch<T,S,A>::update_heavy_general(O&& item, double weight, bool mark) {
+void var_opt_sketch<T, A>::update_heavy_general(O&& item, double weight, bool mark) {
   if (r_ < 2 || m_ != 0 || (r_ + h_) != k_) throw std::logic_error("invalid sketch state during heavy general update");
 
   // put into H, although may come back out momentarily
@@ -891,9 +881,9 @@ void var_opt_sketch<T,S,A>::update_heavy_general(O&& item, double weight, bool m
 /* The analysis of this case is similar to that of the general heavy case.
    The one small technical difference is that since R < 2, we must grab an M item
    to have a valid starting point for continue_by_growing_candidate_set () */
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename O>
-void var_opt_sketch<T,S,A>::update_heavy_r_eq1(O&& item, double weight, bool mark) {
+void var_opt_sketch<T, A>::update_heavy_r_eq1(O&& item, double weight, bool mark) {
   if (r_ != 1 || m_ != 0 || (r_ + h_) != k_) throw std::logic_error("invalid sketch state during heavy r=1 update");
 
   push(std::forward<O>(item), weight, mark);  // new item into H
@@ -911,8 +901,8 @@ void var_opt_sketch<T,S,A>::update_heavy_r_eq1(O&& item, double weight, bool mar
  * <p>Subject to certain pre-conditions, decreasing k causes tau to increase. This fact is used by
  * the unioning algorithm to force "marked" items out of H and into the reservoir region.</p>
  */
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::decrease_k_by_1() {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::decrease_k_by_1() {
   if (k_ <= 1) {
     throw std::logic_error("Cannot decrease k below 1 in union");
   }
@@ -970,8 +960,8 @@ void var_opt_sketch<T,S,A>::decrease_k_by_1() {
   }
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::allocate_data_arrays(uint32_t tgt_size, bool use_marks) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::allocate_data_arrays(uint32_t tgt_size, bool use_marks) {
   filled_data_ = false;
 
   data_ = allocator_.allocate(tgt_size);
@@ -984,8 +974,8 @@ void var_opt_sketch<T,S,A>::allocate_data_arrays(uint32_t tgt_size, bool use_mar
   }
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::grow_data_arrays() {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::grow_data_arrays() {
   const uint32_t prev_size = curr_items_alloc_;
   curr_items_alloc_ = get_adjusted_size(k_, curr_items_alloc_ << rf_);
   if (curr_items_alloc_ == k_) {
@@ -1021,8 +1011,8 @@ void var_opt_sketch<T,S,A>::grow_data_arrays() {
   }
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::transition_from_warmup() {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::transition_from_warmup() {
   // Move the 2 lightest items from H to M
   // But the lighter really belongs in R, so update counts to reflect that
   convert_to_heap();
@@ -1044,8 +1034,8 @@ void var_opt_sketch<T,S,A>::transition_from_warmup() {
   grow_candidate_set(weights_[k_ - 1] + total_wt_r_, 2);
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::convert_to_heap() {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::convert_to_heap() {
   if (h_ < 2) {
     return; // nothing to do
   }
@@ -1064,8 +1054,8 @@ void var_opt_sketch<T,S,A>::convert_to_heap() {
   //}
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::restore_towards_leaves(uint32_t slot_in) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::restore_towards_leaves(uint32_t slot_in) {
   const uint32_t last_slot = h_ - 1;
   if (h_ == 0 || slot_in > last_slot) throw std::logic_error("invalid heap state");
 
@@ -1092,8 +1082,8 @@ void var_opt_sketch<T,S,A>::restore_towards_leaves(uint32_t slot_in) {
   }
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::restore_towards_root(uint32_t slot_in) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::restore_towards_root(uint32_t slot_in) {
   uint32_t slot = slot_in;
   uint32_t p = (((slot + 1) / 2) - 1); // valid if slot >= 1
   while ((slot > 0) && (weights_[slot] < weights_[p])) {
@@ -1103,9 +1093,9 @@ void var_opt_sketch<T,S,A>::restore_towards_root(uint32_t slot_in) {
   }
 }
 
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename O>
-void var_opt_sketch<T,S,A>::push(O&& item, double wt, bool mark) {
+void var_opt_sketch<T, A>::push(O&& item, double wt, bool mark) {
   if (filled_data_) {
     if (&data_[h_] != &item)
       data_[h_] = std::forward<O>(item);
@@ -1123,8 +1113,8 @@ void var_opt_sketch<T,S,A>::push(O&& item, double wt, bool mark) {
   restore_towards_root(h_ - 1); // need use old h_, but want accurate h_
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::pop_min_to_m_region() {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::pop_min_to_m_region() {
   if (h_ == 0 || (h_ + m_ + r_ != k_ + 1))
     throw std::logic_error("invalid heap state popping min to M region");
 
@@ -1148,8 +1138,8 @@ void var_opt_sketch<T,S,A>::pop_min_to_m_region() {
 }
 
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::swap_values(uint32_t src, uint32_t dst) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::swap_values(uint32_t src, uint32_t dst) {
   std::swap(data_[src], data_[dst]);
   std::swap(weights_[src], weights_[dst]);
 
@@ -1166,8 +1156,8 @@ void var_opt_sketch<T,S,A>::swap_values(uint32_t src, uint32_t dst) {
    of cands is at least 2. We will now grow the candidate set as much as possible
    by pulling sufficiently light items from h to m.
 */
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::grow_candidate_set(double wt_cands, uint32_t num_cands) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::grow_candidate_set(double wt_cands, uint32_t num_cands) {
   if ((h_ + m_ + r_ != k_ + 1) || (num_cands < 1) || (num_cands != m_ + r_) || (m_ >= 2))
     throw std::logic_error("invariant violated when growing candidate set");
 
@@ -1190,8 +1180,8 @@ void var_opt_sketch<T,S,A>::grow_candidate_set(double wt_cands, uint32_t num_can
   downsample_candidate_set(wt_cands, num_cands);
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::downsample_candidate_set(double wt_cands, uint32_t num_cands) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::downsample_candidate_set(double wt_cands, uint32_t num_cands) {
   if (num_cands < 2 || h_ + num_cands != k_ + 1)
     throw std::logic_error("invalid num_cands when downsampling");
 
@@ -1217,8 +1207,8 @@ void var_opt_sketch<T,S,A>::downsample_candidate_set(double wt_cands, uint32_t n
   total_wt_r_ = wt_cands;
 }
 
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::choose_delete_slot(double wt_cands, uint32_t num_cands) const {
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::choose_delete_slot(double wt_cands, uint32_t num_cands) const {
   if (r_ == 0) throw std::logic_error("choosing delete slot while in exact mode");
 
   if (m_ == 0) {
@@ -1245,8 +1235,8 @@ uint32_t var_opt_sketch<T,S,A>::choose_delete_slot(double wt_cands, uint32_t num
   }
 }
 
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::choose_weighted_delete_slot(double wt_cands, uint32_t num_cands) const {
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::choose_weighted_delete_slot(double wt_cands, uint32_t num_cands) const {
   if (m_ < 1) throw std::logic_error("must have weighted delete slot");
 
   const uint32_t offset = h_;
@@ -1269,8 +1259,8 @@ uint32_t var_opt_sketch<T,S,A>::choose_weighted_delete_slot(double wt_cands, uin
   return final_m + 1;
 }
 
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::pick_random_slot_in_r() const {
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::pick_random_slot_in_r() const {
   if (r_ == 0) throw std::logic_error("r_ = 0 when picking slot in R region");
   const uint32_t offset = h_ + m_;
   if (r_ == 1) {
@@ -1280,32 +1270,32 @@ uint32_t var_opt_sketch<T,S,A>::pick_random_slot_in_r() const {
   }
 }
 
-template<typename T, typename S, typename A>
-double var_opt_sketch<T,S,A>::peek_min() const {
+template<typename T, typename A>
+double var_opt_sketch<T, A>::peek_min() const {
   if (h_ == 0) throw std::logic_error("h_ = 0 when checking min in H region");
   return weights_[0];
 }
 
-template<typename T, typename S, typename A>
-inline bool var_opt_sketch<T,S,A>::is_marked(uint32_t idx) const {
+template<typename T, typename A>
+inline bool var_opt_sketch<T, A>::is_marked(uint32_t idx) const {
   return marks_ == nullptr ? false : marks_[idx];
 }
 
-template<typename T, typename S, typename A>
-double var_opt_sketch<T,S,A>::get_tau() const {
+template<typename T, typename A>
+double var_opt_sketch<T, A>::get_tau() const {
   return r_ == 0 ? std::nan("1") : (total_wt_r_ / r_);
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::strip_marks() {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::strip_marks() {
   if (marks_ == nullptr) throw std::logic_error("request to strip marks from non-gadget");
   num_marks_in_h_ = 0;
   AllocBool(allocator_).deallocate(marks_, curr_items_alloc_);
   marks_ = nullptr;
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags) {
   const bool is_empty(flags & EMPTY_FLAG_MASK);
   
   if (is_empty) {
@@ -1325,8 +1315,8 @@ void var_opt_sketch<T,S,A>::check_preamble_longs(uint8_t preamble_longs, uint8_t
   }
 }
 
-template<typename T, typename S, typename A>
-void var_opt_sketch<T,S,A>::check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver) {
+template<typename T, typename A>
+void var_opt_sketch<T, A>::check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver) {
   if (family_id == FAMILY_ID) {
     if (ser_ver != SER_VER) {
       throw std::invalid_argument("Possible corruption: VarOpt serialization version must be "
@@ -1340,8 +1330,8 @@ void var_opt_sketch<T,S,A>::check_family_and_serialization_version(uint8_t famil
     + std::to_string(FAMILY_ID) + ". Found: " + std::to_string(family_id));
 }
 
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T, S, A>::validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n,
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n,
                                                                uint32_t h, uint32_t r, resize_factor rf) {
   if (k == 0 || k > MAX_K) {
     throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");
@@ -1386,9 +1376,9 @@ uint32_t var_opt_sketch<T, S, A>::validate_and_get_target_size(uint32_t preamble
   return array_size;
 }
 
-template<typename T, typename S, typename A>
+template<typename T, typename A>
 template<typename P>
-subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(P predicate) const {
+subset_summary var_opt_sketch<T, A>::estimate_subset_sum(P predicate) const {
   if (n_ == 0) {
     return {0.0, 0.0, 0.0, 0.0};
   }
@@ -1434,8 +1424,8 @@ subset_summary var_opt_sketch<T, S, A>::estimate_subset_sum(P predicate) const {
          };
 }
 
-template<typename T, typename S, typename A>
-class var_opt_sketch<T, S, A>::items_deleter {
+template<typename T, typename A>
+class var_opt_sketch<T, A>::items_deleter {
   public:
   items_deleter(uint32_t num, const A& allocator) : num(num), h_count(0), r_count(0), allocator(allocator) {}
   void set_h(uint32_t h) { h_count = h; }
@@ -1463,8 +1453,8 @@ class var_opt_sketch<T, S, A>::items_deleter {
   A allocator;
 };
 
-template<typename T, typename S, typename A>
-class var_opt_sketch<T, S, A>::weights_deleter {
+template<typename T, typename A>
+class var_opt_sketch<T, A>::weights_deleter {
   public:
   weights_deleter(uint32_t num, const A& allocator) : num(num), allocator(allocator) {}
   void operator() (double* ptr) {
@@ -1477,8 +1467,8 @@ class var_opt_sketch<T, S, A>::weights_deleter {
   AllocDouble allocator;
 };
 
-template<typename T, typename S, typename A>
-class var_opt_sketch<T, S, A>::marks_deleter {
+template<typename T, typename A>
+class var_opt_sketch<T, A>::marks_deleter {
   public:
   marks_deleter(uint32_t num, const A& allocator) : num(num), allocator(allocator) {}
   void operator() (bool* ptr) {
@@ -1492,20 +1482,20 @@ class var_opt_sketch<T, S, A>::marks_deleter {
 };
 
 
-template<typename T, typename S, typename A>
-typename var_opt_sketch<T, S, A>::const_iterator var_opt_sketch<T, S, A>::begin() const {
-  return var_opt_sketch<T, S, A>::const_iterator(*this, false);
+template<typename T, typename A>
+typename var_opt_sketch<T, A>::const_iterator var_opt_sketch<T, A>::begin() const {
+  return const_iterator(*this, false);
 }
 
-template<typename T, typename S, typename A>
-typename var_opt_sketch<T, S, A>::const_iterator var_opt_sketch<T, S, A>::end() const {
-  return var_opt_sketch<T, S, A>::const_iterator(*this, true);
+template<typename T, typename A>
+typename var_opt_sketch<T, A>::const_iterator var_opt_sketch<T, A>::end() const {
+  return const_iterator(*this, true);
 }
 
 // -------- var_opt_sketch::const_iterator implementation ---------
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end) :
+template<typename T, typename A>
+var_opt_sketch<T, A>::const_iterator::const_iterator(const var_opt_sketch& sk, bool is_end) :
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),
@@ -1523,8 +1513,8 @@ var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A
   if (idx_ == final_idx_) { sk_ = nullptr; }
 }
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region) :
+template<typename T, typename A>
+var_opt_sketch<T, A>::const_iterator::const_iterator(const var_opt_sketch& sk, bool is_end, bool use_r_region) :
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),
@@ -1542,8 +1532,8 @@ var_opt_sketch<T,S,A>::const_iterator::const_iterator(const var_opt_sketch<T,S,A
 }
 
 
-template<typename T,  typename S, typename A>
-var_opt_sketch<T, S, A>::const_iterator::const_iterator(const const_iterator& other) :
+template<typename T, typename A>
+var_opt_sketch<T, A>::const_iterator::const_iterator(const const_iterator& other) :
   sk_(other.sk_),
   cum_r_weight_(other.cum_r_weight_),
   r_item_wt_(other.r_item_wt_),
@@ -1551,8 +1541,8 @@ var_opt_sketch<T, S, A>::const_iterator::const_iterator(const const_iterator& ot
   final_idx_(other.final_idx_)
 {}
 
-template<typename T,  typename S, typename A>
-typename var_opt_sketch<T, S, A>::const_iterator& var_opt_sketch<T, S, A>::const_iterator::operator++() {
+template<typename T, typename A>
+typename var_opt_sketch<T, A>::const_iterator& var_opt_sketch<T, A>::const_iterator::operator++() {
   ++idx_;
   
   if (idx_ == final_idx_) {
@@ -1565,27 +1555,27 @@ typename var_opt_sketch<T, S, A>::const_iterator& var_opt_sketch<T, S, A>::const
   return *this;
 }
 
-template<typename T,  typename S, typename A>
-typename var_opt_sketch<T, S, A>::const_iterator& var_opt_sketch<T, S, A>::const_iterator::operator++(int) {
+template<typename T, typename A>
+typename var_opt_sketch<T, A>::const_iterator& var_opt_sketch<T, A>::const_iterator::operator++(int) {
   const_iterator tmp(*this);
   operator++();
   return tmp;
 }
 
-template<typename T, typename S, typename A>
-bool var_opt_sketch<T, S, A>::const_iterator::operator==(const const_iterator& other) const {
+template<typename T, typename A>
+bool var_opt_sketch<T, A>::const_iterator::operator==(const const_iterator& other) const {
   if (sk_ != other.sk_) return false;
   if (sk_ == nullptr) return true; // end (and we know other.sk_ is also null)
   return idx_ == other.idx_;
 }
 
-template<typename T, typename S, typename A>
-bool var_opt_sketch<T, S, A>::const_iterator::operator!=(const const_iterator& other) const {
+template<typename T, typename A>
+bool var_opt_sketch<T, A>::const_iterator::operator!=(const const_iterator& other) const {
   return !operator==(other);
 }
 
-template<typename T, typename S, typename A>
-const std::pair<const T&, const double> var_opt_sketch<T, S, A>::const_iterator::operator*() const {
+template<typename T, typename A>
+const std::pair<const T&, const double> var_opt_sketch<T, A>::const_iterator::operator*() const {
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
@@ -1595,16 +1585,16 @@ const std::pair<const T&, const double> var_opt_sketch<T, S, A>::const_iterator:
   return std::pair<const T&, const double>(sk_->data_[idx_], wt);
 }
 
-template<typename T, typename S, typename A>
-bool var_opt_sketch<T, S, A>::const_iterator::get_mark() const {
+template<typename T, typename A>
+bool var_opt_sketch<T, A>::const_iterator::get_mark() const {
   return sk_->marks_ == nullptr ? false : sk_->marks_[idx_];
 }
 
 
 // -------- var_opt_sketch::iterator implementation ---------
 
-template<typename T, typename S, typename A>
-var_opt_sketch<T,S,A>::iterator::iterator(const var_opt_sketch<T,S,A>& sk, bool is_end, bool use_r_region) :
+template<typename T, typename A>
+var_opt_sketch<T, A>::iterator::iterator(const var_opt_sketch& sk, bool is_end, bool use_r_region) :
   sk_(&sk),
   cum_r_weight_(0.0),
   r_item_wt_(sk.get_tau()),
@@ -1621,8 +1611,8 @@ var_opt_sketch<T,S,A>::iterator::iterator(const var_opt_sketch<T,S,A>& sk, bool 
   if (idx_ == final_idx_) { sk_ = nullptr; }
 }
 
-template<typename T,  typename S, typename A>
-var_opt_sketch<T, S, A>::iterator::iterator(const iterator& other) :
+template<typename T, typename A>
+var_opt_sketch<T, A>::iterator::iterator(const iterator& other) :
   sk_(other.sk_),
   cum_r_weight_(other.cum_r_weight_),
   r_item_wt_(other.r_item_wt_),
@@ -1630,8 +1620,8 @@ var_opt_sketch<T, S, A>::iterator::iterator(const iterator& other) :
   final_idx_(other.final_idx_)
 {}
 
-template<typename T,  typename S, typename A>
-typename var_opt_sketch<T, S, A>::iterator& var_opt_sketch<T, S, A>::iterator::operator++() {
+template<typename T, typename A>
+typename var_opt_sketch<T, A>::iterator& var_opt_sketch<T, A>::iterator::operator++() {
   ++idx_;
   
   if (idx_ == final_idx_) {
@@ -1644,27 +1634,27 @@ typename var_opt_sketch<T, S, A>::iterator& var_opt_sketch<T, S, A>::iterator::o
   return *this;
 }
 
-template<typename T,  typename S, typename A>
-typename var_opt_sketch<T, S, A>::iterator& var_opt_sketch<T, S, A>::iterator::operator++(int) {
+template<typename T, typename A>
+typename var_opt_sketch<T, A>::iterator& var_opt_sketch<T, A>::iterator::operator++(int) {
   const_iterator tmp(*this);
   operator++();
   return tmp;
 }
 
-template<typename T, typename S, typename A>
-bool var_opt_sketch<T, S, A>::iterator::operator==(const iterator& other) const {
+template<typename T, typename A>
+bool var_opt_sketch<T, A>::iterator::operator==(const iterator& other) const {
   if (sk_ != other.sk_) return false;
   if (sk_ == nullptr) return true; // end (and we know other.sk_ is also null)
   return idx_ == other.idx_;
 }
 
-template<typename T, typename S, typename A>
-bool var_opt_sketch<T, S, A>::iterator::operator!=(const iterator& other) const {
+template<typename T, typename A>
+bool var_opt_sketch<T, A>::iterator::operator!=(const iterator& other) const {
   return !operator==(other);
 }
 
-template<typename T, typename S, typename A>
-std::pair<T&, double> var_opt_sketch<T, S, A>::iterator::operator*() {
+template<typename T, typename A>
+std::pair<T&, double> var_opt_sketch<T, A>::iterator::operator*() {
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
@@ -1676,8 +1666,8 @@ std::pair<T&, double> var_opt_sketch<T, S, A>::iterator::operator*() {
   return std::pair<T&, double>(sk_->data_[idx_], wt);
 }
 
-template<typename T, typename S, typename A>
-bool var_opt_sketch<T, S, A>::iterator::get_mark() const {
+template<typename T, typename A>
+bool var_opt_sketch<T, A>::iterator::get_mark() const {
   return sk_->marks_ == nullptr ? false : sk_->marks_[idx_];
 }
 
@@ -1685,40 +1675,40 @@ bool var_opt_sketch<T, S, A>::iterator::get_mark() const {
  * Checks if target sampling allocation is more than 50% of max sampling size.
  * If so, returns max sampling size, otherwise passes through target size.
  */
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::get_adjusted_size(uint32_t max_size, uint32_t resize_target) {
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::get_adjusted_size(uint32_t max_size, uint32_t resize_target) {
   if (max_size < (resize_target << 1)) {
     return max_size;
   }
   return resize_target;
 }
 
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::starting_sub_multiple(uint32_t lg_target, uint32_t lg_rf, uint32_t lg_min) {
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::starting_sub_multiple(uint32_t lg_target, uint32_t lg_rf, uint32_t lg_min) {
   return (lg_target <= lg_min)
           ? lg_min : (lg_rf == 0) ? lg_target
           : (lg_target - lg_min) % lg_rf + lg_min;
 }
 
-template<typename T, typename S, typename A>
-double var_opt_sketch<T,S,A>::pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, double sampling_rate) {
+template<typename T, typename A>
+double var_opt_sketch<T, A>::pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, double sampling_rate) {
   const double adjusted_kappa = DEFAULT_KAPPA * sqrt(1 - sampling_rate);
   return bounds_binomial_proportions::approximate_upper_bound_on_p(n, k, adjusted_kappa);
 }
 
-template<typename T, typename S, typename A>
-double var_opt_sketch<T,S,A>::pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, double sampling_rate) {
+template<typename T, typename A>
+double var_opt_sketch<T, A>::pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, double sampling_rate) {
   const double adjusted_kappa = DEFAULT_KAPPA * sqrt(1 - sampling_rate);
   return bounds_binomial_proportions::approximate_lower_bound_on_p(n, k, adjusted_kappa);
 }
 
-template<typename T, typename S, typename A>
-bool var_opt_sketch<T,S,A>::is_power_of_2(uint32_t v) {
+template<typename T, typename A>
+bool var_opt_sketch<T, A>::is_power_of_2(uint32_t v) {
   return v && !(v & (v - 1));
 }
 
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::to_log_2(uint32_t v) {
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::to_log_2(uint32_t v) {
   if (is_power_of_2(v)) {
     return count_trailing_zeros_in_u32(v);
   } else {
@@ -1727,14 +1717,14 @@ uint32_t var_opt_sketch<T,S,A>::to_log_2(uint32_t v) {
 }
 
 // Returns an integer in the range [0, max_value) -- excludes max_value
-template<typename T, typename S, typename A>
-uint32_t var_opt_sketch<T,S,A>::next_int(uint32_t max_value) {
+template<typename T, typename A>
+uint32_t var_opt_sketch<T, A>::next_int(uint32_t max_value) {
   std::uniform_int_distribution<uint32_t> dist(0, max_value - 1);
   return dist(random_utils::rand);
 }
 
-template<typename T, typename S, typename A>
-double var_opt_sketch<T,S,A>::next_double_exclude_zero() {
+template<typename T, typename A>
+double var_opt_sketch<T, A>::next_double_exclude_zero() {
   double r = random_utils::next_double(random_utils::rand);
   while (r == 0.0) {
     r = random_utils::next_double(random_utils::rand);

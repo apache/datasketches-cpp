@@ -47,8 +47,8 @@ static var_opt_sketch<int> create_unweighted_sketch(uint32_t k, uint64_t n) {
   return sk;
 }
 
-template<typename T, typename S, typename A>
-static void check_if_equal(var_opt_sketch<T,S,A>& sk1, var_opt_sketch<T,S,A>& sk2) {
+template<typename T, typename A>
+static void check_if_equal(var_opt_sketch<T, A>& sk1, var_opt_sketch<T, A>& sk2) {
   REQUIRE(sk1.get_k() == sk2.get_k());
   REQUIRE(sk1.get_n() == sk2.get_n());
   REQUIRE(sk1.get_num_samples() == sk2.get_num_samples());
