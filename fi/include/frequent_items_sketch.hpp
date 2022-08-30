@@ -46,7 +46,6 @@ template<
   typename W = uint64_t,
   typename H = std::hash<T>,
   typename E = std::equal_to<T>,
-  typename S = serde<T>, // deprecated, to be removed in the next major version
   typename A = std::allocator<T>
 >
 class frequent_items_sketch {
@@ -228,7 +227,7 @@ public:
    * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
@@ -236,7 +235,7 @@ public:
    * @param os output stream
    * @param instance of a SerDe
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
   // This is a convenience alias for users
@@ -252,18 +251,8 @@ public:
    * @param instance of a SerDe
    * @return serialized sketch as a vector of bytes
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
-
-  /**
-   * This method deserializes a sketch from a given stream.
-   * @param is input stream
-   * @param instance of an Allocator
-   * @return an instance of the sketch
-   *
-   * Deprecated, to be removed in the next major version
-   */
-  static frequent_items_sketch deserialize(std::istream& is, const A& allocator = A());
 
   /**
    * This method deserializes a sketch from a given stream.
@@ -272,29 +261,18 @@ public:
    * @param instance of an Allocator
    * @return an instance of the sketch
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   static frequent_items_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @param instance of an Allocator
-   * @return an instance of the sketch
-   *
-   * Deprecated, to be removed in the next major version
-   */
-  static frequent_items_sketch deserialize(const void* bytes, size_t size, const A& allocator = A());
-
-  /**
-   * This method deserializes a sketch from a given array of bytes.
-   * @param bytes pointer to the array of bytes
-   * @param size the size of the array
    * @param instance of a SerDe
    * @param instance of an Allocator
    * @return an instance of the sketch
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   static frequent_items_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
 
   /**
@@ -334,8 +312,8 @@ private:
   class items_deleter;
 };
 
-template<typename T, typename W, typename H, typename E, typename S, typename A>
-class frequent_items_sketch<T, W, H, E, S, A>::row {
+template<typename T, typename W, typename H, typename E, typename A>
+class frequent_items_sketch<T, W, H, E, A>::row {
 public:
   row(const T* item, W weight, W offset):
     item(item), weight(weight), offset(offset) {}
