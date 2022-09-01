@@ -49,8 +49,8 @@ static var_opt_sketch<int> create_unweighted_sketch(uint32_t k, uint64_t n) {
 
 // if exact_compare = false, checks for equivalence -- specific R region values may differ but
 // R region weights must match
-template<typename T, typename S, typename A>
-static void check_if_equal(var_opt_sketch<T,S,A>& sk1, var_opt_sketch<T,S,A>& sk2, bool exact_compare = true) {
+template<typename T, typename A>
+static void check_if_equal(var_opt_sketch<T, A>& sk1, var_opt_sketch<T, A>& sk2, bool exact_compare = true) {
   REQUIRE(sk1.get_k() == sk2.get_k());
   REQUIRE(sk1.get_n() == sk2.get_n());
   REQUIRE(sk1.get_num_samples() == sk2.get_num_samples());
@@ -78,8 +78,8 @@ static void check_if_equal(var_opt_sketch<T,S,A>& sk1, var_opt_sketch<T,S,A>& sk
 // ensure that the resulting binary images are compatible.
 // if exact_compare = false, checks for equivalence -- specific R region values may differ but
 // R region weights must match
-template<typename T, typename S, typename A>
-static void compare_serialization_deserialization(var_opt_union<T,S,A>& vo_union, bool exact_compare = true) {
+template<typename T, typename A>
+static void compare_serialization_deserialization(var_opt_union<T,A>& vo_union, bool exact_compare = true) {
   std::vector<uint8_t> bytes = vo_union.serialize();
 
   var_opt_union<T> u_from_bytes = var_opt_union<T>::deserialize(bytes.data(), bytes.size());

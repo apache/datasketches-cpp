@@ -27,7 +27,7 @@
 
 namespace datasketches {
 
-using frequent_test_type_sketch = frequent_items_sketch<test_type, float, test_type_hash, test_type_equal, test_type_serde, test_allocator<test_type>>;
+using frequent_test_type_sketch = frequent_items_sketch<test_type, float, test_type_hash, test_type_equal, test_allocator<test_type>>;
 using alloc = test_allocator<test_type>;
 
 TEST_CASE("frequent items: custom type", "[frequent_items_sketch]") {
@@ -51,16 +51,16 @@ TEST_CASE("frequent items: custom type", "[frequent_items_sketch]") {
   REQUIRE(items[0].get_estimate() == 10);
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
-  sketch.serialize(s);
-  auto sketch2 = frequent_test_type_sketch::deserialize(s, alloc(0));
+  sketch.serialize(s, test_type_serde());
+  auto sketch2 = frequent_test_type_sketch::deserialize(s, test_type_serde(), alloc(0));
   REQUIRE_FALSE(sketch2.is_empty());
   REQUIRE(sketch2.get_total_weight() == 17);
   REQUIRE(sketch2.get_estimate(1) == 10);
   REQUIRE(sketch.get_num_active_items() == sketch2.get_num_active_items());
   REQUIRE(sketch.get_maximum_error() == sketch2.get_maximum_error());
 
-  auto bytes = sketch.serialize();
-  auto sketch3 = frequent_test_type_sketch::deserialize(bytes.data(), bytes.size(), alloc(0));
+  auto bytes = sketch.serialize(0, test_type_serde());
+  auto sketch3 = frequent_test_type_sketch::deserialize(bytes.data(), bytes.size(), test_type_serde(), alloc(0));
   REQUIRE_FALSE(sketch3.is_empty());
   REQUIRE(sketch3.get_total_weight() == 17);
   REQUIRE(sketch3.get_estimate(1) == 10);

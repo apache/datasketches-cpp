@@ -28,8 +28,8 @@
 
 namespace datasketches {
 
-using var_opt_test_sketch = var_opt_sketch<test_type, test_type_serde, test_allocator<test_type>>;
-using var_opt_test_union = var_opt_union<test_type, test_type_serde, test_allocator<test_type>>;
+using var_opt_test_sketch = var_opt_sketch<test_type, test_allocator<test_type>>;
+using var_opt_test_union = var_opt_union<test_type, test_allocator<test_type>>;
 using alloc = test_allocator<test_type>;
 
 TEST_CASE("varopt allocation test", "[var_opt_sketch]") {
@@ -38,19 +38,19 @@ TEST_CASE("varopt allocation test", "[var_opt_sketch]") {
   {
     var_opt_test_sketch sk1(10, var_opt_test_sketch::DEFAULT_RESIZE_FACTOR, 0);
     for (int i = 0; i < 100; ++i) sk1.update(i);
-    auto bytes1 = sk1.serialize();
+    auto bytes1 = sk1.serialize(0, test_type_serde());
     auto sk2 = var_opt_test_sketch::deserialize(bytes1.data(), bytes1.size(), test_type_serde(), 0);
 
     std::stringstream ss;
-    sk1.serialize(ss);
-    auto sk3 = var_opt_test_sketch::deserialize(ss, alloc(0));
+    sk1.serialize(ss, test_type_serde());
+    auto sk3 = var_opt_test_sketch::deserialize(ss, test_type_serde(), alloc(0));
 
     var_opt_test_union u1(10, 0);
     u1.update(sk1);
     u1.update(sk2);
     u1.update(sk3);
 
-    auto bytes2 = u1.serialize();
+    auto bytes2 = u1.serialize(0, test_type_serde());
     auto u2 = var_opt_test_union::deserialize(bytes2.data(), bytes2.size(), test_type_serde(), 0);
   }
   REQUIRE(test_allocator_total_bytes == 0);
