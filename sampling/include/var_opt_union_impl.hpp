@@ -191,7 +191,7 @@ var_opt_union<T, A> var_opt_union<T, A>::deserialize(const void* bytes, size_t s
   bool is_empty = flags & EMPTY_FLAG_MASK;
 
   if (is_empty) {
-    return var_opt_union<T, A>(max_k);
+    return var_opt_union(max_k);
   }
 
   uint64_t items_seen;
