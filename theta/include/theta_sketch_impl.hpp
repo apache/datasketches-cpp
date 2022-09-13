@@ -341,8 +341,7 @@ void compact_theta_sketch_alloc<A>::print_specifics(std::ostringstream&) const {
 
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
-  const bool is_single_item = entries_.size() == 1 && !this->is_estimation_mode();
-  const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
+  const uint8_t preamble_longs = this->is_estimation_mode() ? 3 : this->is_empty() || entries_.size() == 1 ? 1 : 2;
   write(os, preamble_longs);
   const uint8_t serial_version = SERIAL_VERSION;
   write(os, serial_version);
@@ -359,24 +358,19 @@ void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
   write(os, flags_byte);
   const uint16_t seed_hash = get_seed_hash();
   write(os, seed_hash);
-  if (entries_.size() > 0) {
-    if (!is_single_item) {
-      const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
-      write(os, num_entries);
-      const uint32_t unused32 = 0;
-      write(os, unused32);
-      if (this->is_estimation_mode()) {
-        write(os, this->theta_);
-      }
-    }
-    write(os, entries_.data(), entries_.size() * sizeof(uint64_t));
+  if (preamble_longs > 1) {
+    const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
+    write(os, num_entries);
+    const uint32_t unused32 = 0;
+    write(os, unused32);
   }
+  if (this->is_estimation_mode()) write(os, this->theta_);
+  if (entries_.size() > 0) write(os, entries_.data(), entries_.size() * sizeof(uint64_t));
 }
 
 template<typename A>
 auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
-  const bool is_single_item = entries_.size() == 1 && !this->is_estimation_mode();
-  const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
+  const uint8_t preamble_longs = this->is_estimation_mode() ? 3 : this->is_empty() || entries_.size() == 1 ? 1 : 2;
   const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs
       + sizeof(uint64_t) * entries_.size();
   vector_bytes bytes(size, 0, entries_.get_allocator());
@@ -397,17 +391,13 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
   ptr += copy_to_mem(flags_byte, ptr);
   const uint16_t seed_hash = get_seed_hash();
   ptr += copy_to_mem(seed_hash, ptr);
-  if (entries_.size() > 0) {
-    if (!is_single_item) {
-      const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
-      ptr += copy_to_mem(num_entries, ptr);
-      ptr += sizeof(uint32_t);
-      if (this->is_estimation_mode()) {
-        ptr += copy_to_mem(theta_, ptr);
-      }
-    }
-    ptr += copy_to_mem(entries_.data(), ptr, entries_.size() * sizeof(uint64_t));
+  if (preamble_longs > 1) {
+    const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
+    ptr += copy_to_mem(num_entries, ptr);
+    ptr += sizeof(uint32_t); // unused
   }
+  if (this->is_estimation_mode()) ptr += copy_to_mem(theta_, ptr);
+  if (entries_.size() > 0) ptr += copy_to_mem(entries_.data(), ptr, entries_.size() * sizeof(uint64_t));
   return bytes;
 }
 
