@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_executable(tuple_test engagement_test.cpp)
+add_executable(tuple_test)
 
 target_link_libraries(tuple_test tuple common_test)
 

@@ -294,9 +294,9 @@ namespace datasketches {
 
     TEST_CASE("engagement", "[engagement]") {
     EngagementTest E ;
-//    E.test_always_one_update() ;
-//    E.test_sum_update_policy() ;
-//    E.test_sum_union_policy() ;
+    E.test_always_one_update() ;
+    E.test_sum_update_policy() ;
+    E.test_sum_union_policy() ;
     E.compute_engagement_histogram() ;
 }
 
