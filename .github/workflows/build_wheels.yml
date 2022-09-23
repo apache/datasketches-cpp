@@ -82,16 +82,16 @@ jobs:
       - name: Configure cibuildwheel
         shell: bash
         run: |
-          CMAKE_OSX_ARCHITECTURES=${{ matrix.cibw-arch == 'macosx_x86_64' && 'x86_64' || matrix.cibw-arch == 'macosx_arm64' && 'arm64' || matrix.cibw-arch == 'macosx_universal2' && '"arm64;x86_64"' || '' }}
+          CMAKE_OSX_ARCHITECTURES=${{ matrix.config.cibw-arch == 'macosx_x86_64' && 'x86_64' || matrix.config.cibw-arch == 'macosx_arm64' && 'arm64' || matrix.config.cibw-arch == 'macosx_universal2' && '"arm64;x86_64"' || '' }}
           echo "CIBW_ARCHS_MACOS=x86_64 arm64" >> $GITHUB_ENV
-          echo "CIBW_BUILD=*-${{ matrix.cibw-arch }}" >> $GITHUB_ENV
+          echo "CIBW_BUILD=*-${{ matrix.config.cibw-arch }}" >> $GITHUB_ENV
           echo "CIBW_ENVIRONMENT_MACOS=CMAKE_OSX_ARCHITECTURES=\"$CMAKE_OSX_ARCHITECTURES\"" >> $GITHUB_ENV
         
       - name: Build wheels
         run: python -m cibuildwheel --output-dir dist
         env:
           CIBW_BEFORE_BUILD_LINUX: "yum remove -y cmake"
-          CIBW_BEFORE_BUILD: python -m pip install cmake>=3.18
+          CIBW_BEFORE_BUILD: "python -m pip install cmake>=3.18"
           CIBW_SKIP: "*-win32 pp*-macosx*"
 
       - uses: actions/upload-artifact@v2
