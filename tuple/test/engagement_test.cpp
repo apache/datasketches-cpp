@@ -51,8 +51,6 @@ using always_one_tuple_sketch = datasketches::update_tuple_sketch<int, int, alwa
 template<typename T>
 class update_sum_value_policy {
 public:
-    //update_sum_value_policy(const T& initial_value): initial_value(0) {}
-    //T create() const { return initial_value; }
     update_sum_value_policy(): initial_value(0) {}
     T create() const { return initial_value; }
     void update(T& summary, const T& update) const { summary += update; }
@@ -60,11 +58,6 @@ private:
     T initial_value;
 };
 using sum_update_tuple_sketch = datasketches::update_tuple_sketch<int, int, update_sum_value_policy<int>>;
-
-
-// This policy is only for a union sketch, not an update sketch.
-// Need another class if the same type of update is gonna work on an update sketch
-// with the create and update methods.
 
 template<typename Summary>
 struct union_sum_value_policy {
@@ -221,24 +214,16 @@ private:
             u.update(sk) ;
         }
         auto union_result = u.get_result() ;
-        // res.get_estimate() should be 271.9156532434.
         std::vector<uint64_t> num_days_arr(num_sketches+1) ;
 
         int num_retained = 0 ;
         int total_sum = 0 ;
 
         for (const auto& entry: union_result) {
-//            std::cout << "First: " << entry.first << "\tSecond: " << entry.second << std::endl ;
             int num_days_visited = entry.second ;
             num_retained++ ;
             total_sum += entry.second ;
             num_days_arr[num_days_visited]++;
-        }
-        std::cout << "Num retained items: " << num_retained << std::endl ;
-        std::cout << "Sum(retained items): " << total_sum << std::endl ;
-
-        for(int i = 1; i<num_sketches+1; i++){
-            std::cout<< "i = " << i << "\tnum_days_arr[i] = " << num_days_arr[i] << std::endl ;
         }
 
         int sum_visits = 0;
@@ -257,7 +242,6 @@ private:
             int visitors_at_days_visited = num_days_arr[i] ;
             if(visitors_at_days_visited == 0){ continue; }
             sum_visits += visitors_at_days_visited * i ;
-            // RUNS UP TO HERE 10/08/2022
 
             double est_visitors_at_days_visited = visitors_at_days_visited / theta ;
             double lower_bound_at_days_visited =  union_result.get_lower_bound(num_std_dev, visitors_at_days_visited);
@@ -270,8 +254,6 @@ private:
                       << std:: endl ;
 
     }
-
-        // PRINT A SUMMARY TABLE FOR VISITORS AND VISITS
         std::cout << std::endl << std::endl ;
         std::cout << std::setw(12) << "Totals"
                   << std::setw(12) << "Estimate"
@@ -291,9 +273,9 @@ private:
                   << std::setw(12) << ub_visitors
                   << std:: endl ;
 
-        //The total number of visits, however, is a scaled metric and takes advantage of the fact that
-        //the retained entries in the sketch is a uniform random sample of all unique visitors, and
-        //the the rest of the unique users will likely behave in the same way.
+        // The total number of visits, however, is a scaled metric and takes advantage of the fact that
+        // the retained entries in the sketch is a uniform random sample of all unique visitors, and
+        // the  rest of the unique users will likely behave in the same way.
         const double est_visits = sum_visits / theta;
         const double lb_visits = est_visits * lb_visitors / total_visitors;
         const double ub_visits = est_visits * ub_visitors / total_visitors;
@@ -312,13 +294,11 @@ namespace datasketches {
 
     TEST_CASE("engagement", "[engagement]") {
     EngagementTest E ;
-    E.test_always_one_update() ;
-    E.test_sum_update_policy() ;
-    E.test_sum_union_policy() ;
+//    E.test_always_one_update() ;
+//    E.test_sum_update_policy() ;
+//    E.test_sum_union_policy() ;
     E.compute_engagement_histogram() ;
 }
 
 
 } /* namespace datasketches */
-
-
