@@ -22,7 +22,7 @@
 #include <exception>
 #include <sstream>
 #include <stdexcept>
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 namespace datasketches {
 

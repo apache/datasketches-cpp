@@ -19,7 +19,7 @@
 
 #include <iostream>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <tuple_intersection.hpp>
 #include <theta_sketch.hpp>
 #include <stdexcept>

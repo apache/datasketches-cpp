@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <theta_a_not_b.hpp>
 

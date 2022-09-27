@@ -19,7 +19,7 @@
 
 #include <iostream>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <tuple_sketch.hpp>
 #include <test_allocator.hpp>
 #include <test_type.hpp>

@@ -22,7 +22,7 @@
 #include <test_type.hpp>
 #include <test_allocator.hpp>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 #include <sstream>
 
