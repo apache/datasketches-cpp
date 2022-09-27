@@ -45,7 +45,6 @@ target_include_directories(common_test
 
 target_sources(common_test
   INTERFACE
-    #${CMAKE_CURRENT_SOURCE_DIR}/catch.hpp  
     ${CMAKE_CURRENT_SOURCE_DIR}/test_allocator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_type.hpp
   PRIVATE
