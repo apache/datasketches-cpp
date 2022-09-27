@@ -76,7 +76,7 @@ The only developer-specific instructions relate to running unit tests.
 
 ### Unit tests
 
-The Python unit tests are run via `tox`, with no arguments, from the project root directory -- not the python subdirectory. Tox creates a temporary virtual environment in which to build and run teh unit tests. In the event you are missing the necessary pacakge, tox may be installed with `python3 -m pip install --upgrade tox`.
+The Python unit tests are run via `tox`, with no arguments, from the project root directory -- not the python subdirectory. Tox creates a temporary virtual environment in which to build and run the unit tests. In the event you are missing the necessary pacakge, tox may be installed with `python3 -m pip install --upgrade tox`.
 
 ## License
 
