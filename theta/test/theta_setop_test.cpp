@@ -20,7 +20,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <theta_union.hpp>
 #include <theta_intersection.hpp>
 #include <theta_a_not_b.hpp>

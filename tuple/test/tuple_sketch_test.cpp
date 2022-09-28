@@ -32,7 +32,7 @@ std::ostream& operator<<(std::ostream& os, const three_doubles& tuple) {
 
 }
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <tuple_sketch.hpp>
 
 namespace datasketches {

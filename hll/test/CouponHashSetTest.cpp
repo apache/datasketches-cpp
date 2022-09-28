@@ -21,7 +21,7 @@
 #include "CouponHashSet.hpp"
 #include "HllUtil.hpp"
 
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <ostream>
 #include <cmath>
 #include <string>

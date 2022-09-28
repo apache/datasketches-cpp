@@ -21,6 +21,18 @@
 # common dependencies for tests
 add_library(common_test OBJECT "")
 
+include(FetchContent)
+
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2
+  GIT_TAG        v2.13.9
+)
+
+FetchContent_MakeAvailable(Catch2)
+
+target_link_libraries(common_test PUBLIC Catch2::Catch2)
+
 set_target_properties(common_test PROPERTIES
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
@@ -33,7 +45,6 @@ target_include_directories(common_test
 
 target_sources(common_test
   INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/catch.hpp  
     ${CMAKE_CURRENT_SOURCE_DIR}/test_allocator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_type.hpp
   PRIVATE
