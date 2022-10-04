@@ -31,7 +31,6 @@ namespace datasketches {
 template<
   typename T,
   typename Comparator = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
-  typename S = serde<T>, // deprecated, to be removed in the next major version
   typename Allocator = std::allocator<T>
 >
 class req_sketch {
@@ -63,8 +62,8 @@ public:
    * @param other sketch of a different type
    * @param allocator instance of an Allocator
    */
-  template<typename TT, typename CC, typename SS, typename AA>
-  explicit req_sketch(const req_sketch<TT, CC, SS, AA>& other, const Allocator& allocator = Allocator());
+  template<typename TT, typename CC, typename AA>
+  explicit req_sketch(const req_sketch<TT, CC, AA>& other, const Allocator& allocator = Allocator());
 
   /**
    * Returns configured parameter K
@@ -102,27 +101,35 @@ public:
    */
   bool is_estimation_mode() const;
 
+  /**
+   * Updates this sketch with the given data item.
+   * @param item from a stream of items
+   */
   template<typename FwdT>
   void update(FwdT&& item);
 
+  /**
+   * Merges another sketch into this one.
+   * @param other sketch to merge into this one
+   */
   template<typename FwdSk>
   void merge(FwdSk&& other);
 
   /**
-   * Returns the min value of the stream.
+   * Returns the min item of the stream.
    * For floating point types: if the sketch is empty this returns NaN.
    * For other types: if the sketch is empty this throws runtime_error.
-   * @return the min value of the stream
+   * @return the min item of the stream
    */
-  const T& get_min_value() const;
+  const T& get_min_item() const;
 
   /**
-   * Returns the max value of the stream.
+   * Returns the max item of the stream.
    * For floating point types: if the sketch is empty this returns NaN.
    * For other types: if the sketch is empty this throws runtime_error.
-   * @return the max value of the stream
+   * @return the max item of the stream
    */
-  const T& get_max_value() const;
+  const T& get_max_item() const;
 
   /**
    * Returns an instance of the comparator for this sketch.
@@ -131,84 +138,83 @@ public:
   Comparator get_comparator() const;
 
   /**
-   * Returns an approximation to the normalized (fractional) rank of the given item from 0 to 1 inclusive.
-   * With the template parameter inclusive=true the weight of the given item is included into the rank.
-   * Otherwise the rank equals the sum of the weights of items less than the given item according to the Comparator.
+   * Returns an approximation to the normalized rank of the given item from 0 to 1 inclusive.
    *
-   * <p>If the sketch is empty this returns NaN.
+   * <p>If the sketch is empty the result is undefined (NaN).
    *
-   * @param item to be ranked
+   * @param item to be ranked.
+   * @param inclusive if true the weight of the given item is included into the rank.
+   * Otherwise the rank equals the sum of the weights of all items that are less than the given item
+   * according to the comparator C.
+   *
    * @return an approximate rank of the given item
    */
-  template<bool inclusive = false>
-  double get_rank(const T& item) const;
+  double get_rank(const T& item, bool inclusive = true) const;
 
   /**
    * Returns an approximation to the Probability Mass Function (PMF) of the input stream
-   * given a set of split points (values).
+   * given a set of split points (items).
    *
    * <p>If the sketch is empty this returns an empty vector.
    *
-   * @param split_points an array of <i>m</i> unique, monotonically increasing values
+   * @param split_points an array of <i>m</i> unique, monotonically increasing items
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
-   * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
-   * split point, with the exception that the last interval will include the maximum value.
-   * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
-   * split point.
-   * It is not necessary to include either the min or max values in these split points.
    *
-   * @return an array of m+1 doubles each of which is an approximation
-   * to the fraction of the input stream values (the mass) that fall into one of those intervals.
-   * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
-   * split point, with the exception that the last interval will include the maximum value.
-   * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
+   * @param size of the array of split points.
+   *
+   * @param inclusive if false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
+   * split point, with the exception that the last interval will include the maximum item.
+   * If true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
    * split point.
+   *
+   * @return an array of m+1 double values each of which is an approximation
+   * to the fraction of the input stream items (the mass) that fall into one of those intervals.
    */
-  template<bool inclusive = false>
-  vector_double get_PMF(const T* split_points, uint32_t size) const;
+  vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
   /**
    * Returns an approximation to the Cumulative Distribution Function (CDF), which is the
-   * cumulative analog of the PMF, of the input stream given a set of split points (values).
+   * cumulative analog of the PMF, of the input stream given a set of split points (items).
    *
    * <p>If the sketch is empty this returns an empty vector.
    *
-   * @param split_points an array of <i>m</i> unique, monotonically increasing float values
+   * @param split_points an array of <i>m</i> unique, monotonically increasing items
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
-   * If the template parameter inclusive=false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
-   * split point, with the exception that the last interval will include the maximum value.
-   * If the template parameter inclusive=true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
+   *
+   * @param size of the array of split points.
+   *
+   * @param inclusive if false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
+   * split point, with the exception that the last interval will include the maximum item.
+   * If true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
    * split point.
-   * It is not necessary to include either the min or max values in these split points.
    *
    * @return an array of m+1 double values, which are a consecutive approximation to the CDF
    * of the input stream given the split_points. The value at array position j of the returned
    * CDF array is the sum of the returned values in positions 0 through j of the returned PMF
    * array.
    */
-  template<bool inclusive = false>
-  vector_double get_CDF(const T* split_points, uint32_t size) const;
+  vector_double get_CDF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
   /**
    * Returns an approximate quantile of the given normalized rank.
    * The normalized rank must be in the range [0.0, 1.0] (both inclusive).
-   * @param rank the given normalized rank
-   * @return approximate quantile given the normalized rank
+   * @param rank of an item in the hypothetical sorted stream.
+   * @param inclusive if true, the given rank is considered inclusive (includes weight of an item)
+   *
+   * @return approximate quantile associated with the given rank
    */
   using quantile_return_type = typename quantile_sketch_sorted_view<T, Comparator, Allocator>::quantile_return_type;
-  template<bool inclusive = false>
-  quantile_return_type get_quantile(double rank) const;
+  quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
   /**
    * Returns an array of quantiles that correspond to the given array of normalized ranks.
    * @param ranks given array of normalized ranks.
    * @return array of quantiles that correspond to the given array of normalized ranks
    */
-  template<bool inclusive = false>
-  std::vector<T, Allocator> get_quantiles(const double* ranks, uint32_t size) const;
+  std::vector<T, Allocator> get_quantiles(const double* ranks, uint32_t size, bool inclusive = true) const;
 
   /**
-   * Returns an approximate lower bound of the given noramalized rank.
+   * Returns an approximate lower bound of the given normalized rank.
    * @param rank the given rank, a value between 0 and 1.0.
    * @param num_std_dev the number of standard deviations. Must be 1, 2, or 3.
    * @return an approximate lower bound rank.
@@ -216,7 +222,7 @@ public:
   double get_rank_lower_bound(double rank, uint8_t num_std_dev) const;
 
   /**
-   * Returns an approximate upper bound of the given noramalized rank.
+   * Returns an approximate upper bound of the given normalized rank.
    * @param rank the given rank, a value between 0 and 1.0.
    * @param num_std_dev the number of standard deviations. Must be 1, 2, or 3.
    * @return an approximate upper bound rank.
@@ -242,7 +248,7 @@ public:
    * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename TT = T, typename SerDe = S, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+  template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
@@ -251,7 +257,7 @@ public:
    * @param instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
-  template<typename TT = T, typename SerDe = S, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+  template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
   size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
@@ -259,7 +265,7 @@ public:
    * @param os output stream
    * @param instance of a SerDe
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
   // This is a convenience alias for users
@@ -274,18 +280,8 @@ public:
    * @param header_size_bytes space to reserve in front of the sketch
    * @param instance of a SerDe
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
-
-  /**
-   * This method deserializes a sketch from a given stream.
-   * @param is input stream
-   * @param instance of an Allocator
-   * @return an instance of a sketch
-   *
-   * Deprecated, to be removed in the next major version
-   */
-  static req_sketch deserialize(std::istream& is, const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given stream.
@@ -294,29 +290,18 @@ public:
    * @param instance of an Allocator
    * @return an instance of a sketch
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   static req_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @param instance of an Allocator
-   * @return an instance of a sketch
-   *
-   * Deprecated, to be removed in the next major version
-   */
-  static req_sketch deserialize(const void* bytes, size_t size, const Allocator& allocator = Allocator());
-
-  /**
-   * This method deserializes a sketch from a given array of bytes.
-   * @param bytes pointer to the array of bytes
-   * @param size the size of the array
    * @param instance of a SerDe
    * @param instance of an Allocator
    * @return an instance of a sketch
    */
-  template<typename SerDe = S>
+  template<typename SerDe = serde<T>>
   static req_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
   /**
@@ -330,8 +315,7 @@ public:
   const_iterator begin() const;
   const_iterator end() const;
 
-  template<bool inclusive = false>
-  quantile_sketch_sorted_view<T, Comparator, Allocator> get_sorted_view(bool cumulative) const;
+  quantile_sketch_sorted_view<T, Comparator, Allocator> get_sorted_view() const;
 
 private:
   Allocator allocator_;
@@ -341,8 +325,12 @@ private:
   uint32_t num_retained_;
   uint64_t n_;
   std::vector<Compactor, AllocCompactor> compactors_;
-  T* min_value_;
-  T* max_value_;
+  T* min_item_;
+  T* max_item_;
+  mutable quantile_sketch_sorted_view<T, Comparator, Allocator>* sorted_view_;
+
+  void setup_sorted_view() const; // modifies mutable state
+  void reset_sorted_view();
 
   static const bool LAZY_COMPRESSION = false;
 
@@ -366,7 +354,7 @@ private:
 
   // for deserialization
   class item_deleter;
-  req_sketch(uint16_t k, bool hra, uint64_t n, std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value, std::vector<Compactor, AllocCompactor>&& compactors);
+  req_sketch(uint16_t k, bool hra, uint64_t n, std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item, std::vector<Compactor, AllocCompactor>&& compactors);
 
   static void check_preamble_ints(uint8_t preamble_ints, uint8_t num_levels);
   static void check_serial_version(uint8_t serial_version);
@@ -380,17 +368,17 @@ private:
   }
 
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
-  static inline bool check_update_value(const TT& value) {
+  static inline bool check_update_item(const TT& value) {
     return !std::isnan(value);
   }
 
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
-  static inline void check_split_points(const T* values, uint32_t size) {
+  static inline void check_split_points(const T* items, uint32_t size) {
     for (uint32_t i = 0; i < size ; i++) {
-      if (std::isnan(values[i])) {
+      if (std::isnan(items[i])) {
         throw std::invalid_argument("Values must not be NaN");
       }
-      if ((i < (size - 1)) && !(Comparator()(values[i], values[i + 1]))) {
+      if ((i < (size - 1)) && !(Comparator()(items[i], items[i + 1]))) {
         throw std::invalid_argument("Values must be unique and monotonically increasing");
       }
     }
@@ -399,30 +387,29 @@ private:
   // implementations for all other types
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
   static const TT& get_invalid_value() {
-    throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of values");
+    throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of items");
   }
 
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
-  static inline bool check_update_value(const TT&) {
+  static inline bool check_update_item(const TT&) {
     return true;
   }
 
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
-  static inline void check_split_points(const T* values, uint32_t size) {
+  static inline void check_split_points(const T* items, uint32_t size) {
     for (uint32_t i = 0; i < size ; i++) {
-      if ((i < (size - 1)) && !(Comparator()(values[i], values[i + 1]))) {
-        throw std::invalid_argument("Values must be unique and monotonically increasing");
+      if ((i < (size - 1)) && !(Comparator()(items[i], items[i + 1]))) {
+        throw std::invalid_argument("Items must be unique and monotonically increasing");
       }
     }
   }
 
   // for type converting constructor
-  template<typename TT, typename CC, typename SS, typename AA>
-  friend class req_sketch;
+  template<typename TT, typename CC, typename AA> friend class req_sketch;
 };
 
-template<typename T, typename C, typename S, typename A>
-class req_sketch<T, C, S, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+template<typename T, typename C, typename A>
+class req_sketch<T, C, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
 public:
   const_iterator& operator++();
   const_iterator& operator++(int);
@@ -434,7 +421,7 @@ private:
   LevelsIterator levels_it_;
   LevelsIterator levels_end_;
   const T* compactor_it_;
-  friend class req_sketch<T, C, S, A>;
+  friend class req_sketch<T, C, A>;
   const_iterator(LevelsIterator begin, LevelsIterator end);
 };
 

@@ -73,50 +73,50 @@ TEST_CASE("quantiles compatibility", "[quantiles_compatibility]") {
 
   SECTION("Qk128_n50_v0.3.0.sk") {
     // file: Qk128_n50_v0.3.0.sk
-    // median: 26.0
-    quantiles_decode_and_check(128, 50, "0.3.0", 26.0);
+    // median: 25
+    quantiles_decode_and_check(128, 50, "0.3.0", 25);
   }
 
   SECTION("Qk128_n1000_v0.3.0.sk") {
     // file: Qk128_n1000_v0.3.0.sk
-    // median: 501.0
-    quantiles_decode_and_check(128, 1000, "0.3.0", 501.0);
+    // median: ~500
+    quantiles_decode_and_check(128, 1000, "0.3.0", 497);
   }
 
   SECTION("Qk128_n50_v0.6.0.sk") {
     // file: Qk128_n50_v0.6.0.sk
-    // median: 26.0
-    quantiles_decode_and_check(128, 50, "0.6.0", 26.0);
+    // median: 25
+    quantiles_decode_and_check(128, 50, "0.6.0", 25);
   }
 
   SECTION("Qk128_n1000_v0.6.0.sk") {
     // file: Qk128_n1000_v0.6.0.sk
-    // median: 501.0
-    quantiles_decode_and_check(128, 1000, "0.6.0", 501.0);
+    // median: ~500
+    quantiles_decode_and_check(128, 1000, "0.6.0", 497);
   }
 
   SECTION("Qk128_n50_v0.8.0.sk") {
     // file: Qk128_n50_v0.8.0.sk
-    // median: 26.0
-    quantiles_decode_and_check(128, 50, "0.8.0", 26.0);
+    // median: 25
+    quantiles_decode_and_check(128, 50, "0.8.0", 25);
   }
 
   SECTION("Qk128_n1000_v0.8.0.sk") {
     // file: Qk128_n1000_v0.8.0.sk
-    // median: 501.0
-    quantiles_decode_and_check(128, 1000, "0.8.0", 501.0);
+    // median: ~500
+    quantiles_decode_and_check(128, 1000, "0.8.0", 497);
   }
 
   SECTION("Qk128_n50_v0.8.3.sk") {
     // file: Qk128_n50_v0.8.3.sk
-    // median: 26.0
-    quantiles_decode_and_check(128, 50, "0.8.3", 26.0);
+    // median: 25
+    quantiles_decode_and_check(128, 50, "0.8.3", 25);
   }
 
   SECTION("Qk128_n1000_v0.8.3.sk") {
     // file: Qk128_n1000_v0.8.3.sk
-    // median: 501.0
-    quantiles_decode_and_check(128, 1000, "0.8.3", 501.0);
+    // median: ~500
+    quantiles_decode_and_check(128, 1000, "0.8.3", 497);
   }
 
   // cleanup

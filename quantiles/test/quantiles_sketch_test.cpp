@@ -61,8 +61,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch.get_n() == 0);
     REQUIRE(sketch.get_num_retained() == 0);
     REQUIRE(std::isnan(sketch.get_rank(0)));
-    REQUIRE(std::isnan(sketch.get_min_value()));
-    REQUIRE(std::isnan(sketch.get_max_value()));
+    REQUIRE(std::isnan(sketch.get_min_item()));
+    REQUIRE(std::isnan(sketch.get_max_item()));
     REQUIRE(std::isnan(sketch.get_quantile(0.5)));
     const double fractions[3] {0, 0.5, 1};
     REQUIRE(sketch.get_quantiles(fractions, 3).empty());
@@ -89,10 +89,12 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_FALSE(sketch.is_estimation_mode());
     REQUIRE(sketch.get_n() == 1);
     REQUIRE(sketch.get_num_retained() == 1);
-    REQUIRE(sketch.get_rank(1.0f) == 0.0);
-    REQUIRE(sketch.get_rank(2.0f) == 1.0);
-    REQUIRE(sketch.get_min_value() == 1.0);
-    REQUIRE(sketch.get_max_value() == 1.0);
+    REQUIRE(sketch.get_rank(0) == 0);
+    REQUIRE(sketch.get_rank(1.0f) == 1);
+    REQUIRE(sketch.get_rank(1.0f, false) == 0);
+    REQUIRE(sketch.get_rank(2.0f, false) == 1);
+    REQUIRE(sketch.get_min_item() == 1.0);
+    REQUIRE(sketch.get_max_item() == 1.0);
     REQUIRE(sketch.get_quantile(0.5) == 1.0);
     const double fractions[3] {0, 0.5, 1};
     auto quantiles = sketch.get_quantiles(fractions, 3);
@@ -139,9 +141,9 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE_FALSE(sketch.is_estimation_mode());
     REQUIRE(sketch.get_num_retained() == n);
-    REQUIRE(sketch.get_min_value() == 0.0);
+    REQUIRE(sketch.get_min_item() == 0.0);
     REQUIRE(sketch.get_quantile(0) == 0.0);
-    REQUIRE(sketch.get_max_value() == n - 1);
+    REQUIRE(sketch.get_max_item() == n - 1);
     REQUIRE(sketch.get_quantile(1) == n - 1);
 
     int count = 0;
@@ -151,17 +153,12 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     }
     REQUIRE(count == n);
 
-    const double fractions[3] {0, 0.5, 1};
-    auto quantiles = sketch.get_quantiles(fractions, 3);
+    const double ranks[3] {0, 0.5, 1};
+    auto quantiles = sketch.get_quantiles(ranks, 3);
     REQUIRE(quantiles.size() == 3);
     REQUIRE(quantiles[0] == 0.0);
     REQUIRE(quantiles[1] == static_cast<float>(n / 2));
     REQUIRE(quantiles[2] == n - 1 );
-
-    for (uint32_t i = 0; i < n; i++) {
-      const double trueRank = (double) i / n;
-      REQUIRE(sketch.get_rank(static_cast<float>(i)) == trueRank);
-    }
 
     // the alternative method must produce the same result
     auto quantiles2 = sketch.get_quantiles(3);
@@ -169,6 +166,11 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(quantiles[0] == quantiles2[0]);
     REQUIRE(quantiles[1] == quantiles2[1]);
     REQUIRE(quantiles[2] == quantiles2[2]);
+
+    for (uint32_t i = 0; i < n; i++) {
+      const double trueRank = static_cast<double>(i + 1) / n;
+      REQUIRE(sketch.get_rank(static_cast<float>(i)) == trueRank);
+    }
   }
 
   SECTION("10 items") {
@@ -183,20 +185,20 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     sketch.update(8.0f);
     sketch.update(9.0f);
     sketch.update(10.0f);
-    REQUIRE(sketch.get_quantile(0) == 1.0);
-    REQUIRE(sketch.get_quantile(0.5) == 6.0);
-    REQUIRE(sketch.get_quantile(0.99) == 10.0);
-    REQUIRE(sketch.get_quantile(1) == 10.0);
+    REQUIRE(sketch.get_quantile(0) == 1);
+    REQUIRE(sketch.get_quantile(0.5) == 5);
+    REQUIRE(sketch.get_quantile(0.99) == 10);
+    REQUIRE(sketch.get_quantile(1) == 10);
   }
 
-  SECTION("100 items") {
+  SECTION("100 items, exact mode") {
     quantiles_float_sketch sketch(128, 0);
-    for (int i = 0; i < 100; ++i) sketch.update(static_cast<float>(i));
-    REQUIRE(sketch.get_quantile(0) == 0);
+    for (int i = 1; i <= 100; ++i) sketch.update(static_cast<float>(i));
+    REQUIRE(sketch.get_quantile(0) == 1);
     REQUIRE(sketch.get_quantile(0.01) == 1);
     REQUIRE(sketch.get_quantile(0.5) == 50);
-    REQUIRE(sketch.get_quantile(0.99) == 99.0);
-    REQUIRE(sketch.get_quantile(1) == 99.0);
+    REQUIRE(sketch.get_quantile(0.99) == 99);
+    REQUIRE(sketch.get_quantile(1) == 100);
   }
 
   SECTION("many items, estimation mode") {
@@ -208,31 +210,28 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     }
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE(sketch.is_estimation_mode());
-    REQUIRE(sketch.get_min_value() == 0.0); // min value is exact
-    REQUIRE(sketch.get_quantile(0) == 0.0); // min value is exact
-    REQUIRE(sketch.get_max_value() == n - 1); // max value is exact
-    REQUIRE(sketch.get_quantile(1) == n - 1); // max value is exact
+    REQUIRE(sketch.get_min_item() == 0.0); // min value is exact
+    REQUIRE(sketch.get_max_item() == n - 1); // max value is exact
 
     // test rank
     for (int i = 0; i < n; i++) {
-      const double trueRank = static_cast<float>(i) / n;
+      const double trueRank = static_cast<float>(i + 1) / n;
       const double sketchRank = sketch.get_rank(static_cast<float>(i));
       REQUIRE(sketchRank == Approx(trueRank).margin(RANK_EPS_FOR_K_128));
     }
 
     // test quantiles at every 0.1 percentage point
-    double fractions[1001];
-    double reverse_fractions[1001]; // check that ordering does not matter
+    double ranks[1001];
+    double reverse_ranks[1001]; // check that ordering does not matter
     for (int i = 0; i < 1001; i++) {
-      fractions[i] = (double) i / 1000;
-      reverse_fractions[1000 - i] = fractions[i];
+      ranks[i] = (double) i / 1000;
+      reverse_ranks[1000 - i] = ranks[i];
     }
-    auto quantiles = sketch.get_quantiles(fractions, 1001);
-    auto reverse_quantiles = sketch.get_quantiles(reverse_fractions, 1001);
-    float previous_quantile(0);
+    auto quantiles = sketch.get_quantiles(ranks, 1001);
+    auto reverse_quantiles = sketch.get_quantiles(reverse_ranks, 1001);
+    float previous_quantile = 0;
     for (int i = 0; i < 1001; i++) {
-      // expensive in a loop, just to check the equivalence here, not advised for real code
-      const float quantile = sketch.get_quantile(fractions[i]);
+      const float quantile = sketch.get_quantile(ranks[i]);
       REQUIRE(quantiles[i] == quantile);
       REQUIRE(reverse_quantiles[1000 - i] == quantile);
       REQUIRE(previous_quantile <= quantile);
@@ -287,23 +286,23 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     // get_rank()
     // using knowledge of internal structure
     // value still in the base buffer to avoid randomness
-    REQUIRE(sketch.get_rank<false>(80) == 0.79);
-    REQUIRE(sketch.get_rank<true>(80) == 0.80);
+    REQUIRE(sketch.get_rank(80, false) == 0.79);
+    REQUIRE(sketch.get_rank(80, true) == 0.80);
 
     // value pushed into higher level
-    REQUIRE(sketch.get_rank<false>(50) == Approx(0.49).margin(0.01));
-    REQUIRE(sketch.get_rank<true>(50) == 0.50);
+    REQUIRE(sketch.get_rank(50, false) == Approx(0.49).margin(0.01));
+    REQUIRE(sketch.get_rank(50, true) == 0.50);
   
     // get_quantile()
     // value still in base buffer
-    REQUIRE(sketch.get_quantile<false>(0.70) == 71);
-    REQUIRE(sketch.get_quantile<true>(0.70) == 70);
+    REQUIRE(sketch.get_quantile(0.70, false) == 71);
+    REQUIRE(sketch.get_quantile(0.70, true) == 70);
   
     // value pushed into higher levell
-    int quantile = sketch.get_quantile<false>(0.30);
+    int quantile = sketch.get_quantile(0.30, false);
     if (quantile != 31 && quantile != 32) { FAIL(); }
     
-    quantile = sketch.get_quantile<true>(0.30);
+    quantile = sketch.get_quantile(0.30, true);
     if (quantile != 29 && quantile != 30) { FAIL(); }
   }
 
@@ -319,8 +318,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
-    REQUIRE(std::isnan(sketch2.get_min_value()));
-    REQUIRE(std::isnan(sketch2.get_max_value()));
+    REQUIRE(std::isnan(sketch2.get_min_item()));
+    REQUIRE(std::isnan(sketch2.get_max_item()));
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }
@@ -334,8 +333,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
-    REQUIRE(std::isnan(sketch2.get_min_value()));
-    REQUIRE(std::isnan(sketch2.get_max_value()));
+    REQUIRE(std::isnan(sketch2.get_min_item()));
+    REQUIRE(std::isnan(sketch2.get_max_item()));
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }
@@ -353,11 +352,12 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_FALSE(sketch2.is_estimation_mode());
     REQUIRE(sketch2.get_n() == 1);
     REQUIRE(sketch2.get_num_retained() == 1);
-    REQUIRE(sketch2.get_min_value() == 1.0);
-    REQUIRE(sketch2.get_max_value() == 1.0);
-    REQUIRE(sketch2.get_quantile(0.5) == 1.0);
-    REQUIRE(sketch2.get_rank(1) == 0.0);
-    REQUIRE(sketch2.get_rank(2) == 1.0);
+    REQUIRE(sketch2.get_min_item() == 1);
+    REQUIRE(sketch2.get_max_item() == 1);
+    REQUIRE(sketch2.get_quantile(0.5) == 1);
+    REQUIRE(sketch2.get_rank(0) == 0);
+    REQUIRE(sketch2.get_rank(1) == 1);
+    REQUIRE(sketch2.get_rank(2) == 1);
   }
 
   SECTION("bytes serialize deserialize one item") {
@@ -371,11 +371,12 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_FALSE(sketch2.is_estimation_mode());
     REQUIRE(sketch2.get_n() == 1);
     REQUIRE(sketch2.get_num_retained() == 1);
-    REQUIRE(sketch2.get_min_value() == 1.0);
-    REQUIRE(sketch2.get_max_value() == 1.0);
-    REQUIRE(sketch2.get_quantile(0.5) == 1.0);
-    REQUIRE(sketch2.get_rank(1) == 0.0);
-    REQUIRE(sketch2.get_rank(2) == 1.0);
+    REQUIRE(sketch2.get_min_item() == 1);
+    REQUIRE(sketch2.get_max_item() == 1);
+    REQUIRE(sketch2.get_quantile(0.5) == 1);
+    REQUIRE(sketch2.get_rank(0) == 0);
+    REQUIRE(sketch2.get_rank(1) == 1);
+    REQUIRE(sketch2.get_rank(2) == 1);
   }
 
   SECTION("stream serialize deserialize three items") {
@@ -393,8 +394,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_FALSE(sketch2.is_estimation_mode());
     REQUIRE(sketch2.get_n() == 3);
     REQUIRE(sketch2.get_num_retained() == 3);
-    REQUIRE(sketch2.get_min_value() == 1.0);
-    REQUIRE(sketch2.get_max_value() == 3.0);
+    REQUIRE(sketch2.get_min_item() == 1.0);
+    REQUIRE(sketch2.get_max_item() == 3.0);
   }
 
   SECTION("bytes serialize deserialize three items") {
@@ -410,8 +411,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_FALSE(sketch2.is_estimation_mode());
     REQUIRE(sketch2.get_n() == 3);
     REQUIRE(sketch2.get_num_retained() == 3);
-    REQUIRE(sketch2.get_min_value() == 1.0);
-    REQUIRE(sketch2.get_max_value() == 3.0);
+    REQUIRE(sketch2.get_min_item() == 1.0);
+    REQUIRE(sketch2.get_max_item() == 3.0);
   }
 
   SECTION("stream serialize deserialize many floats") {
@@ -428,8 +429,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
-    REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
-    REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+    REQUIRE(sketch2.get_min_item() == sketch.get_min_item());
+    REQUIRE(sketch2.get_max_item() == sketch.get_max_item());
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
     REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
@@ -448,8 +449,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
-    REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
-    REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+    REQUIRE(sketch2.get_min_item() == sketch.get_min_item());
+    REQUIRE(sketch2.get_max_item() == sketch.get_max_item());
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
     REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
@@ -472,8 +473,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
-    REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
-    REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+    REQUIRE(sketch2.get_min_item() == sketch.get_min_item());
+    REQUIRE(sketch2.get_max_item() == sketch.get_max_item());
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
     REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
@@ -514,17 +515,17 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       sketch2.update(static_cast<float>((2 * n) - i - 1));
     }
 
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == n - 1);
-    REQUIRE(sketch2.get_min_value() == n);
-    REQUIRE(sketch2.get_max_value() == 2.0f * n - 1);
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == n - 1);
+    REQUIRE(sketch2.get_min_item() == n);
+    REQUIRE(sketch2.get_max_item() == 2.0f * n - 1);
 
     sketch1.merge(sketch2);
 
     REQUIRE_FALSE(sketch1.is_empty());
     REQUIRE(sketch1.get_n() == 2 * n);
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == 2.0f * n - 1);
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == 2.0f * n - 1);
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
   }
 
@@ -537,17 +538,17 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       sketch2.update(static_cast<float>((2 * n) - i - 1));
     }
 
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == n - 1);
-    REQUIRE(sketch2.get_min_value() == n);
-    REQUIRE(sketch2.get_max_value() == 2.0f * n - 1);
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == n - 1);
+    REQUIRE(sketch2.get_min_item() == n);
+    REQUIRE(sketch2.get_max_item() == 2.0f * n - 1);
 
     sketch1.merge(const_cast<const quantiles_float_sketch&>(sketch2));
 
     REQUIRE_FALSE(sketch1.is_empty());
     REQUIRE(sketch1.get_n() == 2 * n);
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == 2.0f * n - 1);
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == 2.0f * n - 1);
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
   }
 
@@ -561,10 +562,10 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       sketch2.update(static_cast<float>((2 * n) - i - 1));
     }
 
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == n - 1);
-    REQUIRE(sketch2.get_min_value() == n);
-    REQUIRE(sketch2.get_max_value() == 2.0f * n - 1);
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == n - 1);
+    REQUIRE(sketch2.get_min_item() == n);
+    REQUIRE(sketch2.get_max_item() == 2.0f * n - 1);
 
     REQUIRE(sketch1.get_k() == 256);
     REQUIRE(sketch2.get_k() == 128);
@@ -580,8 +581,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
     REQUIRE_FALSE(sketch1.is_empty());
     REQUIRE(sketch1.get_n() == 2 * n);
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == 2.0f * n - 1);
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == 2.0f * n - 1);
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
   }
 
@@ -600,8 +601,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
     REQUIRE_FALSE(sketch1.is_empty());
     REQUIRE(sketch1.get_n() == n);
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == n - 1);
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == n - 1);
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n / 2).margin(n / 2 * RANK_EPS_FOR_K_128));
 
     sketch2.update(static_cast<float>(0));
@@ -616,8 +617,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     sketch1.update(1.0f);
     sketch2.update(2.0f);
     sketch2.merge(sketch1);
-    REQUIRE(sketch2.get_min_value() == 1.0f);
-    REQUIRE(sketch2.get_max_value() == 2.0f);
+    REQUIRE(sketch2.get_min_item() == 1.0f);
+    REQUIRE(sketch2.get_max_item() == 2.0f);
   }
 
   SECTION("merge min and max values from other") {
@@ -625,8 +626,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     for (int i = 0; i < 1000000; i++) sketch1.update(static_cast<float>(i));
     quantiles_float_sketch sketch2(128, 0);
     sketch2.merge(sketch1);
-    REQUIRE(sketch2.get_min_value() == 0.0f);
-    REQUIRE(sketch2.get_max_value() == 999999.0f);
+    REQUIRE(sketch2.get_min_item() == 0.0f);
+    REQUIRE(sketch2.get_max_item() == 999999.0f);
   }
 
   SECTION("merge: two empty") {
@@ -658,8 +659,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 101 * k);
     REQUIRE(sketch1.get_k() == 2 * k); // no reason to have shrunk
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == static_cast<float>(100 * k - 1));
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == static_cast<float>(100 * k - 1));
   }
 
   SECTION("merge: src estimation, tgt exact, tgt.k > src.k") {
@@ -679,8 +680,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 101 * k);
     REQUIRE(sketch1.get_k() == k); // no reason to have shrunk
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == static_cast<float>(100 * k - 1));
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == static_cast<float>(100 * k - 1));
   }
 
   SECTION("merge: both estimation, tgt.k < src.k") {
@@ -696,8 +697,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 200 * k);
     REQUIRE(sketch1.get_k() == k); // no reason to have shrunk
-    REQUIRE(sketch1.get_min_value() == static_cast<float>(-100 * k + 1));
-    REQUIRE(sketch1.get_max_value() == static_cast<float>(100 * k - 1));
+    REQUIRE(sketch1.get_min_item() == static_cast<float>(-100 * k + 1));
+    REQUIRE(sketch1.get_max_item() == static_cast<float>(100 * k - 1));
     REQUIRE(sketch1.get_quantile(0.5) == Approx(0.0).margin(100 * k * RANK_EPS_FOR_K_128));
   }
 
@@ -718,8 +719,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 100 * k);
     REQUIRE(sketch1.get_k() == k);
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == static_cast<float>(100 * k - 1));
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == static_cast<float>(100 * k - 1));
     float n = 100 * k - 1;
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n / 2).margin(n / 2 * RANK_EPS_FOR_K_128));
   }
@@ -738,8 +739,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 2 * n);
     REQUIRE(sketch1.get_k() == k);
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == static_cast<float>(2 * n - 1));
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == static_cast<float>(2 * n - 1));
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
   }
 
@@ -757,16 +758,16 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 2 * n);
     REQUIRE(sketch1.get_k() == k);
-    REQUIRE(sketch1.get_min_value() == 0.0f);
-    REQUIRE(sketch1.get_max_value() == static_cast<float>(2 * n - 1));
+    REQUIRE(sketch1.get_min_item() == 0.0f);
+    REQUIRE(sketch1.get_max_item() == static_cast<float>(2 * n - 1));
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
   }
 
   SECTION("sketch of ints") {
     quantiles_sketch<int> sketch;
     REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
-    REQUIRE_THROWS_AS(sketch.get_min_value(), std::runtime_error);
-    REQUIRE_THROWS_AS(sketch.get_max_value(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_min_item(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
 
     const int n = 10000;
     for (int i = 0; i < n; i++) sketch.update(i);
@@ -781,8 +782,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
-    REQUIRE(sketch2.get_min_value() == sketch.get_min_value());
-    REQUIRE(sketch2.get_max_value() == sketch.get_max_value());
+    REQUIRE(sketch2.get_min_item() == sketch.get_min_item());
+    REQUIRE(sketch2.get_max_item() == sketch.get_max_item());
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
     REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
@@ -793,15 +794,15 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   SECTION("sketch of strings stream") {
     quantiles_string_sketch sketch1(128, 0);
     REQUIRE_THROWS_AS(sketch1.get_quantile(0), std::runtime_error);
-    REQUIRE_THROWS_AS(sketch1.get_min_value(), std::runtime_error);
-    REQUIRE_THROWS_AS(sketch1.get_max_value(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch1.get_min_item(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch1.get_max_item(), std::runtime_error);
     REQUIRE(sketch1.get_serialized_size_bytes() == 8);
 
     const int n = 1000;
     for (int i = 0; i < n; i++) sketch1.update(std::to_string(i));
 
-    REQUIRE(sketch1.get_min_value() == std::string("0"));
-    REQUIRE(sketch1.get_max_value() == std::string("999"));
+    REQUIRE(sketch1.get_min_item() == std::string("0"));
+    REQUIRE(sketch1.get_max_item() == std::string("999"));
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch1.serialize(s);
@@ -813,8 +814,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch1.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch1.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch1.get_num_retained());
-    REQUIRE(sketch2.get_min_value() == sketch1.get_min_value());
-    REQUIRE(sketch2.get_max_value() == sketch1.get_max_value());
+    REQUIRE(sketch2.get_min_item() == sketch1.get_min_item());
+    REQUIRE(sketch2.get_max_item() == sketch1.get_max_item());
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch1.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch1.get_normalized_rank_error(true));
     REQUIRE(sketch2.get_quantile(0.5) == sketch1.get_quantile(0.5));
@@ -829,15 +830,15 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   SECTION("sketch of strings bytes") {
     quantiles_string_sketch sketch1(128, 0);
     REQUIRE_THROWS_AS(sketch1.get_quantile(0), std::runtime_error);
-    REQUIRE_THROWS_AS(sketch1.get_min_value(), std::runtime_error);
-    REQUIRE_THROWS_AS(sketch1.get_max_value(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch1.get_min_item(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch1.get_max_item(), std::runtime_error);
     REQUIRE(sketch1.get_serialized_size_bytes() == 8);
 
     const int n = 10000;
     for (int i = 0; i < n; i++) sketch1.update(std::to_string(i));
 
-    REQUIRE(sketch1.get_min_value() == std::string("0"));
-    REQUIRE(sketch1.get_max_value() == std::string("9999"));
+    REQUIRE(sketch1.get_min_item() == std::string("0"));
+    REQUIRE(sketch1.get_max_item() == std::string("9999"));
 
     auto bytes = sketch1.serialize();
     REQUIRE(bytes.size() == sketch1.get_serialized_size_bytes());
@@ -847,8 +848,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch1.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch1.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch1.get_num_retained());
-    REQUIRE(sketch2.get_min_value() == sketch1.get_min_value());
-    REQUIRE(sketch2.get_max_value() == sketch1.get_max_value());
+    REQUIRE(sketch2.get_min_item() == sketch1.get_min_item());
+    REQUIRE(sketch2.get_max_item() == sketch1.get_max_item());
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch1.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch1.get_normalized_rank_error(true));
     REQUIRE(sketch2.get_quantile(0.5) == sketch1.get_quantile(0.5));
@@ -886,20 +887,20 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
 
   SECTION("move") {
     quantiles_sketch<int> sketch1;
-    const int n(100);
+    const int n = 100;
     for (int i = 0; i < n; i++) sketch1.update(i);
 
     // move constructor
     quantiles_sketch<int> sketch2(std::move(sketch1));
     for (int i = 0; i < n; i++) {
-      REQUIRE(sketch2.get_rank(i) == (double) i / n);
+      REQUIRE(sketch2.get_rank(i) == static_cast<double>(i + 1) / n);
     }
 
     // move assignment
     quantiles_sketch<int> sketch3;
     sketch3 = std::move(sketch2);
     for (int i = 0; i < n; i++) {
-      REQUIRE(sketch3.get_rank(i) == (double) i / n);
+      REQUIRE(sketch3.get_rank(i) == static_cast<double>(i + 1) / n);
     }
   }
 
@@ -918,10 +919,10 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sk_double.get_k() == sk_int.get_k());
     REQUIRE(sk_double.get_num_retained() == sk_int.get_num_retained());
 
-    auto sv_double = sk_double.get_sorted_view(false);
+    auto sv_double = sk_double.get_sorted_view();
     std::vector<std::pair<double, uint64_t>> vec_double(sv_double.begin(), sv_double.end()); 
 
-    auto sv_int = sk_int.get_sorted_view(false);
+    auto sv_int = sk_int.get_sorted_view();
     std::vector<std::pair<int, uint64_t>> vec_int(sv_int.begin(), sv_int.end()); 
 
     REQUIRE(vec_double.size() == vec_int.size());

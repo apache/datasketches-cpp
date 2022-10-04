@@ -26,7 +26,7 @@
 
 namespace datasketches {
 
-using req_test_type_sketch = req_sketch<test_type, test_type_less, test_type_serde, test_allocator<test_type>>;
+using req_test_type_sketch = req_sketch<test_type, test_type_less, test_allocator<test_type>>;
 using alloc = test_allocator<test_type>;
 
 TEST_CASE("req sketch custom type", "[req_sketch]") {
@@ -37,17 +37,17 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
   SECTION("compact level zero") {
     req_test_type_sketch sketch(4, true, 0);
     REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
-    REQUIRE_THROWS_AS(sketch.get_min_value(), std::runtime_error);
-    REQUIRE_THROWS_AS(sketch.get_max_value(), std::runtime_error);
-    REQUIRE(sketch.get_serialized_size_bytes() == 8);
+    REQUIRE_THROWS_AS(sketch.get_min_item(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
+    REQUIRE(sketch.get_serialized_size_bytes(test_type_serde()) == 8);
 
     for (int i = 0; i < 24; ++i) sketch.update(i);
     //std::cout << sketch.to_string(true);
 
     REQUIRE(sketch.is_estimation_mode());
     REQUIRE(sketch.get_n() > sketch.get_num_retained());
-    REQUIRE(sketch.get_min_value().get_value() == 0);
-    REQUIRE(sketch.get_max_value().get_value() == 23);
+    REQUIRE(sketch.get_min_item().get_value() == 0);
+    REQUIRE(sketch.get_max_item().get_value() == 23);
   }
 
   SECTION("merge small") {
@@ -63,8 +63,8 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
 
     REQUIRE_FALSE(sketch2.is_estimation_mode());
     REQUIRE(sketch2.get_num_retained() == sketch2.get_n());
-    REQUIRE(sketch2.get_min_value().get_value() == 1);
-    REQUIRE(sketch2.get_max_value().get_value() == 2);
+    REQUIRE(sketch2.get_min_item().get_value() == 1);
+    REQUIRE(sketch2.get_max_item().get_value() == 2);
   }
 
   SECTION("merge higher levels") {
@@ -80,8 +80,8 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
 
     REQUIRE(sketch2.is_estimation_mode());
     REQUIRE(sketch2.get_n() > sketch2.get_num_retained());
-    REQUIRE(sketch2.get_min_value().get_value() == 0);
-    REQUIRE(sketch2.get_max_value().get_value() == 23);
+    REQUIRE(sketch2.get_min_item().get_value() == 0);
+    REQUIRE(sketch2.get_max_item().get_value() == 23);
   }
 
   SECTION("serialize deserialize") {
@@ -91,17 +91,17 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
     for (int i = 0; i < n; i++) sketch1.update(i);
 
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
-    sketch1.serialize(s);
-    REQUIRE((size_t) s.tellp() == sketch1.get_serialized_size_bytes());
-    auto sketch2 = req_test_type_sketch::deserialize(s, alloc(0));
-    REQUIRE((size_t) s.tellg() == sketch2.get_serialized_size_bytes());
+    sketch1.serialize(s, test_type_serde());
+    REQUIRE((size_t) s.tellp() == sketch1.get_serialized_size_bytes(test_type_serde()));
+    auto sketch2 = req_test_type_sketch::deserialize(s, test_type_serde(), alloc(0));
+    REQUIRE((size_t) s.tellg() == sketch2.get_serialized_size_bytes(test_type_serde()));
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch1.is_empty());
     REQUIRE(sketch2.is_estimation_mode() == sketch1.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch1.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch1.get_num_retained());
-    REQUIRE(sketch2.get_min_value().get_value() == sketch1.get_min_value().get_value());
-    REQUIRE(sketch2.get_max_value().get_value() == sketch1.get_max_value().get_value());
+    REQUIRE(sketch2.get_min_item().get_value() == sketch1.get_min_item().get_value());
+    REQUIRE(sketch2.get_max_item().get_value() == sketch1.get_max_item().get_value());
     REQUIRE(sketch2.get_quantile(0.5).get_value() == sketch1.get_quantile(0.5).get_value());
     REQUIRE(sketch2.get_rank(0) == sketch1.get_rank(0));
     REQUIRE(sketch2.get_rank(n) == sketch1.get_rank(n));
@@ -114,8 +114,8 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
     req_test_type_sketch sketch2(4, true, 0);
     sketch2.update(10);
     sketch2.merge(std::move(sketch1));
-    REQUIRE(sketch2.get_min_value().get_value() == 0);
-    REQUIRE(sketch2.get_max_value().get_value() == 10);
+    REQUIRE(sketch2.get_min_item().get_value() == 0);
+    REQUIRE(sketch2.get_max_item().get_value() == 10);
     REQUIRE(sketch2.get_n() == 11);
   }
 

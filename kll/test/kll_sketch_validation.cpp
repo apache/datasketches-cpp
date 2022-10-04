@@ -22,14 +22,11 @@
 #include <kll_sketch.hpp>
 #include <kll_helper.hpp>
 
-#include <assert.h>
-
 #ifdef KLL_VALIDATION
 
 // This is to make sure the implementation matches exactly the reference implementation in OCaml.
-// Conditional compilation is used because the implementation needs a few modifications:
-// - switch from random choice to deterministic
-// - a few methods to expose internals of the sketch
+// Conditional compilation is used because the implementation needs
+// to switch from random choice to deterministic
 
 namespace datasketches {
 
@@ -155,9 +152,9 @@ const int64_t correct_results[num_tests * 7] = {
 };
 
 static std::unique_ptr<int[]> make_input_array(unsigned n, unsigned stride) {
-  assert (kll_helper::is_odd(stride));
-  unsigned mask((1 << 23) - 1); // because library items are single-precision floats at the moment
-  unsigned cur(0);
+  if (!kll_helper::is_odd(stride)) throw std::logic_error("stride must be odd");
+  unsigned mask = (1 << 23) - 1; // because items are single-precision floats at the moment
+  unsigned cur = 0;
   std::unique_ptr<int[]> arr(new int[n]);
   for (unsigned i = 0; i < n; i++) {
     cur += stride;
@@ -167,50 +164,63 @@ static std::unique_ptr<int[]> make_input_array(unsigned n, unsigned stride) {
   return arr;
 }
 
-static int64_t simple_hash_of_sub_array(const float* arr, unsigned start, unsigned length) {
-  int64_t multiplier(738219921); // an arbitrary odd 30-bit number
-  int64_t mask60((1ULL << 60) - 1ULL);
-  int64_t accum(0);
-  for (unsigned i = start; i < start + length; i++) {
-    accum += (int64_t) arr[i];
+template<typename It>
+std::pair<int64_t, uint8_t> hash_samples_and_count_levels(It from, It to) {
+  int64_t multiplier = 738219921; // an arbitrary odd 30-bit number
+  int64_t mask60 = (1ULL << 60) - 1ULL;
+  int64_t accum = 0;
+  uint8_t num_levels = 1;
+  for (auto it = from; it != to; ++it) {
+    accum += static_cast<int64_t>((*it).first);
     accum *= multiplier;
     accum &= mask60;
     accum ^= accum >> 30;
+    const uint8_t level = count_trailing_zeros_in_u64((*it).second);
+    if (num_levels <= level) num_levels = level + 1;
   }
-  return accum;
+  return std::pair<uint64_t, uint8_t>(accum, num_levels);
 }
 
 TEST_CASE("kll validation", "[kll_sketch][validation]") {
   for (unsigned i = 0; i < num_tests; i++) {
-    assert (correct_results[7 * i] == i);
-    unsigned k(correct_results[7 * i + 1]);
-    unsigned n(correct_results[7 * i + 2]);
-    unsigned stride(correct_results[7 * i + 3]);
+    if (correct_results[7 * i] != i) throw std::logic_error("test number mismatch");
+    unsigned k = correct_results[7 * i + 1];
+    unsigned n = correct_results[7 * i + 2];
+    unsigned stride = correct_results[7 * i + 3];
     std::unique_ptr<int[]> input_array = make_input_array(n, stride);
     kll_sketch<float> sketch(k);
     kll_next_offset = 0;
     for (unsigned j = 0; j < n; j++) {
       sketch.update(input_array[j]);
     }
-    unsigned num_levels = sketch.get_num_levels();
     unsigned num_samples = sketch.get_num_retained();
-    int64_t hashed_samples = simple_hash_of_sub_array(sketch.get_items(), sketch.get_levels()[0], num_samples);
+    auto p = hash_samples_and_count_levels(sketch.begin(), sketch.end());
     std::cout << i;
-    REQUIRE(correct_results[7 * i + 4] == num_levels);
+    REQUIRE(correct_results[7 * i + 4] == p.second);
     REQUIRE(correct_results[7 * i + 5] == num_samples);
-    if (correct_results[7 * i + 6] == hashed_samples) {
+    if (correct_results[7 * i + 6] == p.first) {
       std::cout << " pass" << std::endl;
     } else {
-      std::cout << " " << (correct_results[7 * i + 6]) << " != " << hashed_samples;
-      sketch.to_stream(std::cout);
+      std::cout << " " << (correct_results[7 * i + 6]) << " != " << p.first;
+      std::cout << sketch.to_string();
       FAIL();
     }
   }
 }
 
-TEST_CASE("kll validation: test hash", "[kll_sketch][validaiton]") {
-  float array[] = { 907500, 944104, 807020, 219921, 678370, 955217, 426885 };
-  REQUIRE(simple_hash_of_sub_array(array, 1, 5) == 1141543353991880193LL);
+TEST_CASE("kll validation: test hash and num levels", "[kll_sketch][validaiton]") {
+  std::pair<float, uint64_t> array[] = {
+    std::make_pair(907500, 1),
+    std::make_pair(944104, 1),
+    std::make_pair(807020, 2),
+    std::make_pair(219921, 2),
+    std::make_pair(678370, 2),
+    std::make_pair(955217, 4),
+    std::make_pair(426885, 8)
+  };
+  auto hash_and_num_levels = hash_samples_and_count_levels(array + 1, array + 6);
+  REQUIRE(hash_and_num_levels.first == 1141543353991880193LL);
+  REQUIRE(hash_and_num_levels.second == 3);
 }
 
 TEST_CASE("kll validation: make input array", "[kll_sketch][validaiton]") {

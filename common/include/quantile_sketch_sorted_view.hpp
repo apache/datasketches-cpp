@@ -40,7 +40,6 @@ public:
   template<typename Iterator>
   void add(Iterator begin, Iterator end, uint64_t weight);
 
-  template<bool inclusive>
   void convert_to_cummulative();
 
   class const_iterator;
@@ -49,9 +48,10 @@ public:
 
   size_t size() const;
 
-  // makes sense only with cumulative weight
+  double get_rank(const T& item, bool inclusive = true) const;
+
   using quantile_return_type = typename std::conditional<std::is_arithmetic<T>::value, T, const T&>::type;
-  quantile_return_type get_quantile(double rank) const;
+  quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
 private:
   static inline const T& deref_helper(const T* t) { return *t; }
@@ -91,7 +91,7 @@ public:
   using Base = typename quantile_sketch_sorted_view<T, C, A>::Container::const_iterator;
   using value_type = typename std::conditional<std::is_arithmetic<T>::value, typename Base::value_type, std::pair<const T&, const uint64_t>>::type;
 
-  const_iterator(const Base& it): Base(it) {}
+  const_iterator(const Base& it, const Base& begin): Base(it), begin(begin) {}
 
   template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   value_type operator*() const { return Base::operator*(); }
@@ -112,6 +112,18 @@ public:
 
   template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
   return_value_holder operator->() const { return **this; }
+
+  uint64_t get_weight() const {
+    if (*this == begin) return Base::operator*().second;
+    return Base::operator*().second - (*this - 1).operator*().second;
+  }
+
+  uint64_t get_cumulative_weight(bool inclusive = true) const {
+    return inclusive ? Base::operator*().second : Base::operator*().second - get_weight();
+  }
+
+private:
+  Base begin;
 };
 
 } /* namespace datasketches */

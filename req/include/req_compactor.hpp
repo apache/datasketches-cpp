@@ -50,8 +50,7 @@ public:
   T* begin();
   T* end();
 
-  template<bool inclusive>
-  uint64_t compute_weight(const T& item) const;
+  uint64_t compute_weight(const T& item, bool inclusive) const;
 
   template<typename FwdT>
   void append(FwdT&& item);
