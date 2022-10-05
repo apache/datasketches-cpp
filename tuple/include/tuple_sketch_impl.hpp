@@ -353,8 +353,7 @@ size_t compact_tuple_sketch<S, A>::get_serialized_size_summaries_bytes(const SD&
 template<typename S, typename A>
 template<typename SerDe>
 void compact_tuple_sketch<S, A>::serialize(std::ostream& os, const SerDe& sd) const {
-  const bool is_single_item = entries_.size() == 1 && !this->is_estimation_mode();
-  const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
+  const uint8_t preamble_longs = this->is_estimation_mode() ? 3 : this->is_empty() || entries_.size() == 1 ? 1 : 2;
   write(os, preamble_longs);
   const uint8_t serial_version = SERIAL_VERSION;
   write(os, serial_version);
@@ -373,28 +372,25 @@ void compact_tuple_sketch<S, A>::serialize(std::ostream& os, const SerDe& sd) co
   write(os, flags_byte);
   const uint16_t seed_hash = get_seed_hash();
   write(os, seed_hash);
-  if (!this->is_empty()) {
-    if (!is_single_item) {
-      const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
-      write(os, num_entries);
-      const uint32_t unused32 = 0;
-      write(os, unused32);
-      if (this->is_estimation_mode()) {
-        write(os, this->theta_);
-      }
-    }
-    for (const auto& it: entries_) {
-      write(os, it.first);
-      sd.serialize(os, &it.second, 1);
-    }
+  if (preamble_longs > 1) {
+    const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
+    write(os, num_entries);
+    const uint32_t unused32 = 0;
+    write(os, unused32);
+  }
+  if (this->is_estimation_mode()) {
+    write(os, this->theta_);
+  }
+  for (const auto& it: entries_) {
+    write(os, it.first);
+    sd.serialize(os, &it.second, 1);
   }
 }
 
 template<typename S, typename A>
 template<typename SerDe>
 auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const SerDe& sd) const -> vector_bytes {
-  const bool is_single_item = entries_.size() == 1 && !this->is_estimation_mode();
-  const uint8_t preamble_longs = this->is_empty() || is_single_item ? 1 : this->is_estimation_mode() ? 3 : 2;
+  const uint8_t preamble_longs = this->is_estimation_mode() ? 3 : this->is_empty() || entries_.size() == 1 ? 1 : 2;
   const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs
       + sizeof(uint64_t) * entries_.size() + get_serialized_size_summaries_bytes(sd);
   vector_bytes bytes(size, 0, entries_.get_allocator());
@@ -418,19 +414,17 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
   ptr += copy_to_mem(flags_byte, ptr);
   const uint16_t seed_hash = get_seed_hash();
   ptr += copy_to_mem(seed_hash, ptr);
-  if (!this->is_empty()) {
-    if (!is_single_item) {
-      const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
-      ptr += copy_to_mem(num_entries, ptr);
-      ptr += sizeof(uint32_t); // unused
-      if (this->is_estimation_mode()) {
-        ptr += copy_to_mem(theta_, ptr);
-      }
-    }
-    for (const auto& it: entries_) {
-      ptr += copy_to_mem(it.first, ptr);
-      ptr += sd.serialize(ptr, end_ptr - ptr, &it.second, 1);
-    }
+  if (preamble_longs > 1) {
+    const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
+    ptr += copy_to_mem(num_entries, ptr);
+    ptr += sizeof(uint32_t); // unused
+  }
+  if (this->is_estimation_mode()) {
+    ptr += copy_to_mem(theta_, ptr);
+  }
+  for (const auto& it: entries_) {
+    ptr += copy_to_mem(it.first, ptr);
+    ptr += sd.serialize(ptr, end_ptr - ptr, &it.second, 1);
   }
   return bytes;
 }
