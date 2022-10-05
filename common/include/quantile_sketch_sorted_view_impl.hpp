@@ -81,6 +81,27 @@ auto quantile_sketch_sorted_view<T, C, A>::get_quantile(double rank, bool inclus
 }
 
 template<typename T, typename C, typename A>
+auto quantile_sketch_sorted_view<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  vector_double buckets(entries_.get_allocator());
+  if (entries_.size() == 0) return buckets;
+  check_split_points(split_points, size);
+  buckets.reserve(size + 1);
+  for (uint32_t i = 0; i < size; ++i) buckets.push_back(get_rank(split_points[i], inclusive));
+  buckets.push_back(1);
+  return buckets;
+}
+
+template<typename T, typename C, typename A>
+auto quantile_sketch_sorted_view<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  auto buckets = get_CDF(split_points, size, inclusive);
+  if (buckets.size() == 0) return buckets;
+  for (uint32_t i = size; i > 0; --i) {
+    buckets[i] -= buckets[i - 1];
+  }
+  return buckets;
+}
+
+template<typename T, typename C, typename A>
 auto quantile_sketch_sorted_view<T, C, A>::begin() const -> const_iterator {
   return const_iterator(entries_.begin(), entries_.begin());
 }

@@ -248,23 +248,14 @@ double req_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
 
 template<typename T, typename C, typename A>
 auto req_sketch<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
-  auto buckets = get_CDF(split_points, size, inclusive);
-  if (is_empty()) return buckets;
-  for (uint32_t i = size; i > 0; --i) {
-    buckets[i] -= buckets[i - 1];
-  }
-  return buckets;
+  setup_sorted_view();
+  return sorted_view_->get_PMF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto req_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
-  vector_double buckets(allocator_);
-  if (is_empty()) return buckets;
-  check_split_points(split_points, size);
-  buckets.reserve(size + 1);
-  for (uint32_t i = 0; i < size; ++i) buckets.push_back(get_rank(split_points[i], inclusive));
-  buckets.push_back(1);
-  return buckets;
+  setup_sorted_view();
+  return sorted_view_->get_CDF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>

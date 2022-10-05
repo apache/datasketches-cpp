@@ -53,7 +53,14 @@ public:
   using quantile_return_type = typename std::conditional<std::is_arithmetic<T>::value, T, const T&>::type;
   quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
+  using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
+  vector_double get_CDF(const T* split_points, uint32_t size, bool inclusive = true) const;
+  vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
+
 private:
+  uint64_t total_weight_;
+  Container entries_;
+
   static inline const T& deref_helper(const T* t) { return *t; }
   static inline T deref_helper(T t) { return t; }
 
@@ -81,8 +88,26 @@ private:
   template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
   static inline Entry make_dummy_entry(uint64_t weight) { return Entry(nullptr, weight); }
 
-  uint64_t total_weight_;
-  Container entries_;
+  template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
+  static inline void check_split_points(const T* items, uint32_t size) {
+    for (uint32_t i = 0; i < size ; i++) {
+      if (std::isnan(items[i])) {
+        throw std::invalid_argument("Values must not be NaN");
+      }
+      if ((i < (size - 1)) && !(Comparator()(items[i], items[i + 1]))) {
+        throw std::invalid_argument("Values must be unique and monotonically increasing");
+      }
+    }
+  }
+
+  template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
+  static inline void check_split_points(const T* items, uint32_t size) {
+    for (uint32_t i = 0; i < size ; i++) {
+      if ((i < (size - 1)) && !(Comparator()(items[i], items[i + 1]))) {
+        throw std::invalid_argument("Items must be unique and monotonically increasing");
+      }
+    }
+  }
 };
 
 template<typename T, typename C, typename A>

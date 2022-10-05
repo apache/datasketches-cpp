@@ -335,25 +335,14 @@ double kll_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
 
 template<typename T, typename C, typename A>
 vector_d<A> kll_sketch<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const {
-  auto buckets = get_CDF(split_points, size, inclusive);
-  if (buckets.size() > 0) {
-    for (uint32_t i = size; i > 0; --i) {
-      buckets[i] -= buckets[i - 1];
-    }
-  }
-  return buckets;
+  setup_sorted_view();
+  return sorted_view_->get_PMF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
 vector_d<A> kll_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const {
-  if (is_empty()) return vector_d<A>(allocator_);
-  kll_helper::validate_values<T, C>(split_points, size);
-  vector_d<A> buckets(size + 1, 0, allocator_);
-  for (uint32_t i = 0; i < size; ++i) {
-    buckets[i] = get_rank(split_points[i], inclusive);
-  }
-  buckets[size] = 1;
-  return buckets;
+  setup_sorted_view();
+  return sorted_view_->get_CDF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>

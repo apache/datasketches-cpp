@@ -568,18 +568,6 @@ private:
     return !std::isnan(item);
   }
 
-  template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
-  static inline void check_split_points(const T* values, uint32_t size) {
-    for (uint32_t i = 0; i < size ; i++) {
-      if (std::isnan(values[i])) {
-        throw std::invalid_argument("Values must not be NaN");
-      }
-      if ((i < (size - 1)) && !(Comparator()(values[i], values[i + 1]))) {
-        throw std::invalid_argument("Values must be unique and monotonically increasing");
-      }
-    }
-  }
-
   // implementations for all other types
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
   static const TT& get_invalid_value() {
@@ -589,15 +577,6 @@ private:
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
   static inline bool check_update_item(TT) {
     return true;
-  }
-
-  template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
-  static inline void check_split_points(const T* items, uint32_t size) {
-    for (uint32_t i = 0; i < size ; i++) {
-      if ((i < (size - 1)) && !(Comparator()(items[i], items[i + 1]))) {
-        throw std::invalid_argument("Items must be unique and monotonically increasing");
-      }
-    }
   }
 };
 
