@@ -96,15 +96,6 @@ struct theta_update_sketch_base {
 template<typename Derived, typename Allocator>
 class theta_base_builder {
 public:
-  // TODO: Redundant and deprecated. Will be removed in next major version release.
-  using resize_factor = theta_constants::resize_factor;
-  static const uint8_t MIN_LG_K = theta_constants::MIN_LG_K;
-  static const uint8_t MAX_LG_K = theta_constants::MAX_LG_K;
-  // TODO: The following defaults are redundant and deprecated. Will be removed in the
-  //       next major version release
-  static const uint8_t DEFAULT_LG_K = theta_constants::DEFAULT_LG_K;
-  static const resize_factor DEFAULT_RESIZE_FACTOR = theta_constants::DEFAULT_RESIZE_FACTOR;
-
   /**
    * Creates and instance of the builder with default parameters.
    */
