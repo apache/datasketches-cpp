@@ -675,13 +675,13 @@ uint32_t quantiles_sketch<T, C, A>::get_num_retained() const {
 
 template<typename T, typename C, typename A>
 const T& quantiles_sketch<T, C, A>::get_min_item() const {
-  if (is_empty()) return get_invalid_value();
+  if (is_empty()) return get_invalid_item();
   return *min_item_;
 }
 
 template<typename T, typename C, typename A>
 const T& quantiles_sketch<T, C, A>::get_max_item() const {
-  if (is_empty()) return get_invalid_value();
+  if (is_empty()) return get_invalid_item();
   return *max_item_;
 }
 
@@ -750,7 +750,7 @@ quantile_sketch_sorted_view<T, C, A> quantiles_sketch<T, C, A>::get_sorted_view(
 
 template<typename T, typename C, typename A>
 auto quantiles_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
-  if (is_empty()) return get_invalid_value();
+  if (is_empty()) return get_invalid_item();
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
   }
@@ -1111,7 +1111,7 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch& tgt, FwdSk&& sr
     throw std::logic_error("Failed internal consistency check after standard_merge()");
   }
 
-  // update min and max values
+  // update min and max items
   // can't just check is_empty() since min and max might not have been set if
   // there were no base buffer items added via update()
   if (tgt.min_item_ == nullptr) {
@@ -1187,7 +1187,7 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch& tgt, FwdSk&
     throw std::logic_error("Failed internal consistency check after downsampling_merge()");
   }
 
-  // update min and max values
+  // update min and max items
   // can't just check is_empty() since min and max might not have been set if
   // there were no base buffer items added via update()
   if (tgt.min_item_ == nullptr) {

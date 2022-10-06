@@ -222,13 +222,13 @@ void req_sketch<T, C, A>::merge(FwdSk&& other) {
 
 template<typename T, typename C, typename A>
 const T& req_sketch<T, C, A>::get_min_item() const {
-  if (is_empty()) return get_invalid_value();
+  if (is_empty()) return get_invalid_item();
   return *min_item_;
 }
 
 template<typename T, typename C, typename A>
 const T& req_sketch<T, C, A>::get_max_item() const {
-  if (is_empty()) return get_invalid_value();
+  if (is_empty()) return get_invalid_item();
   return *max_item_;
 }
 
@@ -260,32 +260,13 @@ auto req_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inc
 
 template<typename T, typename C, typename A>
 auto req_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
-  if (is_empty()) return get_invalid_value();
+  if (is_empty()) return get_invalid_item();
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
   }
   // possible side-effect of sorting level zero
   setup_sorted_view();
   return sorted_view_->get_quantile(rank, inclusive);
-}
-
-template<typename T, typename C, typename A>
-std::vector<T, A> req_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size, bool inclusive) const {
-  std::vector<T, A> quantiles(allocator_);
-  if (is_empty()) return quantiles;
-  quantiles.reserve(size);
-
-  // possible side-effect of sorting level zero
-  setup_sorted_view();
-
-  for (uint32_t i = 0; i < size; ++i) {
-    const double rank = ranks[i];
-    if ((rank < 0.0) || (rank > 1.0)) {
-      throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
-    }
-    quantiles.push_back(sorted_view_->get_quantile(rank, inclusive));
-  }
-  return quantiles;
 }
 
 template<typename T, typename C, typename A>

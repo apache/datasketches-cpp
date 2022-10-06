@@ -151,11 +151,11 @@ const int64_t correct_results[num_tests * 7] = {
     113, 200, 8311133, 6554171, 16, 637, 121111429906734123
 };
 
-static std::unique_ptr<int[]> make_input_array(unsigned n, unsigned stride) {
+static std::vector<int> make_input_array(unsigned n, unsigned stride) {
   if (!kll_helper::is_odd(stride)) throw std::logic_error("stride must be odd");
   unsigned mask = (1 << 23) - 1; // because items are single-precision floats at the moment
   unsigned cur = 0;
-  std::unique_ptr<int[]> arr(new int[n]);
+  std::vector<int> arr(n, 0);
   for (unsigned i = 0; i < n; i++) {
     cur += stride;
     cur &= mask;
@@ -187,7 +187,7 @@ TEST_CASE("kll validation", "[kll_sketch][validation]") {
     unsigned k = correct_results[7 * i + 1];
     unsigned n = correct_results[7 * i + 2];
     unsigned stride = correct_results[7 * i + 3];
-    std::unique_ptr<int[]> input_array = make_input_array(n, stride);
+    auto input_array = make_input_array(n, stride);
     kll_sketch<float> sketch(k);
     kll_next_offset = 0;
     for (unsigned j = 0; j < n; j++) {
@@ -201,7 +201,7 @@ TEST_CASE("kll validation", "[kll_sketch][validation]") {
     if (correct_results[7 * i + 6] == p.first) {
       std::cout << " pass" << std::endl;
     } else {
-      std::cout << " " << (correct_results[7 * i + 6]) << " != " << p.first;
+      std::cout << " " << (correct_results[7 * i + 6]) << " != " << p.first << "\n";
       std::cout << sketch.to_string();
       FAIL();
     }

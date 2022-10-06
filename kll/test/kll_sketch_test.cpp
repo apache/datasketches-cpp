@@ -67,8 +67,6 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(std::isnan(sketch.get_min_item()));
     REQUIRE(std::isnan(sketch.get_max_item()));
     REQUIRE(std::isnan(sketch.get_quantile(0.5)));
-    const double fractions[3] {0, 0.5, 1};
-    REQUIRE(sketch.get_quantiles(fractions, 3).size() == 0);
     const float split_points[1] {0};
     REQUIRE(sketch.get_PMF(split_points, 1).size() == 0);
     REQUIRE(sketch.get_CDF(split_points, 1).size() == 0);
@@ -99,12 +97,6 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch.get_min_item() == 1.0);
     REQUIRE(sketch.get_max_item() == 1.0);
     REQUIRE(sketch.get_quantile(0.5) == 1.0);
-    const double fractions[3] {0, 0.5, 1};
-    auto quantiles = sketch.get_quantiles(fractions, 3);
-    REQUIRE(quantiles.size() == 3);
-    REQUIRE(quantiles[0] == 1.0);
-    REQUIRE(quantiles[1] == 1.0);
-    REQUIRE(quantiles[2] == 1.0);
 
     int count = 0;
     for (auto it: sketch) {
@@ -139,26 +131,12 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch.get_max_item() == n - 1);
     REQUIRE(sketch.get_quantile(1) == n - 1);
 
-    const double ranks[3] {0, 0.5, 1};
-    auto quantiles = sketch.get_quantiles(ranks, 3, false);
-    REQUIRE(quantiles.size() == 3);
-    REQUIRE(quantiles[0] == 0.0);
-    REQUIRE(quantiles[1] == n / 2);
-    REQUIRE(quantiles[2] == n - 1 );
-
     for (uint32_t i = 0; i < n; i++) {
       const double true_rank = (double) i / n;
       REQUIRE(sketch.get_rank(static_cast<float>(i), false) == true_rank);
       const double true_rank_inclusive = (double) (i + 1) / n;
       REQUIRE(sketch.get_rank(static_cast<float>(i)) == true_rank_inclusive);
     }
-
-    // the alternative method must produce the same result
-    auto quantiles2 = sketch.get_quantiles(3, false);
-    REQUIRE(quantiles2.size() == 3);
-    REQUIRE(quantiles[0] == quantiles2[0]);
-    REQUIRE(quantiles[1] == quantiles2[1]);
-    REQUIRE(quantiles[2] == quantiles2[2]);
   }
 
   SECTION("10 items") {
@@ -205,25 +183,6 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     for (int i = 0; i < n; i++) {
       const double trueRank = (double) i / n;
       REQUIRE(sketch.get_rank(static_cast<float>(i), false) == Approx(trueRank).margin(RANK_EPS_FOR_K_200));
-    }
-
-    // test quantiles at every 0.1 percentage point
-    double ranks[1001];
-    double reverse_ranks[1001]; // check that ordering does not matter
-    for (int i = 0; i < 1001; i++) {
-      ranks[i] = (double) i / 1000;
-      reverse_ranks[1000 - i] = ranks[i];
-    }
-    auto quantiles = sketch.get_quantiles(ranks, 1001);
-    auto reverse_quantiles = sketch.get_quantiles(reverse_ranks, 1001);
-    float previous_quantile = 0;
-    for (int i = 0; i < 1001; i++) {
-      // expensive in a loop, just to check the equivalence here, not advised for real code
-      const float quantile = sketch.get_quantile(ranks[i]);
-      REQUIRE(quantiles[i] == quantile);
-      REQUIRE(reverse_quantiles[1000 - i] == quantile);
-      REQUIRE(previous_quantile <= quantile);
-      previous_quantile = quantile;
     }
 
     //std::cout << sketch.to_string();

@@ -158,16 +158,16 @@ public:
    * <p>If the sketch is empty this returns an empty vector.
    *
    * @param split_points an array of <i>m</i> unique, monotonically increasing items
-   * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
+   * that divide the input domain into <i>m+1</i> consecutive disjoint intervals (bins).
    *
-   * @param size of the array of split points.
+   * @param size the number of split points in the array
    *
-   * @param inclusive if false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
-   * split point, with the exception that the last interval will include the maximum item.
-   * If true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
-   * split point.
+   * @param inclusive if true the rank of an item includes its own weight, and therefore
+   * if the sketch contains items equal to a slit point, then in PMF such items are
+   * included into the interval to the left of split point. Otherwise they are included into the interval
+   * to the right of split point.
    *
-   * @return an array of m+1 double values each of which is an approximation
+   * @return an array of m+1 doubles each of which is an approximation
    * to the fraction of the input stream items (the mass) that fall into one of those intervals.
    */
   vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
@@ -181,17 +181,18 @@ public:
    * @param split_points an array of <i>m</i> unique, monotonically increasing items
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
    *
-   * @param size of the array of split points.
+   * @param size the number of split points in the array
    *
-   * @param inclusive if false, the definition of an "interval" is inclusive of the left split point and exclusive of the right
-   * split point, with the exception that the last interval will include the maximum item.
-   * If true, the definition of an "interval" is exclusive of the left split point and inclusive of the right
-   * split point.
+   * @param inclusive if true the rank of an item includes its own weight, and therefore
+   * if the sketch contains items equal to a slit point, then in CDF such items are
+   * included into the interval to the left of split point. Otherwise they are included into
+   * the interval to the right of split point.
    *
-   * @return an array of m+1 double values, which are a consecutive approximation to the CDF
+   * @return an array of m+1 doubles, which are a consecutive approximation to the CDF
    * of the input stream given the split_points. The value at array position j of the returned
    * CDF array is the sum of the returned values in positions 0 through j of the returned PMF
-   * array.
+   * array. This can be viewed as array of ranks of the given split points plus one more value
+   * that is always 1.
    */
   vector_double get_CDF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
@@ -205,13 +206,6 @@ public:
    */
   using quantile_return_type = typename quantile_sketch_sorted_view<T, Comparator, Allocator>::quantile_return_type;
   quantile_return_type get_quantile(double rank, bool inclusive = true) const;
-
-  /**
-   * Returns an array of quantiles that correspond to the given array of normalized ranks.
-   * @param ranks given array of normalized ranks.
-   * @return array of quantiles that correspond to the given array of normalized ranks
-   */
-  std::vector<T, Allocator> get_quantiles(const double* ranks, uint32_t size, bool inclusive = true) const;
 
   /**
    * Returns an approximate lower bound of the given normalized rank.
@@ -362,19 +356,18 @@ private:
 
   // implementations for floating point types
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
-  static const TT& get_invalid_value() {
-    static TT value = std::numeric_limits<TT>::quiet_NaN();
-    return value;
+  static const TT& get_invalid_item() {
+    return std::numeric_limits<TT>::quiet_NaN();
   }
 
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
-  static inline bool check_update_item(const TT& value) {
-    return !std::isnan(value);
+  static inline bool check_update_item(const TT& item) {
+    return !std::isnan(item);
   }
 
   // implementations for all other types
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
-  static const TT& get_invalid_value() {
+  static const TT& get_invalid_item() {
     throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of items");
   }
 
