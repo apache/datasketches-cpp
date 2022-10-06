@@ -326,9 +326,8 @@ py::array vector_of_kll_sketches<T, C>::get_quantiles(const py::array_t<double>&
 
   std::vector<std::vector<T>> quants(num_sketches, std::vector<T>(num_quantiles));
   for (uint32_t i = 0; i < num_sketches; ++i) {
-    auto quant = sketches_[inds[i]].get_quantiles(ranks.data(), num_quantiles);
     for (size_t j = 0; j < num_quantiles; ++j) {
-      quants[i][j] = quant[j];
+      quants[i][j] = sketches_[inds[i]].get_quantile(ranks.data()[j]);
     }
   }
 

@@ -527,7 +527,8 @@ class kll_sketch {
     // implementations for floating point types
     template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
     static const TT& get_invalid_item() {
-      return std::numeric_limits<TT>::quiet_NaN();
+      static TT item = std::numeric_limits<TT>::quiet_NaN();
+      return item;
     }
 
     template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
