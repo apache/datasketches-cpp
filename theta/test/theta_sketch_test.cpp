@@ -152,7 +152,7 @@ TEST_CASE("theta sketch: estimation", "[theta_sketch]") {
   REQUIRE(update_sketch.get_lower_bound(1) < n);
   REQUIRE(update_sketch.get_upper_bound(1) > n);
 
-  const uint32_t k = 1 << update_theta_sketch::builder::DEFAULT_LG_K;
+  const uint32_t k = 1 << theta_constants::DEFAULT_LG_K;
   REQUIRE(update_sketch.get_num_retained() >= k);
   update_sketch.trim();
   REQUIRE(update_sketch.get_num_retained() == k);
@@ -398,6 +398,7 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalence", "[
 TEST_CASE("theta sketch: deserialize empty buffer overrun", "[theta_sketch]") {
   update_theta_sketch update_sketch = update_theta_sketch::builder().build();
   auto bytes = update_sketch.compact().serialize();
+  REQUIRE(bytes.size() == 8);
   REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 }
 

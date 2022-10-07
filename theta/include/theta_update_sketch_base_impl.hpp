@@ -310,11 +310,11 @@ seed_(DEFAULT_SEED) {}
 
 template<typename Derived, typename Allocator>
 Derived& theta_base_builder<Derived, Allocator>::set_lg_k(uint8_t lg_k) {
-  if (lg_k < MIN_LG_K) {
-    throw std::invalid_argument("lg_k must not be less than " + std::to_string(MIN_LG_K) + ": " + std::to_string(lg_k));
+  if (lg_k < theta_constants::MIN_LG_K) {
+    throw std::invalid_argument("lg_k must not be less than " + std::to_string(theta_constants::MIN_LG_K) + ": " + std::to_string(lg_k));
   }
-  if (lg_k > MAX_LG_K) {
-    throw std::invalid_argument("lg_k must not be greater than " + std::to_string(MAX_LG_K) + ": " + std::to_string(lg_k));
+  if (lg_k > theta_constants::MAX_LG_K) {
+    throw std::invalid_argument("lg_k must not be greater than " + std::to_string(theta_constants::MAX_LG_K) + ": " + std::to_string(lg_k));
   }
   lg_k_ = lg_k;
   return static_cast<Derived&>(*this);
@@ -346,7 +346,7 @@ uint64_t theta_base_builder<Derived, Allocator>::starting_theta() const {
 
 template<typename Derived, typename Allocator>
 uint8_t theta_base_builder<Derived, Allocator>::starting_lg_size() const {
-  return theta_build_helper<true>::starting_sub_multiple(lg_k_ + 1, MIN_LG_K, static_cast<uint8_t>(rf_));
+  return theta_build_helper<true>::starting_sub_multiple(lg_k_ + 1, theta_constants::MIN_LG_K, static_cast<uint8_t>(rf_));
 }
 
 // iterator
