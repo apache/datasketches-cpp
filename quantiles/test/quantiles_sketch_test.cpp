@@ -64,6 +64,8 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(std::isnan(sketch.get_min_item()));
     REQUIRE(std::isnan(sketch.get_max_item()));
     REQUIRE(std::isnan(sketch.get_quantile(0.5)));
+    const double fractions[3] {0, 0.5, 1};
+    REQUIRE(sketch.get_quantiles(fractions, 3).empty());
     const float split_points[1] {0};
     REQUIRE(sketch.get_PMF(split_points, 1).empty());
     REQUIRE(sketch.get_CDF(split_points, 1).empty());
@@ -95,6 +97,13 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch.get_max_item() == 1.0);
     REQUIRE(sketch.get_quantile(0.5) == 1.0);
 
+    const double fractions[3] {0, 0.5, 1};
+    auto quantiles = sketch.get_quantiles(fractions, 3);
+    REQUIRE(quantiles.size() == 3);
+    REQUIRE(quantiles[0] == 1.0);
+    REQUIRE(quantiles[1] == 1.0);
+    REQUIRE(quantiles[2] == 1.0);
+
     int count = 0;
     for (auto it: sketch) {
       REQUIRE(it.second == 1);
@@ -124,19 +133,33 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 
   SECTION("many items, exact mode") {
-    const uint32_t n = 127;
-    quantiles_float_sketch sketch(n + 1, 0);
-    for (uint32_t i = 0; i < n; i++) {
+    const uint32_t n = 100;
+    quantiles_float_sketch sketch(128, 0);
+    for (uint32_t i = 1; i <= n; i++) {
       sketch.update(static_cast<float>(i));
-      REQUIRE(sketch.get_n() == i + 1);
+      REQUIRE(sketch.get_n() == i);
     }
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE_FALSE(sketch.is_estimation_mode());
     REQUIRE(sketch.get_num_retained() == n);
-    REQUIRE(sketch.get_min_item() == 0.0);
-    REQUIRE(sketch.get_quantile(0) == 0.0);
-    REQUIRE(sketch.get_max_item() == n - 1);
-    REQUIRE(sketch.get_quantile(1) == n - 1);
+    REQUIRE(sketch.get_min_item() == 1);
+    REQUIRE(sketch.get_quantile(0) == 1);
+    REQUIRE(sketch.get_max_item() == n);
+    REQUIRE(sketch.get_quantile(1) == n);
+
+    const double ranks[3] {0, 0.5, 1};
+    auto quantiles = sketch.get_quantiles(ranks, 3);
+    REQUIRE(quantiles.size() == 3);
+    REQUIRE(quantiles[0] == 1);
+    REQUIRE(quantiles[1] == static_cast<float>(n / 2));
+    REQUIRE(quantiles[2] == n);
+
+    // the alternative method must produce the same result
+    auto quantiles2 = sketch.get_quantiles(3);
+    REQUIRE(quantiles2.size() == 3);
+    REQUIRE(quantiles[0] == quantiles2[0]);
+    REQUIRE(quantiles[1] == quantiles2[1]);
+    REQUIRE(quantiles[2] == quantiles2[2]);
 
     int count = 0;
     for (auto it: sketch) {
@@ -145,9 +168,11 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     }
     REQUIRE(count == n);
 
-    for (uint32_t i = 0; i < n; i++) {
-      const double trueRank = static_cast<double>(i + 1) / n;
-      REQUIRE(sketch.get_rank(static_cast<float>(i)) == trueRank);
+    for (uint32_t i = 1; i <= n; i++) {
+      const double true_rank_inclusive = static_cast<double>(i) / n;
+      REQUIRE(sketch.get_rank(static_cast<float>(i)) == true_rank_inclusive);
+      const double true_rank_exclusive = static_cast<double>(i - 1) / n;
+      REQUIRE(sketch.get_rank(static_cast<float>(i), false) == true_rank_exclusive);
     }
   }
 

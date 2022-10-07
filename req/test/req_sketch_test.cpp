@@ -50,6 +50,8 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
   REQUIRE(std::isnan(sketch.get_quantile(0)));
   REQUIRE(std::isnan(sketch.get_quantile(0.5)));
   REQUIRE(std::isnan(sketch.get_quantile(1)));
+  const double ranks[3] {0, 0.5, 1};
+  REQUIRE(sketch.get_quantiles(ranks, 3).size() == 0);
 
   const float split_points[1] {0};
   REQUIRE(sketch.get_CDF(split_points, 1).empty());
@@ -71,6 +73,13 @@ TEST_CASE("req sketch: single value, lra", "[req_sketch]") {
   REQUIRE(sketch.get_quantile(0, false) == 1);
   REQUIRE(sketch.get_quantile(0.5, false) == 1);
   REQUIRE(sketch.get_quantile(1, false) == 1);
+
+  const double ranks[3] {0, 0.5, 1};
+  auto quantiles = sketch.get_quantiles(ranks, 3);
+  REQUIRE(quantiles.size() == 3);
+  REQUIRE(quantiles[0] == 1);
+  REQUIRE(quantiles[1] == 1);
+  REQUIRE(quantiles[2] == 1);
 
   unsigned count = 0;
   for (auto it: sketch) {
@@ -133,6 +142,13 @@ TEST_CASE("req sketch: exact mode", "[req_sketch]") {
   REQUIRE(sketch.get_quantile(0.5) == 5);
   REQUIRE(sketch.get_quantile(0.9) == 9);
   REQUIRE(sketch.get_quantile(1) == 10);
+
+  const double ranks[3] {0, 0.5, 1};
+  auto quantiles = sketch.get_quantiles(ranks, 3);
+  REQUIRE(quantiles.size() == 3);
+  REQUIRE(quantiles[0] == 1);
+  REQUIRE(quantiles[1] == 5);
+  REQUIRE(quantiles[2] == 10);
 
   const float splits[3] {2, 6, 9};
   auto cdf = sketch.get_CDF(splits, 3, false);

@@ -760,6 +760,42 @@ auto quantiles_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const 
 }
 
 template<typename T, typename C, typename A>
+std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size, bool inclusive) const {
+  std::vector<T, A> quantiles(allocator_);
+  if (is_empty()) return quantiles;
+  quantiles.reserve(size);
+
+  // possible side-effect: sorting base buffer
+  setup_sorted_view();
+
+  for (uint32_t i = 0; i < size; ++i) {
+    const double rank = ranks[i];
+    if ((rank < 0.0) || (rank > 1.0)) {
+      throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
+    }
+    quantiles.push_back(sorted_view_->get_quantile(rank, inclusive));
+  }
+  return quantiles;
+}
+
+template<typename T, typename C, typename A>
+std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(uint32_t num, bool inclusive) const {
+  if (is_empty()) return std::vector<T, A>(allocator_);
+  if (num == 0) {
+    throw std::invalid_argument("num must be > 0");
+  }
+  vector_double ranks(num, 0, allocator_);
+  ranks[0] = 0.0;
+  for (size_t i = 1; i < num; i++) {
+    ranks[i] = static_cast<double>(i) / (num - 1);
+  }
+  if (num > 1) {
+    ranks[num - 1] = 1.0;
+  }
+  return get_quantiles(ranks.data(), num, inclusive);
+}
+
+template<typename T, typename C, typename A>
 double quantiles_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
   if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
   setup_sorted_view();

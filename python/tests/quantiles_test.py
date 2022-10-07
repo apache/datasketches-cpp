@@ -42,6 +42,14 @@ class QuantilesTest(unittest.TestCase):
       self.assertGreaterEqual(quantiles.get_max_value(), quantiles.get_quantile(0.99))
       self.assertGreaterEqual(1.0, quantiles.get_rank(quantiles.get_max_value()))
 
+      # we can also extract a list of values at a time,
+      # here the values should give us something close to [-2, -1, 0, 1, 2].
+      # then get the CDF, which will return something close to
+      # the original values used in get_quantiles()
+      # finally, can check the normalized rank error bound
+      pts = quantiles.get_quantiles([0.0228, 0.1587, 0.5, 0.8413, 0.9772])
+      cdf = quantiles.get_cdf(pts)  # include 1.0 at end to account for all probability mass
+      self.assertEqual(len(cdf), len(pts)+1)
       err = quantiles.normalized_rank_error(False)
       self.assertEqual(err, quantiles_floats_sketch.get_normalized_rank_error(k, False))
 
@@ -95,6 +103,9 @@ class QuantilesTest(unittest.TestCase):
         self.assertEqual(len(cdf), 2)
 
         self.assertEqual(quantiles.get_quantile(0.5), round(n/2))
+        quants = quantiles.get_quantiles([0.25, 0.5, 0.75])
+        self.assertIsNotNone(quants)
+        self.assertEqual(len(quants), 3)
 
         self.assertEqual(quantiles.get_rank(round(n/2)), 0.5)
 

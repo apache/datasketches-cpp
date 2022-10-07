@@ -42,6 +42,15 @@ class reqTest(unittest.TestCase):
       self.assertGreaterEqual(req.get_max_value(), req.get_quantile(0.99))
       self.assertGreaterEqual(1.0, req.get_rank(req.get_max_value()))
 
+      # we can also extract a list of values at a time,
+      # here the values should give us something close to [-2, -1, 0, 1, 2].
+      # then get the CDF, which will return something close to
+      # the original values used in get_quantiles()
+      # finally, can check the normalized rank error bound
+      pts = req.get_quantiles([0.0228, 0.1587, 0.5, 0.8413, 0.9772])
+      cdf = req.get_cdf(pts)  # include 1.0 at end to account for all probability mass
+      self.assertEqual(len(cdf), len(pts)+1)
+
       # For relative error quantiles, the error depends on the actual rank
       # so we need to use that to detemrine the bounds
       est = req.get_rank(0.999, True)
@@ -93,6 +102,9 @@ class reqTest(unittest.TestCase):
         self.assertEqual(len(cdf), 2)
 
         self.assertEqual(req.get_quantile(0.5), round(n/2))
+        quants = req.get_quantiles([0.25, 0.5, 0.75])
+        self.assertIsNotNone(quants)
+        self.assertEqual(len(quants), 3)
 
         self.assertEqual(req.get_rank(round(n/2)), 0.5)
 

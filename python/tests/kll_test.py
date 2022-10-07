@@ -42,6 +42,14 @@ class KllTest(unittest.TestCase):
       self.assertGreaterEqual(kll.get_max_value(), kll.get_quantile(0.99))
       self.assertGreaterEqual(1.0, kll.get_rank(kll.get_max_value()))
 
+      # we can also extract a list of values at a time,
+      # here the values should give us something close to [-2, -1, 0, 1, 2].
+      # then get the CDF, which will return something close to
+      # the original values used in get_quantiles()
+      # finally, can check the normalized rank error bound
+      pts = kll.get_quantiles([0.0228, 0.1587, 0.5, 0.8413, 0.9772])
+      cdf = kll.get_cdf(pts)  # include 1.0 at end to account for all probability mass
+      self.assertEqual(len(cdf), len(pts)+1)
       err = kll.normalized_rank_error(False)
       self.assertEqual(err, kll_floats_sketch.get_normalized_rank_error(k, False))
 
@@ -94,6 +102,9 @@ class KllTest(unittest.TestCase):
         self.assertEqual(len(cdf), 2)
 
         self.assertEqual(kll.get_quantile(0.5), round(n/2))
+        quants = kll.get_quantiles([0.25, 0.5, 0.75])
+        self.assertIsNotNone(quants)
+        self.assertEqual(len(quants), 3)
 
         self.assertEqual(kll.get_rank(round(n/2)), 0.5)
 
