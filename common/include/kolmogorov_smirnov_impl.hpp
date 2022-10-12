@@ -28,16 +28,16 @@ namespace datasketches {
 template<typename Sketch>
 double kolmogorov_smirnov::delta(const Sketch& sketch1, const Sketch& sketch2) {
   auto comparator = sketch1.get_comparator(); // assuming the same comparator in sketch2
-  auto view1 = sketch1.get_sorted_view(true);
-  auto view2 = sketch2.get_sorted_view(true);
+  auto view1 = sketch1.get_sorted_view();
+  auto view2 = sketch2.get_sorted_view();
   auto it1 = view1.begin();
   auto it2 = view2.begin();
   const auto n1 = sketch1.get_n();
   const auto n2 = sketch2.get_n();
   double delta = 0;
   while (it1 != view1.end() && it2 != view2.end()) {
-    const double norm_cum_wt1 = static_cast<double>((*it1).second) / n1;
-    const double norm_cum_wt2 = static_cast<double>((*it2).second) / n2;
+    const double norm_cum_wt1 = static_cast<double>(it1.get_cumulative_weight(false)) / n1;
+    const double norm_cum_wt2 = static_cast<double>(it2.get_cumulative_weight(false)) / n2;
     delta = std::max(delta, std::abs(norm_cum_wt1 - norm_cum_wt2));
     if (comparator((*it1).first, (*it2).first)) {
       ++it1;
@@ -48,8 +48,8 @@ double kolmogorov_smirnov::delta(const Sketch& sketch1, const Sketch& sketch2) {
       ++it2;
     }
   }
-  const double norm_cum_wt1 = it1 == view1.end() ? 1 : static_cast<double>((*it1).second) / n1;
-  const double norm_cum_wt2 = it2 == view2.end() ? 1 : static_cast<double>((*it2).second) / n2;
+  const double norm_cum_wt1 = it1 == view1.end() ? 1 : static_cast<double>(it1.get_cumulative_weight(false)) / n1;
+  const double norm_cum_wt2 = it2 == view2.end() ? 1 : static_cast<double>(it2.get_cumulative_weight(false)) / n2;
   delta = std::max(delta, std::abs(norm_cum_wt1 - norm_cum_wt2));
   return delta;
 }

@@ -17,7 +17,7 @@
 
 add_executable(cpc_test)
 
-target_link_libraries(cpc_test cpc common_test)
+target_link_libraries(cpc_test cpc common_test_lib)
 
 set_target_properties(cpc_test PROPERTIES
   CXX_STANDARD 11

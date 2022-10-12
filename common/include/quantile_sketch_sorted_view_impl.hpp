@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <cmath>
 
 namespace datasketches {
 
@@ -51,34 +52,63 @@ void quantile_sketch_sorted_view<T, C, A>::add(Iterator first, Iterator last, ui
 }
 
 template<typename T, typename C, typename A>
-template<bool inclusive>
 void quantile_sketch_sorted_view<T, C, A>::convert_to_cummulative() {
-  uint64_t subtotal = 0;
   for (auto& entry: entries_) {
-    const uint64_t new_subtotal = subtotal + entry.second;
-    entry.second = inclusive ? new_subtotal : subtotal;
-    subtotal = new_subtotal;
+    total_weight_ += entry.second;
+    entry.second = total_weight_;
   }
-  total_weight_ = subtotal;
 }
 
 template<typename T, typename C, typename A>
-auto quantile_sketch_sorted_view<T, C, A>::get_quantile(double rank) const -> quantile_return_type {
-  if (total_weight_ == 0) throw std::invalid_argument("supported for cumulative weight only");
-  uint64_t weight = static_cast<uint64_t>(rank * total_weight_);
-  auto it = std::lower_bound(entries_.begin(), entries_.end(), make_dummy_entry<T>(weight), compare_pairs_by_second());
+double quantile_sketch_sorted_view<T, C, A>::get_rank(const T& item, bool inclusive) const {
+  auto it = inclusive ?
+      std::upper_bound(entries_.begin(), entries_.end(), Entry(ref_helper(item), 0), compare_pairs_by_first())
+    : std::lower_bound(entries_.begin(), entries_.end(), Entry(ref_helper(item), 0), compare_pairs_by_first());
+  // we need item just before
+  if (it == entries_.begin()) return 0;
+  --it;
+  return static_cast<double>(it->second) / total_weight_;
+}
+
+template<typename T, typename C, typename A>
+auto quantile_sketch_sorted_view<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
+  uint64_t weight = inclusive ? std::ceil(rank * total_weight_) : rank * total_weight_;
+  auto it = inclusive ?
+      std::lower_bound(entries_.begin(), entries_.end(), make_dummy_entry<T>(weight), compare_pairs_by_second())
+    : std::upper_bound(entries_.begin(), entries_.end(), make_dummy_entry<T>(weight), compare_pairs_by_second());
   if (it == entries_.end()) return deref_helper(entries_[entries_.size() - 1].first);
   return deref_helper(it->first);
 }
 
 template<typename T, typename C, typename A>
+auto quantile_sketch_sorted_view<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  vector_double buckets(entries_.get_allocator());
+  if (entries_.size() == 0) return buckets;
+  check_split_points(split_points, size);
+  buckets.reserve(size + 1);
+  for (uint32_t i = 0; i < size; ++i) buckets.push_back(get_rank(split_points[i], inclusive));
+  buckets.push_back(1);
+  return buckets;
+}
+
+template<typename T, typename C, typename A>
+auto quantile_sketch_sorted_view<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  auto buckets = get_CDF(split_points, size, inclusive);
+  if (buckets.size() == 0) return buckets;
+  for (uint32_t i = size; i > 0; --i) {
+    buckets[i] -= buckets[i - 1];
+  }
+  return buckets;
+}
+
+template<typename T, typename C, typename A>
 auto quantile_sketch_sorted_view<T, C, A>::begin() const -> const_iterator {
-  return entries_.begin();
+  return const_iterator(entries_.begin(), entries_.begin());
 }
 
 template<typename T, typename C, typename A>
 auto quantile_sketch_sorted_view<T, C, A>::end() const -> const_iterator {
-  return entries_.end();
+  return const_iterator(entries_.end(), entries_.begin());
 }
 
 template<typename T, typename C, typename A>

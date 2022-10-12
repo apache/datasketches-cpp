@@ -180,8 +180,7 @@ uint8_t req_compactor<T, C, A>::get_lg_weight() const {
 }
 
 template<typename T, typename C, typename A>
-template<bool inclusive>
-uint64_t req_compactor<T, C, A>::compute_weight(const T& item) const {
+uint64_t req_compactor<T, C, A>::compute_weight(const T& item, bool inclusive) const {
   if (!sorted_) const_cast<req_compactor*>(this)->sort(); // allow sorting as a side effect
   auto it = inclusive ?
       std::upper_bound(begin(), end(), item, C()) :

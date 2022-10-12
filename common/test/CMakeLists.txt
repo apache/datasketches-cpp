@@ -19,7 +19,7 @@
 # and an integration test using the other parts of the library.
 
 # common dependencies for tests
-add_library(common_test OBJECT "")
+add_library(common_test_lib OBJECT "")
 
 include(FetchContent)
 
@@ -31,19 +31,19 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-target_link_libraries(common_test PUBLIC Catch2::Catch2)
+target_link_libraries(common_test_lib PUBLIC Catch2::Catch2)
 
-set_target_properties(common_test PROPERTIES
+set_target_properties(common_test_lib PROPERTIES
   CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 
-target_include_directories(common_test
+target_include_directories(common_test_lib
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_sources(common_test
+target_sources(common_test_lib
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_allocator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_type.hpp
@@ -52,10 +52,29 @@ target_sources(common_test
     ${CMAKE_CURRENT_SOURCE_DIR}/test_allocator.cpp
 )
 
+add_executable(common_test)
+
+target_link_libraries(common_test common common_test_lib)
+
+set_target_properties(common_test PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
+)
+
+add_test(
+  NAME common_test
+  COMMAND common_test
+)
+
+target_sources(common_test
+  PRIVATE
+    quantile_sketch_sorted_view_test.cpp
+)
+
 # now the integration test part
 add_executable(integration_test)
 
-target_link_libraries(integration_test cpc fi hll kll req sampling theta tuple common_test)
+target_link_libraries(integration_test cpc fi hll kll req sampling theta tuple common_test_lib)
 
 set_target_properties(integration_test PROPERTIES
   CXX_STANDARD 11

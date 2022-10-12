@@ -50,7 +50,7 @@ class reqTest(unittest.TestCase):
       pts = req.get_quantiles([0.0228, 0.1587, 0.5, 0.8413, 0.9772])
       cdf = req.get_cdf(pts)  # include 1.0 at end to account for all probability mass
       self.assertEqual(len(cdf), len(pts)+1)
-      
+
       # For relative error quantiles, the error depends on the actual rank
       # so we need to use that to detemrine the bounds
       est = req.get_rank(0.999, True)

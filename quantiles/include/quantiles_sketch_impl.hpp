@@ -36,14 +36,15 @@ namespace datasketches {
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::quantiles_sketch(uint16_t k, const A& allocator):
 allocator_(allocator),
+is_base_buffer_sorted_(true),
 k_(k),
 n_(0),
 bit_pattern_(0),
 base_buffer_(allocator_),
 levels_(allocator_),
-min_value_(nullptr),
-max_value_(nullptr),
-is_sorted_(true)
+min_item_(nullptr),
+max_item_(nullptr),
+sorted_view_(nullptr)
 {
   check_k(k_);
   base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k));
@@ -52,17 +53,18 @@ is_sorted_(true)
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::quantiles_sketch(const quantiles_sketch& other):
 allocator_(other.allocator_),
+is_base_buffer_sorted_(other.is_base_buffer_sorted_),
 k_(other.k_),
 n_(other.n_),
 bit_pattern_(other.bit_pattern_),
 base_buffer_(other.base_buffer_),
 levels_(other.levels_),
-min_value_(nullptr),
-max_value_(nullptr),
-is_sorted_(other.is_sorted_)
+min_item_(nullptr),
+max_item_(nullptr),
+sorted_view_(nullptr)
 {
-  if (other.min_value_ != nullptr) min_value_ = new (allocator_.allocate(1)) T(*other.min_value_);
-  if (other.max_value_ != nullptr) max_value_ = new (allocator_.allocate(1)) T(*other.max_value_);
+  if (other.min_item_ != nullptr) min_item_ = new (allocator_.allocate(1)) T(*other.min_item_);
+  if (other.max_item_ != nullptr) max_item_ = new (allocator_.allocate(1)) T(*other.max_item_);
   for (size_t i = 0; i < levels_.size(); ++i) { 
     if (levels_[i].capacity() != other.levels_[i].capacity()) {
       levels_[i].reserve(other.levels_[i].capacity());
@@ -73,62 +75,66 @@ is_sorted_(other.is_sorted_)
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::quantiles_sketch(quantiles_sketch&& other) noexcept:
 allocator_(other.allocator_),
+is_base_buffer_sorted_(other.is_base_buffer_sorted_),
 k_(other.k_),
 n_(other.n_),
 bit_pattern_(other.bit_pattern_),
 base_buffer_(std::move(other.base_buffer_)),
 levels_(std::move(other.levels_)),
-min_value_(other.min_value_),
-max_value_(other.max_value_),
-is_sorted_(other.is_sorted_)
+min_item_(other.min_item_),
+max_item_(other.max_item_),
+sorted_view_(nullptr)
 {
-  other.min_value_ = nullptr;
-  other.max_value_ = nullptr;
+  other.min_item_ = nullptr;
+  other.max_item_ = nullptr;
 }
 
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>& quantiles_sketch<T, C, A>::operator=(const quantiles_sketch& other) {
   quantiles_sketch<T, C, A> copy(other);
   std::swap(allocator_, copy.allocator_);
+  std::swap(is_base_buffer_sorted_, copy.is_base_buffer_sorted_);
   std::swap(k_, copy.k_);
   std::swap(n_, copy.n_);
   std::swap(bit_pattern_, copy.bit_pattern_);
   std::swap(base_buffer_, copy.base_buffer_);
   std::swap(levels_, copy.levels_);
-  std::swap(min_value_, copy.min_value_);
-  std::swap(max_value_, copy.max_value_);
-  std::swap(is_sorted_, copy.is_sorted_);
+  std::swap(min_item_, copy.min_item_);
+  std::swap(max_item_, copy.max_item_);
+  reset_sorted_view();
   return *this;
 }
 
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>& quantiles_sketch<T, C, A>::operator=(quantiles_sketch&& other) noexcept {
   std::swap(allocator_, other.allocator_);
+  std::swap(is_base_buffer_sorted_, other.is_base_buffer_sorted_);
   std::swap(k_, other.k_);
   std::swap(n_, other.n_);
   std::swap(bit_pattern_, other.bit_pattern_);
   std::swap(base_buffer_, other.base_buffer_);
   std::swap(levels_, other.levels_);
-  std::swap(min_value_, other.min_value_);
-  std::swap(max_value_, other.max_value_);
-  std::swap(is_sorted_, other.is_sorted_);
+  std::swap(min_item_, other.min_item_);
+  std::swap(max_item_, other.max_item_);
+  reset_sorted_view();
   return *this;
 }
 
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::quantiles_sketch(uint16_t k, uint64_t n, uint64_t bit_pattern,
       Level&& base_buffer, VectorLevels&& levels,
-      std::unique_ptr<T, item_deleter> min_value, std::unique_ptr<T, item_deleter> max_value,
+      std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item,
       bool is_sorted, const A& allocator) :
 allocator_(allocator),
+is_base_buffer_sorted_(is_sorted),
 k_(k),
 n_(n),
 bit_pattern_(bit_pattern),
 base_buffer_(std::move(base_buffer)),
 levels_(std::move(levels)),
-min_value_(min_value.release()),
-max_value_(max_value.release()),
-is_sorted_(is_sorted)
+min_item_(min_item.release()),
+max_item_(max_item.release()),
+sorted_view_(nullptr)
 {
   uint32_t item_count = base_buffer_.size();
   for (Level& lvl : levels_) {
@@ -142,14 +148,15 @@ template<typename T, typename C, typename A>
 template<typename From, typename FC, typename FA>
 quantiles_sketch<T, C, A>::quantiles_sketch(const quantiles_sketch<From, FC, FA>& other, const A& allocator) :
 allocator_(allocator),
+is_base_buffer_sorted_(false),
 k_(other.get_k()),
 n_(other.get_n()),
 bit_pattern_(compute_bit_pattern(other.get_k(), other.get_n())),
 base_buffer_(allocator),
 levels_(allocator),
-min_value_(nullptr),
-max_value_(nullptr),
-is_sorted_(false)
+min_item_(nullptr),
+max_item_(nullptr),
+sorted_view_(nullptr)
 {
   static_assert(std::is_constructible<T, From>::value,
                 "Type converting constructor requires new type to be constructible from existing type");
@@ -157,8 +164,8 @@ is_sorted_(false)
   base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k_));
 
   if (!other.is_empty()) {
-    min_value_ = new (allocator_.allocate(1)) T(other.get_min_value());
-    max_value_ = new (allocator_.allocate(1)) T(other.get_max_value());
+    min_item_ = new (allocator_.allocate(1)) T(other.get_min_item());
+    max_item_ = new (allocator_.allocate(1)) T(other.get_max_item());
 
     // reserve space in levels
     const uint8_t num_levels = compute_levels_needed(k_, n_);
@@ -199,40 +206,38 @@ is_sorted_(false)
 
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::~quantiles_sketch() {
-  if (min_value_ != nullptr) {
-    min_value_->~T();
-    allocator_.deallocate(min_value_, 1);
+  if (min_item_ != nullptr) {
+    min_item_->~T();
+    allocator_.deallocate(min_item_, 1);
   }
-  if (max_value_ != nullptr) {
-    max_value_->~T();
-    allocator_.deallocate(max_value_, 1);
+  if (max_item_ != nullptr) {
+    max_item_->~T();
+    allocator_.deallocate(max_item_, 1);
   }
+  reset_sorted_view();
 }
 
 template<typename T, typename C, typename A>
 template<typename FwdT>
 void quantiles_sketch<T, C, A>::update(FwdT&& item) {
-  if (!check_update_value(item)) { return; }
+  if (!check_update_item(item)) { return; }
   if (is_empty()) {
-    min_value_ = new (allocator_.allocate(1)) T(item);
-    max_value_ = new (allocator_.allocate(1)) T(item);
+    min_item_ = new (allocator_.allocate(1)) T(item);
+    max_item_ = new (allocator_.allocate(1)) T(item);
   } else {
-    if (C()(item, *min_value_)) *min_value_ = item;
-    if (C()(*max_value_, item)) *max_value_ = item;
+    if (C()(item, *min_item_)) *min_item_ = item;
+    if (C()(*max_item_, item)) *max_item_ = item;
   }
 
   // if exceed capacity, grow until size 2k -- assumes eager processing
-  if (base_buffer_.size() + 1 > base_buffer_.capacity())
-    grow_base_buffer();
+  if (base_buffer_.size() + 1 > base_buffer_.capacity()) grow_base_buffer();
 
   base_buffer_.push_back(std::forward<FwdT>(item));
   ++n_;
 
-  if (base_buffer_.size() > 1)
-    is_sorted_ = false;
-  
-  if (base_buffer_.size() == 2 * k_)
-    process_full_base_buffer();
+  if (base_buffer_.size() > 1) is_base_buffer_sorted_ = false;
+  if (base_buffer_.size() == 2 * k_) process_full_base_buffer();
+  reset_sorted_view();
 }
 
 template<typename T, typename C, typename A>
@@ -245,10 +250,11 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
     for (auto item : other.base_buffer_) {
       update(conditional_forward<FwdSk>(item));
     }
-    return; // we're done
+    reset_sorted_view();
+    return;
   }
 
-  // we know other has data and is in estimation mode
+  // other has data and is in estimation mode
   if (is_estimation_mode()) {
     if (k_ == other.get_k()) {
       standard_merge(*this, other);
@@ -273,6 +279,7 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
     }
     *this = sk_copy;
   }
+  reset_sorted_view();
 }
 
 template<typename T, typename C, typename A>
@@ -286,8 +293,8 @@ void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& serde) 
   write(os, family);
 
   // side-effect: sort base buffer since always compact
-  // can't set is_sorted_ since const method
   std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), C());
+  const_cast<quantiles_sketch*>(this)->is_base_buffer_sorted_ = true;
 
   // empty, ordered, compact are valid flags
   const uint8_t flags_byte(
@@ -304,8 +311,8 @@ void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& serde) 
     write(os, n_);
 
     // min and max
-    serde.serialize(os, min_value_, 1);
-    serde.serialize(os, max_value_, 1);
+    serde.serialize(os, min_item_, 1);
+    serde.serialize(os, max_item_, 1);
 
     // base buffer items
     serde.serialize(os, base_buffer_.data(), static_cast<unsigned>(base_buffer_.size()));
@@ -334,8 +341,8 @@ auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerD
   ptr += copy_to_mem(family, ptr);
 
   // side-effect: sort base buffer since always compact
-  // can't set is_sorted_ since const method
   std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), C());
+  const_cast<quantiles_sketch*>(this)->is_base_buffer_sorted_ = true;
 
   // empty, ordered, compact are valid flags
   const uint8_t flags_byte(
@@ -352,8 +359,8 @@ auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerD
     ptr += copy_to_mem(n_, ptr);
     
     // min and max
-    ptr += serde.serialize(ptr, end_ptr - ptr, min_value_, 1);
-    ptr += serde.serialize(ptr, end_ptr - ptr, max_value_, 1);
+    ptr += serde.serialize(ptr, end_ptr - ptr, min_item_, 1);
+    ptr += serde.serialize(ptr, end_ptr - ptr, max_item_, 1);
  
     // base buffer items
     if (base_buffer_.size() > 0)
@@ -397,17 +404,17 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
 
   A alloc(allocator);
   auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
-  std::unique_ptr<T, decltype(item_buffer_deleter)> min_value_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, decltype(item_buffer_deleter)> max_value_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, item_deleter> min_value(nullptr, item_deleter(allocator));
-  std::unique_ptr<T, item_deleter> max_value(nullptr, item_deleter(allocator));
+  std::unique_ptr<T, decltype(item_buffer_deleter)> min_item_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> max_item_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, item_deleter> min_item(nullptr, item_deleter(allocator));
+  std::unique_ptr<T, item_deleter> max_item(nullptr, item_deleter(allocator));
 
-  serde.deserialize(is, min_value_buffer.get(), 1);
+  serde.deserialize(is, min_item_buffer.get(), 1);
   // serde call did not throw, repackage with destrtuctor
-  min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
-  serde.deserialize(is, max_value_buffer.get(), 1);
+  min_item = std::unique_ptr<T, item_deleter>(min_item_buffer.release(), item_deleter(allocator));
+  serde.deserialize(is, max_item_buffer.get(), 1);
   // serde call did not throw, repackage with destrtuctor
-  max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
+  max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
 
   if (serial_version == 1) {
     read<uint64_t>(is); // no longer used
@@ -449,7 +456,7 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
   }
 
   return quantiles_sketch(k, items_seen, bit_pattern,
-    std::move(base_buffer), std::move(levels), std::move(min_value), std::move(max_value), is_sorted, allocator);
+    std::move(base_buffer), std::move(levels), std::move(min_item), std::move(max_item), is_sorted, allocator);
 }
 
 template<typename T, typename C, typename A>
@@ -510,17 +517,17 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
 
   A alloc(allocator);
   auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
-  std::unique_ptr<T, decltype(item_buffer_deleter)> min_value_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, decltype(item_buffer_deleter)> max_value_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, item_deleter> min_value(nullptr, item_deleter(allocator));
-  std::unique_ptr<T, item_deleter> max_value(nullptr, item_deleter(allocator));
+  std::unique_ptr<T, decltype(item_buffer_deleter)> min_item_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, decltype(item_buffer_deleter)> max_item_buffer(alloc.allocate(1), item_buffer_deleter);
+  std::unique_ptr<T, item_deleter> min_item(nullptr, item_deleter(allocator));
+  std::unique_ptr<T, item_deleter> max_item(nullptr, item_deleter(allocator));
 
-  ptr += serde.deserialize(ptr, end_ptr - ptr, min_value_buffer.get(), 1);
+  ptr += serde.deserialize(ptr, end_ptr - ptr, min_item_buffer.get(), 1);
   // serde call did not throw, repackage with destrtuctor
-  min_value = std::unique_ptr<T, item_deleter>(min_value_buffer.release(), item_deleter(allocator));
-  ptr += serde.deserialize(ptr, end_ptr - ptr, max_value_buffer.get(), 1);
+  min_item = std::unique_ptr<T, item_deleter>(min_item_buffer.release(), item_deleter(allocator));
+  ptr += serde.deserialize(ptr, end_ptr - ptr, max_item_buffer.get(), 1);
   // serde call did not throw, repackage with destrtuctor
-  max_value = std::unique_ptr<T, item_deleter>(max_value_buffer.release(), item_deleter(allocator));
+  max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
 
   if (serial_version == 1) {
     uint64_t unused_long;
@@ -567,7 +574,7 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
   }
 
   return quantiles_sketch(k, items_seen, bit_pattern,
-    std::move(base_buffer_pair.first), std::move(levels), std::move(min_value), std::move(max_value), is_sorted, allocator);
+    std::move(base_buffer_pair.first), std::move(levels), std::move(min_item), std::move(max_item), is_sorted, allocator);
 }
 
 template<typename T, typename C, typename A>
@@ -605,11 +612,11 @@ string<A> quantiles_sketch<T, C, A>::to_string(bool print_levels, bool print_ite
   os << "   Empty          : " << (is_empty() ? "true" : "false") << std::endl;
   os << "   Estimation mode: " << (is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   Levels (w/o BB): " << levels_.size() << std::endl;
-  os << "   Used Levels    : " << compute_valid_levels(bit_pattern_) << std::endl;
+  os << "   Used Levels    : " << count_valid_levels(bit_pattern_) << std::endl;
   os << "   Retained items : " << get_num_retained() << std::endl;
   if (!is_empty()) {
-    os << "   Min value      : " << *min_value_ << std::endl;
-    os << "   Max value      : " << *max_value_ << std::endl;
+    os << "   Min item      : " << *min_item_ << std::endl;
+    os << "   Max item      : " << *max_item_ << std::endl;
   }
   os << "### End sketch summary" << std::endl;
 
@@ -667,15 +674,15 @@ uint32_t quantiles_sketch<T, C, A>::get_num_retained() const {
 }
 
 template<typename T, typename C, typename A>
-const T& quantiles_sketch<T, C, A>::get_min_value() const {
-  if (is_empty()) return get_invalid_value();
-  return *min_value_;
+const T& quantiles_sketch<T, C, A>::get_min_item() const {
+  if (is_empty()) return get_invalid_item();
+  return *min_item_;
 }
 
 template<typename T, typename C, typename A>
-const T& quantiles_sketch<T, C, A>::get_max_value() const {
-  if (is_empty()) return get_invalid_value();
-  return *max_value_;
+const T& quantiles_sketch<T, C, A>::get_max_item() const {
+  if (is_empty()) return get_invalid_item();
+  return *max_item_;
 }
 
 template<typename T, typename C, typename A>
@@ -702,8 +709,8 @@ template<typename SerDe, typename TT, typename std::enable_if<!std::is_arithmeti
 size_t quantiles_sketch<T, C, A>::get_serialized_size_bytes(const SerDe& serde) const {
   if (is_empty()) { return EMPTY_SIZE_BYTES; }
   size_t size = DATA_START;
-  size += serde.size_of_item(*min_value_);
-  size += serde.size_of_item(*max_value_);
+  size += serde.size_of_item(*min_item_);
+  size += serde.size_of_item(*max_item_);
   for (auto it: *this) size += serde.size_of_item(it.first);
   return size;
 }
@@ -721,162 +728,119 @@ double quantiles_sketch<T, C, A>::get_normalized_rank_error(uint16_t k, bool is_
 }
 
 template<typename T, typename C, typename A>
-template<bool inclusive>
-quantile_sketch_sorted_view<T, C, A> quantiles_sketch<T, C, A>::get_sorted_view(bool cumulative) const {
-  // allow side-effect of sorting the base buffer; can't set the flag since
-  // this is a const method
-  if (!is_sorted_) {
+quantile_sketch_sorted_view<T, C, A> quantiles_sketch<T, C, A>::get_sorted_view() const {
+  // allow side-effect of sorting the base buffer
+  if (!is_base_buffer_sorted_) {
     std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), C());
+    const_cast<quantiles_sketch*>(this)->is_base_buffer_sorted_ = true;
   }
   quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), allocator_);
 
   uint64_t weight = 1;
   view.add(base_buffer_.begin(), base_buffer_.end(), weight);
-  for (auto& level : levels_) {
+  for (const auto& level: levels_) {
     weight <<= 1;
     if (level.empty()) { continue; }
     view.add(level.begin(), level.end(), weight);
   }
 
-  if (cumulative) view.template convert_to_cummulative<inclusive>();
+  view.convert_to_cummulative();
   return view;
 }
 
 template<typename T, typename C, typename A>
-template<bool inclusive>
-auto quantiles_sketch<T, C, A>::get_quantile(double rank) const -> quantile_return_type {
-  if (is_empty()) return get_invalid_value();
-  if (rank == 0.0) return *min_value_;
-  if (rank == 1.0) return *max_value_;
+auto quantiles_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
+  if (is_empty()) return get_invalid_item();
   if ((rank < 0.0) || (rank > 1.0)) {
-    throw std::invalid_argument("Rank cannot be less than zero or greater than 1.0");
+    throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
   }
   // possible side-effect: sorting base buffer
-  return get_sorted_view<inclusive>(true).get_quantile(rank);
+  setup_sorted_view();
+  return sorted_view_->get_quantile(rank, inclusive);
 }
 
 template<typename T, typename C, typename A>
-template<bool inclusive>
-std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size) const {
+std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size, bool inclusive) const {
   std::vector<T, A> quantiles(allocator_);
   if (is_empty()) return quantiles;
   quantiles.reserve(size);
 
   // possible side-effect: sorting base buffer
-  auto view = get_sorted_view<inclusive>(true);
+  setup_sorted_view();
 
   for (uint32_t i = 0; i < size; ++i) {
     const double rank = ranks[i];
     if ((rank < 0.0) || (rank > 1.0)) {
-      throw std::invalid_argument("rank cannot be less than zero or greater than 1.0");
+      throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
     }
-    if      (rank == 0.0) quantiles.push_back(*min_value_);
-    else if (rank == 1.0) quantiles.push_back(*max_value_);
-    else {
-      quantiles.push_back(view.get_quantile(rank));
-    }
+    quantiles.push_back(sorted_view_->get_quantile(rank, inclusive));
   }
   return quantiles;
 }
 
 template<typename T, typename C, typename A>
-template<bool inclusive>
-std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(uint32_t num) const {
+std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(uint32_t num, bool inclusive) const {
   if (is_empty()) return std::vector<T, A>(allocator_);
   if (num == 0) {
     throw std::invalid_argument("num must be > 0");
   }
-  vector_double fractions(num, 0, allocator_);
-  fractions[0] = 0.0;
+  vector_double ranks(num, 0, allocator_);
+  ranks[0] = 0.0;
   for (size_t i = 1; i < num; i++) {
-    fractions[i] = static_cast<double>(i) / (num - 1);
+    ranks[i] = static_cast<double>(i) / (num - 1);
   }
   if (num > 1) {
-    fractions[num - 1] = 1.0;
+    ranks[num - 1] = 1.0;
   }
-  return get_quantiles<inclusive>(fractions.data(), num);
+  return get_quantiles(ranks.data(), num, inclusive);
 }
 
 template<typename T, typename C, typename A>
-template<bool inclusive>
-double quantiles_sketch<T, C, A>::get_rank(const T& value) const {
+double quantiles_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
   if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
-  uint64_t weight = 1;
-  uint64_t total = 0;
-  for (const T &item: base_buffer_) {
-    if (inclusive ? !C()(value, item) : C()(item, value))
-      total += weight;
-  }
-
-  weight *= 2;
-  for (uint8_t level = 0; level < levels_.size(); ++level, weight *= 2) {
-    if (levels_[level].empty()) { continue; }
-    const T* data = levels_[level].data();
-    for (uint16_t i = 0; i < k_; ++i) {
-      if (inclusive ? !C()(value, data[i]) : C()(data[i], value))
-        total += weight;
-      else
-        break;  // levels are sorted, no point comparing further
-    }
-  }
-  return (double) total / n_;
+  setup_sorted_view();
+  return sorted_view_->get_rank(item, inclusive);
 }
 
 template<typename T, typename C, typename A>
-template<bool inclusive>
-auto quantiles_sketch<T, C, A>::get_PMF(const T* split_points, uint32_t size) const -> vector_double {
-  auto buckets = get_CDF<inclusive>(split_points, size);
-  if (is_empty()) return buckets;
-  for (uint32_t i = size; i > 0; --i) {
-    buckets[i] -= buckets[i - 1];
-  }
-  return buckets;
+auto quantiles_sketch<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  setup_sorted_view();
+  return sorted_view_->get_PMF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
-template<bool inclusive>
-auto quantiles_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size) const -> vector_double {
-  vector_double buckets(allocator_);
-  if (is_empty()) return buckets;
-  check_split_points(split_points, size);
-  buckets.reserve(size + 1);
-  for (uint32_t i = 0; i < size; ++i) buckets.push_back(get_rank<inclusive>(split_points[i]));
-  buckets.push_back(1);
-  return buckets;
+auto quantiles_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  setup_sorted_view();
+  return sorted_view_->get_CDF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
-uint32_t quantiles_sketch<T, C, A>::compute_retained_items(const uint16_t k, const uint64_t n) {
+uint32_t quantiles_sketch<T, C, A>::compute_retained_items(uint16_t k, uint64_t n) {
   const uint32_t bb_count = compute_base_buffer_items(k, n);
   const uint64_t bit_pattern = compute_bit_pattern(k, n);
-  const uint32_t valid_levels = compute_valid_levels(bit_pattern);
+  const uint32_t valid_levels = count_valid_levels(bit_pattern);
   return bb_count + (k * valid_levels);
 }
 
 template<typename T, typename C, typename A>
-uint32_t quantiles_sketch<T, C, A>::compute_base_buffer_items(const uint16_t k, const uint64_t n) {
+uint32_t quantiles_sketch<T, C, A>::compute_base_buffer_items(uint16_t k, uint64_t n) {
   return n % (static_cast<uint64_t>(2) * k);
 }
 
 template<typename T, typename C, typename A>
-uint64_t quantiles_sketch<T, C, A>::compute_bit_pattern(const uint16_t k, const uint64_t n) {
+uint64_t quantiles_sketch<T, C, A>::compute_bit_pattern(uint16_t k, uint64_t n) {
   return n / (static_cast<uint64_t>(2) * k);
 }
 
 template<typename T, typename C, typename A>
-uint32_t quantiles_sketch<T, C, A>::compute_valid_levels(const uint64_t bit_pattern) {
-  // TODO: Java's Long.bitCount() probably uses a better method
-  uint64_t bp = bit_pattern;
+uint32_t quantiles_sketch<T, C, A>::count_valid_levels(uint64_t bit_pattern) {
   uint32_t count = 0;
-  while (bp > 0) {
-    if ((bp & 0x01) == 1) ++count;
-    bp >>= 1;
-  }
+  for (; bit_pattern > 0; ++count) bit_pattern &= bit_pattern - 1;
   return count;
 }
 
 template<typename T, typename C, typename A>
-uint8_t quantiles_sketch<T, C, A>::compute_levels_needed(const uint16_t k, const uint64_t n) {
+uint8_t quantiles_sketch<T, C, A>::compute_levels_needed(uint16_t k, uint64_t n) {
   return static_cast<uint8_t>(64U) - count_leading_zeros_in_u64(n / (2 * k));
 }
 
@@ -967,7 +931,7 @@ void quantiles_sketch<T, C, A>::process_full_base_buffer() {
                            base_buffer_,
                            true, *this);
   base_buffer_.clear();
-  is_sorted_ = true;
+  is_base_buffer_sorted_ = true;
   if (n_ / (2 * k_) != bit_pattern_) {
     throw std::logic_error("Internal error: n / 2k (" + std::to_string(n_ / 2 * k_)
       + " != bit_pattern " + std::to_string(bit_pattern_));
@@ -1071,7 +1035,6 @@ void quantiles_sketch<T, C, A>::zip_buffer_with_stride(FwdV&& buf_in, Level& buf
   // do not clear input buffer
 }
 
-
 template<typename T, typename C, typename A>
 void quantiles_sketch<T, C, A>::merge_two_size_k_buffers(Level& src_1, Level& src_2, Level& dst) {
   if (src_1.size() != src_2.size()
@@ -1099,7 +1062,6 @@ void quantiles_sketch<T, C, A>::merge_two_size_k_buffers(Level& src_1, Level& sr
     dst.insert(dst.end(), it2, end2);
   }
 }
-
 
 template<typename T, typename C, typename A>
 template<typename FwdSk>
@@ -1149,24 +1111,23 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch& tgt, FwdSk&& sr
     throw std::logic_error("Failed internal consistency check after standard_merge()");
   }
 
-  // update min and max values
+  // update min and max items
   // can't just check is_empty() since min and max might not have been set if
   // there were no base buffer items added via update()
-  if (tgt.min_value_ == nullptr) {
-    tgt.min_value_ = new (tgt.allocator_.allocate(1)) T(*src.min_value_);
+  if (tgt.min_item_ == nullptr) {
+    tgt.min_item_ = new (tgt.allocator_.allocate(1)) T(*src.min_item_);
   } else {
-    if (C()(*src.min_value_, *tgt.min_value_))
-      *tgt.min_value_ = conditional_forward<FwdSk>(*src.min_value_);
+    if (C()(*src.min_item_, *tgt.min_item_))
+      *tgt.min_item_ = conditional_forward<FwdSk>(*src.min_item_);
   }
 
-  if (tgt.max_value_ == nullptr) {
-    tgt.max_value_ = new (tgt.allocator_.allocate(1)) T(*src.max_value_);
+  if (tgt.max_item_ == nullptr) {
+    tgt.max_item_ = new (tgt.allocator_.allocate(1)) T(*src.max_item_);
   } else {
-    if (C()(*tgt.max_value_, *src.max_value_))
-      *tgt.max_value_ = conditional_forward<FwdSk>(*src.max_value_);
+    if (C()(*tgt.max_item_, *src.max_item_))
+      *tgt.max_item_ = conditional_forward<FwdSk>(*src.max_item_);
   }
 }
-
 
 template<typename T, typename C, typename A>
 template<typename FwdSk>
@@ -1226,24 +1187,23 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch& tgt, FwdSk&
     throw std::logic_error("Failed internal consistency check after downsampling_merge()");
   }
 
-  // update min and max values
+  // update min and max items
   // can't just check is_empty() since min and max might not have been set if
   // there were no base buffer items added via update()
-  if (tgt.min_value_ == nullptr) {
-    tgt.min_value_ = new (tgt.allocator_.allocate(1)) T(*src.min_value_);
+  if (tgt.min_item_ == nullptr) {
+    tgt.min_item_ = new (tgt.allocator_.allocate(1)) T(*src.min_item_);
   } else {
-    if (C()(*src.min_value_, *tgt.min_value_))
-      *tgt.min_value_ = conditional_forward<FwdSk>(*src.min_value_);
+    if (C()(*src.min_item_, *tgt.min_item_))
+      *tgt.min_item_ = conditional_forward<FwdSk>(*src.min_item_);
   }
 
-  if (tgt.max_value_ == nullptr) {
-    tgt.max_value_ = new (tgt.allocator_.allocate(1)) T(*src.max_value_);
+  if (tgt.max_item_ == nullptr) {
+    tgt.max_item_ = new (tgt.allocator_.allocate(1)) T(*src.max_item_);
   } else {
-    if (C()(*tgt.max_value_, *src.max_value_))
-      *tgt.max_value_ = conditional_forward<FwdSk>(*src.max_value_);
+    if (C()(*tgt.max_item_, *src.max_item_))
+      *tgt.max_item_ = conditional_forward<FwdSk>(*src.max_item_);
   }
 }
-
 
 template<typename T, typename C, typename A>
 uint8_t quantiles_sketch<T, C, A>::lowest_zero_bit_starting_at(uint64_t bits, uint8_t starting_bit) {
@@ -1292,6 +1252,23 @@ class quantiles_sketch<T, C, A>::items_deleter {
   size_t num_;
 };
 
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::setup_sorted_view() const {
+  if (sorted_view_ == nullptr) {
+    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantile_sketch_sorted_view<T, C, A>>;
+    sorted_view_ = new (AllocSortedView(allocator_).allocate(1)) quantile_sketch_sorted_view<T, C, A>(get_sorted_view());
+  }
+}
+
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::reset_sorted_view() {
+  if (sorted_view_ != nullptr) {
+    sorted_view_->~quantile_sketch_sorted_view();
+    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantile_sketch_sorted_view<T, C, A>>;
+    AllocSortedView(allocator_).deallocate(sorted_view_, 1);
+    sorted_view_ = nullptr;
+  }
+}
 
 // quantiles_sketch::const_iterator implementation
 
