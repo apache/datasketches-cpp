@@ -481,7 +481,7 @@ private:
   static const size_t DATA_START = 16;
 
   Allocator allocator_;
-  bool is_level_zero_sorted_;
+  bool is_base_buffer_sorted_;
   uint16_t k_;
   uint64_t n_;
   uint64_t bit_pattern_;

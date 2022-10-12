@@ -36,7 +36,7 @@ namespace datasketches {
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::quantiles_sketch(uint16_t k, const A& allocator):
 allocator_(allocator),
-is_level_zero_sorted_(true),
+is_base_buffer_sorted_(true),
 k_(k),
 n_(0),
 bit_pattern_(0),
@@ -53,7 +53,7 @@ sorted_view_(nullptr)
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::quantiles_sketch(const quantiles_sketch& other):
 allocator_(other.allocator_),
-is_level_zero_sorted_(other.is_level_zero_sorted_),
+is_base_buffer_sorted_(other.is_base_buffer_sorted_),
 k_(other.k_),
 n_(other.n_),
 bit_pattern_(other.bit_pattern_),
@@ -75,7 +75,7 @@ sorted_view_(nullptr)
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::quantiles_sketch(quantiles_sketch&& other) noexcept:
 allocator_(other.allocator_),
-is_level_zero_sorted_(other.is_level_zero_sorted_),
+is_base_buffer_sorted_(other.is_base_buffer_sorted_),
 k_(other.k_),
 n_(other.n_),
 bit_pattern_(other.bit_pattern_),
@@ -93,7 +93,7 @@ template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>& quantiles_sketch<T, C, A>::operator=(const quantiles_sketch& other) {
   quantiles_sketch<T, C, A> copy(other);
   std::swap(allocator_, copy.allocator_);
-  std::swap(is_level_zero_sorted_, copy.is_level_zero_sorted_);
+  std::swap(is_base_buffer_sorted_, copy.is_base_buffer_sorted_);
   std::swap(k_, copy.k_);
   std::swap(n_, copy.n_);
   std::swap(bit_pattern_, copy.bit_pattern_);
@@ -108,7 +108,7 @@ quantiles_sketch<T, C, A>& quantiles_sketch<T, C, A>::operator=(const quantiles_
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>& quantiles_sketch<T, C, A>::operator=(quantiles_sketch&& other) noexcept {
   std::swap(allocator_, other.allocator_);
-  std::swap(is_level_zero_sorted_, other.is_level_zero_sorted_);
+  std::swap(is_base_buffer_sorted_, other.is_base_buffer_sorted_);
   std::swap(k_, other.k_);
   std::swap(n_, other.n_);
   std::swap(bit_pattern_, other.bit_pattern_);
@@ -126,7 +126,7 @@ quantiles_sketch<T, C, A>::quantiles_sketch(uint16_t k, uint64_t n, uint64_t bit
       std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item,
       bool is_sorted, const A& allocator) :
 allocator_(allocator),
-is_level_zero_sorted_(is_sorted),
+is_base_buffer_sorted_(is_sorted),
 k_(k),
 n_(n),
 bit_pattern_(bit_pattern),
@@ -148,7 +148,7 @@ template<typename T, typename C, typename A>
 template<typename From, typename FC, typename FA>
 quantiles_sketch<T, C, A>::quantiles_sketch(const quantiles_sketch<From, FC, FA>& other, const A& allocator) :
 allocator_(allocator),
-is_level_zero_sorted_(false),
+is_base_buffer_sorted_(false),
 k_(other.get_k()),
 n_(other.get_n()),
 bit_pattern_(compute_bit_pattern(other.get_k(), other.get_n())),
@@ -235,7 +235,7 @@ void quantiles_sketch<T, C, A>::update(FwdT&& item) {
   base_buffer_.push_back(std::forward<FwdT>(item));
   ++n_;
 
-  if (base_buffer_.size() > 1) is_level_zero_sorted_ = false;
+  if (base_buffer_.size() > 1) is_base_buffer_sorted_ = false;
   if (base_buffer_.size() == 2 * k_) process_full_base_buffer();
   reset_sorted_view();
 }
@@ -294,7 +294,7 @@ void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& serde) 
 
   // side-effect: sort base buffer since always compact
   std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), C());
-  const_cast<quantiles_sketch*>(this)->is_level_zero_sorted_ = true;
+  const_cast<quantiles_sketch*>(this)->is_base_buffer_sorted_ = true;
 
   // empty, ordered, compact are valid flags
   const uint8_t flags_byte(
@@ -342,7 +342,7 @@ auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerD
 
   // side-effect: sort base buffer since always compact
   std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), C());
-  const_cast<quantiles_sketch*>(this)->is_level_zero_sorted_ = true;
+  const_cast<quantiles_sketch*>(this)->is_base_buffer_sorted_ = true;
 
   // empty, ordered, compact are valid flags
   const uint8_t flags_byte(
@@ -730,9 +730,9 @@ double quantiles_sketch<T, C, A>::get_normalized_rank_error(uint16_t k, bool is_
 template<typename T, typename C, typename A>
 quantile_sketch_sorted_view<T, C, A> quantiles_sketch<T, C, A>::get_sorted_view() const {
   // allow side-effect of sorting the base buffer
-  if (!is_level_zero_sorted_) {
+  if (!is_base_buffer_sorted_) {
     std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), C());
-    const_cast<quantiles_sketch*>(this)->is_level_zero_sorted_ = true;
+    const_cast<quantiles_sketch*>(this)->is_base_buffer_sorted_ = true;
   }
   quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), allocator_);
 
@@ -931,7 +931,7 @@ void quantiles_sketch<T, C, A>::process_full_base_buffer() {
                            base_buffer_,
                            true, *this);
   base_buffer_.clear();
-  is_level_zero_sorted_ = true;
+  is_base_buffer_sorted_ = true;
   if (n_ / (2 * k_) != bit_pattern_) {
     throw std::logic_error("Internal error: n / 2k (" + std::to_string(n_ / 2 * k_)
       + " != bit_pattern " + std::to_string(bit_pattern_));
