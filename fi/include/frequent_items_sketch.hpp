@@ -34,7 +34,7 @@ namespace datasketches {
 
 /*
  * Based on Java implementation here:
- * https://github.com/DataSketches/sketches-core/blob/master/src/main/java/com/yahoo/sketches/frequencies/ItemsSketch.java
+ * https://github.com/apache/datasketches-java/blob/master/src/main/java/org/apache/datasketches/frequencies/ItemsSketch.java
  * author Alexander Saydakov
  */
 
