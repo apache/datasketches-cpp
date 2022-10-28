@@ -52,7 +52,7 @@ static void quantiles_decode_and_check(uint16_t k, uint64_t n, const std::string
   std::string filename = testBinaryInputPath + filestr.str();
 
   is.open(filename, std::ios::binary);
-  auto sketch_stream = quantiles_double_sketch::deserialize(is, serde<double>(), 0);
+  auto sketch_stream = quantiles_double_sketch::deserialize(is, serde<double>(), std::less<double>(), 0);
   is.close();
   REQUIRE(sketch_stream.get_quantile(median_rank) == expected_median);
 
@@ -62,7 +62,8 @@ static void quantiles_decode_and_check(uint16_t k, uint64_t n, const std::string
     (std::istreambuf_iterator<char>(infile)),
     (std::istreambuf_iterator<char>()));
   infile.close();
-  auto sketch_bytes = quantiles_double_sketch::deserialize(bytes.data(), bytes.size(), serde<double>(), 0);
+  auto sketch_bytes = quantiles_double_sketch::deserialize(bytes.data(), bytes.size(), serde<double>(),
+      std::less<double>(), 0);
   REQUIRE(sketch_bytes.get_quantile(median_rank) == expected_median);
 }
 

@@ -165,7 +165,7 @@ class kll_sketch {
     static const uint16_t MIN_K = DEFAULT_M;
     static const uint16_t MAX_K = (1 << 16) - 1;
 
-    explicit kll_sketch(uint16_t k = kll_constants::DEFAULT_K, const A& allocator = A());
+    explicit kll_sketch(uint16_t k = kll_constants::DEFAULT_K, const C& comparator = C(), const A& allocator = A());
     kll_sketch(const kll_sketch& other);
     kll_sketch(kll_sketch&& other) noexcept;
     ~kll_sketch();
@@ -175,10 +175,11 @@ class kll_sketch {
     /*
      * Type converting constructor.
      * @param other sketch of a different type
+     * @param comparator instance of a Comparator
      * @param allocator instance of an Allocator
      */
     template<typename TT, typename CC, typename AA>
-    explicit kll_sketch(const kll_sketch<TT, CC, AA>& other, const A& allocator = A());
+    explicit kll_sketch(const kll_sketch<TT, CC, AA>& other, const C& comparator = C(), const A& allocator = A());
 
     /**
      * Updates this sketch with the given data item.
@@ -245,6 +246,12 @@ class kll_sketch {
      * @return comparator
      */
     C get_comparator() const;
+
+    /**
+     * Returns an instance of the allocator for this sketch.
+     * @return allocator
+     */
+    A get_allocator() const;
 
     /**
      * Returns an item from the sketch that is the best approximation to an item
@@ -446,11 +453,13 @@ class kll_sketch {
      * This method deserializes a sketch from a given stream.
      * @param is input stream
      * @param serde instance of a SerDe
+     * @param comparator instance of a Comparator
      * @param allocator instance of an Allocator
      * @return an instance of a sketch
      */
     template<typename SerDe = serde<T>>
-    static kll_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
+    static kll_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(),
+        const C& comparator = C(), const A& allocator = A());
 
     /**
      * This method deserializes a sketch from a given array of bytes.
@@ -458,10 +467,12 @@ class kll_sketch {
      * @param size the size of the array
      * @param serde instance of a SerDe
      * @param allocator instance of an Allocator
+     * @param comparator instance of a Comparator
      * @return an instance of a sketch
      */
     template<typename SerDe = serde<T>>
-    static kll_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
+    static kll_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(),
+        const C& comparator = C(), const A& allocator = A());
 
     /*
      * Gets the normalized rank error given k and pmf.
@@ -509,6 +520,7 @@ class kll_sketch {
     static const uint8_t PREAMBLE_INTS_SHORT = 2; // for empty and single item
     static const uint8_t PREAMBLE_INTS_FULL = 5;
 
+    C comparator_;
     A allocator_;
     uint16_t k_;
     uint8_t m_; // minimum buffer "width"
@@ -528,7 +540,7 @@ class kll_sketch {
     class items_deleter;
     kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, vector_u32&& levels,
         std::unique_ptr<T, items_deleter> items, uint32_t items_size, std::unique_ptr<T, item_deleter> min_item,
-        std::unique_ptr<T, item_deleter> max_item, bool is_level_zero_sorted);
+        std::unique_ptr<T, item_deleter> max_item, bool is_level_zero_sorted, const C& comparator);
 
     // common update code
     inline void update_min_max(const T& item);

@@ -47,9 +47,11 @@ public:
    * Value of 12 roughly corresponds to 1% relative error guarantee at 95% confidence.
    * @param hra if true, the default, the high ranks are prioritized for better
    * accuracy. Otherwise the low ranks are prioritized for better accuracy.
+   * @param comparator to use by this instance
    * @param allocator to use by this instance
    */
-  explicit req_sketch(uint16_t k, bool hra = true, const Allocator& allocator = Allocator());
+  explicit req_sketch(uint16_t k, bool hra = true, const Comparator& comparator = Comparator(),
+      const Allocator& allocator = Allocator());
 
   ~req_sketch();
   req_sketch(const req_sketch& other);
@@ -60,10 +62,12 @@ public:
   /*
    * Type converting constructor.
    * @param other sketch of a different type
+   * @param comparator instance of a Comparator
    * @param allocator instance of an Allocator
    */
   template<typename TT, typename CC, typename AA>
-  explicit req_sketch(const req_sketch<TT, CC, AA>& other, const Allocator& allocator = Allocator());
+  explicit req_sketch(const req_sketch<TT, CC, AA>& other, const Comparator& comparator = Comparator(),
+      const Allocator& allocator = Allocator());
 
   /**
    * Returns configured parameter K
@@ -136,6 +140,12 @@ public:
    * @return comparator
    */
   Comparator get_comparator() const;
+
+  /**
+   * Returns an instance of the allocator for this sketch.
+   * @return allocator
+   */
+  Allocator get_allocator() const;
 
   /**
    * Returns an approximation to the normalized rank of the given item from 0 to 1 inclusive.
@@ -289,23 +299,27 @@ public:
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param serde instance of a SerDe
+   * @param comparator instance of a Comparator
+   * @param allocator instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<T>>
-  static req_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
+  static req_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(),
+      const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param serde instance of a SerDe
+   * @param comparator instance of a Comparator
+   * @param allocator instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<T>>
-  static req_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
+  static req_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(),
+      const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   /**
    * Prints a summary of the sketch.
@@ -321,6 +335,7 @@ public:
   quantile_sketch_sorted_view<T, Comparator, Allocator> get_sorted_view() const;
 
 private:
+  Comparator comparator_;
   Allocator allocator_;
   uint16_t k_;
   bool hra_;
@@ -357,7 +372,9 @@ private:
 
   // for deserialization
   class item_deleter;
-  req_sketch(uint16_t k, bool hra, uint64_t n, std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item, std::vector<Compactor, AllocCompactor>&& compactors);
+  req_sketch(uint16_t k, bool hra, uint64_t n,
+      std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item,
+      std::vector<Compactor, AllocCompactor>&& compactors, const Comparator& comparator);
 
   static void check_preamble_ints(uint8_t preamble_ints, uint8_t num_levels);
   static void check_serial_version(uint8_t serial_version);

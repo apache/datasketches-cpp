@@ -27,7 +27,8 @@
 namespace datasketches {
 
 template<typename T, typename C, typename A>
-quantile_sketch_sorted_view<T, C, A>::quantile_sketch_sorted_view(uint32_t num, const A& allocator):
+quantile_sketch_sorted_view<T, C, A>::quantile_sketch_sorted_view(uint32_t num, const C& comparator, const A& allocator):
+comparator_(comparator),
 total_weight_(0),
 entries_(allocator)
 {
@@ -45,7 +46,7 @@ void quantile_sketch_sorted_view<T, C, A>::add(Iterator first, Iterator last, ui
     std::merge(
         entries_.begin(), entries_.begin() + size_before,
         entries_.begin() + size_before, entries_.end(),
-        std::back_inserter(tmp), compare_pairs_by_first()
+        std::back_inserter(tmp), compare_pairs_by_first(comparator_)
     );
     std::swap(tmp, entries_);
   }
@@ -62,8 +63,8 @@ void quantile_sketch_sorted_view<T, C, A>::convert_to_cummulative() {
 template<typename T, typename C, typename A>
 double quantile_sketch_sorted_view<T, C, A>::get_rank(const T& item, bool inclusive) const {
   auto it = inclusive ?
-      std::upper_bound(entries_.begin(), entries_.end(), Entry(ref_helper(item), 0), compare_pairs_by_first())
-    : std::lower_bound(entries_.begin(), entries_.end(), Entry(ref_helper(item), 0), compare_pairs_by_first());
+      std::upper_bound(entries_.begin(), entries_.end(), Entry(ref_helper(item), 0), compare_pairs_by_first(comparator_))
+    : std::lower_bound(entries_.begin(), entries_.end(), Entry(ref_helper(item), 0), compare_pairs_by_first(comparator_));
   // we need item just before
   if (it == entries_.begin()) return 0;
   --it;
