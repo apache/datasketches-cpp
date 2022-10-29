@@ -22,12 +22,14 @@
 #include <vector>
 #include <utility>
 
+#include <iostream>
+
 #include "quantile_sketch_sorted_view.hpp"
 
 namespace datasketches {
 
 TEST_CASE("set 0", "sorted view") {
-  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(1, std::allocator<float>());
+  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(1, std::less<float>(), std::allocator<float>());
     std::vector<float> l0 {10};
     view.add(l0.begin(), l0.end(), 1);
     view.convert_to_cummulative();
@@ -60,7 +62,7 @@ TEST_CASE("set 0", "sorted view") {
 }
 
 TEST_CASE("set 1", "sorted view") {
-  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(1, std::allocator<float>());
+  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(1, std::less<float>(), std::allocator<float>());
     std::vector<float> l0 {10, 10};
     view.add(l0.begin(), l0.end(), 1);
     view.convert_to_cummulative();
@@ -103,7 +105,7 @@ TEST_CASE("set 1", "sorted view") {
 }
 
 TEST_CASE("set 2", "sorted view") {
-  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(1, std::allocator<float>());
+  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(1, std::less<float>(), std::allocator<float>());
     std::vector<float> l1 {10, 20, 30, 40};
     view.add(l1.begin(), l1.end(), 2);
     view.convert_to_cummulative();
@@ -194,7 +196,7 @@ TEST_CASE("set 2", "sorted view") {
 }
 
 TEST_CASE("set 3", "sorted view") {
-  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(8, std::allocator<float>());
+  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(8, std::less<float>(), std::allocator<float>());
     std::vector<float> l1 {10, 20, 20, 30, 30, 30, 40, 50};
     view.add(l1.begin(), l1.end(), 2);
     view.convert_to_cummulative();
@@ -327,7 +329,7 @@ TEST_CASE("set 3", "sorted view") {
 }
 
 TEST_CASE("set 4", "sorted view") {
-  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(8, std::allocator<float>());
+  auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(8, std::less<float>(), std::allocator<float>());
     std::vector<float> l1 {10, 20, 30, 40};
     view.add(l1.begin(), l1.end(), 2);
     std::vector<float> l0 {10, 20, 30, 40};

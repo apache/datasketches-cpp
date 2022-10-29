@@ -31,7 +31,8 @@ typename Allocator
 >
 class req_compactor {
 public:
-  req_compactor(bool hra, uint8_t lg_weight, uint32_t section_size, const Allocator& allocator, bool sorted = true);
+  req_compactor(bool hra, uint8_t lg_weight, uint32_t section_size, const Comparator& comparator,
+      const Allocator& allocator, bool sorted = true);
   ~req_compactor();
   req_compactor(const req_compactor& other);
   req_compactor(req_compactor&& other) noexcept;
@@ -39,7 +40,7 @@ public:
   req_compactor& operator=(req_compactor&& other);
 
   template<typename TT, typename CC, typename AA>
-  req_compactor(const req_compactor<TT, CC, AA>& other, const Allocator& allocator);
+  req_compactor(const req_compactor<TT, CC, AA>& other, const Comparator& comparator, const Allocator& allocator);
 
   bool is_sorted() const;
   uint32_t get_num_items() const;
@@ -85,18 +86,23 @@ public:
   size_t serialize(void* dst, size_t capacity, const S& serde) const;
 
   template<typename S>
-  static req_compactor deserialize(std::istream& is, const S& serde, const Allocator& allocator, bool sorted, bool hra);
+  static req_compactor deserialize(std::istream& is, const S& serde, const Comparator& comparator,
+      const Allocator& allocator, bool sorted, bool hra);
 
   template<typename S>
-  static std::pair<req_compactor, size_t> deserialize(const void* bytes, size_t size, const S& serde, const Allocator& allocator, bool sorted, bool hra);
+  static std::pair<req_compactor, size_t> deserialize(const void* bytes, size_t size, const S& serde,
+      const Comparator& comparator, const Allocator& allocator, bool sorted, bool hra);
 
   template<typename S>
-  static req_compactor deserialize(std::istream& is, const S& serde, const Allocator& allocator, bool sorted, uint16_t k, uint8_t num_items, bool hra);
+  static req_compactor deserialize(std::istream& is, const S& serde, const Comparator& comparator,
+      const Allocator& allocator, bool sorted, uint16_t k, uint8_t num_items, bool hra);
 
   template<typename S>
-  static std::pair<req_compactor, size_t> deserialize(const void* bytes, size_t size, const S& serde, const Allocator& allocator, bool sorted, uint16_t k, uint8_t num_items, bool hra);
+  static std::pair<req_compactor, size_t> deserialize(const void* bytes, size_t size, const S& serde,
+      const Comparator& comparator, const Allocator& allocator, bool sorted, uint16_t k, uint8_t num_items, bool hra);
 
 private:
+  Comparator comparator_;
   Allocator allocator_;
   uint8_t lg_weight_;
   bool hra_;
@@ -122,7 +128,8 @@ private:
 
   // for deserialization
   class items_deleter;
-  req_compactor(bool hra, uint8_t lg_weight, bool sorted, float section_size_raw, uint8_t num_sections, uint64_t state, std::unique_ptr<T, items_deleter> items, uint32_t num_items, const Allocator& allocator);
+  req_compactor(bool hra, uint8_t lg_weight, bool sorted, float section_size_raw, uint8_t num_sections, uint64_t state,
+      std::unique_ptr<T, items_deleter> items, uint32_t num_items, const Comparator& comparator, const Allocator& allocator);
 
   template<typename S>
   static std::unique_ptr<T, items_deleter> deserialize_items(std::istream& is, const S& serde, const Allocator& allocator, uint32_t num);

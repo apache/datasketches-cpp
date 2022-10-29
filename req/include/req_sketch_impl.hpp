@@ -26,7 +26,8 @@
 namespace datasketches {
 
 template<typename T, typename C, typename A>
-req_sketch<T, C, A>::req_sketch(uint16_t k, bool hra, const A& allocator):
+req_sketch<T, C, A>::req_sketch(uint16_t k, bool hra, const C& comparator, const A& allocator):
+comparator_(comparator),
 allocator_(allocator),
 k_(std::max<uint8_t>(static_cast<int>(k) & -2, static_cast<int>(req_constants::MIN_K))), //rounds down one if odd
 hra_(hra),
@@ -56,6 +57,7 @@ req_sketch<T, C, A>::~req_sketch() {
 
 template<typename T, typename C, typename A>
 req_sketch<T, C, A>::req_sketch(const req_sketch& other):
+comparator_(other.comparator_),
 allocator_(other.allocator_),
 k_(other.k_),
 hra_(other.hra_),
@@ -73,6 +75,7 @@ sorted_view_(nullptr)
 
 template<typename T, typename C, typename A>
 req_sketch<T, C, A>::req_sketch(req_sketch&& other) noexcept :
+comparator_(std::move(other.comparator_)),
 allocator_(std::move(other.allocator_)),
 k_(other.k_),
 hra_(other.hra_),
@@ -91,6 +94,7 @@ sorted_view_(nullptr)
 template<typename T, typename C, typename A>
 req_sketch<T, C, A>& req_sketch<T, C, A>::operator=(const req_sketch& other) {
   req_sketch copy(other);
+  std::swap(comparator_, copy.comparator_);
   std::swap(allocator_, copy.allocator_);
   std::swap(k_, copy.k_);
   std::swap(hra_, copy.hra_);
@@ -106,6 +110,7 @@ req_sketch<T, C, A>& req_sketch<T, C, A>::operator=(const req_sketch& other) {
 
 template<typename T, typename C, typename A>
 req_sketch<T, C, A>& req_sketch<T, C, A>::operator=(req_sketch&& other) {
+  std::swap(comparator_, other.comparator_);
   std::swap(allocator_, other.allocator_);
   std::swap(k_, other.k_);
   std::swap(hra_, other.hra_);
@@ -121,7 +126,8 @@ req_sketch<T, C, A>& req_sketch<T, C, A>::operator=(req_sketch&& other) {
 
 template<typename T, typename C, typename A>
 template<typename TT, typename CC, typename AA>
-req_sketch<T, C, A>::req_sketch(const req_sketch<TT, CC, AA>& other, const A& allocator):
+req_sketch<T, C, A>::req_sketch(const req_sketch<TT, CC, AA>& other, const C& comparator, const A& allocator):
+comparator_(comparator),
 allocator_(allocator),
 k_(other.k_),
 hra_(other.hra_),
@@ -139,7 +145,7 @@ sorted_view_(nullptr)
   );
   compactors_.reserve(other.compactors_.size());
   for (const auto& compactor: other.compactors_) {
-    compactors_.push_back(req_compactor<T, C, A>(compactor, allocator_));
+    compactors_.push_back(req_compactor<T, C, A>(compactor, comparator_, allocator_));
   }
   if (!other.is_empty()) {
     min_item_ = new (allocator_.allocate(1)) T(other.get_min_item());
@@ -185,8 +191,8 @@ void req_sketch<T, C, A>::update(FwdT&& item) {
     min_item_ = new (allocator_.allocate(1)) T(item);
     max_item_ = new (allocator_.allocate(1)) T(item);
   } else {
-    if (C()(item, *min_item_)) *min_item_ = item;
-    if (C()(*max_item_, item)) *max_item_ = item;
+    if (comparator_(item, *min_item_)) *min_item_ = item;
+    if (comparator_(*max_item_, item)) *max_item_ = item;
   }
   compactors_[0].append(std::forward<FwdT>(item));
   ++num_retained_;
@@ -204,8 +210,8 @@ void req_sketch<T, C, A>::merge(FwdSk&& other) {
     min_item_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.min_item_));
     max_item_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.max_item_));
   } else {
-    if (C()(*other.min_item_, *min_item_)) *min_item_ = conditional_forward<FwdSk>(*other.min_item_);
-    if (C()(*max_item_, *other.max_item_)) *max_item_ = conditional_forward<FwdSk>(*other.max_item_);
+    if (comparator_(*other.min_item_, *min_item_)) *min_item_ = conditional_forward<FwdSk>(*other.min_item_);
+    if (comparator_(*max_item_, *other.max_item_)) *max_item_ = conditional_forward<FwdSk>(*other.max_item_);
   }
   // grow until this has at least as many compactors as other
   while (get_num_levels() < other.get_num_levels()) grow();
@@ -234,7 +240,12 @@ const T& req_sketch<T, C, A>::get_max_item() const {
 
 template<typename T, typename C, typename A>
 C req_sketch<T, C, A>::get_comparator() const {
-  return C();
+  return comparator_;
+}
+
+template<typename T, typename C, typename A>
+A req_sketch<T, C, A>::get_allocator() const {
+  return allocator_;
 }
 
 template<typename T, typename C, typename A>
@@ -293,7 +304,7 @@ quantile_sketch_sorted_view<T, C, A> req_sketch<T, C, A>::get_sorted_view() cons
   if (!compactors_[0].is_sorted()) {
     const_cast<Compactor&>(compactors_[0]).sort(); // allow this side effect
   }
-  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), allocator_);
+  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
 
   for (auto& compactor: compactors_) {
     view.add(compactor.begin(), compactor.end(), 1 << compactor.get_lg_weight());
@@ -466,7 +477,7 @@ auto req_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& sd)
 
 template<typename T, typename C, typename A>
 template<typename SerDe>
-req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
+req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const SerDe& sd, const C& comparator, const A& allocator) {
   const auto preamble_ints = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -482,7 +493,7 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   const bool hra = flags_byte & (1 << flags::IS_HIGH_RANK);
-  if (is_empty) return req_sketch(k, hra, allocator);
+  if (is_empty) return req_sketch(k, hra, comparator, allocator);
 
   A alloc(allocator);
   auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
@@ -507,10 +518,10 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   }
 
   if (raw_items) {
-    compactors.push_back(Compactor::deserialize(is, sd, allocator, is_level_0_sorted, k, num_raw_items, hra));
+    compactors.push_back(Compactor::deserialize(is, sd, comparator, allocator, is_level_0_sorted, k, num_raw_items, hra));
   } else {
     for (size_t i = 0; i < num_levels; ++i) {
-      compactors.push_back(Compactor::deserialize(is, sd, allocator, i == 0 ? is_level_0_sorted : true, hra));
+      compactors.push_back(Compactor::deserialize(is, sd, comparator, allocator, i == 0 ? is_level_0_sorted : true, hra));
     }
   }
   if (num_levels == 1) {
@@ -520,8 +531,8 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
     auto min_it = begin;
     auto max_it = begin;
     for (auto it = begin; it != end; ++it) {
-      if (C()(*it, *min_it)) min_it = it;
-      if (C()(*max_it, *it)) max_it = it;
+      if (comparator(*it, *min_it)) min_it = it;
+      if (comparator(*max_it, *it)) max_it = it;
     }
     new (min_item_buffer.get()) T(*min_it);
     // copy did not throw, repackage with destrtuctor
@@ -532,12 +543,12 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   }
 
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
-  return req_sketch(k, hra, n, std::move(min_item), std::move(max_item), std::move(compactors));
+  return req_sketch(k, hra, n, std::move(min_item), std::move(max_item), std::move(compactors), comparator);
 }
 
 template<typename T, typename C, typename A>
 template<typename SerDe>
-req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
+req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const C& comparator, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
@@ -563,7 +574,7 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
 
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   const bool hra = flags_byte & (1 << flags::IS_HIGH_RANK);
-  if (is_empty) return req_sketch(k, hra, allocator);
+  if (is_empty) return req_sketch(k, hra, comparator, allocator);
 
   A alloc(allocator);
   auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
@@ -589,12 +600,12 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   }
 
   if (raw_items) {
-    auto pair = Compactor::deserialize(ptr, end_ptr - ptr, sd, allocator, is_level_0_sorted, k, num_raw_items, hra);
+    auto pair = Compactor::deserialize(ptr, end_ptr - ptr, sd, comparator, allocator, is_level_0_sorted, k, num_raw_items, hra);
     compactors.push_back(std::move(pair.first));
     ptr += pair.second;
   } else {
     for (size_t i = 0; i < num_levels; ++i) {
-      auto pair = Compactor::deserialize(ptr, end_ptr - ptr, sd, allocator, i == 0 ? is_level_0_sorted : true, hra);
+      auto pair = Compactor::deserialize(ptr, end_ptr - ptr, sd, comparator, allocator, i == 0 ? is_level_0_sorted : true, hra);
       compactors.push_back(std::move(pair.first));
       ptr += pair.second;
     }
@@ -606,8 +617,8 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     auto min_it = begin;
     auto max_it = begin;
     for (auto it = begin; it != end; ++it) {
-      if (C()(*it, *min_it)) min_it = it;
-      if (C()(*max_it, *it)) max_it = it;
+      if (comparator(*it, *min_it)) min_it = it;
+      if (comparator(*max_it, *it)) max_it = it;
     }
     new (min_item_buffer.get()) T(*min_it);
     // copy did not throw, repackage with destrtuctor
@@ -617,13 +628,13 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
   }
 
-  return req_sketch(k, hra, n, std::move(min_item), std::move(max_item), std::move(compactors));
+  return req_sketch(k, hra, n, std::move(min_item), std::move(max_item), std::move(compactors), comparator);
 }
 
 template<typename T, typename C, typename A>
 void req_sketch<T, C, A>::grow() {
   const uint8_t lg_weight = get_num_levels();
-  compactors_.push_back(Compactor(hra_, lg_weight, k_, allocator_));
+  compactors_.push_back(Compactor(hra_, lg_weight, k_, comparator_, allocator_));
   update_max_nom_size();
 }
 
@@ -722,7 +733,10 @@ class req_sketch<T, C, A>::item_deleter {
 };
 
 template<typename T, typename C, typename A>
-req_sketch<T, C, A>::req_sketch(uint16_t k, bool hra, uint64_t n, std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item, std::vector<Compactor, AllocCompactor>&& compactors):
+req_sketch<T, C, A>::req_sketch(uint16_t k, bool hra, uint64_t n,
+    std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item,
+    std::vector<Compactor, AllocCompactor>&& compactors, const C& comparator):
+comparator_(comparator),
 allocator_(compactors.get_allocator()),
 k_(k),
 hra_(hra),

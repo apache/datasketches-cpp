@@ -153,7 +153,8 @@ public:
   using comparator = Comparator;
   using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
 
-  explicit quantiles_sketch(uint16_t k = quantiles_constants::DEFAULT_K, const Allocator& allocator = Allocator());
+  explicit quantiles_sketch(uint16_t k = quantiles_constants::DEFAULT_K,
+      const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
   quantiles_sketch(const quantiles_sketch& other);
   quantiles_sketch(quantiles_sketch&& other) noexcept;
   ~quantiles_sketch();
@@ -163,10 +164,12 @@ public:
   /**
    * @brief Type converting constructor
    * @param other quantiles sketch of a different type
+   * @param comparator instance of a Comparator
    * @param allocator instance of an Allocator
    */
   template<typename From, typename FC, typename FA>
-  explicit quantiles_sketch(const quantiles_sketch<From, FC, FA>& other, const Allocator& allocator = Allocator());
+  explicit quantiles_sketch(const quantiles_sketch<From, FC, FA>& other,
+      const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   /**
    * Updates this sketch with the given data item.
@@ -401,23 +404,27 @@ public:
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param serde instance of a SerDe
+   * @param comparator instance of a Comparator
+   * @param allocator instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<T>>
-  static quantiles_sketch deserialize(std::istream& is, const SerDe& serde = SerDe(), const Allocator& allocator = Allocator());
+  static quantiles_sketch deserialize(std::istream& is, const SerDe& serde = SerDe(),
+      const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param serde instance of a SerDe
+   * @param comparator instance of a Comparator
+   * @param allocator instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<T>>
-  static quantiles_sketch deserialize(const void* bytes, size_t size, const SerDe& serde = SerDe(), const Allocator& allocator = Allocator());
+  static quantiles_sketch deserialize(const void* bytes, size_t size, const SerDe& serde = SerDe(),
+      const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   /**
    * Gets the normalized rank error for this sketch. Constants were derived as the best fit to 99 percentile
@@ -480,6 +487,7 @@ private:
   static const uint8_t PREAMBLE_LONGS_FULL = 2;
   static const size_t DATA_START = 16;
 
+  Comparator comparator_;
   Allocator allocator_;
   bool is_base_buffer_sorted_;
   uint16_t k_;
@@ -500,7 +508,7 @@ private:
   quantiles_sketch(uint16_t k, uint64_t n, uint64_t bit_pattern,
       Level&& base_buffer, VectorLevels&& levels,
       std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item,
-      bool is_sorted, const Allocator& allocator = Allocator());
+      bool is_sorted, const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   void grow_base_buffer();
   void process_full_base_buffer();
@@ -514,7 +522,7 @@ private:
                                        Level& buf_size_2k, bool apply_as_update,
                                        quantiles_sketch& sketch);
   static void zip_buffer(Level& buf_in, Level& buf_out);
-  static void merge_two_size_k_buffers(Level& arr_in_1, Level& arr_in_2, Level& arr_out);
+  static void merge_two_size_k_buffers(Level& arr_in_1, Level& arr_in_2, Level& arr_out, const Comparator& comparator);
 
   template<typename SerDe>
   static Level deserialize_array(std::istream& is, uint32_t num_items, uint32_t capcacity, const SerDe& serde, const Allocator& allocator);

@@ -33,7 +33,9 @@
 namespace datasketches {
 
 template<typename T, typename C, typename A>
-req_compactor<T, C, A>::req_compactor(bool hra, uint8_t lg_weight, uint32_t section_size, const A& allocator, bool sorted):
+req_compactor<T, C, A>::req_compactor(bool hra, uint8_t lg_weight, uint32_t section_size,
+    const C& comparator, const A& allocator, bool sorted):
+comparator_(comparator),
 allocator_(allocator),
 lg_weight_(lg_weight),
 hra_(hra),
@@ -58,6 +60,7 @@ req_compactor<T, C, A>::~req_compactor() {
 
 template<typename T, typename C, typename A>
 req_compactor<T, C, A>::req_compactor(const req_compactor& other):
+comparator_(other.comparator_),
 allocator_(other.allocator_),
 lg_weight_(other.lg_weight_),
 hra_(other.hra_),
@@ -81,6 +84,7 @@ items_(nullptr)
 
 template<typename T, typename C, typename A>
 req_compactor<T, C, A>::req_compactor(req_compactor&& other) noexcept :
+comparator_(std::move(other.comparator_)),
 allocator_(std::move(other.allocator_)),
 lg_weight_(other.lg_weight_),
 hra_(other.hra_),
@@ -100,6 +104,7 @@ items_(other.items_)
 template<typename T, typename C, typename A>
 req_compactor<T, C, A>& req_compactor<T, C, A>::operator=(const req_compactor& other) {
   req_compactor copy(other);
+  std::swap(comparator_, copy.comparator_);
   std::swap(allocator_, copy.allocator_);
   std::swap(lg_weight_, copy.lg_weight_);
   std::swap(hra_, copy.hra_);
@@ -117,6 +122,7 @@ req_compactor<T, C, A>& req_compactor<T, C, A>::operator=(const req_compactor& o
 
 template<typename T, typename C, typename A>
 req_compactor<T, C, A>& req_compactor<T, C, A>::operator=(req_compactor&& other) {
+  std::swap(comparator_, other.comparator_);
   std::swap(allocator_, other.allocator_);
   std::swap(lg_weight_, other.lg_weight_);
   std::swap(hra_, other.hra_);
@@ -134,7 +140,8 @@ req_compactor<T, C, A>& req_compactor<T, C, A>::operator=(req_compactor&& other)
 
 template<typename T, typename C, typename A>
 template<typename TT, typename CC, typename AA>
-req_compactor<T, C, A>::req_compactor(const req_compactor<TT, CC, AA>& other, const A& allocator):
+req_compactor<T, C, A>::req_compactor(const req_compactor<TT, CC, AA>& other, const C& comparator, const A& allocator):
+comparator_(comparator),
 allocator_(allocator),
 lg_weight_(other.lg_weight_),
 hra_(other.hra_),
@@ -153,7 +160,7 @@ items_(nullptr)
     const uint32_t from = hra_ ? capacity_ - num_items_ : 0;
     const uint32_t to = hra_ ? capacity_ : num_items_;
     for (uint32_t i = from; i < to; ++i) new (items_ + i) T(other.items_[i]);
-    if (sorted_ && !std::is_sorted(items_ + from, items_ + to, C())) {
+    if (sorted_ && !std::is_sorted(items_ + from, items_ + to, comparator_)) {
       throw std::logic_error("items must be sorted");
     }
   }
@@ -183,8 +190,8 @@ template<typename T, typename C, typename A>
 uint64_t req_compactor<T, C, A>::compute_weight(const T& item, bool inclusive) const {
   if (!sorted_) const_cast<req_compactor*>(this)->sort(); // allow sorting as a side effect
   auto it = inclusive ?
-      std::upper_bound(begin(), end(), item, C()) :
-      std::lower_bound(begin(), end(), item, C());
+      std::upper_bound(begin(), end(), item, comparator_) :
+      std::lower_bound(begin(), end(), item, comparator_);
   return std::distance(begin(), it) << lg_weight_;
 }
 
@@ -250,7 +257,7 @@ void req_compactor<T, C, A>::merge(FwdC&& other) {
   auto to = from + other.get_num_items();
   auto other_it = other.begin();
   for (auto it = from; it != to; ++it, ++other_it) new (it) T(conditional_forward<FwdC>(*other_it));
-  if (!other.sorted_) std::sort(from, to, C());
+  if (!other.sorted_) std::sort(from, to, comparator_);
   if (num_items_ > 0) std::inplace_merge(hra_ ? from : begin(), items_ + offset, hra_ ? end() : to, C());
   num_items_ += other.get_num_items();
 }
@@ -258,7 +265,7 @@ void req_compactor<T, C, A>::merge(FwdC&& other) {
 template<typename T, typename C, typename A>
 void req_compactor<T, C, A>::sort() {
   if (!sorted_) {
-    std::sort(begin(), end(), C());
+    std::sort(begin(), end(), comparator_);
     sorted_ = true;
   }
 }
@@ -280,7 +287,7 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& nex
   auto next_empty = hra_ ? next.begin() - num : next.end();
   promote_evens_or_odds(begin() + compaction_range.first, begin() + compaction_range.second, coin_, next_empty);
   next.num_items_ += num;
-  std::inplace_merge(next.begin(), next_middle, next.end(), C());
+  std::inplace_merge(next.begin(), next_middle, next.end(), comparator_);
   for (size_t i = compaction_range.first; i < compaction_range.second; ++i) (*(begin() + i)).~T();
   num_items_ -= compaction_range.second - compaction_range.first;
 
@@ -388,7 +395,8 @@ size_t req_compactor<T, C, A>::serialize(void* dst, size_t capacity, const S& se
 
 template<typename T, typename C, typename A>
 template<typename S>
-req_compactor<T, C, A> req_compactor<T, C, A>::deserialize(std::istream& is, const S& serde, const A& allocator, bool sorted, bool hra) {
+req_compactor<T, C, A> req_compactor<T, C, A>::deserialize(std::istream& is, const S& serde,
+    const C& comparator, const A& allocator, bool sorted, bool hra) {
   auto state = read<decltype(state_)>(is);
   auto section_size_raw = read<decltype(section_size_raw_)>(is);
   auto lg_weight = read<decltype(lg_weight_)>(is);
@@ -396,14 +404,17 @@ req_compactor<T, C, A> req_compactor<T, C, A>::deserialize(std::istream& is, con
   read<uint16_t>(is); // padding
   auto num_items = read<uint32_t>(is);
   auto items = deserialize_items(is, serde, allocator, num_items);
-  return req_compactor(hra, lg_weight, sorted, section_size_raw, num_sections, state, std::move(items), num_items, allocator);
+  return req_compactor(hra, lg_weight, sorted, section_size_raw, num_sections, state, std::move(items), num_items,
+      comparator, allocator);
 }
 
 template<typename T, typename C, typename A>
 template<typename S>
-req_compactor<T, C, A> req_compactor<T, C, A>::deserialize(std::istream& is, const S& serde, const A& allocator, bool sorted, uint16_t k, uint8_t num_items, bool hra) {
+req_compactor<T, C, A> req_compactor<T, C, A>::deserialize(std::istream& is, const S& serde,
+    const C& comparator, const A& allocator, bool sorted, uint16_t k, uint8_t num_items, bool hra) {
   auto items = deserialize_items(is, serde, allocator, num_items);
-  return req_compactor(hra, 0, sorted, k, req_constants::INIT_NUM_SECTIONS, 0, std::move(items), num_items, allocator);
+  return req_compactor(hra, 0, sorted, k, req_constants::INIT_NUM_SECTIONS, 0, std::move(items), num_items,
+      comparator, allocator);
 }
 
 template<typename T, typename C, typename A>
@@ -421,7 +432,8 @@ auto req_compactor<T, C, A>::deserialize_items(std::istream& is, const S& serde,
 
 template<typename T, typename C, typename A>
 template<typename S>
-std::pair<req_compactor<T, C, A>, size_t> req_compactor<T, C, A>::deserialize(const void* bytes, size_t size, const S& serde, const A& allocator, bool sorted, bool hra) {
+std::pair<req_compactor<T, C, A>, size_t> req_compactor<T, C, A>::deserialize(const void* bytes, size_t size,
+    const S& serde, const C& comparator, const A& allocator, bool sorted, bool hra) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
@@ -440,17 +452,20 @@ std::pair<req_compactor<T, C, A>, size_t> req_compactor<T, C, A>::deserialize(co
   auto pair = deserialize_items(ptr, end_ptr - ptr, serde, allocator, num_items);
   ptr += pair.second;
   return std::pair<req_compactor, size_t>(
-      req_compactor(hra, lg_weight, sorted, section_size_raw, num_sections, state, std::move(pair.first), num_items, allocator),
+      req_compactor(hra, lg_weight, sorted, section_size_raw, num_sections, state, std::move(pair.first), num_items,
+          comparator, allocator),
       ptr - static_cast<const char*>(bytes)
   );
 }
 
 template<typename T, typename C, typename A>
 template<typename S>
-std::pair<req_compactor<T, C, A>, size_t> req_compactor<T, C, A>::deserialize(const void* bytes, size_t size, const S& serde, const A& allocator, bool sorted, uint16_t k, uint8_t num_items, bool hra) {
+std::pair<req_compactor<T, C, A>, size_t> req_compactor<T, C, A>::deserialize(const void* bytes, size_t size,
+    const S& serde, const C& comparator, const A& allocator, bool sorted, uint16_t k, uint8_t num_items, bool hra) {
   auto pair = deserialize_items(bytes, size, serde, allocator, num_items);
   return std::pair<req_compactor, size_t>(
-      req_compactor(hra, 0, sorted, k, req_constants::INIT_NUM_SECTIONS, 0, std::move(pair.first), num_items, allocator),
+      req_compactor(hra, 0, sorted, k, req_constants::INIT_NUM_SECTIONS, 0, std::move(pair.first), num_items,
+          comparator, allocator),
       pair.second
   );
 }
@@ -474,7 +489,9 @@ auto req_compactor<T, C, A>::deserialize_items(const void* bytes, size_t size, c
 
 
 template<typename T, typename C, typename A>
-req_compactor<T, C, A>::req_compactor(bool hra, uint8_t lg_weight, bool sorted, float section_size_raw, uint8_t num_sections, uint64_t state, std::unique_ptr<T, items_deleter> items, uint32_t num_items, const A& allocator):
+req_compactor<T, C, A>::req_compactor(bool hra, uint8_t lg_weight, bool sorted, float section_size_raw, uint8_t num_sections,
+    uint64_t state, std::unique_ptr<T, items_deleter> items, uint32_t num_items, const C& comparator, const A& allocator):
+comparator_(comparator),
 allocator_(allocator),
 lg_weight_(lg_weight),
 hra_(hra),

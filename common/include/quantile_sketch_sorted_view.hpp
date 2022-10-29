@@ -36,7 +36,7 @@ public:
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using Container = std::vector<Entry, AllocEntry>;
 
-  quantile_sketch_sorted_view(uint32_t num, const Allocator& allocator);
+  quantile_sketch_sorted_view(uint32_t num, const Comparator& comparator, const Allocator& allocator);
 
   template<typename Iterator>
   void add(Iterator begin, Iterator end, uint64_t weight);
@@ -59,6 +59,7 @@ public:
   vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
 private:
+  Comparator comparator_;
   uint64_t total_weight_;
   Container entries_;
 
@@ -66,9 +67,11 @@ private:
   static inline T deref_helper(T t) { return t; }
 
   struct compare_pairs_by_first {
+    explicit compare_pairs_by_first(const Comparator& comparator): comparator_(comparator) {}
     bool operator()(const Entry& a, const Entry& b) const {
-      return Comparator()(deref_helper(a.first), deref_helper(b.first));
+      return comparator_(deref_helper(a.first), deref_helper(b.first));
     }
+    Comparator comparator_;
   };
 
   struct compare_pairs_by_second {

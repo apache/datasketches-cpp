@@ -33,7 +33,8 @@
 namespace datasketches {
 
 template<typename T, typename C, typename A>
-kll_sketch<T, C, A>::kll_sketch(uint16_t k, const A& allocator):
+kll_sketch<T, C, A>::kll_sketch(uint16_t k, const C& comparator, const A& allocator):
+comparator_(comparator),
 allocator_(allocator),
 k_(k),
 m_(DEFAULT_M),
@@ -57,6 +58,7 @@ sorted_view_(nullptr)
 
 template<typename T, typename C, typename A>
 kll_sketch<T, C, A>::kll_sketch(const kll_sketch& other):
+comparator_(other.comparator_),
 allocator_(other.allocator_),
 k_(other.k_),
 m_(other.m_),
@@ -79,6 +81,7 @@ sorted_view_(nullptr)
 
 template<typename T, typename C, typename A>
 kll_sketch<T, C, A>::kll_sketch(kll_sketch&& other) noexcept:
+comparator_(std::move(other.comparator_)),
 allocator_(std::move(other.allocator_)),
 k_(other.k_),
 m_(other.m_),
@@ -101,6 +104,7 @@ sorted_view_(nullptr)
 template<typename T, typename C, typename A>
 kll_sketch<T, C, A>& kll_sketch<T, C, A>::operator=(const kll_sketch& other) {
   kll_sketch copy(other);
+  std::swap(comparator_, copy.comparator_);
   std::swap(allocator_, copy.allocator_);
   std::swap(k_, copy.k_);
   std::swap(m_, copy.m_);
@@ -119,6 +123,7 @@ kll_sketch<T, C, A>& kll_sketch<T, C, A>::operator=(const kll_sketch& other) {
 
 template<typename T, typename C, typename A>
 kll_sketch<T, C, A>& kll_sketch<T, C, A>::operator=(kll_sketch&& other) {
+  std::swap(comparator_, other.comparator_);
   std::swap(allocator_, other.allocator_);
   std::swap(k_, other.k_);
   std::swap(m_, other.m_);
@@ -156,7 +161,8 @@ kll_sketch<T, C, A>::~kll_sketch() {
 
 template<typename T, typename C, typename A>
 template<typename TT, typename CC, typename AA>
-kll_sketch<T, C, A>::kll_sketch(const kll_sketch<TT, CC, AA>& other, const A& allocator):
+kll_sketch<T, C, A>::kll_sketch(const kll_sketch<TT, CC, AA>& other, const C& comparator, const A& allocator):
+comparator_(comparator),
 allocator_(allocator),
 k_(other.k_),
 m_(other.m_),
@@ -198,8 +204,8 @@ void kll_sketch<T, C, A>::update_min_max(const T& item) {
     min_item_ = new (allocator_.allocate(1)) T(item);
     max_item_ = new (allocator_.allocate(1)) T(item);
   } else {
-    if (C()(item, *min_item_)) *min_item_ = item;
-    if (C()(*max_item_, item)) *max_item_ = item;
+    if (comparator_(item, *min_item_)) *min_item_ = item;
+    if (comparator_(*max_item_, item)) *max_item_ = item;
   }
 }
 
@@ -222,8 +228,8 @@ void kll_sketch<T, C, A>::merge(FwdSk&& other) {
     min_item_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.min_item_));
     max_item_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.max_item_));
   } else {
-    if (C()(*other.min_item_, *min_item_)) *min_item_ = conditional_forward<FwdSk>(*other.min_item_);
-    if (C()(*max_item_, *other.max_item_)) *max_item_ = conditional_forward<FwdSk>(*other.max_item_);
+    if (comparator_(*other.min_item_, *min_item_)) *min_item_ = conditional_forward<FwdSk>(*other.min_item_);
+    if (comparator_(*max_item_, *other.max_item_)) *max_item_ = conditional_forward<FwdSk>(*other.max_item_);
   }
   const uint64_t final_n = n_ + other.n_;
   for (uint32_t i = other.levels_[0]; i < other.levels_[1]; i++) {
@@ -276,7 +282,12 @@ T kll_sketch<T, C, A>::get_max_item() const {
 
 template<typename T, typename C, typename A>
 C kll_sketch<T, C, A>::get_comparator() const {
-  return C();
+  return comparator_;
+}
+
+template<typename T, typename C, typename A>
+A kll_sketch<T, C, A>::get_allocator() const {
+  return allocator_;
 }
 
 template<typename T, typename C, typename A>
@@ -468,13 +479,15 @@ auto kll_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& sd)
     ptr += sd.serialize(ptr, bytes_remaining, &items_[levels_[0]], get_num_retained());
   }
   const size_t delta = ptr - bytes.data();
-  if (delta != size) throw std::logic_error("serialized size mismatch: " + std::to_string(delta) + " != " + std::to_string(size));
+  if (delta != size) throw std::logic_error("serialized size mismatch: " + std::to_string(delta)
+      + " != " + std::to_string(size));
   return bytes;
 }
 
 template<typename T, typename C, typename A>
 template<typename SerDe>
-kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
+kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const SerDe& sd,
+    const C& comparator, const A& allocator) {
   const auto preamble_ints = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -490,7 +503,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
 
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
-  if (is_empty) return kll_sketch(k, allocator);
+  if (is_empty) return kll_sketch(k, comparator, allocator);
 
   uint64_t n;
   uint16_t min_k;
@@ -547,12 +560,13 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   if (!is.good())
     throw std::runtime_error("error reading from std::istream");
   return kll_sketch(k, min_k, n, num_levels, std::move(levels), std::move(items), capacity,
-      std::move(min_item), std::move(max_item), is_level_zero_sorted);
+      std::move(min_item), std::move(max_item), is_level_zero_sorted, comparator);
 }
 
 template<typename T, typename C, typename A>
 template<typename SerDe>
-kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
+kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t size, const SerDe& sd,
+    const C& comparator, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   uint8_t preamble_ints;
@@ -576,7 +590,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   ensure_minimum_memory(size, preamble_ints * sizeof(uint32_t));
 
   const bool is_empty(flags_byte & (1 << flags::IS_EMPTY));
-  if (is_empty) return kll_sketch(k, allocator);
+  if (is_empty) return kll_sketch(k, comparator, allocator);
 
   uint64_t n;
   uint16_t min_k;
@@ -634,7 +648,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
   }
   return kll_sketch(k, min_k, n, num_levels, std::move(levels), std::move(items), capacity,
-      std::move(min_item), std::move(max_item), is_level_zero_sorted);
+      std::move(min_item), std::move(max_item), is_level_zero_sorted, comparator);
 }
 
 /*
@@ -655,7 +669,8 @@ double kll_sketch<T, C, A>::get_normalized_rank_error(uint16_t k, bool pmf) {
 template<typename T, typename C, typename A>
 kll_sketch<T, C, A>::kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, vector_u32&& levels,
     std::unique_ptr<T, items_deleter> items, uint32_t items_size, std::unique_ptr<T, item_deleter> min_item,
-    std::unique_ptr<T, item_deleter> max_item, bool is_level_zero_sorted):
+    std::unique_ptr<T, item_deleter> max_item, bool is_level_zero_sorted, const C& comparator):
+comparator_(comparator),
 allocator_(levels.get_allocator()),
 k_(k),
 m_(DEFAULT_M),
@@ -698,7 +713,7 @@ void kll_sketch<T, C, A>::compress_while_updating(void) {
   // level zero might not be sorted, so we must sort it if we wish to compact it
   // sort_level_zero() is not used here because of the adjustment for odd number of items
   if ((level == 0) && !is_level_zero_sorted_) {
-    std::sort(items_ + adj_beg, items_ + adj_beg + adj_pop, C());
+    std::sort(items_ + adj_beg, items_ + adj_beg + adj_pop, comparator_);
   }
   if (pop_above == 0) {
     kll_helper::randomly_halve_up(items_, adj_beg, adj_pop);
@@ -779,7 +794,7 @@ void kll_sketch<T, C, A>::add_empty_top_level_to_completely_full_sketch() {
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::sort_level_zero() {
   if (!is_level_zero_sorted_) {
-    std::sort(items_ + levels_[0], items_ + levels_[1], C());
+    std::sort(items_ + levels_[0], items_ + levels_[1], comparator_);
     is_level_zero_sorted_ = true;
   }
 }
@@ -790,7 +805,7 @@ void kll_sketch<T, C, A>::check_sorting() const {
   for (uint8_t level = 1; level < num_levels_; ++level) {
     const auto from = items_ + levels_[level];
     const auto to = items_ + levels_[level + 1];
-    if (!std::is_sorted(from, to, C())) {
+    if (!std::is_sorted(from, to, comparator_)) {
       throw std::logic_error("levels must be sorted");
     }
   }
@@ -799,7 +814,7 @@ void kll_sketch<T, C, A>::check_sorting() const {
 template<typename T, typename C, typename A>
 quantile_sketch_sorted_view<T, C, A> kll_sketch<T, C, A>::get_sorted_view() const {
   const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
-  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), allocator_);
+  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
   for (uint8_t level = 0; level < num_levels_; ++level) {
     const auto from = items_ + levels_[level];
     const auto to = items_ + levels_[level + 1]; // exclusive

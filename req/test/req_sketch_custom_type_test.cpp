@@ -35,7 +35,7 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
   test_allocator_total_bytes = 0;
 
   SECTION("compact level zero") {
-    req_test_type_sketch sketch(4, true, 0);
+    req_test_type_sketch sketch(4, true, test_type_less(), 0);
     REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_min_item(), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
@@ -51,10 +51,10 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
   }
 
   SECTION("merge small") {
-    req_test_type_sketch sketch1(4, true, 0);
+    req_test_type_sketch sketch1(4, true, test_type_less(), 0);
     sketch1.update(1);
 
-    req_test_type_sketch sketch2(4, true, 0);
+    req_test_type_sketch sketch2(4, true, test_type_less(), 0);
     sketch2.update(2);
 
     sketch2.merge(sketch1);
@@ -68,10 +68,10 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
   }
 
   SECTION("merge higher levels") {
-    req_test_type_sketch sketch1(4, true, 0);
+    req_test_type_sketch sketch1(4, true, test_type_less(), 0);
     for (int i = 0; i < 24; ++i) sketch1.update(i);
 
-    req_test_type_sketch sketch2(4, true, 0);
+    req_test_type_sketch sketch2(4, true, test_type_less(), 0);
     for (int i = 0; i < 24; ++i) sketch2.update(i);
 
     sketch2.merge(sketch1);
@@ -85,7 +85,7 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
   }
 
   SECTION("serialize deserialize") {
-    req_test_type_sketch sketch1(12, true, 0);
+    req_test_type_sketch sketch1(12, true, test_type_less(), 0);
 
     const int n = 1000;
     for (int i = 0; i < n; i++) sketch1.update(i);
@@ -93,7 +93,7 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch1.serialize(s, test_type_serde());
     REQUIRE((size_t) s.tellp() == sketch1.get_serialized_size_bytes(test_type_serde()));
-    auto sketch2 = req_test_type_sketch::deserialize(s, test_type_serde(), alloc(0));
+    auto sketch2 = req_test_type_sketch::deserialize(s, test_type_serde(), test_type_less(), 0);
     REQUIRE((size_t) s.tellg() == sketch2.get_serialized_size_bytes(test_type_serde()));
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch1.is_empty());
@@ -109,9 +109,9 @@ TEST_CASE("req sketch custom type", "[req_sketch]") {
   }
 
   SECTION("moving merge") {
-    req_test_type_sketch sketch1(4, true, 0);
+    req_test_type_sketch sketch1(4, true, test_type_less(), 0);
     for (int i = 0; i < 10; i++) sketch1.update(i);
-    req_test_type_sketch sketch2(4, true, 0);
+    req_test_type_sketch sketch2(4, true, test_type_less(), 0);
     sketch2.update(10);
     sketch2.merge(std::move(sketch1));
     REQUIRE(sketch2.get_min_item().get_value() == 0);
