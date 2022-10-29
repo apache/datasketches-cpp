@@ -29,7 +29,6 @@
 namespace datasketches {
 
 TEST_CASE("set 0", "sorted view") {
-  std::cout << "sizeof(sorted_view<float>=" << sizeof(quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>) << '\n';
   auto view = quantile_sketch_sorted_view<float, std::less<float>, std::allocator<float>>(1, std::less<float>(), std::allocator<float>());
     std::vector<float> l0 {10};
     view.add(l0.begin(), l0.end(), 1);
