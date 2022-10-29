@@ -963,6 +963,12 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sb.get_n() == 3);
   }
 
+  SECTION("comparator and allocator") {
+    quantiles_sketch<int> sketch;
+    REQUIRE(sketch.get_comparator()(1, 2));
+    REQUIRE(sketch.get_allocator() == std::allocator<int>());
+  }
+
   // cleanup
   if (test_allocator_total_bytes != 0) {
     REQUIRE(test_allocator_total_bytes == 0);
