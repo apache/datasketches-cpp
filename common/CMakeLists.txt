@@ -43,8 +43,8 @@ install(FILES
 			include/conditional_forward.hpp
 			include/ceiling_power_of_2.hpp
 			include/bounds_binomial_proportions.hpp
-			include/quantile_sketch_sorted_view.hpp
-			include/quantile_sketch_sorted_view_impl.hpp
+			include/quantiles_sorted_view.hpp
+			include/quantiles_sorted_view_impl.hpp
 			include/kolmogorov_smirnov.hpp
 			include/kolmogorov_smirnov_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

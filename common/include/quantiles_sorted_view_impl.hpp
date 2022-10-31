@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef QUANTILE_SKETCH_SORTED_VIEW_IMPL_HPP_
-#define QUANTILE_SKETCH_SORTED_VIEW_IMPL_HPP_
+#ifndef QUANTILES_SORTED_VIEW_IMPL_HPP_
+#define QUANTILES_SORTED_VIEW_IMPL_HPP_
 
 #include <algorithm>
 #include <stdexcept>
@@ -27,7 +27,7 @@
 namespace datasketches {
 
 template<typename T, typename C, typename A>
-quantile_sketch_sorted_view<T, C, A>::quantile_sketch_sorted_view(uint32_t num, const C& comparator, const A& allocator):
+quantiles_sorted_view<T, C, A>::quantiles_sorted_view(uint32_t num, const C& comparator, const A& allocator):
 comparator_(comparator),
 total_weight_(0),
 entries_(allocator)
@@ -37,7 +37,7 @@ entries_(allocator)
 
 template<typename T, typename C, typename A>
 template<typename Iterator>
-void quantile_sketch_sorted_view<T, C, A>::add(Iterator first, Iterator last, uint64_t weight) {
+void quantiles_sorted_view<T, C, A>::add(Iterator first, Iterator last, uint64_t weight) {
   const size_t size_before = entries_.size();
   for (auto it = first; it != last; ++it) entries_.push_back(Entry(ref_helper(*it), weight));
   if (size_before > 0) {
@@ -53,7 +53,7 @@ void quantile_sketch_sorted_view<T, C, A>::add(Iterator first, Iterator last, ui
 }
 
 template<typename T, typename C, typename A>
-void quantile_sketch_sorted_view<T, C, A>::convert_to_cummulative() {
+void quantiles_sorted_view<T, C, A>::convert_to_cummulative() {
   for (auto& entry: entries_) {
     total_weight_ += entry.second;
     entry.second = total_weight_;
@@ -61,7 +61,7 @@ void quantile_sketch_sorted_view<T, C, A>::convert_to_cummulative() {
 }
 
 template<typename T, typename C, typename A>
-double quantile_sketch_sorted_view<T, C, A>::get_rank(const T& item, bool inclusive) const {
+double quantiles_sorted_view<T, C, A>::get_rank(const T& item, bool inclusive) const {
   auto it = inclusive ?
       std::upper_bound(entries_.begin(), entries_.end(), Entry(ref_helper(item), 0), compare_pairs_by_first(comparator_))
     : std::lower_bound(entries_.begin(), entries_.end(), Entry(ref_helper(item), 0), compare_pairs_by_first(comparator_));
@@ -72,7 +72,7 @@ double quantile_sketch_sorted_view<T, C, A>::get_rank(const T& item, bool inclus
 }
 
 template<typename T, typename C, typename A>
-auto quantile_sketch_sorted_view<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
+auto quantiles_sorted_view<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
   uint64_t weight = inclusive ? std::ceil(rank * total_weight_) : rank * total_weight_;
   auto it = inclusive ?
       std::lower_bound(entries_.begin(), entries_.end(), make_dummy_entry<T>(weight), compare_pairs_by_second())
@@ -82,7 +82,7 @@ auto quantile_sketch_sorted_view<T, C, A>::get_quantile(double rank, bool inclus
 }
 
 template<typename T, typename C, typename A>
-auto quantile_sketch_sorted_view<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+auto quantiles_sorted_view<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
   vector_double buckets(entries_.get_allocator());
   if (entries_.size() == 0) return buckets;
   check_split_points(split_points, size);
@@ -93,7 +93,7 @@ auto quantile_sketch_sorted_view<T, C, A>::get_CDF(const T* split_points, uint32
 }
 
 template<typename T, typename C, typename A>
-auto quantile_sketch_sorted_view<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+auto quantiles_sorted_view<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
   auto buckets = get_CDF(split_points, size, inclusive);
   if (buckets.size() == 0) return buckets;
   for (uint32_t i = size; i > 0; --i) {
@@ -103,17 +103,17 @@ auto quantile_sketch_sorted_view<T, C, A>::get_PMF(const T* split_points, uint32
 }
 
 template<typename T, typename C, typename A>
-auto quantile_sketch_sorted_view<T, C, A>::begin() const -> const_iterator {
+auto quantiles_sorted_view<T, C, A>::begin() const -> const_iterator {
   return const_iterator(entries_.begin(), entries_.begin());
 }
 
 template<typename T, typename C, typename A>
-auto quantile_sketch_sorted_view<T, C, A>::end() const -> const_iterator {
+auto quantiles_sorted_view<T, C, A>::end() const -> const_iterator {
   return const_iterator(entries_.end(), entries_.begin());
 }
 
 template<typename T, typename C, typename A>
-size_t quantile_sketch_sorted_view<T, C, A>::size() const {
+size_t quantiles_sorted_view<T, C, A>::size() const {
   return entries_.size();
 }
 

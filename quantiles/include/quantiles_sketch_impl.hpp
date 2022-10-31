@@ -29,7 +29,6 @@
 #include "common_defs.hpp"
 #include "count_zeros.hpp"
 #include "conditional_forward.hpp"
-#include "quantiles_sketch.hpp"
 
 namespace datasketches {
 
@@ -740,13 +739,13 @@ double quantiles_sketch<T, C, A>::get_normalized_rank_error(uint16_t k, bool is_
 }
 
 template<typename T, typename C, typename A>
-quantile_sketch_sorted_view<T, C, A> quantiles_sketch<T, C, A>::get_sorted_view() const {
+quantiles_sorted_view<T, C, A> quantiles_sketch<T, C, A>::get_sorted_view() const {
   // allow side-effect of sorting the base buffer
   if (!is_base_buffer_sorted_) {
     std::sort(const_cast<Level&>(base_buffer_).begin(), const_cast<Level&>(base_buffer_).end(), comparator_);
     const_cast<quantiles_sketch*>(this)->is_base_buffer_sorted_ = true;
   }
-  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
+  quantiles_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
 
   uint64_t weight = 1;
   view.add(base_buffer_.begin(), base_buffer_.end(), weight);
@@ -1268,16 +1267,16 @@ class quantiles_sketch<T, C, A>::items_deleter {
 template<typename T, typename C, typename A>
 void quantiles_sketch<T, C, A>::setup_sorted_view() const {
   if (sorted_view_ == nullptr) {
-    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantile_sketch_sorted_view<T, C, A>>;
-    sorted_view_ = new (AllocSortedView(allocator_).allocate(1)) quantile_sketch_sorted_view<T, C, A>(get_sorted_view());
+    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantiles_sorted_view<T, C, A>>;
+    sorted_view_ = new (AllocSortedView(allocator_).allocate(1)) quantiles_sorted_view<T, C, A>(get_sorted_view());
   }
 }
 
 template<typename T, typename C, typename A>
 void quantiles_sketch<T, C, A>::reset_sorted_view() {
   if (sorted_view_ != nullptr) {
-    sorted_view_->~quantile_sketch_sorted_view();
-    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantile_sketch_sorted_view<T, C, A>>;
+    sorted_view_->~quantiles_sorted_view();
+    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantiles_sorted_view<T, C, A>>;
     AllocSortedView(allocator_).deallocate(sorted_view_, 1);
     sorted_view_ = nullptr;
   }

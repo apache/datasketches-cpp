@@ -23,7 +23,6 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <stdexcept>
 
 #include "conditional_forward.hpp"
 #include "count_zeros.hpp"
@@ -812,9 +811,9 @@ void kll_sketch<T, C, A>::check_sorting() const {
 }
 
 template<typename T, typename C, typename A>
-quantile_sketch_sorted_view<T, C, A> kll_sketch<T, C, A>::get_sorted_view() const {
+quantiles_sorted_view<T, C, A> kll_sketch<T, C, A>::get_sorted_view() const {
   const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
-  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
+  quantiles_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
   for (uint8_t level = 0; level < num_levels_; ++level) {
     const auto from = items_ + levels_[level];
     const auto to = items_ + levels_[level + 1]; // exclusive
@@ -1092,16 +1091,16 @@ class kll_sketch<T, C, A>::items_deleter {
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::setup_sorted_view() const {
   if (sorted_view_ == nullptr) {
-    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantile_sketch_sorted_view<T, C, A>>;
-    sorted_view_ = new (AllocSortedView(allocator_).allocate(1)) quantile_sketch_sorted_view<T, C, A>(get_sorted_view());
+    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantiles_sorted_view<T, C, A>>;
+    sorted_view_ = new (AllocSortedView(allocator_).allocate(1)) quantiles_sorted_view<T, C, A>(get_sorted_view());
   }
 }
 
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::reset_sorted_view() {
   if (sorted_view_ != nullptr) {
-    sorted_view_->~quantile_sketch_sorted_view();
-    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantile_sketch_sorted_view<T, C, A>>;
+    sorted_view_->~quantiles_sorted_view();
+    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantiles_sorted_view<T, C, A>>;
     AllocSortedView(allocator_).deallocate(sorted_view_, 1);
     sorted_view_ = nullptr;
   }

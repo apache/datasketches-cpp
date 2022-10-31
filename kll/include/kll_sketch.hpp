@@ -22,10 +22,11 @@
 
 #include <memory>
 #include <vector>
+#include <stdexcept>
 
 #include "common_defs.hpp"
 #include "serde.hpp"
-#include "quantile_sketch_sorted_view.hpp"
+#include "quantiles_sorted_view.hpp"
 
 namespace datasketches {
 
@@ -265,7 +266,7 @@ class kll_sketch {
      *
      * @return approximate quantile associated with the given rank
      */
-    using quantile_return_type = typename quantile_sketch_sorted_view<T, C, A>::quantile_return_type;
+    using quantile_return_type = typename quantiles_sorted_view<T, C, A>::quantile_return_type;
     quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
     /**
@@ -341,7 +342,7 @@ class kll_sketch {
      * @return an array of m+1 doubles each of which is an approximation
      * to the fraction of the input stream items (the mass) that fall into one of those intervals.
      */
-    using vector_double = typename quantile_sketch_sorted_view<T, C, A>::vector_double;
+    using vector_double = typename quantiles_sorted_view<T, C, A>::vector_double;
     vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
     /**
@@ -494,7 +495,7 @@ class kll_sketch {
     const_iterator begin() const;
     const_iterator end() const;
 
-    quantile_sketch_sorted_view<T, C, A> get_sorted_view() const;
+    quantiles_sorted_view<T, C, A> get_sorted_view() const;
 
   private:
     /* Serialized sketch layout:
@@ -533,7 +534,7 @@ class kll_sketch {
     uint32_t items_size_;
     T* min_item_;
     T* max_item_;
-    mutable quantile_sketch_sorted_view<T, C, A>* sorted_view_;
+    mutable quantiles_sorted_view<T, C, A>* sorted_view_;
 
     // for deserialization
     class item_deleter;
