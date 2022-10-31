@@ -17,7 +17,7 @@
 
 cmake_minimum_required(VERSION 3.16.0)
 project(DataSketches
-        VERSION 3.5.0
+        VERSION 3.5.1
         LANGUAGES CXX)
 
 include(GNUInstallDirs)
