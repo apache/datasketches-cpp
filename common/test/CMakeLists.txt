@@ -68,7 +68,7 @@ add_test(
 
 target_sources(common_test
   PRIVATE
-    quantile_sketch_sorted_view_test.cpp
+    quantiles_sorted_view_test.cpp
 )
 
 # now the integration test part

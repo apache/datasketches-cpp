@@ -24,7 +24,7 @@
 #include <memory>
 #include <vector>
 
-#include "quantile_sketch_sorted_view.hpp"
+#include "quantiles_sorted_view.hpp"
 #include "common_defs.hpp"
 #include "serde.hpp"
 
@@ -151,7 +151,6 @@ public:
   using value_type = T;
   using allocator_type = Allocator;
   using comparator = Comparator;
-  using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
 
   explicit quantiles_sketch(uint16_t k = quantiles_constants::DEFAULT_K,
       const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
@@ -254,7 +253,7 @@ public:
    *
    * @return the approximation to the item at the given rank
    */
-  using quantile_return_type = typename quantile_sketch_sorted_view<T, Comparator, Allocator>::quantile_return_type;
+  using quantile_return_type = typename quantiles_sorted_view<T, Comparator, Allocator>::quantile_return_type;
   quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
   /**
@@ -330,6 +329,7 @@ public:
    * @return an array of m+1 doubles each of which is an approximation
    * to the fraction of the input stream items (the mass) that fall into one of those intervals.
    */
+  using vector_double = typename quantiles_sorted_view<T, Comparator, Allocator>::vector_double;
   vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
   /**
@@ -456,7 +456,7 @@ public:
   const_iterator begin() const;
   const_iterator end() const;
 
-  quantile_sketch_sorted_view<T, Comparator, Allocator> get_sorted_view() const;
+  quantiles_sorted_view<T, Comparator, Allocator> get_sorted_view() const;
 
 private:
   using Level = std::vector<T, Allocator>;
@@ -497,7 +497,7 @@ private:
   VectorLevels levels_;
   T* min_item_;
   T* max_item_;
-  mutable quantile_sketch_sorted_view<T, Comparator, Allocator>* sorted_view_;
+  mutable quantiles_sorted_view<T, Comparator, Allocator>* sorted_view_;
 
   void setup_sorted_view() const; // modifies mutable state
   void reset_sorted_view();

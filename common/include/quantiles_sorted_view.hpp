@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef QUANTILE_SKETCH_SORTED_VIEW_HPP_
-#define QUANTILE_SKETCH_SORTED_VIEW_HPP_
+#ifndef QUANTILES_SORTED_VIEW_HPP_
+#define QUANTILES_SORTED_VIEW_HPP_
 
 #include <functional>
 #include <cmath>
@@ -30,13 +30,13 @@ template<
   typename Comparator, // strict weak ordering function (see C++ named requirements: Compare)
   typename Allocator
 >
-class quantile_sketch_sorted_view {
+class quantiles_sorted_view {
 public:
   using Entry = typename std::conditional<std::is_arithmetic<T>::value, std::pair<T, uint64_t>, std::pair<const T*, uint64_t>>::type;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using Container = std::vector<Entry, AllocEntry>;
 
-  quantile_sketch_sorted_view(uint32_t num, const Comparator& comparator, const Allocator& allocator);
+  quantiles_sorted_view(uint32_t num, const Comparator& comparator, const Allocator& allocator);
 
   template<typename Iterator>
   void add(Iterator begin, Iterator end, uint64_t weight);
@@ -115,9 +115,9 @@ private:
 };
 
 template<typename T, typename C, typename A>
-class quantile_sketch_sorted_view<T, C, A>::const_iterator: public quantile_sketch_sorted_view<T, C, A>::Container::const_iterator {
+class quantiles_sorted_view<T, C, A>::const_iterator: public quantiles_sorted_view<T, C, A>::Container::const_iterator {
 public:
-  using Base = typename quantile_sketch_sorted_view<T, C, A>::Container::const_iterator;
+  using Base = typename quantiles_sorted_view<T, C, A>::Container::const_iterator;
   using value_type = typename std::conditional<std::is_arithmetic<T>::value, typename Base::value_type, std::pair<const T&, const uint64_t>>::type;
 
   const_iterator(const Base& it, const Base& begin): Base(it), begin(begin) {}
@@ -157,6 +157,6 @@ private:
 
 } /* namespace datasketches */
 
-#include "quantile_sketch_sorted_view_impl.hpp"
+#include "quantiles_sorted_view_impl.hpp"
 
 #endif

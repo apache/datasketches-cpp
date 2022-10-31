@@ -21,7 +21,6 @@
 #define REQ_SKETCH_IMPL_HPP_
 
 #include <sstream>
-#include <stdexcept>
 
 namespace datasketches {
 
@@ -300,11 +299,11 @@ std::vector<T, A> req_sketch<T, C, A>::get_quantiles(const double* ranks, uint32
 }
 
 template<typename T, typename C, typename A>
-quantile_sketch_sorted_view<T, C, A> req_sketch<T, C, A>::get_sorted_view() const {
+quantiles_sorted_view<T, C, A> req_sketch<T, C, A>::get_sorted_view() const {
   if (!compactors_[0].is_sorted()) {
     const_cast<Compactor&>(compactors_[0]).sort(); // allow this side effect
   }
-  quantile_sketch_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
+  quantiles_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
 
   for (auto& compactor: compactors_) {
     view.add(compactor.begin(), compactor.end(), 1 << compactor.get_lg_weight());
@@ -791,16 +790,16 @@ auto req_sketch<T, C, A>::end() const -> const_iterator {
 template<typename T, typename C, typename A>
 void req_sketch<T, C, A>::setup_sorted_view() const {
   if (sorted_view_ == nullptr) {
-    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantile_sketch_sorted_view<T, C, A>>;
-    sorted_view_ = new (AllocSortedView(allocator_).allocate(1)) quantile_sketch_sorted_view<T, C, A>(get_sorted_view());
+    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantiles_sorted_view<T, C, A>>;
+    sorted_view_ = new (AllocSortedView(allocator_).allocate(1)) quantiles_sorted_view<T, C, A>(get_sorted_view());
   }
 }
 
 template<typename T, typename C, typename A>
 void req_sketch<T, C, A>::reset_sorted_view() {
   if (sorted_view_ != nullptr) {
-    sorted_view_->~quantile_sketch_sorted_view();
-    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantile_sketch_sorted_view<T, C, A>>;
+    sorted_view_->~quantiles_sorted_view();
+    using AllocSortedView = typename std::allocator_traits<A>::template rebind_alloc<quantiles_sorted_view<T, C, A>>;
     AllocSortedView(allocator_).deallocate(sorted_view_, 1);
     sorted_view_ = nullptr;
   }

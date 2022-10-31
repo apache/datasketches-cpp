@@ -20,11 +20,11 @@
 #ifndef REQ_SKETCH_HPP_
 #define REQ_SKETCH_HPP_
 
+#include <stdexcept>
+
 #include "req_common.hpp"
 #include "req_compactor.hpp"
-#include "quantile_sketch_sorted_view.hpp"
-
-#include <stdexcept>
+#include "quantiles_sorted_view.hpp"
 
 namespace datasketches {
 
@@ -39,7 +39,6 @@ public:
   using comparator = Comparator;
   using Compactor = req_compactor<T, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
-  using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
 
   /**
    * Constructor
@@ -180,6 +179,7 @@ public:
    * @return an array of m+1 doubles each of which is an approximation
    * to the fraction of the input stream items (the mass) that fall into one of those intervals.
    */
+  using vector_double = typename quantiles_sorted_view<T, Comparator, Allocator>::vector_double;
   vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
   /**
@@ -214,7 +214,7 @@ public:
    *
    * @return approximate quantile associated with the given rank
    */
-  using quantile_return_type = typename quantile_sketch_sorted_view<T, Comparator, Allocator>::quantile_return_type;
+  using quantile_return_type = typename quantiles_sorted_view<T, Comparator, Allocator>::quantile_return_type;
   quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
   /**
@@ -332,7 +332,7 @@ public:
   const_iterator begin() const;
   const_iterator end() const;
 
-  quantile_sketch_sorted_view<T, Comparator, Allocator> get_sorted_view() const;
+  quantiles_sorted_view<T, Comparator, Allocator> get_sorted_view() const;
 
 private:
   Comparator comparator_;
@@ -345,7 +345,7 @@ private:
   std::vector<Compactor, AllocCompactor> compactors_;
   T* min_item_;
   T* max_item_;
-  mutable quantile_sketch_sorted_view<T, Comparator, Allocator>* sorted_view_;
+  mutable quantiles_sorted_view<T, Comparator, Allocator>* sorted_view_;
 
   void setup_sorted_view() const; // modifies mutable state
   void reset_sorted_view();
