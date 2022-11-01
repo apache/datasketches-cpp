@@ -59,11 +59,13 @@ public:
    * @param lg_max_map_size Log2 of the physical size of the internal hash map managed by this
    * sketch. The maximum capacity of this internal hash map is 0.75 times 2^lg_max_map_size.
    * Both the ultimate accuracy and size of this sketch are functions of lg_max_map_size.
-   *
    * @param lg_start_map_size Log2 of the starting physical size of the internal hash
    * map managed by this sketch.
+   * @param equal instance of Equality operator
+   * @param allocator instance of an Allocator
    */
-  explicit frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size = LG_MIN_MAP_SIZE, const A& allocator = A());
+  explicit frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size = LG_MIN_MAP_SIZE,
+      const E& equal = E(), const A& allocator = A());
 
   /**
    * Update this sketch with an item and a positive weight (frequency count).
@@ -157,7 +159,7 @@ public:
   /**
    * Returns epsilon used to compute <i>a priori</i> error.
    * This is just the value <i>3.5 / maxMapSize</i>.
-   * @param maxMapSize the planned map size to be used when constructing this sketch.
+   * @param lg_max_map_size the planned map size to be used when constructing this sketch.
    * @return epsilon used to compute <i>a priori</i> error.
    */
   static double get_epsilon(uint8_t lg_max_map_size);
@@ -166,13 +168,13 @@ public:
    * Returns the estimated <i>a priori</i> error given the max_map_size for the sketch and the
    * estimated_total_stream_weight.
    * @param lg_max_map_size the planned map size to be used when constructing this sketch.
-   * @param estimated_total_stream_weight the estimated total stream weight.
+   * @param estimated_total_weight the estimated total stream weight.
    * @return the estimated <i>a priori</i> error.
    */
   static double get_apriori_error(uint8_t lg_max_map_size, W estimated_total_weight);
 
   class row;
-  typedef typename std::vector<row, typename std::allocator_traits<A>::template rebind_alloc<row>> vector_row; // alias for users
+  using vector_row = typename std::vector<row, typename std::allocator_traits<A>::template rebind_alloc<row>>;
 
   /**
    * Returns an array of rows that include frequent items, estimates, upper and lower bounds
@@ -224,7 +226,7 @@ public:
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This can be expensive since every item needs to be looked at.
-   * @param instance of a SerDe
+   * @param serde instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
   template<typename SerDe = serde<T>>
@@ -233,7 +235,7 @@ public:
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
-   * @param instance of a SerDe
+   * @param serde instance of a SerDe
    */
   template<typename SerDe = serde<T>>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
@@ -248,7 +250,7 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
-   * @param instance of a SerDe
+   * @param serde instance of a SerDe
    * @return serialized sketch as a vector of bytes
    */
   template<typename SerDe = serde<T>>
@@ -257,23 +259,27 @@ public:
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param serde instance of a SerDe
+   * @param equal instance of Equality operator
+   * @param allocator instance of an Allocator
    * @return an instance of the sketch
    */
   template<typename SerDe = serde<T>>
-  static frequent_items_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
+  static frequent_items_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(),
+      const E& equal = E(), const A& allocator = A());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param serde instance of a SerDe
+   * @param equal instance of Equality operator
+   * @param allocator instance of an Allocator
    * @return an instance of the sketch
    */
   template<typename SerDe = serde<T>>
-  static frequent_items_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
+  static frequent_items_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(),
+      const E& equal = E(), const A& allocator = A());
 
   /**
    * Returns a human readable summary of this sketch

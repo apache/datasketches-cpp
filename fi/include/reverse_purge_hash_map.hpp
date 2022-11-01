@@ -33,17 +33,23 @@ namespace datasketches {
  * author Alexander Saydakov
  */
 
-template<typename K, typename V = uint64_t, typename H = std::hash<K>, typename E = std::equal_to<K>, typename A = std::allocator<K>>
+template<
+  typename K,
+  typename V = uint64_t,
+  typename H = std::hash<K>,
+  typename E = std::equal_to<K>,
+  typename A = std::allocator<K>
+>
 class reverse_purge_hash_map {
 public:
   using AllocV = typename std::allocator_traits<A>::template rebind_alloc<V>;
   using AllocU16 = typename std::allocator_traits<A>::template rebind_alloc<uint16_t>;
 
-  reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size, const A& allocator);
+  reverse_purge_hash_map(uint8_t lg_size, uint8_t lg_max_size, const E& equal, const A& allocator);
   reverse_purge_hash_map(const reverse_purge_hash_map& other);
   reverse_purge_hash_map(reverse_purge_hash_map&& other) noexcept;
   ~reverse_purge_hash_map();
-  reverse_purge_hash_map& operator=(reverse_purge_hash_map other);
+  reverse_purge_hash_map& operator=(const reverse_purge_hash_map& other);
   reverse_purge_hash_map& operator=(reverse_purge_hash_map&& other);
 
   template<typename FwdK>
@@ -65,6 +71,7 @@ private:
   static constexpr uint16_t DRIFT_LIMIT = 1024; // used only for stress testing
   static constexpr uint32_t MAX_SAMPLE_SIZE = 1024; // number of samples to compute approximate median during purge
 
+  E equal_;
   A allocator_;
   uint8_t lg_cur_size_;
   uint8_t lg_max_size_;
