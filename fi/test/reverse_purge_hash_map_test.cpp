@@ -19,14 +19,11 @@
 
 #include <catch2/catch.hpp>
 
-#include <iostream>
-
 #include <reverse_purge_hash_map.hpp>
 
 namespace datasketches {
 
 TEST_CASE("reverse purge hash map: empty", "[frequent_items_sketch]") {
-  std::cout << "sizeof(reverse_purge_hash_map<int>)=" << sizeof(reverse_purge_hash_map<int>) << '\n';
   reverse_purge_hash_map<int> map(3, 3, std::equal_to<int>(), std::allocator<int>());
   REQUIRE(map.get_num_active() == 0);
   REQUIRE(map.get_lg_cur_size() == 3);  // static_cast<uint8_t>(3)
