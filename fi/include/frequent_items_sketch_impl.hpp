@@ -34,12 +34,14 @@ template<typename T, typename W, typename H, typename E, typename A>
 const uint8_t frequent_items_sketch<T, W, H, E, A>::LG_MIN_MAP_SIZE;
 
 template<typename T, typename W, typename H, typename E, typename A>
-frequent_items_sketch<T, W, H, E, A>::frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size, const A& allocator):
+frequent_items_sketch<T, W, H, E, A>::frequent_items_sketch(uint8_t lg_max_map_size, uint8_t lg_start_map_size,
+    const E& equal, const A& allocator):
 total_weight(0),
 offset(0),
 map(
   std::max(lg_start_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE),
   std::max(lg_max_map_size, frequent_items_sketch::LG_MIN_MAP_SIZE),
+  equal,
   allocator
 )
 {
@@ -286,7 +288,8 @@ private:
 
 template<typename T, typename W, typename H, typename E, typename A>
 template<typename SerDe>
-frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
+frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deserialize(std::istream& is,
+    const SerDe& sd, const E& equal, const A& allocator) {
   const auto preamble_longs = read<uint8_t>(is);
   const auto serial_version = read<uint8_t>(is);
   const auto family_id = read<uint8_t>(is);
@@ -302,7 +305,7 @@ frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deser
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
 
-  frequent_items_sketch sketch(lg_max_size, lg_cur_size, allocator);
+  frequent_items_sketch sketch(lg_max_size, lg_cur_size, equal, allocator);
   if (!is_empty) {
     const auto num_items = read<uint32_t>(is);
     read<uint32_t>(is); // unused
@@ -330,7 +333,8 @@ frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deser
 
 template<typename T, typename W, typename H, typename E, typename A>
 template<typename SerDe>
-frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
+frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deserialize(const void* bytes, size_t size,
+    const SerDe& sd, const E& equal, const A& allocator) {
   ensure_minimum_memory(size, 8);
   const char* ptr = static_cast<const char*>(bytes);
   const char* base = static_cast<const char*>(bytes);
@@ -356,7 +360,7 @@ frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deser
   check_size(lg_cur_size, lg_max_size);
   ensure_minimum_memory(size, preamble_longs * sizeof(uint64_t));
 
-  frequent_items_sketch sketch(lg_max_size, lg_cur_size, allocator);
+  frequent_items_sketch sketch(lg_max_size, lg_cur_size, equal, allocator);
   if (!is_empty) {
     uint32_t num_items;
     ptr += copy_from_mem(ptr, num_items);
