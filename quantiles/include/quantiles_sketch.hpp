@@ -362,28 +362,28 @@ public:
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This version is for fixed-size arithmetic types (integral and floating point).
-   * @param instance of a SerDe
+   * @param sd instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
   template<typename SerDe = serde<T>, typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-  size_t get_serialized_size_bytes(const SerDe& serde = SerDe()) const;
+  size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This version is for all other types and can be expensive since every item needs to be looked at.
-   * @param instance of a SerDe
+   * @param sd instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
   template<typename SerDe = serde<T>, typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-  size_t get_serialized_size_bytes(const SerDe& serde = SerDe()) const;
+  size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
-   * @param instance of a SerDe
+   * @param sd instance of a SerDe
    */
   template<typename SerDe = serde<T>>
-  void serialize(std::ostream& os, const SerDe& serde = SerDe()) const;
+  void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
   // This is a convenience alias for users
   // The type returned by the following serialize method
@@ -395,35 +395,35 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
-   * @param instance of a SerDe
+   * @param sd instance of a SerDe
    * @return serialized sketch as a vector of bytes
    */
   template<typename SerDe = serde<T>>
-  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& serde = SerDe()) const;
+  vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
-   * @param serde instance of a SerDe
+   * @param sd instance of a SerDe
    * @param comparator instance of a Comparator
    * @param allocator instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<T>>
-  static quantiles_sketch deserialize(std::istream& is, const SerDe& serde = SerDe(),
+  static quantiles_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(),
       const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   /**
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @param serde instance of a SerDe
+   * @param sd instance of a SerDe
    * @param comparator instance of a Comparator
    * @param allocator instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<T>>
-  static quantiles_sketch deserialize(const void* bytes, size_t size, const SerDe& serde = SerDe(),
+  static quantiles_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(),
       const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   /**

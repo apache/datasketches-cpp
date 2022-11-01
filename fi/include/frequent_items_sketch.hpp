@@ -226,7 +226,7 @@ public:
   /**
    * Computes size needed to serialize the current state of the sketch.
    * This can be expensive since every item needs to be looked at.
-   * @param serde instance of a SerDe
+   * @param sd instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
   template<typename SerDe = serde<T>>
@@ -235,7 +235,7 @@ public:
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
-   * @param serde instance of a SerDe
+   * @param sd instance of a SerDe
    */
   template<typename SerDe = serde<T>>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
@@ -250,7 +250,7 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
-   * @param serde instance of a SerDe
+   * @param sd instance of a SerDe
    * @return serialized sketch as a vector of bytes
    */
   template<typename SerDe = serde<T>>
@@ -259,7 +259,7 @@ public:
   /**
    * This method deserializes a sketch from a given stream.
    * @param is input stream
-   * @param serde instance of a SerDe
+   * @param sd instance of a SerDe
    * @param equal instance of Equality operator
    * @param allocator instance of an Allocator
    * @return an instance of the sketch
@@ -272,7 +272,7 @@ public:
    * This method deserializes a sketch from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @param serde instance of a SerDe
+   * @param sd instance of a SerDe
    * @param equal instance of Equality operator
    * @param allocator instance of an Allocator
    * @return an instance of the sketch
