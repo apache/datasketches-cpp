@@ -686,13 +686,13 @@ uint32_t quantiles_sketch<T, C, A>::get_num_retained() const {
 
 template<typename T, typename C, typename A>
 const T& quantiles_sketch<T, C, A>::get_min_item() const {
-  if (is_empty()) return get_invalid_item();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   return *min_item_;
 }
 
 template<typename T, typename C, typename A>
 const T& quantiles_sketch<T, C, A>::get_max_item() const {
-  if (is_empty()) return get_invalid_item();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   return *max_item_;
 }
 
@@ -761,7 +761,7 @@ quantiles_sorted_view<T, C, A> quantiles_sketch<T, C, A>::get_sorted_view() cons
 
 template<typename T, typename C, typename A>
 auto quantiles_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
-  if (is_empty()) return get_invalid_item();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
   }
@@ -772,8 +772,8 @@ auto quantiles_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const 
 
 template<typename T, typename C, typename A>
 std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size, bool inclusive) const {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   std::vector<T, A> quantiles(allocator_);
-  if (is_empty()) return quantiles;
   quantiles.reserve(size);
 
   // possible side-effect: sorting base buffer
@@ -791,7 +791,7 @@ std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(const double* ranks, 
 
 template<typename T, typename C, typename A>
 std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(uint32_t num, bool inclusive) const {
-  if (is_empty()) return std::vector<T, A>(allocator_);
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   if (num == 0) {
     throw std::invalid_argument("num must be > 0");
   }
@@ -808,19 +808,21 @@ std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(uint32_t num, bool in
 
 template<typename T, typename C, typename A>
 double quantiles_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
-  if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   setup_sorted_view();
   return sorted_view_->get_rank(item, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto quantiles_sketch<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   setup_sorted_view();
   return sorted_view_->get_PMF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto quantiles_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   setup_sorted_view();
   return sorted_view_->get_CDF(split_points, size, inclusive);
 }

@@ -20,7 +20,7 @@
 #ifndef REQ_SKETCH_HPP_
 #define REQ_SKETCH_HPP_
 
-#include <stdexcept>
+#include <iterator>
 
 #include "req_common.hpp"
 #include "req_compactor.hpp"
@@ -120,16 +120,14 @@ public:
 
   /**
    * Returns the min item of the stream.
-   * For floating point types: if the sketch is empty this returns NaN.
-   * For other types: if the sketch is empty this throws runtime_error.
+   * If the sketch is empty this throws std::runtime_error.
    * @return the min item of the stream
    */
   const T& get_min_item() const;
 
   /**
    * Returns the max item of the stream.
-   * For floating point types: if the sketch is empty this returns NaN.
-   * For other types: if the sketch is empty this throws runtime_error.
+   * If the sketch is empty this throws std::runtime_error.
    * @return the max item of the stream
    */
   const T& get_max_item() const;
@@ -149,7 +147,7 @@ public:
   /**
    * Returns an approximation to the normalized rank of the given item from 0 to 1 inclusive.
    *
-   * <p>If the sketch is empty the result is undefined (NaN).
+   * <p>If the sketch is empty this throws std::runtime_error.
    *
    * @param item to be ranked.
    * @param inclusive if true the weight of the given item is included into the rank.
@@ -164,7 +162,7 @@ public:
    * Returns an approximation to the Probability Mass Function (PMF) of the input stream
    * given a set of split points (items).
    *
-   * <p>If the sketch is empty this returns an empty vector.
+   * <p>If the sketch is empty this throws std::runtime_error.
    *
    * @param split_points an array of <i>m</i> unique, monotonically increasing items
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals (bins).
@@ -186,7 +184,7 @@ public:
    * Returns an approximation to the Cumulative Distribution Function (CDF), which is the
    * cumulative analog of the PMF, of the input stream given a set of split points (items).
    *
-   * <p>If the sketch is empty this returns an empty vector.
+   * <p>If the sketch is empty this throws std::runtime_error.
    *
    * @param split_points an array of <i>m</i> unique, monotonically increasing items
    * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
@@ -209,6 +207,8 @@ public:
   /**
    * Returns an approximate quantile of the given normalized rank.
    * The normalized rank must be in the range [0.0, 1.0] (both inclusive).
+   * <p>If the sketch is empty this throws std::runtime_error.
+   *
    * @param rank of an item in the hypothetical sorted stream.
    * @param inclusive if true, the given rank is considered inclusive (includes weight of an item)
    *
@@ -219,7 +219,11 @@ public:
 
   /**
    * Returns an array of quantiles that correspond to the given array of normalized ranks.
+   * <p>If the sketch is empty this throws std::runtime_error.
+   *
    * @param ranks given array of normalized ranks.
+   * @param size the number of ranks in the array.
+   *
    * @return array of quantiles that correspond to the given array of normalized ranks
    *
    * Deprecated. Will be removed in the next major version. Use get_quantile() instead.
@@ -380,22 +384,9 @@ private:
   static void check_serial_version(uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
 
-  // implementations for floating point types
-  template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
-  static const TT& get_invalid_item() {
-    static TT item = std::numeric_limits<TT>::quiet_NaN();
-    return item;
-  }
-
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
   static inline bool check_update_item(const TT& item) {
     return !std::isnan(item);
-  }
-
-  // implementations for all other types
-  template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
-  static const TT& get_invalid_item() {
-    throw std::runtime_error("getting quantiles from empty sketch is not supported for this type of items");
   }
 
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>

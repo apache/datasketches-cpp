@@ -43,19 +43,16 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 0);
   REQUIRE(sketch.get_num_retained() == 0);
-  REQUIRE(std::isnan(sketch.get_rank(0)));
-  REQUIRE(std::isnan(sketch.get_rank(std::numeric_limits<float>::infinity())));
-  REQUIRE(std::isnan(sketch.get_min_item()));
-  REQUIRE(std::isnan(sketch.get_max_item()));
-  REQUIRE(std::isnan(sketch.get_quantile(0)));
-  REQUIRE(std::isnan(sketch.get_quantile(0.5)));
-  REQUIRE(std::isnan(sketch.get_quantile(1)));
+  REQUIRE_THROWS_AS(sketch.get_min_item(), std::runtime_error);
+  REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
+  REQUIRE_THROWS_AS(sketch.get_rank(0), std::runtime_error);
+  REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
   const double ranks[3] {0, 0.5, 1};
-  REQUIRE(sketch.get_quantiles(ranks, 3).size() == 0);
+  REQUIRE_THROWS_AS(sketch.get_quantiles(ranks, 3), std::runtime_error);
 
   const float split_points[1] {0};
-  REQUIRE(sketch.get_CDF(split_points, 1).empty());
-  REQUIRE(sketch.get_PMF(split_points, 1).empty());
+  REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::runtime_error);
+  REQUIRE_THROWS_AS(sketch.get_PMF(split_points, 1), std::runtime_error);
 }
 
 TEST_CASE("req sketch: single value, lra", "[req_sketch]") {
@@ -203,8 +200,8 @@ TEST_CASE("req sketch: stream serialize-deserialize empty", "[req_sketch]") {
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
   REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
   REQUIRE(sketch2.get_n() == sketch.get_n());
-  REQUIRE(std::isnan(sketch2.get_min_item()));
-  REQUIRE(std::isnan(sketch2.get_max_item()));
+  REQUIRE_THROWS_AS(sketch2.get_min_item(), std::runtime_error);
+  REQUIRE_THROWS_AS(sketch2.get_max_item(), std::runtime_error);
 }
 
 TEST_CASE("req sketch: byte serialize-deserialize empty", "[req_sketch]") {
@@ -218,8 +215,8 @@ TEST_CASE("req sketch: byte serialize-deserialize empty", "[req_sketch]") {
   REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
   REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
   REQUIRE(sketch2.get_n() == sketch.get_n());
-  REQUIRE(std::isnan(sketch2.get_min_item()));
-  REQUIRE(std::isnan(sketch2.get_max_item()));
+  REQUIRE_THROWS_AS(sketch2.get_min_item(), std::runtime_error);
+  REQUIRE_THROWS_AS(sketch2.get_max_item(), std::runtime_error);
 }
 
 TEST_CASE("req sketch: stream serialize-deserialize single item", "[req_sketch]") {
@@ -363,8 +360,8 @@ TEST_CASE("req sketch: stream deserialize from Java - empty", "[req_sketch]") {
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 0);
   REQUIRE(sketch.get_num_retained() == 0);
-  REQUIRE(std::isnan(sketch.get_min_item()));
-  REQUIRE(std::isnan(sketch.get_max_item()));
+  REQUIRE_THROWS_AS(sketch.get_min_item(), std::runtime_error);
+  REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
 }
 
 TEST_CASE("req sketch: stream deserialize from Java - single item", "[req_sketch]") {

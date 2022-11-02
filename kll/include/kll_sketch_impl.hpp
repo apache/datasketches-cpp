@@ -23,6 +23,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
 
 #include "conditional_forward.hpp"
 #include "count_zeros.hpp"
@@ -269,13 +270,13 @@ bool kll_sketch<T, C, A>::is_estimation_mode() const {
 
 template<typename T, typename C, typename A>
 T kll_sketch<T, C, A>::get_min_item() const {
-  if (is_empty()) return get_invalid_item();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   return *min_item_;
 }
 
 template<typename T, typename C, typename A>
 T kll_sketch<T, C, A>::get_max_item() const {
-  if (is_empty()) return get_invalid_item();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   return *max_item_;
 }
 
@@ -291,26 +292,28 @@ A kll_sketch<T, C, A>::get_allocator() const {
 
 template<typename T, typename C, typename A>
 double kll_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
-  if (is_empty()) return std::numeric_limits<double>::quiet_NaN();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   setup_sorted_view();
   return sorted_view_->get_rank(item, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto kll_sketch<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   setup_sorted_view();
   return sorted_view_->get_PMF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto kll_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   setup_sorted_view();
   return sorted_view_->get_CDF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto kll_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
-  if (is_empty()) return get_invalid_item();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("normalized rank cannot be less than zero or greater than 1.0");
   }
@@ -321,8 +324,8 @@ auto kll_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> qua
 
 template<typename T, typename C, typename A>
 std::vector<T, A> kll_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size, bool inclusive) const {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   std::vector<T, A> quantiles(allocator_);
-  if (is_empty()) return quantiles;
   quantiles.reserve(size);
 
   // may have a side effect of sorting level zero if needed
@@ -340,7 +343,7 @@ std::vector<T, A> kll_sketch<T, C, A>::get_quantiles(const double* ranks, uint32
 
 template<typename T, typename C, typename A>
 std::vector<T, A> kll_sketch<T, C, A>::get_quantiles(uint32_t num, bool inclusive) const {
-  if (is_empty()) return std::vector<T, A>(allocator_);
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   if (num == 0) {
     throw std::invalid_argument("num must be > 0");
   }
