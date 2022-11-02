@@ -63,15 +63,15 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE_FALSE(sketch.is_estimation_mode());
     REQUIRE(sketch.get_n() == 0);
     REQUIRE(sketch.get_num_retained() == 0);
-    REQUIRE(std::isnan(sketch.get_rank(0)));
-    REQUIRE(std::isnan(sketch.get_min_item()));
-    REQUIRE(std::isnan(sketch.get_max_item()));
-    REQUIRE(std::isnan(sketch.get_quantile(0.5)));
+    REQUIRE_THROWS_AS(sketch.get_min_item(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_rank(0), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_quantile(0.5), std::runtime_error);
     const double ranks[3] {0, 0.5, 1};
-    REQUIRE(sketch.get_quantiles(ranks, 3).size() == 0);
+    REQUIRE_THROWS_AS(sketch.get_quantiles(ranks, 3), std::runtime_error);
     const float split_points[1] {0};
-    REQUIRE(sketch.get_PMF(split_points, 1).size() == 0);
-    REQUIRE(sketch.get_CDF(split_points, 1).size() == 0);
+    REQUIRE_THROWS_AS(sketch.get_PMF(split_points, 1), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::runtime_error);
 
     for (auto it: sketch) {
       (void) it; // to suppress "unused" warning
@@ -284,8 +284,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
-    REQUIRE(std::isnan(sketch2.get_min_item()));
-    REQUIRE(std::isnan(sketch2.get_max_item()));
+    REQUIRE_THROWS_AS(sketch2.get_min_item(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch2.get_max_item(), std::runtime_error);
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }
@@ -299,8 +299,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
-    REQUIRE(std::isnan(sketch2.get_min_item()));
-    REQUIRE(std::isnan(sketch2.get_max_item()));
+    REQUIRE_THROWS_AS(sketch2.get_min_item(), std::runtime_error);
+    REQUIRE_THROWS_AS(sketch2.get_max_item(), std::runtime_error);
     REQUIRE(sketch2.get_normalized_rank_error(false) == sketch.get_normalized_rank_error(false));
     REQUIRE(sketch2.get_normalized_rank_error(true) == sketch.get_normalized_rank_error(true));
   }

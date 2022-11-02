@@ -28,6 +28,15 @@
 
 namespace datasketches {
 
+TEST_CASE("empty", "sorted view") {
+  auto view = quantiles_sorted_view<float, std::less<float>, std::allocator<float>>(1, std::less<float>(), std::allocator<float>());
+  REQUIRE_THROWS_AS(view.get_rank(0), std::runtime_error);
+  REQUIRE_THROWS_AS(view.get_quantile(0), std::runtime_error);
+  const float split_points[1] {0};
+  REQUIRE_THROWS_AS(view.get_CDF(split_points, 1), std::runtime_error);
+  REQUIRE_THROWS_AS(view.get_PMF(split_points, 1), std::runtime_error);
+}
+
 TEST_CASE("set 0", "sorted view") {
   auto view = quantiles_sorted_view<float, std::less<float>, std::allocator<float>>(1, std::less<float>(), std::allocator<float>());
     std::vector<float> l0 {10};

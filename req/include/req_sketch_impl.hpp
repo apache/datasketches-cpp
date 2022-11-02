@@ -21,6 +21,7 @@
 #define REQ_SKETCH_IMPL_HPP_
 
 #include <sstream>
+#include <stdexcept>
 
 namespace datasketches {
 
@@ -227,13 +228,13 @@ void req_sketch<T, C, A>::merge(FwdSk&& other) {
 
 template<typename T, typename C, typename A>
 const T& req_sketch<T, C, A>::get_min_item() const {
-  if (is_empty()) return get_invalid_item();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   return *min_item_;
 }
 
 template<typename T, typename C, typename A>
 const T& req_sketch<T, C, A>::get_max_item() const {
-  if (is_empty()) return get_invalid_item();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   return *max_item_;
 }
 
@@ -249,6 +250,7 @@ A req_sketch<T, C, A>::get_allocator() const {
 
 template<typename T, typename C, typename A>
 double req_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   uint64_t weight = 0;
   for (const auto& compactor: compactors_) {
     weight += compactor.compute_weight(item, inclusive);
@@ -258,19 +260,21 @@ double req_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
 
 template<typename T, typename C, typename A>
 auto req_sketch<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   setup_sorted_view();
   return sorted_view_->get_PMF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto req_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   setup_sorted_view();
   return sorted_view_->get_CDF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto req_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
-  if (is_empty()) return get_invalid_item();
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
   }
@@ -281,8 +285,8 @@ auto req_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> qua
 
 template<typename T, typename C, typename A>
 std::vector<T, A> req_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size, bool inclusive) const {
+  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   std::vector<T, A> quantiles(allocator_);
-  if (is_empty()) return quantiles;
   quantiles.reserve(size);
 
   // possible side-effect of sorting level zero
