@@ -26,12 +26,6 @@ project(DataSketches
         VERSION ${BASE_VERSION}
         LANGUAGES CXX)
 
-#get_cmake_property(_variableNames VARIABLES)
-#list (SORT _variableNames)
-#foreach (_variableName ${_variableNames})
-#    message(STATUS "${_variableName}=${${_variableName}}")
-#endforeach()
-
 message("Configuring DataSketches version ${BASE_VERSION}")
 
 include(GNUInstallDirs)
