@@ -22,6 +22,8 @@ import os
 import sys
 import platform
 import subprocess
+import re
+from datetime import datetime, timezone
 
 from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
@@ -78,9 +80,19 @@ class CMakeBuild(build_ext):
                               cwd=self.build_temp, env=env)
         print() # add an empty line to pretty print
 
+# Read and parse the version format
+# @DT@ -> datestamp
+# @HHMM@ -> .devHHMM to indicate development version
+# Releases should have a fixed version with no @ variables
+with open('version.cfg.in', 'r') as file:
+    ds_version = file.read().rstrip()
+dt = datetime.now(timezone.utc)
+ds_version = re.sub('@DT@', dt.strftime('%Y%m%d'), ds_version)
+ds_version = re.sub('@HHMM@', 'dev' + dt.strftime('%H%M'), ds_version)
+
 setup(
     name='datasketches',
-    version='3.6.0.dev0',
+    version=ds_version,
     author='Apache Software Foundation',
     author_email='dev@datasketches.apache.org',
     description='The Apache DataSketches Library for Python',
