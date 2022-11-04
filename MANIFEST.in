@@ -23,8 +23,6 @@ global-include *.h
 global-include *.bin
 global-include *.in
 
-global-exclude .git*
-
 graft cmake
 graft common
 graft cpc
@@ -36,3 +34,8 @@ graft theta
 graft tuple
 graft sampling
 graft python
+
+# exclusions appear after including subdirectories
+exclude version.cfg
+global-exclude version.hpp
+global-exclude .git*
