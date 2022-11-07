@@ -1,7 +1,3 @@
-# output of configured files
-version.cfg
-common/include/version.hpp
-
 # Eclipse project files 
 .cproject
 .project

@@ -17,7 +17,7 @@
 
 add_library(common INTERFACE)
 
-configure_file(include/version.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/version.hpp @ONLY)
+configure_file(include/version.hpp.in include/version.hpp @ONLY)
 
 if (BUILD_TESTS)
   add_subdirectory(test)
@@ -34,7 +34,7 @@ target_compile_features(common INTERFACE cxx_std_11)
 install(TARGETS common EXPORT ${PROJECT_NAME})
 
 install(FILES 
-			include/version.hpp
+			${CMAKE_CURRENT_BINARY_DIR}/include/version.hpp
 			include/common_defs.hpp
 			include/memory_operations.hpp
 			include/MurmurHash3.h

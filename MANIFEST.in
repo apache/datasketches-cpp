@@ -36,6 +36,4 @@ graft sampling
 graft python
 
 # exclusions appear after including subdirectories
-exclude version.cfg
-global-exclude version.hpp
-global-exclude .git*
+prune build
