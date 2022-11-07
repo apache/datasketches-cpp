@@ -16,9 +16,17 @@
 # under the License.
 
 cmake_minimum_required(VERSION 3.16.0)
+
+string(TIMESTAMP DT %Y%m%d UTC)
+string(TIMESTAMP HHMM %H%M UTC)
+configure_file(version.cfg.in version.cfg @ONLY)
+file(STRINGS ${CMAKE_CURRENT_BINARY_DIR}/version.cfg BASE_VERSION)
+
 project(DataSketches
-        VERSION 3.6.0
+        VERSION ${BASE_VERSION}
         LANGUAGES CXX)
+
+message("Configuring DataSketches version ${BASE_VERSION}")
 
 include(GNUInstallDirs)
 include(CMakeDependentOption)
