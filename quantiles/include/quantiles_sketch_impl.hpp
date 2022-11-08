@@ -26,7 +26,6 @@
 #include <iomanip>
 #include <sstream>
 
-#include "common_defs.hpp"
 #include "count_zeros.hpp"
 #include "conditional_forward.hpp"
 
@@ -1355,8 +1354,13 @@ bool quantiles_sketch<T, C, A>::const_iterator::operator!=(const const_iterator&
 }
 
 template<typename T, typename C, typename A>
-std::pair<const T&, const uint64_t> quantiles_sketch<T, C, A>::const_iterator::operator*() const {
-  return std::pair<const T&, const uint64_t>(level_ == -1 ? base_buffer_[index_] : levels_[level_][index_], weight_);
+auto quantiles_sketch<T, C, A>::const_iterator::operator*() const -> const value_type {
+  return value_type(level_ == -1 ? base_buffer_[index_] : levels_[level_][index_], weight_);
+}
+
+template<typename T, typename C, typename A>
+auto quantiles_sketch<T, C, A>::const_iterator::operator->() const -> const return_value_holder<value_type> {
+  return **this;
 }
 
 } /* namespace datasketches */

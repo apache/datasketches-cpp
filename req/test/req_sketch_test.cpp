@@ -79,11 +79,16 @@ TEST_CASE("req sketch: single value, lra", "[req_sketch]") {
   REQUIRE(quantiles[2] == 1);
 
   unsigned count = 0;
-  for (auto it: sketch) {
-    REQUIRE(it.second == 1);
+  for (auto pair: sketch) {
+    REQUIRE(pair.second == 1);
     ++count;
   }
   REQUIRE(count == 1);
+
+  // iterator dereferencing
+  auto it = sketch.begin();
+  REQUIRE(it->first == 1.0f);
+  REQUIRE((*it).first == 1.0f);
 }
 
 TEST_CASE("req sketch: repeated values", "[req_sketch]") {
@@ -182,8 +187,8 @@ TEST_CASE("req sketch: estimation mode", "[req_sketch]") {
   REQUIRE(sketch.get_rank_upper_bound(0.5, 1) > 0.5);
 
   unsigned count = 0;
-  for (auto it: sketch) {
-    REQUIRE(it.second >= 1);
+  for (auto pair: sketch) {
+    REQUIRE(pair.second >= 1);
     ++count;
   }
   REQUIRE(count == sketch.get_num_retained());

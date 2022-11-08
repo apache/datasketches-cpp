@@ -86,6 +86,16 @@ static inline void write(std::ostream& os, const T* ptr, size_t size_bytes) {
   os.write(reinterpret_cast<const char*>(ptr), size_bytes);
 }
 
+// wrapper for iterators to implement operator-> returning temporary value
+template<typename T>
+class return_value_holder {
+public:
+  return_value_holder(T value): value_(value) {}
+  const T* operator->() const { return std::addressof(value_); }
+private:
+  T value_;
+};
+
 } // namespace
 
 #endif // _COMMON_DEFS_HPP_

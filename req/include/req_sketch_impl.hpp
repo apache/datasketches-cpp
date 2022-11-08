@@ -848,8 +848,13 @@ bool req_sketch<T, C, A>::const_iterator::operator!=(const const_iterator& other
 }
 
 template<typename T, typename C, typename A>
-std::pair<const T&, const uint64_t> req_sketch<T, C, A>::const_iterator::operator*() const {
-  return std::pair<const T&, const uint64_t>(*compactor_it_, 1ULL << (*levels_it_).get_lg_weight());
+auto req_sketch<T, C, A>::const_iterator::operator*() const -> const value_type {
+  return value_type(*compactor_it_, 1ULL << (*levels_it_).get_lg_weight());
+}
+
+template<typename T, typename C, typename A>
+auto req_sketch<T, C, A>::const_iterator::operator->() const -> const return_value_holder<value_type> {
+  return **this;
 }
 
 } /* namespace datasketches */

@@ -23,6 +23,8 @@
 #include <functional>
 #include <cmath>
 
+#include "common_defs.hpp"
+
 namespace datasketches {
 
 template<
@@ -123,24 +125,16 @@ public:
   const_iterator(const Base& it, const Base& begin): Base(it), begin(begin) {}
 
   template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-  value_type operator*() const { return Base::operator*(); }
+  const value_type operator*() const { return Base::operator*(); }
 
   template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-  value_type operator*() const { return value_type(*(Base::operator*().first), Base::operator*().second); }
-
-  class return_value_holder {
-  public:
-    return_value_holder(value_type value): value_(value) {}
-    const value_type* operator->() const { return &value_; }
-  private:
-    value_type value_;
-  };
+  const value_type operator*() const { return value_type(*(Base::operator*().first), Base::operator*().second); }
 
   template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   const value_type* operator->() const { return Base::operator->(); }
 
   template<typename TT = T, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-  return_value_holder operator->() const { return **this; }
+  const return_value_holder<value_type> operator->() const { return **this; }
 
   uint64_t get_weight() const {
     if (*this == begin) return Base::operator*().second;
