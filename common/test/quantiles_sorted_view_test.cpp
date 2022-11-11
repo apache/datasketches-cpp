@@ -45,8 +45,12 @@ TEST_CASE("set 0", "sorted view") {
     REQUIRE(view.size() == 1);
 
     auto it = view.begin();
+    // using operator->
     REQUIRE(it->first == 10);
     REQUIRE(it->second == 1);
+    // using operator*
+    REQUIRE((*it).first == 10);
+    REQUIRE((*it).second == 1);
     REQUIRE(it.get_weight() == 1);
     REQUIRE(it.get_cumulative_weight() == 1);
     REQUIRE(it.get_cumulative_weight(false) == 0);

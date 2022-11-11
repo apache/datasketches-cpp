@@ -73,8 +73,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE_THROWS_AS(sketch.get_PMF(split_points, 1), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::runtime_error);
 
-    for (auto it: sketch) {
-      (void) it; // to suppress "unused" warning
+    for (auto pair: sketch) {
+      unused(pair); // to suppress "unused" warning
       FAIL("should be no iterations over an empty sketch");
     }
   }
@@ -107,11 +107,16 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(quantiles[2] == 1.0);
 
     int count = 0;
-    for (auto it: sketch) {
-      REQUIRE(it.second == 1);
+    for (auto pair: sketch) {
+      REQUIRE(pair.second == 1);
       ++count;
     }
     REQUIRE(count == 1);
+
+    // iterator dereferencing
+    auto it = sketch.begin();
+    REQUIRE(it->first == 1.0f);
+    REQUIRE((*it).first == 1.0f);
   }
 
   SECTION("NaN") {
@@ -211,9 +216,9 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
     uint32_t count = 0;
     uint64_t total_weight = 0;
-    for (auto it: sketch) {
+    for (auto pair: sketch) {
       ++count;
-      total_weight += it.second;
+      total_weight += pair.second;
     }
     REQUIRE(count == sketch.get_num_retained());
     REQUIRE(total_weight == sketch.get_n());

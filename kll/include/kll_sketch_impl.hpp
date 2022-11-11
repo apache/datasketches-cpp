@@ -1019,47 +1019,6 @@ typename kll_sketch<T, C, A>::const_iterator kll_sketch<T, C, A>::end() const {
   return kll_sketch<T, C, A>::const_iterator(nullptr, levels_.data(), num_levels_);
 }
 
-// kll_sketch::const_iterator implementation
-
-template<typename T, typename C, typename A>
-kll_sketch<T, C, A>::const_iterator::const_iterator(const T* items, const uint32_t* levels, const uint8_t num_levels):
-items(items), levels(levels), num_levels(num_levels), index(items == nullptr ? levels[num_levels] : levels[0]), level(items == nullptr ? num_levels : 0), weight(1)
-{}
-
-template<typename T, typename C, typename A>
-typename kll_sketch<T, C, A>::const_iterator& kll_sketch<T, C, A>::const_iterator::operator++() {
-  ++index;
-  if (index == levels[level + 1]) { // go to the next non-empty level
-    do {
-      ++level;
-      weight *= 2;
-    } while (level < num_levels && levels[level] == levels[level + 1]);
-  }
-  return *this;
-}
-
-template<typename T, typename C, typename A>
-typename kll_sketch<T, C, A>::const_iterator& kll_sketch<T, C, A>::const_iterator::operator++(int) {
-  const_iterator tmp(*this);
-  operator++();
-  return tmp;
-}
-
-template<typename T, typename C, typename A>
-bool kll_sketch<T, C, A>::const_iterator::operator==(const const_iterator& other) const {
-  return index == other.index;
-}
-
-template<typename T, typename C, typename A>
-bool kll_sketch<T, C, A>::const_iterator::operator!=(const const_iterator& other) const {
-  return !operator==(other);
-}
-
-template<typename T, typename C, typename A>
-const std::pair<const T&, const uint64_t> kll_sketch<T, C, A>::const_iterator::operator*() const {
-  return std::pair<const T&, const uint64_t>(items[index], weight);
-}
-
 template<typename T, typename C, typename A>
 class kll_sketch<T, C, A>::item_deleter {
   public:
@@ -1107,6 +1066,52 @@ void kll_sketch<T, C, A>::reset_sorted_view() {
     AllocSortedView(allocator_).deallocate(sorted_view_, 1);
     sorted_view_ = nullptr;
   }
+}
+
+// kll_sketch::const_iterator implementation
+
+template<typename T, typename C, typename A>
+kll_sketch<T, C, A>::const_iterator::const_iterator(const T* items, const uint32_t* levels, const uint8_t num_levels):
+items(items), levels(levels), num_levels(num_levels), index(items == nullptr ? levels[num_levels] : levels[0]), level(items == nullptr ? num_levels : 0), weight(1)
+{}
+
+template<typename T, typename C, typename A>
+typename kll_sketch<T, C, A>::const_iterator& kll_sketch<T, C, A>::const_iterator::operator++() {
+  ++index;
+  if (index == levels[level + 1]) { // go to the next non-empty level
+    do {
+      ++level;
+      weight *= 2;
+    } while (level < num_levels && levels[level] == levels[level + 1]);
+  }
+  return *this;
+}
+
+template<typename T, typename C, typename A>
+typename kll_sketch<T, C, A>::const_iterator& kll_sketch<T, C, A>::const_iterator::operator++(int) {
+  const_iterator tmp(*this);
+  operator++();
+  return tmp;
+}
+
+template<typename T, typename C, typename A>
+bool kll_sketch<T, C, A>::const_iterator::operator==(const const_iterator& other) const {
+  return index == other.index;
+}
+
+template<typename T, typename C, typename A>
+bool kll_sketch<T, C, A>::const_iterator::operator!=(const const_iterator& other) const {
+  return !operator==(other);
+}
+
+template<typename T, typename C, typename A>
+auto kll_sketch<T, C, A>::const_iterator::operator*() const -> const value_type {
+  return value_type(items[index], weight);
+}
+
+template<typename T, typename C, typename A>
+auto kll_sketch<T, C, A>::const_iterator::operator->() const -> const return_value_holder<value_type> {
+  return **this;
 }
 
 } /* namespace datasketches */
