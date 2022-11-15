@@ -42,7 +42,7 @@ class always_one_policy {
 public:
     always_one_policy(): initial_value(1) {}
     T create() const { return 1; }
-    void update(T& summary, const T& update) const { }
+    void update(T&, const T&) const { }
 private:
     T initial_value;
 };
@@ -216,13 +216,8 @@ private:
         auto union_result = u.get_result() ;
         std::vector<uint64_t> num_days_arr(num_sketches+1) ;
 
-        int num_retained = 0 ;
-        int total_sum = 0 ;
-
         for (const auto& entry: union_result) {
             int num_days_visited = entry.second ;
-            num_retained++ ;
-            total_sum += entry.second ;
             num_days_arr[num_days_visited]++;
         }
 
