@@ -23,6 +23,7 @@
 #include <type_traits>
 #include <vector>
 #include <functional>
+#include <numeric>
 #include <cmath>
 
 /*
