@@ -115,6 +115,7 @@ add_subdirectory(sampling)
 add_subdirectory(tuple)
 add_subdirectory(req)
 add_subdirectory(quantiles)
+add_subdirectory(density)
 
 if (WITH_PYTHON)
   add_subdirectory(python)
