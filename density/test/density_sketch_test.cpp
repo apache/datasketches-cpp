@@ -37,6 +37,7 @@ TEST_CASE("density sketch: one item", "[density_sketch]") {
 
   sketch.update(std::vector<float>({0, 0, 0}));
   REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_estimate({0, 0, 0}) == 1);
   REQUIRE(sketch.get_estimate({0.01, 0.01, 0.01}) > 0.95);
   REQUIRE(sketch.get_estimate({1, 1, 1}) < 0.05);
@@ -61,6 +62,7 @@ TEST_CASE("density sketch: iterator", "[density_sketch]") {
   unsigned n = 1000;
   for (unsigned i = 1; i <= n; ++i) sketch.update(std::vector<float>(3, i));
   REQUIRE(sketch.get_n() == n);
+  REQUIRE(sketch.is_estimation_mode());
   //std::cout << sketch.to_string(true, true);
   unsigned count = 0;
   for (auto pair: sketch) {

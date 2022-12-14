@@ -95,6 +95,12 @@ public:
   uint32_t get_num_retained() const;
 
   /**
+   * Returns true if this sketch is in estimation mode.
+   * @return estimation mode flag
+   */
+  bool is_estimation_mode() const;
+
+  /**
    * Updates this sketch with a given point.
    * @param point given point
    */

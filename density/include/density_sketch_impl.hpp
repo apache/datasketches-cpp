@@ -62,6 +62,11 @@ uint32_t density_sketch<T, K, A>::get_num_retained() const {
 }
 
 template<typename T, typename K, typename A>
+bool density_sketch<T, K, A>::is_estimation_mode() const {
+  return levels_.size() > 1;
+}
+
+template<typename T, typename K, typename A>
 template<typename FwdVector>
 void density_sketch<T, K, A>::update(FwdVector&& point) {
   if (point.size() != dim_) throw std::invalid_argument("dimension mismatch");
