@@ -21,8 +21,6 @@
 
 #include <density_sketch.hpp>
 
-#include <iostream>
-
 namespace datasketches {
 
 TEST_CASE("density sketch: empty", "[density_sketch]") {
@@ -56,6 +54,21 @@ TEST_CASE("density sketch: merge", "[density_sketch]") {
 
   REQUIRE(sketch1.get_n() == 3);
   REQUIRE(sketch1.get_num_retained() == 3);
+}
+
+TEST_CASE("density sketch: iterator", "[density_sketch]") {
+  density_sketch<float> sketch(10, 3);
+  unsigned n = 1000;
+  for (unsigned i = 1; i <= n; ++i) sketch.update(std::vector<float>(3, i));
+  REQUIRE(sketch.get_n() == n);
+  //std::cout << sketch.to_string(true, true);
+  unsigned count = 0;
+  for (auto pair: sketch) {
+    ++count;
+    // just to assert something about the output
+    REQUIRE(pair.first.size() == sketch.get_dim());
+  }
+  REQUIRE(count == sketch.get_num_retained());
 }
 
 } /* namespace datasketches */

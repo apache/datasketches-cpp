@@ -26,6 +26,8 @@
 #include <numeric>
 #include <cmath>
 
+#include "common_defs.hpp"
+
 /*
  * Based on the following paper:
  * Zohar Karnin, Edo Liberty "Discrepancy, Coresets, and Sketches in Machine Learning"
@@ -114,6 +116,17 @@ public:
    */
   Allocator get_allocator() const;
 
+  /**
+   * Prints a summary of the sketch.
+   * @param print_levels if true include information about levels
+   * @param print_items if true include sketch data
+   */
+  string<Allocator> to_string(bool print_levels = false, bool print_items = false) const;
+
+  class const_iterator;
+  const_iterator begin() const;
+  const_iterator end() const;
+
 private:
   uint16_t k_;
   uint32_t dim_;
@@ -123,6 +136,28 @@ private:
 
   void compact();
   void compact_level(unsigned height);
+};
+
+template<typename T, typename K, typename A>
+class density_sketch<T, K, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+public:
+  using Vector = density_sketch<T, K, A>::Vector;
+  using value_type = std::pair<const Vector&, const uint64_t>;
+  const_iterator& operator++();
+  const_iterator& operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  const value_type operator*() const;
+  const return_value_holder<value_type> operator->() const;
+private:
+  using LevelsIterator = typename density_sketch<T, K, A>::Levels::const_iterator;
+  using LevelIterator = typename density_sketch<T, K, A>::Level::const_iterator;
+  LevelsIterator levels_it_;
+  LevelsIterator levels_end_;
+  LevelIterator level_it_;
+  unsigned height_;
+  friend class density_sketch<T, K, A>;
+  const_iterator(LevelsIterator begin, LevelsIterator end);
 };
 
 } /* namespace datasketches */

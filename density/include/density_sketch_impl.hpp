@@ -21,8 +21,8 @@
 #define DENSITY_SKETCH_IMPL_HPP_
 
 #include <algorithm>
+#include <sstream>
 
-#include "common_defs.hpp"
 #include "conditional_forward.hpp"
 
 namespace datasketches {
@@ -138,6 +138,128 @@ void density_sketch<T, K, A>::compact_level(unsigned height) {
     }
   }
   level.clear();
+}
+
+template<typename T, typename K, typename A>
+string<A> density_sketch<T, K, A>::to_string(bool print_levels, bool print_items) const {
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
+  os << "### Density sketch summary:" << std::endl;
+  os << "   K              : " << k_ << std::endl;
+  os << "   Dim            : " << dim_ << std::endl;
+  os << "   Empty          : " << (is_empty() ? "true" : "false") << std::endl;
+  os << "   N              : " << n_ << std::endl;
+  os << "   Retained items : " << num_retained_ << std::endl;
+  os << "   Levels         : " << levels_.size() << std::endl;
+  os << "### End sketch summary" << std::endl;
+
+  if (print_levels) {
+    os << "### Density sketch levels:" << std::endl;
+    os << "   height: size" << std::endl;
+    for (unsigned height = 0; height < levels_.size(); ++height) {
+      os << "   " << height << ": "
+        << levels_[height].size() << std::endl;
+    }
+    os << "### End sketch levels" << std::endl;
+  }
+
+  if (print_items) {
+    os << "### Density sketch data:" << std::endl;
+    unsigned level = 0;
+    for (unsigned height = 0; height < levels_.size(); ++height) {
+      os << " level " << height << ": " << std::endl;
+      for (const auto& point: levels_[height]) {
+        os << "   [";
+        bool first = true;
+        for (auto value: point) {
+          if (first) {
+            first = false;
+          } else {
+            os << ", ";
+          }
+          os << value;
+        }
+        os << "]" << std::endl;
+      }
+      ++level;
+    }
+    os << "### End sketch data" << std::endl;
+  }
+  return string<A>(os.str().c_str(), levels_.get_allocator());
+}
+
+template<typename T, typename K, typename A>
+auto density_sketch<T, K, A>::begin() const -> const_iterator {
+  return const_iterator(levels_.begin(), levels_.end());
+}
+
+template<typename T, typename K, typename A>
+auto density_sketch<T, K, A>::end() const -> const_iterator {
+  return const_iterator(levels_.end(), levels_.end());
+}
+
+// iterator
+
+template<typename T, typename K, typename A>
+density_sketch<T, K, A>::const_iterator::const_iterator(LevelsIterator begin, LevelsIterator end):
+levels_it_(begin),
+levels_end_(end),
+level_it_(),
+height_(0)
+{
+  // skip empty levels
+  while (levels_it_ != levels_end_) {
+    level_it_ = levels_it_->begin();
+    if (level_it_ != levels_it_->end()) break;
+    ++levels_it_;
+  }
+}
+
+template<typename T, typename K, typename A>
+auto density_sketch<T, K, A>::const_iterator::operator++() -> const_iterator& {
+  ++level_it_;
+  if (level_it_ == levels_it_->end()) {
+    ++levels_it_;
+    ++height_;
+    // skip empty levels
+    while (levels_it_ != levels_end_) {
+      level_it_ = levels_it_->begin();
+      if (level_it_ != levels_it_->end()) break;
+      ++levels_it_;
+      ++height_;
+    }
+  }
+  return *this;
+}
+
+template<typename T, typename K, typename A>
+auto density_sketch<T, K, A>::const_iterator::operator++(int) -> const_iterator& {
+  const_iterator tmp(*this);
+  operator++();
+  return tmp;
+}
+
+template<typename T, typename K, typename A>
+bool density_sketch<T, K, A>::const_iterator::operator==(const const_iterator& other) const {
+  if (levels_it_ != other.levels_it_) return false;
+  if (levels_it_ == levels_end_) return true;
+  return level_it_ == other.level_it_;
+}
+
+template<typename T, typename K, typename A>
+bool density_sketch<T, K, A>::const_iterator::operator!=(const const_iterator& other) const {
+  return !operator==(other);
+}
+
+template<typename T, typename K, typename A>
+auto density_sketch<T, K, A>::const_iterator::operator*() const -> const value_type {
+  return value_type(*level_it_, 1ULL << height_);
+}
+
+template<typename T, typename K, typename A>
+auto density_sketch<T, K, A>::const_iterator::operator->() const -> const return_value_holder<value_type> {
+  return **this;
 }
 
 } /* namespace datasketches */
