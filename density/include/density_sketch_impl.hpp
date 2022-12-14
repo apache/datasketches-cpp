@@ -213,6 +213,7 @@ height_(0)
     level_it_ = levels_it_->begin();
     if (level_it_ != levels_it_->end()) break;
     ++levels_it_;
+    ++height_;
   }
 }
 
