@@ -156,6 +156,7 @@ string<A> density_sketch<T, K, A>::to_string(bool print_levels, bool print_items
   os << "   Empty          : " << (is_empty() ? "true" : "false") << std::endl;
   os << "   N              : " << n_ << std::endl;
   os << "   Retained items : " << num_retained_ << std::endl;
+  os << "   Estimation mode: " << (is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   Levels         : " << levels_.size() << std::endl;
   os << "### End sketch summary" << std::endl;
 
