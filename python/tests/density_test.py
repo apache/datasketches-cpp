@@ -44,10 +44,13 @@ class densityTest(unittest.TestCase):
     self.assertLess(sketch.get_num_retained(), n)
     self.assertGreater(sketch.get_estimate([n - 1, n - 1, n - 1]), 0)
 
-    print(sketch.to_string())
+    print(sketch)
 
-    list = sketch.get_coreset()
-    self.assertEqual(len(list), sketch.get_num_retained())
+    for tuple in sketch:
+      vector = tuple[0]
+      weight = tuple[1]
+      self.assertEqual(len(vector), dim)
+      self.assertGreaterEqual(weight, 1) 
 
   def test_density_merge(self):
     sketch1 = density_doubles_sketch(10, 2)

@@ -17,33 +17,14 @@
  * under the License.
  */
 
-#include "density_sketch.hpp"
-
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <vector>
 
+#include "density_sketch.hpp"
+
 namespace py = pybind11;
-
-namespace datasketches {
-
-namespace python {
-
-template<typename T>
-py::list density_sketch_get_coreset(const density_sketch<T>& sketch) {
-  py::list list(sketch.get_num_retained());
-  unsigned i = 0;
-  for (auto pair: sketch) {
-    list[i++] = py::make_tuple(pair.first, pair.second);
-  }
-  return list;
-}
-
-}
-}
-
-namespace dspy = datasketches::python;
 
 template<typename T>
 void bind_density_sketch(py::module &m, const char* name) {
@@ -71,12 +52,11 @@ void bind_density_sketch(py::module &m, const char* name) {
         "Returns True if the sketch is in estimation mode, otherwise False")
     .def("get_estimate", &density_sketch<T>::get_estimate, py::arg("point"),
         "Returns an approximate density at the given point")
-    .def("get_coreset", &dspy::density_sketch_get_coreset<T>,
-        "Returns the retained samples with weights")
     .def("__str__", &density_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
         "Produces a string summary of the sketch")
     .def("to_string", &density_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
         "Produces a string summary of the sketch")
+    .def("__iter__", [](const density_sketch<T>& s){ return py::make_iterator(s.begin(), s.end()); })
     ;
 }
 
