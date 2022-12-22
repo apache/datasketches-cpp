@@ -56,17 +56,40 @@ public:
   /**
   * @return vector of uint64_t which each represent the index to which `value' must update in the sketch
   */
-  std::vector<uint64_t> get_hashes(const void* value) ;
+  std::vector<uint64_t> get_hashes(const void* value, size_t size) ;
 
   /**
-   * void function which inserts an item into the sketch
+  * void function which inserts an item of type uint64_t into the sketch
+  */
+  void update(uint64_t item) ;
+
+  /**
+   * void function which inserts an item of type std::string into the sketch
    */
-  void update(const void* value) ;
+  void update(const std::string& item) ;
+
+  /**
+  * void function for generic updates.
+  */
+  void update(const void* item, size_t size) ;
+
+  /**
+   * @param item : uint64_t type
+   * @return an estimate of the item's frequency.
+   */
+  uint64_t get_estimate(uint64_t item) ;
+
+   /**
+   * @param item : std::string type
+   * @return an estimate of the item's frequency.
+   */
+  uint64_t get_estimate(const std::string& item) ;
+
 
   /**
    * @return the estimated frequency of item
    */
-   uint64_t get_estimate(const void* item) ;
+   uint64_t get_estimate(const void* item, size_t size) ;
 
 
 

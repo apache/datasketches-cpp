@@ -29,27 +29,30 @@ TEST_CASE("CM one update: uint64_t"){
     uint64_t n_hashes = 3, n_buckets = 5, seed = 1234567 ;
     count_min_sketch c(n_hashes, n_buckets, seed) ;
     std::string x = "x" ;
-    c.update(x.c_str()) ; // pointer to the string
+    c.update(x) ; // pointer to the string
     std::vector<uint64_t> c_sketch = c.get_sketch() ;
+    REQUIRE(c.get_estimate(x) == 1) ;
+
+
 
     // init the hash function to check the sketch is appropriately set.
-//    HashState hashes ;
-//    MurmurHash3_x64_128(x.c_str(), 64, seed, hashes);
-//    uint64_t bucket_id, bucket_to_set ;
-//    uint64_t hash_location = hashes.h1 ;
-//    std::cout<< "Hash seed: " << seed << std::endl;
-//    for(uint64_t nh=0; nh < n_hashes; ++nh){
-//      hash_location += (nh * hashes.h2) ;
-//      bucket_id = hash_location % n_buckets ;
-//      std::cout << "hash: " << hash_location << std::endl ;
-//      //std::cout << bucket_id << std::endl;
-//      bucket_to_set = (nh*n_hashes) + bucket_id ;
-//      //std::cout << "The hash location should be: " << bucket_to_set << std::endl;
-//      REQUIRE(c_sketch[ bucket_to_set] == 1) ;
-//
-//    uint64_t est = c.get_estimate(x.c_str()) ;
-//    REQUIRE(est == 1) ;
-//    }
+    HashState hashes ;
+    MurmurHash3_x64_128(x.c_str(), x.length(),  seed, hashes);
+    uint64_t bucket_id, bucket_to_set ;
+    uint64_t hash_location = hashes.h1 ;
+    std::cout<< "Hash seed: " << seed << std::endl;
+    for(uint64_t nh=0; nh < n_hashes; ++nh){
+      hash_location += (nh * hashes.h2) ;
+      bucket_id = hash_location % n_buckets ;
+      std::cout << "hash: " << hash_location << std::endl ;
+      //std::cout << bucket_id << std::endl;
+      bucket_to_set = (nh*n_hashes) + bucket_id ;
+      //std::cout << "The hash location should be: " << bucket_to_set << std::endl;
+      REQUIRE(c_sketch[ bucket_to_set] == 1) ;
+
+    uint64_t est = c.get_estimate(x) ;
+    REQUIRE(est == 1) ;
+    }
 
 
 

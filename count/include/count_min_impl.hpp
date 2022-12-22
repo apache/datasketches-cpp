@@ -37,7 +37,7 @@ std::vector<uint64_t> count_min_sketch::get_config(){
     return config ;
 } ;
 
-std::vector<uint64_t> count_min_sketch::get_hashes(const void* item){
+std::vector<uint64_t> count_min_sketch::get_hashes(const void* item, size_t size){
   /*
    * Returns the hash locations for the input item.
    * Approach taken from
@@ -48,8 +48,7 @@ std::vector<uint64_t> count_min_sketch::get_hashes(const void* item){
   //sketch_update_locations.resize(num_hashes) ;
   HashState hashes;
   std::cout<< "Hash seed: " << seed << std::endl;
-  std::cout << "Item: " << item << std::endl;
-  MurmurHash3_x64_128(item, 64, seed, hashes); //
+  MurmurHash3_x64_128(item, size, seed, hashes); //
 
 
   uint64_t hash = hashes.h1 ;
@@ -62,22 +61,40 @@ std::vector<uint64_t> count_min_sketch::get_hashes(const void* item){
   return sketch_update_locations ;
 }
 
-void count_min_sketch::update(const void* item) {
+void count_min_sketch::update(uint64_t item) {
+  std::cout << "Inserting " << item << std::endl;
+  update(&item, sizeof(item));
+}
+
+void count_min_sketch::update(const std::string& item) {
+  std::cout << "Inserting " << item << std::endl;
+  if (item.empty()) return;
+  update(item.c_str(), item.length());
+}
+
+void count_min_sketch::update(const void* item, size_t size) {
   /*
    * Gets the value's hash locations and then increments the sketch in those
    * locations.
    */
-  std::vector<uint64_t> hash_locations = get_hashes(item) ;
+  std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
   for (auto h: hash_locations){
     sketch[h] += 1 ;
   }
 }
 
-uint64_t count_min_sketch::get_estimate(const void* item){
+uint64_t count_min_sketch::get_estimate(uint64_t item) {return get_estimate(&item, sizeof(item));}
+
+uint64_t count_min_sketch::get_estimate(const std::string& item) {
+  if (item.empty()) return 0 ; // Empty strings are not inserted into the sketch.
+  return get_estimate(item.c_str(), item.length());
+}
+
+uint64_t count_min_sketch::get_estimate(const void* item, size_t size){
   /*
    * Returns the estimated frequency of the item
    */
-  std::vector<uint64_t> hash_locations = get_hashes(item) ;
+  std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
   std::vector<uint64_t> estimates ;
   for (auto h: hash_locations){
     std::cout<< h << " " << sketch[h] << std::endl;
