@@ -17,34 +17,11 @@
  * under the License.
  */
 
-#include "hll.hpp"
-
 #include <pybind11/pybind11.h>
 
+#include "hll.hpp"
+
 namespace py = pybind11;
-
-namespace datasketches {
-namespace python {
-
-hll_sketch hll_sketch_deserialize(py::bytes skBytes) {
-  std::string skStr = skBytes; // implicit cast  
-  return hll_sketch::deserialize(skStr.c_str(), skStr.length());
-}
-
-py::object hll_sketch_serialize_compact(const hll_sketch& sk) {
-  auto serResult = sk.serialize_compact();
-  return py::bytes((char*)serResult.data(), serResult.size());
-}
-
-py::object hll_sketch_serialize_updatable(const hll_sketch& sk) {
-  auto serResult = sk.serialize_updatable();
-  return py::bytes((char*)serResult.data(), serResult.size());
-}
-
-}
-}
-
-namespace dspy = datasketches::python;
 
 void init_hll(py::module &m) {
   using namespace datasketches;
@@ -59,12 +36,6 @@ void init_hll(py::module &m) {
     .def(py::init<uint8_t>(), py::arg("lg_k"))
     .def(py::init<uint8_t, target_hll_type>(), py::arg("lg_k"), py::arg("tgt_type"))
     .def(py::init<uint8_t, target_hll_type, bool>(), py::arg("lg_k"), py::arg("tgt_type"), py::arg("start_max_size")=false)
-    .def_static("deserialize", &dspy::hll_sketch_deserialize,
-         "Reads a bytes object and returns the corresponding hll_sketch")
-    .def("serialize_compact", &dspy::hll_sketch_serialize_compact,
-         "Serializes the sketch into a bytes object, compressiong the exception table if HLL_4")
-    .def("serialize_updatable", &dspy::hll_sketch_serialize_updatable,
-         "Serializes the sketch into a bytes object")
     .def("__str__", (std::string (hll_sketch::*)(bool,bool,bool,bool) const) &hll_sketch::to_string,
          py::arg("summary")=true, py::arg("detail")=false, py::arg("aux_detail")=false, py::arg("all")=false,
          "Produces a string summary of the sketch")
@@ -101,7 +72,28 @@ void init_hll(py::module &m) {
     .def_static("get_rel_err", &hll_sketch::get_rel_err,
          py::arg("upper_bound"), py::arg("unioned"), py::arg("lg_k"), py::arg("num_std_devs"),
          "Retuns the a priori relative error bound for the given parameters")
-    ;
+    .def(
+        "serialize_compact",
+        [](const hll_sketch& sk) {
+          auto bytes = sk.serialize_compact();
+          return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        },
+        "Serializes the sketch into a bytes object, compressiong the exception table if HLL_4"
+    )
+    .def(
+        "serialize_updatable",
+        [](const hll_sketch& sk) {
+          auto bytes = sk.serialize_updatable();
+          return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        },
+        "Serializes the sketch into a bytes object"
+    )
+    .def_static(
+        "deserialize",
+        [](const std::string& bytes) { return hll_sketch::deserialize(bytes.data(), bytes.size()); },
+        py::arg("bytes"),
+        "Reads a bytes object and returns the corresponding hll_sketch"
+    );
 
   py::class_<hll_union>(m, "hll_union")
     .def(py::init<uint8_t>(), py::arg("lg_max_k"))
