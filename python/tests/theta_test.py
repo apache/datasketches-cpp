@@ -48,6 +48,12 @@ class ThetaTest(unittest.TestCase):
         self.assertFalse(sk.is_empty())
         self.assertEqual(sk.get_estimate(), new_sk.get_estimate())
 
+        count = 0
+        for hash in new_sk:
+          self.assertLess(hash, new_sk.get_theta64())
+          count = count + 1
+        self.assertEqual(count, new_sk.get_num_retained())
+
     def test_theta_set_operations(self):
         k = 12      # 2^k = 4096 rows in the table
         n = 1 << 18 # ~256k unique values
@@ -77,7 +83,6 @@ class ThetaTest(unittest.TestCase):
         self.assertLessEqual(result.get_lower_bound(1), 7 * n / 4)
         self.assertGreaterEqual(result.get_upper_bound(1), 7 * n / 4)
 
-
         # INTERSECTIONS
         # create an intersection object
         intersect = theta_intersection() # no lg_k
@@ -95,7 +100,6 @@ class ThetaTest(unittest.TestCase):
         # we know the sets overlap by 1/4
         self.assertLessEqual(result.get_lower_bound(1), n / 4)
         self.assertGreaterEqual(result.get_upper_bound(1), n / 4)
-
 
         # A NOT B
         # create an a_not_b object
