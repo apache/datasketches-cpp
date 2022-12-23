@@ -80,6 +80,13 @@ class QuantilesTest(unittest.TestCase):
       unif_quantiles.update(np.random.uniform(10, 20, size=n-1))
       self.assertTrue(ks_test(quantiles, unif_quantiles, 0.001))
 
+      total_weight = 0
+      for tuple in quantiles:
+        item = tuple[0]
+        weight = tuple[1]
+        total_weight = total_weight + weight
+      self.assertEqual(total_weight, quantiles.get_n())
+
     def test_quantiles_ints_sketch(self):
         k = 128
         n = 10
