@@ -17,7 +17,6 @@
  * under the License.
  */
 
-#include <sstream>
 #include <pybind11/pybind11.h>
 
 #include "cpc_sketch.hpp"
@@ -26,28 +25,6 @@
 #include "common_defs.hpp"
 
 namespace py = pybind11;
-
-namespace datasketches {
-namespace python {
-
-cpc_sketch* cpc_sketch_deserialize(py::bytes skBytes) {
-  std::string skStr = skBytes; // implicit cast
-  return new cpc_sketch(cpc_sketch::deserialize(skStr.c_str(), skStr.length()));
-}
-
-py::object cpc_sketch_serialize(const cpc_sketch& sk) {
-  auto serResult = sk.serialize();
-  return py::bytes((char*)serResult.data(), serResult.size());
-}
-
-cpc_sketch* cpc_union_get_result(const cpc_union& u) {
-  return new cpc_sketch(u.get_result());
-}
-
-}
-}
-
-namespace dspy = datasketches::python;
 
 void init_cpc(py::module &m) {
   using namespace datasketches;
@@ -59,10 +36,6 @@ void init_cpc(py::module &m) {
          "Produces a string summary of the sketch")
     .def("to_string", &cpc_sketch::to_string,
          "Produces a string summary of the sketch")
-    .def("serialize", &dspy::cpc_sketch_serialize,
-         "Serializes the sketch into a bytes object")
-    .def_static("deserialize", &dspy::cpc_sketch_deserialize,
-         "Reads a bytes object and returns the corresponding cpc_sketch")
     .def<void (cpc_sketch::*)(uint64_t)>("update", &cpc_sketch::update, py::arg("datum"),
          "Updates the sketch with the given 64-bit integer value")
     .def<void (cpc_sketch::*)(double)>("update", &cpc_sketch::update, py::arg("datum"),
@@ -77,14 +50,27 @@ void init_cpc(py::module &m) {
          "Returns an approximate lower bound on the estimate for kappa values in {1, 2, 3}, roughly corresponding to standard deviations")
     .def("get_upper_bound", &cpc_sketch::get_upper_bound, py::arg("kappa"),
          "Returns an approximate upper bound on the estimate for kappa values in {1, 2, 3}, roughly corresponding to standard deviations")
-    ;
+    .def(
+        "serialize",
+        [](const cpc_sketch& sk) {
+          auto bytes = sk.serialize();
+          return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        },
+        "Serializes the sketch into a bytes object"
+    )
+    .def_static(
+        "deserialize",
+        [](const std::string& bytes) { return cpc_sketch::deserialize(bytes.data(), bytes.size()); },
+        py::arg("bytes"),
+        "Reads a bytes object and returns the corresponding cpc_sketch"
+    );
 
   py::class_<cpc_union>(m, "cpc_union")
     .def(py::init<uint8_t, uint64_t>(), py::arg("lg_k"), py::arg("seed")=DEFAULT_SEED)
     .def(py::init<const cpc_union&>())
     .def("update", (void (cpc_union::*)(const cpc_sketch&)) &cpc_union::update, py::arg("sketch"),
          "Updates the union with the provided CPC sketch")
-    .def("get_result", &dspy::cpc_union_get_result,
+    .def("get_result", &cpc_union::get_result,
          "Returns a CPC sketch with the result of the union")
     ;
 }
