@@ -72,7 +72,7 @@ class vector_of_kll_sketches {
     std::string to_string(bool print_levels = false, bool print_items = false) const;
 
     // binary output/input
-    py::list serialize(py::array_t<uint32_t>& isk);
+    py::list serialize(const py::array_t<int>& isk);
     // note: deserialize() replaces the sketch at the specified
     //       index. Not a static method.
     void deserialize(const py::bytes& sk_bytes, uint32_t idx);
@@ -404,7 +404,7 @@ void vector_of_kll_sketches<T, C>::deserialize(const py::bytes& sk_bytes,
 }
 
 template<typename T, typename C>
-py::list vector_of_kll_sketches<T, C>::serialize(py::array_t<uint32_t>& isk) {
+py::list vector_of_kll_sketches<T, C>::serialize(const py::array_t<int>& isk) {
   std::vector<uint32_t> inds = get_indices(isk);
   const size_t num_sketches = inds.size();
 
