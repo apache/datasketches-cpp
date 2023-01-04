@@ -15,6 +15,9 @@ namespace datasketches {
    * @author Charlie Dickens
    */
 
+template<typename T> class count_min_sketch ;
+
+template<typename T>
 class count_min_sketch{
 public:
   uint64_t num_hashes, num_buckets, seed ;
@@ -27,7 +30,8 @@ public:
   */
   count_min_sketch(uint64_t num_hashes, uint64_t num_buckets, uint64_t seed = DEFAULT_SEED) ;
 
-  std::vector<uint64_t> sketch ; // the sketch array data structure
+  //std::vector<uint64_t> sketch ; // the sketch array data structure
+  std::vector<T> sketch ; // the sketch array data structure
 
   /**
   * @return configured num_hashes of this sketch
@@ -52,7 +56,7 @@ public:
   /**
   * @return vector of the sketch data structure
   */
-  std::vector<uint64_t> get_sketch() ; // Sketch parameter configuration -- needed for merging.
+  std::vector<T> get_sketch() ; // Sketch parameter configuration -- needed for merging.
 
 //  /**
 //  * void function sets the hash parameters a and b for the bucket assignment in each row.
