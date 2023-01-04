@@ -105,17 +105,20 @@ public:
   /**
   * void function which inserts an item of type uint64_t into the sketch
   */
+  //template<typename T>
+  void update(uint64_t item, T weight) ;
   void update(uint64_t item) ;
 
   /**
    * void function which inserts an item of type std::string into the sketch
    */
+  void update(const std::string& item, T weight) ;
   void update(const std::string& item) ;
 
   /**
   * void function for generic updates.
   */
-  void update(const void* item, size_t size) ;
+  void update(const void* item, size_t size, T weight) ;
 
 
 

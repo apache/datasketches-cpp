@@ -123,27 +123,40 @@ T count_min_sketch<T>::get_estimate(const void* item, size_t size){
 }
 
 template<typename T>
+void count_min_sketch<T>::update(uint64_t item, T weight) {
+  std::cout << "Inserting " << item << std::endl;
+  update(&item, sizeof(item), weight);
+}
+
+template<typename T>
 void count_min_sketch<T>::update(uint64_t item) {
   std::cout << "Inserting " << item << std::endl;
-  update(&item, sizeof(item));
+  update(&item, sizeof(item), 1);
+}
+
+template<typename T>
+void count_min_sketch<T>::update(const std::string& item, T weight) {
+  std::cout << "Inserting " << item << std::endl;
+  if (item.empty()) return;
+  update(item.c_str(), item.length(), weight);
 }
 
 template<typename T>
 void count_min_sketch<T>::update(const std::string& item) {
   std::cout << "Inserting " << item << std::endl;
   if (item.empty()) return;
-  update(item.c_str(), item.length());
+  update(item.c_str(), item.length(), 1);
 }
 
 template<typename T>
-void count_min_sketch<T>::update(const void* item, size_t size) {
+void count_min_sketch<T>::update(const void* item, size_t size, T weight) {
   /*
    * Gets the value's hash locations and then increments the sketch in those
    * locations.
    */
   std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
   for (auto h: hash_locations){
-    sketch[h] += 1 ;
+    sketch[h] += weight ;
   }
 }
 

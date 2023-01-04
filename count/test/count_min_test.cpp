@@ -51,6 +51,12 @@ TEST_CASE("CM one update: uint64_t"){
     c.update(x) ;
     REQUIRE(c.get_estimate(x) == 1) ;
 
+    c.update(x, 9) ;
+    REQUIRE(c.get_estimate(x) == 10) ;
+
+    c.update(x, 10.0) ;
+    REQUIRE(c.get_estimate(x) == 20) ; // I think that this is going to cause issues in future.
+
 //   // Check that the hash locations are set correctly.
 //    std::vector<uint64_t> c_sketch = c.get_sketch() ;
 //    // init the hash function to check the sketch is appropriately set.
