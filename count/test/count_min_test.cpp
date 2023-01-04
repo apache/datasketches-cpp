@@ -25,32 +25,32 @@ TEST_CASE("CM init"){
     REQUIRE(c1.get_seed() == DEFAULT_SEED) ;
 }
 
-//TEST_CASE("CM parameter suggestions") {
-//
-//    // Bucket suggestions
-//    REQUIRE_THROWS(count_min_sketch::suggest_num_buckets(-1.0), "Confidence must be between 0 and 1.0 (inclusive)." ) ;
-//    REQUIRE(count_min_sketch::suggest_num_buckets(0.2) == 14) ;
-//    REQUIRE(count_min_sketch::suggest_num_buckets(0.1) == 28) ;
-//    REQUIRE(count_min_sketch::suggest_num_buckets(0.05) == 55) ;
-//    REQUIRE(count_min_sketch::suggest_num_buckets(0.01) == 272) ;
-//
-//    // Hash suggestions
-//    REQUIRE_THROWS(count_min_sketch::suggest_num_hashes(10.0), "Confidence must be between 0 and 1.0 (inclusive)." ) ;
-//    REQUIRE_THROWS(count_min_sketch::suggest_num_hashes(-1.0), "Confidence must be between 0 and 1.0 (inclusive)." ) ;
-//    REQUIRE(count_min_sketch::suggest_num_hashes(0.682689492) == 2) ; // 1 STDDEV
-//    REQUIRE(count_min_sketch::suggest_num_hashes(0.954499736) == 4) ; // 2 STDDEV
-//    REQUIRE(count_min_sketch::suggest_num_hashes(0.997300204) == 6) ; // 3 STDDEV
-//}
-//
-//TEST_CASE("CM one update: uint64_t"){
-//    uint64_t n_hashes = 3, n_buckets = 5, seed = 1234567 ;
-//    count_min_sketch c(n_hashes, n_buckets, seed) ;
-//    std::string x = "x" ;
-//
-//    REQUIRE(c.get_estimate("x") == 0) ; // No items in sketch so estiamtes should be zero
-//    c.update(x) ;
-//    REQUIRE(c.get_estimate(x) == 1) ;
-//
+TEST_CASE("CM parameter suggestions") {
+
+    // Bucket suggestions
+    REQUIRE_THROWS(count_min_sketch<uint64_t>::suggest_num_buckets(-1.0), "Confidence must be between 0 and 1.0 (inclusive)." ) ;
+    REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.2) == 14) ;
+    REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.1) == 28) ;
+    REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.05) == 55) ;
+    REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.01) == 272) ;
+
+    // Hash suggestions
+    REQUIRE_THROWS(count_min_sketch<uint64_t>::suggest_num_hashes(10.0), "Confidence must be between 0 and 1.0 (inclusive)." ) ;
+    REQUIRE_THROWS(count_min_sketch<uint64_t>::suggest_num_hashes(-1.0), "Confidence must be between 0 and 1.0 (inclusive)." ) ;
+    REQUIRE(count_min_sketch<uint64_t>::suggest_num_hashes(0.682689492) == 2) ; // 1 STDDEV
+    REQUIRE(count_min_sketch<uint64_t>::suggest_num_hashes(0.954499736) == 4) ; // 2 STDDEV
+    REQUIRE(count_min_sketch<uint64_t>::suggest_num_hashes(0.997300204) == 6) ; // 3 STDDEV
+}
+
+TEST_CASE("CM one update: uint64_t"){
+    uint64_t n_hashes = 3, n_buckets = 5, seed = 1234567 ;
+    count_min_sketch<uint64_t> c(n_hashes, n_buckets, seed) ;
+    std::string x = "x" ;
+
+    REQUIRE(c.get_estimate("x") == 0) ; // No items in sketch so estimates should be zero
+    c.update(x) ;
+    REQUIRE(c.get_estimate(x) == 1) ;
+
 //   // Check that the hash locations are set correctly.
 //    std::vector<uint64_t> c_sketch = c.get_sketch() ;
 //    // init the hash function to check the sketch is appropriately set.
@@ -68,7 +68,7 @@ TEST_CASE("CM init"){
 //      //std::cout << "The hash location should be: " << bucket_to_set << std::endl;
 //      REQUIRE(c_sketch[bucket_to_set] == 1) ;
 //    }
-//}
+}
 
 
 

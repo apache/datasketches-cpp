@@ -58,6 +58,23 @@ public:
   */
   std::vector<T> get_sketch() ; // Sketch parameter configuration -- needed for merging.
 
+  /*
+ * @return number_of_buckets : the number of hash buckets at every level of the
+ * sketch required in order to obtain the specified relative error.
+ * [1] - Section 3 ``Data Structure'', page 6.
+ */
+  static uint64_t suggest_num_buckets(double relative_error) ;
+
+  /*
+  * @return number_of_hashes : the number of hash functions that are required in
+   * order to achieve the specified confidence of the sketch.
+   * confidence = 1 - delta, with delta denoting the sketch failure probability in the literature.
+   * [1] - Section 3 ``Data Structure'', page 6.
+  */
+  static uint64_t suggest_num_hashes(double confidence) ;
+
+
+
 //  /**
 //  * void function sets the hash parameters a and b for the bucket assignment in each row.
 //  */
@@ -67,6 +84,23 @@ public:
   * @return vector of uint64_t which each represent the index to which `value' must update in the sketch
   */
   std::vector<uint64_t> get_hashes(const void* value, size_t size) ;
+
+  /**
+   * @param item : uint64_t type
+   * @return an estimate of the item's frequency.
+   */
+  T get_estimate(uint64_t item) ;
+
+   /**
+   * @param item : std::string type
+   * @return an estimate of the item's frequency.
+   */
+  T get_estimate(const std::string& item) ;
+
+  /**
+   * @return the estimated frequency of item
+   */
+   T get_estimate(const void* item, size_t size) ;
 
   /**
   * void function which inserts an item of type uint64_t into the sketch
@@ -83,38 +117,7 @@ public:
   */
   void update(const void* item, size_t size) ;
 
-  /**
-   * @param item : uint64_t type
-   * @return an estimate of the item's frequency.
-   */
-  uint64_t get_estimate(uint64_t item) ;
 
-   /**
-   * @param item : std::string type
-   * @return an estimate of the item's frequency.
-   */
-  uint64_t get_estimate(const std::string& item) ;
-
-
-  /**
-   * @return the estimated frequency of item
-   */
-   uint64_t get_estimate(const void* item, size_t size) ;
-
-   /*
-    * @return number_of_buckets : the number of hash buckets at every level of the
-    * sketch required in order to obtain the specified relative error.
-    * [1] - Section 3 ``Data Structure'', page 6.
-    */
-   static uint64_t suggest_num_buckets(double relative_error) ;
-
-   /*
-   * @return number_of_hashes : the number of hash functions that are required in
-    * order to achieve the specified confidence of the sketch.
-    * confidence = 1 - delta, with delta denoting the sketch failure probability in the literature.
-    * [1] - Section 3 ``Data Structure'', page 6.
-   */
-   static uint64_t suggest_num_hashes(double confidence) ;
 
 
 
