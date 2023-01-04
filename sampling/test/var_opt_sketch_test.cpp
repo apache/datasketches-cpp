@@ -58,8 +58,8 @@ static void check_if_equal(var_opt_sketch<T, A>& sk1, var_opt_sketch<T, A>& sk2)
   size_t i = 0;
 
   while ((it1 != sk1.end()) && (it2 != sk2.end())) {
-    const std::pair<const T&, const double> p1 = *it1;
-    const std::pair<const T&, const double> p2 = *it2;
+    auto p1 = *it1;
+    auto p2 = *it2;
     REQUIRE(p1.first == p2.first);   // data values
     REQUIRE(p1.second == p2.second); // weights
     ++i;
@@ -182,7 +182,7 @@ TEST_CASE("varopt sketch: invalid weight", "[var_opt_sketch]") {
   var_opt_sketch<std::string> sk(100, resize_factor::X2);
   REQUIRE_THROWS_AS(sk.update("invalid_weight", -1.0), std::invalid_argument);
 
-  // should not throw but sketch shoulds till be empty
+  // should not throw but sketch should still be empty
   sk.update("zero weight", 0.0);
   REQUIRE(sk.is_empty());
 }
@@ -221,8 +221,8 @@ TEST_CASE("varopt sketch: cumulative weight", "[var_opt_sketch]") {
   }
 
   double output_sum = 0.0;
-  for (auto it : sk) { // std::pair<int, weight>
-    output_sum += it.second;
+  for (auto pair : sk) { // std::pair<int, weight>
+    output_sum += pair.second;
   }
     
   double weight_ratio = output_sum / input_sum;
@@ -277,24 +277,27 @@ TEST_CASE("varopt sketch: full sketch serialization", "[var_opt_sketch]") {
 
   // first 2 entries should be heavy and in heap order (smallest at root)
   auto it = sk.begin();
-  const std::pair<const int, const double> p1 = *it;
+  auto p1 = *it;
   ++it;
-  const std::pair<const int, const double> p2 = *it;
+  auto p2 = *it;
   REQUIRE(p1.second == Approx(100.0).margin(EPS));
   REQUIRE(p2.second == Approx(101.0).margin(EPS));
   REQUIRE(p1.first == 100);
   REQUIRE(p2.first == 101);
+  // using operator ->
+  REQUIRE(it->first == p2.first);
+  REQUIRE(it->second == p2.second);
 
   // check for 4 preamble longs
   auto bytes = sk.serialize();
   REQUIRE((bytes.data()[0] & 0x3f) == 4);; // PREAMBLE_LONGS_WARMUP
 
-  var_opt_sketch<int> sk_from_bytes = var_opt_sketch<int>::deserialize(bytes.data(), bytes.size());
+  auto sk_from_bytes = var_opt_sketch<int>::deserialize(bytes.data(), bytes.size());
   check_if_equal(sk, sk_from_bytes);
 
   std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
   sk.serialize(ss);
-  var_opt_sketch<int> sk_from_stream = var_opt_sketch<int>::deserialize(ss);
+  auto sk_from_stream = var_opt_sketch<int>::deserialize(ss);
   check_if_equal(sk, sk_from_stream);
 
   // ensure we unroll properly
