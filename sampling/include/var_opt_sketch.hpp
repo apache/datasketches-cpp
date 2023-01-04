@@ -348,12 +348,14 @@ class var_opt_sketch {
 template<typename T, typename A>
 class var_opt_sketch<T, A>::const_iterator : public std::iterator<std::input_iterator_tag, T> {
 public:
+  using value_type = std::pair<const T&, const double>;
   const_iterator(const const_iterator& other);
   const_iterator& operator++();
   const_iterator& operator++(int);
   bool operator==(const const_iterator& other) const;
   bool operator!=(const const_iterator& other) const;
-  const std::pair<const T&, const double> operator*() const;
+  const value_type operator*() const;
+  const return_value_holder<value_type> operator->() const;
 
 private:
   friend class var_opt_sketch<T, A>;
