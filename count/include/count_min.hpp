@@ -9,6 +9,12 @@
 
 namespace datasketches {
 
+  /*
+   * C++ implementation of the CountMin sketch data structure of Cormode and Muthukrishnan.
+   * [1] - http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
+   * @author Charlie Dickens
+   */
+
 class count_min_sketch{
 public:
   uint64_t num_hashes, num_buckets, seed ;
@@ -90,6 +96,21 @@ public:
    * @return the estimated frequency of item
    */
    uint64_t get_estimate(const void* item, size_t size) ;
+
+   /*
+    * @return number_of_buckets : the number of hash buckets at every level of the
+    * sketch required in order to obtain the specified relative error.
+    * [1] - Section 3 ``Data Structure'', page 6.
+    */
+   static uint64_t suggest_num_buckets(double relative_error) ;
+
+   /*
+   * @return number_of_hashes : the number of hash functions that are required in
+    * order to achieve the specified confidence of the sketch.
+    * confidence = 1 - delta, with delta denoting the sketch failure probability in the literature.
+    * [1] - Section 3 ``Data Structure'', page 6.
+   */
+   static uint64_t suggest_num_hashes(double confidence) ;
 
 
 

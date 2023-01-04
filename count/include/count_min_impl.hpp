@@ -104,6 +104,31 @@ uint64_t count_min_sketch::get_estimate(const void* item, size_t size){
   return result ;
 }
 
+uint64_t count_min_sketch::suggest_num_buckets(double relative_error){
+  /*
+   * Function to help users select a number of buckets for a given error.
+   * TODO: Change this when we use only power of 2 buckets.
+   */
+  //std::cout<< count_min_sketch::num_buckets << std::endl;
+  if(relative_error < 0.){
+    throw std::invalid_argument( "Relative error must be at least 0." );
+  }
+  return ceil(exp(1.0) / relative_error) ;
+}
+
+uint64_t count_min_sketch::suggest_num_hashes(double confidence){
+    /*
+     * Function to help users select a number of hashes for a given confidence
+     * eg confidence is 1 - failure probability
+     * failure probability == delta in the literature.
+     * * TODO: Change this when update is improved
+     */
+    if(confidence < 0. || confidence > 1.0){
+      throw std::invalid_argument( "Confidence must be between 0 and 1.0 (inclusive)." );
+    }
+    return ceil(log(1.0/(1.0 - confidence))) ;
+  }
+
 } /* namespace datasketches */
 
 #endif
