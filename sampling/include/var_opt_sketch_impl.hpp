@@ -1575,14 +1575,19 @@ bool var_opt_sketch<T, A>::const_iterator::operator!=(const const_iterator& othe
 }
 
 template<typename T, typename A>
-const std::pair<const T&, const double> var_opt_sketch<T, A>::const_iterator::operator*() const {
+auto var_opt_sketch<T, A>::const_iterator::operator*() const -> const value_type {
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
   } else {
     wt = r_item_wt_;
   }
-  return std::pair<const T&, const double>(sk_->data_[idx_], wt);
+  return value_type(sk_->data_[idx_], wt);
+}
+
+template<typename T, typename A>
+auto var_opt_sketch<T, A>::const_iterator::operator->() const -> const return_value_holder<value_type> {
+  return **this;
 }
 
 template<typename T, typename A>
