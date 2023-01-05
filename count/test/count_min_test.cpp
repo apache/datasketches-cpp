@@ -25,7 +25,7 @@ TEST_CASE("CM init"){
     REQUIRE(c1.get_seed() == DEFAULT_SEED) ;
 }
 
-TEST_CASE("CM parameter suggestions") {
+TEST_CASE("CM parameter suggestions", "[error parameters]") {
 
     // Bucket suggestions
     REQUIRE_THROWS(count_min_sketch<uint64_t>::suggest_num_buckets(-1.0), "Confidence must be between 0 and 1.0 (inclusive)." ) ;
@@ -33,6 +33,13 @@ TEST_CASE("CM parameter suggestions") {
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.1) == 28) ;
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.05) == 55) ;
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.01) == 272) ;
+
+    // Check that the sketch get_epsilon acts inversely to suggest_num_buckets
+    uint64_t n_hashes = 3 ;
+    REQUIRE(count_min_sketch<uint64_t>(n_hashes, 14).get_relative_error() <= 0.2) ;
+    REQUIRE(count_min_sketch<uint64_t>(n_hashes, 28).get_relative_error() <= 0.1) ;
+    REQUIRE(count_min_sketch<uint64_t>(n_hashes, 55).get_relative_error() <= 0.05) ;
+    REQUIRE(count_min_sketch<uint64_t>(n_hashes, 272).get_relative_error() <= 0.01) ;
 
     // Hash suggestions
     REQUIRE_THROWS(count_min_sketch<uint64_t>::suggest_num_hashes(10.0), "Confidence must be between 0 and 1.0 (inclusive)." ) ;
@@ -44,18 +51,29 @@ TEST_CASE("CM parameter suggestions") {
 
 TEST_CASE("CM one update: uint64_t"){
     uint64_t n_hashes = 3, n_buckets = 5, seed = 1234567 ;
+    uint64_t inserted_weight = 0 ;
     count_min_sketch<uint64_t> c(n_hashes, n_buckets, seed) ;
     std::string x = "x" ;
 
     REQUIRE(c.get_estimate("x") == 0) ; // No items in sketch so estimates should be zero
     c.update(x) ;
     REQUIRE(c.get_estimate(x) == 1) ;
+    inserted_weight += 1 ;
 
-    c.update(x, 9) ;
-    REQUIRE(c.get_estimate(x) == 10) ;
+    uint64_t w = 9 ;
+    inserted_weight += w ;
+    c.update(x, w) ;
+    REQUIRE(c.get_estimate(x) == inserted_weight) ;
 
-    c.update(x, 10.0) ;
-    REQUIRE(c.get_estimate(x) == 20) ; // I think that this is going to cause issues in future.
+    // Doubles are converted to uint64_t
+    double w1 = 10.0 ;
+    inserted_weight += w1 ;
+    c.update(x, w1) ;
+    REQUIRE(c.get_estimate(x) == inserted_weight) ;
+    REQUIRE(c.get_total_weight() == inserted_weight) ;
+    REQUIRE(c.get_estimate(x) <= c.get_upper_bound(x)) ;
+    REQUIRE(c.get_estimate(x) >= c.get_lower_bound(x)) ;
+}
 
 //   // Check that the hash locations are set correctly.
 //    std::vector<uint64_t> c_sketch = c.get_sketch() ;
@@ -74,7 +92,6 @@ TEST_CASE("CM one update: uint64_t"){
 //      //std::cout << "The hash location should be: " << bucket_to_set << std::endl;
 //      REQUIRE(c_sketch[bucket_to_set] == 1) ;
 //    }
-}
 
 
 
