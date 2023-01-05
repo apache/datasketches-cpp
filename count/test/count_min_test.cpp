@@ -75,6 +75,56 @@ TEST_CASE("CM one update: uint64_t"){
     REQUIRE(c.get_estimate(x) >= c.get_lower_bound(x)) ;
 }
 
+TEST_CASE("Cm merge operation"){
+    double relative_error = 0.25 ;
+    double confidence = 0.9 ;
+    uint64_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
+    uint64_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
+    std::cout << "Buckets: " << n_buckets << "\tHashes: " << n_hashes << std::endl;
+
+    count_min_sketch<uint64_t> s(n_hashes, n_buckets, 9082435234709287) ;
+
+
+    // Generate sketches that we cannot merge into ie they disagree on at least one of the config entries
+    // TODO: implement more general merge procedure so different hashes or buckets are permitted.
+    count_min_sketch<uint64_t> s1(n_hashes+1, n_buckets) ; // incorrect number of hashes
+    count_min_sketch<uint64_t> s2(n_hashes, n_buckets+1) ;// incorrect number of buckets
+    count_min_sketch<uint64_t> s3(n_hashes, n_buckets, 1) ;// incorrect seed
+    std::vector<count_min_sketch<uint64_t>> sketches = {s1, s2, s3};
+
+    // Fail cases
+    REQUIRE_THROWS(s.merge(s), "Cannot merge a sketch with itself." ) ;
+    for(count_min_sketch<uint64_t> sk : sketches){
+      REQUIRE_THROWS(s.merge(sk), "Incompatible sketch config." ) ;
+    }
+
+    // Passing case
+    std::vector<uint64_t> s_config = s.get_config() ; // Construct a sketch with correct configuration.
+    count_min_sketch<uint64_t> t(s_config[0], s_config[1], s_config[2]) ;
+    //s.merge(t) ;
+
+    std::vector<uint64_t> data = {2, 3, 5, 7, 11};//
+    for(auto d: data){
+      s.update(d) ;
+      t.update(d) ;
+    }
+    std::vector<uint64_t> s_sk = s.get_sketch() ;
+    std::vector<uint64_t> t_sk = t.get_sketch() ;
+    for(uint64_t ii=0 ; ii < (n_buckets*n_hashes); ++ii){
+      std::cout << ii << "\t" << s_sk[ii] << "\t" << t_sk[ii] << std::endl;
+    }
+    //s.merge(t);
+
+
+    //REQUIRE(s.get_total_weight() == 2*t.get_total_weight());
+    std::cout << "Estimation checks: " << std::endl ;
+    for (auto x : data) {
+      std::cout << x << "|\t" << s.get_estimate(x) << "\t" << t.get_estimate(x) << std::endl;
+      //REQUIRE(s.get_estimate(ii) <= 2); // I don't think this line is quite correct.
+    }
+
+}
+
 //   // Check that the hash locations are set correctly.
 //    std::vector<uint64_t> c_sketch = c.get_sketch() ;
 //    // init the hash function to check the sketch is appropriately set.

@@ -89,9 +89,7 @@ std::vector<uint64_t> count_min_sketch<T>::get_hashes(const void* item, size_t s
    */
   uint64_t bucket_index ;
   std::vector<uint64_t> sketch_update_locations(num_hashes) ;
-  //sketch_update_locations.resize(num_hashes) ;
   HashState hashes;
-  //std::cout<< "Hash seed: " << seed << std::endl;
   MurmurHash3_x64_128(item, size, seed, hashes); //
 
 
@@ -99,8 +97,9 @@ std::vector<uint64_t> count_min_sketch<T>::get_hashes(const void* item, size_t s
   for(uint64_t hash_idx=0; hash_idx<num_hashes; ++hash_idx){
     hash += (hash_idx * hashes.h2) ;
     bucket_index = hash % num_buckets ;
-    //std::cout << "HASH " << hash << std::endl ;
-    sketch_update_locations.at(hash_idx) = (hash_idx * num_hashes) + bucket_index ;
+    std::cout << " Bucket index: " << bucket_index << " HASH " << (hash_idx * num_buckets) + bucket_index << std::endl ;
+    //sketch_update_locations.at(hash_idx) = (hash_idx * num_hashes) + bucket_index ;
+    sketch_update_locations.at(hash_idx) = (hash_idx * num_buckets) + bucket_index ;
   }
   return sketch_update_locations ;
 }
@@ -135,6 +134,7 @@ void count_min_sketch<T>::update(uint64_t item, T weight) {
 
 template<typename T>
 void count_min_sketch<T>::update(uint64_t item) {
+  std::cout << "item: " << item ;
   update(&item, sizeof(item), 1);
 }
 
@@ -159,6 +159,7 @@ void count_min_sketch<T>::update(const void* item, size_t size, T weight) {
   total_weight += weight ;
   std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
   for (auto h: hash_locations){
+    //std::cout << "hash: " << h << std::endl;
     sketch[h] += weight ;
   }
 }
@@ -197,6 +198,35 @@ T count_min_sketch<T>::get_lower_bound(const void* item, size_t size){
    *
    */
   return get_estimate(item, size) ;
+}
+
+template<typename T>
+void count_min_sketch<T>::merge(count_min_sketch<T> &other_sketch){
+  /*
+   * Merges this sketch into that sketch by elementwise summing of buckets
+   */
+  if(this == &other_sketch){
+    throw std::invalid_argument( "Cannot merge a sketch with itself." );
+  }
+
+  bool same_sketch_config = (get_config() == other_sketch.get_config()) ;
+  if(!same_sketch_config){
+    throw std::invalid_argument( "Incompatible sketch config." );
+  }
+
+  std::vector<T> other_table = other_sketch.get_sketch() ;
+  for(auto i=0 ; i<(num_hashes*num_buckets); ++i){
+    sketch[i] += other_table[i] ;
+  }
+  total_weight += other_sketch.get_total_weight() ;
+
+//  // Iterate through the table and increment
+//  for(int i=0 ; i < num_hashes; i++){
+//    for(int j = -0; j < num_buckets; j++){
+//      table[i][j] += sketch.table[i][j] ;
+//    }
+//  }
+//  total_weight += sketch.total_weight ;
 }
 
 } /* namespace datasketches */

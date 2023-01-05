@@ -150,6 +150,11 @@ public:
   void update(const std::string& item, T weight) ;
   void update(const std::string& item) ;
 
+  /*
+  * merges a separate count_min_sketch into this count_min_sketch.
+  */
+  void merge(count_min_sketch<T> &other_sketch) ;
+
 };
 
 } /* namespace datasketches */
