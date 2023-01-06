@@ -42,7 +42,7 @@ namespace datasketches {
 template<typename T>
 struct gaussian_kernel {
   T operator()(const std::vector<T>& v1, const std::vector<T>& v2) const {
-    return exp(-std::inner_product(v1.begin(), v1.end(), v2.begin(), 0, std::plus<T>(), [](T a, T b){return (a-b)*(a-b);}));
+    return exp(-std::inner_product(v1.begin(), v1.end(), v2.begin(), 0.0, std::plus<T>(), [](T a, T b){return (a-b)*(a-b);}));
   }
 };
 
