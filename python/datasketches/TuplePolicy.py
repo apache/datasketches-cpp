@@ -15,9 +15,25 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name = 'datasketches'
+from _datasketches import TuplePolicy
 
-from .PySerDe import *
-from .TuplePolicy import *
+# This file provides an example Python Tuple Policy implementation.
+#
+# Each implementation must extend the PyTuplePolicy class and define
+# two methods:
+#   * create() returns a new Summary object
+#   * update(summary, update) applies the relevant policy to update the
+#     provided summary with the data in update.
 
-from _datasketches import *
+# Implements an accumulator summary policy, where new values are
+# added to the existing value.
+class AccumulatorUpdatePolicy(TuplePolicy):
+  def __init__(self):
+    TuplePolicy.__init__(self)
+
+  def create_summary(self):
+    return int(0)
+
+  def update_summary(self, summary: int, update: int):
+    summary += update
+    return summary

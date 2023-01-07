@@ -100,7 +100,7 @@ setup(
     url='http://datasketches.apache.org',
     long_description=open('python/README.md').read(),
     long_description_content_type='text/markdown',
-    packages=find_packages(where='python',exclude=['src','*tests*']), # src not needed if only the .so
+    packages=find_packages(where='python',exclude=['src','include','*tests*']), # src not needed if only the .so
     package_dir={'':'python'},
     # may need to add all source paths for sdist packages w/o MANIFEST.in
     ext_modules=[CMakeExtension('datasketches')],

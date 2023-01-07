@@ -42,6 +42,7 @@ target_link_libraries(python
     cpc
     fi
     theta
+    tuple
     sampling
     req
     quantiles
@@ -72,6 +73,7 @@ target_sources(python
     src/cpc_wrapper.cpp
     src/fi_wrapper.cpp
     src/theta_wrapper.cpp
+    src/tuple_wrapper.cpp
     src/vo_wrapper.cpp
     src/req_wrapper.cpp
     src/quantiles_wrapper.cpp
