@@ -55,14 +55,12 @@ static void check_if_equal(var_opt_sketch<T, A>& sk1, var_opt_sketch<T, A>& sk2)
       
   auto it1 = sk1.begin();
   auto it2 = sk2.begin();
-  size_t i = 0;
 
   while ((it1 != sk1.end()) && (it2 != sk2.end())) {
     auto p1 = *it1;
     auto p2 = *it2;
     REQUIRE(p1.first == p2.first);   // data values
     REQUIRE(p1.second == p2.second); // weights
-    ++i;
     ++it1;
     ++it2;
   }
