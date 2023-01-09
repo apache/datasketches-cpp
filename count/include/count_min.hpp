@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <vector>
-//#include <stdint.h>
 #include <iterator>
 #include <algorithm>
 
@@ -39,9 +38,7 @@ public:
   */
   count_min_sketch(uint64_t num_hashes, uint64_t num_buckets, uint64_t seed = DEFAULT_SEED) ;
 
-  //std::vector<uint64_t> sketch ; // the sketch array data structure
-
-  std::vector<T> sketch ; // the sketch array data structure
+  std::vector<T> sketch ; // the array stored by the sketch
 
   /**
   * @return configured num_hashes of this sketch
@@ -66,7 +63,7 @@ public:
   /**
    * @return epsilon : double
    * The maximum permissible error for any frequency estimate query.
-   * epsilon = e / num_buckets
+   * epsilon = ceil(e / num_buckets)
    */
    double get_relative_error() ;
 
@@ -78,8 +75,9 @@ public:
 
   /**
   * @return vector of the sketch data structure
+  * Required for merging.
   */
-  std::vector<T> get_sketch() ; // Sketch parameter configuration -- needed for merging.
+  std::vector<T> get_sketch() ;
 
   /*
  * @return number_of_buckets : the number of hash buckets at every level of the
@@ -115,7 +113,7 @@ public:
 
   /**
    * @return f_est : type T -- the estimated frequency of item
-   * Guarantee satisfies that f_est
+   * Guarantee is that f_est satisfies:
    * f_true - relative_error*total_weight <= f_est <= f_true
    */
    T get_estimate(const void* item, size_t size) ;

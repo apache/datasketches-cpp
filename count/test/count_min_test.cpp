@@ -79,6 +79,7 @@ TEST_CASE("CM frequency estimates"){
     int number_of_items = 10 ;
     std::vector<uint64_t> data(number_of_items) ;
     std::vector<uint64_t> frequencies(number_of_items) ;
+
     // Populate data vector
     for(int i=0; i < number_of_items; i++){
       data[i] = i;
@@ -97,18 +98,10 @@ TEST_CASE("CM frequency estimates"){
       c.update(value, freq) ;
     }
 
-    // Output the results:
     for(const auto i: data){
       uint64_t est = c.get_estimate(i) ;
       uint64_t upp = c.get_upper_bound(i) ;
       uint64_t low = c.get_lower_bound(i) ;
-//      For debugging
-//        std::cout << data[i]   << " "
-//             << " Freq: " << frequencies[i]
-//             << "  Est: " << est
-//             << "   UB: " << upp
-//             << "   LB: " << low
-//             << std::endl ;
       REQUIRE(est <= upp) ;
       REQUIRE(est >= low) ;
     }
@@ -144,7 +137,7 @@ TEST_CASE("CM merge - pass", "[acceptable cases]"){
     std::vector<uint64_t> s_config = s.get_config() ; // Construct a sketch with correct configuration.
     count_min_sketch<uint64_t> t(s_config[0], s_config[1]) ;
 
-    // Merge in an all-zeros sketch t should not change the total weight.
+    // Merge in an all-zeros sketch t.  Should not change the total weight.
     s.merge(t) ;
     REQUIRE(s.get_total_weight() == 0 ) ;
 
@@ -157,10 +150,10 @@ TEST_CASE("CM merge - pass", "[acceptable cases]"){
 
     REQUIRE(s.get_total_weight() == 2*t.get_total_weight());
 
-    // Estiamtor checks.
+    // Estimator checks.
     for (auto x : data) {
       REQUIRE(s.get_estimate(x) <= s.get_upper_bound(x)) ;
-      REQUIRE(s.get_estimate(x) <= 2); // True frequency of x == 2 for all x.
+      REQUIRE(s.get_estimate(x) <= 2); // True frequency x == 2 for all x.
     }
   }
 } /* namespace datasketches */

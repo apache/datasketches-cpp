@@ -13,7 +13,7 @@ num_buckets(num_buckets),
 seed(seed){
   sketch_length = num_hashes*num_buckets ;
   sketch.resize(sketch_length) ;
-  assert(num_buckets >= 3); // need epsilon at most 1.
+  assert(num_buckets >= 3); // need relative error epsilon at most 1.
 
 
   std::default_random_engine rng(seed);
@@ -80,9 +80,8 @@ template<typename T>
 uint64_t count_min_sketch<T>::suggest_num_hashes(double confidence){
   /*
    * Function to help users select a number of hashes for a given confidence
-   * eg confidence is 1 - failure probability
+   * eg. confidence = 1 - failure probability
    * failure probability == delta in the literature.
-   * * TODO: Change this when update is improved
    */
   if(confidence < 0. || confidence > 1.0){
     throw std::invalid_argument( "Confidence must be between 0 and 1.0 (inclusive)." );
@@ -109,38 +108,16 @@ std::vector<uint64_t> count_min_sketch<T>::get_hashes(const void* item, size_t s
   uint64_t bucket_index ;
   std::vector<uint64_t> sketch_update_locations; //(num_hashes) ;
   sketch_update_locations.reserve(num_hashes) ;
-  //std::cout<< "Getting hashes" << std::endl;
 
   uint64_t hash_seed_index = 0 ;
   for(const auto &it : hash_seeds){
-//    std::cout << "&H = " << &it << std::endl;
-//    std::cout << "H = " << it << std::endl;
     HashState hashes;
-    MurmurHash3_x64_128(item, size, it, hashes); // ! BEWARE OVERFLOW.
+    MurmurHash3_x64_128(item, size, it, hashes); // ? BEWARE OVERFLOW.
     uint64_t hash = hashes.h1 ;
     bucket_index = hash % num_buckets ;
     sketch_update_locations.push_back( (hash_seed_index * num_buckets) + bucket_index) ;
     hash_seed_index += 1 ;
-    //std::cout << hash << std::endl;
-////  for(uint64_t hash_idx=0; hash_idx<num_hashes; ++hash_idx){
-////    std::cout << hash_idx << "\t" << "hash_seeds[hash_idx]: " << hash_seeds.at(hash_idx) << std::endl;
-//
-//    //uint64_t hash = hashes.h1 ;
-//    //bucket_index = hash % num_buckets ;
-//    //std::cout<< "Bucket index: " << bucket_index << std::endl;
-//    //sketch_update_locations.at(hash_idx) = (hash_idx * num_buckets) + bucket_index ;
   }
-
-//  HashState hashes;
-//  MurmurHash3_x64_128(item, size, seed, hashes); //
-//
-//
-//  uint64_t hash = hashes.h1 ;
-//  for(uint64_t hash_idx=0; hash_idx<num_hashes; ++hash_idx){
-//    hash += (hash_idx * hashes.h2) ;
-//    bucket_index = hash % num_buckets ;
-//    sketch_update_locations.at(hash_idx) = (hash_idx * num_buckets) + bucket_index ;
-//  }
   return sketch_update_locations ;
 }
 
@@ -192,17 +169,15 @@ void count_min_sketch<T>::update(const std::string& item) {
 template<typename T>
 void count_min_sketch<T>::update(const void* item, size_t size, T weight) {
   /*
-   * Gets the value's hash locations and then increments the sketch in those
-   * locations.
+   * Gets the item's hash locations and then increments the sketch in those
+   * locations by the weight.
    */
   total_weight += weight ;
   std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
   for (auto h: hash_locations){
-    //std::cout << "hash: " << h << std::endl;
     sketch[h] += weight ;
   }
 }
-
 
 template<typename T>
 T count_min_sketch<T>::get_upper_bound(uint64_t item) {return get_upper_bound(&item, sizeof(item));}
@@ -215,9 +190,6 @@ T count_min_sketch<T>::get_upper_bound(const std::string& item) {
 
 template<typename T>
 T count_min_sketch<T>::get_upper_bound(const void* item, size_t size){
-  /*
-   *
-   */
   return get_estimate(item, size) + get_relative_error()*get_total_weight() ;
 }
 
@@ -233,16 +205,13 @@ T count_min_sketch<T>::get_lower_bound(const std::string& item) {
 
 template<typename T>
 T count_min_sketch<T>::get_lower_bound(const void* item, size_t size){
-  /*
-   *
-   */
   return get_estimate(item, size) ;
 }
 
 template<typename T>
 void count_min_sketch<T>::merge(count_min_sketch<T> &other_sketch){
   /*
-   * Merges this sketch into that sketch by elementwise summing of buckets
+   * Merges this sketch into other_sketch sketch by elementwise summing of buckets
    */
   if(this == &other_sketch){
     throw std::invalid_argument( "Cannot merge a sketch with itself." );
@@ -258,14 +227,6 @@ void count_min_sketch<T>::merge(count_min_sketch<T> &other_sketch){
     sketch[i] += other_table[i] ;
   }
   total_weight += other_sketch.get_total_weight() ;
-
-//  // Iterate through the table and increment
-//  for(int i=0 ; i < num_hashes; i++){
-//    for(int j = -0; j < num_buckets; j++){
-//      table[i][j] += sketch.table[i][j] ;
-//    }
-//  }
-//  total_weight += sketch.total_weight ;
 }
 
 } /* namespace datasketches */
