@@ -754,10 +754,10 @@ string<A> var_opt_sketch<T, A>::items_to_string(bool print_gap) const {
   const uint32_t array_length = (n_ < k_ ? n_ : k_ + 1);
   for (uint32_t i = 0, display_idx = 0; i < array_length; ++i) {
     if (i == h_ && print_gap) {
-      os << i << ": GAP" << std::endl;
+      os << display_idx << ": GAP" << std::endl;
       ++display_idx;
     } else {
-      os << i << ": " << data_[i] << "\twt = ";
+      os << display_idx << ": " << data_[i] << "\twt = ";
       if (weights_[i] == -1.0) {
         os << get_tau() << "\t(-1.0)" << std::endl;
       } else {
