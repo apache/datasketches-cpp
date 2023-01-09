@@ -55,7 +55,7 @@ public:
   // consistent way of initializing theta from p
   // avoids multiplication if p == 1 since it might not yield MAX_THETA exactly
   static uint64_t starting_theta_from_p(float p) {
-    if (p < 1) return static_cast<uint64_t>(theta_constants::MAX_THETA * p);
+    if (p < 1) return static_cast<float>(theta_constants::MAX_THETA) * p;
     return theta_constants::MAX_THETA;
   }
 
