@@ -78,6 +78,12 @@ class KllTest(unittest.TestCase):
       # they come from the same distribution (since they do)
       self.assertFalse(ks_test(kll, new_kll, 0.001))
 
+      total_weight = 0
+      for tuple in kll:
+        item = tuple[0]
+        weight = tuple[1]
+        total_weight = total_weight + weight
+      self.assertEqual(total_weight, kll.get_n())
 
     def test_kll_ints_sketch(self):
         k = 100

@@ -17,62 +17,11 @@
  * under the License.
  */
 
+#include <pybind11/pybind11.h>
+
 #include "frequent_items_sketch.hpp"
 
-#include <pybind11/pybind11.h>
-#include <sstream>
-
 namespace py = pybind11;
-
-namespace datasketches {
-namespace python {
-
-template<typename T>
-frequent_items_sketch<T> fi_sketch_deserialize(py::bytes skBytes) {
-  std::string skStr = skBytes; // implicit cast  
-  return frequent_items_sketch<T>::deserialize(skStr.c_str(), skStr.length());
-}
-
-template<typename T>
-py::object fi_sketch_serialize(const frequent_items_sketch<T>& sk) {
-  auto serResult = sk.serialize();
-  return py::bytes((char*)serResult.data(), serResult.size());
-}
-
-// maybe possible to disambiguate the static vs method get_epsilon calls, but
-// this is easier for now
-template<typename T>
-double fi_sketch_get_generic_epsilon(uint8_t lg_max_map_size) {
-  return frequent_items_sketch<T>::get_epsilon(lg_max_map_size);
-}
-
-template<typename T>
-py::list fi_sketch_get_frequent_items(const frequent_items_sketch<T>& sk,
-                                   frequent_items_error_type err_type,
-                                   uint64_t threshold = 0) {
-  if (threshold == 0) { threshold = sk.get_maximum_error(); }
-
-  py::list list;
-  auto items = sk.get_frequent_items(err_type, threshold);
-  for (auto iter = items.begin(); iter != items.end(); ++iter) {
-    py::tuple t = py::make_tuple(iter->get_item(),
-                                 iter->get_estimate(),
-                                 iter->get_lower_bound(),
-                                 iter->get_upper_bound());
-    list.append(t);
-  }
-  return list;
-}
-
-template<typename T>
-size_t fi_sketch_get_serialized_size_bytes(const frequent_items_sketch<T>& sk) {
-  return sk.get_serialized_size_bytes();
-}
-
-}
-}
-
-namespace dspy = datasketches::python;
 
 template<typename T>
 void bind_fi_sketch(py::module &m, const char* name) {
@@ -86,7 +35,6 @@ void bind_fi_sketch(py::module &m, const char* name) {
          "Produces a string summary of the sketch")
     .def("update", (void (frequent_items_sketch<T>::*)(const T&, uint64_t)) &frequent_items_sketch<T>::update, py::arg("item"), py::arg("weight")=1,
          "Updates the sketch with the given string and, optionally, a weight")
-    .def("get_frequent_items", &dspy::fi_sketch_get_frequent_items<T>, py::arg("err_type"), py::arg("threshold")=0)
     .def("merge", (void (frequent_items_sketch<T>::*)(const frequent_items_sketch<T>&)) &frequent_items_sketch<T>::merge,
          "Merges the given sketch into this one")
     .def("is_empty", &frequent_items_sketch<T>::is_empty,
@@ -105,15 +53,55 @@ void bind_fi_sketch(py::module &m, const char* name) {
          "Returns the guaranteed upper bound weight (frequency) of the given item.")
     .def("get_sketch_epsilon", (double (frequent_items_sketch<T>::*)(void) const) &frequent_items_sketch<T>::get_epsilon,
          "Returns the epsilon value used by the sketch to compute error")
-    .def_static("get_epsilon_for_lg_size", &dspy::fi_sketch_get_generic_epsilon<T>, py::arg("lg_max_map_size"),
-         "Returns the epsilon value used to compute a priori error for a given log2(max_map_size)")
-    .def_static("get_apriori_error", &frequent_items_sketch<T>::get_apriori_error, py::arg("lg_max_map_size"), py::arg("estimated_total_weight"),
-         "Returns the estimated a priori error given the max_map_size for the sketch and the estimated_total_stream_weight.")
-    .def("get_serialized_size_bytes", &dspy::fi_sketch_get_serialized_size_bytes<T>,
-         "Computes the size needed to serialize the current state of the sketch. This can be expensive since every item needs to be looked at.")
-    .def("serialize", &dspy::fi_sketch_serialize<T>, "Serializes the sketch into a bytes object")
-    .def_static("deserialize", &dspy::fi_sketch_deserialize<T>, "Reads a bytes object and returns the corresponding frequent_strings_sketch")
-    ;
+    .def(
+        "get_frequent_items",
+        [](const frequent_items_sketch<T>& sk, frequent_items_error_type err_type, uint64_t threshold) {
+          if (threshold == 0) threshold = sk.get_maximum_error();
+          py::list list;
+          auto rows = sk.get_frequent_items(err_type, threshold);
+          for (auto row: rows) {
+            list.append(py::make_tuple(
+                row.get_item(),
+                row.get_estimate(),
+                row.get_lower_bound(),
+                row.get_upper_bound())
+            );
+          }
+          return list;
+        },
+        py::arg("err_type"), py::arg("threshold")=0
+    )
+    .def_static(
+        "get_epsilon_for_lg_size",
+        [](uint8_t lg_max_map_size) { return frequent_items_sketch<T>::get_epsilon(lg_max_map_size); },
+        py::arg("lg_max_map_size"),
+        "Returns the epsilon value used to compute a priori error for a given log2(max_map_size)"
+    )
+    .def_static(
+        "get_apriori_error",
+        &frequent_items_sketch<T>::get_apriori_error,
+        py::arg("lg_max_map_size"), py::arg("estimated_total_weight"),
+        "Returns the estimated a priori error given the max_map_size for the sketch and the estimated_total_stream_weight."
+    )
+    .def(
+        "get_serialized_size_bytes",
+        [](const frequent_items_sketch<T>& sk) { return sk.get_serialized_size_bytes(); },
+        "Computes the size needed to serialize the current state of the sketch. This can be expensive since every item needs to be looked at."
+    )
+    .def(
+        "serialize",
+        [](const frequent_items_sketch<T>& sk) {
+          auto bytes = sk.serialize();
+          return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        },
+        "Serializes the sketch into a bytes object"
+    )
+    .def_static(
+        "deserialize",
+        [](const std::string& bytes) { return frequent_items_sketch<T>::deserialize(bytes.data(), bytes.size()); },
+        py::arg("bytes"),
+        "Reads a bytes object and returns the corresponding frequent_strings_sketch"
+    );
 }
 
 void init_fi(py::module &m) {

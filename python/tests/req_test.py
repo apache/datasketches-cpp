@@ -79,6 +79,13 @@ class reqTest(unittest.TestCase):
       self.assertEqual(req.get_quantile(0.7), new_req.get_quantile(0.7))
       self.assertEqual(req.get_rank(0.0), new_req.get_rank(0.0))
 
+      total_weight = 0
+      for tuple in req:
+        item = tuple[0]
+        weight = tuple[1]
+        total_weight = total_weight + weight
+      self.assertEqual(total_weight, req.get_n())
+
     def test_req_ints_sketch(self):
         k = 100
         n = 10

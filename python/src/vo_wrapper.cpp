@@ -140,7 +140,7 @@ void bind_vo_sketch(py::module &m, const char* name) {
     .def("serialize", &dspy::vo_sketch_serialize<T>, py::arg("serde"), "Serialize the var opt sketch using the provided serde")
     .def_static("deserialize", &dspy::vo_sketch_deserialize<T>, py::arg("bytes"), py::arg("serde"),
         "Constructs a var opt sketch from the given bytes using the provided serde")
-    ;
+    .def("__iter__", [](const var_opt_sketch<T>& sk) { return py::make_iterator(sk.begin(), sk.end()); });
 }
 
 template<typename T>
