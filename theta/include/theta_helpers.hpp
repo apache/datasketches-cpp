@@ -20,8 +20,10 @@
 #ifndef THETA_HELPERS_HPP_
 #define THETA_HELPERS_HPP_
 
-#include <string>
 #include <stdexcept>
+#include <string>
+
+#include "theta_constants.hpp"
 
 namespace datasketches {
 
