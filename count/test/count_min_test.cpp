@@ -50,12 +50,12 @@ TEST_CASE("CM parameter suggestions", "[error parameters]") {
 }
 
 TEST_CASE("CM one update: uint64_t"){
-    uint64_t n_hashes = 3, n_buckets = 5, seed = 1234567 ;
+    uint64_t n_hashes = 3, n_buckets = 5, seed =  9223372036854775807 ; //1234567 ;
     uint64_t inserted_weight = 0 ;
     count_min_sketch<uint64_t> c(n_hashes, n_buckets, seed) ;
     std::string x = "x" ;
 
-    REQUIRE(c.get_estimate("x") == 0) ; // No items in sketch so estimates should be zero
+      REQUIRE(c.get_estimate("x") == 0) ; // No items in sketch so estimates should be zero
     c.update(x) ;
     REQUIRE(c.get_estimate(x) == 1) ;
     inserted_weight += 1 ;
@@ -75,18 +75,54 @@ TEST_CASE("CM one update: uint64_t"){
     REQUIRE(c.get_estimate(x) >= c.get_lower_bound(x)) ;
 }
 
-TEST_CASE("Cm merge operation"){
+TEST_CASE("CM frequency estimates"){
+    int number_of_items = 10 ;
+    std::vector<uint64_t> data(number_of_items) ;
+    std::vector<uint64_t> frequencies(number_of_items) ;
+    // Populate data vector
+    for(int i=0; i < number_of_items; i++){
+      data[i] = i;
+      frequencies[i] = 1 << (number_of_items - i) ;
+    }
+
+    double relative_error = 0.1 ;
+    double confidence = 0.99 ;
+    uint64_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
+    uint64_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
+
+    count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
+    for(int i=0 ; i < number_of_items ; i++) {
+      uint64_t value = data[i] ;
+      uint64_t freq = frequencies[i] ;
+      c.update(value, freq) ;
+    }
+
+    // Output the results:
+    for(const auto i: data){
+      uint64_t est = c.get_estimate(i) ;
+      uint64_t upp = c.get_upper_bound(i) ;
+      uint64_t low = c.get_lower_bound(i) ;
+//      For debugging
+//        std::cout << data[i]   << " "
+//             << " Freq: " << frequencies[i]
+//             << "  Est: " << est
+//             << "   UB: " << upp
+//             << "   LB: " << low
+//             << std::endl ;
+      REQUIRE(est <= upp) ;
+      REQUIRE(est >= low) ;
+    }
+}
+
+TEST_CASE("CM merge - reject", "[reject cases]"){
     double relative_error = 0.25 ;
     double confidence = 0.9 ;
     uint64_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
     uint64_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
-    std::cout << "Buckets: " << n_buckets << "\tHashes: " << n_hashes << std::endl;
-
     count_min_sketch<uint64_t> s(n_hashes, n_buckets, 9082435234709287) ;
 
 
     // Generate sketches that we cannot merge into ie they disagree on at least one of the config entries
-    // TODO: implement more general merge procedure so different hashes or buckets are permitted.
     count_min_sketch<uint64_t> s1(n_hashes+1, n_buckets) ; // incorrect number of hashes
     count_min_sketch<uint64_t> s2(n_hashes, n_buckets+1) ;// incorrect number of buckets
     count_min_sketch<uint64_t> s3(n_hashes, n_buckets, 1) ;// incorrect seed
@@ -97,54 +133,35 @@ TEST_CASE("Cm merge operation"){
     for(count_min_sketch<uint64_t> sk : sketches){
       REQUIRE_THROWS(s.merge(sk), "Incompatible sketch config." ) ;
     }
+}
 
-    // Passing case
+TEST_CASE("CM merge - pass", "[acceptable cases]"){
+    double relative_error = 0.25 ;
+    double confidence = 0.9 ;
+    uint64_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
+    uint64_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
+    count_min_sketch<uint64_t> s(n_hashes, n_buckets) ;
     std::vector<uint64_t> s_config = s.get_config() ; // Construct a sketch with correct configuration.
-    count_min_sketch<uint64_t> t(s_config[0], s_config[1], s_config[2]) ;
-    //s.merge(t) ;
+    count_min_sketch<uint64_t> t(s_config[0], s_config[1]) ;
 
-    std::vector<uint64_t> data = {2, 3, 5, 7, 11};//
+    // Merge in an all-zeros sketch t should not change the total weight.
+    s.merge(t) ;
+    REQUIRE(s.get_total_weight() == 0 ) ;
+
+    std::vector<uint64_t> data = {2,3,5,7};
     for(auto d: data){
       s.update(d) ;
       t.update(d) ;
     }
-    std::vector<uint64_t> s_sk = s.get_sketch() ;
-    std::vector<uint64_t> t_sk = t.get_sketch() ;
-    for(uint64_t ii=0 ; ii < (n_buckets*n_hashes); ++ii){
-      std::cout << ii << "\t" << s_sk[ii] << "\t" << t_sk[ii] << std::endl;
-    }
-    //s.merge(t);
+    s.merge(t);
 
+    REQUIRE(s.get_total_weight() == 2*t.get_total_weight());
 
-    //REQUIRE(s.get_total_weight() == 2*t.get_total_weight());
-    std::cout << "Estimation checks: " << std::endl ;
+    // Estiamtor checks.
     for (auto x : data) {
-      std::cout << x << "|\t" << s.get_estimate(x) << "\t" << t.get_estimate(x) << std::endl;
-      //REQUIRE(s.get_estimate(ii) <= 2); // I don't think this line is quite correct.
+      REQUIRE(s.get_estimate(x) <= s.get_upper_bound(x)) ;
+      REQUIRE(s.get_estimate(x) <= 2); // True frequency of x == 2 for all x.
     }
-
-}
-
-//   // Check that the hash locations are set correctly.
-//    std::vector<uint64_t> c_sketch = c.get_sketch() ;
-//    // init the hash function to check the sketch is appropriately set.
-//    HashState hashes ;
-//    MurmurHash3_x64_128(x.c_str(), x.length(),  seed, hashes);
-//    uint64_t bucket_id, bucket_to_set ;
-//    uint64_t hash_location = hashes.h1 ;
-//    //std::cout<< "Hash seed: " << seed << std::endl;
-//    for(uint64_t nh=0; nh < n_hashes; ++nh){
-//      hash_location += (nh * hashes.h2) ;
-//      bucket_id = hash_location % n_buckets ;
-//      //std::cout << "hash: " << hash_location << std::endl ;
-//      //std::cout << bucket_id << std::endl;
-//      bucket_to_set = (nh*n_hashes) + bucket_id ;
-//      //std::cout << "The hash location should be: " << bucket_to_set << std::endl;
-//      REQUIRE(c_sketch[bucket_to_set] == 1) ;
-//    }
-
-
-
-
+  }
 } /* namespace datasketches */
 

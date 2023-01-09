@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <vector>
 //#include <stdint.h>
+#include <iterator>
+#include <algorithm>
 
 #include "common_defs.hpp"
 
@@ -21,8 +23,9 @@ template<typename T>
 class count_min_sketch{
   static_assert(std::is_arithmetic<T>::value, "Arithmetic type expected");
 public:
-  uint64_t num_hashes, num_buckets, seed ;
+  uint64_t num_hashes, num_buckets, seed, sketch_length ;
   T total_weight = 0;
+  std::vector<uint64_t> hash_seeds ;
 
   /**
   * Creates an instance of the sketch given parameters num_hashes, num_buckets and hash seed, `seed`.
@@ -156,6 +159,7 @@ public:
   void merge(count_min_sketch<T> &other_sketch) ;
 
 };
+
 
 } /* namespace datasketches */
 

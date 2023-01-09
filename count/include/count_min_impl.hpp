@@ -2,6 +2,7 @@
 #define COUNT_MIN_IMPL_HPP_
 
 #include "MurmurHash3.h"
+#include <random>
 
 namespace datasketches {
 
@@ -10,8 +11,18 @@ count_min_sketch<T>::count_min_sketch(uint64_t num_hashes, uint64_t num_buckets,
 num_hashes(num_hashes),
 num_buckets(num_buckets),
 seed(seed){
-  sketch.resize(num_hashes*num_buckets) ;
+  sketch_length = num_hashes*num_buckets ;
+  sketch.resize(sketch_length) ;
   assert(num_buckets >= 3); // need epsilon at most 1.
+
+
+  std::default_random_engine rng(seed);
+  std::uniform_int_distribution<uint64_t> extra_hash_seeds(0, std::numeric_limits<uint64_t>::max());
+  hash_seeds.reserve(num_hashes) ;
+
+  for(uint64_t i=0 ; i < num_hashes ; ++i){
+    hash_seeds.push_back(extra_hash_seeds(rng) + seed); // Adds the global seed to all hash functions.
+  }
 };
 
 template<typename T>
@@ -33,6 +44,7 @@ template<typename T>
 std::vector<T> count_min_sketch<T>::get_sketch(){
   return sketch ;
 }
+
 
 template<typename T>
 std::vector<uint64_t> count_min_sketch<T>::get_config(){
@@ -56,8 +68,8 @@ uint64_t count_min_sketch<T>::suggest_num_buckets(double relative_error){
   /*
    * Function to help users select a number of buckets for a given error.
    * TODO: Change this when we use only power of 2 buckets.
+   *
    */
-  //std::cout<< count_min_sketch::num_buckets << std::endl;
   if(relative_error < 0.){
     throw std::invalid_argument( "Relative error must be at least 0." );
   }
@@ -78,29 +90,57 @@ uint64_t count_min_sketch<T>::suggest_num_hashes(double confidence){
   return ceil(log(1.0/(1.0 - confidence))) ;
 }
 
-
-
 template<typename T>
 std::vector<uint64_t> count_min_sketch<T>::get_hashes(const void* item, size_t size){
   /*
-   * Returns the hash locations for the input item.
-   * Approach taken from
+   * Returns the hash locations for the input item using the original hashing
+   * scheme from [1].
+   * Generate num_hashes separate hashes from calls to murmurmhash.
+   * This could be optimized by keeping both of the 64bit parts of the hash
+   * function, rather than generating a new one for every level.
+   *
+   *
+   * Postscript.
+   * Note that a tradeoff can be achieved over the update time and space
+   * complexity of the sketch by using a combinatorial hashing scheme from
    * https://github.com/Claudenw/BloomFilter/wiki/Bloom-Filters----An-overview
+   * https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf
    */
   uint64_t bucket_index ;
-  std::vector<uint64_t> sketch_update_locations(num_hashes) ;
-  HashState hashes;
-  MurmurHash3_x64_128(item, size, seed, hashes); //
+  std::vector<uint64_t> sketch_update_locations; //(num_hashes) ;
+  sketch_update_locations.reserve(num_hashes) ;
+  //std::cout<< "Getting hashes" << std::endl;
 
-
-  uint64_t hash = hashes.h1 ;
-  for(uint64_t hash_idx=0; hash_idx<num_hashes; ++hash_idx){
-    hash += (hash_idx * hashes.h2) ;
+  uint64_t hash_seed_index = 0 ;
+  for(const auto &it : hash_seeds){
+//    std::cout << "&H = " << &it << std::endl;
+//    std::cout << "H = " << it << std::endl;
+    HashState hashes;
+    MurmurHash3_x64_128(item, size, it, hashes); // ! BEWARE OVERFLOW.
+    uint64_t hash = hashes.h1 ;
     bucket_index = hash % num_buckets ;
-    std::cout << " Bucket index: " << bucket_index << " HASH " << (hash_idx * num_buckets) + bucket_index << std::endl ;
-    //sketch_update_locations.at(hash_idx) = (hash_idx * num_hashes) + bucket_index ;
-    sketch_update_locations.at(hash_idx) = (hash_idx * num_buckets) + bucket_index ;
+    sketch_update_locations.push_back( (hash_seed_index * num_buckets) + bucket_index) ;
+    hash_seed_index += 1 ;
+    //std::cout << hash << std::endl;
+////  for(uint64_t hash_idx=0; hash_idx<num_hashes; ++hash_idx){
+////    std::cout << hash_idx << "\t" << "hash_seeds[hash_idx]: " << hash_seeds.at(hash_idx) << std::endl;
+//
+//    //uint64_t hash = hashes.h1 ;
+//    //bucket_index = hash % num_buckets ;
+//    //std::cout<< "Bucket index: " << bucket_index << std::endl;
+//    //sketch_update_locations.at(hash_idx) = (hash_idx * num_buckets) + bucket_index ;
   }
+
+//  HashState hashes;
+//  MurmurHash3_x64_128(item, size, seed, hashes); //
+//
+//
+//  uint64_t hash = hashes.h1 ;
+//  for(uint64_t hash_idx=0; hash_idx<num_hashes; ++hash_idx){
+//    hash += (hash_idx * hashes.h2) ;
+//    bucket_index = hash % num_buckets ;
+//    sketch_update_locations.at(hash_idx) = (hash_idx * num_buckets) + bucket_index ;
+//  }
   return sketch_update_locations ;
 }
 
@@ -134,7 +174,6 @@ void count_min_sketch<T>::update(uint64_t item, T weight) {
 
 template<typename T>
 void count_min_sketch<T>::update(uint64_t item) {
-  std::cout << "item: " << item ;
   update(&item, sizeof(item), 1);
 }
 
@@ -215,7 +254,7 @@ void count_min_sketch<T>::merge(count_min_sketch<T> &other_sketch){
   }
 
   std::vector<T> other_table = other_sketch.get_sketch() ;
-  for(auto i=0 ; i<(num_hashes*num_buckets); ++i){
+  for(auto i=0 ; i<(sketch_length); ++i){
     sketch[i] += other_table[i] ;
   }
   total_weight += other_sketch.get_total_weight() ;
