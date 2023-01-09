@@ -21,19 +21,25 @@ from _datasketches import TuplePolicy
 #
 # Each implementation must extend the PyTuplePolicy class and define
 # two methods:
-#   * create() returns a new Summary object
-#   * update(summary, update) applies the relevant policy to update the
+#   * create_summary() returns a new Summary object
+#   * update_summary(summary, update) applies the relevant policy to update the
 #     provided summary with the data in update.
+#   * __call__ may be similar to update_summary but allows a different
+#     implementation for set operations
 
 # Implements an accumulator summary policy, where new values are
 # added to the existing value.
-class AccumulatorUpdatePolicy(TuplePolicy):
+class AccumulatorPolicy(TuplePolicy):
   def __init__(self):
     TuplePolicy.__init__(self)
 
-  def create_summary(self):
+  def create_summary(self) -> int:
     return int(0)
 
-  def update_summary(self, summary: int, update: int):
+  def update_summary(self, summary: int, update: int) -> int:
+    summary += update
+    return summary
+
+  def __call__(self, summary: int, update: int) -> int:
     summary += update
     return summary

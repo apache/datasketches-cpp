@@ -37,6 +37,7 @@ namespace datasketches {
 struct tuple_policy {
   virtual py::object create_summary() const = 0;
   virtual py::object update_summary(py::object& summary, const py::object& update) const = 0;
+  virtual py::object operator()(py::object& summary, const py::object& update) const = 0;
   virtual ~tuple_policy() = default;
 };
 
@@ -58,7 +59,17 @@ struct TuplePolicy : public tuple_policy {
       py::object,          // Return type
       tuple_policy,        // Parent class
       update_summary,      // Name of function in C++ (must match Python name)
-      summary, update      // Argument(s)
+      summary, update      // Arguments
+    );
+  }
+
+  py::object operator()(py::object& summary, const py::object& update) const override {
+    PYBIND11_OVERRIDE_PURE_NAME(
+      py::object,          // Return type
+      tuple_policy,        // Parent class
+      "__call__",          // Name of function in python
+      operator(),          // Name of function in C++
+      summary, update      // Arguemnts
     );
   }
 };
@@ -76,6 +87,10 @@ struct tuple_policy_holder {
     summary = _policy->update_summary(summary, update);
   }
 
+  void operator()(py::object& summary, const py::object& update) const {
+    summary = _policy->operator()(summary, update);
+  }
+
   private:
     std::shared_ptr<tuple_policy> _policy;
 };
@@ -85,10 +100,14 @@ struct tuple_policy_holder {
 void init_tuple(py::module &m) {
   using namespace datasketches;
 
+  // generic tuple_policy:
+  // * update sketch policy uses create_summary and update_summary
+  // * set operation policies all use __call__
   py::class_<tuple_policy, TuplePolicy, std::shared_ptr<tuple_policy>>(m, "TuplePolicy")
     .def(py::init())
     .def("create_summary", &tuple_policy::create_summary)
     .def("update_summary", &tuple_policy::update_summary, py::arg("summary"), py::arg("update"))
+    .def("__call__", &tuple_policy::operator(), py::arg("summary"), py::arg("update"))
   ;
 
   // only needed temporarily -- can remove once everything is working
