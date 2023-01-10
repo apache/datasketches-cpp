@@ -39,7 +39,8 @@ bool base_theta_sketch_alloc<A>::is_estimation_mode() const {
 
 template<typename A>
 double base_theta_sketch_alloc<A>::get_theta() const {
-  return static_cast<double>(get_theta64()) / theta_constants::MAX_THETA;
+  return static_cast<double>(get_theta64()) /
+         static_cast<double>(theta_constants::MAX_THETA);
 }
 
 template<typename A>
