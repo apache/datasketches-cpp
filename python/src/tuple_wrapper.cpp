@@ -232,7 +232,7 @@ void init_tuple(py::module &m) {
         "compute",
         &py_tuple_a_not_b::compute<const py_tuple_sketch&, const py_tuple_sketch&>,
         py::arg("a"), py::arg("b"), py::arg("ordered")=true,
-        "Returns a sketch with the reuslt of appying the A-not-B operation on the given inputs"
+        "Returns a sketch with the result of appying the A-not-B operation on the given inputs"
     )
   ;
 

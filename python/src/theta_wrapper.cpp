@@ -128,7 +128,7 @@ void init_theta(py::module &m) {
         "compute",
         &theta_a_not_b::compute<const theta_sketch&, const theta_sketch&>,
         py::arg("a"), py::arg("b"), py::arg("ordered")=true,
-        "Returns a sketch with the reuslt of appying the A-not-B operation on the given inputs"
+        "Returns a sketch with the result of appying the A-not-B operation on the given inputs"
     )
   ;
   
