@@ -607,7 +607,7 @@ TEST_CASE("theta sketch: wrap compact estimation from java", "[theta_sketch]") {
   compact_theta_sketch compact_sketch = update_sketch.compact();
   // the sketches are ordered, so the iteration sequence must match exactly
   auto iter = sketch.begin();
-  for (const auto& key: compact_sketch) {
+  for (const auto key: compact_sketch) {
     REQUIRE(*iter == key);
     ++iter;
   }
@@ -652,7 +652,7 @@ TEST_CASE("theta sketch: wrap compact v1 estimation from java", "[theta_sketch]"
   compact_theta_sketch compact_sketch = update_sketch.compact();
   // the sketches are ordered, so the iteration sequence must match exactly
   auto iter = sketch.begin();
-  for (const auto& key: compact_sketch) {
+  for (const auto key: compact_sketch) {
     REQUIRE(*iter == key);
     ++iter;
   }
@@ -697,7 +697,20 @@ TEST_CASE("theta sketch: wrap compact v2 estimation from java", "[theta_sketch]"
   compact_theta_sketch compact_sketch = update_sketch.compact();
   // the sketches are ordered, so the iteration sequence must match exactly
   auto iter = sketch.begin();
-  for (const auto& key: compact_sketch) {
+  for (const auto key: compact_sketch) {
+    REQUIRE(*iter == key);
+    ++iter;
+  }
+}
+
+TEST_CASE("theta sketch: wrapped compressed", "[theta_sketch]") {
+  auto update_sketch = update_theta_sketch::builder().build();
+  for (int i = 0; i < 10000; i++) update_sketch.update(i);
+  auto compact_sketch = update_sketch.compact();
+  auto bytes = compact_sketch.serialize_compressed();
+  auto wrapped_compressed = wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size());
+  auto iter = wrapped_compressed.begin();
+  for (const auto key: compact_sketch) {
     REQUIRE(*iter == key);
     ++iter;
   }

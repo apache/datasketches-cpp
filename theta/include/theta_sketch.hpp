@@ -21,6 +21,7 @@
 #define THETA_SKETCH_HPP_
 
 #include "theta_update_sketch_base.hpp"
+#include "compact_theta_sketch_parser.hpp"
 
 namespace datasketches {
 
@@ -355,6 +356,8 @@ public:
    */
   vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
+  vector_bytes serialize_compressed(unsigned header_size_bytes = 0) const;
+
   virtual iterator begin();
   virtual iterator end();
   virtual const_iterator begin() const;
@@ -391,6 +394,14 @@ private:
   uint64_t theta_;
   std::vector<uint64_t, Allocator> entries_;
 
+  vector_bytes serialize_version_4_SLZ(unsigned header_size_bytes = 0) const;
+  vector_bytes serialize_version_4_MLZ(unsigned header_size_bytes = 0) const;
+  vector_bytes serialize_version_4_FLZ(unsigned header_size_bytes = 0) const;
+  vector_bytes serialize_version_4_ULEB128(unsigned header_size_bytes = 0) const;
+
+  static compact_theta_sketch_alloc deserialize_version_4(const void* bytes, size_t size,
+      uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
+
   virtual void print_specifics(std::ostringstream& os) const;
 };
 
@@ -407,7 +418,7 @@ public:
 template<typename Allocator = std::allocator<uint64_t>>
 class wrapped_compact_theta_sketch_alloc : public base_theta_sketch_alloc<Allocator> {
 public:
-  using const_iterator = const uint64_t*;
+  class const_iterator;
 
   Allocator get_allocator() const;
   bool is_empty() const;
@@ -433,15 +444,32 @@ protected:
   virtual void print_items(std::ostringstream& os) const;
 
 private:
-  bool is_empty_;
-  bool is_ordered_;
-  uint16_t seed_hash_;
-  uint32_t num_entries_;
-  uint64_t theta_;
-  const uint64_t* entries_;
+  using data_type = compact_theta_sketch_parser<true>::compact_theta_sketch_data;
+  data_type data_;
 
-  wrapped_compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint32_t num_entries,
-      uint64_t theta, const uint64_t* entries);
+  wrapped_compact_theta_sketch_alloc(const data_type& data);
+};
+
+template<typename Allocator>
+class wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator: std::iterator<std::input_iterator_tag, uint64_t> {
+public:
+  const_iterator(const void* ptr, uint8_t entry_bits, uint32_t num_entries, uint32_t index);
+  const_iterator& operator++();
+  const_iterator operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  const uint64_t& operator*() const;
+  const uint64_t* operator->() const;
+private:
+  const void* ptr_;
+  uint8_t entry_bits_;
+  uint32_t num_entries_;
+  uint32_t index_;
+  uint64_t previous_;
+  bool is_block_mode_;
+  uint8_t buf_i_;
+  uint8_t offset_;
+  uint64_t buffer_[8];
 };
 
 // aliases with default allocator for convenience
