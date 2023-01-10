@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import sys
+
 from _datasketches import TuplePolicy
 
 # This file provides an example Python Tuple Policy implementation.
@@ -25,7 +27,7 @@ from _datasketches import TuplePolicy
 #   * update_summary(summary, update) applies the relevant policy to update the
 #     provided summary with the data in update.
 #   * __call__ may be similar to update_summary but allows a different
-#     implementation for set operations
+#     implementation for set operations (union and intersection)
 
 # Implements an accumulator summary policy, where new values are
 # added to the existing value.
@@ -43,3 +45,48 @@ class AccumulatorPolicy(TuplePolicy):
   def __call__(self, summary: int, update: int) -> int:
     summary += update
     return summary
+
+
+# Implements a MAX rule, where the largest integer value is always kept
+class MaxIntPolicy(TuplePolicy):
+  def __init__(self):
+    TuplePolicy.__init__(self)
+
+  def create_summary(self) -> int:
+    return int(-sys.maxsize-1)
+
+  def update_summary(self, summary: int, update: int) -> int:
+    return max(summary, update)
+
+  def __call__(self, summary: int, update: int) -> int:
+    return max(summary, update)
+
+
+# Implements a MIN rule, where the smallest integer value is always kept
+class MinIntPolicy(TuplePolicy):
+  def __init__(self):
+    TuplePolicy.__init__(self)
+
+  def create_summary(self) -> int:
+    return int(sys.maxsize)
+
+  def update_summary(self, summary: int, update: int) -> int:
+    return min(summary, update)
+
+  def __call__(self, summary: int, update: int) -> int:
+    return min(summary, update)
+
+
+# Implements an Always One policy, where the summary is always exactly 1
+class AkwaysOnePolicy(TuplePolicy):
+  def __init__(self):
+    TuplePolicy.__init__(self)
+
+  def create_summary(self) -> int:
+    return int(1)
+
+  def update_summary(self, summary: int, update: int) -> int:
+    return int(1)
+
+  def __call__(self, summary: int, update: int) -> int:
+    return int(1)
