@@ -25,7 +25,7 @@
 #include "tuple_union.hpp"
 #include "tuple_intersection.hpp"
 #include "tuple_a_not_b.hpp"
-#include "tuple_jaccard_similarity.hpp"
+#include "theta_jaccard_similarity_base.hpp"
 #include "common_defs.hpp"
 
 #include "py_serde.hpp"
@@ -95,6 +95,12 @@ struct tuple_policy_holder {
     std::shared_ptr<tuple_policy> _policy;
 };
 
+struct dummy_jaccard_policy {
+  void operator()(py::object&, const py::object&) const {
+    return;
+  }
+};
+
 }
 
 void init_tuple(py::module &m) {
@@ -124,6 +130,7 @@ void init_tuple(py::module &m) {
   using py_tuple_union = tuple_union<py::object, tuple_policy_holder>;
   using py_tuple_intersection = tuple_intersection<py::object, tuple_policy_holder>;
   using py_tuple_a_not_b = tuple_a_not_b<py::object>;
+  using py_tuple_jaccard_similarity = jaccard_similarity_base<tuple_union<py::object, dummy_jaccard_policy>, tuple_intersection<py::object, dummy_jaccard_policy>, pair_extract_key<uint64_t, py::object>>;
 
   py::class_<py_tuple_sketch>(m, "tuple_sketch")
     .def("__str__", &py_tuple_sketch::to_string, py::arg("print_items")=false,
@@ -236,8 +243,7 @@ void init_tuple(py::module &m) {
     )
   ;
 
-  /*
-  py::class_<py_tuple_jaccard_similarity>(m, "theta_jaccard_similarity")
+  py::class_<py_tuple_jaccard_similarity>(m, "tuple_jaccard_similarity")
     .def_static(
         "jaccard",
         [](const py_tuple_sketch& sketch_a, const py_tuple_sketch& sketch_b, uint64_t seed) {
@@ -268,5 +274,4 @@ void init_tuple(py::module &m) {
         "to be dissimilar sith a confidence of 97.7% and returns True, otherwise False."
     )
   ;
-  */
 }
