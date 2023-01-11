@@ -410,70 +410,6 @@ auto compact_theta_sketch_alloc<A>::serialize_compressed(unsigned header_size_by
   return serialize_version_4_MLZ(header_size_bytes);
 }
 
-// should be called for ordered sketches that are not empty and not single item
-template<typename A>
-auto compact_theta_sketch_alloc<A>::serialize_version_4_FLZ(unsigned header_size_bytes) const -> vector_bytes {
-  const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
-  // compression based on leading zeros in deltas between ordered hash values
-  // assumes ordered sketch
-  uint64_t previous = 0;
-  uint8_t min_zeros = 64;
-  uint8_t max_zeros = 0;
-  std::vector<uint8_t> leading_zeros(entries_.get_allocator());
-  leading_zeros.reserve(entries_.size());
-  std::vector<uint64_t> deltas(entries_.get_allocator());
-  deltas.reserve(entries_.size());
-  size_t compressed_bits = 0;
-  for (unsigned i = 0; i < entries_.size(); ++i) {
-    const uint64_t delta = entries_[i] - previous;
-    deltas.push_back(delta);
-    previous = entries_[i];
-    const uint8_t zeros = count_leading_zeros_in_u64(delta);
-    leading_zeros.push_back(zeros);
-    min_zeros = std::min(min_zeros, zeros);
-    max_zeros = std::max(max_zeros, zeros);
-    compressed_bits += 63 - zeros; // the first 1 is understood
-  }
-  const uint8_t count_zeros_bits = 8 - byte_leading_zeros_table[max_zeros - min_zeros];
-  compressed_bits += count_zeros_bits * entries_.size();
-
-  const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
-  const uint8_t num_entries_bits = 31 - count_leading_zeros_in_u32(num_entries); // the first 1 is understood
-  compressed_bits += 5 + num_entries_bits;
-
-  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + std::ceil(compressed_bits / 8.0);
-  vector_bytes bytes(size, 0, entries_.get_allocator());
-  uint8_t* ptr = bytes.data() + header_size_bytes;
-
-  ptr += copy_to_mem(preamble_longs, ptr);
-  const uint8_t serial_version = 4;
-  ptr += copy_to_mem(serial_version, ptr);
-  const uint8_t type = SKETCH_TYPE;
-  ptr += copy_to_mem(type, ptr);
-  ptr += copy_to_mem(min_zeros, ptr);
-  ptr += copy_to_mem(count_zeros_bits, ptr);
-  const uint8_t flags_byte(
-    (1 << flags::IS_COMPACT) |
-    (1 << flags::IS_READ_ONLY) |
-    (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
-    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
-  );
-  ptr += copy_to_mem(flags_byte, ptr);
-  const uint16_t seed_hash = get_seed_hash();
-  ptr += copy_to_mem(seed_hash, ptr);
-  if (this->is_estimation_mode()) {
-    ptr += copy_to_mem(theta_, ptr);
-  }
-
-  size_t offset_bits = pack_bits(num_entries_bits, 5, ptr, 0);
-  offset_bits = pack_bits(num_entries, num_entries_bits, ptr, offset_bits);
-  for (unsigned i = 0; i < entries_.size(); ++i) {
-    offset_bits = pack_bits(leading_zeros[i] - min_zeros, count_zeros_bits, ptr, offset_bits);
-    offset_bits = pack_bits(deltas[i], 63 - leading_zeros[i], ptr, offset_bits);
-  }
-  return bytes;
-}
-
 template<typename A>
 auto compact_theta_sketch_alloc<A>::serialize_version_4_MLZ(unsigned header_size_bytes) const -> vector_bytes {
   const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
@@ -544,95 +480,6 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4_MLZ(unsigned header_size
     previous = entries_[i];
     offset = pack_bits(delta, entry_bits, ptr, offset);
   }
-  return bytes;
-}
-
-template<typename A>
-auto compact_theta_sketch_alloc<A>::serialize_version_4_SLZ(unsigned header_size_bytes) const -> vector_bytes {
-  const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
-  // compression based on leading zeros in deltas between ordered hash values
-  // assumes ordered sketch
-  const size_t fixed_size = header_size_bytes + sizeof(uint64_t) * preamble_longs;
-  const size_t estimated_variable_size = 5 // for num_entries
-      + 9 * entries_.size();
-  vector_bytes bytes(fixed_size + estimated_variable_size, 0, entries_.get_allocator());
-  uint8_t* ptr = bytes.data() + header_size_bytes;
-
-  ptr += copy_to_mem(preamble_longs, ptr);
-  const uint8_t serial_version = 4;
-  ptr += copy_to_mem(serial_version, ptr);
-  const uint8_t type = SKETCH_TYPE;
-  ptr += copy_to_mem(type, ptr);
-  ptr += sizeof(uint16_t); // unused
-  const uint8_t flags_byte(
-    (1 << flags::IS_COMPACT) |
-    (1 << flags::IS_READ_ONLY) |
-    (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
-    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
-  );
-  ptr += copy_to_mem(flags_byte, ptr);
-  const uint16_t seed_hash = get_seed_hash();
-  ptr += copy_to_mem(seed_hash, ptr);
-  if (this->is_estimation_mode()) {
-    ptr += copy_to_mem(theta_, ptr);
-  }
-
-  ptr += ULEB128(entries_.size(), ptr);
-
-  uint8_t offset_bits = 0;
-  uint64_t previous = 0;
-  for (const uint64_t entry: entries_) {
-    const uint64_t delta = entry - previous;
-    previous = entry;
-    const uint8_t zeros = count_leading_zeros_in_u64(delta);
-    offset_bits = pack_bits(zeros, 6, ptr, offset_bits);
-    offset_bits = pack_bits(delta, 63 - zeros, ptr, offset_bits);
-  }
-  if (offset_bits > 0) ++ptr;
-  bytes.resize(ptr - bytes.data());
-  return bytes;
-}
-
-template<typename A>
-auto compact_theta_sketch_alloc<A>::serialize_version_4_ULEB128(unsigned header_size_bytes) const -> vector_bytes {
-  const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
-  // compression based on ULEB128 code of deltas between ordered hash values
-  // assumes ordered sketch
-
-  const size_t fixed_size = header_size_bytes + sizeof(uint64_t) * preamble_longs;
-  const size_t estimated_variable_size = 5 // for num_entries
-      + 10 * entries_.size();
-  vector_bytes bytes(fixed_size + estimated_variable_size, 0, entries_.get_allocator());
-  uint8_t* ptr = bytes.data() + header_size_bytes;
-
-  ptr += copy_to_mem(preamble_longs, ptr);
-  const uint8_t serial_version = 4;
-  ptr += copy_to_mem(serial_version, ptr);
-  const uint8_t type = SKETCH_TYPE;
-  ptr += copy_to_mem(type, ptr);
-  ptr += sizeof(uint16_t); // unused
-  const uint8_t flags_byte(
-    (1 << flags::IS_COMPACT) |
-    (1 << flags::IS_READ_ONLY) |
-    (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
-    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
-  );
-  ptr += copy_to_mem(flags_byte, ptr);
-  const uint16_t seed_hash = get_seed_hash();
-  ptr += copy_to_mem(seed_hash, ptr);
-  if (this->is_estimation_mode()) {
-    ptr += copy_to_mem(theta_, ptr);
-  }
-
-  ptr += ULEB128(entries_.size(), ptr);
-
-  uint64_t previous = 0;
-  for (unsigned i = 0; i < entries_.size(); ++i) {
-    const uint64_t delta = entries_[i] - previous;
-    previous = entries_[i];
-    ptr += pack_ULEB128(delta, ptr);
-  }
-  bytes.resize(ptr - bytes.data());
   return bytes;
 }
 
@@ -740,81 +587,31 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(std::is
 
 template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed, const A& allocator) {
-  if (static_cast<const uint8_t*>(bytes)[1] == 4) return deserialize_version_4(bytes, size, seed, allocator); // TODO: check size
   auto data = compact_theta_sketch_parser<true>::parse(bytes, size, seed, false);
-  const uint64_t* entries = reinterpret_cast<const uint64_t*>(data.entries_start_ptr);
-  return compact_theta_sketch_alloc(data.is_empty, data.is_ordered, data.seed_hash, data.theta,
-      std::vector<uint64_t, A>(entries, entries + data.num_entries, allocator));
-}
-
-// MLZ
-template<typename A>
-compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize_version_4(const void* bytes, size_t size,
-    uint64_t seed, const A& allocator) {
-  ensure_minimum_memory(size, 8);
-  const uint8_t* ptr = static_cast<const uint8_t*>(bytes);
-  uint8_t preamble_longs;
-  ptr += copy_from_mem(ptr, preamble_longs);
-  uint8_t serial_version;
-  ptr += copy_from_mem(ptr, serial_version);
-  uint8_t type;
-  ptr += copy_from_mem(ptr, type);
-  uint8_t min_entry_zeros;
-  ptr += copy_from_mem(ptr, min_entry_zeros);
-//  uint8_t num_entries_zeros;
-//  ptr += copy_from_mem(ptr, num_entries_zeros);
-  ptr++; // unused
-  uint8_t flags_byte;
-  ptr += copy_from_mem(ptr, flags_byte);
-  uint16_t seed_hash;
-  ptr += copy_from_mem(ptr, seed_hash);
-  checker<true>::check_sketch_type(type, SKETCH_TYPE);
-  checker<true>::check_serial_version(serial_version, 4);
-  const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
-  if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
-  // check counts of zeros?
-
-  uint64_t theta = theta_constants::MAX_THETA;
-  if (preamble_longs == 2) {
-    ensure_minimum_memory(size, sizeof(uint64_t) * 2);
-    ptr += copy_from_mem(ptr, theta);
+  if (data.entry_bits == 64) { // versions 1 to 3
+    const uint64_t* entries = reinterpret_cast<const uint64_t*>(data.entries_start_ptr);
+    return compact_theta_sketch_alloc(data.is_empty, data.is_ordered, data.seed_hash, data.theta,
+        std::vector<uint64_t, A>(entries, entries + data.num_entries, allocator));
+  } else { // version 4
+    std::vector<uint64_t, A> entries(data.num_entries, 0, allocator);
+    const uint8_t* ptr = reinterpret_cast<const uint8_t*>(data.entries_start_ptr);
+    unsigned i;
+    for (i = 0; i + 7 < data.num_entries; i += 8) {
+      unpack_bits_block8(&entries[i], ptr, data.entry_bits);
+      ptr += data.entry_bits;
+    }
+    uint8_t offset = 0;
+    for (; i < data.num_entries; ++i) {
+      offset = unpack_bits(entries[i], data.entry_bits, ptr, offset);
+    }
+    // undo deltas
+    uint64_t previous = 0;
+    for (i = 0; i < data.num_entries; ++i) {
+      entries[i] += previous;
+      previous = entries[i];
+    }
+    return compact_theta_sketch_alloc(data.is_empty, data.is_ordered, data.seed_hash, data.theta, std::move(entries));
   }
-
-  // TODO: check size
-
-//  const size_t expected_bits = (64 - min_entry_zeros) * num_entries + num_entries_bits * (num_entries > 1);
-//  const size_t expected_size = sizeof(uint64_t) * (preamble_longs + std::ceil(expected_bits / 64.0));
-//  ensure_minimum_memory(size, expected_size);
-
-  // uncompressed num_entries for now
-  uint32_t num_entries;
-  ptr += copy_from_mem(ptr, num_entries);
-
-  const size_t expected_bits = (64 - min_entry_zeros) * num_entries;
-  const size_t expected_size = sizeof(uint64_t) * preamble_longs + std::ceil(expected_bits / 8.0) + sizeof(uint32_t);
-  ensure_minimum_memory(size, expected_size);
-
-  const uint8_t entry_bits = 64 - min_entry_zeros;
-  uint64_t previous = 0;
-  std::vector<uint64_t, A> entries(num_entries, 0, allocator);
-
-  unsigned i;
-  for (i = 0; i + 7 < num_entries; i += 8) {
-    unpack_bits_block8(&entries[i], ptr, entry_bits);
-    ptr += entry_bits;
-  }
-  uint8_t offset = 0;
-  for (; i < num_entries; ++i) {
-    offset = unpack_bits(entries[i], entry_bits, ptr, offset);
-  }
-  // undo deltas
-  for (i = 0; i < num_entries; ++i) {
-    entries[i] += previous;
-    previous = entries[i];
-  }
-
-  const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  return compact_theta_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries));
 }
 
 // wrapped compact sketch

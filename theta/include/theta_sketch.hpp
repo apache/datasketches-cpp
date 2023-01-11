@@ -394,13 +394,7 @@ private:
   uint64_t theta_;
   std::vector<uint64_t, Allocator> entries_;
 
-  vector_bytes serialize_version_4_SLZ(unsigned header_size_bytes = 0) const;
   vector_bytes serialize_version_4_MLZ(unsigned header_size_bytes = 0) const;
-  vector_bytes serialize_version_4_FLZ(unsigned header_size_bytes = 0) const;
-  vector_bytes serialize_version_4_ULEB128(unsigned header_size_bytes = 0) const;
-
-  static compact_theta_sketch_alloc deserialize_version_4(const void* bytes, size_t size,
-      uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   virtual void print_specifics(std::ostringstream& os) const;
 };
