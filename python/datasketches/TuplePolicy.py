@@ -75,18 +75,3 @@ class MinIntPolicy(TuplePolicy):
 
   def __call__(self, summary: int, update: int) -> int:
     return min(summary, update)
-
-
-# Implements an Always One policy, where the summary is always exactly 1
-class AkwaysOnePolicy(TuplePolicy):
-  def __init__(self):
-    TuplePolicy.__init__(self)
-
-  def create_summary(self) -> int:
-    return int(1)
-
-  def update_summary(self, summary: int, update: int) -> int:
-    return int(1)
-
-  def __call__(self, summary: int, update: int) -> int:
-    return int(1)
