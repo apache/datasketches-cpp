@@ -21,6 +21,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "theta_sketch.hpp"
 #include "tuple_sketch.hpp"
 #include "tuple_union.hpp"
 #include "tuple_intersection.hpp"
@@ -163,6 +164,8 @@ void init_tuple(py::module &m) {
   py::class_<py_compact_tuple, py_tuple_sketch>(m, "compact_tuple_sketch")
     .def(py::init<const py_compact_tuple&>())
     .def(py::init<const py_tuple_sketch&, bool>())
+    .def(py::init<const theta_sketch&, py::object&>(),
+         "Creates a compact tuple sketch from a theta sketch using a fixed summary value.")
     .def(
         "serialize",
         [](const py_compact_tuple& sk, py_object_serde& serde) {
