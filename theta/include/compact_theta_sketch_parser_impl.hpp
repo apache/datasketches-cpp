@@ -26,6 +26,12 @@
 
 namespace datasketches {
 
+template<typename T>
+T whole_bytes_to_hold_bits(T bits) {
+  static_assert(std::is_integral<T>::value, "integral type expected");
+  return (bits >> 3) + ((bits & 7) > 0);
+}
+
 template<bool dummy>
 auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uint64_t seed, bool dump_on_error) -> compact_theta_sketch_data {
   check_memory_size(ptr, size, 8, dump_on_error);
@@ -42,16 +48,21 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
       check_memory_size(ptr, size, 16, dump_on_error);
       theta = reinterpret_cast<const uint64_t*>(ptr)[COMPACT_SKETCH_V4_THETA_U64];
     }
-    const size_t num_entries_index = has_theta ? COMPACT_SKETCH_V4_NUM_ENTRIES_ESTIMATION_U32 : COMPACT_SKETCH_V4_NUM_ENTRIES_EXACT_U32;
-    check_memory_size(ptr, size, (num_entries_index + 1) * sizeof(uint32_t), dump_on_error);
-    const uint32_t num_entries = reinterpret_cast<const uint32_t*>(ptr)[num_entries_index];
-    const size_t entries_offset_bytes = has_theta ? COMPACT_SKETCH_V4_PACKED_DATA_ESTIMATION_U8 : COMPACT_SKETCH_V4_PACKED_DATA_EXACT_U8;
+    const uint8_t num_entries_bytes = reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_V4_NUM_ENTRIES_BYTES_BYTE];
+    size_t data_offset_bytes = has_theta ? COMPACT_SKETCH_V4_PACKED_DATA_ESTIMATION_BYTE : COMPACT_SKETCH_V4_PACKED_DATA_EXACT_BYTE;
+    check_memory_size(ptr, size, data_offset_bytes + num_entries_bytes, dump_on_error);
+    uint32_t num_entries = 0;
+    const uint8_t* num_entries_ptr = reinterpret_cast<const uint8_t*>(ptr) + data_offset_bytes;
+    for (unsigned i = 0; i < num_entries_bytes; ++i) {
+      num_entries |= (*num_entries_ptr++) << (i << 3);
+    }
+    data_offset_bytes += num_entries_bytes;
     const uint8_t min_entry_zeros = reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_V4_MIN_ENTRY_ZEROS_BYTE];
     const size_t expected_bits = (64 - min_entry_zeros) * num_entries;
-    const size_t expected_size_bytes = entries_offset_bytes + std::ceil(expected_bits / 8.0);
+    const size_t expected_size_bytes = data_offset_bytes + whole_bytes_to_hold_bits(expected_bits);
     check_memory_size(ptr, size, expected_size_bytes, dump_on_error);
     return {false, true, seed_hash, num_entries, theta,
-      reinterpret_cast<const uint8_t*>(ptr) + entries_offset_bytes, static_cast<uint8_t>(64 - min_entry_zeros)};
+      reinterpret_cast<const uint8_t*>(ptr) + data_offset_bytes, static_cast<uint8_t>(64 - min_entry_zeros)};
   }
   case 3: {
       uint64_t theta = theta_constants::MAX_THETA;

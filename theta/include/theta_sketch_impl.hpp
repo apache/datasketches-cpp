@@ -425,11 +425,11 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4_MLZ(unsigned header_size
   uint8_t min_entry_zeros = count_leading_zeros_in_u64(ored);
   size_t compressed_bits = (64 - min_entry_zeros) * entries_.size();
 
-//  const uint8_t num_entries_zeros = count_leading_zeros_in_u32(entries_.size());
-//  const uint8_t num_entries_bits = 31 - num_entries_zeros; // first 1 is understood
-//  compressed_bits += num_entries_bits * (entries_.size() > 1); // no bits for 0 or 1 entry
+  // store num_entries as whole bytes since whole-byte blocks will follow (most probably)
+  const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(entries_.size()));
 
-  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + std::ceil(compressed_bits / 8.0) + sizeof(uint32_t);
+  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + num_entries_bytes
+      + whole_bytes_to_hold_bits(compressed_bits);
   vector_bytes bytes(size, 0, entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
@@ -438,7 +438,7 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4_MLZ(unsigned header_size
   ptr += copy_to_mem<uint8_t>(serial_version, ptr);
   ptr += copy_to_mem(SKETCH_TYPE, ptr);
   ptr += copy_to_mem(min_entry_zeros, ptr);
-  ptr += sizeof(uint8_t); // unused
+  ptr += copy_to_mem(num_entries_bytes, ptr);
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
@@ -450,14 +450,11 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4_MLZ(unsigned header_size
   if (this->is_estimation_mode()) {
     ptr += copy_to_mem(theta_, ptr);
   }
-//  uint8_t offset_bits = 0;
-//  if (entries_.size() > 1) {
-//    offset_bits = put_bits64(entries_.size(), num_entries_bits, ptr, offset_bits);
-//    std::cout << "writing " << std::to_string(num_entries_bits) << " bits\n";
-//  }
-
-  // uncompressed num_entries for now
-  ptr += copy_to_mem<uint32_t>(entries_.size(), ptr);
+  uint32_t num_entries = entries_.size();
+  for (unsigned i = 0; i < num_entries_bytes; ++i) {
+    *ptr++ = num_entries & 0xff;
+    num_entries >>= 8;
+  }
 
   const uint8_t entry_bits = 64 - min_entry_zeros;
 
