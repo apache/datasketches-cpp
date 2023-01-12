@@ -30,79 +30,9 @@
 #include "common_defs.hpp"
 
 #include "py_serde.hpp"
+#include "tuple_policy.hpp"
 
 namespace py = pybind11;
-
-namespace datasketches {
-
-struct tuple_policy {
-  virtual py::object create_summary() const = 0;
-  virtual py::object update_summary(py::object& summary, const py::object& update) const = 0;
-  virtual py::object operator()(py::object& summary, const py::object& update) const = 0;
-  virtual ~tuple_policy() = default;
-};
-
-struct TuplePolicy : public tuple_policy {
-  using tuple_policy::tuple_policy;
-
-  // trampoline definitions -- need one for each virtual function
-  py::object create_summary() const override {
-    PYBIND11_OVERRIDE_PURE(
-      py::object,          // Return type
-      tuple_policy,        // Parent class
-      create_summary,      // Name of function in C++ (must match Python name)
-                           // Argument(s) -- if any
-    );
-  }
-
-  py::object update_summary(py::object& summary, const py::object& update) const override {
-    PYBIND11_OVERRIDE_PURE(
-      py::object,          // Return type
-      tuple_policy,        // Parent class
-      update_summary,      // Name of function in C++ (must match Python name)
-      summary, update      // Arguments
-    );
-  }
-
-  py::object operator()(py::object& summary, const py::object& update) const override {
-    PYBIND11_OVERRIDE_PURE_NAME(
-      py::object,          // Return type
-      tuple_policy,        // Parent class
-      "__call__",          // Name of function in python
-      operator(),          // Name of function in C++
-      summary, update      // Arguemnts
-    );
-  }
-};
-
-struct tuple_policy_holder {
-  explicit tuple_policy_holder(std::shared_ptr<tuple_policy> policy) : _policy(policy) {}
-  tuple_policy_holder(const tuple_policy_holder& other) : _policy(other._policy) {}
-  tuple_policy_holder(tuple_policy_holder&& other) : _policy(std::move(other._policy)) {}
-  tuple_policy_holder& operator=(const tuple_policy_holder& other) { _policy = other._policy; return *this; }
-  tuple_policy_holder& operator=(tuple_policy_holder&& other) { std::swap(_policy, other._policy); return *this; }
-
-  py::object create() const { return _policy->create_summary(); }
-  
-  void update(py::object& summary, const py::object& update) const {
-    summary = _policy->update_summary(summary, update);
-  }
-
-  void operator()(py::object& summary, const py::object& update) const {
-    summary = _policy->operator()(summary, update);
-  }
-
-  private:
-    std::shared_ptr<tuple_policy> _policy;
-};
-
-struct dummy_jaccard_policy {
-  void operator()(py::object&, const py::object&) const {
-    return;
-  }
-};
-
-}
 
 void init_tuple(py::module &m) {
   using namespace datasketches;
@@ -119,7 +49,7 @@ void init_tuple(py::module &m) {
 
   // only needed temporarily -- can remove once everything is working
   py::class_<tuple_policy_holder>(m, "TuplePolicyHolder")
-    .def(py::init<std::shared_ptr<tuple_policy>>())
+    .def(py::init<std::shared_ptr<tuple_policy>>(), py::arg("policy"))
     .def("create", &tuple_policy_holder::create, "Creates a new Summary object")
     .def("update", &tuple_policy_holder::update, py::arg("summary"), py::arg("update"),
          "Updates the provided summary using the data in update")
@@ -162,9 +92,9 @@ void init_tuple(py::module &m) {
   ;
 
   py::class_<py_compact_tuple, py_tuple_sketch>(m, "compact_tuple_sketch")
-    .def(py::init<const py_compact_tuple&>())
-    .def(py::init<const py_tuple_sketch&, bool>())
-    .def(py::init<const theta_sketch&, py::object&>(),
+    .def(py::init<const py_compact_tuple&>(), py::arg("other"))
+    .def(py::init<const py_tuple_sketch&, bool>(), py::arg("other"), py::arg("ordered")=true)
+    .def(py::init<const theta_sketch&, py::object&>(), py::arg("other"), py::arg("summary"),
          "Creates a compact tuple sketch from a theta sketch using a fixed summary value.")
     .def(
         "serialize",
