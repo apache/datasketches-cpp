@@ -67,17 +67,10 @@ static inline uint8_t unpack_bits(uint64_t& value, uint8_t width, const uint8_t*
   return offset;
 }
 
-static inline size_t pack_ULEB128(uint64_t value, uint8_t* ptr) {
-  const uint8_t* start = ptr;
-  while (value >= 0x80) {
-    *ptr++ = value | 0x80;
-    value >>= 7;
-  }
-  *ptr++ = value;
-  return ptr - start;
-}
-
 // pack given number of bits from a block of 8 64-bit values into bytes
+// we don't need 0 and 64 bits
+// we assume that higher bits (which we are not packing) are zeros
+// this assumption allows to avoid masking operations
 
 static inline void pack_bits_1(const uint64_t* values, uint8_t* ptr) {
   *ptr = values[0] << 7;
