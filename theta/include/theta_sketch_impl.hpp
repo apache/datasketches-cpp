@@ -357,7 +357,7 @@ void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
   write(os, flags_byte);
   write(os, get_seed_hash());
   if (preamble_longs > 1) {
-    write(os, static_cast<uint32_t>(entries_.size()));
+    write<uint32_t>(os, entries_.size());
     write<uint32_t>(os, 0); // unused
   }
   if (this->is_estimation_mode()) write(os, this->theta_);
@@ -372,11 +372,9 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
   vector_bytes bytes(size, 0, entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
-  ptr += copy_to_mem(preamble_longs, ptr);
-  const uint8_t serial_version = UNCOMPRESSED_SERIAL_VERSION;
-  ptr += copy_to_mem(serial_version, ptr);
-  const uint8_t type = SKETCH_TYPE;
-  ptr += copy_to_mem(type, ptr);
+  *ptr++ = preamble_longs;
+  *ptr++ = UNCOMPRESSED_SERIAL_VERSION;
+  *ptr++ = SKETCH_TYPE;
   ptr += sizeof(uint16_t); // unused
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
@@ -384,12 +382,10 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
     (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
     (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
   );
-  ptr += copy_to_mem(flags_byte, ptr);
-  const uint16_t seed_hash = get_seed_hash();
-  ptr += copy_to_mem(seed_hash, ptr);
+  *ptr++ = flags_byte;
+  ptr += copy_to_mem(get_seed_hash(), ptr);
   if (preamble_longs > 1) {
-    const uint32_t num_entries = static_cast<uint32_t>(entries_.size());
-    ptr += copy_to_mem(num_entries, ptr);
+    ptr += copy_to_mem<uint32_t>(entries_.size(), ptr);
     ptr += sizeof(uint32_t); // unused
   }
   if (this->is_estimation_mode()) ptr += copy_to_mem(theta_, ptr);
@@ -454,7 +450,7 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
   if (this->is_estimation_mode()) write(os, this->theta_);
   uint32_t num_entries = entries_.size();
   for (unsigned i = 0; i < num_entries_bytes; ++i) {
-    write(os, static_cast<uint8_t>(num_entries & 0xff));
+    write<uint8_t>(os, num_entries & 0xff);
     num_entries >>= 8;
   }
 
@@ -497,20 +493,19 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_byt
   vector_bytes bytes(size, 0, entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
-  ptr += copy_to_mem(preamble_longs, ptr);
-  const uint8_t serial_version = COMPRESSED_SERIAL_VERSION;
-  ptr += copy_to_mem<uint8_t>(serial_version, ptr);
-  ptr += copy_to_mem(SKETCH_TYPE, ptr);
-  ptr += copy_to_mem(min_entry_zeros, ptr);
-  ptr += copy_to_mem(num_entries_bytes, ptr);
+  *ptr++ = preamble_longs;
+  *ptr++ = COMPRESSED_SERIAL_VERSION;
+  *ptr++ = SKETCH_TYPE;
+  *ptr++ = min_entry_zeros;
+  *ptr++ = num_entries_bytes;
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
     (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
     (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
   );
-  ptr += copy_to_mem(flags_byte, ptr);
-  ptr += copy_to_mem<uint16_t>(get_seed_hash(), ptr);
+  *ptr++ = flags_byte;
+  ptr += copy_to_mem(get_seed_hash(), ptr);
   if (this->is_estimation_mode()) {
     ptr += copy_to_mem(theta_, ptr);
   }
