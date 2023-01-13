@@ -318,7 +318,8 @@ public:
   using AllocBytes = typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
 
-  static const uint8_t SERIAL_VERSION = 3;
+  static const uint8_t UNCOMPRESSED_SERIAL_VERSION = 3;
+  static const uint8_t COMPRESSED_SERIAL_VERSION = 4;
   static const uint8_t SKETCH_TYPE = 3;
 
   // Instances of this type can be obtained:
@@ -356,6 +357,23 @@ public:
    */
   vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
+  /**
+   * This method serializes the sketch into a given stream in a compressed binary form.
+   * Compression is applied to ordered sketches except empty and single item.
+   * For unordered, empty and single item sketches this method is equivalent to serialize()
+   * @param os output stream
+   */
+  void serialize_compressed(std::ostream& os) const;
+
+  /**
+   * This method serializes the sketch as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is an uninitialized space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * Compression is applied to ordered sketches except empty and single item.
+   * For unordered, empty and single item sketches this method is equivalent to serialize()
+   * @param header_size_bytes space to reserve in front of the sketch
+   */
   vector_bytes serialize_compressed(unsigned header_size_bytes = 0) const;
 
   virtual iterator begin();
@@ -394,7 +412,15 @@ private:
   uint64_t theta_;
   std::vector<uint64_t, Allocator> entries_;
 
-  vector_bytes serialize_version_4_MLZ(unsigned header_size_bytes = 0) const;
+  bool is_suitable_for_compression() const;
+  uint8_t compute_min_leading_zeros() const;
+  void serialize_version_4(std::ostream& os) const;
+  vector_bytes serialize_version_4(unsigned header_size_bytes = 0) const;
+
+  static compact_theta_sketch_alloc deserialize_v1(uint8_t preamble_longs, std::istream& is, uint64_t seed, const Allocator& allocator);
+  static compact_theta_sketch_alloc deserialize_v2(uint8_t preamble_longs, std::istream& is, uint64_t seed, const Allocator& allocator);
+  static compact_theta_sketch_alloc deserialize_v3(uint8_t preamble_longs, std::istream& is, uint64_t seed, const Allocator& allocator);
+  static compact_theta_sketch_alloc deserialize_v4(uint8_t preamble_longs, std::istream& is, uint64_t seed, const Allocator& allocator);
 
   virtual void print_specifics(std::ostringstream& os) const;
 };
