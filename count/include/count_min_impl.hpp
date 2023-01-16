@@ -6,14 +6,16 @@
 
 namespace datasketches {
 
-template<typename T>
-count_min_sketch<T>::count_min_sketch(uint64_t num_hashes, uint64_t num_buckets, uint64_t seed):
+template<typename W>
+count_min_sketch<W>::count_min_sketch(uint16_t num_hashes, uint32_t num_buckets, uint64_t seed):
 num_hashes(num_hashes),
 num_buckets(num_buckets),
 seed(seed){
+  total_weight = 0 ;
   sketch_length = num_hashes*num_buckets ;
   sketch.resize(sketch_length) ;
-  assert(num_buckets >= 3); // need relative error epsilon at most 1.
+  //assert(num_buckets >= 3); // need
+  if(num_buckets < 3) throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.") ;
 
 
   std::default_random_engine rng(seed);
@@ -25,46 +27,38 @@ seed(seed){
   }
 };
 
-template<typename T>
-uint64_t count_min_sketch<T>::get_num_hashes() {
+template<typename W>
+uint16_t count_min_sketch<W>::get_num_hashes() {
     return num_hashes ;
 }
 
-template<typename T>
-uint64_t count_min_sketch<T>::get_num_buckets() {
+template<typename W>
+uint32_t count_min_sketch<W>::get_num_buckets() {
     return num_buckets ;
 }
 
-template<typename T>
-uint64_t count_min_sketch<T>::get_seed() {
+template<typename W>
+uint64_t count_min_sketch<W>::get_seed() {
     return seed ;
 }
 
-template<typename T>
-std::vector<T> count_min_sketch<T>::get_sketch(){
+template<typename W>
+std::vector<W> count_min_sketch<W>::get_sketch(){
   return sketch ;
 }
 
-
-template<typename T>
-std::vector<uint64_t> count_min_sketch<T>::get_config(){
-    std::vector<uint64_t> config(3) ;
-    config = {get_num_hashes(), get_num_buckets(), get_seed()} ;
-    return config ;
-} ;
-
-template<typename T>
-double count_min_sketch<T>::get_relative_error(){
+template<typename W>
+double count_min_sketch<W>::get_relative_error(){
   return exp(1.0) / double(num_buckets) ;
 }
 
-template<typename T>
-T count_min_sketch<T>::get_total_weight(){
+template<typename W>
+W count_min_sketch<W>::get_total_weight(){
   return total_weight ;
 }
 
-template<typename T>
-uint64_t count_min_sketch<T>::suggest_num_buckets(double relative_error){
+template<typename W>
+uint32_t count_min_sketch<W>::suggest_num_buckets(double relative_error){
   /*
    * Function to help users select a number of buckets for a given error.
    * TODO: Change this when we use only power of 2 buckets.
@@ -76,11 +70,11 @@ uint64_t count_min_sketch<T>::suggest_num_buckets(double relative_error){
   return ceil(exp(1.0) / relative_error) ;
 }
 
-template<typename T>
-uint64_t count_min_sketch<T>::suggest_num_hashes(double confidence){
+template<typename W>
+uint16_t count_min_sketch<W>::suggest_num_hashes(double confidence){
   /*
    * Function to help users select a number of hashes for a given confidence
-   * eg. confidence = 1 - failure probability
+   * e.g. confidence = 1 - failure probability
    * failure probability == delta in the literature.
    */
   if(confidence < 0. || confidence > 1.0){
@@ -89,8 +83,8 @@ uint64_t count_min_sketch<T>::suggest_num_hashes(double confidence){
   return ceil(log(1.0/(1.0 - confidence))) ;
 }
 
-template<typename T>
-std::vector<uint64_t> count_min_sketch<T>::get_hashes(const void* item, size_t size){
+template<typename W>
+std::vector<uint64_t> count_min_sketch<W>::get_hashes(const void* item, size_t size){
   /*
    * Returns the hash locations for the input item using the original hashing
    * scheme from [1].
@@ -121,53 +115,53 @@ std::vector<uint64_t> count_min_sketch<T>::get_hashes(const void* item, size_t s
   return sketch_update_locations ;
 }
 
-template<typename T>
-T count_min_sketch<T>::get_estimate(uint64_t item) {return get_estimate(&item, sizeof(item));}
+template<typename W>
+W count_min_sketch<W>::get_estimate(uint64_t item) {return get_estimate(&item, sizeof(item));}
 
-template<typename T>
-T count_min_sketch<T>::get_estimate(const std::string& item) {
+template<typename W>
+W count_min_sketch<W>::get_estimate(const std::string& item) {
   if (item.empty()) return 0 ; // Empty strings are not inserted into the sketch.
   return get_estimate(item.c_str(), item.length());
 }
 
-template<typename T>
-T count_min_sketch<T>::get_estimate(const void* item, size_t size){
+template<typename W>
+W count_min_sketch<W>::get_estimate(const void* item, size_t size){
   /*
    * Returns the estimated frequency of the item
    */
   std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
-  std::vector<T> estimates ;
+  std::vector<W> estimates ;
   for (auto h: hash_locations){
     estimates.push_back(sketch[h]) ;
   }
-  T result = *std::min_element(estimates.begin(), estimates.end());
+  W result = *std::min_element(estimates.begin(), estimates.end());
   return result ;
 }
 
-template<typename T>
-void count_min_sketch<T>::update(uint64_t item, T weight) {
+template<typename W>
+void count_min_sketch<W>::update(uint64_t item, W weight) {
   update(&item, sizeof(item), weight);
 }
 
-template<typename T>
-void count_min_sketch<T>::update(uint64_t item) {
+template<typename W>
+void count_min_sketch<W>::update(uint64_t item) {
   update(&item, sizeof(item), 1);
 }
 
-template<typename T>
-void count_min_sketch<T>::update(const std::string& item, T weight) {
+template<typename W>
+void count_min_sketch<W>::update(const std::string& item, W weight) {
   if (item.empty()) return;
   update(item.c_str(), item.length(), weight);
 }
 
-template<typename T>
-void count_min_sketch<T>::update(const std::string& item) {
+template<typename W>
+void count_min_sketch<W>::update(const std::string& item) {
   if (item.empty()) return;
   update(item.c_str(), item.length(), 1);
 }
 
-template<typename T>
-void count_min_sketch<T>::update(const void* item, size_t size, T weight) {
+template<typename W>
+void count_min_sketch<W>::update(const void* item, size_t size, W weight) {
   /*
    * Gets the item's hash locations and then increments the sketch in those
    * locations by the weight.
@@ -179,51 +173,55 @@ void count_min_sketch<T>::update(const void* item, size_t size, T weight) {
   }
 }
 
-template<typename T>
-T count_min_sketch<T>::get_upper_bound(uint64_t item) {return get_upper_bound(&item, sizeof(item));}
+template<typename W>
+W count_min_sketch<W>::get_upper_bound(uint64_t item) {return get_upper_bound(&item, sizeof(item));}
 
-template<typename T>
-T count_min_sketch<T>::get_upper_bound(const std::string& item) {
+template<typename W>
+W count_min_sketch<W>::get_upper_bound(const std::string& item) {
   if (item.empty()) return 0 ; // Empty strings are not inserted into the sketch.
   return get_upper_bound(item.c_str(), item.length());
 }
 
-template<typename T>
-T count_min_sketch<T>::get_upper_bound(const void* item, size_t size){
+template<typename W>
+W count_min_sketch<W>::get_upper_bound(const void* item, size_t size){
   return get_estimate(item, size) + get_relative_error()*get_total_weight() ;
 }
 
 
-template<typename T>
-T count_min_sketch<T>::get_lower_bound(uint64_t item) {return get_lower_bound(&item, sizeof(item));}
+template<typename W>
+W count_min_sketch<W>::get_lower_bound(uint64_t item) {return get_lower_bound(&item, sizeof(item));}
 
-template<typename T>
-T count_min_sketch<T>::get_lower_bound(const std::string& item) {
+template<typename W>
+W count_min_sketch<W>::get_lower_bound(const std::string& item) {
   if (item.empty()) return 0 ; // Empty strings are not inserted into the sketch.
   return get_lower_bound(item.c_str(), item.length());
 }
 
-template<typename T>
-T count_min_sketch<T>::get_lower_bound(const void* item, size_t size){
+template<typename W>
+W count_min_sketch<W>::get_lower_bound(const void* item, size_t size){
   return get_estimate(item, size) ;
 }
 
-template<typename T>
-void count_min_sketch<T>::merge(count_min_sketch<T> &other_sketch){
+template<typename W>
+void count_min_sketch<W>::merge( count_min_sketch<W> &other_sketch){
   /*
-   * Merges this sketch into other_sketch sketch by elementwise summing of buckets
-   */
+  * Merges this sketch into other_sketch sketch by elementwise summing of buckets
+  */
   if(this == &other_sketch){
     throw std::invalid_argument( "Cannot merge a sketch with itself." );
   }
 
-  bool same_sketch_config = (get_config() == other_sketch.get_config()) ;
-  if(!same_sketch_config){
-    throw std::invalid_argument( "Incompatible sketch config." );
+
+  bool acceptable_config =
+    (get_num_hashes() == other_sketch.get_num_hashes())   &&
+    (get_num_buckets() == other_sketch.get_num_buckets()) &&
+    (get_seed() == other_sketch.get_seed()) ;
+  if(!acceptable_config){
+    throw std::invalid_argument( "Incompatible sketch configuration." );
   }
 
-  std::vector<T> other_table = other_sketch.get_sketch() ;
-  for(auto i=0 ; i<(sketch_length); ++i){
+  std::vector<W> other_table = other_sketch.get_sketch() ;
+  for(uint64_t i=0 ; i<sketch_length ; ++i){
     sketch[i] += other_table[i] ;
   }
   total_weight += other_sketch.get_total_weight() ;

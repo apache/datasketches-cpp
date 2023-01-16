@@ -7,13 +7,16 @@
 namespace datasketches{
 
 TEST_CASE("CM init"){
-    uint64_t n_hashes = 3, n_buckets = 5, seed = 1234567 ;
+    uint16_t n_hashes = 3 ;
+    uint32_t n_buckets = 5 ;
+    uint64_t seed = 1234567 ;
+    REQUIRE_THROWS_AS(count_min_sketch<uint64_t>(n_hashes, 1, seed), std::invalid_argument);
     count_min_sketch<uint64_t> c(n_hashes, n_buckets, seed) ;
-    std::vector<uint64_t> sk_config{n_hashes, n_buckets, seed} ;
+    //std::vector<uint64_t> sk_config{n_hashes, n_buckets, seed} ;
     REQUIRE(c.get_num_hashes() == n_hashes) ;
     REQUIRE(c.get_num_buckets() == n_buckets) ;
     REQUIRE(c.get_seed() == seed) ;
-    REQUIRE(c.get_config() == sk_config) ;
+    //REQUIRE(c.get_config() == sk_config) ;
 
     std::vector<uint64_t> sketch_table = c.get_sketch() ;
     for(auto x: sketch_table){
@@ -50,20 +53,22 @@ TEST_CASE("CM parameter suggestions", "[error parameters]") {
 }
 
 TEST_CASE("CM one update: uint64_t"){
-    uint64_t n_hashes = 3, n_buckets = 5, seed =  9223372036854775807 ; //1234567 ;
-    uint64_t inserted_weight = 0 ;
-    count_min_sketch<uint64_t> c(n_hashes, n_buckets, seed) ;
-    std::string x = "x" ;
+  uint16_t n_hashes = 3 ;
+  uint32_t n_buckets = 5 ;
+  uint64_t seed =  9223372036854775807 ; //1234567 ;
+  uint64_t inserted_weight = 0 ;
+  count_min_sketch<uint64_t> c(n_hashes, n_buckets, seed) ;
+  std::string x = "x" ;
 
-      REQUIRE(c.get_estimate("x") == 0) ; // No items in sketch so estimates should be zero
-    c.update(x) ;
-    REQUIRE(c.get_estimate(x) == 1) ;
-    inserted_weight += 1 ;
+  REQUIRE(c.get_estimate("x") == 0) ; // No items in sketch so estimates should be zero
+  c.update(x) ;
+  REQUIRE(c.get_estimate(x) == 1) ;
+  inserted_weight += 1 ;
 
-    uint64_t w = 9 ;
-    inserted_weight += w ;
-    c.update(x, w) ;
-    REQUIRE(c.get_estimate(x) == inserted_weight) ;
+  uint64_t w = 9 ;
+  inserted_weight += w ;
+  c.update(x, w) ;
+  REQUIRE(c.get_estimate(x) == inserted_weight) ;
 
     // Doubles are converted to uint64_t
     double w1 = 10.0 ;
@@ -88,8 +93,8 @@ TEST_CASE("CM frequency estimates"){
 
     double relative_error = 0.1 ;
     double confidence = 0.99 ;
-    uint64_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
-    uint64_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
+    uint16_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
+    uint32_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
 
     count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
     for(int i=0 ; i < number_of_items ; i++) {
@@ -110,8 +115,8 @@ TEST_CASE("CM frequency estimates"){
 TEST_CASE("CM merge - reject", "[reject cases]"){
     double relative_error = 0.25 ;
     double confidence = 0.9 ;
-    uint64_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
-    uint64_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
+    uint32_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
+    uint16_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
     count_min_sketch<uint64_t> s(n_hashes, n_buckets, 9082435234709287) ;
 
 
@@ -131,11 +136,12 @@ TEST_CASE("CM merge - reject", "[reject cases]"){
 TEST_CASE("CM merge - pass", "[acceptable cases]"){
     double relative_error = 0.25 ;
     double confidence = 0.9 ;
-    uint64_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
-    uint64_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
+    uint32_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
+    uint16_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
     count_min_sketch<uint64_t> s(n_hashes, n_buckets) ;
-    std::vector<uint64_t> s_config = s.get_config() ; // Construct a sketch with correct configuration.
-    count_min_sketch<uint64_t> t(s_config[0], s_config[1]) ;
+    uint16_t s_hashes = s.get_num_hashes() ;
+    uint32_t s_buckets = s.get_num_buckets() ;
+    count_min_sketch<uint64_t> t(s_hashes, s_buckets) ;
 
     // Merge in an all-zeros sketch t.  Should not change the total weight.
     s.merge(t) ;
