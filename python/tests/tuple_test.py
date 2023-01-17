@@ -32,7 +32,7 @@ class TupleTest(unittest.TestCase):
 
         # create a sketch and inject some values -- summary is 2 so we can sum them
         # and know the reuslt
-        sk = self.generate_tuple_sketch(n, k, summary=2, policy=AccumulatorPolicy())
+        sk = self.generate_tuple_sketch(AccumulatorPolicy(), n, k, summary=2)
 
         # we can check that the upper and lower bounds bracket the
         # estimate, without needing to know the exact value.
@@ -84,13 +84,12 @@ class TupleTest(unittest.TestCase):
         offset = int(3 * n / 4) # it's a float w/o cast
 
         # create a couple sketches and inject some values, with different summaries
-        sk1 = self.generate_tuple_sketch(n, k, summary=5, policy=AccumulatorPolicy())
-        sk2 = self.generate_tuple_sketch(n, k, summary=7, policy=AccumulatorPolicy(), offset=offset)
+        sk1 = self.generate_tuple_sketch(AccumulatorPolicy(), n, k, summary=5)
+        sk2 = self.generate_tuple_sketch(AccumulatorPolicy(), n, k, summary=7, offset=offset)
 
         # UNIONS
         # create a union object
-        maxIntPolicy = MaxIntPolicy()
-        union = tuple_union(k, policy=maxIntPolicy)
+        union = tuple_union(MaxIntPolicy(), k)
         union.update(sk1)
         union.update(sk2)
 
@@ -122,8 +121,7 @@ class TupleTest(unittest.TestCase):
 
         # INTERSECTIONS
         # create an intersection object
-        minIntPolicy = MinIntPolicy()
-        intersect = tuple_intersection(policy=minIntPolicy) # no lg_k
+        intersect = tuple_intersection(MinIntPolicy()) # no lg_k
         intersect.update(sk1)
         intersect.update(sk2)
 
@@ -198,8 +196,8 @@ class TupleTest(unittest.TestCase):
 
 
     # Generates a basic tuple sketch using a fixed integer summary of 2
-    def generate_tuple_sketch(self, n, k, summary, policy, offset=0):
-      sk = update_tuple_sketch(k, policy)
+    def generate_tuple_sketch(self, policy, n, k, summary, offset=0):
+      sk = update_tuple_sketch(policy, k)
       for i in range(0, n):
         sk.update(i + offset, summary)
       return sk

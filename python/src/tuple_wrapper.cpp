@@ -113,13 +113,13 @@ void init_tuple(py::module &m) {
         "Reads a bytes object and returns the corresponding compact_tuple_sketch"
     );
 
-  py::class_<py_update_tuple, py_tuple_sketch>(m, "update_tuple_sketch")
+  py::class_<py_update_tuple, py_tuple_sketch>(m, "_update_tuple_sketch")
     .def(
-        py::init([](uint8_t lg_k, std::shared_ptr<tuple_policy> policy, double p, uint64_t seed) {
+        py::init([](std::shared_ptr<tuple_policy> policy, uint8_t lg_k, double p, uint64_t seed) {
           tuple_policy_holder holder(policy);
           return py_update_tuple::builder(holder).set_lg_k(lg_k).set_p(p).set_seed(seed).build();
         }),
-        py::arg("lg_k")=theta_constants::DEFAULT_LG_K, py::arg("policy"), py::arg("p")=1.0, py::arg("seed")=DEFAULT_SEED
+        py::arg("policy"), py::arg("lg_k")=theta_constants::DEFAULT_LG_K, py::arg("p")=1.0, py::arg("seed")=DEFAULT_SEED
     )
     .def(py::init<const py_update_tuple&>())
     .def("update", static_cast<void (py_update_tuple::*)(int64_t, py::object&)>(&py_update_tuple::update),
@@ -135,13 +135,13 @@ void init_tuple(py::module &m) {
          "Returns a compacted form of the sketch, optionally sorting it")
   ;
 
-  py::class_<py_tuple_union>(m, "tuple_union")
+  py::class_<py_tuple_union>(m, "_tuple_union")
     .def(
-        py::init([](uint8_t lg_k, std::shared_ptr<tuple_policy> policy, double p, uint64_t seed) {
+        py::init([](std::shared_ptr<tuple_policy> policy, uint8_t lg_k, double p, uint64_t seed) {
           tuple_policy_holder holder(policy);
           return py_tuple_union::builder(holder).set_lg_k(lg_k).set_p(p).set_seed(seed).build();
         }),
-        py::arg("lg_k")=theta_constants::DEFAULT_LG_K, py::arg("policy"), py::arg("p")=1.0, py::arg("seed")=DEFAULT_SEED
+        py::arg("policy"), py::arg("lg_k")=theta_constants::DEFAULT_LG_K, py::arg("p")=1.0, py::arg("seed")=DEFAULT_SEED
     )
     .def("update", &py_tuple_union::update<const py_tuple_sketch&>, py::arg("sketch"),
          "Updates the union with the given sketch")
@@ -151,13 +151,13 @@ void init_tuple(py::module &m) {
          "Resets the sketch to the initial empty")
   ;
 
-  py::class_<py_tuple_intersection>(m, "tuple_intersection")
+  py::class_<py_tuple_intersection>(m, "_tuple_intersection")
     .def(
-        py::init([](uint64_t seed, std::shared_ptr<tuple_policy> policy) {
+        py::init([](std::shared_ptr<tuple_policy> policy, uint64_t seed) {
           tuple_policy_holder holder(policy);
           return py_tuple_intersection(seed, holder);
         }),
-        py::arg("seed")=DEFAULT_SEED, py::arg("policy"))
+        py::arg("policy"), py::arg("seed")=DEFAULT_SEED)
     .def("update", &py_tuple_intersection::update<const py_tuple_sketch&>, py::arg("sketch"),
          "Intersections the provided sketch with the current intersection state")
     .def("get_result", &py_tuple_intersection::get_result, py::arg("ordered")=true,
@@ -166,7 +166,7 @@ void init_tuple(py::module &m) {
          "Returns True if the intersection has a valid result, otherwise False")
   ;
 
-  py::class_<py_tuple_a_not_b>(m, "tuple_a_not_b")
+  py::class_<py_tuple_a_not_b>(m, "_tuple_a_not_b")
     .def(py::init<uint64_t>(), py::arg("seed")=DEFAULT_SEED)
     .def(
         "compute",

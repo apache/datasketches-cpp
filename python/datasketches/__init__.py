@@ -17,7 +17,18 @@
 
 name = 'datasketches'
 
+from _datasketches import *
+
 from .PySerDe import *
 from .TuplePolicy import *
 
-from _datasketches import *
+# Wrappers around the pybind11 classes for cases where we
+# need to define a python object that is persisted within
+# the C++ object. Currently, the native python portion of
+# a class derived from a C++ class may be garbage collected
+# even though a pointer to the C++ portion remains valid.
+#
+# These wrappers should exactly implement the target API
+# for the pybind11 interface so they can be removed if
+# that issue is ever fixed.
+from .TupleWrapper import *
