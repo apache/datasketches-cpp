@@ -13,7 +13,7 @@ num_buckets(num_buckets),
 seed(seed){
   total_weight = 0 ;
   sketch_length = num_hashes*num_buckets ;
-  sketch.resize(sketch_length) ;
+  sketch_array.resize(sketch_length) ;
   //assert(num_buckets >= 3); // need
   if(num_buckets < 3) throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.") ;
 
@@ -28,23 +28,18 @@ seed(seed){
 };
 
 template<typename W>
-uint16_t count_min_sketch<W>::get_num_hashes() {
+uint16_t count_min_sketch<W>::get_num_hashes() const{
     return num_hashes ;
 }
 
 template<typename W>
-uint32_t count_min_sketch<W>::get_num_buckets() {
+uint32_t count_min_sketch<W>::get_num_buckets() const{
     return num_buckets ;
 }
 
 template<typename W>
-uint64_t count_min_sketch<W>::get_seed() {
+uint64_t count_min_sketch<W>::get_seed() const {
     return seed ;
-}
-
-template<typename W>
-std::vector<W> count_min_sketch<W>::get_sketch(){
-  return sketch ;
 }
 
 template<typename W>
@@ -53,7 +48,7 @@ double count_min_sketch<W>::get_relative_error(){
 }
 
 template<typename W>
-W count_min_sketch<W>::get_total_weight(){
+W count_min_sketch<W>::get_total_weight() const{
   return total_weight ;
 }
 
@@ -132,7 +127,7 @@ W count_min_sketch<W>::get_estimate(const void* item, size_t size){
   std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
   std::vector<W> estimates ;
   for (auto h: hash_locations){
-    estimates.push_back(sketch[h]) ;
+    estimates.push_back(sketch_array[h]) ;
   }
   W result = *std::min_element(estimates.begin(), estimates.end());
   return result ;
@@ -169,7 +164,7 @@ void count_min_sketch<W>::update(const void* item, size_t size, W weight) {
   total_weight += weight ;
   std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
   for (auto h: hash_locations){
-    sketch[h] += weight ;
+    sketch_array[h] += weight ;
   }
 }
 
@@ -203,14 +198,13 @@ W count_min_sketch<W>::get_lower_bound(const void* item, size_t size){
 }
 
 template<typename W>
-void count_min_sketch<W>::merge( count_min_sketch<W> &other_sketch){
+void count_min_sketch<W>::merge(const count_min_sketch<W> &other_sketch){
   /*
   * Merges this sketch into other_sketch sketch by elementwise summing of buckets
   */
   if(this == &other_sketch){
     throw std::invalid_argument( "Cannot merge a sketch with itself." );
   }
-
 
   bool acceptable_config =
     (get_num_hashes() == other_sketch.get_num_hashes())   &&
@@ -220,11 +214,26 @@ void count_min_sketch<W>::merge( count_min_sketch<W> &other_sketch){
     throw std::invalid_argument( "Incompatible sketch configuration." );
   }
 
-  std::vector<W> other_table = other_sketch.get_sketch() ;
-  for(uint64_t i=0 ; i<sketch_length ; ++i){
-    sketch[i] += other_table[i] ;
+  // Merge step - iterate over the other vector and add the weights to this sketch
+  auto it = sketch_array.begin() ; // This is a std::vector iterator.
+  auto other_it = other_sketch.begin() ; //This is a const iterator over the other sketch.
+  while(it != sketch_array.end()){
+    *it += *other_it ;
+    ++it ;
+    ++other_it ;
   }
   total_weight += other_sketch.get_total_weight() ;
+}
+
+// Iterators
+template<typename W>
+typename count_min_sketch<W>::const_iterator count_min_sketch<W>::begin() const {
+  return sketch_array.begin();
+}
+
+template<typename W>
+typename count_min_sketch<W>::const_iterator count_min_sketch<W>::end() const {
+return sketch_array.end();
 }
 
 } /* namespace datasketches */

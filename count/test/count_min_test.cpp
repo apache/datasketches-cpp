@@ -18,8 +18,8 @@ TEST_CASE("CM init"){
     REQUIRE(c.get_seed() == seed) ;
     //REQUIRE(c.get_config() == sk_config) ;
 
-    std::vector<uint64_t> sketch_table = c.get_sketch() ;
-    for(auto x: sketch_table){
+    //std::vector<uint64_t> sketch_table = c.get_sketch() ;
+    for(auto x: c){
       REQUIRE(x == 0) ;
     }
 

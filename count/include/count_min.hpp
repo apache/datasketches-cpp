@@ -1,6 +1,7 @@
 #ifndef COUNT_MIN_HPP_
 #define COUNT_MIN_HPP_
 
+#include <iterator>
 #include "common_defs.hpp"
 
 namespace datasketches {
@@ -32,17 +33,17 @@ public:
   /**
   * @return configured num_hashes of this sketch
   */
-  uint16_t get_num_hashes() ;
+  uint16_t get_num_hashes() const;
 
   /**
   * @return configured num_buckets of this sketch
   */
-  uint32_t get_num_buckets() ;
+  uint32_t get_num_buckets() const;
 
   /**
   * @return configured seed of this sketch
   */
-  uint64_t get_seed() ;
+  uint64_t get_seed()  const;
 
   /**
    * @return epsilon : double
@@ -55,13 +56,7 @@ public:
   * @return total_weight : typename W
   * The total weight currently inserted into the stream.
   */
-  W get_total_weight() ;
-
-  /**
-  * @return vector of the sketch data structure
-  * Required for merging.
-  */
-  std::vector<W> get_sketch() ;
+  W get_total_weight() const;
 
   /*
  * @param relative_error : double -- the desired accuracy within which estimates should lie.
@@ -161,7 +156,12 @@ public:
   /*
   * merges a separate count_min_sketch into this count_min_sketch.
   */
-  void merge(count_min_sketch<W> &other_sketch) ;
+  void merge(const count_min_sketch<W> &other_sketch) ;
+
+  // Iterators
+  using const_iterator = typename std::vector<W>::const_iterator ;
+  const_iterator begin() const;
+  const_iterator end() const;
 
 private:
   uint16_t num_hashes ;
@@ -169,7 +169,7 @@ private:
   uint64_t seed, sketch_length ;
   W total_weight ;
   std::vector<uint64_t> hash_seeds ;
-  std::vector<W> sketch ; // the array stored by the sketch
+  std::vector<W> sketch_array ; // the array stored by the sketch
 
 
   /*
