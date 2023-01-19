@@ -63,7 +63,7 @@ void init_tuple(py::module &m) {
   using py_tuple_a_not_b = tuple_a_not_b<py::object>;
   using py_tuple_jaccard_similarity = jaccard_similarity_base<tuple_union<py::object, dummy_jaccard_policy>, tuple_intersection<py::object, dummy_jaccard_policy>, pair_extract_key<uint64_t, py::object>>;
 
-  py::class_<py_tuple_sketch>(m, "tuple_sketch")
+  py::class_<py_tuple_sketch>(m, "_tuple_sketch")
     .def("__str__", &py_tuple_sketch::to_string, py::arg("print_items")=false,
          "Produces a string summary of the sketch")
     .def("to_string", &py_tuple_sketch::to_string, py::arg("print_items")=false,
@@ -91,7 +91,7 @@ void init_tuple(py::module &m) {
     .def("__iter__", [](const py_tuple_sketch& s) { return py::make_iterator(s.begin(), s.end()); })
   ;
 
-  py::class_<py_compact_tuple, py_tuple_sketch>(m, "compact_tuple_sketch")
+  py::class_<py_compact_tuple, py_tuple_sketch>(m, "_compact_tuple_sketch")
     .def(py::init<const py_compact_tuple&>(), py::arg("other"))
     .def(py::init<const py_tuple_sketch&, bool>(), py::arg("other"), py::arg("ordered")=true)
     .def(py::init<const theta_sketch&, py::object&>(), py::arg("other"), py::arg("summary"),
@@ -106,10 +106,10 @@ void init_tuple(py::module &m) {
     )
     .def_static(
         "deserialize",
-        [](const std::string& bytes, uint64_t seed, py_object_serde& serde) {
+        [](const std::string& bytes, py_object_serde& serde, uint64_t seed) {
           return py_compact_tuple::deserialize(bytes.data(), bytes.size(), seed, serde);
         },
-        py::arg("bytes"), py::arg("seed")=DEFAULT_SEED, py::arg("serde"),
+        py::arg("bytes"), py::arg("serde"), py::arg("seed")=DEFAULT_SEED,
         "Reads a bytes object and returns the corresponding compact_tuple_sketch"
     );
 
@@ -176,7 +176,7 @@ void init_tuple(py::module &m) {
     )
   ;
 
-  py::class_<py_tuple_jaccard_similarity>(m, "tuple_jaccard_similarity")
+  py::class_<py_tuple_jaccard_similarity>(m, "_tuple_jaccard_similarity")
     .def_static(
         "jaccard",
         [](const py_tuple_sketch& sketch_a, const py_tuple_sketch& sketch_b, uint64_t seed) {
