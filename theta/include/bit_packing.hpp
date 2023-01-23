@@ -24,45 +24,45 @@
 
 namespace datasketches {
 
-static inline uint8_t pack_bits(uint64_t value, uint8_t width, uint8_t*& ptr, uint8_t offset) {
+static inline uint8_t pack_bits(uint64_t value, uint8_t bits, uint8_t*& ptr, uint8_t offset) {
   if (offset > 0) {
     const uint8_t chunk_bits = 8 - offset;
     const uint8_t mask = (1 << chunk_bits) - 1;
-    if (width < chunk_bits) {
-      *ptr |= (value << (chunk_bits - width)) & mask;
-      return offset + width;
+    if (bits < chunk_bits) {
+      *ptr |= (value << (chunk_bits - bits)) & mask;
+      return offset + bits;
     }
-    *ptr++ |= (value >> (width - chunk_bits)) & mask;
-    width -= chunk_bits;
+    *ptr++ |= (value >> (bits - chunk_bits)) & mask;
+    bits -= chunk_bits;
   }
-  while (width >= 8) {
-    *ptr++ = value >> (width - 8);
-    width -= 8;
+  while (bits >= 8) {
+    *ptr++ = value >> (bits - 8);
+    bits -= 8;
   }
-  if (width > 0) {
-    *ptr = value << (8 - width);
-    return width;
+  if (bits > 0) {
+    *ptr = value << (8 - bits);
+    return bits;
   }
   return 0;
 }
 
-static inline uint8_t unpack_bits(uint64_t& value, uint8_t width, const uint8_t*& ptr, uint8_t offset) {
+static inline uint8_t unpack_bits(uint64_t& value, uint8_t bits, const uint8_t*& ptr, uint8_t offset) {
   const uint8_t avail_bits = 8 - offset;
-  const uint8_t chunk_bits = std::min(avail_bits, width);
+  const uint8_t chunk_bits = std::min(avail_bits, bits);
   const uint8_t mask = (1 << chunk_bits) - 1;
   value = (*ptr >> (avail_bits - chunk_bits)) & mask;
   ptr += avail_bits == chunk_bits;
   offset = (offset + chunk_bits) & 7;
-  width -= chunk_bits;
-  while (width >= 8) {
+  bits -= chunk_bits;
+  while (bits >= 8) {
     value <<= 8;
     value |= *ptr++;
-    width -= 8;
+    bits -= 8;
   }
-  if (width > 0) {
-    value <<= width;
-    value |= *ptr >> (8 - width);
-    return width;
+  if (bits > 0) {
+    value <<= bits;
+    value |= *ptr >> (8 - bits);
+    return bits;
   }
   return offset;
 }
@@ -3223,7 +3223,7 @@ static inline void unpack_bits_1(uint64_t* values, const uint8_t* ptr) {
   values[4] = (*ptr >> 3) & 1;
   values[5] = (*ptr >> 2) & 1;
   values[6] = (*ptr >> 1) & 1;
-  values[7] = *ptr++ & 1;
+  values[7] = *ptr & 1;
 }
 
 static inline void unpack_bits_2(uint64_t* values, const uint8_t* ptr) {
