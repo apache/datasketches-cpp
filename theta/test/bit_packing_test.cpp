@@ -25,15 +25,18 @@ namespace datasketches {
 // for every number of bits from 1 to 63
 // generate pseudo-random data, pack, unpack and compare
 
+// inverse golden ratio (0.618.. of max uint64_t)
+static const uint64_t IGOLDEN64 = 0x9e3779b97f4a7c13ULL;
+
 TEST_CASE("pack unpack bits") {
   for (uint8_t bits = 1; bits <= 63; ++bits) {
     const uint64_t mask = (1ULL << bits) - 1;
     std::vector<uint64_t> input(8, 0);
-    const uint64_t golden64 = 0x9e3779b97f4a7c13ULL;  // the golden ratio
+    const uint64_t igolden64 = IGOLDEN64;
     uint64_t value = 0xaa55aa55aa55aa55ULL; // arbitrary starting value
     for (int i = 0; i < 8; ++i) {
       input[i] = value & mask;
-      value += golden64;
+      value += igolden64;
     }
     std::vector<uint8_t> bytes(8 * sizeof(uint64_t), 0);
     uint8_t offset = 0;
@@ -58,11 +61,11 @@ TEST_CASE("pack unpack blocks") {
   for (uint8_t bits = 1; bits <= 63; ++bits) {
     const uint64_t mask = (1ULL << bits) - 1;
     std::vector<uint64_t> input(8, 0);
-    const uint64_t golden64 = 0x9e3779b97f4a7c13ULL;  // the golden ratio
+    const uint64_t igolden64 = IGOLDEN64;
     uint64_t value = 0xaa55aa55aa55aa55ULL; // arbitrary starting value
     for (int i = 0; i < 8; ++i) {
       input[i] = value & mask;
-      value += golden64;
+      value += igolden64;
     }
     std::vector<uint8_t> bytes(8 * sizeof(uint64_t), 0);
     pack_bits_block8(input.data(), bytes.data(), bits);
