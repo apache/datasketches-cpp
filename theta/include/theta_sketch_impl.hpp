@@ -442,8 +442,7 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
-    (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
-    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
+    (1 << flags::IS_ORDERED)
   );
   write(os, flags_byte);
   write(os, get_seed_hash());
@@ -501,8 +500,7 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_byt
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
-    (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
-    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
+    (1 << flags::IS_ORDERED)
   );
   *ptr++ = flags_byte;
   ptr += copy_to_mem(get_seed_hash(), ptr);
