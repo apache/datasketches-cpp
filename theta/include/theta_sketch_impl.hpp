@@ -429,7 +429,7 @@ uint8_t compact_theta_sketch_alloc<A>::compute_min_leading_zeros() const {
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const {
   const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
-  uint8_t min_entry_zeros = compute_min_leading_zeros();
+  const uint8_t min_entry_zeros = compute_min_leading_zeros();
 
   // store num_entries as whole bytes since whole-byte blocks will follow (most probably)
   const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(entries_.size()));
@@ -482,8 +482,8 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
 template<typename A>
 auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_bytes) const -> vector_bytes {
   const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
-  uint8_t min_entry_zeros = compute_min_leading_zeros();
-  size_t compressed_bits = (64 - min_entry_zeros) * entries_.size();
+  const uint8_t min_entry_zeros = compute_min_leading_zeros();
+  const size_t compressed_bits = (64 - min_entry_zeros) * entries_.size();
 
   // store num_entries as whole bytes since whole-byte blocks will follow (most probably)
   const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(entries_.size()));
