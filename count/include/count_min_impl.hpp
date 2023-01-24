@@ -12,9 +12,7 @@ num_hashes(num_hashes),
 num_buckets(num_buckets),
 seed(seed){
   total_weight = 0 ;
-  sketch_length = num_hashes*num_buckets ;
-  sketch_array.resize(sketch_length) ;
-  //assert(num_buckets >= 3); // need
+  sketch_array.resize(num_hashes*num_buckets) ;
   if(num_buckets < 3) throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.") ;
 
 
@@ -43,7 +41,7 @@ uint64_t count_min_sketch<W>::get_seed() const {
 }
 
 template<typename W>
-double count_min_sketch<W>::get_relative_error(){
+double count_min_sketch<W>::get_relative_error() const{
   return exp(1.0) / double(num_buckets) ;
 }
 
@@ -79,7 +77,7 @@ uint16_t count_min_sketch<W>::suggest_num_hashes(double confidence){
 }
 
 template<typename W>
-std::vector<uint64_t> count_min_sketch<W>::get_hashes(const void* item, size_t size){
+std::vector<uint64_t> count_min_sketch<W>::get_hashes(const void* item, size_t size) const{
   /*
    * Returns the hash locations for the input item using the original hashing
    * scheme from [1].
@@ -111,16 +109,16 @@ std::vector<uint64_t> count_min_sketch<W>::get_hashes(const void* item, size_t s
 }
 
 template<typename W>
-W count_min_sketch<W>::get_estimate(uint64_t item) {return get_estimate(&item, sizeof(item));}
+W count_min_sketch<W>::get_estimate(uint64_t item) const {return get_estimate(&item, sizeof(item));}
 
 template<typename W>
-W count_min_sketch<W>::get_estimate(const std::string& item) {
+W count_min_sketch<W>::get_estimate(const std::string& item) const {
   if (item.empty()) return 0 ; // Empty strings are not inserted into the sketch.
   return get_estimate(item.c_str(), item.length());
 }
 
 template<typename W>
-W count_min_sketch<W>::get_estimate(const void* item, size_t size){
+W count_min_sketch<W>::get_estimate(const void* item, size_t size) const {
   /*
    * Returns the estimated frequency of the item
    */
@@ -169,31 +167,31 @@ void count_min_sketch<W>::update(const void* item, size_t size, W weight) {
 }
 
 template<typename W>
-W count_min_sketch<W>::get_upper_bound(uint64_t item) {return get_upper_bound(&item, sizeof(item));}
+W count_min_sketch<W>::get_upper_bound(uint64_t item) const {return get_upper_bound(&item, sizeof(item));}
 
 template<typename W>
-W count_min_sketch<W>::get_upper_bound(const std::string& item) {
+W count_min_sketch<W>::get_upper_bound(const std::string& item) const {
   if (item.empty()) return 0 ; // Empty strings are not inserted into the sketch.
   return get_upper_bound(item.c_str(), item.length());
 }
 
 template<typename W>
-W count_min_sketch<W>::get_upper_bound(const void* item, size_t size){
+W count_min_sketch<W>::get_upper_bound(const void* item, size_t size) const {
   return get_estimate(item, size) + get_relative_error()*get_total_weight() ;
 }
 
 
 template<typename W>
-W count_min_sketch<W>::get_lower_bound(uint64_t item) {return get_lower_bound(&item, sizeof(item));}
+W count_min_sketch<W>::get_lower_bound(uint64_t item) const {return get_lower_bound(&item, sizeof(item));}
 
 template<typename W>
-W count_min_sketch<W>::get_lower_bound(const std::string& item) {
+W count_min_sketch<W>::get_lower_bound(const std::string& item) const {
   if (item.empty()) return 0 ; // Empty strings are not inserted into the sketch.
   return get_lower_bound(item.c_str(), item.length());
 }
 
 template<typename W>
-W count_min_sketch<W>::get_lower_bound(const void* item, size_t size){
+W count_min_sketch<W>::get_lower_bound(const void* item, size_t size) const {
   return get_estimate(item, size) ;
 }
 

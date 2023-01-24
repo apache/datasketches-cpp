@@ -50,7 +50,7 @@ public:
    * The maximum permissible error for any frequency estimate query.
    * epsilon = ceil(e / num_buckets)
    */
-   double get_relative_error() ;
+   double get_relative_error() const;
 
   /**
   * @return total_weight : typename W
@@ -85,7 +85,7 @@ public:
    * @param item : uint64_t type.
    * @return an estimate of the item's frequency.
    */
-  W get_estimate(uint64_t item) ;
+  W get_estimate(uint64_t item) const ;
 
    /**
    * Specific get_estimate function for std::string type
@@ -93,7 +93,7 @@ public:
    * @param item : std::string type
    * @return an estimate of the item's frequency.
    */
-  W get_estimate(const std::string& item) ;
+  W get_estimate(const std::string& item) const;
 
   /**
   * This is the generic estimate query function for any of the given datatypes.
@@ -103,7 +103,7 @@ public:
   * @return the estimated frequency of the item denoted f_est satisfying
   * f_true - relative_error*total_weight <= f_est <= f_true
   */
-   W get_estimate(const void* item, size_t size) ;
+   W get_estimate(const void* item, size_t size) const ;
 
   /**
   * Query the sketch for the upper bound of a given item.
@@ -111,9 +111,9 @@ public:
   * @return the upper bound on the true frequency of the item
   * f_true <= f_est + relative_error*total_weight
   */
-   W get_upper_bound(const void* item, size_t size) ;
-   W get_upper_bound(uint64_t) ;
-   W get_upper_bound(const std::string& item) ;
+   W get_upper_bound(const void* item, size_t size) const;
+   W get_upper_bound(uint64_t) const ;
+   W get_upper_bound(const std::string& item) const;
 
   /**
   * Query the sketch for the lower bound of a given item.
@@ -121,9 +121,9 @@ public:
   * @return the lower bound for the query result, f_est, on the true frequency, f_est of the item
   * f_true - relative_error*total_weight <= f_est
   */
-  W get_lower_bound(const void* item, size_t size) ;
-  W get_lower_bound(uint64_t) ;
-  W get_lower_bound(const std::string& item) ;
+  W get_lower_bound(const void* item, size_t size) const ;
+  W get_lower_bound(uint64_t) const ;
+  W get_lower_bound(const std::string& item) const ;
 
   /*
   * Update this sketch with given data of any type.
@@ -166,7 +166,7 @@ public:
 private:
   uint16_t num_hashes ;
   uint32_t num_buckets ;
-  uint64_t seed, sketch_length ;
+  uint64_t seed ;
   W total_weight ;
   std::vector<uint64_t> hash_seeds ;
   std::vector<W> sketch_array ; // the array stored by the sketch
@@ -178,7 +178,7 @@ private:
    * @param size of the data in bytes
    * @return vector of uint64_t which each represent the index to which `value' must update in the sketch
    */
-  std::vector<uint64_t> get_hashes(const void* item, size_t size) ;
+  std::vector<uint64_t> get_hashes(const void* item, size_t size) const;
 
 };
 
