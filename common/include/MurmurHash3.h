@@ -33,8 +33,7 @@ typedef unsigned __int64 uint64_t;
 
 #include <stdlib.h>
 
-#define ROTL32(x,y)	_rotl(x,y)
-#define ROTL64(x,y)	_rotl64(x,y)
+#define MURMUR3_ROTL64(x,y)	_rotl64(x,y)
 
 #define BIG_CONSTANT(x) (x)
 
@@ -46,18 +45,12 @@ typedef unsigned __int64 uint64_t;
 
 #define	FORCE_INLINE inline __attribute__((always_inline))
 
-inline uint32_t rotl32 ( uint32_t x, int8_t r )
-{
-  return (x << r) | (x >> (32 - r));
-}
-
 inline uint64_t rotl64 ( uint64_t x, int8_t r )
 {
   return (x << r) | (x >> (64 - r));
 }
 
-#define	ROTL32(x,y)	rotl32(x,y)
-#define ROTL64(x,y)	rotl64(x,y)
+#define MURMUR3_ROTL64(x,y)	rotl64(x,y)
 
 #define BIG_CONSTANT(x) (x##LLU)
 
@@ -118,13 +111,13 @@ FORCE_INLINE void MurmurHash3_x64_128(const void* key, size_t lenBytes, uint64_t
     uint64_t k1 = getblock64(blocks, i * 2 + 0);
     uint64_t k2 = getblock64(blocks, i * 2 + 1);
 
-    k1 *= c1; k1  = ROTL64(k1,31); k1 *= c2; out.h1 ^= k1;
-    out.h1 = ROTL64(out.h1,27);
+    k1 *= c1; k1  = MURMUR3_ROTL64(k1,31); k1 *= c2; out.h1 ^= k1;
+    out.h1 = MURMUR3_ROTL64(out.h1,27);
     out.h1 += out.h2;
     out.h1 = out.h1*5+0x52dce729;
 
-    k2 *= c2; k2  = ROTL64(k2,33); k2 *= c1; out.h2 ^= k2;
-    out.h2 = ROTL64(out.h2,31);
+    k2 *= c2; k2  = MURMUR3_ROTL64(k2,33); k2 *= c1; out.h2 ^= k2;
+    out.h2 = MURMUR3_ROTL64(out.h2,31);
     out.h2 += out.h1;
     out.h2 = out.h2*5+0x38495ab5;
   }
@@ -144,7 +137,7 @@ FORCE_INLINE void MurmurHash3_x64_128(const void* key, size_t lenBytes, uint64_t
   case 11: k2 ^= ((uint64_t)tail[10]) << 16; // falls through
   case 10: k2 ^= ((uint64_t)tail[ 9]) << 8;  // falls through
   case  9: k2 ^= ((uint64_t)tail[ 8]) << 0;
-           k2 *= c2; k2  = ROTL64(k2,33); k2 *= c1; out.h2 ^= k2;
+           k2 *= c2; k2  = MURMUR3_ROTL64(k2,33); k2 *= c1; out.h2 ^= k2;
            // falls through
   case  8: k1 ^= ((uint64_t)tail[ 7]) << 56; // falls through
   case  7: k1 ^= ((uint64_t)tail[ 6]) << 48; // falls through
@@ -154,7 +147,7 @@ FORCE_INLINE void MurmurHash3_x64_128(const void* key, size_t lenBytes, uint64_t
   case  3: k1 ^= ((uint64_t)tail[ 2]) << 16; // falls through
   case  2: k1 ^= ((uint64_t)tail[ 1]) << 8; // falls through
   case  1: k1 ^= ((uint64_t)tail[ 0]) << 0;
-           k1 *= c1; k1  = ROTL64(k1,31); k1 *= c2; out.h1 ^= k1;
+           k1 *= c1; k1  = MURMUR3_ROTL64(k1,31); k1 *= c2; out.h1 ^= k1;
   };
 
   //----------
