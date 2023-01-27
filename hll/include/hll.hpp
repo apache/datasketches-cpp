@@ -23,8 +23,9 @@
 #include "common_defs.hpp"
 #include "HllUtil.hpp"
 
-#include <memory>
 #include <iostream>
+#include <memory>
+#include <string>
 #include <vector>
 
 namespace datasketches {
@@ -144,7 +145,7 @@ class hll_sketch_alloc final {
 
     /**
      * Reconstructs a sketch from a serialized image in a byte array.
-     * @param is bytes An input array with a binary image of a sketch
+     * @param bytes An input array with a binary image of a sketch
      * @param len Length of the input array, in bytes
      */
     static hll_sketch_alloc deserialize(const void* bytes, size_t len, const A& allocator = A());
@@ -197,7 +198,7 @@ class hll_sketch_alloc final {
      * Human readable summary with optional detail
      * @param summary if true, output the sketch summary
      * @param detail if true, output the internal data array
-     * @param auxDetail if true, output the internal Aux array, if it exists.
+     * @param aux_detail if true, output the internal Aux array, if it exists.
      * @param all if true, outputs all entries including empty ones
      * @return human readable string with optional detail.
      */
@@ -358,7 +359,7 @@ class hll_sketch_alloc final {
      * value can be exceeded in extremely rare cases.  If exceeded, it
      * will be larger by only a few percent.
      *
-     * @param lg_config_k The Log2 of K for the target HLL sketch. This value must be
+     * @param lg_k The Log2 of K for the target HLL sketch. This value must be
      *        between 4 and 21 inclusively.
      * @param tgt_type the desired Hll type
      * @return the maximum size in bytes that this sketch can grow to.
@@ -495,20 +496,20 @@ class hll_union_alloc {
     /**
      * Returns the result of this union operator with the specified
      * #tgt_hll_type.
-     * @param The tgt_hll_type enum value of the desired result (Default: HLL_4)
+     * @param tgt_type The tgt_hll_type enum value of the desired result (Default: HLL_4)
      * @return The result of this union with the specified tgt_hll_type
      */
     hll_sketch_alloc<A> get_result(target_hll_type tgt_type = HLL_4) const;
 
     /**
      * Update this union operator with the given sketch.
-     * @param The given sketch.
+     * @param sketch The given sketch.
      */
     void update(const hll_sketch_alloc<A>& sketch);
 
     /**
      * Update this union operator with the given temporary sketch.
-     * @param The given sketch.
+     * @param sketch The given sketch.
      */
     void update(hll_sketch_alloc<A>&& sketch);
   
@@ -608,7 +609,7 @@ class hll_union_alloc {
     * perform the union. This may involve swapping, down-sampling, transforming, and / or
     * copying one of the arguments and may completely replace the internals of the union.
     *
-    * @param incoming_impl the given incoming sketch, which may not be modified.
+    * @param sketch the given incoming sketch, which may not be modified.
     * @param lg_max_k the maximum value of log2 K for this union.
     */
     inline void union_impl(const hll_sketch_alloc<A>& sketch, uint8_t lg_max_k);
