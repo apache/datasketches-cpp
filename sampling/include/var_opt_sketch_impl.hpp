@@ -189,16 +189,16 @@ var_opt_sketch<T, A>::~var_opt_sketch() {
       // destroy everything
       const size_t num_to_destroy = std::min(k_ + 1, curr_items_alloc_);
       for (size_t i = 0; i < num_to_destroy; ++i) {
-        allocator_.destroy(data_ + i);
+        data_[i].~T();
       }
     } else {
       // skip gap or anything unused at the end
       for (size_t i = 0; i < h_; ++i) {
-        allocator_.destroy(data_+ i);
+        data_[i].~T();
       }
     
       for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i) {
-        allocator_.destroy(data_ + i);
+        data_[i].~T();
       }
     }
     allocator_.deallocate(data_, curr_items_alloc_);
@@ -658,14 +658,14 @@ void var_opt_sketch<T, A>::reset() {
     // destroy everything
     const size_t num_to_destroy = std::min(k_ + 1, prev_alloc);
     for (size_t i = 0; i < num_to_destroy; ++i) 
-      allocator_.destroy(data_ + i);
+      data_[i].~T();
   } else {
     // skip gap or anything unused at the end
     for (size_t i = 0; i < h_; ++i)
-      allocator_.destroy(data_+ i);
+      data_[i].~T();
     
     for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
-      allocator_.destroy(data_ + i);
+      data_[i].~T();
   }
 
   if (curr_items_alloc_ < prev_alloc) {
@@ -990,7 +990,7 @@ void var_opt_sketch<T, A>::grow_data_arrays() {
 
     for (uint32_t i = 0; i < prev_size; ++i) {
       new (&tmp_data[i]) T(std::move(data_[i]));
-      allocator_.destroy(data_ + i);
+      data_[i].~T();
       tmp_weights[i] = weights_[i];
     }
 

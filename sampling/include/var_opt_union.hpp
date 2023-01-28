@@ -153,6 +153,8 @@ public:
 
 private:
   typedef typename std::allocator_traits<A>::template rebind_alloc<var_opt_sketch<T, A>> AllocSketch;
+  typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocDouble;
+  typedef typename std::allocator_traits<A>::template rebind_alloc<bool> AllocBool;
 
   static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
   static const uint8_t PREAMBLE_LONGS_NON_EMPTY = 4;
@@ -170,10 +172,12 @@ private:
 
   uint32_t max_k_;
 
+  A allocator_;
+
   var_opt_sketch<T, A> gadget_;
 
   var_opt_union(uint64_t n, double outer_tau_numer, uint64_t outer_tau_denom,
-                uint32_t max_k, var_opt_sketch<T, A>&& gadget);
+                uint32_t max_k, var_opt_sketch<T, A>&& gadget, const A& allocator = A());
 
   /*
    IMPORTANT NOTE: the "gadget" in the union object appears to be a varopt sketch,
