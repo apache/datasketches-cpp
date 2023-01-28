@@ -458,6 +458,7 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
   uint64_t deltas[8];
   vector_bytes buffer(entry_bits, 0, entries_.get_allocator()); // block of 8 entries takes entry_bits bytes
 
+  // pack blocks of 8 deltas
   unsigned i;
   for (i = 0; i + 7 < entries_.size(); i += 8) {
     for (unsigned j = 0; j < 8; ++j) {
@@ -468,14 +469,17 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
     write(os, buffer.data(), buffer.size());
   }
 
-  uint8_t offset = 0;
-  uint8_t* ptr = buffer.data();
-  for (; i < entries_.size(); ++i) {
-    const uint64_t delta = entries_[i] - previous;
-    previous = entries_[i];
-    offset = pack_bits(delta, entry_bits, ptr, offset);
+  // pack extra deltas if fewer than 8 of them left
+  if (i < entries_.size()) {
+    uint8_t offset = 0;
+    uint8_t* ptr = buffer.data();
+    for (; i < entries_.size(); ++i) {
+      const uint64_t delta = entries_[i] - previous;
+      previous = entries_[i];
+      offset = pack_bits(delta, entry_bits, ptr, offset);
+    }
+    write(os, buffer.data(), ptr - buffer.data());
   }
-  write(os, buffer.data(), ptr - buffer.data());
 }
 
 template<typename A>
@@ -517,6 +521,7 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_byt
   uint64_t previous = 0;
   uint64_t deltas[8];
 
+  // pack blocks of 8 deltas
   unsigned i;
   for (i = 0; i + 7 < entries_.size(); i += 8) {
     for (unsigned j = 0; j < 8; ++j) {
@@ -527,6 +532,7 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_byt
     ptr += entry_bits;
   }
 
+  // pack extra deltas if fewer than 8 of them left
   uint8_t offset = 0;
   for (; i < entries_.size(); ++i) {
     const uint64_t delta = entries_[i] - previous;
@@ -660,12 +666,15 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize_v4(
   const uint8_t entry_bits = 64 - min_entry_zeros;
   vector_bytes buffer(entry_bits, 0, allocator); // block of 8 entries takes entry_bits bytes
   std::vector<uint64_t, A> entries(num_entries, 0, allocator);
+
+  // unpack blocks of 8 deltas
   unsigned i;
   for (i = 0; i + 7 < num_entries; i += 8) {
     read(is, buffer.data(), buffer.size());
     unpack_bits_block8(&entries[i], buffer.data(), entry_bits);
   }
-  read(is, buffer.data(), whole_bytes_to_hold_bits((num_entries - i) * entry_bits));
+  // unpack extra deltas if fewer than 8 of them left
+  if (i < num_entries) read(is, buffer.data(), whole_bytes_to_hold_bits((num_entries - i) * entry_bits));
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
   const uint8_t* ptr = buffer.data();
   uint8_t offset = 0;
@@ -692,11 +701,13 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize(const v
   } else { // version 4
     std::vector<uint64_t, A> entries(data.num_entries, 0, allocator);
     const uint8_t* ptr = reinterpret_cast<const uint8_t*>(data.entries_start_ptr);
+    // unpack blocks of 8 deltas
     unsigned i;
     for (i = 0; i + 7 < data.num_entries; i += 8) {
       unpack_bits_block8(&entries[i], ptr, data.entry_bits);
       ptr += data.entry_bits;
     }
+    // unpack extra deltas if fewer than 8 of them left
     uint8_t offset = 0;
     for (; i < data.num_entries; ++i) {
       offset = unpack_bits(entries[i], data.entry_bits, ptr, offset);
