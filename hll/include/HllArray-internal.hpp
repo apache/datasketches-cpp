@@ -369,7 +369,6 @@ double HllArray<A>::getUpperBound(uint8_t numStdDev) const {
 /**
  * This is the (non-HIP) estimator.
  * It is called "composite" because multiple estimators are pasted together.
- * @param absHllArr an instance of the AbstractHllArray class.
  * @return the composite estimate
  */
 // Original C: again-two-registers.c hhb_get_composite_estimate L1489
