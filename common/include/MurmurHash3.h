@@ -29,13 +29,13 @@ typedef unsigned char uint8_t;
 typedef unsigned int uint32_t;
 typedef unsigned __int64 uint64_t;
 
-#define FORCE_INLINE	__forceinline
+#define MURMUR3_FORCE_INLINE	__forceinline
 
 #include <stdlib.h>
 
 #define MURMUR3_ROTL64(x,y)	_rotl64(x,y)
 
-#define BIG_CONSTANT(x) (x)
+#define MURMUR3_BIG_CONSTANT(x) (x)
 
 // Other compilers
 
@@ -43,7 +43,7 @@ typedef unsigned __int64 uint64_t;
 
 #include <stdint.h>
 
-#define	FORCE_INLINE inline __attribute__((always_inline))
+#define	MURMUR3_FORCE_INLINE inline __attribute__((always_inline))
 
 inline uint64_t rotl64 ( uint64_t x, int8_t r )
 {
@@ -52,7 +52,7 @@ inline uint64_t rotl64 ( uint64_t x, int8_t r )
 
 #define MURMUR3_ROTL64(x,y)	rotl64(x,y)
 
-#define BIG_CONSTANT(x) (x##LLU)
+#define MURMUR3_BIG_CONSTANT(x) (x##LLU)
 
 #endif // !defined(_MSC_VER)
 
@@ -71,7 +71,7 @@ typedef struct {
 // Block read - if your platform needs to do endian-swapping or can only
 // handle aligned reads, do the conversion here
 
-FORCE_INLINE uint64_t getblock64 ( const uint64_t * p, size_t i )
+MURMUR3_FORCE_INLINE uint64_t getblock64 ( const uint64_t * p, size_t i )
 {
   uint64_t res;
   memcpy(&res, p + i, sizeof(res));
@@ -81,20 +81,21 @@ FORCE_INLINE uint64_t getblock64 ( const uint64_t * p, size_t i )
 //-----------------------------------------------------------------------------
 // Finalization mix - force all bits of a hash block to avalanche
 
-FORCE_INLINE uint64_t fmix64 ( uint64_t k )
+MURMUR3_FORCE_INLINE uint64_t fmix64 ( uint64_t k )
 {
   k ^= k >> 33;
-  k *= BIG_CONSTANT(0xff51afd7ed558ccd);
+  k *= MURMUR3_BIG_CONSTANT(0xff51afd7ed558ccd);
   k ^= k >> 33;
-  k *= BIG_CONSTANT(0xc4ceb9fe1a85ec53);
+  k *= MURMUR3_BIG_CONSTANT(0xc4ceb9fe1a85ec53);
   k ^= k >> 33;
 
   return k;
 }
 
-FORCE_INLINE void MurmurHash3_x64_128(const void* key, size_t lenBytes, uint64_t seed, HashState& out) {
-  static const uint64_t c1 = BIG_CONSTANT(0x87c37b91114253d5);
-  static const uint64_t c2 = BIG_CONSTANT(0x4cf5ad432745937f);
+MURMUR3_FORCE_INLINE void MurmurHash3_x64_128(const void* key, size_t lenBytes,
+                                              uint64_t seed, HashState& out) {
+  static const uint64_t c1 = MURMUR3_BIG_CONSTANT(0x87c37b91114253d5);
+  static const uint64_t c2 = MURMUR3_BIG_CONSTANT(0x4cf5ad432745937f);
 
   const uint8_t* data = (const uint8_t*)key;
 
@@ -168,10 +169,14 @@ FORCE_INLINE void MurmurHash3_x64_128(const void* key, size_t lenBytes, uint64_t
 
 //-----------------------------------------------------------------------------
 
-FORCE_INLINE uint16_t compute_seed_hash(uint64_t seed) {
+MURMUR3_FORCE_INLINE uint16_t compute_seed_hash(uint64_t seed) {
   HashState hashes;
   MurmurHash3_x64_128(&seed, sizeof(seed), 0, hashes);
   return static_cast<uint16_t>(hashes.h1 & 0xffff);
 }
+
+#undef MURMUR3_FORCE_INLINE
+#undef MURMUR3_ROTL64
+#undef MURMUR3_BIG_CONSTANT
 
 #endif // _MURMURHASH3_H_
