@@ -242,7 +242,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
           FAIL("checking rank vs CDF for value " + std::to_string(i));
         }
         subtotal_pmf += pmf[i];
-        if (abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
+        if (std::abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
           FAIL("CDF vs PMF for value " + std::to_string(i));
         }
       }
@@ -257,7 +257,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
           FAIL("checking rank vs CDF for value " + std::to_string(i));
         }
         subtotal_pmf += pmf[i];
-        if (abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
+        if (std::abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
           FAIL("CDF vs PMF for value " + std::to_string(i));
         }
       }
