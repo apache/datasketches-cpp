@@ -47,13 +47,16 @@ void init_tuple(py::module &m) {
     .def("__call__", &tuple_policy::operator(), py::arg("summary"), py::arg("update"))
   ;
 
-  // only needed temporarily -- can remove once everything is working
+  // potentially useful for debugging but not needed as a permanent
+  // object type in the library
+  /*
   py::class_<tuple_policy_holder>(m, "TuplePolicyHolder")
     .def(py::init<std::shared_ptr<tuple_policy>>(), py::arg("policy"))
     .def("create", &tuple_policy_holder::create, "Creates a new Summary object")
     .def("update", &tuple_policy_holder::update, py::arg("summary"), py::arg("update"),
          "Updates the provided summary using the data in update")
   ;
+  */
 
   using py_tuple_sketch = tuple_sketch<py::object>;
   using py_update_tuple = update_tuple_sketch<py::object, py::object, tuple_policy_holder>;
@@ -89,6 +92,7 @@ void init_tuple(py::module &m) {
     .def("is_ordered", &py_tuple_sketch::is_ordered,
          "Returns True if the sketch entries are sorted, otherwise False")
     .def("__iter__", [](const py_tuple_sketch& s) { return py::make_iterator(s.begin(), s.end()); })
+    .def_property_readonly_static("DEFAULT_SEED", [](py::object /* self */) { return DEFAULT_SEED; });
   ;
 
   py::class_<py_compact_tuple, py_tuple_sketch>(m, "_compact_tuple_sketch")
@@ -123,16 +127,17 @@ void init_tuple(py::module &m) {
     )
     .def(py::init<const py_update_tuple&>())
     .def("update", static_cast<void (py_update_tuple::*)(int64_t, py::object&)>(&py_update_tuple::update),
-         py::arg("datum"), py::arg("summary"),
-         "Updates the sketch with the given integral value")
+         py::arg("datum"), py::arg("value"),
+         "Updates the sketch with the given integral item and summary value")
     .def("update", static_cast<void (py_update_tuple::*)(double, py::object&)>(&py_update_tuple::update),
-         py::arg("datum"), py::arg("summary"),
-         "Updates the sketch with the given floating point value")
+         py::arg("datum"), py::arg("value"),
+         "Updates the sketch with the given floating point item and summary value")
     .def("update", static_cast<void (py_update_tuple::*)(const std::string&, py::object&)>(&py_update_tuple::update),
-         py::arg("datum"), py::arg("summary"),
-         "Updates the sketch with the given string")
+         py::arg("datum"), py::arg("value"),
+         "Updates the sketch with the given string item and summary value")
     .def("compact", &py_update_tuple::compact, py::arg("ordered")=true,
          "Returns a compacted form of the sketch, optionally sorting it")
+    .def("reset", &py_update_tuple::reset, "Resets the sketch to the initial empty state")
   ;
 
   py::class_<py_tuple_union>(m, "_tuple_union")
@@ -159,7 +164,7 @@ void init_tuple(py::module &m) {
         }),
         py::arg("policy"), py::arg("seed")=DEFAULT_SEED)
     .def("update", &py_tuple_intersection::update<const py_tuple_sketch&>, py::arg("sketch"),
-         "Intersections the provided sketch with the current intersection state")
+         "Intersects the provided sketch with the current intersection state")
     .def("get_result", &py_tuple_intersection::get_result, py::arg("ordered")=true,
          "Returns the sketch corresponding to the intersection result")
     .def("has_result", &py_tuple_intersection::has_result,
@@ -195,14 +200,14 @@ void init_tuple(py::module &m) {
         "similarity_test",
         &py_tuple_jaccard_similarity::similarity_test<const py_tuple_sketch&, const py_tuple_sketch&>,
         py::arg("actual"), py::arg("expected"), py::arg("threshold"), py::arg("seed")=DEFAULT_SEED,
-        "Tests similarity of an actual sketch against an expected sketch. Computers the lower bound of the Jaccard "
+        "Tests similarity of an actual sketch against an expected sketch. Computes the lower bound of the Jaccard "
         "index J_{LB} of the actual and expected sketches. If J_{LB} >= threshold, then the sketches are considered "
         "to be similar sith a confidence of 97.7% and returns True, otherwise False.")
     .def_static(
         "dissimilarity_test",
         &py_tuple_jaccard_similarity::dissimilarity_test<const py_tuple_sketch&, const py_tuple_sketch&>,
         py::arg("actual"), py::arg("expected"), py::arg("threshold"), py::arg("seed")=DEFAULT_SEED,
-        "Tests dissimilarity of an actual sketch against an expected sketch. Computers the lower bound of the Jaccard "
+        "Tests dissimilarity of an actual sketch against an expected sketch. Computes the upper bound of the Jaccard "
         "index J_{UB} of the actual and expected sketches. If J_{UB} <= threshold, then the sketches are considered "
         "to be dissimilar sith a confidence of 97.7% and returns True, otherwise False."
     )

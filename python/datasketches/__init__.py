@@ -15,6 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
+"""The Apache DataSketches Library for Python
+
+Provided under the Apache License, Verison 2.0
+<http://www.apache.org/licenses/LICENSE-2.0>
+"""
+
 name = 'datasketches'
 
 from _datasketches import *
@@ -27,8 +33,4 @@ from .TuplePolicy import *
 # the C++ object. Currently, the native python portion of
 # a class derived from a C++ class may be garbage collected
 # even though a pointer to the C++ portion remains valid.
-#
-# These wrappers should exactly implement the target API
-# for the pybind11 interface so they can be removed if
-# that issue is ever fixed.
 from .TupleWrapper import *
