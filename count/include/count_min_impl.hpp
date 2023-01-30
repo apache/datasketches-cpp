@@ -11,8 +11,6 @@ count_min_sketch<W>::count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, 
 num_hashes(num_hashes),
 num_buckets(num_buckets),
 seed(seed){
-  total_weight = 0 ;
-  sketch_array.resize(num_hashes*num_buckets) ;
   if(num_buckets < 3) throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.") ;
 
   // This check is to ensure later compatibility with a Java implementation whose maximum size can only
@@ -30,6 +28,8 @@ seed(seed){
   for(uint64_t i=0 ; i < num_hashes ; ++i){
     hash_seeds.push_back(extra_hash_seeds(rng) + seed); // Adds the global seed to all hash functions.
   }
+  total_weight = 0 ;
+  sketch_array.resize(num_hashes*num_buckets) ;
 };
 
 template<typename W>
