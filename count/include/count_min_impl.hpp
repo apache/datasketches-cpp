@@ -7,13 +7,20 @@
 namespace datasketches {
 
 template<typename W>
-count_min_sketch<W>::count_min_sketch(uint16_t num_hashes, uint32_t num_buckets, uint64_t seed):
+count_min_sketch<W>::count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed):
 num_hashes(num_hashes),
 num_buckets(num_buckets),
 seed(seed){
   total_weight = 0 ;
   sketch_array.resize(num_hashes*num_buckets) ;
   if(num_buckets < 3) throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.") ;
+
+  // This check is to ensure later compatibility with a Java implementation whose maximum size can only
+  // be 2^31-1.  We check only against 2^30 for simplicity.
+  if(num_buckets*num_hashes >= 1<<30) {
+    throw std::invalid_argument("These parameters generate a sketch that exceeds 2^30 elements."
+                                "Try reducing either the number of buckets or the number of hash functions.") ;
+  }
 
 
   std::default_random_engine rng(seed);
@@ -60,11 +67,11 @@ uint32_t count_min_sketch<W>::suggest_num_buckets(double relative_error){
   if(relative_error < 0.){
     throw std::invalid_argument( "Relative error must be at least 0." );
   }
-  return ceil(exp(1.0) / relative_error) ;
+  return ceil(exp(1.0) / relative_error);
 }
 
 template<typename W>
-uint16_t count_min_sketch<W>::suggest_num_hashes(double confidence){
+uint8_t count_min_sketch<W>::suggest_num_hashes(double confidence){
   /*
    * Function to help users select a number of hashes for a given confidence
    * e.g. confidence = 1 - failure probability
@@ -73,7 +80,7 @@ uint16_t count_min_sketch<W>::suggest_num_hashes(double confidence){
   if(confidence < 0. || confidence > 1.0){
     throw std::invalid_argument( "Confidence must be between 0 and 1.0 (inclusive)." );
   }
-  return ceil(log(1.0/(1.0 - confidence))) ;
+  return std::min<uint8_t>( ceil(log(1.0/(1.0 - confidence))), UINT8_MAX) ;
 }
 
 template<typename W>

@@ -6,19 +6,20 @@
 
 namespace datasketches{
 
+TEST_CASE("CM init - throws") {
+    REQUIRE_THROWS_AS(count_min_sketch<uint64_t>(5, 1), std::invalid_argument);
+    REQUIRE_THROWS_AS(count_min_sketch<uint64_t>(4, 268435456), std::invalid_argument);
+}
+
 TEST_CASE("CM init"){
-    uint16_t n_hashes = 3 ;
+    uint8_t n_hashes = 3 ;
     uint32_t n_buckets = 5 ;
     uint64_t seed = 1234567 ;
-    REQUIRE_THROWS_AS(count_min_sketch<uint64_t>(n_hashes, 1, seed), std::invalid_argument);
     count_min_sketch<uint64_t> c(n_hashes, n_buckets, seed) ;
-    //std::vector<uint64_t> sk_config{n_hashes, n_buckets, seed} ;
     REQUIRE(c.get_num_hashes() == n_hashes) ;
     REQUIRE(c.get_num_buckets() == n_buckets) ;
     REQUIRE(c.get_seed() == seed) ;
-    //REQUIRE(c.get_config() == sk_config) ;
 
-    //std::vector<uint64_t> sketch_table = c.get_sketch() ;
     for(auto x: c){
       REQUIRE(x == 0) ;
     }
@@ -38,7 +39,7 @@ TEST_CASE("CM parameter suggestions", "[error parameters]") {
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.01) == 272) ;
 
     // Check that the sketch get_epsilon acts inversely to suggest_num_buckets
-    uint64_t n_hashes = 3 ;
+    uint8_t n_hashes = 3 ;
     REQUIRE(count_min_sketch<uint64_t>(n_hashes, 14).get_relative_error() <= 0.2) ;
     REQUIRE(count_min_sketch<uint64_t>(n_hashes, 28).get_relative_error() <= 0.1) ;
     REQUIRE(count_min_sketch<uint64_t>(n_hashes, 55).get_relative_error() <= 0.05) ;
@@ -53,7 +54,7 @@ TEST_CASE("CM parameter suggestions", "[error parameters]") {
 }
 
 TEST_CASE("CM one update: uint64_t"){
-  uint16_t n_hashes = 3 ;
+  uint8_t n_hashes = 3 ;
   uint32_t n_buckets = 5 ;
   uint64_t seed =  9223372036854775807 ; //1234567 ;
   uint64_t inserted_weight = 0 ;
@@ -93,7 +94,7 @@ TEST_CASE("CM frequency estimates"){
 
     double relative_error = 0.1 ;
     double confidence = 0.99 ;
-    uint16_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
+    uint8_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
     uint32_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
 
     count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
@@ -116,7 +117,7 @@ TEST_CASE("CM merge - reject", "[reject cases]"){
     double relative_error = 0.25 ;
     double confidence = 0.9 ;
     uint32_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
-    uint16_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
+    uint8_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
     count_min_sketch<uint64_t> s(n_hashes, n_buckets, 9082435234709287) ;
 
 
@@ -137,9 +138,9 @@ TEST_CASE("CM merge - pass", "[acceptable cases]"){
     double relative_error = 0.25 ;
     double confidence = 0.9 ;
     uint32_t n_buckets = count_min_sketch<uint64_t>::suggest_num_buckets(relative_error) ;
-    uint16_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
+    uint8_t n_hashes = count_min_sketch<uint64_t>::suggest_num_hashes(confidence) ;
     count_min_sketch<uint64_t> s(n_hashes, n_buckets) ;
-    uint16_t s_hashes = s.get_num_hashes() ;
+    uint8_t s_hashes = s.get_num_hashes() ;
     uint32_t s_buckets = s.get_num_buckets() ;
     count_min_sketch<uint64_t> t(s_hashes, s_buckets) ;
 

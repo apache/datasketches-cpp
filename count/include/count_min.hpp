@@ -28,7 +28,7 @@ public:
   * The items inserted into the sketch can be arbitrary type, so long as they are hashable via murmurhash.
   * Only update and estimate methods are added for uint64_t and string types.
   */
-  count_min_sketch(uint16_t num_hashes, uint32_t num_buckets, uint64_t seed = DEFAULT_SEED) ;
+  count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed = DEFAULT_SEED) ;
 
   /**
   * @return configured num_hashes of this sketch
@@ -77,7 +77,7 @@ public:
    * confidence = 1 - delta, with delta denoting the sketch failure probability in the literature.
    * [1] - Section 3 ``Data Structure'', page 6.
   */
-  static uint16_t suggest_num_hashes(double confidence) ;
+  static uint8_t suggest_num_hashes(double confidence) ;
 
   /**
    * Specific get_estimate function for uint64_t type
