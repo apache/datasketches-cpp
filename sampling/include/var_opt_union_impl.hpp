@@ -548,7 +548,7 @@ void var_opt_union<T, A>::mark_moving_gadget_coercer(var_opt_sketch<T, A>& sk) c
   }
 
   if (result_h + result_r != result_k) throw std::logic_error("H + R counts must equal k");
-  if (fabs(transferred_weight - outer_tau_numer_) > 1e-10) {
+  if (std::abs(transferred_weight - outer_tau_numer_) > 1e-10) {
     throw std::logic_error("uexpected mismatch in transferred weight");
   }
 
