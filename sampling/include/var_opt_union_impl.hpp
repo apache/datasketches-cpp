@@ -34,6 +34,7 @@ var_opt_union<T, A>::var_opt_union(uint32_t max_k, const A& allocator) :
   outer_tau_numer_(0.0),
   outer_tau_denom_(0),
   max_k_(max_k),
+  allocator_(allocator),
   gadget_(max_k, var_opt_sketch<T, A>::DEFAULT_RESIZE_FACTOR, true, allocator)
 {}
 
@@ -43,6 +44,7 @@ var_opt_union<T, A>::var_opt_union(const var_opt_union& other) :
   outer_tau_numer_(other.outer_tau_numer_),
   outer_tau_denom_(other.outer_tau_denom_),
   max_k_(other.max_k_),
+  allocator_(other.allocator_),
   gadget_(other.gadget_)
 {}
 
@@ -52,16 +54,18 @@ var_opt_union<T, A>::var_opt_union(var_opt_union&& other) noexcept :
   outer_tau_numer_(other.outer_tau_numer_),
   outer_tau_denom_(other.outer_tau_denom_),
   max_k_(other.max_k_),
+  allocator_(other.allocator_),
   gadget_(std::move(other.gadget_))
 {}
 
 template<typename T, typename A>
 var_opt_union<T, A>::var_opt_union(uint64_t n, double outer_tau_numer, uint64_t outer_tau_denom,
-                                    uint32_t max_k, var_opt_sketch<T, A>&& gadget) :
+                                    uint32_t max_k, var_opt_sketch<T, A>&& gadget, const A& allocator) :
   n_(n),
   outer_tau_numer_(outer_tau_numer),
   outer_tau_denom_(outer_tau_denom),
   max_k_(max_k),
+  allocator_(allocator),
   gadget_(gadget)
 {}
 
@@ -75,6 +79,7 @@ var_opt_union<T, A>& var_opt_union<T, A>::operator=(const var_opt_union& other) 
   std::swap(outer_tau_numer_, union_copy.outer_tau_numer_);
   std::swap(outer_tau_denom_, union_copy.outer_tau_denom_);
   std::swap(max_k_, union_copy.max_k_);
+  std::swap(allocator_, other.allocator_);
   std::swap(gadget_, union_copy.gadget_);
   return *this;
 }
@@ -85,6 +90,7 @@ var_opt_union<T, A>& var_opt_union<T, A>::operator=(var_opt_union&& other) {
   std::swap(outer_tau_numer_, other.outer_tau_numer_);
   std::swap(outer_tau_denom_, other.outer_tau_denom_);
   std::swap(max_k_, other.max_k_);
+  std::swap(allocator_, other.allocator_);
   std::swap(gadget_, other.gadget_);
   return *this;
 }
@@ -162,7 +168,7 @@ var_opt_union<T, A> var_opt_union<T, A>::deserialize(std::istream& is, const Ser
   if (!is.good())
     throw std::runtime_error("error reading from std::istream"); 
 
-  return var_opt_union(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
+  return var_opt_union(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget), allocator);
 }
 
 template<typename T, typename A>
@@ -204,7 +210,7 @@ var_opt_union<T, A> var_opt_union<T, A>::deserialize(const void* bytes, size_t s
   const size_t gadget_size = size - (PREAMBLE_LONGS_NON_EMPTY << 3);
   var_opt_sketch<T, A> gadget = var_opt_sketch<T, A>::deserialize(ptr, gadget_size, sd, allocator);
 
-  return var_opt_union(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget));
+  return var_opt_union(items_seen, outer_tau_numer, outer_tau_denom, max_k, std::move(gadget), allocator);
 }
 
 template<typename T, typename A>
@@ -508,9 +514,8 @@ void var_opt_union<T, A>::mark_moving_gadget_coercer(var_opt_sketch<T, A>& sk) c
   uint32_t result_r = 0;
   size_t next_r_pos = result_k; // = (result_k+1)-1, to fill R region from back to front
 
-  typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocDouble;
-  double* wts = AllocDouble().allocate(result_k + 1);
-  T* data     = A().allocate(result_k + 1);
+  double* wts = AllocDouble(allocator_).allocate(result_k + 1);
+  T* data     = A(allocator_).allocate(result_k + 1);
     
   // insert R region items, ignoring weights
   // Currently (May 2017) this next block is unreachable; this coercer is used only in the
@@ -519,7 +524,7 @@ void var_opt_union<T, A>::mark_moving_gadget_coercer(var_opt_sketch<T, A>& sk) c
   // Addedndum (Jan 2020): Cleanup at end of method assumes R count is 0
   const size_t final_idx = gadget_.get_num_samples();
   for (size_t idx = gadget_.h_ + 1; idx <= final_idx; ++idx) {
-    A().construct(&data[next_r_pos], T(gadget_.data_[idx]));
+    new (&data[next_r_pos]) T(gadget_.data_[idx]);
     wts[next_r_pos]  = gadget_.weights_[idx];
     ++result_r;
     --next_r_pos;
@@ -530,13 +535,13 @@ void var_opt_union<T, A>::mark_moving_gadget_coercer(var_opt_sketch<T, A>& sk) c
   // insert H region items
   for (size_t idx = 0; idx < gadget_.h_; ++idx) {
     if (gadget_.marks_[idx]) {
-      A().construct(&data[next_r_pos], T(gadget_.data_[idx]));
+      new (&data[next_r_pos]) T(gadget_.data_[idx]);
       wts[next_r_pos] = -1.0;
       transferred_weight += gadget_.weights_[idx];
       ++result_r;
       --next_r_pos;
     } else {
-      A().construct(&data[result_h], T(gadget_.data_[idx]));
+      new (&data[result_h]) T(gadget_.data_[idx]);
       wts[result_h] = gadget_.weights_[idx];
       ++result_h;
     }
@@ -554,11 +559,10 @@ void var_opt_union<T, A>::mark_moving_gadget_coercer(var_opt_sketch<T, A>& sk) c
   wts[result_h] = -1.0;
 
   // clean up arrays in input sketch, replace with new values
-  typedef typename std::allocator_traits<A>::template rebind_alloc<bool> AllocBool;
-  AllocBool().deallocate(sk.marks_, sk.curr_items_alloc_);
-  AllocDouble().deallocate(sk.weights_, sk.curr_items_alloc_);
-  for (size_t i = 0; i < result_k; ++i) { A().destroy(sk.data_ + i); } // assumes everything in H region, no gap
-  A().deallocate(sk.data_, sk.curr_items_alloc_);
+  AllocBool(allocator_).deallocate(sk.marks_, sk.curr_items_alloc_);
+  AllocDouble(allocator_).deallocate(sk.weights_, sk.curr_items_alloc_);
+  for (size_t i = 0; i < result_k; ++i) { sk.data_[i].~T(); } // assumes everything in H region, no gap
+  A(allocator_).deallocate(sk.data_, sk.curr_items_alloc_);
 
   sk.data_ = data;
   sk.weights_ = wts;
