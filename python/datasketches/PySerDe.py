@@ -54,51 +54,57 @@ class PyStringsSerDe(PyObjectSerDe):
     str = data[offset+4:offset+4+num_chars].decode()
     return (str, 4+num_chars)
 
-# Implements an integer-encoding scheme where each integer is written
+# Implements an integer encoding scheme where each integer is written
 # as a 32-bit (4 byte) little-endian value.
 class PyIntsSerDe(PyObjectSerDe):
   def get_size(self, item):
     return int(4)
 
   def to_bytes(self, item):
-    return struct.pack('i', item)
+    return struct.pack('<i', item)
 
   def from_bytes(self, data: bytes, offset: int):
-    val = struct.unpack_from('i', data, offset)[0]
+    val = struct.unpack_from('<i', data, offset)[0]
     return (val, 4)
 
 
+# Implements an integer encoding scheme where each integer is written
+# as a 64-bit (8 byte) little-endian value.
 class PyLongsSerDe(PyObjectSerDe):
   def get_size(self, item):
     return int(8)
 
   def to_bytes(self, item):
-    return struct.pack('l', item)
+    return struct.pack('<l', item)
 
   def from_bytes(self, data: bytes, offset: int):
-    val = struct.unpack_from('l', data, offset)[0]
+    val = struct.unpack_from('<l', data, offset)[0]
     return (val, 8)
 
 
+# Implements a floating point encoding scheme where each value is written
+# as a 32-bit floating point value.
 class PyFloatsSerDe(PyObjectSerDe):
   def get_size(self, item):
     return int(4)
 
   def to_bytes(self, item):
-    return struct.pack('f', item)
+    return struct.pack('<f', item)
 
   def from_bytes(self, data: bytes, offset: int):
-    val = struct.unpack_from('f', data, offset)[0]
+    val = struct.unpack_from('<f', data, offset)[0]
     return (val, 4)
 
 
+# Implements a floating point encoding scheme where each value is written
+# as a 64-bit floating point value.
 class PyDoublesSerDe(PyObjectSerDe):
   def get_size(self, item):
     return int(8)
 
   def to_bytes(self, item):
-    return struct.pack('d', item)
+    return struct.pack('<d', item)
 
   def from_bytes(self, data: bytes, offset: int):
-    val = struct.unpack_from('d', data, offset)[0]
+    val = struct.unpack_from('<d', data, offset)[0]
     return (val, 8)
