@@ -212,15 +212,15 @@ public:
   using iterator_category = std::input_iterator_tag;
   using value_type = const Entry;
   using difference_type = std::ptrdiff_t;
-  using pointer = Entry*;
-  using reference = Entry&;
+  using pointer = const Entry*;
+  using reference = const Entry&;
 
   theta_const_iterator(const Entry* entries, uint32_t size, uint32_t index);
   theta_const_iterator& operator++();
   theta_const_iterator operator++(int);
   bool operator==(const theta_const_iterator& other) const;
   bool operator!=(const theta_const_iterator& other) const;
-  const Entry& operator*() const;
+  reference operator*() const;
 
 private:
   const Entry* entries_;

@@ -1575,7 +1575,7 @@ bool var_opt_sketch<T, A>::const_iterator::operator!=(const const_iterator& othe
 }
 
 template<typename T, typename A>
-auto var_opt_sketch<T, A>::const_iterator::operator*() const -> const value_type {
+auto var_opt_sketch<T, A>::const_iterator::operator*() const -> reference {
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
@@ -1586,7 +1586,7 @@ auto var_opt_sketch<T, A>::const_iterator::operator*() const -> const value_type
 }
 
 template<typename T, typename A>
-auto var_opt_sketch<T, A>::const_iterator::operator->() const -> const return_value_holder<value_type> {
+auto var_opt_sketch<T, A>::const_iterator::operator->() const -> pointer {
   return **this;
 }
 

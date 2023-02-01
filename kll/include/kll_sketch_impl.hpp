@@ -1105,12 +1105,12 @@ bool kll_sketch<T, C, A>::const_iterator::operator!=(const const_iterator& other
 }
 
 template<typename T, typename C, typename A>
-auto kll_sketch<T, C, A>::const_iterator::operator*() const -> const value_type {
+auto kll_sketch<T, C, A>::const_iterator::operator*() const -> reference {
   return value_type(items[index], weight);
 }
 
 template<typename T, typename C, typename A>
-auto kll_sketch<T, C, A>::const_iterator::operator->() const -> const return_value_holder<value_type> {
+auto kll_sketch<T, C, A>::const_iterator::operator->() const -> pointer {
   return **this;
 }
 

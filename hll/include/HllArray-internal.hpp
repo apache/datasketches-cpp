@@ -636,7 +636,7 @@ bool HllArray<A>::const_iterator::operator!=(const const_iterator& other) const 
 }
 
 template<typename A>
-uint32_t HllArray<A>::const_iterator::operator*() const {
+auto HllArray<A>::const_iterator::operator*() const -> reference {
   return HllUtil<A>::pair(index_, value_);
 }
 

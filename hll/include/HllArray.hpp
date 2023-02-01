@@ -119,12 +119,12 @@ public:
   using value_type = uint32_t;
   using difference_type = int32_t;
   using pointer = uint32_t*;
-  using reference = uint32_t&;
+  using reference = uint32_t;
 
   const_iterator(const uint8_t* array, uint32_t array_slze, uint32_t index, target_hll_type hll_type, const AuxHashMap<A>* exceptions, uint8_t offset, bool all);
   const_iterator& operator++();
   bool operator!=(const const_iterator& other) const;
-  uint32_t operator*() const;
+  reference operator*() const;
 private:
   const uint8_t* array_;
   uint32_t array_size_;

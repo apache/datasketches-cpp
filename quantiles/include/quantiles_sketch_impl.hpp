@@ -1354,12 +1354,12 @@ bool quantiles_sketch<T, C, A>::const_iterator::operator!=(const const_iterator&
 }
 
 template<typename T, typename C, typename A>
-auto quantiles_sketch<T, C, A>::const_iterator::operator*() const -> const value_type {
+auto quantiles_sketch<T, C, A>::const_iterator::operator*() const -> reference {
   return value_type(level_ == -1 ? base_buffer_[index_] : levels_[level_][index_], weight_);
 }
 
 template<typename T, typename C, typename A>
-auto quantiles_sketch<T, C, A>::const_iterator::operator->() const -> const return_value_holder<value_type> {
+auto quantiles_sketch<T, C, A>::const_iterator::operator->() const -> pointer {
   return **this;
 }
 

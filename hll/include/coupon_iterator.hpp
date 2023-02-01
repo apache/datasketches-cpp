@@ -29,12 +29,12 @@ public:
   using value_type = uint32_t;
   using difference_type = int32_t;
   using pointer = uint32_t*;
-  using reference = uint32_t&;
+  using reference = uint32_t;
 
   coupon_iterator(const uint32_t* array, size_t array_slze, size_t index, bool all);
   coupon_iterator& operator++();
   bool operator!=(const coupon_iterator& other) const;
-  uint32_t operator*() const;
+  reference operator*() const;
 private:
   const uint32_t* array_;
   size_t array_size_;
