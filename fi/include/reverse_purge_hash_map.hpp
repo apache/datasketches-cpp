@@ -95,9 +95,9 @@ class reverse_purge_hash_map<K, V, H, E, A>::iterator {
 public:
   using iterator_category = std::input_iterator_tag;
   using value_type = std::pair<K&, V>;
-  using difference_type = std::ptrdiff_t;
+  using difference_type = void;
   using pointer = void;
-  using reference = value_type&;
+  using reference = value_type;
 
   friend class reverse_purge_hash_map<K, V, H, E, A>;
   iterator& operator++() {
@@ -113,7 +113,7 @@ public:
   iterator operator++(int) { iterator tmp(*this); operator++(); return tmp; }
   bool operator==(const iterator& rhs) const { return count == rhs.count; }
   bool operator!=(const iterator& rhs) const { return count != rhs.count; }
-  const value_type operator*() const {
+  const reference operator*() const {
     return value_type(map->keys_[index], map->values_[index]);
   }
 private:
