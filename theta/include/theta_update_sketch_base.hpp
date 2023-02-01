@@ -185,8 +185,14 @@ static inline uint64_t compute_hash(const void* data, size_t length, uint64_t se
 // iterators
 
 template<typename Entry, typename ExtractKey>
-class theta_iterator: public std::iterator<std::input_iterator_tag, Entry> {
+class theta_iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = Entry;
+  using difference_type = std::ptrdiff_t;
+  using pointer = Entry*;
+  using reference = Entry&;
+
   theta_iterator(Entry* entries, uint32_t size, uint32_t index);
   theta_iterator& operator++();
   theta_iterator operator++(int);
@@ -201,8 +207,14 @@ private:
 };
 
 template<typename Entry, typename ExtractKey>
-class theta_const_iterator: public std::iterator<std::input_iterator_tag, Entry> {
+class theta_const_iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = const Entry;
+  using difference_type = std::ptrdiff_t;
+  using pointer = Entry*;
+  using reference = Entry&;
+
   theta_const_iterator(const Entry* entries, uint32_t size, uint32_t index);
   theta_const_iterator& operator++();
   theta_const_iterator operator++(int);

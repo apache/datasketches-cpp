@@ -91,8 +91,14 @@ private:
 
 // This iterator uses strides based on golden ratio to avoid clustering during merge
 template<typename K, typename V, typename H, typename E, typename A>
-class reverse_purge_hash_map<K, V, H, E, A>::iterator: public std::iterator<std::input_iterator_tag, K> {
+class reverse_purge_hash_map<K, V, H, E, A>::iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = std::pair<K&, V>;
+  using difference_type = std::ptrdiff_t;
+  using pointer = void;
+  using reference = value_type&;
+
   friend class reverse_purge_hash_map<K, V, H, E, A>;
   iterator& operator++() {
     ++count;
@@ -107,8 +113,8 @@ public:
   iterator operator++(int) { iterator tmp(*this); operator++(); return tmp; }
   bool operator==(const iterator& rhs) const { return count == rhs.count; }
   bool operator!=(const iterator& rhs) const { return count != rhs.count; }
-  const std::pair<K&, V> operator*() const {
-    return std::pair<K&, V>(map->keys_[index], map->values_[index]);
+  const value_type operator*() const {
+    return value_type(map->keys_[index], map->values_[index]);
   }
 private:
   static constexpr double GOLDEN_RATIO_RECIPROCAL = 0.6180339887498949; // = (sqrt(5) - 1) / 2

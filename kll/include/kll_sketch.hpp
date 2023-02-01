@@ -586,9 +586,14 @@ class kll_sketch {
 };
 
 template<typename T, typename C, typename A>
-class kll_sketch<T, C, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+class kll_sketch<T, C, A>::const_iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
   using value_type = std::pair<const T&, const uint64_t>;
+  using difference_type = std::ptrdiff_t;
+  using pointer = return_value_holder<value_type>;
+  using reference = value_type&;
+
   friend class kll_sketch<T, C, A>;
   const_iterator& operator++();
   const_iterator& operator++(int);

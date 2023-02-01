@@ -346,9 +346,13 @@ class var_opt_sketch {
 };
 
 template<typename T, typename A>
-class var_opt_sketch<T, A>::const_iterator : public std::iterator<std::input_iterator_tag, T> {
-public:
+class var_opt_sketch<T, A>::const_iterator {
+  using iterator_category = std::input_iterator_tag;
   using value_type = std::pair<const T&, const double>;
+  using difference_type = std::ptrdiff_t;
+  using pointer = return_value_holder<value_type>;
+  using reference = value_type&;
+public:
   const_iterator(const const_iterator& other);
   const_iterator& operator++();
   const_iterator& operator++(int);
@@ -379,14 +383,20 @@ private:
 
 // non-const iterator for internal use
 template<typename T, typename A>
-class var_opt_sketch<T, A>::iterator : public std::iterator<std::input_iterator_tag, T> {
+class var_opt_sketch<T, A>::iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = std::pair<T&, double>;
+  using difference_type = std::ptrdiff_t;
+  using pointer = return_value_holder<value_type>;
+  using reference = value_type&;
+
   iterator(const iterator& other);
   iterator& operator++();
   iterator& operator++(int);
   bool operator==(const iterator& other) const;
   bool operator!=(const iterator& other) const;
-  std::pair<T&, double> operator*();
+  value_type operator*();
 
 private:
   friend class var_opt_sketch<T, A>;
