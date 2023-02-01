@@ -1659,7 +1659,7 @@ bool var_opt_sketch<T, A>::iterator::operator!=(const iterator& other) const {
 }
 
 template<typename T, typename A>
-std::pair<T&, double> var_opt_sketch<T, A>::iterator::operator*() {
+auto var_opt_sketch<T, A>::iterator::operator*() -> reference {
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];

@@ -397,7 +397,7 @@ public:
   iterator& operator++(int);
   bool operator==(const iterator& other) const;
   bool operator!=(const iterator& other) const;
-  value_type operator*();
+  reference operator*();
 
 private:
   friend class var_opt_sketch<T, A>;
