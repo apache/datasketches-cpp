@@ -27,7 +27,7 @@ class coupon_iterator {
 public:
   using iterator_category = std::input_iterator_tag;
   using value_type = uint32_t;
-  using difference_type = int32_t;
+  using difference_type = void;
   using pointer = uint32_t*;
   using reference = uint32_t;
 

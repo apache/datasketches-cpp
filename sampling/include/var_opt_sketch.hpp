@@ -350,7 +350,7 @@ class var_opt_sketch<T, A>::const_iterator {
 public:
   using iterator_category = std::input_iterator_tag;
   using value_type = std::pair<const T&, const double>;
-  using difference_type = std::ptrdiff_t;
+  using difference_type = void;
   using pointer = const return_value_holder<value_type>;
   using reference = const value_type;
 
@@ -388,9 +388,9 @@ class var_opt_sketch<T, A>::iterator {
 public:
   using iterator_category = std::input_iterator_tag;
   using value_type = std::pair<T&, double>;
-  using difference_type = std::ptrdiff_t;
+  using difference_type = void;
   using pointer = return_value_holder<value_type>;
-  using reference = value_type&;
+  using reference = value_type;
 
   iterator(const iterator& other);
   iterator& operator++();
