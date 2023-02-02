@@ -57,12 +57,12 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
       num_entries |= (*num_entries_ptr++) << (i << 3);
     }
     data_offset_bytes += num_entries_bytes;
-    const uint8_t min_entry_zeros = reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_V4_MIN_ENTRY_ZEROS_BYTE];
-    const size_t expected_bits = (64 - min_entry_zeros) * num_entries;
+    const uint8_t entry_bits = reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_V4_ENTRY_BITS_BYTE];
+    const size_t expected_bits = entry_bits * num_entries;
     const size_t expected_size_bytes = data_offset_bytes + whole_bytes_to_hold_bits(expected_bits);
     check_memory_size(ptr, size, expected_size_bytes, dump_on_error);
     return {false, true, seed_hash, num_entries, theta,
-      reinterpret_cast<const uint8_t*>(ptr) + data_offset_bytes, static_cast<uint8_t>(64 - min_entry_zeros)};
+      reinterpret_cast<const uint8_t*>(ptr) + data_offset_bytes, entry_bits};
   }
   case 3: {
       uint64_t theta = theta_constants::MAX_THETA;

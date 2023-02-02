@@ -429,7 +429,7 @@ uint8_t compact_theta_sketch_alloc<A>::compute_min_leading_zeros() const {
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const {
   const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
-  const uint8_t min_entry_zeros = compute_min_leading_zeros();
+  const uint8_t entry_bits = 64 - compute_min_leading_zeros();
 
   // store num_entries as whole bytes since whole-byte blocks will follow (most probably)
   const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(entries_.size()));
@@ -437,7 +437,7 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
   write(os, preamble_longs);
   write(os, COMPRESSED_SERIAL_VERSION);
   write(os, SKETCH_TYPE);
-  write(os, min_entry_zeros);
+  write(os, entry_bits);
   write(os, num_entries_bytes);
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
@@ -453,7 +453,6 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
     num_entries >>= 8;
   }
 
-  const uint8_t entry_bits = 64 - min_entry_zeros;
   uint64_t previous = 0;
   uint64_t deltas[8];
   vector_bytes buffer(entry_bits, 0, entries_.get_allocator()); // block of 8 entries takes entry_bits bytes
@@ -485,8 +484,8 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
 template<typename A>
 auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_bytes) const -> vector_bytes {
   const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
-  const uint8_t min_entry_zeros = compute_min_leading_zeros();
-  const size_t compressed_bits = (64 - min_entry_zeros) * entries_.size();
+  const uint8_t entry_bits = 64 - compute_min_leading_zeros();
+  const size_t compressed_bits = entry_bits * entries_.size();
 
   // store num_entries as whole bytes since whole-byte blocks will follow (most probably)
   const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(entries_.size()));
@@ -499,7 +498,7 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_byt
   *ptr++ = preamble_longs;
   *ptr++ = COMPRESSED_SERIAL_VERSION;
   *ptr++ = SKETCH_TYPE;
-  *ptr++ = min_entry_zeros;
+  *ptr++ = entry_bits;
   *ptr++ = num_entries_bytes;
   const uint8_t flags_byte(
     (1 << flags::IS_COMPACT) |
@@ -517,7 +516,6 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_byt
     num_entries >>= 8;
   }
 
-  const uint8_t entry_bits = 64 - min_entry_zeros;
   uint64_t previous = 0;
   uint64_t deltas[8];
 
@@ -651,7 +649,7 @@ template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize_v4(
     uint8_t preamble_longs, std::istream& is, uint64_t seed, const A& allocator)
 {
-  const auto min_entry_zeros = read<uint8_t>(is);
+  const auto entry_bits = read<uint8_t>(is);
   const auto num_entries_bytes = read<uint8_t>(is);
   const auto flags_byte = read<uint8_t>(is);
   const auto seed_hash = read<uint16_t>(is);
@@ -663,7 +661,6 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize_v4(
   for (unsigned i = 0; i < num_entries_bytes; ++i) {
     num_entries |= read<uint8_t>(is) << (i << 3);
   }
-  const uint8_t entry_bits = 64 - min_entry_zeros;
   vector_bytes buffer(entry_bits, 0, allocator); // block of 8 entries takes entry_bits bytes
   std::vector<uint64_t, A> entries(num_entries, 0, allocator);
 

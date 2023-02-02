@@ -51,7 +51,7 @@ private:
   static const size_t COMPACT_SKETCH_ENTRIES_EXACT_U64 = 2; // ver 1-3
   static const size_t COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 = 3; // ver 1-3
   static const size_t COMPACT_SKETCH_THETA_U64 = 2; // ver 1-3
-  static const size_t COMPACT_SKETCH_V4_MIN_ENTRY_ZEROS_BYTE = 3;
+  static const size_t COMPACT_SKETCH_V4_ENTRY_BITS_BYTE = 3;
   static const size_t COMPACT_SKETCH_V4_NUM_ENTRIES_BYTES_BYTE = 4;
   static const size_t COMPACT_SKETCH_V4_THETA_U64 = 1;
   static const size_t COMPACT_SKETCH_V4_PACKED_DATA_EXACT_BYTE = 8;
