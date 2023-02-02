@@ -1531,7 +1531,6 @@ var_opt_sketch<T, A>::const_iterator::const_iterator(const var_opt_sketch& sk, b
   if (idx_ == final_idx_) { sk_ = nullptr; }
 }
 
-
 template<typename T, typename A>
 var_opt_sketch<T, A>::const_iterator::const_iterator(const const_iterator& other) :
   sk_(other.sk_),
@@ -1543,6 +1542,9 @@ var_opt_sketch<T, A>::const_iterator::const_iterator(const const_iterator& other
 
 template<typename T, typename A>
 typename var_opt_sketch<T, A>::const_iterator& var_opt_sketch<T, A>::const_iterator::operator++() {
+  // accumulate weight already visited
+  if (idx_ > sk_->h_) { cum_r_weight_ += r_item_wt_; }
+
   ++idx_;
   
   if (idx_ == final_idx_) {
@@ -1551,7 +1553,6 @@ typename var_opt_sketch<T, A>::const_iterator& var_opt_sketch<T, A>::const_itera
   } else if (idx_ == sk_->h_ && sk_->r_ > 0) { // check for the gap
     ++idx_;
   }
-  if (idx_ > sk_->h_) { cum_r_weight_ += r_item_wt_; }
   return *this;
 }
 
@@ -1579,6 +1580,8 @@ auto var_opt_sketch<T, A>::const_iterator::operator*() const -> reference {
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
+  } else if (idx_ == final_idx_ - 1) {
+    wt = sk_->total_wt_r_ - cum_r_weight_;
   } else {
     wt = r_item_wt_;
   }
@@ -1627,6 +1630,9 @@ var_opt_sketch<T, A>::iterator::iterator(const iterator& other) :
 
 template<typename T, typename A>
 typename var_opt_sketch<T, A>::iterator& var_opt_sketch<T, A>::iterator::operator++() {
+  // accumulate weight already visited
+  if (idx_ > sk_->h_) { cum_r_weight_ += r_item_wt_; }
+
   ++idx_;
   
   if (idx_ == final_idx_) {
@@ -1635,7 +1641,7 @@ typename var_opt_sketch<T, A>::iterator& var_opt_sketch<T, A>::iterator::operato
   } else if (idx_ == sk_->h_ && sk_->r_ > 0) { // check for the gap
     ++idx_;
   }
-  if (idx_ > sk_->h_) { cum_r_weight_ += r_item_wt_; }
+
   return *this;
 }
 
@@ -1668,7 +1674,12 @@ auto var_opt_sketch<T, A>::iterator::operator*() -> reference {
   } else {
     wt = r_item_wt_;
   }
-  return std::pair<T&, double>(sk_->data_[idx_], wt);
+  return value_type(sk_->data_[idx_], wt);
+}
+
+template<typename T, typename A>
+auto var_opt_sketch<T, A>::iterator::operator->() -> pointer {
+  return **this;
 }
 
 template<typename T, typename A>

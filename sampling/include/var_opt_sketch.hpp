@@ -369,8 +369,8 @@ private:
   // default iterator over full sketch
   const_iterator(const var_opt_sketch<T, A>& sk, bool is_end);
   
-  // iterates over only one of the H or R region, optionally applying weight correction
-  // to R region (can correct for numerical precision issues)
+  // iterates over only one of the H or R regions
+  // does not apply weight correction
   const_iterator(const var_opt_sketch<T, A>& sk, bool is_end, bool use_r_region);
 
   bool get_mark() const;
@@ -398,6 +398,7 @@ public:
   bool operator==(const iterator& other) const;
   bool operator!=(const iterator& other) const;
   reference operator*();
+  pointer operator->();
 
 private:
   friend class var_opt_sketch<T, A>;
