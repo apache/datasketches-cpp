@@ -1580,8 +1580,6 @@ auto var_opt_sketch<T, A>::const_iterator::operator*() const -> reference {
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
-  } else if (idx_ == final_idx_ - 1) {
-    wt = sk_->total_wt_r_ - cum_r_weight_;
   } else {
     wt = r_item_wt_;
   }
