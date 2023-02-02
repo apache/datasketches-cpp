@@ -382,7 +382,7 @@ bool theta_iterator<Entry, ExtractKey>::operator==(const theta_iterator& other) 
 }
 
 template<typename Entry, typename ExtractKey>
-auto theta_iterator<Entry, ExtractKey>::operator*() const -> Entry& {
+auto theta_iterator<Entry, ExtractKey>::operator*() const -> reference {
   return entries_[index_];
 }
 

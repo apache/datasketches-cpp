@@ -52,7 +52,7 @@ static void check_if_equal(var_opt_sketch<T, A>& sk1, var_opt_sketch<T, A>& sk2)
   REQUIRE(sk1.get_k() == sk2.get_k());
   REQUIRE(sk1.get_n() == sk2.get_n());
   REQUIRE(sk1.get_num_samples() == sk2.get_num_samples());
-      
+
   auto it1 = sk1.begin();
   auto it2 = sk2.begin();
 
@@ -211,7 +211,7 @@ TEST_CASE("varopt sketch: cumulative weight", "[var_opt_sketch]") {
 
   double input_sum = 0.0;
   for (size_t i = 0; i < n; ++i) {
-    // generate weights aboev and below 1.0 using w ~ exp(5*N(0,1))
+    // generate weights above and below 1.0 using w ~ exp(5*N(0,1))
     // which covers about 10 orders of magnitude
     double w = std::exp(5 * N(rand));
     input_sum += w;
@@ -224,7 +224,7 @@ TEST_CASE("varopt sketch: cumulative weight", "[var_opt_sketch]") {
   }
     
   double weight_ratio = output_sum / input_sum;
-  REQUIRE(std::abs(weight_ratio - 1.0) == Approx(0).margin(EPS));
+  REQUIRE(weight_ratio == Approx(1.0).margin(EPS));
 }
 
 TEST_CASE("varopt sketch: under-full sketch serialization", "[var_opt_sketch]") {
@@ -272,6 +272,15 @@ TEST_CASE("varopt sketch: full sketch serialization", "[var_opt_sketch]") {
   var_opt_sketch<int> sk = create_unweighted_sketch(32, 32);
   sk.update(100, 100.0);
   sk.update(101, 101.0);
+
+  subset_summary summary = sk.estimate_subset_sum([](int){ return true; });
+  double total_weight = summary.total_sketch_weight;
+  double cum_weight = 0.0;
+  for (auto pair : sk) {
+    cum_weight += pair.second;
+  }
+  double weight_ratio = cum_weight / total_weight;
+  REQUIRE(weight_ratio == Approx(1.0).margin(EPS));
 
   // first 2 entries should be heavy and in heap order (smallest at root)
   auto it = sk.begin();
@@ -341,6 +350,15 @@ TEST_CASE("varopt sketch: pseudo-light update", "[var_opt_sketch]") {
   auto it = sk.begin();
   double wt = (*it).second;
   REQUIRE(wt == Approx((k + 2.0) / k).margin(EPS));
+
+  subset_summary summary = sk.estimate_subset_sum([](int){ return true; });
+  double total_weight = summary.total_sketch_weight;
+  double cum_weight = 0.0;
+  for (auto pair : sk) {
+    cum_weight += pair.second;
+  }
+  double weight_ratio = cum_weight / total_weight;
+  REQUIRE(weight_ratio == Approx(1.0).margin(EPS));
 }
 
 TEST_CASE("varopt sketch: pseudo-heavy update", "[var_opt_sketch]") {
