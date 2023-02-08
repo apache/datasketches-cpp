@@ -19,17 +19,6 @@
 
 #include <memory>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-#include "theta_sketch.hpp"
-#include "tuple_sketch.hpp"
-#include "tuple_union.hpp"
-#include "tuple_intersection.hpp"
-#include "tuple_a_not_b.hpp"
-#include "theta_jaccard_similarity_base.hpp"
-#include "common_defs.hpp"
-
-#include "py_serde.hpp"
 
 #ifndef _TUPLE_POLICY_HPP_
 #define _TUPLE_POLICY_HPP_
