@@ -19,6 +19,7 @@
 
 
 #include "py_serde.hpp"
+#include "py_object_ostream.hpp"
 #include "frequent_items_sketch.hpp"
 
 #include <pybind11/pybind11.h>
@@ -26,13 +27,6 @@
 #include <ostream>
 
 namespace py = pybind11;
-
-namespace pybind11 {
-static std::ostream& operator<<(std::ostream& os, const py::object& obj) {
-  os << std::string(py::str(obj));
-  return os;
-}
-}
 
 // forward declarations
 // std::string and arithmetic types, where we don't need a separate serde
@@ -43,17 +37,16 @@ void add_serialization(py::class_<datasketches::frequent_items_sketch<T, W, H, E
 template<typename T, typename W, typename H, typename E, typename std::enable_if<!std::is_arithmetic<T>::value && !std::is_same<std::string, T>::value, bool>::type = 0>
 void add_serialization(py::class_<datasketches::frequent_items_sketch<T, W, H, E>>& clazz);
 
-
 template<typename T, typename W, typename H, typename E>
 void bind_fi_sketch(py::module &m, const char* name) {
   using namespace datasketches;
 
   auto fi_class = py::class_<frequent_items_sketch<T, W, H, E>>(m, name)
+    .def(py::init<uint8_t>(), py::arg("lg_max_k"))
     .def("__str__", &frequent_items_sketch<T, W, H, E>::to_string, py::arg("print_items")=false,
          "Produces a string summary of the sketch")
     .def("to_string", &frequent_items_sketch<T, W, H, E>::to_string, py::arg("print_items")=false,
          "Produces a string summary of the sketch")
-        .def(py::init<uint8_t>(), py::arg("lg_max_k"))
     .def("update", (void (frequent_items_sketch<T, W, H, E>::*)(const T&, uint64_t)) &frequent_items_sketch<T, W, H, E>::update, py::arg("item"), py::arg("weight")=1,
          "Updates the sketch with the given string and, optionally, a weight")
     .def("merge", (void (frequent_items_sketch<T, W, H, E>::*)(const frequent_items_sketch<T, W, H, E>&)) &frequent_items_sketch<T, W, H, E>::merge,
