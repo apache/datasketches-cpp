@@ -16,10 +16,11 @@
 # under the License.
  
 import unittest
-from datasketches import frequent_strings_sketch, frequent_items_error_type
+from datasketches import frequent_strings_sketch, frequent_items_sketch
+from datasketches import frequent_items_error_type, PyIntsSerDe
 
 class FiTest(unittest.TestCase):
-  def test_fi_example(self):
+  def test_fi_strings_example(self):
     k = 3  # a small value so we can easily fill the sketch
     fi = frequent_strings_sketch(k)
 
@@ -89,6 +90,44 @@ class FiTest(unittest.TestCase):
     new_fi = frequent_strings_sketch.deserialize(fi_bytes)
 
     # and now interrogate the sketch
+    self.assertFalse(new_fi.is_empty())
+    self.assertGreater(new_fi.get_num_active_items(), 0)
+    self.assertEqual(5 * wt, new_fi.get_total_weight())
+
+  # This example uses generic objects but is otherwise identical
+  def test_fi_items_example(self):
+    k = 3  # a small value so we can easily fill the sketch
+    fi = frequent_items_sketch(k)
+
+    # as above, but in this case inserting ints
+    n = 8
+    for i in range(0, n):
+      fi.update(i, 2 ** (n - i))
+
+    # everything else works identically, so let's jump straight
+    # to merging and serialization
+
+    # now create a second sketch with a lot of unique
+    # values but all with equal weight (of 1) such that
+    # the total weight is much larger than the first sketch
+    fi2 = frequent_items_sketch(k)
+    wt = fi.get_total_weight()
+    for i in range(0, 4*wt):
+      fi2.update(i)
+
+    # merge the second sketch into the first
+    fi.merge(fi2)
+
+    # we can see that the weight is much larger
+    self.assertEqual(5 * wt, fi.get_total_weight())
+
+    # finally, serialize and reconstruct -- now we need a serde to tell
+    # (de)serialization how to interpret the objects
+    fi_bytes = fi.serialize(PyIntsSerDe())
+    self.assertEqual(len(fi_bytes), fi.get_serialized_size_bytes(PyIntsSerDe()))
+    new_fi = frequent_items_sketch.deserialize(fi_bytes, PyIntsSerDe())
+
+    # and again interrogate the sketch to check that it's what we serialized
     self.assertFalse(new_fi.is_empty())
     self.assertGreater(new_fi.get_num_active_items(), 0)
     self.assertEqual(5 * wt, new_fi.get_total_weight())
