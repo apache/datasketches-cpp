@@ -98,7 +98,7 @@ void bind_fi_sketch(py::module &m, const char* name) {
         "Returns the estimated a priori error given the max_map_size for the sketch and the estimated_total_stream_weight."
     );
 
-    // serialization may need a caller-provided serde depending on teh sketch type, so
+    // serialization may need a caller-provided serde depending on the sketch type, so
     // we use a separate method to handle that appropriately based on type T.
     add_serialization(fi_class);
 }
@@ -157,14 +157,14 @@ void add_serialization(py::class_<datasketches::frequent_items_sketch<T, W, H, E
 
 // calls class __hash__ method
 struct py_hash_caller {
-  size_t operator()(const py::object& a) {
+  size_t operator()(const py::object& a) const {
     return py::hash(a);
   }
 };
 
 // calls class __eq__ method
 struct py_equal_caller {
-  bool operator()(const py::object& a, const py::object& b) {
+  bool operator()(const py::object& a, const py::object& b) const {
     return a.equal(b);
   }
 };
