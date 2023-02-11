@@ -21,6 +21,7 @@
 #define THETA_SKETCH_HPP_
 
 #include "theta_update_sketch_base.hpp"
+#include "compact_theta_sketch_parser.hpp"
 
 namespace datasketches {
 
@@ -317,7 +318,8 @@ public:
   using AllocBytes = typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>;
   using vector_bytes = std::vector<uint8_t, AllocBytes>;
 
-  static const uint8_t SERIAL_VERSION = 3;
+  static const uint8_t UNCOMPRESSED_SERIAL_VERSION = 3;
+  static const uint8_t COMPRESSED_SERIAL_VERSION = 4;
   static const uint8_t SKETCH_TYPE = 3;
 
   // Instances of this type can be obtained:
@@ -355,6 +357,25 @@ public:
    */
   vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
+  /**
+   * This method serializes the sketch into a given stream in a compressed binary form.
+   * Compression is applied to ordered sketches except empty and single item.
+   * For unordered, empty and single item sketches this method is equivalent to serialize()
+   * @param os output stream
+   */
+  void serialize_compressed(std::ostream& os) const;
+
+  /**
+   * This method serializes the sketch as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is an uninitialized space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * Compression is applied to ordered sketches except empty and single item.
+   * For unordered, empty and single item sketches this method is equivalent to serialize()
+   * @param header_size_bytes space to reserve in front of the sketch
+   */
+  vector_bytes serialize_compressed(unsigned header_size_bytes = 0) const;
+
   virtual iterator begin();
   virtual iterator end();
   virtual const_iterator begin() const;
@@ -391,6 +412,16 @@ private:
   uint64_t theta_;
   std::vector<uint64_t, Allocator> entries_;
 
+  bool is_suitable_for_compression() const;
+  uint8_t compute_min_leading_zeros() const;
+  void serialize_version_4(std::ostream& os) const;
+  vector_bytes serialize_version_4(unsigned header_size_bytes = 0) const;
+
+  static compact_theta_sketch_alloc deserialize_v1(uint8_t preamble_longs, std::istream& is, uint64_t seed, const Allocator& allocator);
+  static compact_theta_sketch_alloc deserialize_v2(uint8_t preamble_longs, std::istream& is, uint64_t seed, const Allocator& allocator);
+  static compact_theta_sketch_alloc deserialize_v3(uint8_t preamble_longs, std::istream& is, uint64_t seed, const Allocator& allocator);
+  static compact_theta_sketch_alloc deserialize_v4(uint8_t preamble_longs, std::istream& is, uint64_t seed, const Allocator& allocator);
+
   virtual void print_specifics(std::ostringstream& os) const;
 };
 
@@ -407,7 +438,7 @@ public:
 template<typename Allocator = std::allocator<uint64_t>>
 class wrapped_compact_theta_sketch_alloc : public base_theta_sketch_alloc<Allocator> {
 public:
-  using const_iterator = const uint64_t*;
+  class const_iterator;
 
   Allocator get_allocator() const;
   bool is_empty() const;
@@ -433,15 +464,32 @@ protected:
   virtual void print_items(std::ostringstream& os) const;
 
 private:
-  bool is_empty_;
-  bool is_ordered_;
-  uint16_t seed_hash_;
-  uint32_t num_entries_;
-  uint64_t theta_;
-  const uint64_t* entries_;
+  using data_type = compact_theta_sketch_parser<true>::compact_theta_sketch_data;
+  data_type data_;
 
-  wrapped_compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint32_t num_entries,
-      uint64_t theta, const uint64_t* entries);
+  wrapped_compact_theta_sketch_alloc(const data_type& data);
+};
+
+template<typename Allocator>
+class wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator: public std::iterator<std::input_iterator_tag, uint64_t> {
+public:
+  const_iterator(const void* ptr, uint8_t entry_bits, uint32_t num_entries, uint32_t index);
+  const_iterator& operator++();
+  const_iterator operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  const uint64_t& operator*() const;
+  const uint64_t* operator->() const;
+private:
+  const void* ptr_;
+  uint8_t entry_bits_;
+  uint32_t num_entries_;
+  uint32_t index_;
+  uint64_t previous_;
+  bool is_block_mode_;
+  uint8_t buf_i_;
+  uint8_t offset_;
+  uint64_t buffer_[8];
 };
 
 // aliases with default allocator for convenience

@@ -77,7 +77,7 @@ static inline void read(std::istream& is, T* ptr, size_t size_bytes) {
 }
 
 template<typename T>
-static inline void write(std::ostream& os, T& value) {
+static inline void write(std::ostream& os, T value) {
   os.write(reinterpret_cast<const char*>(&value), sizeof(T));
 }
 

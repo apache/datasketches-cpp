@@ -23,8 +23,8 @@
 #include <vector>
 #include <climits>
 #include <cmath>
+#include <iterator>
 
-#include "common_defs.hpp"
 #include "MurmurHash3.h"
 #include "theta_comparators.hpp"
 #include "theta_constants.hpp"
