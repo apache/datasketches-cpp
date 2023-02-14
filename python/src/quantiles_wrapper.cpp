@@ -17,63 +17,53 @@
  * under the License.
  */
 
+#include "py_object_lt.hpp"
+#include "py_object_ostream.hpp"
+#include "quantile_conditional.hpp"
+#include "quantiles_sketch.hpp"
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <vector>
 #include <stdexcept>
 
-#include "quantiles_sketch.hpp"
-
 namespace py = pybind11;
 
-template<typename T>
+template<typename T, typename C>
 void bind_quantiles_sketch(py::module &m, const char* name) {
   using namespace datasketches;
 
-  py::class_<quantiles_sketch<T>>(m, name)
+  auto quantiles_class = py::class_<quantiles_sketch<T, C>>(m, name)
     .def(py::init<uint16_t>(), py::arg("k")=quantiles_constants::DEFAULT_K)
-    .def(py::init<const quantiles_sketch<T>&>())
+    .def(py::init<const quantiles_sketch<T, C>&>())
     .def(
         "update",
-        static_cast<void (quantiles_sketch<T>::*)(const T&)>(&quantiles_sketch<T>::update),
+        static_cast<void (quantiles_sketch<T, C>::*)(const T&)>(&quantiles_sketch<T, C>::update),
         py::arg("item"),
         "Updates the sketch with the given value"
     )
-    .def(
-        "update",
-        [](quantiles_sketch<T>& sk, py::array_t<T, py::array::c_style | py::array::forcecast> items) {
-          if (items.ndim() != 1) {
-            throw std::invalid_argument("input data must have only one dimension. Found: "
-              + std::to_string(items.ndim()));
-          }
-          auto array = items.template unchecked<1>();
-          for (uint32_t i = 0; i < array.size(); ++i) sk.update(array(i));
-        },
-        py::arg("array"),
-        "Updates the sketch with the values in the given array"
-    )
-    .def("merge", (void (quantiles_sketch<T>::*)(const quantiles_sketch<T>&)) &quantiles_sketch<T>::merge, py::arg("sketch"),
+    .def("merge", (void (quantiles_sketch<T, C>::*)(const quantiles_sketch<T, C>&)) &quantiles_sketch<T, C>::merge, py::arg("sketch"),
          "Merges the provided sketch into this one")
-    .def("__str__", &quantiles_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
+    .def("__str__", &quantiles_sketch<T, C>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
          "Produces a string summary of the sketch")
-    .def("to_string", &quantiles_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
+    .def("to_string", &quantiles_sketch<T, C>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
          "Produces a string summary of the sketch")
-    .def("is_empty", &quantiles_sketch<T>::is_empty,
+    .def("is_empty", &quantiles_sketch<T, C>::is_empty,
          "Returns True if the sketch is empty, otherwise False")
-    .def("get_k", &quantiles_sketch<T>::get_k,
+    .def("get_k", &quantiles_sketch<T, C>::get_k,
          "Returns the configured parameter k")
-    .def("get_n", &quantiles_sketch<T>::get_n,
+    .def("get_n", &quantiles_sketch<T, C>::get_n,
          "Returns the length of the input stream")
-    .def("get_num_retained", &quantiles_sketch<T>::get_num_retained,
+    .def("get_num_retained", &quantiles_sketch<T, C>::get_num_retained,
          "Returns the number of retained items (samples) in the sketch")
-    .def("is_estimation_mode", &quantiles_sketch<T>::is_estimation_mode,
+    .def("is_estimation_mode", &quantiles_sketch<T, C>::is_estimation_mode,
          "Returns True if the sketch is in estimation mode, otherwise False")
-    .def("get_min_value", &quantiles_sketch<T>::get_min_item,
+    .def("get_min_value", &quantiles_sketch<T, C>::get_min_item,
          "Returns the minimum value from the stream. If empty, quantiles_floats_sketch returns nan; quantiles_ints_sketch throws a RuntimeError")
-    .def("get_max_value", &quantiles_sketch<T>::get_max_item,
+    .def("get_max_value", &quantiles_sketch<T, C>::get_max_item,
          "Returns the maximum value from the stream. If empty, quantiles_floats_sketch returns nan; quantiles_ints_sketch throws a RuntimeError")
-    .def("get_quantile", &quantiles_sketch<T>::get_quantile, py::arg("rank"), py::arg("inclusive")=false,
+    .def("get_quantile", &quantiles_sketch<T, C>::get_quantile, py::arg("rank"), py::arg("inclusive")=false,
          "Returns an approximation to the data value "
          "associated with the given rank in a hypothetical sorted "
          "version of the input stream so far.\n"
@@ -81,7 +71,7 @@ void bind_quantiles_sketch(py::module &m, const char* name) {
          "For quantiles_ints_sketch: if the sketch is empty this throws a RuntimeError.")
     .def(
         "get_quantiles",
-        [](const quantiles_sketch<T>& sk, const std::vector<double>& ranks, bool inclusive) {
+        [](const quantiles_sketch<T, C>& sk, const std::vector<double>& ranks, bool inclusive) {
           return sk.get_quantiles(ranks.data(), ranks.size(), inclusive);
         },
         py::arg("ranks"), py::arg("inclusive")=false,
@@ -90,7 +80,7 @@ void bind_quantiles_sketch(py::module &m, const char* name) {
         "If the sketch is empty this returns an empty vector.\n"
         "Deprecated. Will be removed in the next major version. Use get_quantile() instead."
     )
-    .def("get_rank", &quantiles_sketch<T>::get_rank, py::arg("value"), py::arg("inclusive")=false,
+    .def("get_rank", &quantiles_sketch<T, C>::get_rank, py::arg("value"), py::arg("inclusive")=false,
          "Returns an approximation to the normalized rank of the given value from 0 to 1, inclusive.\n"
          "The resulting approximation has a probabilistic guarantee that can be obtained from the "
          "get_normalized_rank_error(False) function.\n"
@@ -99,7 +89,7 @@ void bind_quantiles_sketch(py::module &m, const char* name) {
          "If the sketch is empty this returns nan.")
     .def(
         "get_pmf",
-        [](const quantiles_sketch<T>& sk, const std::vector<T>& split_points, bool inclusive) {
+        [](const quantiles_sketch<T, C>& sk, const std::vector<T>& split_points, bool inclusive) {
           return sk.get_PMF(split_points.data(), split_points.size(), inclusive);
         },
         py::arg("split_points"), py::arg("inclusive")=false,
@@ -117,7 +107,7 @@ void bind_quantiles_sketch(py::module &m, const char* name) {
     )
     .def(
         "get_cdf",
-        [](const quantiles_sketch<T>& sk, const std::vector<T>& split_points, bool inclusive) {
+        [](const quantiles_sketch<T, C>& sk, const std::vector<T>& split_points, bool inclusive) {
           return sk.get_CDF(split_points.data(), split_points.size(), inclusive);
         },
         py::arg("split_points"), py::arg("inclusive")=false,
@@ -135,7 +125,7 @@ void bind_quantiles_sketch(py::module &m, const char* name) {
     )
     .def(
         "normalized_rank_error",
-        static_cast<double (quantiles_sketch<T>::*)(bool) const>(&quantiles_sketch<T>::get_normalized_rank_error),
+        static_cast<double (quantiles_sketch<T, C>::*)(bool) const>(&quantiles_sketch<T, C>::get_normalized_rank_error),
         py::arg("as_pmf"),
         "Gets the normalized rank error for this sketch.\n"
         "If pmf is True, returns the 'double-sided' normalized rank error for the get_PMF() function.\n"
@@ -144,32 +134,22 @@ void bind_quantiles_sketch(py::module &m, const char* name) {
     )
     .def_static(
         "get_normalized_rank_error",
-        [](uint16_t k, bool pmf) { return quantiles_sketch<T>::get_normalized_rank_error(k, pmf); },
+        [](uint16_t k, bool pmf) { return quantiles_sketch<T, C>::get_normalized_rank_error(k, pmf); },
         py::arg("k"), py::arg("as_pmf"),
         "Gets the normalized rank error given parameters k and the pmf flag.\n"
         "If pmf is True, returns the 'double-sided' normalized rank error for the get_PMF() function.\n"
         "Otherwise, it is the 'single-sided' normalized rank error for all the other queries.\n"
         "Constants were derived as the best fit to 99 percentile empirically measured max error in thousands of trials"
     )
-    .def(
-        "serialize",
-        [](const quantiles_sketch<T>& sk) {
-          auto bytes = sk.serialize();
-          return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-        },
-        "Serializes the sketch into a bytes object"
-    )
-    .def_static(
-        "deserialize",
-        [](const std::string& bytes) { return quantiles_sketch<T>::deserialize(bytes.data(), bytes.size()); },
-        py::arg("bytes"),
-        "Deserializes the sketch from a bytes object"
-    )
-    .def("__iter__", [](const quantiles_sketch<T>& s) { return py::make_iterator(s.begin(), s.end()); });
+    .def("__iter__", [](const quantiles_sketch<T, C>& s) { return py::make_iterator(s.begin(), s.end()); });
+
+    add_serialization<T>(quantiles_class);
+    add_vector_update<T>(quantiles_class);
 }
 
 void init_quantiles(py::module &m) {
-  bind_quantiles_sketch<int>(m, "quantiles_ints_sketch");
-  bind_quantiles_sketch<float>(m, "quantiles_floats_sketch");
-  bind_quantiles_sketch<double>(m, "quantiles_doubles_sketch");
+  bind_quantiles_sketch<int, std::less<int>>(m, "quantiles_ints_sketch");
+  bind_quantiles_sketch<float, std::less<float>>(m, "quantiles_floats_sketch");
+  bind_quantiles_sketch<double, std::less<double>>(m, "quantiles_doubles_sketch");
+  bind_quantiles_sketch<py::object, py_object_lt>(m, "quantiles_items_sketch");
 }

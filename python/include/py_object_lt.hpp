@@ -17,32 +17,21 @@
  * under the License.
  */
 
-#ifndef _PY_OBJECT_OSTREAM_HPP_
-#define _PY_OBJECT_OSTREAM_HPP_
+#ifndef _PY_OBJECT_LT_HPP_
+#define _PY_OBJECT_LT_HPP_
 
 #include <pybind11/pybind11.h>
 
-#include <string>
-#include <ostream>
-
 /*
-  This header defines an ostream output operator on a generic python
-  object. The implementation calls the object's built-in __str__()
+  This header defines a less than operator on generic python
+  objects. The implementation calls the object's built-in __lr__()
   method. If that method is not defined, the call may fail.
-
-  NOTE: This header must be included before the inclusion of
-        any sketch classes.
 */
 
-namespace py = pybind11;
+struct py_object_lt {
+  bool operator()(const pybind11::object& a, const pybind11::object& b) const {
+    return a < b;
+  }
+};
 
-namespace datasketches {
-
-static std::ostream& operator<<(std::ostream& os, const py::object& obj) {
-  os << std::string(pybind11::str(obj));
-  return os;
-}
-
-}
-
-#endif // _PY_OBJECT_OSTREAM_HPP_
+#endif // _PY_OBJECT_LT_HPP_
