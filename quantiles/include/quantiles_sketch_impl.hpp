@@ -645,12 +645,12 @@ string<A> quantiles_sketch<T, C, A>::to_string(bool print_levels, bool print_ite
     uint8_t level = 0;
     os << " BB:" << std::endl;
     for (const T& item : base_buffer_) {
-      os << "    " << std::to_string(item) << std::endl;
+      os << "    " << item << std::endl;
     }
     for (uint8_t i = 0; i < levels_.size(); ++i) {
       os << " level " << static_cast<unsigned int>(level) << ":" << std::endl;
       for (const T& item : levels_[i]) {
-        os << "   " << std::to_string(item) << std::endl;
+        os << "   " << item << std::endl;
       }
     }
     os << "### End sketch data" << std::endl;

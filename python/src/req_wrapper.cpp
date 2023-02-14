@@ -17,61 +17,51 @@
  * under the License.
  */
 
+#include "py_object_lt.hpp"
+#include "py_object_ostream.hpp"
+#include "quantile_conditional.hpp"
+#include "req_sketch.hpp"
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
 #include <vector>
 #include <stdexcept>
 
-#include "req_sketch.hpp"
-
 namespace py = pybind11;
 
-template<typename T>
+template<typename T, typename C>
 void bind_req_sketch(py::module &m, const char* name) {
   using namespace datasketches;
 
-  py::class_<req_sketch<T>>(m, name)
+  auto req_class = py::class_<req_sketch<T, C>>(m, name)
     .def(py::init<uint16_t, bool>(), py::arg("k")=12, py::arg("is_hra")=true)
-    .def(py::init<const req_sketch<T>&>())
-    .def("update", (void (req_sketch<T>::*)(const T&)) &req_sketch<T>::update, py::arg("item"),
+    .def(py::init<const req_sketch<T, C>&>())
+    .def("update", (void (req_sketch<T, C>::*)(const T&)) &req_sketch<T, C>::update, py::arg("item"),
         "Updates the sketch with the given value")
-    .def(
-        "update",
-        [](req_sketch<T>& sk, py::array_t<T, py::array::c_style | py::array::forcecast> items) {
-          if (items.ndim() != 1) {
-            throw std::invalid_argument("input data must have only one dimension. Found: "
-              + std::to_string(items.ndim()));
-          }
-          auto array = items.template unchecked<1>();
-          for (uint32_t i = 0; i < array.size(); ++i) sk.update(array(i));
-        },
-        py::arg("array"),
-        "Updates the sketch with the values in the given array"
-    )
-    .def("merge", (void (req_sketch<T>::*)(const req_sketch<T>&)) &req_sketch<T>::merge, py::arg("sketch"),
+    .def("merge", (void (req_sketch<T, C>::*)(const req_sketch<T, C>&)) &req_sketch<T, C>::merge, py::arg("sketch"),
         "Merges the provided sketch into this one")
-    .def("__str__", &req_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
+    .def("__str__", &req_sketch<T, C>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
         "Produces a string summary of the sketch")
-    .def("to_string", &req_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
+    .def("to_string", &req_sketch<T, C>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
         "Produces a string summary of the sketch")
-    .def("is_hra", &req_sketch<T>::is_HRA,
+    .def("is_hra", &req_sketch<T, C>::is_HRA,
         "Returns True if the sketch is in High Rank Accuracy mode, otherwise False")
-    .def("is_empty", &req_sketch<T>::is_empty,
+    .def("is_empty", &req_sketch<T, C>::is_empty,
         "Returns True if the sketch is empty, otherwise False")
-    .def("get_k", &req_sketch<T>::get_k,
+    .def("get_k", &req_sketch<T, C>::get_k,
         "Returns the configured parameter k")
-    .def("get_n", &req_sketch<T>::get_n,
+    .def("get_n", &req_sketch<T, C>::get_n,
         "Returns the length of the input stream")
-    .def("get_num_retained", &req_sketch<T>::get_num_retained,
+    .def("get_num_retained", &req_sketch<T, C>::get_num_retained,
         "Returns the number of retained items (samples) in the sketch")
-    .def("is_estimation_mode", &req_sketch<T>::is_estimation_mode,
+    .def("is_estimation_mode", &req_sketch<T, C>::is_estimation_mode,
         "Returns True if the sketch is in estimation mode, otherwise False")
-    .def("get_min_value", &req_sketch<T>::get_min_item,
+    .def("get_min_value", &req_sketch<T, C>::get_min_item,
         "Returns the minimum value from the stream. If empty, req_floats_sketch returns nan; req_ints_sketch throws a RuntimeError")
-    .def("get_max_value", &req_sketch<T>::get_max_item,
+    .def("get_max_value", &req_sketch<T, C>::get_max_item,
         "Returns the maximum value from the stream. If empty, req_floats_sketch returns nan; req_ints_sketch throws a RuntimeError")
-    .def("get_quantile", &req_sketch<T>::get_quantile, py::arg("rank"), py::arg("inclusive")=false,
+    .def("get_quantile", &req_sketch<T, C>::get_quantile, py::arg("rank"), py::arg("inclusive")=false,
         "Returns an approximation to the data value "
         "associated with the given normalized rank in a hypothetical sorted "
         "version of the input stream so far.\n"
@@ -79,7 +69,7 @@ void bind_req_sketch(py::module &m, const char* name) {
         "For req_ints_sketch: if the sketch is empty this throws a RuntimeError.")
     .def(
         "get_quantiles",
-        [](const req_sketch<T>& sk, const std::vector<double>& ranks, bool inclusive) {
+        [](const req_sketch<T, C>& sk, const std::vector<double>& ranks, bool inclusive) {
           return sk.get_quantiles(ranks.data(), ranks.size(), inclusive);
         },
         py::arg("ranks"), py::arg("inclusive")=false,
@@ -88,7 +78,7 @@ void bind_req_sketch(py::module &m, const char* name) {
         "If the sketch is empty this returns an empty vector.\n"
         "Deprecated. Will be removed in the next major version. Use get_quantile() instead."
     )
-    .def("get_rank", &req_sketch<T>::get_rank, py::arg("value"), py::arg("inclusive")=false,
+    .def("get_rank", &req_sketch<T, C>::get_rank, py::arg("value"), py::arg("inclusive")=false,
         "Returns an approximation to the normalized rank of the given value from 0 to 1, inclusive.\n"
         "The resulting approximation has a probabilistic guarantee that can be obtained from the "
         "get_normalized_rank_error(False) function.\n"
@@ -97,7 +87,7 @@ void bind_req_sketch(py::module &m, const char* name) {
         "If the sketch is empty this returns nan.")
     .def(
         "get_pmf",
-        [](const req_sketch<T>& sk, const std::vector<T>& split_points, bool inclusive) {
+        [](const req_sketch<T, C>& sk, const std::vector<T>& split_points, bool inclusive) {
           return sk.get_PMF(split_points.data(), split_points.size(), inclusive);
         },
         py::arg("split_points"), py::arg("inclusive")=false,
@@ -117,7 +107,7 @@ void bind_req_sketch(py::module &m, const char* name) {
     )
     .def(
         "get_cdf",
-        [](const req_sketch<T>& sk, const std::vector<T>& split_points, bool inclusive) {
+        [](const req_sketch<T, C>& sk, const std::vector<T>& split_points, bool inclusive) {
           return sk.get_CDF(split_points.data(), split_points.size(), inclusive);
         },
         py::arg("split_points"), py::arg("inclusive")=false,
@@ -135,15 +125,15 @@ void bind_req_sketch(py::module &m, const char* name) {
         "inclusive of the right split point.\n"
         "It is not necessary to include either the min or max values in these split points."
     )
-    .def("get_rank_lower_bound", &req_sketch<T>::get_rank_lower_bound, py::arg("rank"), py::arg("num_std_dev"),
+    .def("get_rank_lower_bound", &req_sketch<T, C>::get_rank_lower_bound, py::arg("rank"), py::arg("num_std_dev"),
         "Returns an approximate lower bound on the given normalized rank.\n"
         "Normalized rank must be a value between 0.0 and 1.0 (inclusive); "
         "the number of standard deviations must be 1, 2, or 3.")
-    .def("get_rank_upper_bound", &req_sketch<T>::get_rank_upper_bound, py::arg("rank"), py::arg("num_std_dev"),
+    .def("get_rank_upper_bound", &req_sketch<T, C>::get_rank_upper_bound, py::arg("rank"), py::arg("num_std_dev"),
         "Returns an approximate upper bound on the given normalized rank.\n"
         "Normalized rank must be a value between 0.0 and 1.0 (inclusive); "
         "the number of standard deviations must be 1, 2, or 3.")
-    .def_static("get_RSE", &req_sketch<T>::get_RSE,
+    .def_static("get_RSE", &req_sketch<T, C>::get_RSE,
         py::arg("k"), py::arg("rank"), py::arg("is_hra"), py::arg("n"),
         "Returns an a priori estimate of relative standard error (RSE, expressed as a number in [0,1]). "
         "Derived from Lemma 12 in http://arxiv.org/abs/2004.01668v2, but the constant factors have been "
@@ -151,24 +141,14 @@ void bind_req_sketch(py::module &m, const char* name) {
         "Normalized rank must be a value between 0.0 and 1.0 (inclusive). If is_hra is True, uses high "
         "rank accuracy mode, else low rank accuracy. N is an estimate of the total number of points "
         "provided to the sketch.")
-    .def(
-        "serialize",
-        [](const req_sketch<T>& sk) {
-          auto bytes = sk.serialize();
-          return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-        },
-        "Serializes the sketch into a bytes object"
-    )
-    .def_static(
-        "deserialize",
-        [](const std::string& bytes) { return req_sketch<T>::deserialize(bytes.data(), bytes.size()); },
-        py::arg("bytes"),
-        "Deserializes the sketch from a bytes object"
-    )
-    .def("__iter__", [](const req_sketch<T>& s) { return py::make_iterator(s.begin(), s.end()); });
+    .def("__iter__", [](const req_sketch<T, C>& s) { return py::make_iterator(s.begin(), s.end()); });
+
+    add_serialization<T>(req_class);
+    add_vector_update<T>(req_class);
 }
 
 void init_req(py::module &m) {
-  bind_req_sketch<int>(m, "req_ints_sketch");
-  bind_req_sketch<float>(m, "req_floats_sketch");
+  bind_req_sketch<int, std::less<int>>(m, "req_ints_sketch");
+  bind_req_sketch<float, std::less<float>>(m, "req_floats_sketch");
+  bind_req_sketch<py::object, py_object_lt>(m, "req_items_sketch");
 }
