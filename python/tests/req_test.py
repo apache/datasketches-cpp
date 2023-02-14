@@ -16,7 +16,7 @@
 # under the License.
 
 import unittest
-from datasketches import req_ints_sketch, req_floats_sketch
+from datasketches import req_ints_sketch, req_floats_sketch, req_items_sketch, PyStringsSerDe
 import numpy as np
 
 class reqTest(unittest.TestCase):
@@ -67,12 +67,13 @@ class reqTest(unittest.TestCase):
       self.assertEqual(req.get_k(), k)
 
       # merging itself will double the number of items the sketch has seen
-      req.merge(req)
+      req_copy = req_floats_sketch(req)
+      req.merge(req_copy)
       self.assertEqual(req.get_n(), 2*n)
 
       # we can then serialize and reconstruct the sketch
       req_bytes = req.serialize()
-      new_req = req.deserialize(req_bytes)
+      new_req = req_floats_sketch.deserialize(req_bytes)
       self.assertEqual(req.get_num_retained(), new_req.get_num_retained())
       self.assertEqual(req.get_min_value(), new_req.get_min_value())
       self.assertEqual(req.get_max_value(), new_req.get_max_value())
@@ -116,18 +117,43 @@ class reqTest(unittest.TestCase):
         self.assertEqual(req.get_rank(round(n/2)), 0.5)
 
         # merge self
-        req.merge(req)
+        req_copy = req_ints_sketch(req)
+        req.merge(req_copy)
         self.assertEqual(req.get_n(), 2 * n)
 
         sk_bytes = req.serialize()
         self.assertTrue(isinstance(req_ints_sketch.deserialize(sk_bytes), req_ints_sketch))
 
     def test_req_floats_sketch(self):
-      # already tested ints and it's templatized, so just make sure it instantiates properly
+      # already tested floats with LRA so just check that HRA works
       k = 75
       req = req_floats_sketch(k, False) # low rank accuracy
       self.assertTrue(req.is_empty())
       self.assertFalse(req.is_hra())
+
+    def test_req_items_sketch(self):
+      # most functionality has been tested, but we need to ensure objects and sorting work
+      # as well as serialization
+      k = 100
+      n = 2 ** 16
+
+      # create a sketch and inject enough points to force compaction
+      req = req_items_sketch(k)
+      for i in range(0, n):
+        req.update(str(i))
+      
+      req_copy = req_items_sketch(req)
+      req.merge(req_copy)
+      self.assertEqual(req.get_n(), 2 * n)
+      
+      req_bytes = req.serialize(PyStringsSerDe())
+      new_req = req_items_sketch.deserialize(req_bytes, PyStringsSerDe())
+      self.assertEqual(req.get_num_retained(), new_req.get_num_retained())
+      self.assertEqual(req.get_min_value(), new_req.get_min_value())
+      self.assertEqual(req.get_max_value(), new_req.get_max_value())
+      self.assertEqual(req.get_quantile(0.7), new_req.get_quantile(0.7))
+      self.assertEqual(req.get_rank(str(n/4)), new_req.get_rank(str(n/4)))
+
 
 if __name__ == '__main__':
     unittest.main()
