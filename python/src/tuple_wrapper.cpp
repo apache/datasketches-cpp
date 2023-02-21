@@ -86,7 +86,7 @@ void init_tuple(py::module &m) {
     .def("get_theta64", &py_tuple_sketch::get_theta64,
          "Returns theta as 64-bit value")
     .def("get_num_retained", &py_tuple_sketch::get_num_retained,
-         "Retunrs the number of items currently in the sketch")
+         "Returns the number of items currently in the sketch")
     .def("get_seed_hash", [](const py_tuple_sketch& sk) { return sk.get_seed_hash(); }, // why does regular call not work??
          "Returns a hash of the seed used in the sketch")
     .def("is_ordered", &py_tuple_sketch::is_ordered,
@@ -177,7 +177,7 @@ void init_tuple(py::module &m) {
         "compute",
         &py_tuple_a_not_b::compute<const py_tuple_sketch&, const py_tuple_sketch&>,
         py::arg("a"), py::arg("b"), py::arg("ordered")=true,
-        "Returns a sketch with the result of appying the A-not-B operation on the given inputs"
+        "Returns a sketch with the result of applying the A-not-B operation on the given inputs"
     )
   ;
 
@@ -202,14 +202,14 @@ void init_tuple(py::module &m) {
         py::arg("actual"), py::arg("expected"), py::arg("threshold"), py::arg("seed")=DEFAULT_SEED,
         "Tests similarity of an actual sketch against an expected sketch. Computes the lower bound of the Jaccard "
         "index J_{LB} of the actual and expected sketches. If J_{LB} >= threshold, then the sketches are considered "
-        "to be similar sith a confidence of 97.7% and returns True, otherwise False.")
+        "to be similar with a confidence of 97.7% and returns True, otherwise False.")
     .def_static(
         "dissimilarity_test",
         &py_tuple_jaccard_similarity::dissimilarity_test<const py_tuple_sketch&, const py_tuple_sketch&>,
         py::arg("actual"), py::arg("expected"), py::arg("threshold"), py::arg("seed")=DEFAULT_SEED,
         "Tests dissimilarity of an actual sketch against an expected sketch. Computes the upper bound of the Jaccard "
         "index J_{UB} of the actual and expected sketches. If J_{UB} <= threshold, then the sketches are considered "
-        "to be dissimilar sith a confidence of 97.7% and returns True, otherwise False."
+        "to be dissimilar with a confidence of 97.7% and returns True, otherwise False."
     )
   ;
 }

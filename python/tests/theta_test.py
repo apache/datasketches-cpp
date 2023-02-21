@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
- 
+
 import unittest
 
 from datasketches import theta_sketch, update_theta_sketch
@@ -24,11 +24,11 @@ from datasketches import theta_jaccard_similarity
 
 class ThetaTest(unittest.TestCase):
     def test_theta_basic_example(self):
-        k = 12      # 2^k = 4096 rows in the table
+        lgk = 12    # 2^k = 4096 rows in the table
         n = 1 << 18 # ~256k unique values
 
         # create a sketch and inject some values
-        sk = self.generate_theta_sketch(n, k)
+        sk = self.generate_theta_sketch(n, lgk)
 
         # we can check that the upper and lower bounds bracket the
         # estimate, without needing to know the exact value.
@@ -55,19 +55,19 @@ class ThetaTest(unittest.TestCase):
         self.assertEqual(count, new_sk.get_num_retained())
 
     def test_theta_set_operations(self):
-        k = 12      # 2^k = 4096 rows in the table
+        lgk = 12    # 2^k = 4096 rows in the table
         n = 1 << 18 # ~256k unique values
 
         # we'll have 1/4 of the values overlap
         offset = int(3 * n / 4) # it's a float w/o cast
 
         # create a couple sketches and inject some values
-        sk1 = self.generate_theta_sketch(n, k)
-        sk2 = self.generate_theta_sketch(n, k, offset)
+        sk1 = self.generate_theta_sketch(n, lgk)
+        sk2 = self.generate_theta_sketch(n, lgk, offset)
 
         # UNIONS
         # create a union object
-        union = theta_union(k)
+        union = theta_union(lgk)
         union.update(sk1)
         union.update(sk2)
 
@@ -138,13 +138,11 @@ class ThetaTest(unittest.TestCase):
         self.assertTrue(theta_jaccard_similarity.similarity_test(sk1, result, 0.7))
 
 
-    def generate_theta_sketch(self, n, k, offset=0):
-      sk = update_theta_sketch(k)
+    def generate_theta_sketch(self, n, lgk, offset=0):
+      sk = update_theta_sketch(lgk)
       for i in range(0, n):
         sk.update(i + offset)
       return sk
-        
+
 if __name__ == '__main__':
     unittest.main()
-
-  
