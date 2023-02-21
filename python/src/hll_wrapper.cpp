@@ -59,7 +59,7 @@ void init_hll(py::module &m) {
     .def("get_compact_serialization_bytes", &hll_sketch::get_compact_serialization_bytes,
          "Returns the size of the serialized sketch when compressing the exception table if HLL_4")
     .def("reset", &hll_sketch::reset,
-         "Resets the sketch to the empty state in coupon colleciton mode")
+         "Resets the sketch to the empty state in coupon collection mode")
     .def("update", (void (hll_sketch::*)(int64_t)) &hll_sketch::update, py::arg("datum"),
          "Updates the sketch with the given integral value")
     .def("update", (void (hll_sketch::*)(double)) &hll_sketch::update, py::arg("datum"),
@@ -68,17 +68,17 @@ void init_hll(py::module &m) {
          "Updates the sketch with the given string value")
     .def_static("get_max_updatable_serialization_bytes", &hll_sketch::get_max_updatable_serialization_bytes,
          py::arg("lg_k"), py::arg("tgt_type"),
-         "Provides a likely upper bound on serialization size for the given paramters")
+         "Provides a likely upper bound on serialization size for the given parameters")
     .def_static("get_rel_err", &hll_sketch::get_rel_err,
          py::arg("upper_bound"), py::arg("unioned"), py::arg("lg_k"), py::arg("num_std_devs"),
-         "Retuns the a priori relative error bound for the given parameters")
+         "Returns the a priori relative error bound for the given parameters")
     .def(
         "serialize_compact",
         [](const hll_sketch& sk) {
           auto bytes = sk.serialize_compact();
           return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         },
-        "Serializes the sketch into a bytes object, compressiong the exception table if HLL_4"
+        "Serializes the sketch into a bytes object, compressing the exception table if HLL_4"
     )
     .def(
         "serialize_updatable",
@@ -121,6 +121,6 @@ void init_hll(py::module &m) {
          "Updates the union with the given string value")
     .def_static("get_rel_err", &hll_union::get_rel_err,
          py::arg("upper_bound"), py::arg("unioned"), py::arg("lg_k"), py::arg("num_std_devs"),
-         "Retuns the a priori relative error bound for the given parameters")
+         "Returns the a priori relative error bound for the given parameters")
     ;
 }

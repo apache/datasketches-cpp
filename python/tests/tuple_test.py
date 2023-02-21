@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
- 
+
 import unittest
 
 from datasketches import update_tuple_sketch
@@ -27,12 +27,12 @@ from datasketches import update_theta_sketch
 
 class TupleTest(unittest.TestCase):
     def test_tuple_basic_example(self):
-        k = 12      # 2^k = 4096 rows in the table
+        lgk = 12    # 2^k = 4096 rows in the table
         n = 1 << 18 # ~256k unique values
 
         # create a sketch and inject some values -- summary is 2 so we can sum them
         # and know the reuslt
-        sk = self.generate_tuple_sketch(AccumulatorPolicy(), n, k, value=2)
+        sk = self.generate_tuple_sketch(AccumulatorPolicy(), n, lgk, value=2)
 
         # we can check that the upper and lower bounds bracket the
         # estimate, without needing to know the exact value.
@@ -66,7 +66,7 @@ class TupleTest(unittest.TestCase):
 
         # we can even create a tuple sketch from an existing theta sketch
         # as long as we provide a summary to use
-        theta_sk = update_theta_sketch(k)
+        theta_sk = update_theta_sketch(lgk)
         for i in range(n, 2*n):
           theta_sk.update(i)
         cts = compact_tuple_sketch(theta_sk, 5)
@@ -77,19 +77,19 @@ class TupleTest(unittest.TestCase):
 
 
     def test_tuple_set_operations(self):
-        k = 12      # 2^k = 4096 rows in the table
+        lgk = 12    # 2^k = 4096 rows in the table
         n = 1 << 18 # ~256k unique values
 
         # we'll have 1/4 of the values overlap
         offset = int(3 * n / 4) # it's a float w/o cast
 
         # create a couple sketches and inject some values, with different summaries
-        sk1 = self.generate_tuple_sketch(AccumulatorPolicy(), n, k, value=5)
-        sk2 = self.generate_tuple_sketch(AccumulatorPolicy(), n, k, value=7, offset=offset)
+        sk1 = self.generate_tuple_sketch(AccumulatorPolicy(), n, lgk, value=5)
+        sk2 = self.generate_tuple_sketch(AccumulatorPolicy(), n, lgk, value=7, offset=offset)
 
         # UNIONS
         # create a union object
-        union = tuple_union(MaxIntPolicy(), k)
+        union = tuple_union(MaxIntPolicy(), lgk)
         union.update(sk1)
         union.update(sk2)
 
@@ -179,12 +179,12 @@ class TupleTest(unittest.TestCase):
         self.assertLess(jac[0], jac[1])
         self.assertLess(jac[1], jac[2])
 
-        # checks for sketch equivalency
+        # checks for sketch equivalence
         self.assertTrue(tuple_jaccard_similarity.exactly_equal(sk1, sk1))
         self.assertFalse(tuple_jaccard_similarity.exactly_equal(sk1, sk2))
 
         # we can apply a check for similarity or dissimilarity at a
-        # given threshhold, at 97.7% confidence.
+        # given threshold, at 97.7% confidence.
 
         # check that the Jaccard Index is at most (upper bound) 0.2.
         # exact result would be 1/7
@@ -196,13 +196,11 @@ class TupleTest(unittest.TestCase):
 
 
     # Generates a basic tuple sketch with a fixed value for each update
-    def generate_tuple_sketch(self, policy, n, k, value, offset=0):
-      sk = update_tuple_sketch(policy, k)
+    def generate_tuple_sketch(self, policy, n, lgk, value, offset=0):
+      sk = update_tuple_sketch(policy, lgk)
       for i in range(0, n):
         sk.update(i + offset, value)
       return sk
-        
+
 if __name__ == '__main__':
     unittest.main()
-
-  

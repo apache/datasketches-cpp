@@ -43,7 +43,7 @@ void init_cpc(py::module &m) {
     .def<void (cpc_sketch::*)(const std::string&)>("update", &cpc_sketch::update, py::arg("datum"),
          "Updates the sketch with the given string")
     .def("is_empty", &cpc_sketch::is_empty,
-         "Returns True if the sketch is empty, otherwise Dalse")
+         "Returns True if the sketch is empty, otherwise False")
     .def("get_estimate", &cpc_sketch::get_estimate,
          "Estimate of the distinct count of the input stream")
     .def("get_lower_bound", &cpc_sketch::get_lower_bound, py::arg("kappa"),

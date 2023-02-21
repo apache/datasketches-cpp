@@ -14,34 +14,34 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
- 
+
 import unittest
 from datasketches import hll_sketch, hll_union, tgt_hll_type
 
 class HllTest(unittest.TestCase):
     def test_hll_example(self):
-        k = 12      # 2^k = 4096 rows in the table
+        lgk = 12    # 2^k = 4096 rows in the table
         n = 1 << 18 # ~256k unique values
 
         # create a couple sketches and inject some values
         # we'll have 1/4 of the values overlap
-        hll  = hll_sketch(k, tgt_hll_type.HLL_8)
-        hll2 = hll_sketch(k, tgt_hll_type.HLL_6)
+        hll  = hll_sketch(lgk, tgt_hll_type.HLL_8)
+        hll2 = hll_sketch(lgk, tgt_hll_type.HLL_6)
         offset = int(3 * n / 4) # it's a float w/o cast
         # because we hash on the bits, not an abstract numeric value,
         # hll.update(1) and hll.update(1.0) give different results.
         for i in range(0, n):
             hll.update(i)
             hll2.update(i + offset)
-        
+
         # we can check that the upper and lower bounds bracket the
         # estimate, without needing to know the exact value.
         self.assertLessEqual(hll.get_lower_bound(1), hll.get_estimate())
         self.assertGreaterEqual(hll.get_upper_bound(1), hll.get_estimate())
 
-        # unioning uses a separate class, and we can either get a result
+        # union is a separate class, and we can either get a result
         # sketch or query the union object directly
-        union = hll_union(k)
+        union = hll_union(lgk)
         union.update(hll)
         union.update(hll2)
         result = union.get_result()
@@ -59,7 +59,7 @@ class HllTest(unittest.TestCase):
         new_hll = hll_sketch.deserialize(sk_bytes)
 
         # the sketch can self-report its configuration and status
-        self.assertEqual(new_hll.lg_config_k, k)
+        self.assertEqual(new_hll.lg_config_k, lgk)
         self.assertEqual(new_hll.tgt_type, tgt_hll_type.HLL_4)
         self.assertFalse(new_hll.is_empty())
 
@@ -68,16 +68,16 @@ class HllTest(unittest.TestCase):
         self.assertTrue(new_hll.is_empty())
 
     def test_hll_sketch(self):
-        k = 8
+        lgk = 8
         n = 117
-        hll = self.generate_sketch(n, k, tgt_hll_type.HLL_6)
+        hll = self.generate_sketch(n, lgk, tgt_hll_type.HLL_6)
         hll.update('string data')
         hll.update(3.14159) # double data
 
         self.assertLessEqual(hll.get_lower_bound(1), hll.get_estimate())
         self.assertGreaterEqual(hll.get_upper_bound(1), hll.get_estimate())
 
-        self.assertEqual(hll.lg_config_k, k)
+        self.assertEqual(hll.lg_config_k, lgk)
         self.assertEqual(hll.tgt_type, tgt_hll_type.HLL_6)
 
         bytes_compact = hll.serialize_compact()
@@ -98,13 +98,13 @@ class HllTest(unittest.TestCase):
         self.assertTrue(hll.is_empty())
 
     def test_hll_union(self):
-        k = 7
+        lgk = 7
         n = 53
-        union = hll_union(k)
+        union = hll_union(lgk)
 
-        sk = self.generate_sketch(n, k, tgt_hll_type.HLL_4, 0)
+        sk = self.generate_sketch(n, lgk, tgt_hll_type.HLL_4, 0)
         union.update(sk)
-        sk = self.generate_sketch(3 * n, k, tgt_hll_type.HLL_4, n)
+        sk = self.generate_sketch(3 * n, lgk, tgt_hll_type.HLL_4, n)
         union.update(sk)
         union.update('string data')
         union.update(1.4142136)
@@ -112,19 +112,18 @@ class HllTest(unittest.TestCase):
         self.assertLessEqual(union.get_lower_bound(1), union.get_estimate())
         self.assertGreaterEqual(union.get_upper_bound(1), union.get_estimate())
 
-        self.assertEqual(union.lg_config_k, k)
+        self.assertEqual(union.lg_config_k, lgk)
         self.assertFalse(union.is_empty())
 
         sk = union.get_result()
         self.assertTrue(isinstance(sk, hll_sketch))
         self.assertEqual(sk.tgt_type, tgt_hll_type.HLL_4)
         
-    def generate_sketch(self, n, k, sk_type=tgt_hll_type.HLL_4, st_idx=0):
-        sk = hll_sketch(k, sk_type)
+    def generate_sketch(self, n, lgk, sk_type=tgt_hll_type.HLL_4, st_idx=0):
+        sk = hll_sketch(lgk, sk_type)
         for i in range(st_idx, st_idx + n):
             sk.update(i)
         return sk
-        
-        
+
 if __name__ == '__main__':
     unittest.main()
