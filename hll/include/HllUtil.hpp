@@ -168,7 +168,8 @@ inline double HllUtil<A>::getRelErr(bool upperBound, bool unioned,
   if (lgConfigK > 12) {
     const double rseFactor = unioned ?
         hll_constants::HLL_NON_HIP_RSE_FACTOR : hll_constants::HLL_HIP_RSE_FACTOR;
-    return (upperBound ? -1 : 1) * (numStdDev * rseFactor) / sqrt(lgConfigK);
+    const uint32_t configK = 1 << lgConfigK;
+    return (upperBound ? -1 : 1) * (numStdDev * rseFactor) / sqrt(configK);
   } else {
     return RelativeErrorTables<A>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
   }
