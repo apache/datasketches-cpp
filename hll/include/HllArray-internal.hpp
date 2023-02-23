@@ -322,48 +322,15 @@ double HllArray<A>::getLowerBound(uint8_t numStdDev) const {
   HllUtil<A>::checkNumStdDev(numStdDev);
   const uint32_t configK = 1 << this->lgConfigK_;
   const double numNonZeros = ((curMin_ == 0) ? (configK - numAtCurMin_) : configK);
-
-  double estimate;
-  double rseFactor;
-  if (oooFlag_) {
-    estimate = getCompositeEstimate();
-    rseFactor = hll_constants::HLL_NON_HIP_RSE_FACTOR;
-  } else {
-    estimate = hipAccum_;
-    rseFactor = hll_constants::HLL_HIP_RSE_FACTOR;
-  }
-
-  double relErr;
-  if (this->lgConfigK_ > 12) {
-    relErr = (numStdDev * rseFactor) / sqrt(configK);
-  } else {
-    relErr = HllUtil<A>::getRelErr(false, oooFlag_, this->lgConfigK_, numStdDev);
-  }
-  return fmax(estimate / (1.0 + relErr), numNonZeros);
+  const double relErr = HllUtil<A>::getRelErr(false, this->oooFlag_, this->lgConfigK_, numStdDev);
+  return fmax(getEstimate() / (1.0 + relErr), numNonZeros);
 }
 
 template<typename A>
 double HllArray<A>::getUpperBound(uint8_t numStdDev) const {
   HllUtil<A>::checkNumStdDev(numStdDev);
-  const uint32_t configK = 1 << this->lgConfigK_;
-
-  double estimate;
-  double rseFactor;
-  if (oooFlag_) {
-    estimate = getCompositeEstimate();
-    rseFactor = hll_constants::HLL_NON_HIP_RSE_FACTOR;
-  } else {
-    estimate = hipAccum_;
-    rseFactor = hll_constants::HLL_HIP_RSE_FACTOR;
-  }
-
-  double relErr;
-  if (this->lgConfigK_ > 12) {
-    relErr = (-1.0) * (numStdDev * rseFactor) / sqrt(configK);
-  } else {
-    relErr = HllUtil<A>::getRelErr(true, oooFlag_, this->lgConfigK_, numStdDev);
-  }
-  return estimate / (1.0 + relErr);
+  const double relErr = HllUtil<A>::getRelErr(true, this->oooFlag_, this->lgConfigK_, numStdDev);
+  return getEstimate() / (1.0 + relErr);
 }
 
 /**
