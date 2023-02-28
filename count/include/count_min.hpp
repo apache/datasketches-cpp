@@ -20,7 +20,7 @@ class count_min_sketch{
 public:
 
   /**
-  * Creates an instance of the sketch given parameters num_hashes, num_buckets and hash seed, `seed`.
+  * Creates an instance of the sketch given parameters _num_hashes, _num_buckets and hash seed, `seed`.
   * @param num_hashes : number of hash functions in the sketch. Equivalently the number of rows in the array
   * @param num_buckets : number of buckets that hash functions map into. Equivalently the number of columns in the array
   * @param seed for hash function
@@ -31,12 +31,12 @@ public:
   count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed = DEFAULT_SEED) ;
 
   /**
-  * @return configured num_hashes of this sketch
+  * @return configured _num_hashes of this sketch
   */
   uint16_t get_num_hashes() const;
 
   /**
-  * @return configured num_buckets of this sketch
+  * @return configured _num_buckets of this sketch
   */
   uint32_t get_num_buckets() const;
 
@@ -48,12 +48,12 @@ public:
   /**
    * @return epsilon : double
    * The maximum permissible error for any frequency estimate query.
-   * epsilon = ceil(e / num_buckets)
+   * epsilon = ceil(e / _num_buckets)
    */
    double get_relative_error() const;
 
   /**
-  * @return total_weight : typename W
+  * @return _total_weight : typename W
   * The total weight currently inserted into the stream.
   */
   W get_total_weight() const;
@@ -101,7 +101,7 @@ public:
   * @param item : pointer to the data item to be query from the sketch.
   * @param size : size_t
   * @return the estimated frequency of the item denoted f_est satisfying
-  * f_true - relative_error*total_weight <= f_est <= f_true
+  * f_true - relative_error*_total_weight <= f_est <= f_true
   */
    W get_estimate(const void* item, size_t size) const ;
 
@@ -109,7 +109,7 @@ public:
   * Query the sketch for the upper bound of a given item.
   * @param item : uint64_t or std::string to query
   * @return the upper bound on the true frequency of the item
-  * f_true <= f_est + relative_error*total_weight
+  * f_true <= f_est + relative_error*_total_weight
   */
    W get_upper_bound(const void* item, size_t size) const;
    W get_upper_bound(uint64_t) const ;
@@ -119,7 +119,7 @@ public:
   * Query the sketch for the lower bound of a given item.
   * @param item : uint64_t or std::string to query
   * @return the lower bound for the query result, f_est, on the true frequency, f_est of the item
-  * f_true - relative_error*total_weight <= f_est
+  * f_true - relative_error*_total_weight <= f_est
   */
   W get_lower_bound(const void* item, size_t size) const ;
   W get_lower_bound(uint64_t) const ;
@@ -143,6 +143,8 @@ public:
   */
   void update(uint64_t item, W weight) ;
   void update(uint64_t item) ;
+  void update(int64_t item, W weight) ;
+  void update(int64_t item) ;
 
   /**
    * Update this sketch with a given string.
@@ -163,13 +165,72 @@ public:
   const_iterator begin() const;
   const_iterator end() const;
 
+  /**
+   * This method serializes the sketch into a given stream in a binary form
+   * @param os output stream
+   * The byte output has the following structure
+   * Byte 0:
+   * 1 - if and only if the sketch is empty
+   * 0 - otherwise
+   *
+   * Byte 1 (serial version), byte 2 (family id), byte 3 (flags):
+   * 00000001 - default for now.
+   *
+   * Bytes 4 - 7:
+   * uint8_t zero corresponding to ``empty''
+   *
+   * Byte 8:
+   * uint_8 for number of hash functions
+   *
+   * Bytes 9, 13
+   * 4 bytes : uint32 for number of buckets.
+   *
+   * Bytes 14, 15:
+   * seed_hash
+   *
+   * Byte 16:
+   * uint8_t zero corresponding to ``empty''
+   *
+   * All remaining bytes from 17-24 follow the pattern of
+   * Bytes 17-24:
+   * Sketch array entry
+   *
+
+  0   ||    0   |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+      ||is_empty|00000001|00000001|00000001|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+
+  1   ||    0   |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+      ||num_hash|----------- _num_buckets -----------|__seed__ __hash__|xxxxxxxx|
+
+  2   ||    0   |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+      ||---------------------------- total  weight ----------------------------|
+
+  3   ||    0   |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+      ||---------------------------- sketch entries ---------------------------|
+ ...
+
+   *
+   *
+   */
+  void serialize(std::ostream& os) const;
+
+  /**
+ * This method deserializes a sketch from a given stream.
+ * @param is input stream
+ * @param seed the seed for the hash function that was used to create the sketch
+ * @return an instance of a sketch
+ */
+  //static count_min_sketch deserialize(std::istream& is, uint64_t seed=DEFAULT_SEED) const;
+  static count_min_sketch deserialize(std::istream& is, uint64_t seed) ;
+
 private:
-  uint16_t num_hashes ;
-  uint32_t num_buckets ;
-  uint64_t seed ;
-  W total_weight ;
+  uint16_t _num_hashes ;
+  uint32_t _num_buckets ;
+  std::vector<W> _sketch_array ; // the array stored by the sketch
+  uint64_t _seed ;
+  W _total_weight ;
   std::vector<uint64_t> hash_seeds ;
-  std::vector<W> sketch_array ; // the array stored by the sketch
+
 
 
   /*

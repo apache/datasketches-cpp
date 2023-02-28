@@ -1,5 +1,8 @@
 #include <catch2/catch.hpp>
 #include <vector>
+#include <cstring>
+#include <sstream>
+#include <fstream>
 
 #include "count_min.hpp"
 #include "common_defs.hpp"
@@ -80,6 +83,16 @@ TEST_CASE("CM one update: uint64_t"){
     REQUIRE(c.get_estimate(x) <= c.get_upper_bound(x)) ;
     REQUIRE(c.get_estimate(x) >= c.get_lower_bound(x)) ;
 }
+
+TEST_CASE("CM frequency cancellation"){
+  count_min_sketch<int64_t> c(1, 5) ;
+  c.update("x") ;
+  c.update("y", -1) ;
+  REQUIRE(c.get_total_weight() == 2) ;
+  REQUIRE(c.get_estimate("x") == 1) ;
+  REQUIRE(c.get_estimate("y") == -1) ;
+}
+
 
 TEST_CASE("CM frequency estimates"){
     int number_of_items = 10 ;
@@ -163,5 +176,48 @@ TEST_CASE("CM merge - pass", "[acceptable cases]"){
       REQUIRE(s.get_estimate(x) <= 2); // True frequency x == 2 for all x.
     }
   }
+
+TEST_CASE("CountMin sketch: serialize-deserialize empty", "[cm_sketch]"){
+    uint8_t n_hashes = 1 ;
+    uint32_t n_buckets = 5 ;
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
+    c.serialize(s);
+    count_min_sketch<uint64_t> d = count_min_sketch<uint64_t>::deserialize(s, DEFAULT_SEED) ;
+    REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
+    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+    REQUIRE(c.get_seed() == d.get_seed()) ;
+    REQUIRE(c.get_estimate(0) == d.get_estimate(0)) ;
+    REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
+
+    // Check that all entries are equal and 0
+    for(auto di: d){
+      REQUIRE(di == 0) ;
+    }
+    std::ofstream os("count_min-empty.bin");
+    c.serialize(os);
+}
+
+TEST_CASE("CountMin sketch: serialize-deserialize non-empty", "[cm_sketch]"){
+  uint8_t n_hashes = 3 ;
+  uint32_t n_buckets = 1024 ;
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
+  for(uint64_t i=0 ; i < 10; ++i) c.update(i,10*i*i) ;
+  c.serialize(s);
+  count_min_sketch<uint64_t> d = count_min_sketch<uint64_t>::deserialize(s, DEFAULT_SEED) ;
+  REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
+  REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+  REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+  REQUIRE(c.get_seed() == d.get_seed()) ;
+  REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
+  for(uint64_t i=0 ; i < 10; ++i){
+    REQUIRE(c.get_estimate(i) == d.get_estimate(i)) ;
+  }
+  std::ofstream os("count_min-non-empty.bin");
+  c.serialize(os);
+}
+
 } /* namespace datasketches */
 

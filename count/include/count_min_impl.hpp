@@ -8,9 +8,11 @@ namespace datasketches {
 
 template<typename W>
 count_min_sketch<W>::count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed):
-num_hashes(num_hashes),
-num_buckets(num_buckets),
-seed(seed){
+_num_hashes(num_hashes),
+_num_buckets(num_buckets),
+_sketch_array(num_hashes * num_buckets, 0),
+_seed(seed),
+_total_weight(0){
   if(num_buckets < 3) throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.") ;
 
   // This check is to ensure later compatibility with a Java implementation whose maximum size can only
@@ -21,40 +23,38 @@ seed(seed){
   }
 
 
-  std::default_random_engine rng(seed);
+  std::default_random_engine rng(_seed);
   std::uniform_int_distribution<uint64_t> extra_hash_seeds(0, std::numeric_limits<uint64_t>::max());
   hash_seeds.reserve(num_hashes) ;
 
   for(uint64_t i=0 ; i < num_hashes ; ++i){
-    hash_seeds.push_back(extra_hash_seeds(rng) + seed); // Adds the global seed to all hash functions.
+    hash_seeds.push_back(extra_hash_seeds(rng) + _seed); // Adds the global seed to all hash functions.
   }
-  total_weight = 0 ;
-  sketch_array.resize(num_hashes*num_buckets) ;
-};
+}
 
 template<typename W>
 uint16_t count_min_sketch<W>::get_num_hashes() const{
-    return num_hashes ;
+    return _num_hashes ;
 }
 
 template<typename W>
 uint32_t count_min_sketch<W>::get_num_buckets() const{
-    return num_buckets ;
+    return _num_buckets ;
 }
 
 template<typename W>
 uint64_t count_min_sketch<W>::get_seed() const {
-    return seed ;
+    return _seed ;
 }
 
 template<typename W>
 double count_min_sketch<W>::get_relative_error() const{
-  return exp(1.0) / double(num_buckets) ;
+  return exp(1.0) / double(_num_buckets) ;
 }
 
 template<typename W>
 W count_min_sketch<W>::get_total_weight() const{
-  return total_weight ;
+  return _total_weight ;
 }
 
 template<typename W>
@@ -88,7 +88,7 @@ std::vector<uint64_t> count_min_sketch<W>::get_hashes(const void* item, size_t s
   /*
    * Returns the hash locations for the input item using the original hashing
    * scheme from [1].
-   * Generate num_hashes separate hashes from calls to murmurmhash.
+   * Generate _num_hashes separate hashes from calls to murmurmhash.
    * This could be optimized by keeping both of the 64bit parts of the hash
    * function, rather than generating a new one for every level.
    *
@@ -100,16 +100,16 @@ std::vector<uint64_t> count_min_sketch<W>::get_hashes(const void* item, size_t s
    * https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf
    */
   uint64_t bucket_index ;
-  std::vector<uint64_t> sketch_update_locations; //(num_hashes) ;
-  sketch_update_locations.reserve(num_hashes) ;
+  std::vector<uint64_t> sketch_update_locations; //(_num_hashes) ;
+  sketch_update_locations.reserve(_num_hashes) ;
 
   uint64_t hash_seed_index = 0 ;
   for(const auto &it : hash_seeds){
     HashState hashes;
     MurmurHash3_x64_128(item, size, it, hashes); // ? BEWARE OVERFLOW.
     uint64_t hash = hashes.h1 ;
-    bucket_index = hash % num_buckets ;
-    sketch_update_locations.push_back( (hash_seed_index * num_buckets) + bucket_index) ;
+    bucket_index = hash % _num_buckets ;
+    sketch_update_locations.push_back((hash_seed_index * _num_buckets) + bucket_index) ;
     hash_seed_index += 1 ;
   }
   return sketch_update_locations ;
@@ -132,7 +132,7 @@ W count_min_sketch<W>::get_estimate(const void* item, size_t size) const {
   std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
   std::vector<W> estimates ;
   for (auto h: hash_locations){
-    estimates.push_back(sketch_array[h]) ;
+    estimates.push_back(_sketch_array[h]) ;
   }
   W result = *std::min_element(estimates.begin(), estimates.end());
   return result ;
@@ -166,10 +166,11 @@ void count_min_sketch<W>::update(const void* item, size_t size, W weight) {
    * Gets the item's hash locations and then increments the sketch in those
    * locations by the weight.
    */
-  total_weight += weight ;
+  W magnitude = (weight >= 0) ? weight : -weight ;
+  _total_weight += magnitude ;
   std::vector<uint64_t> hash_locations = get_hashes(item, size) ;
   for (auto h: hash_locations){
-    sketch_array[h] += weight ;
+    _sketch_array[h] += weight ;
   }
 }
 
@@ -220,27 +221,102 @@ void count_min_sketch<W>::merge(const count_min_sketch<W> &other_sketch){
   }
 
   // Merge step - iterate over the other vector and add the weights to this sketch
-  auto it = sketch_array.begin() ; // This is a std::vector iterator.
+  auto it = _sketch_array.begin() ; // This is a std::vector iterator.
   auto other_it = other_sketch.begin() ; //This is a const iterator over the other sketch.
-  while(it != sketch_array.end()){
+  while(it != _sketch_array.end()){
     *it += *other_it ;
     ++it ;
     ++other_it ;
   }
-  total_weight += other_sketch.get_total_weight() ;
+  _total_weight += other_sketch.get_total_weight() ;
 }
 
 // Iterators
 template<typename W>
 typename count_min_sketch<W>::const_iterator count_min_sketch<W>::begin() const {
-  return sketch_array.begin();
+  return _sketch_array.begin();
 }
 
 template<typename W>
 typename count_min_sketch<W>::const_iterator count_min_sketch<W>::end() const {
-return sketch_array.end();
+return _sketch_array.end();
 }
 
+template<typename W>
+void count_min_sketch<W>::serialize(std::ostream& os) const {
+  const uint8_t preamble_longs = (_total_weight == 0) ? 1 : 0; // is_empty is 1 if weight == 0
+  write(os, preamble_longs);
+
+  // These are placeholders for now
+  const uint8_t serial_version = 1 ;
+  write(os, serial_version) ;
+  const uint8_t family_id = 1 ;
+  write(os, family_id) ;
+  const uint8_t flags = 1 ;
+  write(os, flags) ;
+
+  // Now write 4 zeros to complete the 0th block of 8 bytes
+  const uint32_t null_characters_32 = 0 ;
+  write(os, null_characters_32) ;
+
+  // At index 1 for the writing
+  // Sketch parameters at bytes[1][0,1,2,3,4]
+  const uint8_t nhashes = _num_hashes ;
+  write(os, nhashes) ;
+  const uint32_t nbuckets = _num_buckets ;
+  write(os, nbuckets) ;
+
+  // Seed hash at bytes[1][5, 6]
+  const uint16_t seed_hash(compute_seed_hash(_seed));
+  write(os, seed_hash);
+
+  // Now write 1 zero to complete the bytes[1]7]
+  const uint8_t null_characters_8 = 0 ;
+  write(os, null_characters_8) ;
+
+  if (preamble_longs == 1) return ; // sketch is empty, no need to write any more.
+
+  // In the next 8 bytes, write the total weight
+  const W t_weight = _total_weight ;
+  write(os, t_weight) ;
+
+  // Any remaining bytes are consumed by writing the array values.
+  auto it = _sketch_array.begin() ;
+  while(it != _sketch_array.end()){
+    write(os, *it);
+    ++it ;
+  }
+}
+
+template<typename W>
+count_min_sketch<W> count_min_sketch<W>::deserialize(std::istream& is, uint64_t seed) {
+
+  const auto is_empty = read<uint8_t>(is) ;
+  const auto serial_version = read<uint8_t>(is) ;
+  const auto family_id = read<uint8_t>(is) ;
+  const auto flags = read<uint8_t>(is) ;
+  read<uint32_t>(is) ; // 4 unused bytes
+
+  // Sketch parameters
+  const auto nhashes = read<uint8_t>(is);
+  const auto nbuckets = read<uint32_t>(is) ;
+  const auto seed_hash = read<uint16_t>(is) ;
+  read<uint8_t>(is) ; // 1 unused byte
+
+  if (seed_hash != compute_seed_hash(seed)) {
+    throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
+                                + std::to_string(compute_seed_hash(seed)));
+  }
+  count_min_sketch<W> c(nhashes, nbuckets, seed) ;
+  if (is_empty == 1) return c ; // sketch is empty, no need to read any more.
+
+  // Set the sketch weight and read in the sketch values
+  const auto weight = read<W>(is) ;
+  c._total_weight += weight ;
+  read(is, c._sketch_array.data(), sizeof(W) * c._sketch_array.size());
+
+  return c ;
+}
 } /* namespace datasketches */
 
 #endif
