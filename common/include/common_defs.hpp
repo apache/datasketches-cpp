@@ -26,6 +26,7 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <thread>
 
 namespace datasketches {
 
@@ -36,15 +37,22 @@ enum resize_factor { X1 = 0, X2, X4, X8 };
 template<typename A> using AllocChar = typename std::allocator_traits<A>::template rebind_alloc<char>;
 template<typename A> using string = std::basic_string<char, std::char_traits<char>, AllocChar<A>>;
 
-// random bit
-static std::independent_bits_engine<std::mt19937, 1, uint32_t>
-  random_bit(static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count()));
+// thread-safe random bit
+inline uint32_t random_bit() 
+{
+  // add additional hash(this_thread::get_id) 
+  // to make different threads won't share the same random sequence
+  static thread_local std::independent_bits_engine<std::mt19937, 1, uint32_t>
+    random_bit_impl(static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count() 
+      + std::hash<std::thread::id>{}(std::this_thread::get_id())));
+  return random_bit_impl();
+}
 
 // common random declarations
 namespace random_utils {
   static std::random_device rd; // possibly unsafe in MinGW with GCC < 9.2
-  static std::mt19937_64 rand(rd());
-  static std::uniform_real_distribution<> next_double(0.0, 1.0);
+  static thread_local std::mt19937_64 rand(rd());
+  static thread_local std::uniform_real_distribution<> next_double(0.0, 1.0);
 }
 
 
