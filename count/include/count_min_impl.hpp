@@ -10,7 +10,7 @@ template<typename W>
 count_min_sketch<W>::count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed):
 _num_hashes(num_hashes),
 _num_buckets(num_buckets),
-_sketch_array(num_hashes * num_buckets, 0),
+_sketch_array((num_hashes*num_buckets < 1<<30) ? num_hashes*num_buckets : 0, 0),
 _seed(seed),
 _total_weight(0){
   if(num_buckets < 3) throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.") ;
