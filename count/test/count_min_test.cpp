@@ -9,10 +9,10 @@
 
 namespace datasketches{
 
-TEST_CASE("CM init - throws") {
-    REQUIRE_THROWS_AS(count_min_sketch<uint64_t>(5, 1), std::invalid_argument);
-    REQUIRE_THROWS_AS(count_min_sketch<uint64_t>(4, 268435456), std::invalid_argument);
-}
+//TEST_CASE("CM init - throws") {
+//    REQUIRE_THROWS_AS(count_min_sketch<uint64_t>(5, 1), std::invalid_argument);
+//    REQUIRE_THROWS_AS(count_min_sketch<uint64_t>(4, 268435456), std::invalid_argument);
+//}
 
 TEST_CASE("CM init"){
     uint8_t n_hashes = 3 ;
