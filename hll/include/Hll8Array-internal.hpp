@@ -108,9 +108,7 @@ void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
       if (new_v > old_v) {
         this->hllByteArr_[j] = new_v;
         this->hipAndKxQIncrementalUpdate(old_v, new_v);
-        if (old_v == 0) {
-          this->numAtCurMin_--;
-        }
+        this->numAtCurMin_ -= old_v == 0;
       }
     }
   } else if (src.getTgtHllType() == target_hll_type::HLL_6) {
@@ -121,9 +119,7 @@ void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
       if (new_v > old_v) {
         this->hllByteArr_[j] = new_v;
         this->hipAndKxQIncrementalUpdate(old_v, new_v);
-        if (old_v == 0) {
-          this->numAtCurMin_--;
-        }
+        this->numAtCurMin_ -= old_v == 0;
       }
     }
   } else { // HLL_4
@@ -134,9 +130,7 @@ void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
       if (new_v > old_v) {
         this->hllByteArr_[j] = new_v;
         this->hipAndKxQIncrementalUpdate(old_v, new_v);
-        if (old_v == 0) {
-          this->numAtCurMin_--;
-        }
+        this->numAtCurMin_ -= old_v == 0;
       }
     }
   }
