@@ -299,7 +299,7 @@ double HllArray<A>::getEstimate() const {
   if (oooFlag_) {
     return getCompositeEstimate();
   }
-  return getHipAccum();
+  return hipAccum_;
 }
 
 // HLL UPPER AND LOWER BOUNDS
@@ -435,16 +435,6 @@ void HllArray<A>::putNumAtCurMin(uint32_t numAtCurMin) {
 }
 
 template<typename A>
-void HllArray<A>::decNumAtCurMin() {
-  --numAtCurMin_;
-}
-
-template<typename A>
-void HllArray<A>::addToHipAccum(double delta) {
-  hipAccum_ += delta;
-}
-
-template<typename A>
 bool HllArray<A>::isCompact() const {
   return false;
 }
@@ -452,7 +442,7 @@ bool HllArray<A>::isCompact() const {
 template<typename A>
 bool HllArray<A>::isEmpty() const {
   const uint32_t configK = 1 << this->lgConfigK_;
-  return (getCurMin() == 0) && (getNumAtCurMin() == configK);
+  return (curMin_ == 0) && (numAtCurMin_ == configK);
 }
 
 template<typename A>
