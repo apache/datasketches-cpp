@@ -210,7 +210,7 @@ void Hll4Array<A>::internalHll4Update(uint32_t slotNo, uint8_t newVal) {
 
       // we just increased a pair value, so it might be time to change curMin
       if (actualOldValue == this->curMin_) { // 908
-        this->decNumAtCurMin();
+        --(this->numAtCurMin_);
         while (this->numAtCurMin_ == 0) {
           shiftToBiggerCurMin(); // increases curMin by 1, builds a new aux table
           // shifts values in 4-bit table and recounts curMin

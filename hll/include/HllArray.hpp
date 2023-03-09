@@ -52,10 +52,6 @@ class HllArray : public HllSketchImpl<A> {
     virtual double getLowerBound(uint8_t numStdDev) const;
     virtual double getUpperBound(uint8_t numStdDev) const;
 
-    inline void addToHipAccum(double delta);
-
-    inline void decNumAtCurMin();
-
     inline uint8_t getCurMin() const;
     inline uint32_t getNumAtCurMin() const;
     inline double getHipAccum() const;

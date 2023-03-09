@@ -77,13 +77,11 @@ void Hll8Array<A>::internalCouponUpdate(uint32_t coupon) {
   const uint32_t slotNo = HllUtil<A>::getLow26(coupon) & configKmask;
   const uint8_t newVal = HllUtil<A>::getValue(coupon);
 
-  const uint8_t curVal = getSlot(slotNo);
+  const uint8_t curVal = this->hllByteArr_[slotNo];
   if (newVal > curVal) {
-    putSlot(slotNo, newVal);
+    this->hllByteArr_[slotNo] = newVal;
     this->hipAndKxQIncrementalUpdate(curVal, newVal);
-    if (curVal == 0) {
-      this->numAtCurMin_--; // interpret numAtCurMin as num zeros
-    }
+    this->numAtCurMin_ -= curVal == 0; // interpret numAtCurMin as num zeros
   }
 }
 
