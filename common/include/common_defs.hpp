@@ -38,15 +38,9 @@ template<typename A> using AllocChar = typename std::allocator_traits<A>::templa
 template<typename A> using string = std::basic_string<char, std::char_traits<char>, AllocChar<A>>;
 
 // thread-safe random bit
-inline uint32_t random_bit() 
-{
-  // add additional hash(this_thread::get_id) 
-  // to make different threads won't share the same random sequence
-  static thread_local std::independent_bits_engine<std::mt19937, 1, uint32_t>
-    random_bit_impl(static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count() 
-      + std::hash<std::thread::id>{}(std::this_thread::get_id())));
-  return random_bit_impl();
-}
+static thread_local std::independent_bits_engine<std::mt19937, 1, uint32_t>
+  random_bit(static_cast<uint32_t>(std::chrono::system_clock::now().time_since_epoch().count() 
+    + std::hash<std::thread::id>{}(std::this_thread::get_id())));
 
 // common random declarations
 namespace random_utils {
