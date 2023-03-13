@@ -2,7 +2,11 @@
 #define COUNT_MIN_IMPL_HPP_
 
 #include "MurmurHash3.h"
+#include "count_min.hpp"
+#include "memory_operations.hpp"
+
 #include <random>
+
 
 namespace datasketches {
 
@@ -33,7 +37,7 @@ _total_weight(0){
 }
 
 template<typename W>
-uint16_t count_min_sketch<W>::get_num_hashes() const{
+uint8_t count_min_sketch<W>::get_num_hashes() const{
     return _num_hashes ;
 }
 
@@ -288,35 +292,127 @@ void count_min_sketch<W>::serialize(std::ostream& os) const {
   }
 }
 
+  template<typename W>
+  count_min_sketch<W> count_min_sketch<W>::deserialize(std::istream& is, uint64_t seed) {
+
+    const auto is_empty = read<uint8_t>(is) ;
+    const auto serial_version = read<uint8_t>(is) ;
+    const auto family_id = read<uint8_t>(is) ;
+    const auto flags = read<uint8_t>(is) ;
+    read<uint32_t>(is) ; // 4 unused bytes
+
+    // Sketch parameters
+    const auto nhashes = read<uint8_t>(is);
+    const auto nbuckets = read<uint32_t>(is) ;
+    const auto seed_hash = read<uint16_t>(is) ;
+    read<uint8_t>(is) ; // 1 unused byte
+
+    if (seed_hash != compute_seed_hash(seed)) {
+      throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
+                                  + std::to_string(compute_seed_hash(seed)));
+    }
+    count_min_sketch<W> c(nhashes, nbuckets, seed) ;
+    if (is_empty == 1) return c ; // sketch is empty, no need to read any more.
+
+    // Set the sketch weight and read in the sketch values
+    const auto weight = read<W>(is) ;
+    c._total_weight += weight ;
+    read(is, c._sketch_array.data(), sizeof(W) * c._sketch_array.size());
+
+    return c ;
+  }
+
 template<typename W>
-count_min_sketch<W> count_min_sketch<W>::deserialize(std::istream& is, uint64_t seed) {
+auto count_min_sketch<W>::serialize(unsigned header_size_bytes) const -> vector_bytes {
 
-  const auto is_empty = read<uint8_t>(is) ;
-  const auto serial_version = read<uint8_t>(is) ;
-  const auto family_id = read<uint8_t>(is) ;
-  const auto flags = read<uint8_t>(is) ;
-  read<uint32_t>(is) ; // 4 unused bytes
+  // The first 4 (of 8) bytes are either 1 or 0 (denoting empty vs non-empty) and the final 4 bytes are unused.
+  const uint8_t preamble_longs =  (_total_weight == 0) ? 1 : 0; // is_empty == 1 iff weight == 0
+  static const uint8_t serial_version = 1 ;
+  static const uint8_t family_id = 1 ;
+  static const uint8_t flags = 1 ;
+  static const uint32_t null_characters_32 = 0 ;
 
-  // Sketch parameters
-  const auto nhashes = read<uint8_t>(is);
-  const auto nbuckets = read<uint32_t>(is) ;
-  const auto seed_hash = read<uint16_t>(is) ;
-  read<uint8_t>(is) ; // 1 unused byte
+  // Variable table bytes is used to determine how many bytes to allocate for the sketch table.
+  // We assume that 8 bytes are necessary per entry in the table.
+  // The extra 1 is for the total_weight variable which will be zero iff the sketch is empty.
+  // Hence, table_bytes == 0 iff sketch is empty <=> preamble_longs == 1
+  const size_t table_bytes( preamble_longs ? 0 : (1+_num_hashes)*_num_buckets) ;
+  const size_t size = header_size_bytes + sizeof(uint64_t)*(2 + table_bytes)  ;
+  vector_bytes bytes(size, 0) ;
+
+  uint8_t* ptr = bytes.data() + header_size_bytes;
+  ptr += copy_to_mem(preamble_longs, ptr) ;
+  ptr += copy_to_mem(serial_version, ptr) ;
+  ptr += copy_to_mem(family_id, ptr) ;
+  ptr += copy_to_mem(flags, ptr) ;
+  ptr += copy_to_mem(null_characters_32, ptr) ;
+
+  // Second 8 bytes
+  static const uint8_t nhashes = _num_hashes ;
+  static const uint32_t nbuckets = _num_buckets ;
+  static const uint16_t seed_hash(compute_seed_hash(_seed));
+  static const uint8_t null_characters_8 = 0 ;
+  ptr += copy_to_mem(nhashes, ptr) ;
+  ptr += copy_to_mem(nbuckets, ptr) ;
+  ptr += copy_to_mem(seed_hash, ptr) ;
+  ptr += copy_to_mem(null_characters_8, ptr) ;
+  if (preamble_longs == 1) return bytes  ; // sketch is empty, no need to write further bytes.
+
+  // Remaining bytes are consumed by writing the weight and the array values.
+  static const W t_weight = _total_weight ;
+  ptr += copy_to_mem(t_weight, ptr) ;
+  auto it = _sketch_array.begin() ;
+  while(it != _sketch_array.end()){
+    ptr += copy_to_mem(*it, ptr) ;
+    ++it ;
+  }
+  return bytes ;
+}
+
+template<typename W>
+count_min_sketch<W> count_min_sketch<W>::deserialize(const void* bytes, size_t size, uint64_t seed) {
+  const char* ptr = static_cast<const char*>(bytes);
+
+  // First 8 bytes are 4 bytes of preamble and 4 unused bytes.
+  uint8_t is_empty ;
+  ptr += copy_from_mem(ptr, is_empty) ;
+  uint8_t serial_version ;
+  ptr += copy_from_mem(ptr, serial_version) ;
+  uint8_t family_id ;
+  ptr += copy_from_mem(ptr, family_id) ;
+  uint8_t flags ;
+  ptr += copy_from_mem(ptr, flags) ;
+  ptr += sizeof(uint32_t);
+
+  // Second 8 bytes are the sketch parameters with a final, unused byte.
+  uint8_t nhashes ;
+  uint32_t nbuckets ;
+  uint16_t seed_hash ;
+  ptr += copy_from_mem(ptr, nhashes) ;
+  ptr += copy_from_mem(ptr, nbuckets) ;
+  ptr += copy_from_mem(ptr, seed_hash) ;
+  ptr += sizeof(uint8_t);
 
   if (seed_hash != compute_seed_hash(seed)) {
     throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
                                 + std::to_string(compute_seed_hash(seed)));
   }
   count_min_sketch<W> c(nhashes, nbuckets, seed) ;
-  if (is_empty == 1) return c ; // sketch is empty, no need to read any more.
+  if (is_empty == 1) return c ; // sketch is empty, no need to read further.
 
-  // Set the sketch weight and read in the sketch values
-  const auto weight = read<W>(is) ;
+  // Third set of 8 bytes are the weight.
+  W weight;
+  ptr += copy_from_mem(ptr, weight) ;
   c._total_weight += weight ;
-  read(is, c._sketch_array.data(), sizeof(W) * c._sketch_array.size());
 
-  return c ;
+  // All remaining bytes are the sketch table entries.
+  for (auto i = 0; i<c._num_buckets*c._num_hashes ; ++i){
+    ptr += copy_from_mem(ptr, c._sketch_array[i]) ;
+  }
+  return c;
 }
+
+
 } /* namespace datasketches */
 
 #endif

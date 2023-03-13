@@ -19,6 +19,7 @@ class count_min_sketch{
   static_assert(std::is_arithmetic<W>::value, "Arithmetic type expected");
 public:
 
+  using vector_bytes = std::vector<uint8_t>;
   /**
   * Creates an instance of the sketch given parameters _num_hashes, _num_buckets and hash seed, `seed`.
   * @param num_hashes : number of hash functions in the sketch. Equivalently the number of rows in the array
@@ -33,7 +34,7 @@ public:
   /**
   * @return configured _num_hashes of this sketch
   */
-  uint16_t get_num_hashes() const;
+  uint8_t get_num_hashes() const;
 
   /**
   * @return configured _num_buckets of this sketch
@@ -215,6 +216,15 @@ public:
   void serialize(std::ostream& os) const;
 
   /**
+   * This method serializes the sketch as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is an uninitialized space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * @param header_size_bytes space to reserve in front of the sketch
+   */
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+
+  /**
  * This method deserializes a sketch from a given stream.
  * @param is input stream
  * @param seed the seed for the hash function that was used to create the sketch
@@ -223,8 +233,17 @@ public:
   //static count_min_sketch deserialize(std::istream& is, uint64_t seed=DEFAULT_SEED) const;
   static count_min_sketch deserialize(std::istream& is, uint64_t seed) ;
 
+  /**
+ * This method deserializes a sketch from a given array of bytes.
+ * @param bytes pointer to the array of bytes
+ * @param size the size of the array
+ * @param seed the seed for the hash function that was used to create the sketch
+ * @return an instance of the sketch
+ */
+  static count_min_sketch deserialize(const void* bytes, size_t size, uint64_t seed=DEFAULT_SEED);
+
 private:
-  uint16_t _num_hashes ;
+  uint8_t _num_hashes ;
   uint32_t _num_buckets ;
   std::vector<W> _sketch_array ; // the array stored by the sketch
   uint64_t _seed ;

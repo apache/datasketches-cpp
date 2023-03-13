@@ -215,9 +215,72 @@ TEST_CASE("CountMin sketch: serialize-deserialize non-empty", "[cm_sketch]"){
   for(uint64_t i=0 ; i < 10; ++i){
     REQUIRE(c.get_estimate(i) == d.get_estimate(i)) ;
   }
+
+  auto c_it = c.begin() ;
+  auto d_it = d.begin() ;
+  while(c_it != c.end()){
+    REQUIRE(*c_it == *d_it) ;
+    ++c_it ;
+    ++d_it ;
+  }
+
   std::ofstream os("count_min-non-empty.bin");
   c.serialize(os);
 }
+
+TEST_CASE("CountMin sketch: bytes serialize-deserialize empty", "[cm_sketch]"){
+  uint8_t n_hashes = 3 ;
+  uint32_t n_buckets = 1024 ;
+  count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
+  auto bytes = c.serialize() ;
+
+  auto d = count_min_sketch<uint64_t>::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED) ;
+
+    REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
+    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+    REQUIRE(c.get_seed() == d.get_seed()) ;
+    REQUIRE(c.get_estimate(0) == d.get_estimate(0)) ;
+    REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
+
+    // Check that all entries are equal and 0
+    for(auto di: d){
+      REQUIRE(di == 0) ;
+    }
+}
+
+
+  TEST_CASE("CountMin sketch: bytes serialize-deserialize non-empty", "[cm_sketch]"){
+    uint8_t n_hashes = 3 ;
+    uint32_t n_buckets = 3 ;
+    count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
+    for(uint64_t i=0 ; i < 10; ++i) c.update(i,10*i*i) ;
+
+    auto bytes = c.serialize() ;
+    auto d = count_min_sketch<uint64_t>::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED) ;
+
+    REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
+    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+    REQUIRE(c.get_seed() == d.get_seed()) ;
+    REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
+
+    // Check that all entries are equal
+    auto c_it = c.begin() ;
+    auto d_it = d.begin() ;
+    while(c_it != c.end()){
+      REQUIRE(*c_it == *d_it) ;
+      ++c_it ;
+      ++d_it ;
+    }
+
+    // Check that the estimates agree
+    for(uint64_t i=0 ; i < 10; ++i){
+      REQUIRE(c.get_estimate(i) == d.get_estimate(i)) ;
+    }
+
+  }
+
 
 } /* namespace datasketches */
 
