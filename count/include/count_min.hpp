@@ -161,6 +161,14 @@ public:
   */
   void merge(const count_min_sketch<W> &other_sketch) ;
 
+  /**
+   * Returns true if this sketch is empty.
+   * A Count Min Sketch is defined to be empty iff weight == 0
+   * This can only ever happen if all items inserted to the sketch have weights that cancel each other out.
+   * @return empty flag
+   */
+  bool is_empty() const ;
+
   // Iterators
   using const_iterator = typename std::vector<W>::const_iterator ;
   const_iterator begin() const;
@@ -198,10 +206,10 @@ public:
    *
 
   0   ||    0   |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
-      ||is_empty|00000001|00000001|00000001|xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
+      ||is_empty|ser__ver|familyId| flags  |xxxxxxxx|xxxxxxxx|xxxxxxxx|xxxxxxxx|
 
   1   ||    0   |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
-      ||num_hash|----------- _num_buckets -----------|__seed__ __hash__|xxxxxxxx|
+      ||---------- _num_buckets -----------|num_hash|__seed__ __hash__|xxxxxxxx|
 
   2   ||    0   |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
       ||---------------------------- total  weight ----------------------------|
@@ -213,6 +221,7 @@ public:
    *
    *
    */
+
   void serialize(std::ostream& os) const;
 
   /**
@@ -249,6 +258,24 @@ private:
   uint64_t _seed ;
   W _total_weight ;
   std::vector<uint64_t> hash_seeds ;
+
+  enum flags {IS_EMPTY};
+  static const uint8_t PREAMBLE_LONGS_SHORT = 2; // Empty -> need second byte for sketch parameters
+  static const uint8_t PREAMBLE_LONGS_FULL = 3; // Not empty -> need (at least) third byte for total weight.
+  static const uint8_t SERIAL_VERSION_1 = 1;
+  static const uint8_t FAMILY_ID = 1;
+  //static const size_t DATA_START = 24;
+  static const uint8_t NULL_8 = 0;
+  static const uint32_t NULL_32 = 0;
+
+  /**
+   * Throws an error if the header is not valid.
+   * @param preamble_longs
+   * @param serial_version
+   * @param flags_byte
+   */
+  static void check_header_validity(uint8_t preamble_longs, uint8_t serial_version, uint8_t family_id, uint8_t flags_byte);
+
 
 
 

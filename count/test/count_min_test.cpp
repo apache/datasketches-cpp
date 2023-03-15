@@ -22,6 +22,7 @@ TEST_CASE("CM init"){
     REQUIRE(c.get_num_hashes() == n_hashes) ;
     REQUIRE(c.get_num_buckets() == n_buckets) ;
     REQUIRE(c.get_seed() == seed) ;
+    REQUIRE(c.is_empty()) ;
 
     for(auto x: c){
       REQUIRE(x == 0) ;
@@ -64,8 +65,10 @@ TEST_CASE("CM one update: uint64_t"){
   count_min_sketch<uint64_t> c(n_hashes, n_buckets, seed) ;
   std::string x = "x" ;
 
+  REQUIRE(c.is_empty()) ;
   REQUIRE(c.get_estimate("x") == 0) ; // No items in sketch so estimates should be zero
   c.update(x) ;
+  REQUIRE(!c.is_empty()) ;
   REQUIRE(c.get_estimate(x) == 1) ;
   inserted_weight += 1 ;
 
@@ -186,7 +189,6 @@ TEST_CASE("CountMin sketch: serialize-deserialize empty", "[cm_sketch]"){
     count_min_sketch<uint64_t> d = count_min_sketch<uint64_t>::deserialize(s, DEFAULT_SEED) ;
     REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
     REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
-    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
     REQUIRE(c.get_seed() == d.get_seed()) ;
     REQUIRE(c.get_estimate(0) == d.get_estimate(0)) ;
     REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
@@ -209,7 +211,6 @@ TEST_CASE("CountMin sketch: serialize-deserialize non-empty", "[cm_sketch]"){
   count_min_sketch<uint64_t> d = count_min_sketch<uint64_t>::deserialize(s, DEFAULT_SEED) ;
   REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
   REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
-  REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
   REQUIRE(c.get_seed() == d.get_seed()) ;
   REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
   for(uint64_t i=0 ; i < 10; ++i){
@@ -230,56 +231,55 @@ TEST_CASE("CountMin sketch: serialize-deserialize non-empty", "[cm_sketch]"){
 
 TEST_CASE("CountMin sketch: bytes serialize-deserialize empty", "[cm_sketch]"){
   uint8_t n_hashes = 3 ;
-  uint32_t n_buckets = 1024 ;
+  uint32_t n_buckets = 32 ;
   count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
   auto bytes = c.serialize() ;
 
+  REQUIRE_THROWS_AS(count_min_sketch<uint64_t>::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED-1), std::invalid_argument);
   auto d = count_min_sketch<uint64_t>::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED) ;
+  REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
+  REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+  REQUIRE(c.get_seed() == d.get_seed()) ;
+  REQUIRE(c.get_estimate(0) == d.get_estimate(0)) ;
+  REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
 
-    REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
-    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
-    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
-    REQUIRE(c.get_seed() == d.get_seed()) ;
-    REQUIRE(c.get_estimate(0) == d.get_estimate(0)) ;
-    REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
-
-    // Check that all entries are equal and 0
-    for(auto di: d){
-      REQUIRE(di == 0) ;
-    }
+  // Check that all entries are equal and 0
+  for(auto di: d){
+    REQUIRE(di == 0) ;
+  }
 }
 
 
-  TEST_CASE("CountMin sketch: bytes serialize-deserialize non-empty", "[cm_sketch]"){
-    uint8_t n_hashes = 3 ;
-    uint32_t n_buckets = 3 ;
-    count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
-    for(uint64_t i=0 ; i < 10; ++i) c.update(i,10*i*i) ;
+TEST_CASE("CountMin sketch: bytes serialize-deserialize non-empty", "[cm_sketch]"){
+  uint8_t n_hashes = 5 ;
+  uint32_t n_buckets = 64 ;
+  count_min_sketch<uint64_t> c(n_hashes, n_buckets) ;
+  for(uint64_t i=0 ; i < 10; ++i) c.update(i,10*i*i) ;
 
-    auto bytes = c.serialize() ;
-    auto d = count_min_sketch<uint64_t>::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED) ;
+  auto bytes = c.serialize() ;
+  REQUIRE_THROWS_AS(count_min_sketch<uint64_t>::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED-1), std::invalid_argument);
+  auto d = count_min_sketch<uint64_t>::deserialize(bytes.data(), bytes.size(), DEFAULT_SEED) ;
 
-    REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
-    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
-    REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
-    REQUIRE(c.get_seed() == d.get_seed()) ;
-    REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
+  REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
+  REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
+  REQUIRE(c.get_seed() == d.get_seed()) ;
+  REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
 
-    // Check that all entries are equal
-    auto c_it = c.begin() ;
-    auto d_it = d.begin() ;
-    while(c_it != c.end()){
-      REQUIRE(*c_it == *d_it) ;
-      ++c_it ;
-      ++d_it ;
-    }
-
-    // Check that the estimates agree
-    for(uint64_t i=0 ; i < 10; ++i){
-      REQUIRE(c.get_estimate(i) == d.get_estimate(i)) ;
-    }
-
+  // Check that all entries are equal
+  auto c_it = c.begin() ;
+  auto d_it = d.begin() ;
+  while(c_it != c.end()){
+    REQUIRE(*c_it == *d_it) ;
+    ++c_it ;
+    ++d_it ;
   }
+
+  // Check that the estimates agree
+  for(uint64_t i=0 ; i < 10; ++i){
+    REQUIRE(c.get_estimate(i) == d.get_estimate(i)) ;
+  }
+
+}
 
 
 } /* namespace datasketches */

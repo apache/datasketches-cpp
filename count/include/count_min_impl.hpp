@@ -248,125 +248,133 @@ return _sketch_array.end();
 
 template<typename W>
 void count_min_sketch<W>::serialize(std::ostream& os) const {
-  const uint8_t preamble_longs = (_total_weight == 0) ? 1 : 0; // is_empty is 1 if weight == 0
-  write(os, preamble_longs);
+  // Variable table bytes is used to determine how many bytes to allocate for the sketch table.
+  // We assume that 8 bytes are necessary per entry in the table.
+  // The extra 1 is for the total_weight variable which will be zero iff the sketch is empty.
+  // Hence, table_bytes == 0 iff sketch is empty <=> preamble_longs == 1
+  const size_t table_bytes(is_empty() ? 0 : (1 + _num_hashes) * _num_buckets);
+  const size_t size = sizeof(uint64_t) * (2 + table_bytes);
+  vector_bytes bytes(size, 0);
 
-  // These are placeholders for now
-  const uint8_t serial_version = 1 ;
-  write(os, serial_version) ;
-  const uint8_t family_id = 1 ;
+  // Long 0
+  // The first 4 (of 8) bytes are either 1 or 0 (denoting empty vs non-empty) and the final 4 bytes are unused.
+  const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_SHORT : PREAMBLE_LONGS_FULL;
+  const uint8_t ser_ver = SERIAL_VERSION_1;
+  const uint8_t family_id = FAMILY_ID ;
+  const uint8_t flags_byte = (is_empty() ? 1 << flags::IS_EMPTY : 0);
+  const uint32_t unused32 = NULL_32 ;
+  write(os, preamble_longs) ;
+  write(os, ser_ver) ;
   write(os, family_id) ;
-  const uint8_t flags = 1 ;
-  write(os, flags) ;
+  write(os, flags_byte) ;
+  write(os, unused32) ;
 
-  // Now write 4 zeros to complete the 0th block of 8 bytes
-  const uint32_t null_characters_32 = 0 ;
-  write(os, null_characters_32) ;
-
-  // At index 1 for the writing
-  // Sketch parameters at bytes[1][0,1,2,3,4]
-  const uint8_t nhashes = _num_hashes ;
-  write(os, nhashes) ;
+  // Long 1
   const uint32_t nbuckets = _num_buckets ;
-  write(os, nbuckets) ;
-
-  // Seed hash at bytes[1][5, 6]
+  const uint8_t nhashes = _num_hashes ;
   const uint16_t seed_hash(compute_seed_hash(_seed));
-  write(os, seed_hash);
+  const uint8_t unused8 =  NULL_8;
+  write(os, nbuckets) ;
+  write(os, nhashes) ;
+  write(os, seed_hash) ;
+  write(os, unused8) ;
+  if (is_empty()) return  ; // sketch is empty, no need to write further bytes.
 
-  // Now write 1 zero to complete the bytes[1]7]
-  const uint8_t null_characters_8 = 0 ;
-  write(os, null_characters_8) ;
-
-  if (preamble_longs == 1) return ; // sketch is empty, no need to write any more.
-
-  // In the next 8 bytes, write the total weight
+  // Long 2
   const W t_weight = _total_weight ;
   write(os, t_weight) ;
 
-  // Any remaining bytes are consumed by writing the array values.
+  // Long  3 onwards: remaining bytes are consumed by writing the weight and the array values.
   auto it = _sketch_array.begin() ;
   while(it != _sketch_array.end()){
-    write(os, *it);
+    write(os, *it) ;
     ++it ;
   }
 }
 
-  template<typename W>
-  count_min_sketch<W> count_min_sketch<W>::deserialize(std::istream& is, uint64_t seed) {
+template<typename W>
+count_min_sketch<W> count_min_sketch<W>::deserialize(std::istream& is, uint64_t seed) {
 
-    const auto is_empty = read<uint8_t>(is) ;
-    const auto serial_version = read<uint8_t>(is) ;
-    const auto family_id = read<uint8_t>(is) ;
-    const auto flags = read<uint8_t>(is) ;
-    read<uint32_t>(is) ; // 4 unused bytes
+  // First 8 bytes are 4 bytes of preamble and 4 unused bytes.
+  const auto preamble_longs = read<uint8_t>(is) ;
+  const auto serial_version = read<uint8_t>(is) ;
+  const auto family_id = read<uint8_t>(is) ;
+  const auto flags_byte = read<uint8_t>(is) ;
+  read<uint32_t>(is) ; // 4 unused bytes
 
-    // Sketch parameters
-    const auto nhashes = read<uint8_t>(is);
-    const auto nbuckets = read<uint32_t>(is) ;
-    const auto seed_hash = read<uint16_t>(is) ;
-    read<uint8_t>(is) ; // 1 unused byte
+  // Sketch parameters
+  const auto nbuckets = read<uint32_t>(is) ;
+  const auto nhashes = read<uint8_t>(is);
+  const auto seed_hash = read<uint16_t>(is) ;
+  read<uint8_t>(is) ; // 1 unused byte
 
-    if (seed_hash != compute_seed_hash(seed)) {
-      throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
-                                  + std::to_string(compute_seed_hash(seed)));
-    }
-    count_min_sketch<W> c(nhashes, nbuckets, seed) ;
-    if (is_empty == 1) return c ; // sketch is empty, no need to read any more.
-
-    // Set the sketch weight and read in the sketch values
-    const auto weight = read<W>(is) ;
-    c._total_weight += weight ;
-    read(is, c._sketch_array.data(), sizeof(W) * c._sketch_array.size());
-
-    return c ;
+  if (seed_hash != compute_seed_hash(seed)) {
+    throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
+                                + std::to_string(compute_seed_hash(seed)));
   }
+  count_min_sketch<W> c(nhashes, nbuckets, seed) ;
+  const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+  if (is_empty == 1) return c ; // sketch is empty, no need to read further.
+
+  // Set the sketch weight and read in the sketch values
+  const auto weight = read<W>(is) ;
+  c._total_weight += weight ;
+  read(is, c._sketch_array.data(), sizeof(W) * c._sketch_array.size());
+
+  return c ;
+}
 
 template<typename W>
 auto count_min_sketch<W>::serialize(unsigned header_size_bytes) const -> vector_bytes {
 
   // The first 4 (of 8) bytes are either 1 or 0 (denoting empty vs non-empty) and the final 4 bytes are unused.
-  const uint8_t preamble_longs =  (_total_weight == 0) ? 1 : 0; // is_empty == 1 iff weight == 0
-  static const uint8_t serial_version = 1 ;
-  static const uint8_t family_id = 1 ;
-  static const uint8_t flags = 1 ;
-  static const uint32_t null_characters_32 = 0 ;
+  const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_SHORT : PREAMBLE_LONGS_FULL;
 
   // Variable table bytes is used to determine how many bytes to allocate for the sketch table.
   // We assume that 8 bytes are necessary per entry in the table.
   // The extra 1 is for the total_weight variable which will be zero iff the sketch is empty.
   // Hence, table_bytes == 0 iff sketch is empty <=> preamble_longs == 1
-  const size_t table_bytes( preamble_longs ? 0 : (1+_num_hashes)*_num_buckets) ;
-  const size_t size = header_size_bytes + sizeof(uint64_t)*(2 + table_bytes)  ;
-  vector_bytes bytes(size, 0) ;
+  const size_t table_bytes(is_empty() ? 0 : (1 + _num_hashes) * _num_buckets);
+  const size_t size = header_size_bytes + sizeof(uint64_t) * (2 + table_bytes);
+  vector_bytes bytes(size, 0);
+  uint8_t *ptr = bytes.data() + header_size_bytes;
+  //std::cout<< "Preamble Long: " << preamble_longs << std::endl;
+  //std::cout<< "Writing " << size << " bytes." << std::endl;
 
-  uint8_t* ptr = bytes.data() + header_size_bytes;
-  ptr += copy_to_mem(preamble_longs, ptr) ;
-  ptr += copy_to_mem(serial_version, ptr) ;
-  ptr += copy_to_mem(family_id, ptr) ;
-  ptr += copy_to_mem(flags, ptr) ;
-  ptr += copy_to_mem(null_characters_32, ptr) ;
+  // Long 0
+  ptr += copy_to_mem(preamble_longs, ptr);
+  const uint8_t ser_ver = SERIAL_VERSION_1;
+  ptr += copy_to_mem(ser_ver, ptr);
+  const uint8_t family_id = FAMILY_ID ;
+  ptr += copy_to_mem(family_id, ptr);
+  const uint8_t flags_byte = (is_empty() ? 1 << flags::IS_EMPTY : 0);
+  ptr += copy_to_mem(flags_byte, ptr);
+  const uint32_t unused32 = NULL_32 ;
+  ptr += copy_to_mem(unused32, ptr) ;
 
-  // Second 8 bytes
-  static const uint8_t nhashes = _num_hashes ;
-  static const uint32_t nbuckets = _num_buckets ;
-  static const uint16_t seed_hash(compute_seed_hash(_seed));
-  static const uint8_t null_characters_8 = 0 ;
-  ptr += copy_to_mem(nhashes, ptr) ;
+  // Long 1
+  const uint32_t nbuckets = _num_buckets ;
+  const uint8_t nhashes = _num_hashes ;
+  const uint16_t seed_hash(compute_seed_hash(_seed));
+  const uint8_t null_characters_8 =  NULL_8;
   ptr += copy_to_mem(nbuckets, ptr) ;
+  ptr += copy_to_mem(nhashes, ptr) ;
   ptr += copy_to_mem(seed_hash, ptr) ;
   ptr += copy_to_mem(null_characters_8, ptr) ;
-  if (preamble_longs == 1) return bytes  ; // sketch is empty, no need to write further bytes.
+  if (is_empty()) return bytes  ; // sketch is empty, no need to write further bytes.
 
-  // Remaining bytes are consumed by writing the weight and the array values.
-  static const W t_weight = _total_weight ;
+  // Long 2
+  const W t_weight = _total_weight ;
   ptr += copy_to_mem(t_weight, ptr) ;
+
+  // Long  3 onwards: remaining bytes are consumed by writing the weight and the array values.
   auto it = _sketch_array.begin() ;
   while(it != _sketch_array.end()){
     ptr += copy_to_mem(*it, ptr) ;
     ++it ;
   }
-  return bytes ;
+
+  return bytes;
 }
 
 template<typename W>
@@ -374,22 +382,22 @@ count_min_sketch<W> count_min_sketch<W>::deserialize(const void* bytes, size_t s
   const char* ptr = static_cast<const char*>(bytes);
 
   // First 8 bytes are 4 bytes of preamble and 4 unused bytes.
-  uint8_t is_empty ;
-  ptr += copy_from_mem(ptr, is_empty) ;
+  uint8_t preamble_longs ;
+  ptr += copy_from_mem(ptr, preamble_longs) ;
   uint8_t serial_version ;
   ptr += copy_from_mem(ptr, serial_version) ;
   uint8_t family_id ;
   ptr += copy_from_mem(ptr, family_id) ;
-  uint8_t flags ;
-  ptr += copy_from_mem(ptr, flags) ;
+  uint8_t flags_byte ;
+  ptr += copy_from_mem(ptr, flags_byte) ;
   ptr += sizeof(uint32_t);
-
+  
   // Second 8 bytes are the sketch parameters with a final, unused byte.
-  uint8_t nhashes ;
   uint32_t nbuckets ;
+  uint8_t nhashes ;
   uint16_t seed_hash ;
-  ptr += copy_from_mem(ptr, nhashes) ;
   ptr += copy_from_mem(ptr, nbuckets) ;
+  ptr += copy_from_mem(ptr, nhashes) ;
   ptr += copy_from_mem(ptr, seed_hash) ;
   ptr += sizeof(uint8_t);
 
@@ -398,9 +406,11 @@ count_min_sketch<W> count_min_sketch<W>::deserialize(const void* bytes, size_t s
                                 + std::to_string(compute_seed_hash(seed)));
   }
   count_min_sketch<W> c(nhashes, nbuckets, seed) ;
-  if (is_empty == 1) return c ; // sketch is empty, no need to read further.
+  check_header_validity(preamble_longs, serial_version, family_id, flags_byte);
+  const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+  if (is_empty) return c ; // sketch is empty, no need to read further.
 
-  // Third set of 8 bytes are the weight.
+  // Long 2 is the weight.
   W weight;
   ptr += copy_from_mem(ptr, weight) ;
   c._total_weight += weight ;
@@ -410,6 +420,35 @@ count_min_sketch<W> count_min_sketch<W>::deserialize(const void* bytes, size_t s
     ptr += copy_from_mem(ptr, c._sketch_array[i]) ;
   }
   return c;
+}
+
+template<typename W>
+bool count_min_sketch<W>::is_empty() const {
+  return _total_weight == 0;
+}
+
+template<typename W>
+void count_min_sketch<W>::check_header_validity(uint8_t preamble_longs, uint8_t serial_version,  uint8_t family_id, uint8_t flags_byte) {
+  const bool empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+
+  const uint8_t sw = (empty ? 1 : 0) + (2 * serial_version) + (4 * family_id) + (32 * (preamble_longs & 0x3F));
+  bool valid = true;
+
+  switch (sw) { // exhaustive list and description of all valid cases
+    case 71 : break; // empty, ser_ver==1, family==1, preLongs=2;
+    case 102 : break ; // !empty, ser_ver==1, family==1, preLongs=3 ;
+    default : // all other case values are invalid
+      valid = false;
+  }
+
+  if (!valid) {
+    std::ostringstream os;
+    os << "Possible sketch corruption. Inconsistent state: "
+       << "preamble_longs = " << preamble_longs
+       << ", empty = " << (empty ? "true" : "false")
+       << ", serialization_version = " << serial_version ;
+    throw std::invalid_argument(os.str());
+  }
 }
 
 
