@@ -34,7 +34,7 @@ include(CMakeDependentOption)
 ### Require out-of-source builds
 file(TO_CMAKE_PATH "${PROJECT_BINARY_DIR}/CMakeLists.txt" LOC_PATH)
 if(EXISTS "${LOC_PATH}")
-    message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
+  message(FATAL_ERROR "You cannot build in a source directory (or any directory with a CMakeLists.txt file). Please make a build subdirectory. Feel free to remove CMakeCache.txt and CMakeFiles.")
 endif()
 
 # Ensure builds on Windows export all symbols
@@ -69,7 +69,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 ###### OPTIONS ######
 # Enable testing
 option(BUILD_TESTS "Build unit tests" ON)
-if (BUILD_TESTS)  
+if (BUILD_TESTS)
   enable_testing()
 endif()
 
@@ -93,10 +93,10 @@ set(default_build_type "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
   set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
-      STRING "Choose the type of build." FORCE)
+          STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+          "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
 ###### TARGETS ######
@@ -115,47 +115,48 @@ add_subdirectory(sampling)
 add_subdirectory(tuple)
 add_subdirectory(req)
 add_subdirectory(quantiles)
+add_subdirectory(count)
 
 if (WITH_PYTHON)
   add_subdirectory(python)
 endif()
 
-target_link_libraries(datasketches INTERFACE hll cpc kll fi theta sampling req quantiles)
+target_link_libraries(datasketches INTERFACE hll cpc kll fi theta sampling req quantiles count)
 
 if (COVERAGE)
   find_program(LCOV_PATH NAMES "lcov")
   find_program(GENHTML_PATH NAMES "genhtml")
   if (NOT LCOV_PATH-NOTFOUND AND NOT GENHTML_PATH-NOTFOUND)
     add_custom_target(coverage_report
-      COMMAND ${LCOV_PATH} --capture --exclude '*/test/*' --exclude '/Library/*' --exclude '/usr/include/*' --directory . --output-file lcov.info
-      COMMAND ${GENHTML_PATH} --legend lcov.info --output-directory coverage --demangle-cpp)
-    endif()
+            COMMAND ${LCOV_PATH} --capture --exclude '*/test/*' --exclude '/Library/*' --exclude '/usr/include/*' --directory . --output-file lcov.info
+            COMMAND ${GENHTML_PATH} --legend lcov.info --output-directory coverage --demangle-cpp)
+  endif()
 endif()
 
 
 # # Installation
 install(TARGETS datasketches
-  EXPORT ${PROJECT_NAME}
-  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
-)
+        EXPORT ${PROJECT_NAME}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DataSketches
+        )
 
 # Packaging
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfigVersion.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
+        "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfigVersion.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
 )
 configure_package_config_file(
-    cmake/DataSketchesConfig.cmake.in
-    "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfig.cmake"
-    INSTALL_DESTINATION lib/DataSketches/cmake
-    PATH_VARS CMAKE_INSTALL_INCLUDEDIR
+        cmake/DataSketchesConfig.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfig.cmake"
+        INSTALL_DESTINATION lib/DataSketches/cmake
+        PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
 install(EXPORT ${PROJECT_NAME} DESTINATION lib/DataSketches/cmake)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfigVersion.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/DataSketchesConfig.cmake"
         DESTINATION lib/DataSketches/cmake)
 
 
