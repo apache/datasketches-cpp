@@ -97,7 +97,6 @@ void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
   // at this point src_k >= dst_k
   const uint32_t dst_mask = (1 << this->getLgConfigK()) - 1;
   // special treatment below to optimize performance
-  // in particular to avoid a virtual method call in a loop
   if (src.getTgtHllType() == target_hll_type::HLL_8) {
     uint32_t i = 0;
     for (const auto value: src.getHllArray()) {
@@ -105,9 +104,19 @@ void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
     }
   } else if (src.getTgtHllType() == target_hll_type::HLL_6) {
     const uint32_t src_k = 1 << src.getLgConfigK();
-    for (uint32_t i = 0; i < src_k; ++i) {
-      const uint8_t new_v = static_cast<const Hll6Array<A>&>(src).getSlot(i);
-      processValue(i, dst_mask, new_v);
+    uint32_t i = 0;
+    const uint8_t* ptr = src.getHllArray().data();
+    while (i < src_k) {
+      uint8_t value = *ptr & 0x3f;
+      processValue(i++, dst_mask, value);
+      value = *ptr++ >> 6;
+      value |= (*ptr & 0x0f) << 2;
+      processValue(i++, dst_mask, value);
+      value = *ptr++ >> 4;
+      value |= (*ptr & 3) << 4;
+      processValue(i++, dst_mask, value);
+      value = *ptr++ >> 2;
+      processValue(i++, dst_mask, value);
     }
   } else { // HLL_4
     const auto& src4 = static_cast<const Hll4Array<A>&>(src);
