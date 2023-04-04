@@ -513,6 +513,11 @@ AuxHashMap<A>* HllArray<A>::getAuxHashMap() const {
 }
 
 template<typename A>
+const vector_u8<A>& HllArray<A>::getHllArray() const {
+  return hllByteArr_;
+}
+
+template<typename A>
 void HllArray<A>::hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue) {
   const uint32_t configK = 1 << this->getLgConfigK();
   // update hip BEFORE updating kxq

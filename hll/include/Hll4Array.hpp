@@ -26,9 +26,6 @@
 namespace datasketches {
 
 template<typename A>
-class Hll4Iterator;
-
-template<typename A>
 class Hll4Array final : public HllArray<A> {
   public:
     explicit Hll4Array(uint8_t lgConfigK, bool startFullSize, const A& allocator);
@@ -41,7 +38,7 @@ class Hll4Array final : public HllArray<A> {
 
     inline uint8_t getSlot(uint32_t slotNo) const;
     inline void putSlot(uint32_t slotNo, uint8_t value);
-    inline uint8_t get_value(uint32_t index) const;
+    inline uint8_t adjustRawValue(uint32_t index, uint8_t value) const;
 
     virtual uint32_t getUpdatableSerializationBytes() const;
     virtual uint32_t getHllByteArrBytes() const;

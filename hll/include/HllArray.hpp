@@ -92,6 +92,8 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual A getAllocator() const;
 
+    const vector_u8<A>& getHllArray() const;
+
   protected:
     void hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue);
     double getHllBitMapEstimate() const;
