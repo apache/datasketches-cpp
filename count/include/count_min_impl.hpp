@@ -363,7 +363,7 @@ size_t count_min_sketch<W,A>::get_serialized_size_bytes() const {
 
   // If the sketch is empty, we're done. Otherwise, we need the total weight
   // held by the sketch as well as a data table of size (num_buckets * num_hashes)
-  return preamble_longs + (is_empty() ? 0 : sizeof(W) * (1 + _num_buckets * _num_hashes));
+  return (preamble_longs * sizeof(uint64_t)) + (is_empty() ? 0 : sizeof(W) * (1 + _num_buckets * _num_hashes));
 }
 
 template<typename W, typename A>

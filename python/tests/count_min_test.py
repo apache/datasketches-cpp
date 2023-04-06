@@ -68,6 +68,7 @@ class CountMinTest(unittest.TestCase):
 
     # finally, serialize and reconstruct
     cm_bytes = cm.serialize()
+    self.assertEqual(cm.get_serialized_size_bytes(), len(cm_bytes))
     new_cm = count_min_sketch.deserialize(cm_bytes)
 
     # and now interrogate the sketch

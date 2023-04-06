@@ -77,6 +77,8 @@ void bind_count_min_sketch(py::module &m, const char* name) {
          "Returns an lower bound on the estimate for the provided string")
     .def("merge", &count_min_sketch<W>::merge, py::arg("other"),
          "Merges the provided other sketch into this one")
+    .def("get_serialized_size_bytes", &count_min_sketch<W>::get_serialized_size_bytes,
+         "Returns the size in bytes of the serialized image of the sketch")
     .def(
         "serialize",
         [](const count_min_sketch<W>& sk) {
