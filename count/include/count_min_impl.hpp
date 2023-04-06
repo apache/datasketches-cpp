@@ -20,13 +20,14 @@
 #ifndef COUNT_MIN_IMPL_HPP_
 #define COUNT_MIN_IMPL_HPP_
 
-#include "MurmurHash3.h"
-#include "count_min.hpp"
-#include "memory_operations.hpp"
-
+#include <algorithm>
 #include <iomanip>
 #include <random>
 #include <sstream>
+
+#include "MurmurHash3.h"
+#include "count_min.hpp"
+#include "memory_operations.hpp"
 
 namespace datasketches {
 
