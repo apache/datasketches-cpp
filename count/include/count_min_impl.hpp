@@ -5,8 +5,9 @@
 #include "count_min.hpp"
 #include "memory_operations.hpp"
 
+#include <iomanip>
 #include <random>
-
+#include <sstream>
 
 namespace datasketches {
 
@@ -123,6 +124,9 @@ template<typename W>
 W count_min_sketch<W>::get_estimate(uint64_t item) const {return get_estimate(&item, sizeof(item));}
 
 template<typename W>
+W count_min_sketch<W>::get_estimate(int64_t item) const {return get_estimate(&item, sizeof(item));}
+
+template<typename W>
 W count_min_sketch<W>::get_estimate(const std::string& item) const {
   if (item.empty()) return 0 ; // Empty strings are not inserted into the sketch.
   return get_estimate(item.c_str(), item.length());
@@ -149,6 +153,16 @@ void count_min_sketch<W>::update(uint64_t item, W weight) {
 
 template<typename W>
 void count_min_sketch<W>::update(uint64_t item) {
+  update(&item, sizeof(item), 1);
+}
+
+template<typename W>
+void count_min_sketch<W>::update(int64_t item, W weight) {
+  update(&item, sizeof(item), weight);
+}
+
+template<typename W>
+void count_min_sketch<W>::update(int64_t item) {
   update(&item, sizeof(item), 1);
 }
 
@@ -182,6 +196,9 @@ template<typename W>
 W count_min_sketch<W>::get_upper_bound(uint64_t item) const {return get_upper_bound(&item, sizeof(item));}
 
 template<typename W>
+W count_min_sketch<W>::get_upper_bound(int64_t item) const {return get_upper_bound(&item, sizeof(item));}
+
+template<typename W>
 W count_min_sketch<W>::get_upper_bound(const std::string& item) const {
   if (item.empty()) return 0 ; // Empty strings are not inserted into the sketch.
   return get_upper_bound(item.c_str(), item.length());
@@ -192,9 +209,11 @@ W count_min_sketch<W>::get_upper_bound(const void* item, size_t size) const {
   return get_estimate(item, size) + get_relative_error()*get_total_weight() ;
 }
 
-
 template<typename W>
 W count_min_sketch<W>::get_lower_bound(uint64_t item) const {return get_lower_bound(&item, sizeof(item));}
+
+template<typename W>
+W count_min_sketch<W>::get_lower_bound(int64_t item) const {return get_lower_bound(&item, sizeof(item));}
 
 template<typename W>
 W count_min_sketch<W>::get_lower_bound(const std::string& item) const {
@@ -302,6 +321,8 @@ count_min_sketch<W> count_min_sketch<W>::deserialize(std::istream& is, uint64_t 
   const auto flags_byte = read<uint8_t>(is) ;
   read<uint32_t>(is) ; // 4 unused bytes
 
+  check_header_validity(preamble_longs, serial_version, family_id, flags_byte);
+
   // Sketch parameters
   const auto nbuckets = read<uint32_t>(is) ;
   const auto nhashes = read<uint8_t>(is);
@@ -391,7 +412,9 @@ count_min_sketch<W> count_min_sketch<W>::deserialize(const void* bytes, size_t s
   uint8_t flags_byte ;
   ptr += copy_from_mem(ptr, flags_byte) ;
   ptr += sizeof(uint32_t);
-  
+
+  check_header_validity(preamble_longs, serial_version, family_id, flags_byte);
+
   // Second 8 bytes are the sketch parameters with a final, unused byte.
   uint32_t nbuckets ;
   uint8_t nhashes ;
@@ -406,7 +429,6 @@ count_min_sketch<W> count_min_sketch<W>::deserialize(const void* bytes, size_t s
                                 + std::to_string(compute_seed_hash(seed)));
   }
   count_min_sketch<W> c(nhashes, nbuckets, seed) ;
-  check_header_validity(preamble_longs, serial_version, family_id, flags_byte);
   const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
   if (is_empty) return c ; // sketch is empty, no need to read further.
 
@@ -416,7 +438,7 @@ count_min_sketch<W> count_min_sketch<W>::deserialize(const void* bytes, size_t s
   c._total_weight += weight ;
 
   // All remaining bytes are the sketch table entries.
-  for (auto i = 0; i<c._num_buckets*c._num_hashes ; ++i){
+  for (size_t i = 0; i<c._num_buckets*c._num_hashes ; ++i){
     ptr += copy_from_mem(ptr, c._sketch_array[i]) ;
   }
   return c;
@@ -425,6 +447,30 @@ count_min_sketch<W> count_min_sketch<W>::deserialize(const void* bytes, size_t s
 template<typename W>
 bool count_min_sketch<W>::is_empty() const {
   return _total_weight == 0;
+}
+
+template<typename W>
+string<std::allocator<char>> count_min_sketch<W>::to_string() const {
+  // count the number of used entries in the sketch
+  uint64_t num_nonzero = 0;
+  for (auto entry : _sketch_array) {
+    if (entry != static_cast<W>(0.0))
+      ++num_nonzero;
+  }
+
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
+  os << "### KLL sketch summary:" << std::endl;
+  os << "   num hashes     : " << static_cast<uint32_t>(_num_hashes) << std::endl;
+  os << "   num buckets    : " << _num_buckets << std::endl;
+  os << "   capacity bins  : " << _sketch_array.size() << std::endl;
+  os << "   filled bins    : " << num_nonzero << std::endl;
+  os << "   pct filled     : " << std::setprecision(3) << (num_nonzero * 100.0) / _sketch_array.size() << "%" << std::endl;
+  os << "### End sketch summary" << std::endl;
+
+  //return string<A>(os.str().c_str(), allocator_);
+  return string<std::allocator<char>>(os.str().c_str());
 }
 
 template<typename W>

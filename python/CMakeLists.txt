@@ -45,6 +45,7 @@ target_link_libraries(python
     sampling
     req
     quantiles
+    count
     pybind11::module
 )
 
@@ -76,6 +77,7 @@ target_sources(python
     src/req_wrapper.cpp
     src/quantiles_wrapper.cpp
     src/ks_wrapper.cpp
+    src/count_wrapper.cpp
     src/vector_of_kll.cpp
     src/py_serde.cpp
 )
