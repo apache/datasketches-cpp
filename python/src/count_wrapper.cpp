@@ -34,8 +34,8 @@ void bind_count_min_sketch(py::module &m, const char* name) {
     .def_static("suggest_num_buckets", &count_min_sketch<W>::suggest_num_buckets, py::arg("relative_error"),
                 "Suggests the number of buckets needed to achieve an accuracy within the provided "
                 "relative_error. For example, when relative_error = 0.05, the returned frequency estimates "
-                "satisfy the 'relative_error' guarantee that never overestimates the weights by may "
-                "underestimate hte weights by 5% of the total weight in the sketch. "
+                "satisfy the 'relative_error' guarantee that never overestimates the weights but may "
+                "underestimate the weights by 5% of the total weight in the sketch. "
                 "Returns the number of hash buckets at every level of the sketch required in order to obtain "
                 "the specified relative error.")
     .def_static("suggest_num_hashes", &count_min_sketch<W>::suggest_num_hashes, py::arg("confidence"),

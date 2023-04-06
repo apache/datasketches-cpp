@@ -62,8 +62,8 @@ class CountMinTest(unittest.TestCase):
       cm2.update(i, i)
     cm.merge(cm2)
 
-    # and the estimated weight for the meerged values should now be
-    # at least 2x the value
+    # and the estimated weight for the overlapped meerged values
+    # (n/2 to n) should now be at least 2x the value
     self.assertGreaterEqual(cm.get_estimate(n), 2 * n)
 
     # finally, serialize and reconstruct
