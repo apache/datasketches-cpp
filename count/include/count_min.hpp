@@ -206,7 +206,7 @@ public:
   string<Allocator> to_string() const;
 
   // Iterators
-  using const_iterator = typename std::vector<W>::const_iterator ;
+  using const_iterator = typename std::vector<W, Allocator>::const_iterator ;
   const_iterator begin() const;
   const_iterator end() const;
 
