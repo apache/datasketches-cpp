@@ -183,7 +183,7 @@ public:
    * @brief Returns a string describing the sketch
    * @return A string with a human-readable description of the sketch
    */
-  string<std::allocator<char>> to_string() const;
+  string<std::allocator<W>> to_string() const;
 
   // Iterators
   using const_iterator = typename std::vector<W>::const_iterator ;

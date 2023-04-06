@@ -450,7 +450,7 @@ bool count_min_sketch<W>::is_empty() const {
 }
 
 template<typename W>
-string<std::allocator<char>> count_min_sketch<W>::to_string() const {
+string<std::allocator<W>> count_min_sketch<W>::to_string() const {
   // count the number of used entries in the sketch
   uint64_t num_nonzero = 0;
   for (auto entry : _sketch_array) {
@@ -461,7 +461,7 @@ string<std::allocator<char>> count_min_sketch<W>::to_string() const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
-  os << "### KLL sketch summary:" << std::endl;
+  os << "### Count Min sketch summary:" << std::endl;
   os << "   num hashes     : " << static_cast<uint32_t>(_num_hashes) << std::endl;
   os << "   num buckets    : " << _num_buckets << std::endl;
   os << "   capacity bins  : " << _sketch_array.size() << std::endl;
@@ -470,7 +470,7 @@ string<std::allocator<char>> count_min_sketch<W>::to_string() const {
   os << "### End sketch summary" << std::endl;
 
   //return string<A>(os.str().c_str(), allocator_);
-  return string<std::allocator<char>>(os.str().c_str());
+  return string<std::allocator<W>>(os.str().c_str());
 }
 
 template<typename W>

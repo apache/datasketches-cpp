@@ -59,9 +59,9 @@ void bind_count_min_sketch(py::module &m, const char* name) {
          "Returns the maximum permissible error for any frequency estimate query")
     .def("get_total_weight", &count_min_sketch<W>::get_total_weight,
          "Returns the total weight currently inserted into the stream")
-    .def("update", static_cast<void (count_min_sketch<W>::*)(int64_t)>(&count_min_sketch<W>::update), py::arg("item"),
+    .def("update", static_cast<void (count_min_sketch<W>::*)(int64_t, W)>(&count_min_sketch<W>::update), py::arg("item"), py::arg("weight")=1.0,
          "Updates the sketch with the given 64-bit integer value")
-    .def("update", static_cast<void (count_min_sketch<W>::*)(const std::string&)>(&count_min_sketch<W>::update), py::arg("item"),
+    .def("update", static_cast<void (count_min_sketch<W>::*)(const std::string&, W)>(&count_min_sketch<W>::update), py::arg("item"), py::arg("weight")=1.0,
          "Updates the sketch with the given string")
     .def("get_estimate", static_cast<W (count_min_sketch<W>::*)(int64_t) const>(&count_min_sketch<W>::get_estimate), py::arg("item"),
          "Returns an estimate of the frequency of the provided 64-bit integer value")
