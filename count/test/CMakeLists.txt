@@ -39,4 +39,5 @@ add_test(
 target_sources(count_min_test
         PRIVATE
         count_min_test.cpp
+        count_min_allocation_test.cpp
         )

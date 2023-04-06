@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 #include <catch2/catch.hpp>
 #include <vector>
 #include <cstring>
@@ -190,7 +209,8 @@ TEST_CASE("CountMin sketch: serialize-deserialize empty", "[cm_sketch]"){
     REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
     REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
     REQUIRE(c.get_seed() == d.get_seed()) ;
-    REQUIRE(c.get_estimate(0) == d.get_estimate(0)) ;
+    uint64_t zero = 0;
+    REQUIRE(c.get_estimate(zero) == d.get_estimate(zero)) ;
     REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
 
     // Check that all entries are equal and 0
@@ -240,7 +260,8 @@ TEST_CASE("CountMin sketch: bytes serialize-deserialize empty", "[cm_sketch]"){
   REQUIRE(c.get_num_hashes() == d.get_num_hashes()) ;
   REQUIRE(c.get_num_buckets() == d.get_num_buckets()) ;
   REQUIRE(c.get_seed() == d.get_seed()) ;
-  REQUIRE(c.get_estimate(0) == d.get_estimate(0)) ;
+  uint64_t zero = 0;
+  REQUIRE(c.get_estimate(zero) == d.get_estimate(zero)) ;
   REQUIRE(c.get_total_weight() == d.get_total_weight()) ;
 
   // Check that all entries are equal and 0
@@ -280,7 +301,6 @@ TEST_CASE("CountMin sketch: bytes serialize-deserialize non-empty", "[cm_sketch]
   }
 
 }
-
 
 } /* namespace datasketches */
 
