@@ -1,3 +1,22 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
 #ifndef COUNT_MIN_HPP_
 #define COUNT_MIN_HPP_
 
@@ -14,12 +33,13 @@ namespace datasketches {
    * @author Charlie Dickens
    */
 
-template<typename W>
+template <typename W,
+          typename Allocator = std::allocator<W>>
 class count_min_sketch{
   static_assert(std::is_arithmetic<W>::value, "Arithmetic type expected");
 public:
+  using allocator_type = Allocator;
 
-  using vector_bytes = std::vector<uint8_t>;
   /**
    * Creates an instance of the sketch given parameters _num_hashes, _num_buckets and hash seed, `seed`.
    * @param num_hashes : number of hash functions in the sketch. Equivalently the number of rows in the array
@@ -29,7 +49,7 @@ public:
    * The items inserted into the sketch can be arbitrary type, so long as they are hashable via murmurhash.
    * Only update and estimate methods are added for uint64_t and string types.
    */
-  count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed = DEFAULT_SEED) ;
+  count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator()) ;
 
   /**
    * @return configured _num_hashes of this sketch
@@ -169,7 +189,7 @@ public:
   /*
    * merges a separate count_min_sketch into this count_min_sketch.
    */
-  void merge(const count_min_sketch<W> &other_sketch) ;
+  void merge(const count_min_sketch &other_sketch) ;
 
   /**
    * Returns true if this sketch is empty.
@@ -183,7 +203,7 @@ public:
    * @brief Returns a string describing the sketch
    * @return A string with a human-readable description of the sketch
    */
-  string<std::allocator<W>> to_string() const;
+  string<Allocator> to_string() const;
 
   // Iterators
   using const_iterator = typename std::vector<W>::const_iterator ;
@@ -238,7 +258,21 @@ public:
    *
    */
 
+  
+  /**
+   * Computes size needed to serialize the current state of the sketch.
+   * @return size in bytes needed to serialize this sketch
+   */
+  size_t get_serialized_size_bytes() const;
+
+  /**
+   * This method serializes a binary image of the sketch to an output stream.
+   */
   void serialize(std::ostream& os) const;
+
+  // This is a convenience alias for users
+  // The type returned by the following serialize method
+  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;
 
   /**
    * This method serializes the sketch as a vector of bytes.
@@ -255,8 +289,7 @@ public:
   * @param seed the seed for the hash function that was used to create the sketch
   * @return an instance of a sketch
   */
-  //static count_min_sketch deserialize(std::istream& is, uint64_t seed=DEFAULT_SEED) const;
-  static count_min_sketch deserialize(std::istream& is, uint64_t seed) ;
+  static count_min_sketch deserialize(std::istream& is, uint64_t seed=DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
   * This method deserializes a sketch from a given array of bytes.
@@ -265,12 +298,19 @@ public:
   * @param seed the seed for the hash function that was used to create the sketch
   * @return an instance of the sketch
   */
-  static count_min_sketch deserialize(const void* bytes, size_t size, uint64_t seed=DEFAULT_SEED);
+  static count_min_sketch deserialize(const void* bytes, size_t size, uint64_t seed=DEFAULT_SEED, const Allocator& allocator = Allocator());
+
+  /**
+   * Returns the allocator for this sketch.
+   * @return allocator
+   */
+  allocator_type get_allocator() const;
 
 private:
+  Allocator _allocator;
   uint8_t _num_hashes ;
   uint32_t _num_buckets ;
-  std::vector<W> _sketch_array ; // the array stored by the sketch
+  std::vector<W, Allocator> _sketch_array ; // the array stored by the sketch
   uint64_t _seed ;
   W _total_weight ;
   std::vector<uint64_t> hash_seeds ;
