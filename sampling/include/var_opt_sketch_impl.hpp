@@ -189,16 +189,16 @@ var_opt_sketch<T, A>::~var_opt_sketch() {
       // destroy everything
       const size_t num_to_destroy = std::min(k_ + 1, curr_items_alloc_);
       for (size_t i = 0; i < num_to_destroy; ++i) {
-        allocator_.destroy(data_ + i);
+        data_[i].~T();
       }
     } else {
       // skip gap or anything unused at the end
       for (size_t i = 0; i < h_; ++i) {
-        allocator_.destroy(data_+ i);
+        data_[i].~T();
       }
     
       for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i) {
-        allocator_.destroy(data_ + i);
+        data_[i].~T();
       }
     }
     allocator_.deallocate(data_, curr_items_alloc_);
@@ -658,14 +658,14 @@ void var_opt_sketch<T, A>::reset() {
     // destroy everything
     const size_t num_to_destroy = std::min(k_ + 1, prev_alloc);
     for (size_t i = 0; i < num_to_destroy; ++i) 
-      allocator_.destroy(data_ + i);
+      data_[i].~T();
   } else {
     // skip gap or anything unused at the end
     for (size_t i = 0; i < h_; ++i)
-      allocator_.destroy(data_+ i);
+      data_[i].~T();
     
     for (size_t i = h_ + 1; i < h_ + r_ + 1; ++i)
-      allocator_.destroy(data_ + i);
+      data_[i].~T();
   }
 
   if (curr_items_alloc_ < prev_alloc) {
@@ -754,10 +754,10 @@ string<A> var_opt_sketch<T, A>::items_to_string(bool print_gap) const {
   const uint32_t array_length = (n_ < k_ ? n_ : k_ + 1);
   for (uint32_t i = 0, display_idx = 0; i < array_length; ++i) {
     if (i == h_ && print_gap) {
-      os << i << ": GAP" << std::endl;
+      os << display_idx << ": GAP" << std::endl;
       ++display_idx;
     } else {
-      os << i << ": " << data_[i] << "\twt = ";
+      os << display_idx << ": " << data_[i] << "\twt = ";
       if (weights_[i] == -1.0) {
         os << get_tau() << "\t(-1.0)" << std::endl;
       } else {
@@ -990,7 +990,7 @@ void var_opt_sketch<T, A>::grow_data_arrays() {
 
     for (uint32_t i = 0; i < prev_size; ++i) {
       new (&tmp_data[i]) T(std::move(data_[i]));
-      allocator_.destroy(data_ + i);
+      data_[i].~T();
       tmp_weights[i] = weights_[i];
     }
 
@@ -1531,7 +1531,6 @@ var_opt_sketch<T, A>::const_iterator::const_iterator(const var_opt_sketch& sk, b
   if (idx_ == final_idx_) { sk_ = nullptr; }
 }
 
-
 template<typename T, typename A>
 var_opt_sketch<T, A>::const_iterator::const_iterator(const const_iterator& other) :
   sk_(other.sk_),
@@ -1543,6 +1542,9 @@ var_opt_sketch<T, A>::const_iterator::const_iterator(const const_iterator& other
 
 template<typename T, typename A>
 typename var_opt_sketch<T, A>::const_iterator& var_opt_sketch<T, A>::const_iterator::operator++() {
+  // accumulate weight already visited
+  if (idx_ > sk_->h_) { cum_r_weight_ += r_item_wt_; }
+
   ++idx_;
   
   if (idx_ == final_idx_) {
@@ -1551,7 +1553,6 @@ typename var_opt_sketch<T, A>::const_iterator& var_opt_sketch<T, A>::const_itera
   } else if (idx_ == sk_->h_ && sk_->r_ > 0) { // check for the gap
     ++idx_;
   }
-  if (idx_ > sk_->h_) { cum_r_weight_ += r_item_wt_; }
   return *this;
 }
 
@@ -1575,14 +1576,19 @@ bool var_opt_sketch<T, A>::const_iterator::operator!=(const const_iterator& othe
 }
 
 template<typename T, typename A>
-const std::pair<const T&, const double> var_opt_sketch<T, A>::const_iterator::operator*() const {
+auto var_opt_sketch<T, A>::const_iterator::operator*() const -> reference {
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
   } else {
     wt = r_item_wt_;
   }
-  return std::pair<const T&, const double>(sk_->data_[idx_], wt);
+  return value_type(sk_->data_[idx_], wt);
+}
+
+template<typename T, typename A>
+auto var_opt_sketch<T, A>::const_iterator::operator->() const -> pointer {
+  return **this;
 }
 
 template<typename T, typename A>
@@ -1622,6 +1628,9 @@ var_opt_sketch<T, A>::iterator::iterator(const iterator& other) :
 
 template<typename T, typename A>
 typename var_opt_sketch<T, A>::iterator& var_opt_sketch<T, A>::iterator::operator++() {
+  // accumulate weight already visited
+  if (idx_ > sk_->h_) { cum_r_weight_ += r_item_wt_; }
+
   ++idx_;
   
   if (idx_ == final_idx_) {
@@ -1630,7 +1639,7 @@ typename var_opt_sketch<T, A>::iterator& var_opt_sketch<T, A>::iterator::operato
   } else if (idx_ == sk_->h_ && sk_->r_ > 0) { // check for the gap
     ++idx_;
   }
-  if (idx_ > sk_->h_) { cum_r_weight_ += r_item_wt_; }
+
   return *this;
 }
 
@@ -1654,7 +1663,7 @@ bool var_opt_sketch<T, A>::iterator::operator!=(const iterator& other) const {
 }
 
 template<typename T, typename A>
-std::pair<T&, double> var_opt_sketch<T, A>::iterator::operator*() {
+auto var_opt_sketch<T, A>::iterator::operator*() -> reference {
   double wt;
   if (idx_ < sk_->h_) {
     wt = sk_->weights_[idx_];
@@ -1663,7 +1672,12 @@ std::pair<T&, double> var_opt_sketch<T, A>::iterator::operator*() {
   } else {
     wt = r_item_wt_;
   }
-  return std::pair<T&, double>(sk_->data_[idx_], wt);
+  return value_type(sk_->data_[idx_], wt);
+}
+
+template<typename T, typename A>
+auto var_opt_sketch<T, A>::iterator::operator->() -> pointer {
+  return **this;
 }
 
 template<typename T, typename A>

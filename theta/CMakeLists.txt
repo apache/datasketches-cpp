@@ -62,4 +62,5 @@ install(FILES
 			include/bounds_on_ratios_in_theta_sketched_sets.hpp
 			include/compact_theta_sketch_parser.hpp
 			include/compact_theta_sketch_parser_impl.hpp
+			include/bit_packing.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

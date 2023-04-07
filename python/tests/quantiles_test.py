@@ -16,11 +16,12 @@
 # under the License.
 
 import unittest
-from datasketches import quantiles_ints_sketch, quantiles_floats_sketch, quantiles_doubles_sketch, ks_test
+from datasketches import quantiles_ints_sketch, quantiles_floats_sketch, quantiles_doubles_sketch
+from datasketches import quantiles_items_sketch, ks_test, PyStringsSerDe
 import numpy as np
 
 class QuantilesTest(unittest.TestCase):
-    def test_quantiles_example(self):
+    def test_quantiles_floats_example(self):
       k = 128
       n = 2 ** 20
 
@@ -61,12 +62,13 @@ class QuantilesTest(unittest.TestCase):
       self.assertLess(quantiles.get_num_retained(), n)
 
       # merging itself will double the number of items the sketch has seen
-      quantiles.merge(quantiles)
+      quantiles_copy = quantiles_floats_sketch(quantiles)
+      quantiles.merge(quantiles_copy)
       self.assertEqual(quantiles.get_n(), 2*n)
 
       # we can then serialize and reconstruct the sketch
       quantiles_bytes = quantiles.serialize()
-      new_quantiles = quantiles.deserialize(quantiles_bytes)
+      new_quantiles = quantiles_floats_sketch.deserialize(quantiles_bytes)
       self.assertEqual(quantiles.get_num_retained(), new_quantiles.get_num_retained())
       self.assertEqual(quantiles.get_min_value(), new_quantiles.get_min_value())
       self.assertEqual(quantiles.get_max_value(), new_quantiles.get_max_value())
@@ -79,6 +81,13 @@ class QuantilesTest(unittest.TestCase):
       unif_quantiles = quantiles_floats_sketch(k)
       unif_quantiles.update(np.random.uniform(10, 20, size=n-1))
       self.assertTrue(ks_test(quantiles, unif_quantiles, 0.001))
+
+      total_weight = 0
+      for tuple in quantiles:
+        item = tuple[0]
+        weight = tuple[1]
+        total_weight = total_weight + weight
+      self.assertEqual(total_weight, quantiles.get_n())
 
     def test_quantiles_ints_sketch(self):
         k = 128
@@ -110,7 +119,8 @@ class QuantilesTest(unittest.TestCase):
         self.assertEqual(quantiles.get_rank(round(n/2)), 0.5)
 
         # merge self
-        quantiles.merge(quantiles)
+        quantiles_copy = quantiles_ints_sketch(quantiles)
+        quantiles.merge(quantiles_copy)
         self.assertEqual(quantiles.get_n(), 2 * n)
 
         sk_bytes = quantiles.serialize()
@@ -121,6 +131,30 @@ class QuantilesTest(unittest.TestCase):
       k = 128
       quantiles = quantiles_doubles_sketch(k)
       self.assertTrue(quantiles.is_empty())
+
+    def test_quantiles_items_sketch(self):
+      # most functionality has been tested, but we need to ensure objects and sorting work
+      # as well as serialization
+      k = 128
+      n = 2 ** 16
+
+      # create a sketch and inject enough points to force compaction
+      quantiles = quantiles_items_sketch(k)
+      for i in range(0, n):
+        quantiles.update(str(i))
+      
+      quantiles_copy = quantiles_items_sketch(quantiles)
+      quantiles.merge(quantiles_copy)
+      self.assertEqual(quantiles.get_n(), 2 * n)
+      
+      quantiles_bytes = quantiles.serialize(PyStringsSerDe())
+      new_quantiles = quantiles_items_sketch.deserialize(quantiles_bytes, PyStringsSerDe())
+      self.assertEqual(quantiles.get_num_retained(), new_quantiles.get_num_retained())
+      self.assertEqual(quantiles.get_min_value(), new_quantiles.get_min_value())
+      self.assertEqual(quantiles.get_max_value(), new_quantiles.get_max_value())
+      self.assertEqual(quantiles.get_quantile(0.7), new_quantiles.get_quantile(0.7))
+      self.assertEqual(quantiles.get_rank(str(n/4)), new_quantiles.get_rank(str(n/4)))
+
 
 if __name__ == '__main__':
     unittest.main()

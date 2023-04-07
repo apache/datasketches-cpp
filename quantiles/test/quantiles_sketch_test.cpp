@@ -260,7 +260,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
         REQUIRE(sketch.get_rank(values[i]) == ranks[i]);
       }
       subtotal_pmf += pmf[i];
-      if (abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
+      if (std::abs(ranks[i] - subtotal_pmf) > NUMERIC_NOISE_TOLERANCE) {
         std::cerr << "CDF vs PMF for value " << i << std::endl;
         REQUIRE(ranks[i] == Approx(subtotal_pmf).margin(NUMERIC_NOISE_TOLERANCE));
       }

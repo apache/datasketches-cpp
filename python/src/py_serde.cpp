@@ -27,13 +27,14 @@
 namespace py = pybind11;
 
 void init_serde(py::module& m) {
-  py::class_<datasketches::py_object_serde, datasketches::PyObjectSerDe /* <--- trampoline*/>(m, "PyObjectSerDe")
+  using namespace datasketches;
+  py::class_<py_object_serde, PyObjectSerDe /* <--- trampoline*/>(m, "PyObjectSerDe")
     .def(py::init<>())
-    .def("get_size", &datasketches::py_object_serde::get_size, py::arg("item"),
+    .def("get_size", &py_object_serde::get_size, py::arg("item"),
         "Returns the size in bytes of an item")
-    .def("to_bytes", &datasketches::py_object_serde::to_bytes, py::arg("item"),
+    .def("to_bytes", &py_object_serde::to_bytes, py::arg("item"),
         "Retuns a bytes object with a serialized version of an item")
-    .def("from_bytes", &datasketches::py_object_serde::from_bytes, py::arg("data"), py::arg("offset"),
+    .def("from_bytes", &py_object_serde::from_bytes, py::arg("data"), py::arg("offset"),
         "Reads a bytes object starting from the given offest and returns a tuple of the reconstructed "
         "object and the number of additional bytes read")
     ;

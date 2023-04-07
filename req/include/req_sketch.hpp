@@ -399,15 +399,20 @@ private:
 };
 
 template<typename T, typename C, typename A>
-class req_sketch<T, C, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+class req_sketch<T, C, A>::const_iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
   using value_type = std::pair<const T&, const uint64_t>;
+  using difference_type = void;
+  using pointer = const return_value_holder<value_type>;
+  using reference = const value_type;
+
   const_iterator& operator++();
   const_iterator& operator++(int);
   bool operator==(const const_iterator& other) const;
   bool operator!=(const const_iterator& other) const;
-  const value_type operator*() const;
-  const return_value_holder<value_type> operator->() const;
+  reference operator*() const;
+  pointer operator->() const;
 private:
   using LevelsIterator = typename std::vector<Compactor, AllocCompactor>::const_iterator;
   LevelsIterator levels_it_;

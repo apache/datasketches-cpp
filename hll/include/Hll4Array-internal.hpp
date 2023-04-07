@@ -114,10 +114,9 @@ uint8_t Hll4Array<A>::getSlot(uint32_t slotNo) const {
 }
 
 template<typename A>
-uint8_t Hll4Array<A>::get_value(uint32_t index) const {
-  const uint8_t value = getSlot(index);
+uint8_t Hll4Array<A>::adjustRawValue(uint32_t slot, uint8_t value) const {
   if (value != hll_constants::AUX_TOKEN) return value + this->curMin_;
-  return auxHashMap_->mustFindValueFor(index);
+  return auxHashMap_->mustFindValueFor(slot);
 }
 
 template<typename A>
@@ -210,7 +209,7 @@ void Hll4Array<A>::internalHll4Update(uint32_t slotNo, uint8_t newVal) {
 
       // we just increased a pair value, so it might be time to change curMin
       if (actualOldValue == this->curMin_) { // 908
-        this->decNumAtCurMin();
+        --(this->numAtCurMin_);
         while (this->numAtCurMin_ == 0) {
           shiftToBiggerCurMin(); // increases curMin by 1, builds a new aux table
           // shifts values in 4-bit table and recounts curMin

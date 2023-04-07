@@ -848,12 +848,12 @@ bool req_sketch<T, C, A>::const_iterator::operator!=(const const_iterator& other
 }
 
 template<typename T, typename C, typename A>
-auto req_sketch<T, C, A>::const_iterator::operator*() const -> const value_type {
+auto req_sketch<T, C, A>::const_iterator::operator*() const -> reference {
   return value_type(*compactor_it_, 1ULL << (*levels_it_).get_lg_weight());
 }
 
 template<typename T, typename C, typename A>
-auto req_sketch<T, C, A>::const_iterator::operator->() const -> const return_value_holder<value_type> {
+auto req_sketch<T, C, A>::const_iterator::operator->() const -> pointer {
   return **this;
 }
 
