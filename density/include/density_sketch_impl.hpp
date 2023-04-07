@@ -28,7 +28,8 @@
 namespace datasketches {
 
 template<typename T, typename K, typename A>
-density_sketch<T, K, A>::density_sketch(uint16_t k, uint32_t dim, const A& allocator):
+density_sketch<T, K, A>::density_sketch(uint16_t k, uint32_t dim, const K& kernel, const A& allocator):
+kernel_(kernel),
 k_(k),
 dim_(dim),
 num_retained_(0),
@@ -100,7 +101,7 @@ T density_sketch<T, K, A>::get_estimate(const std::vector<T>& point) const {
   T density = 0;
   for (unsigned height = 0; height < levels_.size(); ++height) {
     for (const auto& p: levels_[height]) {
-      density += (1 << height) * K()(p, point) / n_;
+      density += (1 << height) * kernel_(p, point) / n_;
     }
   }
   return density;
@@ -131,7 +132,7 @@ void density_sketch<T, K, A>::compact_level(unsigned height) {
   for (unsigned i = 1; i < level.size(); ++i) {
     T delta = 0;
     for (unsigned j = 0; j < i; ++j) {
-      delta += (bits[j] ? 1 : -1) * K()(level[i], level[j]);
+      delta += (bits[j] ? 1 : -1) * kernel_(level[i], level[j]);
     }
     bits[i] = delta < 0;
   }

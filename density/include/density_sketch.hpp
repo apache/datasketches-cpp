@@ -63,9 +63,10 @@ public:
    * Constructor
    * @param k controls the size and error of the sketch.
    * @param dim dimension of the input domain
+   * @param kernel to use by this instance
    * @param allocator to use by this instance
    */
-  density_sketch(uint16_t k, uint32_t dim, const Allocator& allocator = Allocator());
+  density_sketch(uint16_t k, uint32_t dim, const Kernel& kernel = Kernel(), const Allocator& allocator = Allocator());
 
   /**
    * Returns configured parameter K
@@ -137,6 +138,7 @@ public:
   const_iterator end() const;
 
 private:
+  Kernel kernel_;
   uint16_t k_;
   uint32_t dim_;
   uint32_t num_retained_;
