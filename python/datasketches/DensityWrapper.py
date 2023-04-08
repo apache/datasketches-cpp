@@ -18,12 +18,12 @@
 import numpy as np
 
 from _datasketches import _density_sketch, KernelFunction
-from .KernelFunction import RBFKernel
+from .KernelFunction import GaussianKernel
 
 class density_sketch:
   """An instance of a Density Sketch for kernel density estimation. Requires a KernelFunction object."""
 
-  def __init__(self, k:int, dim:int, kernel:KernelFunction=RBFKernel()):
+  def __init__(self, k:int, dim:int, kernel:KernelFunction=GaussianKernel()):
     self._kernel = kernel
     self._gadget = _density_sketch(k, dim, self._kernel)
 

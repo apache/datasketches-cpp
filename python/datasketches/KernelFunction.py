@@ -24,8 +24,8 @@ from _datasketches import KernelFunction
 # Each implementation must extend the KernelFunction class
 # and define the __call__ method
 
-# Implements a basic RBF Kernel
-class RBFKernel(KernelFunction):
+# Implements a basic Gaussian Kernel
+class GaussianKernel(KernelFunction):
   def __init__(self, bandwidth: float=1.0):
     KernelFunction.__init__(self)
     self._bw = bandwidth

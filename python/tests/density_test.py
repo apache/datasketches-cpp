@@ -69,18 +69,18 @@ class densityTest(unittest.TestCase):
     self.assertEqual(sketch1.get_num_retained(), 2)
 
   def test_custom_kernel(self):
-    rbfSketch = density_sketch(10, 2) # default kernel
+    gaussianSketch = density_sketch(10, 2) # default kernel
     sphericalSketch = density_sketch(10, 2, UnitSphereKernel())
 
     p = [1, 1]
-    rbfSketch.update(p)
+    gaussianSketch.update(p)
     sphericalSketch.update(p)
 
     # Spherical kernel should return 1.0 for a nearby point, 0 farther
-    # RBF kernel should return something nonzero when farther away
+    # Gaussian kernel should return something nonzero when farther away
     self.assertEqual(sphericalSketch.get_estimate([1.001, 1]), 1.0)
     self.assertEqual(sphericalSketch.get_estimate([2, 2]), 0.0)
-    self.assertGreater(rbfSketch.get_estimate([2, 2]), 0.0)
+    self.assertGreater(gaussianSketch.get_estimate([2, 2]), 0.0)
 
 if __name__ == '__main__':
     unittest.main()
