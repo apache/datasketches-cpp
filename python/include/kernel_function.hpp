@@ -76,23 +76,20 @@ struct kernel_function_holder {
   kernel_function_holder& operator=(kernel_function_holder&& other) { std::swap(_kernel, other._kernel); return *this; }
 
   double operator()(const std::vector<double>& a, const py::array_t<double>& b) const {
-    // need to create a dummy object to "own" the array to avoid a copy:
-    // https://github.com/pybind/pybind11/issues/323#issuecomment-575717041
-    py::str dummy_array_owner;
     py::array_t<double> a_arr(a.size(), a.data(), dummy_array_owner);
     return _kernel->operator()(a_arr, b);
   }
 
   double operator()(const std::vector<double>& a, const std::vector<double>& b) const {
-    // need to create a dummy object to "own" the arrays to avoid a copy:
-    // https://github.com/pybind/pybind11/issues/323#issuecomment-575717041
-    py::str dummy_array_owner;
     py::array_t<double> a_arr(a.size(), a.data(), dummy_array_owner);
     py::array_t<double> b_arr(b.size(), b.data(), dummy_array_owner);
     return _kernel->operator()(a_arr, b_arr);
   }
 
   private:
+    // a dummy object to "own" arrays when translating from std::vector to avoid a copy:
+    // https://github.com/pybind/pybind11/issues/323#issuecomment-575717041
+    py::str dummy_array_owner;
     std::shared_ptr<kernel_function> _kernel;
 };
 

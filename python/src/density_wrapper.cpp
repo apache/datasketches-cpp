@@ -73,7 +73,8 @@ void init_density(py::module &m) {
     .def("__call__", &kernel_function::operator(), py::arg("a"), py::arg("b"))
     ;
 
-  //bind_density_sketch<float>(m, "density_floats_sketch");
-  //bind_density_sketch<double>(m, "density_doubles_sketch");
+  // the old sketch names  can almost be defined, but the kernel_function_holder won't work in init()
+  //bind_density_sketch<float, gaussian_kernel<float>>(m, "density_floats_sketch");
+  //bind_density_sketch<double, gaussian_kernel<double>>(m, "density_doubles_sketch");
   bind_density_sketch<double, kernel_function_holder>(m, "_density_sketch");
 }
