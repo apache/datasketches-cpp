@@ -21,7 +21,7 @@ from _datasketches import TuplePolicy
 
 # This file provides an example Python Tuple Policy implementation.
 #
-# Each implementation must extend the PyTuplePolicy class and define
+# Each implementation must extend the TuplePolicy class and define
 # two methods:
 #   * create_summary() returns a new Summary object
 #   * update_summary(summary, update) applies the relevant policy to update the
