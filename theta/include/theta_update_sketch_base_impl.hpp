@@ -188,7 +188,7 @@ auto theta_update_sketch_base<EN, EK, A>::begin() const -> iterator {
 
 template<typename EN, typename EK, typename A>
 auto theta_update_sketch_base<EN, EK, A>::end() const -> iterator {
-  return &entries_[1ULL << lg_cur_size_];
+  return entries_ + (1ULL << lg_cur_size_);
 }
 
 template<typename EN, typename EK, typename A>
