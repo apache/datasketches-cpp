@@ -16,8 +16,15 @@
 # under the License.
 
 import unittest
-from datasketches import density_doubles_sketch
+from datasketches import density_sketch, KernelFunction
 import numpy as np
+
+class UnitSphereKernel(KernelFunction):
+  def __call__(self, a: np.array, b: np.array) -> float:
+    if np.linalg.norm(a - b) < 1.0:
+      return 1.0
+    else:
+      return 0.0
 
 class densityTest(unittest.TestCase):
   def test_density_sketch(self):
@@ -25,7 +32,7 @@ class densityTest(unittest.TestCase):
     dim = 3
     n = 1000
 
-    sketch = density_doubles_sketch(k, dim)
+    sketch = density_sketch(k, dim)
 
     self.assertEqual(sketch.get_k(), k)
     self.assertEqual(sketch.get_dim(), dim)
@@ -53,13 +60,27 @@ class densityTest(unittest.TestCase):
       self.assertGreaterEqual(weight, 1) 
 
   def test_density_merge(self):
-    sketch1 = density_doubles_sketch(10, 2)
+    sketch1 = density_sketch(10, 2)
     sketch1.update([0, 0])
-    sketch2 = density_doubles_sketch(10, 2)
+    sketch2 = density_sketch(10, 2)
     sketch2.update([0, 1])
     sketch1.merge(sketch2)
     self.assertEqual(sketch1.get_n(), 2)
     self.assertEqual(sketch1.get_num_retained(), 2)
+
+  def test_custom_kernel(self):
+    gaussianSketch = density_sketch(10, 2) # default kernel
+    sphericalSketch = density_sketch(10, 2, UnitSphereKernel())
+
+    p = [1, 1]
+    gaussianSketch.update(p)
+    sphericalSketch.update(p)
+
+    # Spherical kernel should return 1.0 for a nearby point, 0 farther
+    # Gaussian kernel should return something nonzero when farther away
+    self.assertEqual(sphericalSketch.get_estimate([1.001, 1]), 1.0)
+    self.assertEqual(sphericalSketch.get_estimate([2, 2]), 0.0)
+    self.assertGreater(gaussianSketch.get_estimate([2, 2]), 0.0)
 
 if __name__ == '__main__':
     unittest.main()

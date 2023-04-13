@@ -63,9 +63,10 @@ public:
    * Constructor
    * @param k controls the size and error of the sketch.
    * @param dim dimension of the input domain
+   * @param kernel to use by this instance
    * @param allocator to use by this instance
    */
-  density_sketch(uint16_t k, uint32_t dim, const Allocator& allocator = Allocator());
+  density_sketch(uint16_t k, uint32_t dim, const Kernel& kernel = Kernel(), const Allocator& allocator = Allocator());
 
   /**
    * Returns configured parameter K
@@ -137,6 +138,7 @@ public:
   const_iterator end() const;
 
 private:
+  Kernel kernel_;
   uint16_t k_;
   uint32_t dim_;
   uint32_t num_retained_;
@@ -148,10 +150,14 @@ private:
 };
 
 template<typename T, typename K, typename A>
-class density_sketch<T, K, A>::const_iterator: public std::iterator<std::input_iterator_tag, T> {
+class density_sketch<T, K, A>::const_iterator {
 public:
   using Vector = density_sketch<T, K, A>::Vector;
+  using iterator_category = std::input_iterator_tag;
   using value_type = std::pair<const Vector&, const uint64_t>;
+  using difference_type = void;
+  using pointer = return_value_holder<value_type>;
+  using reference = const value_type;
   const_iterator& operator++();
   const_iterator& operator++(int);
   bool operator==(const const_iterator& other) const;
