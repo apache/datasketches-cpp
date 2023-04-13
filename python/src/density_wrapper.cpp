@@ -22,45 +22,59 @@
 #include <pybind11/numpy.h>
 #include <vector>
 
+#include "kernel_function.hpp"
 #include "density_sketch.hpp"
 
 namespace py = pybind11;
 
-template<typename T>
+template<typename T, typename K>
 void bind_density_sketch(py::module &m, const char* name) {
   using namespace datasketches;
 
-  py::class_<density_sketch<T>>(m, name)
-    .def(py::init<uint16_t, uint32_t>(), py::arg("k"), py::arg("dim"))
-    .def("update", static_cast<void (density_sketch<T>::*)(const std::vector<T>&)>(&density_sketch<T>::update),
+  py::class_<density_sketch<T, K>>(m, name)
+    .def(
+        py::init([](uint16_t k, uint32_t dim, std::shared_ptr<kernel_function> kernel) {
+          kernel_function_holder holder(kernel);
+          return density_sketch<T, K>(k, dim, holder);
+        }),
+        py::arg("k"), py::arg("dim"), py::arg("kernel"))
+    .def("update", static_cast<void (density_sketch<T, K>::*)(const std::vector<T>&)>(&density_sketch<T, K>::update),
         "Updates the sketch with the given vector")
-    .def("update", static_cast<void (density_sketch<T>::*)(std::vector<T>&&)>(&density_sketch<T>::update),
-        "Updates the sketch with the given vector")
-    .def("merge", static_cast<void (density_sketch<T>::*)(const density_sketch<T>&)>(&density_sketch<T>::merge), py::arg("sketch"),
+    .def("merge", static_cast<void (density_sketch<T, K>::*)(const density_sketch<T, K>&)>(&density_sketch<T, K>::merge), py::arg("sketch"),
         "Merges the provided sketch into this one")
-    .def("is_empty", &density_sketch<T>::is_empty,
+    .def("is_empty", &density_sketch<T, K>::is_empty,
         "Returns True if the sketch is empty, otherwise False")
-    .def("get_k", &density_sketch<T>::get_k,
+    .def("get_k", &density_sketch<T, K>::get_k,
         "Returns the configured parameter k")
-    .def("get_dim", &density_sketch<T>::get_dim,
+    .def("get_dim", &density_sketch<T, K>::get_dim,
         "Returns the configured parameter dim")
-    .def("get_n", &density_sketch<T>::get_n,
+    .def("get_n", &density_sketch<T, K>::get_n,
         "Returns the length of the input stream")
-    .def("get_num_retained", &density_sketch<T>::get_num_retained,
+    .def("get_num_retained", &density_sketch<T, K>::get_num_retained,
         "Returns the number of retained items (samples) in the sketch")
-    .def("is_estimation_mode", &density_sketch<T>::is_estimation_mode,
+    .def("is_estimation_mode", &density_sketch<T, K>::is_estimation_mode,
         "Returns True if the sketch is in estimation mode, otherwise False")
-    .def("get_estimate", &density_sketch<T>::get_estimate, py::arg("point"),
+    .def("get_estimate", &density_sketch<T, K>::get_estimate, py::arg("point"),
         "Returns an approximate density at the given point")
-    .def("__str__", &density_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
+    .def("__str__", &density_sketch<T, K>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
         "Produces a string summary of the sketch")
-    .def("to_string", &density_sketch<T>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
+    .def("to_string", &density_sketch<T, K>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
         "Produces a string summary of the sketch")
-    .def("__iter__", [](const density_sketch<T>& s){ return py::make_iterator(s.begin(), s.end()); })
+    .def("__iter__", [](const density_sketch<T, K>& s){ return py::make_iterator(s.begin(), s.end()); })
     ;
 }
 
 void init_density(py::module &m) {
-  bind_density_sketch<float>(m, "density_floats_sketch");
-  bind_density_sketch<double>(m, "density_doubles_sketch");
+  using namespace datasketches;
+
+  // generic kernel function
+  py::class_<kernel_function, KernelFunction, std::shared_ptr<kernel_function>>(m, "KernelFunction")
+    .def(py::init())
+    .def("__call__", &kernel_function::operator(), py::arg("a"), py::arg("b"))
+    ;
+
+  // the old sketch names  can almost be defined, but the kernel_function_holder won't work in init()
+  //bind_density_sketch<float, gaussian_kernel<float>>(m, "density_floats_sketch");
+  //bind_density_sketch<double, gaussian_kernel<double>>(m, "density_doubles_sketch");
+  bind_density_sketch<double, kernel_function_holder>(m, "_density_sketch");
 }

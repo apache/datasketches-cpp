@@ -15,12 +15,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name = 'datasketches'
+import numpy as np
 
-from _datasketches import *
+from _datasketches import KernelFunction
 
-from .PySerDe import *
-from .KernelFunction import *
+# This file provides an example Python Kernel Function implementation.
+#
+# Each implementation must extend the KernelFunction class
+# and define the __call__ method
 
+# Implements a basic Gaussian Kernel
+class GaussianKernel(KernelFunction):
+  def __init__(self, bandwidth: float=1.0):
+    KernelFunction.__init__(self)
+    self._bw = bandwidth
+    self._scale = -0.5 * (bandwidth ** -2)
 
-from .DensityWrapper import *
+  def __call__(self, a: np.array, b: np.array) -> float:
+    return np.exp(self._scale * np.linalg.norm(a - b)**2)

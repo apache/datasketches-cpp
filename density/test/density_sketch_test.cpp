@@ -73,4 +73,37 @@ TEST_CASE("density sketch: iterator", "[density_sketch]") {
   REQUIRE(count == sketch.get_num_retained());
 }
 
+// spherical kernel for testing, returns 1 for vectors within radius and 0 otherwise
+template<typename T>
+struct spherical_kernel {
+  spherical_kernel(T radius = 1.0) : _radius_squared(radius * radius) {}
+  T operator()(const std::vector<T>& v1, const std::vector<T>& v2) const {
+    return std::inner_product(v1.begin(), v1.end(), v2.begin(), 0.0, std::plus<T>(), [](T a, T b){return (a-b)*(a-b);}) <= _radius_squared ? 1.0 : 0.0;
+  }
+  private:
+    T _radius_squared;
+};
+
+TEST_CASE("custom kernel", "[density_sketch]") {
+  density_sketch<float, spherical_kernel<float>> sketch(10, 3, spherical_kernel<float>(0.5));
+
+  // update with (1,1,1) and test points inside and outside the kernel
+  sketch.update(std::vector<float>(3, 1.0));
+  REQUIRE(sketch.get_estimate(std::vector<float>(3, 1.001)) == 1.0);
+  REQUIRE(sketch.get_estimate(std::vector<float>(3, 2.0)) == 0.0);
+
+  // rest of test follows iterator test above
+  unsigned n = 1000;
+  for (unsigned i = 2; i <= n; ++i) sketch.update(std::vector<float>(3, i));
+  REQUIRE(sketch.get_n() == n);
+  REQUIRE(sketch.is_estimation_mode());
+  unsigned count = 0;
+  for (auto pair: sketch) {
+    ++count;
+    // just to assert something about the output
+    REQUIRE(pair.first.size() == sketch.get_dim());
+  }
+  REQUIRE(count == sketch.get_num_retained());
+}
+
 } /* namespace datasketches */
