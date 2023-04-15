@@ -127,6 +127,44 @@ public:
   Allocator get_allocator() const;
 
   /**
+   * This method serializes the sketch into a given stream in a binary form
+   * @param os output stream
+   */
+  void serialize(std::ostream& os) const;
+
+  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;
+
+  /**
+   * This method serializes the sketch as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is an uninitialized space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * @param header_size_bytes space to reserve in front of the sketch
+   */
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+
+  /**
+   * This method deserializes a sketch from a given stream.
+   * @param is input stream
+   * @param kernel the kernel function to use for this sketch
+   * @param allocator the memory allocator to use with this sketch
+   * @return an instance of the sketch
+   */
+  static density_sketch deserialize(std::istream& is,
+      Kernel& kernel=Kernel(), const Allocator& allocator = Allocator());
+
+  /**
+   * This method deserializes a sketch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param kernel the kernel function to use for this sketch
+   * @param allocator the memory allocator to use with this sketch
+   * @return an instance of the sketch
+   */
+  static density_sketch deserialize(const void* bytes, size_t size,
+      Kernel& kernel=Kernel(), const Allocator& allocator = Allocator());
+
+  /**
    * Prints a summary of the sketch.
    * @param print_levels if true include information about levels
    * @param print_items if true include sketch data
@@ -138,6 +176,14 @@ public:
   const_iterator end() const;
 
 private:
+  enum flags { RESERVED0, RESERVED1, IS_EMPTY };
+  static const uint8_t PREAMBLE_INTS_SHORT = 3;
+  static const uint8_t PREAMBLE_INTS_LONG = 5;
+  static const uint8_t FAMILY_ID = 19;
+  static const uint8_t SERIAL_VERSION = 1;
+  static const size_t LEVELS_ARRAY_START = 5;
+
+  Allocator allocator_;
   Kernel kernel_;
   uint16_t k_;
   uint32_t dim_;

@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <sstream>
 
+#include "memory_operations.hpp"
 #include "conditional_forward.hpp"
 
 namespace datasketches {
@@ -145,6 +146,113 @@ void density_sketch<T, K, A>::compact_level(unsigned height) {
   }
   level.clear();
 }
+
+/* Serialized sketch layout:
+ * Int  || Start Byte Addr:
+ * Addr:
+ *      ||       0        |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+ *  0   || Preamble_Ints  | SerVer | FamID  |  Flags |------- K -------|---- unused -----|
+ *
+ *      ||       8        |    9   |   10   |   11   |   12   |   13   |   14   |   15   |
+ *  2   ||---------------------------Items Seen Count (N)--------------------------------|
+ *
+ *      ||       16       |    17   |   18   |   19   |   12   |   13   |   14   |   15  |
+ *  4   ||------------- Num Dimensions ---------------|----- Start of Levels Data -------|
+ *
+ * Ints 2 and 3 are omitted when the sketch is empty, meaning Num Dimensions is stored at
+ * offset 8 in that case. Otherwise, Int 5 is the start of level data, consisting of the
+ * size of the level (as a uint32 value) followed by that number of points, with 
+ * Num Dimensions per point.
+ */
+
+template<typename T, typename K, typename A>
+void density_sketch<T, K, A>::serialize(std::ostream& os) const {
+  const uint8_t preamble_ints = is_empty() ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_LONG;
+  write(os, preamble_ints);
+  const uint8_t ser_ver = SERIAL_VERSION;
+  write(os, ser_ver);
+  const uint8_t family = FAMILY_ID;
+  write(os, family);
+
+  // only empty is a valid flag
+  const uint8_t flags_byte = (is_empty() ? 1 << flags::IS_EMPTY : 0);
+  write(os, flags_byte);
+  write(os, k_);
+  const uint16_t unused = 0;
+  write(os, unused);
+
+  if (!is_empty())
+    write(os, n_);
+
+  write(os, dim_);
+
+  // levels array -- uint32_t since a single level may be larger than k
+  size_t pt_size = sizeof(T) * dim_;
+  for (Level lvl : levels_) {
+    const uint32_t level_size = static_cast<uint32_t>(lvl.size());
+    write(os, level_size);
+    for (Vector pt : lvl) {
+      write(os, &pt.data(), pt_size);
+    }
+  }
+}
+
+template<typename T, typename K, typename A>
+auto density_sketch<T, K, A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
+  const uint8_t preamble_ints = (is_empty() ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_LONG);
+  
+  // pre-compute size
+  const size_t size = header_size_bytes + preamble_ints;
+  for (Level lvl : levels_) {
+    size += sizeof(uint32_t) + (lvl.size() * dim_ * sizeof(T));
+  }
+
+  vector_bytes bytes(size, 0, levels_.get_allocator());
+  uint8_t* ptr = bytes.data() + header_size_bytes;
+  const uint8_t* end_ptr = ptr + size;
+  
+  ptr += copy_to_mem(preamble_ints, ptr);
+  const uint8_t ser_ver = SERIAL_VERSION;
+  ptr += copy_to_mem(ser_ver, ptr);
+  const uint8_t family = FAMILY_ID;
+  ptr += copy_to_mem(family, ptr);
+
+  // empty is the only valid flat
+  const uint8_t flags_byte = (is_empty() ? 1 << flags::IS_EMPTY : 0);
+  ptr += copy_to_mem(flags_byte, ptr);
+  ptr += copy_to_mem(k_, ptr);
+  ptr += sizeof(uint16_t); // 2 unused bytes
+  
+  if (!is_empty())
+    ptr += copy_to_mem(n_, ptr);
+  
+  ptr += copy_to_mem(dim_, ptr);
+
+  // levels array -- uint32_t since a single level may be larger than k
+  size_t pt_size = sizeof(T) * dim_;
+  for (Level lvl : levels_) {
+    ptr += copy_to_mem(static_cast<uint32_t>(lvl.size()), ptr);
+    for (Vector pt : lvl) {
+      ptr += copy_to_mem(&pt.data(), ptr, pt_size);
+    }
+  }
+
+  if (ptr != end_ptr)
+    throw std::runtime_error("Actual output size does not equal expected output size");
+
+  return bytes;
+}
+
+template<typename T, typename K, typename A>
+density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(std::istream& is, K& kernel, const A& allocator) {
+
+}
+
+template<typename T, typename K, typename A>
+density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(const void* bytes, size_t size, K& kernel, const A& allocator) {
+
+}
+
 
 template<typename T, typename K, typename A>
 string<A> density_sketch<T, K, A>::to_string(bool print_levels, bool print_items) const {
