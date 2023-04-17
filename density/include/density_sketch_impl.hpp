@@ -39,6 +39,17 @@ levels_(1, Level(allocator), allocator)
 {}
 
 template<typename T, typename K, typename A>
+density_sketch<T, K, A>::density_sketch(uint16_t k, uint32_t dim, uint32_t num_retained, uint64_t n,
+                                        Levels&& levels, const K& kernel):
+kernel_(kernel),
+k_(k),
+dim_(dim),
+num_retained_(num_retained),
+n_(n),
+levels_(std::move(levels))
+{}
+
+template<typename T, typename K, typename A>
 uint16_t density_sketch<T, K, A>::get_k() const {
   return k_;
 }
@@ -154,10 +165,10 @@ void density_sketch<T, K, A>::compact_level(unsigned height) {
  *  0   || Preamble_Ints  | SerVer | FamID  |  Flags |------- K -------|---- unused -----|
  *
  *      ||       8        |    9   |   10   |   11   |   12   |   13   |   14   |   15   |
- *  2   ||---------------------------Items Seen Count (N)--------------------------------|
+ *  2   ||------------- Num Dimensions --------------|------ Num Retained Items ---------|
  *
- *      ||       16       |    17   |   18   |   19   |   12   |   13   |   14   |   15  |
- *  4   ||------------- Num Dimensions ---------------|----- Start of Levels Data -------|
+ *      ||       16       |   17   |   18   |   19   |   20   |   21   |   22   |   23   |
+ *  4   ||---------------------------Items Seen Count (N)--------------------------------|
  *
  * Ints 2 and 3 are omitted when the sketch is empty, meaning Num Dimensions is stored at
  * offset 8 in that case. Otherwise, Int 5 is the start of level data, consisting of the
@@ -180,11 +191,13 @@ void density_sketch<T, K, A>::serialize(std::ostream& os) const {
   write(os, k_);
   const uint16_t unused = 0;
   write(os, unused);
-
-  if (!is_empty())
-    write(os, n_);
-
   write(os, dim_);
+
+  if (is_empty())
+    return;
+
+  write(os, num_retained_);
+  write(os, n_);
 
   // levels array -- uint32_t since a single level may be larger than k
   size_t pt_size = sizeof(T) * dim_;
@@ -192,7 +205,7 @@ void density_sketch<T, K, A>::serialize(std::ostream& os) const {
     const uint32_t level_size = static_cast<uint32_t>(lvl.size());
     write(os, level_size);
     for (Vector pt : lvl) {
-      write(os, &pt.data(), pt_size);
+      write(os, pt.data(), pt_size);
     }
   }
 }
@@ -202,10 +215,10 @@ auto density_sketch<T, K, A>::serialize(unsigned header_size_bytes) const -> vec
   const uint8_t preamble_ints = (is_empty() ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_LONG);
   
   // pre-compute size
-  const size_t size = header_size_bytes + preamble_ints;
-  for (Level lvl : levels_) {
-    size += sizeof(uint32_t) + (lvl.size() * dim_ * sizeof(T));
-  }
+  size_t size = header_size_bytes + preamble_ints * sizeof(uint32_t);
+  if (!is_empty())
+    for (Level lvl : levels_)
+      size += sizeof(uint32_t) + (lvl.size() * dim_ * sizeof(T));
 
   vector_bytes bytes(size, 0, levels_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
@@ -222,18 +235,20 @@ auto density_sketch<T, K, A>::serialize(unsigned header_size_bytes) const -> vec
   ptr += copy_to_mem(flags_byte, ptr);
   ptr += copy_to_mem(k_, ptr);
   ptr += sizeof(uint16_t); // 2 unused bytes
-  
-  if (!is_empty())
-    ptr += copy_to_mem(n_, ptr);
-  
   ptr += copy_to_mem(dim_, ptr);
+  
+  if (is_empty())
+    return bytes;
+
+  ptr += copy_to_mem(num_retained_, ptr);
+  ptr += copy_to_mem(n_, ptr);
 
   // levels array -- uint32_t since a single level may be larger than k
   size_t pt_size = sizeof(T) * dim_;
   for (Level lvl : levels_) {
     ptr += copy_to_mem(static_cast<uint32_t>(lvl.size()), ptr);
     for (Vector pt : lvl) {
-      ptr += copy_to_mem(&pt.data(), ptr, pt_size);
+      ptr += copy_to_mem(pt.data(), ptr, pt_size);
     }
   }
 
@@ -244,15 +259,152 @@ auto density_sketch<T, K, A>::serialize(unsigned header_size_bytes) const -> vec
 }
 
 template<typename T, typename K, typename A>
-density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(std::istream& is, K& kernel, const A& allocator) {
+density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(std::istream& is, const K& kernel, const A& allocator) {
+  const auto preamble_ints = read<uint8_t>(is);
+  const auto serial_version = read<uint8_t>(is);
+  const auto family_id = read<uint8_t>(is);
+  const auto flags_byte = read<uint8_t>(is);
+  const auto k = read<uint16_t>(is);
+  read<uint16_t>(is); // unused
+  const auto dim = read<uint32_t>(is);
 
+  //check_k(k); // do we have constraints?
+  check_serial_version(serial_version); // a little redundant with the header check
+  check_family_id(family_id);
+  check_header_validity(preamble_ints, flags_byte, serial_version);
+
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+  const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+  if (is_empty) {
+    return density_sketch(k, dim, kernel, allocator);
+  }
+
+  const auto num_retained = read<uint32_t>(is);
+  const auto n = read<uint64_t>(is);
+
+  // levels arrays
+  size_t pt_size = sizeof(T) * dim;
+  Levels levels(allocator);
+  int64_t num_to_read = num_retained; // num_retrained is uint32_t so this allows error checking
+  while (num_to_read > 0) {
+    const auto level_size = read<uint32_t>(is);
+    Level lvl(allocator);
+    lvl.reserve(level_size);
+    for (uint32_t i = 0; i < level_size; ++i) {
+      Vector pt(dim, allocator);
+      pt.reserve(dim);
+      read(is, pt.data(), pt_size);
+      lvl.push_back(pt);
+    }
+    levels.push_back(lvl);
+    num_to_read -= lvl.size();
+  }
+
+  if (num_to_read != 0)
+    throw std::runtime_error("Error deserializing sketch: Incorrect number of items read");
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+
+  return density_sketch(k, dim, num_retained, n, std::move(levels), kernel);
 }
 
 template<typename T, typename K, typename A>
-density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(const void* bytes, size_t size, K& kernel, const A& allocator) {
+density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(const void* bytes, size_t size, const K& kernel, const A& allocator) {
+  ensure_minimum_memory(size, PREAMBLE_INTS_SHORT * sizeof(uint32_t));
+  const char* ptr = static_cast<const char*>(bytes);
+  const char* end_ptr = static_cast<const char*>(bytes) + size;
+  uint8_t preamble_ints;
+  ptr += copy_from_mem(ptr, preamble_ints);
+  uint8_t serial_version;
+  ptr += copy_from_mem(ptr, serial_version);
+  uint8_t family_id;
+  ptr += copy_from_mem(ptr, family_id);
+  uint8_t flags_byte;
+  ptr += copy_from_mem(ptr, flags_byte);
+  uint16_t k;
+  ptr += copy_from_mem(ptr, k);
+  uint16_t unused;
+  ptr += copy_from_mem(ptr, unused);
+  uint32_t dim;
+  ptr += copy_from_mem(ptr, dim);
 
+  //check_k(k);
+  check_serial_version(serial_version); // a little redundant with the header check
+  check_family_id(family_id);
+  check_header_validity(preamble_ints, flags_byte, serial_version);
+
+  const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+  if (is_empty) {
+    return density_sketch(k, dim, kernel, allocator);
+  }
+
+  ensure_minimum_memory(size, PREAMBLE_INTS_LONG * sizeof(uint32_t));
+  uint32_t num_retained;
+  ptr += copy_from_mem(ptr, num_retained);
+  uint64_t n;
+  ptr += copy_from_mem(ptr, n);
+
+  // Predicting the number of levels seems hard so determining the exact remaining
+  // size is also hard. But we need at least num_retained * dim * sizeof(T)
+  // bytes for the points so we can check that.
+  size_t pt_size = sizeof(T) * dim;
+  ensure_minimum_memory(end_ptr - ptr, num_retained * pt_size);
+
+  // levels arrays
+  Levels levels(allocator);
+  int64_t num_to_read = num_retained; // num_retrained is uint32_t so this allows error checking
+  while (num_to_read > 0) {
+    uint32_t level_size;
+    ptr += copy_from_mem(ptr, level_size);
+    Level lvl(allocator);
+    lvl.reserve(level_size);
+    for (uint32_t i = 0; i < level_size; ++i) {
+      Vector pt(dim, allocator);
+      ptr += copy_from_mem(ptr, pt.data(), pt_size);
+      lvl.push_back(pt);
+    }
+    levels.push_back(lvl);
+    num_to_read -= lvl.size();
+  }
+
+  if (num_to_read != 0)
+    throw std::runtime_error("Error deserializing sketch: Incorrect number of items read");
+  if (ptr > end_ptr) throw std::runtime_error("Error deserializing sketch: Read beyond provided memory");
+
+  return density_sketch(k, dim, num_retained, n, std::move(levels), kernel);
 }
 
+template<typename T, typename K, typename A>
+void density_sketch<T, K, A>::check_serial_version(uint8_t serial_version) {
+  if (serial_version == SERIAL_VERSION)
+    return;
+  else
+    throw std::invalid_argument("Possible corruption. Unrecognized serialization version: " + std::to_string(serial_version));
+}
+
+template<typename T, typename K, typename A>
+void density_sketch<T, K, A>::check_family_id(uint8_t family_id) {
+  if (family_id == FAMILY_ID)
+    return;
+  else
+    throw std::invalid_argument("Possible corruption. Family id does not indicate density sketch: " + std::to_string(family_id));
+}
+
+template<typename T, typename K, typename A>
+void density_sketch<T, K, A>::check_header_validity(uint8_t preamble_ints, uint8_t flags_byte, uint8_t serial_version) {
+  const bool empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+
+  if ((empty && preamble_ints == PREAMBLE_INTS_SHORT)
+      || (!empty && preamble_ints == PREAMBLE_INTS_LONG))
+      return;
+  else {
+    std::ostringstream os;
+    os << "Possible sketch corruption. Inconsistent state: "
+       << "preamble_ints = " << preamble_ints
+       << ", empty = " << (empty ? "true" : "false")
+       << ", serialization_version = " << serial_version;
+    throw std::invalid_argument(os.str());
+  }
+}
 
 template<typename T, typename K, typename A>
 string<A> density_sketch<T, K, A>::to_string(bool print_levels, bool print_items) const {
