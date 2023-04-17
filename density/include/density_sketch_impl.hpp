@@ -291,8 +291,7 @@ density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(std::istream& is, c
     Level lvl(allocator);
     lvl.reserve(level_size);
     for (uint32_t i = 0; i < level_size; ++i) {
-      Vector pt(dim, allocator);
-      pt.reserve(dim);
+      Vector pt(dim, 0, allocator);
       read(is, pt.data(), pt_size);
       lvl.push_back(pt);
     }
@@ -358,7 +357,7 @@ density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(const void* bytes, 
     Level lvl(allocator);
     lvl.reserve(level_size);
     for (uint32_t i = 0; i < level_size; ++i) {
-      Vector pt(dim, allocator);
+      Vector pt(dim, 0, allocator);
       ptr += copy_from_mem(ptr, pt.data(), pt_size);
       lvl.push_back(pt);
     }
