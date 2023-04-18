@@ -51,13 +51,15 @@ class densityTest(unittest.TestCase):
     self.assertLess(sketch.get_num_retained(), n)
     self.assertGreater(sketch.get_estimate([n - 1, n - 1, n - 1]), 0)
 
-    print(sketch)
-
     for tuple in sketch:
       vector = tuple[0]
       weight = tuple[1]
       self.assertEqual(len(vector), dim)
-      self.assertGreaterEqual(weight, 1) 
+      self.assertGreaterEqual(weight, 1)
+
+    sk_bytes = sketch.serialize()
+    sketch2 = density_sketch.deserialize(sk_bytes)
+    self.assertEqual(sketch.get_estimate([1.5, 2.5, 3.5]), sketch2.get_estimate([1.5, 2.5, 3.5]))
 
   def test_density_merge(self):
     sketch1 = density_sketch(10, 2)
@@ -81,6 +83,11 @@ class densityTest(unittest.TestCase):
     self.assertEqual(sphericalSketch.get_estimate([1.001, 1]), 1.0)
     self.assertEqual(sphericalSketch.get_estimate([2, 2]), 0.0)
     self.assertGreater(gaussianSketch.get_estimate([2, 2]), 0.0)
+
+    # We can also use a custom kernel when deserializing
+    sk_bytes = sphericalSketch.serialize()
+    sphericalRebuilt = density_sketch.deserialize(sk_bytes, UnitSphereKernel())
+    self.assertEqual(sphericalSketch.get_estimate([1.001, 1]), sphericalRebuilt.get_estimate([1.001, 1]))
 
 if __name__ == '__main__':
     unittest.main()

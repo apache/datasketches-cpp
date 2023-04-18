@@ -61,7 +61,22 @@ void bind_density_sketch(py::module &m, const char* name) {
     .def("to_string", &density_sketch<T, K>::to_string, py::arg("print_levels")=false, py::arg("print_items")=false,
         "Produces a string summary of the sketch")
     .def("__iter__", [](const density_sketch<T, K>& s){ return py::make_iterator(s.begin(), s.end()); })
-    ;
+    .def("serialize",
+        [](const density_sketch<T, K>& sk) {
+          auto bytes = sk.serialize();
+          return py::bytes(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+        },
+        "Serializes the sketch into a bytes object"
+    )
+    .def_static(
+        "deserialize",
+        [](const std::string& bytes, std::shared_ptr<kernel_function> kernel) {
+          kernel_function_holder holder(kernel);
+          return density_sketch<T, K>::deserialize(bytes.data(), bytes.size(), holder);
+        },
+        py::arg("bytes"), py::arg("kernel"),
+        "Reads a bytes object and returns the corresponding density_sketch"
+    );;
 }
 
 void init_density(py::module &m) {
