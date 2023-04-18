@@ -36,7 +36,9 @@ dim_(dim),
 num_retained_(0),
 n_(0),
 levels_(1, Level(allocator), allocator)
-{}
+{
+  check_k(k);
+}
 
 template<typename T, typename K, typename A>
 density_sketch<T, K, A>::density_sketch(uint16_t k, uint32_t dim, uint32_t num_retained, uint64_t n,
@@ -47,7 +49,9 @@ dim_(dim),
 num_retained_(num_retained),
 n_(n),
 levels_(std::move(levels))
-{}
+{
+  check_k(k);
+}
 
 template<typename T, typename K, typename A>
 uint16_t density_sketch<T, K, A>::get_k() const {
@@ -268,7 +272,7 @@ density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(std::istream& is, c
   read<uint16_t>(is); // unused
   const auto dim = read<uint32_t>(is);
 
-  //check_k(k); // do we have constraints?
+  check_k(k); // do we have constraints?
   check_serial_version(serial_version); // a little redundant with the header check
   check_family_id(family_id);
   check_header_validity(preamble_ints, flags_byte, serial_version);
@@ -326,7 +330,7 @@ density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(const void* bytes, 
   uint32_t dim;
   ptr += copy_from_mem(ptr, dim);
 
-  //check_k(k);
+  check_k(k);
   check_serial_version(serial_version); // a little redundant with the header check
   check_family_id(family_id);
   check_header_validity(preamble_ints, flags_byte, serial_version);
@@ -370,6 +374,12 @@ density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(const void* bytes, 
   if (ptr > end_ptr) throw std::runtime_error("Error deserializing sketch: Read beyond provided memory");
 
   return density_sketch(k, dim, num_retained, n, std::move(levels), kernel);
+}
+
+template<typename T, typename K, typename A>
+void density_sketch<T, K, A>::check_k(uint16_t k) {
+  if (k < 2)
+    throw std::invalid_argument("k must be > 1. Found: " + std::to_string(k));
 }
 
 template<typename T, typename K, typename A>
