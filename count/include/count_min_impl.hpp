@@ -491,9 +491,9 @@ void count_min_sketch<W,A>::check_header_validity(uint8_t preamble_longs, uint8_
   bool valid = true;
 
   switch (sw) { // exhaustive list and description of all valid cases
-    case 70 : break; // !empty, ser_ver==1, family==1, preLongs=2;
-    case 71 : break; // empty, ser_ver==1, family==1, preLongs=2;
-    //case 102 : break ; // !empty, ser_ver==1, family==1, preLongs=3 ;
+    case 138 : break; // !empty, ser_ver==1, family==18, preLongs=2;
+    case 139 : break; // empty, ser_ver==1, family==18, preLongs=2;
+    //case 170 : break ; // !empty, ser_ver==1, family==18, preLongs=3 ;
     default : // all other case values are invalid
       valid = false;
   }

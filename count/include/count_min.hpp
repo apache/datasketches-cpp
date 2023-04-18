@@ -319,8 +319,7 @@ private:
   static const uint8_t PREAMBLE_LONGS_SHORT = 2; // Empty -> need second byte for sketch parameters
   static const uint8_t PREAMBLE_LONGS_FULL = 3; // Not empty -> need (at least) third byte for total weight.
   static const uint8_t SERIAL_VERSION_1 = 1;
-  static const uint8_t FAMILY_ID = 1;
-  //static const size_t DATA_START = 24;
+  static const uint8_t FAMILY_ID = 18;
   static const uint8_t NULL_8 = 0;
   static const uint32_t NULL_32 = 0;
 
