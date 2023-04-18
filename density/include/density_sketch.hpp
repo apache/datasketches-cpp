@@ -194,6 +194,7 @@ private:
   void compact();
   void compact_level(unsigned height);
 
+  static void check_k(uint16_t k);
   static void check_serial_version(uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
   static void check_header_validity(uint8_t preamble_ints, uint8_t flags_byte, uint8_t serial_version);
