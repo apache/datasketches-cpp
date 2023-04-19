@@ -205,10 +205,10 @@ void density_sketch<T, K, A>::serialize(std::ostream& os) const {
 
   // levels array -- uint32_t since a single level may be larger than k
   size_t pt_size = sizeof(T) * dim_;
-  for (Level lvl : levels_) {
+  for (const Level& lvl : levels_) {
     const uint32_t level_size = static_cast<uint32_t>(lvl.size());
     write(os, level_size);
-    for (Vector pt : lvl) {
+    for (const Vector& pt : lvl) {
       write(os, pt.data(), pt_size);
     }
   }
@@ -221,7 +221,7 @@ auto density_sketch<T, K, A>::serialize(unsigned header_size_bytes) const -> vec
   // pre-compute size
   size_t size = header_size_bytes + preamble_ints * sizeof(uint32_t);
   if (!is_empty())
-    for (Level lvl : levels_)
+    for (const Level& lvl : levels_)
       size += sizeof(uint32_t) + (lvl.size() * dim_ * sizeof(T));
 
   vector_bytes bytes(size, 0, levels_.get_allocator());
@@ -249,9 +249,9 @@ auto density_sketch<T, K, A>::serialize(unsigned header_size_bytes) const -> vec
 
   // levels array -- uint32_t since a single level may be larger than k
   size_t pt_size = sizeof(T) * dim_;
-  for (Level lvl : levels_) {
+  for (const Level& lvl : levels_) {
     ptr += copy_to_mem(static_cast<uint32_t>(lvl.size()), ptr);
-    for (Vector pt : lvl) {
+    for (const Vector& pt : lvl) {
       ptr += copy_to_mem(pt.data(), ptr, pt_size);
     }
   }
