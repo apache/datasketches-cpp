@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <cmath>
 #include <catch2/catch.hpp>
 
 #include <density_sketch.hpp>
@@ -104,6 +105,140 @@ TEST_CASE("custom kernel", "[density_sketch]") {
     REQUIRE(pair.first.size() == sketch.get_dim());
   }
   REQUIRE(count == sketch.get_num_retained());
+}
+
+TEST_CASE("serialize empty", "[density_sketch]") {
+  density_sketch<double> sk(10, 2);
+  auto bytes = sk.serialize();
+  auto sk2 = density_sketch<double>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(sk2.is_empty());
+  REQUIRE(!sk2.is_estimation_mode());
+  REQUIRE(sk.get_k() == sk2.get_k());
+  REQUIRE(sk.get_dim() == sk2.get_dim());
+  REQUIRE(sk.get_n() == sk2.get_n());
+  REQUIRE(sk.get_num_retained() == sk2.get_num_retained());
+
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sk.serialize(s);
+  auto sk3 = density_sketch<double>::deserialize(s);
+  REQUIRE(sk3.is_empty());
+  REQUIRE(!sk3.is_estimation_mode());
+  REQUIRE(sk.get_k() == sk3.get_k());
+  REQUIRE(sk.get_dim() == sk3.get_dim());
+  REQUIRE(sk.get_n() == sk3.get_n());
+  REQUIRE(sk.get_num_retained() == sk3.get_num_retained());
+}
+
+TEST_CASE("serialize bytes", "[density_sketch]") {
+  uint16_t k = 10;
+  uint32_t dim = 3;
+  density_sketch<double> sk(k, dim);
+
+  for (uint16_t i = 0; i < k; ++i) {
+    double val = static_cast<double>(i);
+    sk.update(std::vector<double>({val, std::sqrt(val), -val}));
+  }
+  REQUIRE(!sk.is_estimation_mode());
+
+  // exact mode
+  auto bytes = sk.serialize();
+  auto sk2 = density_sketch<double>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(!sk2.is_empty());
+  REQUIRE(!sk2.is_estimation_mode());
+  REQUIRE(sk.get_k() == sk2.get_k());
+  REQUIRE(sk.get_dim() == sk2.get_dim());
+  REQUIRE(sk.get_n() == sk2.get_n());
+  REQUIRE(sk.get_num_retained() == sk2.get_num_retained());
+  auto it1 = sk.begin();
+  auto it2 = sk2.begin();
+  while (it1 != sk.end()) {
+    REQUIRE(it1->first[0] == it2->first[0]);
+    REQUIRE(it1->second == it2->second);
+    ++it1;
+    ++it2;
+  }
+
+  // estimation mode
+  size_t n = 1031;
+  for (uint32_t i = k; i < n; ++i) {
+    double val = static_cast<double>(i);
+    sk.update(std::vector<double>({val, std::sqrt(val), -val}));
+  }
+  REQUIRE(sk.is_estimation_mode());
+
+  bytes = sk.serialize();
+  sk2 = density_sketch<double>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(!sk2.is_empty());
+  REQUIRE(sk2.is_estimation_mode());
+  REQUIRE(sk.get_k() == sk2.get_k());
+  REQUIRE(sk.get_dim() == sk2.get_dim());
+  REQUIRE(sk.get_n() == sk2.get_n());
+  REQUIRE(sk.get_num_retained() == sk2.get_num_retained());
+  it1 = sk.begin();
+  it2 = sk2.begin();
+  while (it1 != sk.end()) {
+    REQUIRE(it1->first[0] == it2->first[0]);
+    REQUIRE(it1->second == it2->second);
+    ++it1;
+    ++it2;
+  }
+}
+
+TEST_CASE("serialize stream", "[density_sketch]") {
+  uint16_t k = 10;
+  uint32_t dim = 3;
+  density_sketch<float> sk(k, dim);
+
+  for (uint16_t i = 0; i < k; ++i) {
+    float val = static_cast<float>(i);
+    sk.update(std::vector<float>({val, std::sin(val), std::cos(val)}));
+  }
+  REQUIRE(!sk.is_estimation_mode());
+
+  // exact mode
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sk.serialize(s);
+  auto sk2 = density_sketch<float>::deserialize(s);
+  REQUIRE(!sk2.is_empty());
+  REQUIRE(!sk2.is_estimation_mode());
+  REQUIRE(sk.get_k() == sk2.get_k());
+  REQUIRE(sk.get_dim() == sk2.get_dim());
+  REQUIRE(sk.get_n() == sk2.get_n());
+  REQUIRE(sk.get_num_retained() == sk2.get_num_retained());
+  auto it1 = sk.begin();
+  auto it2 = sk2.begin();
+  while (it1 != sk.end()) {
+    REQUIRE(it1->first[0] == it2->first[0]);
+    REQUIRE(it1->second == it2->second);
+    ++it1;
+    ++it2;
+  }
+
+  // estimation mode
+  size_t n = 1031;
+  for (uint32_t i = k; i < n; ++i) {
+    float val = static_cast<float>(i);
+    sk.update(std::vector<float>({val, std::sqrt(val), -val}));
+  }
+  REQUIRE(sk.is_estimation_mode());
+
+  std::stringstream s2(std::ios::in | std::ios::out | std::ios::binary);
+  sk.serialize(s2);
+  sk2 = density_sketch<float>::deserialize(s2);
+  REQUIRE(!sk2.is_empty());
+  REQUIRE(sk2.is_estimation_mode());
+  REQUIRE(sk.get_k() == sk2.get_k());
+  REQUIRE(sk.get_dim() == sk2.get_dim());
+  REQUIRE(sk.get_n() == sk2.get_n());
+  REQUIRE(sk.get_num_retained() == sk2.get_num_retained());
+  it1 = sk.begin();
+  it2 = sk2.begin();
+  while (it1 != sk.end()) {
+    REQUIRE(it1->first[0] == it2->first[0]);
+    REQUIRE(it1->second == it2->second);
+    ++it1;
+    ++it2;
+  }
 }
 
 } /* namespace datasketches */

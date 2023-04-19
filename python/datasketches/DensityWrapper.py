@@ -27,6 +27,14 @@ class density_sketch:
     self._kernel = kernel
     self._gadget = _density_sketch(k, dim, self._kernel)
 
+  @classmethod
+  def deserialize(cls, data:bytes, kernel:KernelFunction=GaussianKernel()):
+    """Reads a bytes object and returns a density sketch, using the provided kerenl or defaulting to a Guassian kerenl"""
+    self = cls.__new__(cls)
+    self._kernel = kernel
+    self._gadget = _density_sketch.deserialize(data, kernel)
+    return self
+
   def update(self, point:np.array):
     """Updates the sketch with the given point"""
     self._gadget.update(point)
@@ -62,6 +70,10 @@ class density_sketch:
   def get_estimate(self, point:np.array):
     """Returns an approximate density at the given point"""
     return self._gadget.get_estimate(point)
+
+  def serialize(self):
+    """Serializes the sketch into a bytes object"""
+    return self._gadget.serialize()
 
   def __str__(self, print_levels:bool=False, print_items:bool=False):
     """Produces a string summary of the sketch"""
