@@ -128,4 +128,29 @@ TEST_CASE("theta union: seed mismatch", "[theta_union]") {
   REQUIRE_THROWS_AS(u.update(sketch), std::invalid_argument);
 }
 
+TEST_CASE("theta union: larger K", "[theta_union]") {
+  auto update_sketch1 = datasketches::update_theta_sketch::builder().set_lg_k(14).build();
+  for(int i = 0; i < 16384; ++i) update_sketch1.update(i);
+
+  auto update_sketch2 = datasketches::update_theta_sketch::builder().set_lg_k(14).build();
+  for(int i = 0; i < 26384; ++i) update_sketch2.update(i);
+
+  auto update_sketch3 = datasketches::update_theta_sketch::builder().set_lg_k(14).build();
+  for(int i = 0; i < 86384; ++i) update_sketch3.update(i);
+
+  auto union1 = datasketches::theta_union::builder().set_lg_k(16).build();
+  union1.update(update_sketch2);
+  union1.update(update_sketch1);
+  union1.update(update_sketch3);
+  auto result1 = union1.get_result();
+  REQUIRE(result1.get_estimate() == update_sketch3.get_estimate());
+
+  auto union2 = datasketches::theta_union::builder().set_lg_k(16).build();
+  union2.update(update_sketch1);
+  union2.update(update_sketch3);
+  union2.update(update_sketch2);
+  auto result2 = union2.get_result();
+  REQUIRE(result2.get_estimate() == update_sketch3.get_estimate());
+}
+
 } /* namespace datasketches */

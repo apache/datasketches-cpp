@@ -32,7 +32,8 @@ bool tuple_sketch<S, A>::is_estimation_mode() const {
 
 template<typename S, typename A>
 double tuple_sketch<S, A>::get_theta() const {
-  return static_cast<double>(get_theta64()) / theta_constants::MAX_THETA;
+  return static_cast<double>(get_theta64()) /
+         static_cast<double>(theta_constants::MAX_THETA);
 }
 
 template<typename S, typename A>

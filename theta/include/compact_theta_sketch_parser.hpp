@@ -20,7 +20,7 @@
 #ifndef COMPACT_THETA_SKETCH_PARSER_HPP_
 #define COMPACT_THETA_SKETCH_PARSER_HPP_
 
-#include <stdint.h>
+#include <cstdint>
 
 namespace datasketches {
 
@@ -33,7 +33,8 @@ public:
     uint16_t seed_hash;
     uint32_t num_entries;
     uint64_t theta;
-    const uint64_t* entries;
+    const void* entries_start_ptr;
+    uint8_t entry_bits;
   };
 
   static compact_theta_sketch_data parse(const void* ptr, size_t size, uint64_t seed, bool dump_on_error = false);
@@ -45,18 +46,23 @@ private:
   static const size_t COMPACT_SKETCH_TYPE_BYTE = 2;
   static const size_t COMPACT_SKETCH_FLAGS_BYTE = 5;
   static const size_t COMPACT_SKETCH_SEED_HASH_U16 = 3;
-  static const size_t COMPACT_SKETCH_NUM_ENTRIES_U32 = 2;
-  static const size_t COMPACT_SKETCH_SINGLE_ENTRY_U64 = 1;
-  static const size_t COMPACT_SKETCH_ENTRIES_EXACT_U64 = 2;
-  static const size_t COMPACT_SKETCH_THETA_U64 = 2;
-  static const size_t COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 = 3;
+  static const size_t COMPACT_SKETCH_SINGLE_ENTRY_U64 = 1; // ver 3
+  static const size_t COMPACT_SKETCH_NUM_ENTRIES_U32 = 2; // ver 1-3
+  static const size_t COMPACT_SKETCH_ENTRIES_EXACT_U64 = 2; // ver 1-3
+  static const size_t COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 = 3; // ver 1-3
+  static const size_t COMPACT_SKETCH_THETA_U64 = 2; // ver 1-3
+  static const size_t COMPACT_SKETCH_V4_ENTRY_BITS_BYTE = 3;
+  static const size_t COMPACT_SKETCH_V4_NUM_ENTRIES_BYTES_BYTE = 4;
+  static const size_t COMPACT_SKETCH_V4_THETA_U64 = 1;
+  static const size_t COMPACT_SKETCH_V4_PACKED_DATA_EXACT_BYTE = 8;
+  static const size_t COMPACT_SKETCH_V4_PACKED_DATA_ESTIMATION_BYTE = 16;
 
   static const uint8_t COMPACT_SKETCH_IS_EMPTY_FLAG = 2;
   static const uint8_t COMPACT_SKETCH_IS_ORDERED_FLAG = 4;
 
-  static const uint8_t COMPACT_SKETCH_SERIAL_VERSION = 3;
   static const uint8_t COMPACT_SKETCH_TYPE = 3;
 
+  static void check_memory_size(const void* ptr, size_t actual_bytes, size_t expected_bytes, bool dump_on_error);
   static std::string hex_dump(const uint8_t* ptr, size_t size);
 };
 

@@ -153,17 +153,25 @@ inline void HllUtil<A>::hash(const void* key, size_t keyLen, uint64_t seed, Hash
 }
 
 template<typename A>
-inline double HllUtil<A>::getRelErr(bool upperBound, bool unioned,
-                                    uint8_t lgConfigK, uint8_t numStdDev) {
-  return RelativeErrorTables<A>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
-}
-
-template<typename A>
 inline uint8_t HllUtil<A>::checkLgK(uint8_t lgK) {
   if ((lgK >= hll_constants::MIN_LOG_K) && (lgK <= hll_constants::MAX_LOG_K)) {
     return lgK;
   } else {
     throw std::invalid_argument("Invalid value of k: " + std::to_string(lgK));
+  }
+}
+
+template<typename A>
+inline double HllUtil<A>::getRelErr(bool upperBound, bool unioned,
+                                    uint8_t lgConfigK, uint8_t numStdDev) {
+  checkLgK(lgConfigK);
+  if (lgConfigK > 12) {
+    const double rseFactor = unioned ?
+        hll_constants::HLL_NON_HIP_RSE_FACTOR : hll_constants::HLL_HIP_RSE_FACTOR;
+    const uint32_t configK = 1 << lgConfigK;
+    return (upperBound ? -1 : 1) * (numStdDev * rseFactor) / sqrt(configK);
+  } else {
+    return RelativeErrorTables<A>::getRelErr(upperBound, unioned, lgConfigK, numStdDev);
   }
 }
 

@@ -42,9 +42,11 @@ target_link_libraries(python
     cpc
     fi
     theta
+    tuple
     sampling
     req
     quantiles
+    count
     density
     pybind11::module
 )
@@ -73,11 +75,13 @@ target_sources(python
     src/cpc_wrapper.cpp
     src/fi_wrapper.cpp
     src/theta_wrapper.cpp
+    src/tuple_wrapper.cpp
     src/vo_wrapper.cpp
     src/req_wrapper.cpp
     src/quantiles_wrapper.cpp
     src/density_wrapper.cpp
     src/ks_wrapper.cpp
+    src/count_wrapper.cpp
     src/vector_of_kll.cpp
     src/py_serde.cpp
 )

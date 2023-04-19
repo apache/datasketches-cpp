@@ -47,7 +47,7 @@ bool coupon_iterator<A>::operator!=(const coupon_iterator& other) const {
 }
 
 template<typename A>
-uint32_t coupon_iterator<A>::operator*() const {
+auto coupon_iterator<A>::operator*() const -> reference {
   return array_[index_];
 }
 

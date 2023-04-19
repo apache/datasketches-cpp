@@ -346,14 +346,21 @@ class var_opt_sketch {
 };
 
 template<typename T, typename A>
-class var_opt_sketch<T, A>::const_iterator : public std::iterator<std::input_iterator_tag, T> {
+class var_opt_sketch<T, A>::const_iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = std::pair<const T&, const double>;
+  using difference_type = void;
+  using pointer = const return_value_holder<value_type>;
+  using reference = const value_type;
+
   const_iterator(const const_iterator& other);
   const_iterator& operator++();
   const_iterator& operator++(int);
   bool operator==(const const_iterator& other) const;
   bool operator!=(const const_iterator& other) const;
-  const std::pair<const T&, const double> operator*() const;
+  reference operator*() const;
+  pointer operator->() const;
 
 private:
   friend class var_opt_sketch<T, A>;
@@ -362,8 +369,8 @@ private:
   // default iterator over full sketch
   const_iterator(const var_opt_sketch<T, A>& sk, bool is_end);
   
-  // iterates over only one of the H or R region, optionally applying weight correction
-  // to R region (can correct for numerical precision issues)
+  // iterates over only one of the H or R regions
+  // does not apply weight correction
   const_iterator(const var_opt_sketch<T, A>& sk, bool is_end, bool use_r_region);
 
   bool get_mark() const;
@@ -377,14 +384,21 @@ private:
 
 // non-const iterator for internal use
 template<typename T, typename A>
-class var_opt_sketch<T, A>::iterator : public std::iterator<std::input_iterator_tag, T> {
+class var_opt_sketch<T, A>::iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = std::pair<T&, double>;
+  using difference_type = void;
+  using pointer = return_value_holder<value_type>;
+  using reference = value_type;
+
   iterator(const iterator& other);
   iterator& operator++();
   iterator& operator++(int);
   bool operator==(const iterator& other) const;
   bool operator!=(const iterator& other) const;
-  std::pair<T&, double> operator*();
+  reference operator*();
+  pointer operator->();
 
 private:
   friend class var_opt_sketch<T, A>;

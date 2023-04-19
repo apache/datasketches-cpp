@@ -45,6 +45,13 @@ class VoTest(unittest.TestCase):
     items = vo.get_samples()
     self.assertEqual(len(items), k)
 
+    count = 0
+    for tuple in vo:
+      sample = tuple[0]
+      weight = tuple[1]
+      count = count + 1
+    self.assertEqual(count, vo.num_samples)
+
     # we can also apply a predicate to the sketch to get an estimate
     # (with optimally minimal variance) of the subset sum of items
     # matching that predicate among the entire population

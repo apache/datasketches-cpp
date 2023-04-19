@@ -52,10 +52,6 @@ class HllArray : public HllSketchImpl<A> {
     virtual double getLowerBound(uint8_t numStdDev) const;
     virtual double getUpperBound(uint8_t numStdDev) const;
 
-    inline void addToHipAccum(double delta);
-
-    inline void decNumAtCurMin();
-
     inline uint8_t getCurMin() const;
     inline uint32_t getNumAtCurMin() const;
     inline double getHipAccum() const;
@@ -96,6 +92,8 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual A getAllocator() const;
 
+    const vector_u8<A>& getHllArray() const;
+
   protected:
     void hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue);
     double getHllBitMapEstimate() const;
@@ -113,12 +111,18 @@ class HllArray : public HllSketchImpl<A> {
 };
 
 template<typename A>
-class HllArray<A>::const_iterator: public std::iterator<std::input_iterator_tag, uint32_t> {
+class HllArray<A>::const_iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = uint32_t;
+  using difference_type = void;
+  using pointer = uint32_t*;
+  using reference = uint32_t;
+
   const_iterator(const uint8_t* array, uint32_t array_slze, uint32_t index, target_hll_type hll_type, const AuxHashMap<A>* exceptions, uint8_t offset, bool all);
   const_iterator& operator++();
   bool operator!=(const const_iterator& other) const;
-  uint32_t operator*() const;
+  reference operator*() const;
 private:
   const uint8_t* array_;
   uint32_t array_size_;

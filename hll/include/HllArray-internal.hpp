@@ -299,7 +299,7 @@ double HllArray<A>::getEstimate() const {
   if (oooFlag_) {
     return getCompositeEstimate();
   }
-  return getHipAccum();
+  return hipAccum_;
 }
 
 // HLL UPPER AND LOWER BOUNDS
@@ -322,54 +322,20 @@ double HllArray<A>::getLowerBound(uint8_t numStdDev) const {
   HllUtil<A>::checkNumStdDev(numStdDev);
   const uint32_t configK = 1 << this->lgConfigK_;
   const double numNonZeros = ((curMin_ == 0) ? (configK - numAtCurMin_) : configK);
-
-  double estimate;
-  double rseFactor;
-  if (oooFlag_) {
-    estimate = getCompositeEstimate();
-    rseFactor = hll_constants::HLL_NON_HIP_RSE_FACTOR;
-  } else {
-    estimate = hipAccum_;
-    rseFactor = hll_constants::HLL_HIP_RSE_FACTOR;
-  }
-
-  double relErr;
-  if (this->lgConfigK_ > 12) {
-    relErr = (numStdDev * rseFactor) / sqrt(configK);
-  } else {
-    relErr = HllUtil<A>::getRelErr(false, oooFlag_, this->lgConfigK_, numStdDev);
-  }
-  return fmax(estimate / (1.0 + relErr), numNonZeros);
+  const double relErr = HllUtil<A>::getRelErr(false, this->oooFlag_, this->lgConfigK_, numStdDev);
+  return fmax(getEstimate() / (1.0 + relErr), numNonZeros);
 }
 
 template<typename A>
 double HllArray<A>::getUpperBound(uint8_t numStdDev) const {
   HllUtil<A>::checkNumStdDev(numStdDev);
-  const uint32_t configK = 1 << this->lgConfigK_;
-
-  double estimate;
-  double rseFactor;
-  if (oooFlag_) {
-    estimate = getCompositeEstimate();
-    rseFactor = hll_constants::HLL_NON_HIP_RSE_FACTOR;
-  } else {
-    estimate = hipAccum_;
-    rseFactor = hll_constants::HLL_HIP_RSE_FACTOR;
-  }
-
-  double relErr;
-  if (this->lgConfigK_ > 12) {
-    relErr = (-1.0) * (numStdDev * rseFactor) / sqrt(configK);
-  } else {
-    relErr = HllUtil<A>::getRelErr(true, oooFlag_, this->lgConfigK_, numStdDev);
-  }
-  return estimate / (1.0 + relErr);
+  const double relErr = HllUtil<A>::getRelErr(true, this->oooFlag_, this->lgConfigK_, numStdDev);
+  return getEstimate() / (1.0 + relErr);
 }
 
 /**
  * This is the (non-HIP) estimator.
  * It is called "composite" because multiple estimators are pasted together.
- * @param absHllArr an instance of the AbstractHllArray class.
  * @return the composite estimate
  */
 // Original C: again-two-registers.c hhb_get_composite_estimate L1489
@@ -469,16 +435,6 @@ void HllArray<A>::putNumAtCurMin(uint32_t numAtCurMin) {
 }
 
 template<typename A>
-void HllArray<A>::decNumAtCurMin() {
-  --numAtCurMin_;
-}
-
-template<typename A>
-void HllArray<A>::addToHipAccum(double delta) {
-  hipAccum_ += delta;
-}
-
-template<typename A>
 bool HllArray<A>::isCompact() const {
   return false;
 }
@@ -486,7 +442,7 @@ bool HllArray<A>::isCompact() const {
 template<typename A>
 bool HllArray<A>::isEmpty() const {
   const uint32_t configK = 1 << this->lgConfigK_;
-  return (getCurMin() == 0) && (getNumAtCurMin() == configK);
+  return (curMin_ == 0) && (numAtCurMin_ == configK);
 }
 
 template<typename A>
@@ -554,6 +510,11 @@ uint8_t HllArray<A>::getPreInts() const {
 template<typename A>
 AuxHashMap<A>* HllArray<A>::getAuxHashMap() const {
   return nullptr;
+}
+
+template<typename A>
+const vector_u8<A>& HllArray<A>::getHllArray() const {
+  return hllByteArr_;
 }
 
 template<typename A>
@@ -637,7 +598,7 @@ bool HllArray<A>::const_iterator::operator!=(const const_iterator& other) const 
 }
 
 template<typename A>
-uint32_t HllArray<A>::const_iterator::operator*() const {
+auto HllArray<A>::const_iterator::operator*() const -> reference {
   return HllUtil<A>::pair(index_, value_);
 }
 

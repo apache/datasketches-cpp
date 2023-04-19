@@ -48,6 +48,7 @@ class Hll8Array final : public HllArray<A> {
 
   private:
     inline void internalCouponUpdate(uint32_t coupon);
+    inline void processValue(uint32_t slot, uint32_t mask, uint8_t new_val);
 };
 
 }

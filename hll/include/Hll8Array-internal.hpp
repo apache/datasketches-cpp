@@ -77,13 +77,11 @@ void Hll8Array<A>::internalCouponUpdate(uint32_t coupon) {
   const uint32_t slotNo = HllUtil<A>::getLow26(coupon) & configKmask;
   const uint8_t newVal = HllUtil<A>::getValue(coupon);
 
-  const uint8_t curVal = getSlot(slotNo);
+  const uint8_t curVal = this->hllByteArr_[slotNo];
   if (newVal > curVal) {
-    putSlot(slotNo, newVal);
+    this->hllByteArr_[slotNo] = newVal;
     this->hipAndKxQIncrementalUpdate(curVal, newVal);
-    if (curVal == 0) {
-      this->numAtCurMin_--; // interpret numAtCurMin as num zeros
-    }
+    this->numAtCurMin_ -= curVal == 0; // interpret numAtCurMin as num zeros
   }
 }
 
@@ -97,48 +95,48 @@ void Hll8Array<A>::mergeList(const CouponList<A>& src) {
 template<typename A>
 void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
   // at this point src_k >= dst_k
-  const uint32_t src_k = 1 << src.getLgConfigK();
   const uint32_t dst_mask = (1 << this->getLgConfigK()) - 1;
-  // duplication below is to avoid a virtual method call in a loop
+  // special treatment below to optimize performance
   if (src.getTgtHllType() == target_hll_type::HLL_8) {
-    for (uint32_t i = 0; i < src_k; i++) {
-      const uint8_t new_v = static_cast<const Hll8Array<A>&>(src).getSlot(i);
-      const uint32_t j = i & dst_mask;
-      const uint8_t old_v = this->hllByteArr_[j];
-      if (new_v > old_v) {
-        this->hllByteArr_[j] = new_v;
-        this->hipAndKxQIncrementalUpdate(old_v, new_v);
-        if (old_v == 0) {
-          this->numAtCurMin_--;
-        }
-      }
+    uint32_t i = 0;
+    for (const auto value: src.getHllArray()) {
+      processValue(i++, dst_mask, value);
     }
   } else if (src.getTgtHllType() == target_hll_type::HLL_6) {
-    for (uint32_t i = 0; i < src_k; i++) {
-      const uint8_t new_v = static_cast<const Hll6Array<A>&>(src).getSlot(i);
-      const uint32_t j = i & dst_mask;
-      const uint8_t old_v = this->hllByteArr_[j];
-      if (new_v > old_v) {
-        this->hllByteArr_[j] = new_v;
-        this->hipAndKxQIncrementalUpdate(old_v, new_v);
-        if (old_v == 0) {
-          this->numAtCurMin_--;
-        }
-      }
+    const uint32_t src_k = 1 << src.getLgConfigK();
+    uint32_t i = 0;
+    const uint8_t* ptr = src.getHllArray().data();
+    while (i < src_k) {
+      uint8_t value = *ptr & 0x3f;
+      processValue(i++, dst_mask, value);
+      value = *ptr++ >> 6;
+      value |= (*ptr & 0x0f) << 2;
+      processValue(i++, dst_mask, value);
+      value = *ptr++ >> 4;
+      value |= (*ptr & 3) << 4;
+      processValue(i++, dst_mask, value);
+      value = *ptr++ >> 2;
+      processValue(i++, dst_mask, value);
     }
   } else { // HLL_4
-    for (uint32_t i = 0; i < src_k; i++) {
-      const uint8_t new_v = static_cast<const Hll4Array<A>&>(src).get_value(i);
-      const uint32_t j = i & dst_mask;
-      const uint8_t old_v = this->hllByteArr_[j];
-      if (new_v > old_v) {
-        this->hllByteArr_[j] = new_v;
-        this->hipAndKxQIncrementalUpdate(old_v, new_v);
-        if (old_v == 0) {
-          this->numAtCurMin_--;
-        }
-      }
+    const auto& src4 = static_cast<const Hll4Array<A>&>(src);
+    uint32_t i = 0;
+    for (const auto byte: src.getHllArray()) {
+      processValue(i, dst_mask, src4.adjustRawValue(i, byte & hll_constants::loNibbleMask));
+      ++i;
+      processValue(i, dst_mask, src4.adjustRawValue(i, byte >> 4));
+      ++i;
     }
+  }
+}
+
+template<typename A>
+void Hll8Array<A>::processValue(uint32_t slot, uint32_t mask, uint8_t new_val) {
+  const uint8_t old_val = this->hllByteArr_[slot & mask];
+  if (new_val > old_val) {
+    this->hllByteArr_[slot & mask] = new_val;
+    this->hipAndKxQIncrementalUpdate(old_val, new_val);
+    this->numAtCurMin_ -= old_val == 0;
   }
 }
 

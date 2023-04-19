@@ -41,7 +41,7 @@ void theta_union_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   if (sketch.is_empty()) return;
   if (sketch.get_seed_hash() != compute_seed_hash(table_.seed_)) throw std::invalid_argument("seed hash mismatch");
   table_.is_empty_ = false;
-  if (sketch.get_theta64() < union_theta_) union_theta_ = sketch.get_theta64();
+  union_theta_ = std::min(union_theta_, sketch.get_theta64());
   for (auto& entry: sketch) {
     const uint64_t hash = EK()(entry);
     if (hash < union_theta_ && hash < table_.theta_) {
@@ -55,7 +55,7 @@ void theta_union_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
       if (sketch.is_ordered()) break; // early stop
     }
   }
-  if (table_.theta_ < union_theta_) union_theta_ = table_.theta_;
+  union_theta_ = std::min(union_theta_, table_.theta_);
 }
 
 template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
@@ -65,16 +65,16 @@ CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
   entries.reserve(table_.num_entries_);
   uint64_t theta = std::min(union_theta_, table_.theta_);
   const uint32_t nominal_num = 1 << table_.lg_nom_size_;
-  if (union_theta_ >= theta && table_.num_entries_ <= nominal_num) {
+  if (union_theta_ >= table_.theta_) {
     std::copy_if(table_.begin(), table_.end(), std::back_inserter(entries), key_not_zero<EN, EK>());
   } else {
     std::copy_if(table_.begin(), table_.end(), std::back_inserter(entries), key_not_zero_less_than<uint64_t, EN, EK>(theta));
-    if (entries.size() > nominal_num) {
-      std::nth_element(entries.begin(), entries.begin() + nominal_num, entries.end(), comparator());
-      theta = EK()(entries[nominal_num]);
-      entries.erase(entries.begin() + nominal_num, entries.end());
-      entries.shrink_to_fit();
-    }
+  }
+  if (entries.size() > nominal_num) {
+    std::nth_element(entries.begin(), entries.begin() + nominal_num, entries.end(), comparator());
+    theta = EK()(entries[nominal_num]);
+    entries.erase(entries.begin() + nominal_num, entries.end());
+    entries.shrink_to_fit();
   }
   if (ordered) std::sort(entries.begin(), entries.end(), comparator());
   return CS(table_.is_empty_, ordered, compute_seed_hash(table_.seed_), theta, std::move(entries));
