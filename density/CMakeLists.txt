@@ -15,24 +15,28 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""The Apache DataSketches Library for Python
+add_library(density INTERFACE)
 
-Provided under the Apache License, Verison 2.0
-<http://www.apache.org/licenses/LICENSE-2.0>
-"""
+add_library(${PROJECT_NAME}::DENSITY ALIAS density)
 
-name = 'datasketches'
+if (BUILD_TESTS)
+  add_subdirectory(test)
+endif()
 
-from _datasketches import *
+target_include_directories(density
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+)
 
-from .PySerDe import *
-from .TuplePolicy import *
-from .KernelFunction import *
+target_link_libraries(density INTERFACE common)
+target_compile_features(density INTERFACE cxx_std_11)
 
-# Wrappers around the pybind11 classes for cases where we
-# need to define a python object that is persisted within
-# the C++ object. Currently, the native python portion of
-# a class derived from a C++ class may be garbage collected
-# even though a pointer to the C++ portion remains valid.
-from .TupleWrapper import *
-from .DensityWrapper import *
+install(TARGETS density
+  EXPORT ${PROJECT_NAME}
+)
+
+install(FILES 
+		include/density_sketch.hpp
+		include/density_sketch_impl.hpp
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

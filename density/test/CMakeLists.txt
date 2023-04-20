@@ -15,24 +15,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""The Apache DataSketches Library for Python
+add_executable(density_test)
 
-Provided under the Apache License, Verison 2.0
-<http://www.apache.org/licenses/LICENSE-2.0>
-"""
+target_link_libraries(density_test density common_test_lib)
 
-name = 'datasketches'
+set_target_properties(density_test PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED YES
+)
 
-from _datasketches import *
+add_test(
+  NAME density_test
+  COMMAND density_test
+)
 
-from .PySerDe import *
-from .TuplePolicy import *
-from .KernelFunction import *
-
-# Wrappers around the pybind11 classes for cases where we
-# need to define a python object that is persisted within
-# the C++ object. Currently, the native python portion of
-# a class derived from a C++ class may be garbage collected
-# even though a pointer to the C++ portion remains valid.
-from .TupleWrapper import *
-from .DensityWrapper import *
+target_sources(density_test
+  PRIVATE
+    density_sketch_test.cpp
+)

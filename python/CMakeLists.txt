@@ -47,6 +47,7 @@ target_link_libraries(python
     req
     quantiles
     count
+    density
     pybind11::module
 )
 
@@ -78,6 +79,7 @@ target_sources(python
     src/vo_wrapper.cpp
     src/req_wrapper.cpp
     src/quantiles_wrapper.cpp
+    src/density_wrapper.cpp
     src/ks_wrapper.cpp
     src/count_wrapper.cpp
     src/vector_of_kll.cpp

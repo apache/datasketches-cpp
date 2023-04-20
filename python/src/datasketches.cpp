@@ -32,6 +32,7 @@ void init_vo(py::module& m);
 void init_req(py::module& m);
 void init_quantiles(py::module& m);
 void init_count_min(py::module& m);
+void init_density(py::module& m);
 void init_vector_of_kll(py::module& m);
 
 // supporting objects
@@ -49,6 +50,7 @@ PYBIND11_MODULE(_datasketches, m) {
   init_req(m);
   init_quantiles(m);
   init_count_min(m);
+  init_density(m);
   init_vector_of_kll(m);
 
   init_kolmogorov_smirnov(m);

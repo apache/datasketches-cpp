@@ -15,24 +15,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""The Apache DataSketches Library for Python
+import numpy as np
 
-Provided under the Apache License, Verison 2.0
-<http://www.apache.org/licenses/LICENSE-2.0>
-"""
+from _datasketches import KernelFunction
 
-name = 'datasketches'
+# This file provides an example Python Kernel Function implementation.
+#
+# Each implementation must extend the KernelFunction class
+# and define the __call__ method
 
-from _datasketches import *
+# Implements a basic Gaussian Kernel
+class GaussianKernel(KernelFunction):
+  def __init__(self, bandwidth: float=1.0):
+    KernelFunction.__init__(self)
+    self._bw = bandwidth
+    self._scale = -0.5 * (bandwidth ** -2)
 
-from .PySerDe import *
-from .TuplePolicy import *
-from .KernelFunction import *
-
-# Wrappers around the pybind11 classes for cases where we
-# need to define a python object that is persisted within
-# the C++ object. Currently, the native python portion of
-# a class derived from a C++ class may be garbage collected
-# even though a pointer to the C++ portion remains valid.
-from .TupleWrapper import *
-from .DensityWrapper import *
+  def __call__(self, a: np.array, b: np.array) -> float:
+    return np.exp(self._scale * np.linalg.norm(a - b)**2)
