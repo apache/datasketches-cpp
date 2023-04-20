@@ -35,6 +35,25 @@ HllArray<A>(lgConfigK, target_hll_type::HLL_6, startFullSize, allocator)
 }
 
 template<typename A>
+Hll6Array<A>::Hll6Array(const HllArray<A>& other) :
+  HllArray<A>(other.getLgConfigK(), target_hll_type::HLL_6, other.isStartFullSize(), other.getAllocator())
+{
+  const int numBytes = this->hll6ArrBytes(this->lgConfigK_);
+  this->hllByteArr_.resize(numBytes, 0);
+  this->oooFlag_ = other.isOutOfOrderFlag();
+  uint32_t num_zeros = 1 << this->lgConfigK_;
+  
+  for (const auto& coupon : other) { // all = false, so skip empty values
+    num_zeros--;
+    internalCouponUpdate(coupon); // updates KxQ registers
+  }
+  
+  this->numAtCurMin_ = num_zeros;
+  this->hipAccum_ = other.getHipAccum();
+  this->rebuild_kxq_curmin_ = false;
+}
+
+template<typename A>
 std::function<void(HllSketchImpl<A>*)> Hll6Array<A>::get_deleter() const {
   return [](HllSketchImpl<A>* ptr) {
     using Hll6Alloc = typename std::allocator_traits<A>::template rebind_alloc<Hll6Array<A>>;
@@ -98,13 +117,6 @@ void Hll6Array<A>::internalCouponUpdate(uint32_t coupon) {
     if (curVal == 0) {
       this->numAtCurMin_--; // interpret numAtCurMin as num zeros
     }
-  }
-}
-
-template<typename A>
-void Hll6Array<A>::mergeHll(const HllArray<A>& src) {
-  for (const auto coupon: src) {
-    internalCouponUpdate(coupon);
   }
 }
 

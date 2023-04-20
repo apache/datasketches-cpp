@@ -33,6 +33,25 @@ HllArray<A>(lgConfigK, target_hll_type::HLL_8, startFullSize, allocator)
 }
 
 template<typename A>
+Hll8Array<A>::Hll8Array(const HllArray<A>& other):
+  HllArray<A>(other.getLgConfigK(), target_hll_type::HLL_8, other.isStartFullSize(), other.getAllocator())
+{
+  const int numBytes = this->hll8ArrBytes(this->lgConfigK_);
+  this->hllByteArr_.resize(numBytes, 0);
+  this->oooFlag_ = other.isOutOfOrderFlag();
+  uint32_t num_zeros = 1 << this->lgConfigK_;
+  
+  for (const auto& coupon : other) { // all = false, so skip empty values
+    num_zeros--;
+    internalCouponUpdate(coupon); // updates KxQ registers
+  }
+  
+  this->numAtCurMin_ = num_zeros;
+  this->hipAccum_ = other.getHipAccum();
+  this->rebuild_kxq_curmin_ = false;
+}
+
+template<typename A>
 std::function<void(HllSketchImpl<A>*)> Hll8Array<A>::get_deleter() const {
   return [](HllSketchImpl<A>* ptr) {
     Hll8Array<A>* hll = static_cast<Hll8Array<A>*>(ptr);
@@ -128,16 +147,14 @@ void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
       ++i;
     }
   }
+  this->setRebuildKxqCurminFlag(true);
 }
+
 
 template<typename A>
 void Hll8Array<A>::processValue(uint32_t slot, uint32_t mask, uint8_t new_val) {
-  const uint8_t old_val = this->hllByteArr_[slot & mask];
-  if (new_val > old_val) {
-    this->hllByteArr_[slot & mask] = new_val;
-    this->hipAndKxQIncrementalUpdate(old_val, new_val);
-    this->numAtCurMin_ -= old_val == 0;
-  }
+  const size_t index = slot & mask;
+  this->hllByteArr_[index] = std::max(this->hllByteArr_[index], new_val);
 }
 
 }

@@ -43,20 +43,42 @@ kxq1_(0.0),
 hllByteArr_(allocator),
 curMin_(0),
 numAtCurMin_(1 << lgConfigK),
-oooFlag_(false)
+oooFlag_(false),
+rebuild_kxq_curmin_(false)
+{}
+
+template<typename A>
+HllArray<A>::HllArray(const HllArray& other, target_hll_type tgtHllType) :
+  HllSketchImpl<A>(other.getLgConfigK(), tgtHllType, hll_mode::HLL, other.isStartFullSize()),
+  // remaining fields are initialized to empty sketch defaults
+  // and left to subclass constructor to populate
+  hipAccum_(0.0),
+  kxq0_(1 << other.getLgConfigK()),
+  kxq1_(0.0),
+  hllByteArr_(other.getAllocator()),
+  curMin_(0),
+  numAtCurMin_(1 << other.getLgConfigK()),
+  oooFlag_(false),
+  rebuild_kxq_curmin_(false)
 {}
 
 template<typename A>
 HllArray<A>* HllArray<A>::copyAs(target_hll_type tgtHllType) const {
-  if (tgtHllType == this->getTgtHllType()) {
+  // we may need to recompute KxQ and curMin data for a union gadget,
+  // so only use a direct copy if we have a valid sketch
+  if (tgtHllType == this->getTgtHllType() && !this->isRebuildKxqCurminFlag()) {
     return static_cast<HllArray*>(copy());
   }
-  if (tgtHllType == target_hll_type::HLL_4) {
-    return HllSketchImplFactory<A>::convertToHll4(*this);
-  } else if (tgtHllType == target_hll_type::HLL_6) {
-    return HllSketchImplFactory<A>::convertToHll6(*this);
-  } else { // tgtHllType == HLL_8
-    return HllSketchImplFactory<A>::convertToHll8(*this);
+  
+  // the factory methods replay the coupons and will always rebuild
+  // the sketch in a consistent way
+  switch (tgtHllType) {
+    case target_hll_type::HLL_4:
+      return HllSketchImplFactory<A>::convertToHll4(*this);
+    case target_hll_type::HLL_6:
+      return HllSketchImplFactory<A>::convertToHll6(*this);
+    case target_hll_type::HLL_8:
+      return HllSketchImplFactory<A>::convertToHll8(*this);
   }
 }
 
@@ -563,6 +585,16 @@ double HllArray<A>::getHllRawEstimate() const {
 }
 
 template<typename A>
+void HllArray<A>::setRebuildKxqCurminFlag(bool rebuild) {
+  rebuild_kxq_curmin_ = rebuild;
+}
+
+template<typename A>
+bool HllArray<A>::isRebuildKxqCurminFlag() const {
+  return rebuild_kxq_curmin_;
+}
+
+template<typename A>
 typename HllArray<A>::const_iterator HllArray<A>::begin(bool all) const {
   return const_iterator(hllByteArr_.data(), 1 << this->lgConfigK_, 0, this->tgtHllType_, nullptr, 0, all);
 }
@@ -604,6 +636,8 @@ auto HllArray<A>::const_iterator::operator*() const -> reference {
 
 template<typename A>
 uint8_t HllArray<A>::const_iterator::get_value(const uint8_t* array, uint32_t index, target_hll_type hll_type, const AuxHashMap<A>* exceptions, uint8_t offset) {
+  // TODO: we should be able to improve efficiency here by reading multiple bytes at a time
+  //       for HLL4 and HLL6
   if (hll_type == target_hll_type::HLL_4) {
     uint8_t value = array[index >> 1];
     if ((index & 1) > 0) { // odd

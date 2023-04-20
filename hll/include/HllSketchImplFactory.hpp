@@ -136,38 +136,20 @@ HllSketchImpl<A>* HllSketchImplFactory<A>::reset(HllSketchImpl<A>* impl, bool st
 
 template<typename A>
 Hll4Array<A>* HllSketchImplFactory<A>::convertToHll4(const HllArray<A>& srcHllArr) {
-  const uint8_t lgConfigK = srcHllArr.getLgConfigK();
   using Hll4Alloc = typename std::allocator_traits<A>::template rebind_alloc<Hll4Array<A>>;
-  Hll4Array<A>* hll4Array = new (Hll4Alloc(srcHllArr.getAllocator()).allocate(1))
-      Hll4Array<A>(lgConfigK, srcHllArr.isStartFullSize(), srcHllArr.getAllocator());
-  hll4Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());
-  hll4Array->mergeHll(srcHllArr);
-  hll4Array->putHipAccum(srcHllArr.getHipAccum());
-  return hll4Array;
+  return new (Hll4Alloc(srcHllArr.getAllocator()).allocate(1)) Hll4Array<A>(srcHllArr);
 }
 
 template<typename A>
 Hll6Array<A>* HllSketchImplFactory<A>::convertToHll6(const HllArray<A>& srcHllArr) {
-  const uint8_t lgConfigK = srcHllArr.getLgConfigK();
   using Hll6Alloc = typename std::allocator_traits<A>::template rebind_alloc<Hll6Array<A>>;
-  Hll6Array<A>* hll6Array = new (Hll6Alloc(srcHllArr.getAllocator()).allocate(1))
-      Hll6Array<A>(lgConfigK, srcHllArr.isStartFullSize(), srcHllArr.getAllocator());
-  hll6Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());
-  hll6Array->mergeHll(srcHllArr);
-  hll6Array->putHipAccum(srcHllArr.getHipAccum());
-  return hll6Array;
+  return new (Hll6Alloc(srcHllArr.getAllocator()).allocate(1)) Hll6Array<A>(srcHllArr);
 }
 
 template<typename A>
 Hll8Array<A>* HllSketchImplFactory<A>::convertToHll8(const HllArray<A>& srcHllArr) {
-  const uint8_t lgConfigK = srcHllArr.getLgConfigK();
   using Hll8Alloc = typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>>;
-  Hll8Array<A>* hll8Array = new (Hll8Alloc(srcHllArr.getAllocator()).allocate(1))
-      Hll8Array<A>(lgConfigK, srcHllArr.isStartFullSize(), srcHllArr.getAllocator());
-  hll8Array->putOutOfOrderFlag(srcHllArr.isOutOfOrderFlag());
-  hll8Array->mergeHll(srcHllArr);
-  hll8Array->putHipAccum(srcHllArr.getHipAccum());
-  return hll8Array;
+  return new (Hll8Alloc(srcHllArr.getAllocator()).allocate(1)) Hll8Array<A>(srcHllArr);
 }
 
 }

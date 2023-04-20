@@ -32,6 +32,7 @@ template<typename A>
 class HllArray : public HllSketchImpl<A> {
   public:
     HllArray(uint8_t lgConfigK, target_hll_type tgtHllType, bool startFullSize, const A& allocator);
+    explicit HllArray(const HllArray& other, target_hll_type tgtHllType);
 
     static HllArray* newHll(const void* bytes, size_t len, const A& allocator);
     static HllArray* newHll(std::istream& is, const A& allocator);
@@ -86,6 +87,9 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual AuxHashMap<A>* getAuxHashMap() const;
 
+    virtual void setRebuildKxqCurminFlag(bool rebuild);
+    virtual bool isRebuildKxqCurminFlag() const;
+
     class const_iterator;
     virtual const_iterator begin(bool all = false) const;
     virtual const_iterator end() const;
@@ -106,6 +110,7 @@ class HllArray : public HllSketchImpl<A> {
     uint8_t curMin_; //always zero for Hll6 and Hll8, only tracked by Hll4Array
     uint32_t numAtCurMin_; //interpreted as num zeros when curMin == 0
     bool oooFlag_; //Out-Of-Order Flag
+    bool rebuild_kxq_curmin_; // flag to recompute
 
     friend class HllSketchImplFactory<A>;
 };

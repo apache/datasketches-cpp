@@ -52,6 +52,22 @@ Hll4Array<A>::Hll4Array(const Hll4Array<A>& that) :
 }
 
 template<typename A>
+Hll4Array<A>::Hll4Array(const HllArray<A>& other) :
+  HllArray<A>(other.getLgConfigK(), target_hll_type::HLL_4, other.isStartFullSize(), other.getAllocator()),
+  auxHashMap_(nullptr)
+{
+  const int numBytes = this->hll4ArrBytes(this->lgConfigK_);
+  this->hllByteArr_.resize(numBytes, 0);
+  this->oooFlag_ = other.isOutOfOrderFlag();
+
+  for (const auto& coupon : other) { // all = false, so skip empty values
+    internalCouponUpdate(coupon); // updates KxQ registers
+  }
+  this->hipAccum_ = other.getHipAccum();
+  this->rebuild_kxq_curmin_ = false;
+}
+
+template<typename A>
 Hll4Array<A>::~Hll4Array() {
   // hllByteArr deleted in parent
   if (auxHashMap_ != nullptr) {
@@ -325,13 +341,6 @@ template<typename A>
 typename HllArray<A>::const_iterator Hll4Array<A>::end() const {
   return typename HllArray<A>::const_iterator(this->hllByteArr_.data(), 1 << this->lgConfigK_, 1 << this->lgConfigK_,
       this->tgtHllType_, auxHashMap_, this->curMin_, false);
-}
-
-template<typename A>
-void Hll4Array<A>::mergeHll(const HllArray<A>& src) {
-  for (const auto coupon: src) {
-    internalCouponUpdate(coupon);
-  }
 }
 
 }
