@@ -24,7 +24,7 @@
 
 /*
   This header defines a less than operator on generic python
-  objects. The implementation calls the object's built-in __lr__()
+  objects. The implementation calls the object's built-in __lt__()
   method. If that method is not defined, the call may fail.
 */
 
