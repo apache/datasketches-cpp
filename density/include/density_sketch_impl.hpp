@@ -354,10 +354,11 @@ density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(const void* bytes, 
 
   // levels arrays
   Levels levels(allocator);
-  int64_t num_to_read = num_retained; // num_retrained is uint32_t so this allows error checking
+  int64_t num_to_read = num_retained; // num_retained is uint32_t so this allows error checking
   while (num_to_read > 0) {
     uint32_t level_size;
     ptr += copy_from_mem(ptr, level_size);
+    ensure_minimum_memory(end_ptr - ptr, level_size * pt_size);
     Level lvl(allocator);
     lvl.reserve(level_size);
     for (uint32_t i = 0; i < level_size; ++i) {
@@ -442,7 +443,6 @@ string<A> density_sketch<T, K, A>::to_string(bool print_levels, bool print_items
 
   if (print_items) {
     os << "### Density sketch data:" << std::endl;
-    unsigned level = 0;
     for (unsigned height = 0; height < levels_.size(); ++height) {
       os << " level " << height << ": " << std::endl;
       for (const auto& point: levels_[height]) {
@@ -458,7 +458,6 @@ string<A> density_sketch<T, K, A>::to_string(bool print_levels, bool print_items
         }
         os << "]" << std::endl;
       }
-      ++level;
     }
     os << "### End sketch data" << std::endl;
   }
