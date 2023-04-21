@@ -79,6 +79,8 @@ HllArray<A>* HllArray<A>::copyAs(target_hll_type tgtHllType) const {
       return HllSketchImplFactory<A>::convertToHll6(*this);
     case target_hll_type::HLL_8:
       return HllSketchImplFactory<A>::convertToHll8(*this);
+    default:
+      throw std::invalid_argument("Invalid target HLL type"); 
   }
 }
 
