@@ -131,21 +131,29 @@ void hll_union_alloc<A>::coupon_update(uint32_t coupon) {
 
 template<typename A>
 double hll_union_alloc<A>::get_estimate() const {
+  if (gadget_.sketch_impl->getCurMode() == hll_mode::HLL)
+    static_cast<HllArray<A>*>(gadget_.sketch_impl)->check_rebuild_kxq_cur_min();
   return gadget_.get_estimate();
 }
 
 template<typename A>
 double hll_union_alloc<A>::get_composite_estimate() const {
+  if (gadget_.sketch_impl->getCurMode() == hll_mode::HLL)
+    static_cast<HllArray<A>*>(gadget_.sketch_impl)->check_rebuild_kxq_cur_min();
   return gadget_.get_composite_estimate();
 }
 
 template<typename A>
 double hll_union_alloc<A>::get_lower_bound(uint8_t num_std_dev) const {
+  if (gadget_.sketch_impl->getCurMode() == hll_mode::HLL)
+    static_cast<HllArray<A>*>(gadget_.sketch_impl)->check_rebuild_kxq_cur_min();
   return gadget_.get_lower_bound(num_std_dev);
 }
 
 template<typename A>
 double hll_union_alloc<A>::get_upper_bound(uint8_t num_std_dev) const {
+  if (gadget_.sketch_impl->getCurMode() == hll_mode::HLL)
+    static_cast<HllArray<A>*>(gadget_.sketch_impl)->check_rebuild_kxq_cur_min();
   return gadget_.get_upper_bound(num_std_dev);
 }
 

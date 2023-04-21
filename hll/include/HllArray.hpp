@@ -87,8 +87,9 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual AuxHashMap<A>* getAuxHashMap() const;
 
-    virtual void setRebuildKxqCurminFlag(bool rebuild);
-    virtual bool isRebuildKxqCurminFlag() const;
+    void setRebuildKxqCurminFlag(bool rebuild);
+    bool isRebuildKxqCurminFlag() const;
+    void check_rebuild_kxq_cur_min();
 
     class const_iterator;
     virtual const_iterator begin(bool all = false) const;

@@ -595,6 +595,42 @@ bool HllArray<A>::isRebuildKxqCurminFlag() const {
 }
 
 template<typename A>
+void HllArray<A>::check_rebuild_kxq_cur_min() {
+  if (!rebuild_kxq_curmin_) { return; }
+
+  uint8_t cur_min = 64;
+  uint32_t num_at_cur_min = 0;
+  double kxq0 = 1 << this->lgConfigK_;
+  double kxq1 = 0;
+
+  auto it = this->begin(true); // want all points to adjust cur_min
+  const auto end = this->end();
+  while (it != end) {
+    uint8_t v = HllUtil<A>::getValue(*it);
+    if (v > 0) {
+      if (v < 32) { kxq0 += INVERSE_POWERS_OF_2[v] - 1.0; }
+      else        { kxq1 += INVERSE_POWERS_OF_2[v] - 1.0; }
+    }
+    if (v > cur_min) { ++it; continue; }
+    if (v < cur_min) {
+      cur_min = v;
+      num_at_cur_min = 1;
+    } else {
+      ++num_at_cur_min;
+    }    
+    ++it;
+  }
+
+  kxq0_ = kxq0;
+  kxq1_ = kxq1;
+  curMin_ = cur_min;
+  numAtCurMin_ = num_at_cur_min;
+  rebuild_kxq_curmin_ = false;
+  // HipAccum is not affected
+
+}
+
+template<typename A>
 typename HllArray<A>::const_iterator HllArray<A>::begin(bool all) const {
   return const_iterator(hllByteArr_.data(), 1 << this->lgConfigK_, 0, this->tgtHllType_, nullptr, 0, all);
 }
