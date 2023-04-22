@@ -33,6 +33,25 @@ HllArray<A>(lgConfigK, target_hll_type::HLL_8, startFullSize, allocator)
 }
 
 template<typename A>
+Hll8Array<A>::Hll8Array(const HllArray<A>& other):
+  HllArray<A>(other.getLgConfigK(), target_hll_type::HLL_8, other.isStartFullSize(), other.getAllocator())
+{
+  const int numBytes = this->hll8ArrBytes(this->lgConfigK_);
+  this->hllByteArr_.resize(numBytes, 0);
+  this->oooFlag_ = other.isOutOfOrderFlag();
+  uint32_t num_zeros = 1 << this->lgConfigK_;
+  
+  for (const auto coupon : other) { // all = false, so skip empty values
+    num_zeros--;
+    internalCouponUpdate(coupon); // updates KxQ registers
+  }
+  
+  this->numAtCurMin_ = num_zeros;
+  this->hipAccum_ = other.getHipAccum();
+  this->rebuild_kxq_curmin_ = false;
+}
+
+template<typename A>
 std::function<void(HllSketchImpl<A>*)> Hll8Array<A>::get_deleter() const {
   return [](HllSketchImpl<A>* ptr) {
     Hll8Array<A>* hll = static_cast<Hll8Array<A>*>(ptr);
@@ -95,49 +114,88 @@ void Hll8Array<A>::mergeList(const CouponList<A>& src) {
 template<typename A>
 void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
   // at this point src_k >= dst_k
-  const uint32_t dst_mask = (1 << this->getLgConfigK()) - 1;
-  // special treatment below to optimize performance
-  if (src.getTgtHllType() == target_hll_type::HLL_8) {
-    uint32_t i = 0;
-    for (const auto value: src.getHllArray()) {
-      processValue(i++, dst_mask, value);
+  // we can optimize further when the k values are equal
+  if (this->getLgConfigK() == src.getLgConfigK()) {
+    if (src.getTgtHllType() == target_hll_type::HLL_8) {
+      uint32_t i = 0;
+      for (const auto value: src.getHllArray()) {
+        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
+        ++i;
+      }
+    } else if (src.getTgtHllType() == target_hll_type::HLL_6) {
+      const uint32_t src_k = 1 << src.getLgConfigK();
+      uint32_t i = 0;
+      const uint8_t* ptr = src.getHllArray().data();
+      while (i < src_k) {
+        uint8_t value = *ptr & 0x3f;
+        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
+        ++i;
+        value = *ptr++ >> 6;
+        value |= (*ptr & 0x0f) << 2;
+        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
+        ++i;
+        value = *ptr++ >> 4;
+        value |= (*ptr & 3) << 4;
+        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
+        ++i;
+        value = *ptr++ >> 2;
+        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
+        ++i;
+      }
+    } else { // HLL_4
+      const auto& src4 = static_cast<const Hll4Array<A>&>(src);
+      uint32_t i = 0;
+      for (const auto byte: src.getHllArray()) {
+        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], src4.adjustRawValue(i, byte & hll_constants::loNibbleMask));
+        ++i;
+        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], src4.adjustRawValue(i, byte >> 4));
+        ++i;
+      }
     }
-  } else if (src.getTgtHllType() == target_hll_type::HLL_6) {
-    const uint32_t src_k = 1 << src.getLgConfigK();
-    uint32_t i = 0;
-    const uint8_t* ptr = src.getHllArray().data();
-    while (i < src_k) {
-      uint8_t value = *ptr & 0x3f;
-      processValue(i++, dst_mask, value);
-      value = *ptr++ >> 6;
-      value |= (*ptr & 0x0f) << 2;
-      processValue(i++, dst_mask, value);
-      value = *ptr++ >> 4;
-      value |= (*ptr & 3) << 4;
-      processValue(i++, dst_mask, value);
-      value = *ptr++ >> 2;
-      processValue(i++, dst_mask, value);
-    }
-  } else { // HLL_4
-    const auto& src4 = static_cast<const Hll4Array<A>&>(src);
-    uint32_t i = 0;
-    for (const auto byte: src.getHllArray()) {
-      processValue(i, dst_mask, src4.adjustRawValue(i, byte & hll_constants::loNibbleMask));
-      ++i;
-      processValue(i, dst_mask, src4.adjustRawValue(i, byte >> 4));
-      ++i;
+  } else {
+    // src_k > dst_k
+    const uint32_t dst_mask = (1 << this->getLgConfigK()) - 1;
+    // special treatment below to optimize performance
+    if (src.getTgtHllType() == target_hll_type::HLL_8) {
+      uint32_t i = 0;
+      for (const auto value: src.getHllArray()) {
+        processValue(i++, dst_mask, value);
+      }
+    } else if (src.getTgtHllType() == target_hll_type::HLL_6) {
+      const uint32_t src_k = 1 << src.getLgConfigK();
+      uint32_t i = 0;
+      const uint8_t* ptr = src.getHllArray().data();
+      while (i < src_k) {
+        uint8_t value = *ptr & 0x3f;
+        processValue(i++, dst_mask, value);
+        value = *ptr++ >> 6;
+        value |= (*ptr & 0x0f) << 2;
+        processValue(i++, dst_mask, value);
+        value = *ptr++ >> 4;
+        value |= (*ptr & 3) << 4;
+        processValue(i++, dst_mask, value);
+        value = *ptr++ >> 2;
+        processValue(i++, dst_mask, value);
+      }
+    } else { // HLL_4
+      const auto& src4 = static_cast<const Hll4Array<A>&>(src);
+      uint32_t i = 0;
+      for (const auto byte: src.getHllArray()) {
+        processValue(i, dst_mask, src4.adjustRawValue(i, byte & hll_constants::loNibbleMask));
+        ++i;
+        processValue(i, dst_mask, src4.adjustRawValue(i, byte >> 4));
+        ++i;
+      }
     }
   }
+  this->setRebuildKxqCurminFlag(true);
 }
+
 
 template<typename A>
 void Hll8Array<A>::processValue(uint32_t slot, uint32_t mask, uint8_t new_val) {
-  const uint8_t old_val = this->hllByteArr_[slot & mask];
-  if (new_val > old_val) {
-    this->hllByteArr_[slot & mask] = new_val;
-    this->hipAndKxQIncrementalUpdate(old_val, new_val);
-    this->numAtCurMin_ -= old_val == 0;
-  }
+  const size_t index = slot & mask;
+  this->hllByteArr_[index] = std::max(this->hllByteArr_[index], new_val);
 }
 
 }

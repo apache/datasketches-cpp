@@ -53,10 +53,15 @@ static void basicUnion(uint64_t n1, uint64_t n2,
   v += n2;
 
   hll_union u(lgMaxK);
-  u.update(std::move(h1));
+  u.update(h1);
   u.update(h2);
 
   hll_sketch result = u.get_result(resultType);
+
+  // ensure we check a direct union estimate, without first caling get_result()
+  u.reset();
+  u.update(std::move(h1));
+  u.update(h2);
 
   // force non-HIP estimates to avoid issues with in- vs out-of-order
   double uEst = result.get_composite_estimate();
@@ -74,6 +79,7 @@ static void basicUnion(uint64_t n1, uint64_t n2,
   REQUIRE((uEst - uLb) >= 0.0);
 
   REQUIRE(controlEst == uEst);
+  REQUIRE(controlEst == u.get_composite_estimate());
 }
 
 /**

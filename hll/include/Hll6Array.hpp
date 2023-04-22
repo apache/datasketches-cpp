@@ -31,6 +31,7 @@ template<typename A>
 class Hll6Array final : public HllArray<A> {
   public:
     Hll6Array(uint8_t lgConfigK, bool startFullSize, const A& allocator);
+    explicit Hll6Array(const HllArray<A>& that);
 
     virtual ~Hll6Array() = default;
     virtual std::function<void(HllSketchImpl<A>*)> get_deleter() const;
@@ -41,7 +42,6 @@ class Hll6Array final : public HllArray<A> {
     inline void putSlot(uint32_t slotNo, uint8_t value);
 
     virtual HllSketchImpl<A>* couponUpdate(uint32_t coupon) final;
-    void mergeHll(const HllArray<A>& src);
 
     virtual uint32_t getHllByteArrBytes() const;
 
