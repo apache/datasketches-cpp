@@ -60,7 +60,7 @@ Hll4Array<A>::Hll4Array(const HllArray<A>& other) :
   this->hllByteArr_.resize(numBytes, 0);
   this->oooFlag_ = other.isOutOfOrderFlag();
 
-  for (const auto& coupon : other) { // all = false, so skip empty values
+  for (const auto coupon : other) { // all = false, so skip empty values
     internalCouponUpdate(coupon); // updates KxQ registers
   }
   this->hipAccum_ = other.getHipAccum();

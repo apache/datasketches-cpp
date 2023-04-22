@@ -43,7 +43,7 @@ Hll6Array<A>::Hll6Array(const HllArray<A>& other) :
   this->oooFlag_ = other.isOutOfOrderFlag();
   uint32_t num_zeros = 1 << this->lgConfigK_;
   
-  for (const auto& coupon : other) { // all = false, so skip empty values
+  for (const auto coupon : other) { // all = false, so skip empty values
     num_zeros--;
     internalCouponUpdate(coupon); // updates KxQ registers
   }
