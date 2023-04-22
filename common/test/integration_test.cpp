@@ -19,8 +19,10 @@
 
 #include <catch2/catch.hpp>
 
+#include "count_min.hpp"
 #include "cpc_sketch.hpp"
 #include "cpc_union.hpp"
+#include "density_sketch.hpp"
 #include "frequent_items_sketch.hpp"
 #include "hll.hpp"
 #include "kll_sketch.hpp"
@@ -48,8 +50,12 @@ struct subtracting_intersection_policy {
 using tuple_intersection_float = tuple_intersection<float, subtracting_intersection_policy<float>>;
 
 TEST_CASE("integration: declare all sketches", "[integration]") {
+  count_min_sketch<double> cm(5, 128);
+
   cpc_sketch cpc(12);
   cpc_union cpc_u(12);
+
+  density_sketch<double> ds(32, 3);
 
   frequent_items_sketch<std::string> fi(100);
 
