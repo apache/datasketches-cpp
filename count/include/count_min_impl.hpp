@@ -359,7 +359,7 @@ auto count_min_sketch<W,A>::deserialize(std::istream& is, uint64_t seed, const A
 
 template<typename W, typename A>
 size_t count_min_sketch<W,A>::get_serialized_size_bytes() const {
-  // The header is always 2 bytes, whether empty or full
+  // The header is always 2 longs, whether empty or full
   size_t preamble_longs = PREAMBLE_LONGS_SHORT;
 
   // If the sketch is empty, we're done. Otherwise, we need the total weight
@@ -411,6 +411,8 @@ auto count_min_sketch<W,A>::serialize(unsigned header_size_bytes) const -> vecto
 
 template<typename W, typename A>
 auto count_min_sketch<W,A>::deserialize(const void* bytes, size_t size, uint64_t seed, const A& allocator) -> count_min_sketch {
+  ensure_minimum_memory(size, PREAMBLE_LONGS_SHORT * sizeof(uint64_t));
+
   const char* ptr = static_cast<const char*>(bytes);
 
   // First 8 bytes are 4 bytes of preamble and 4 unused bytes.
@@ -442,6 +444,8 @@ auto count_min_sketch<W,A>::deserialize(const void* bytes, size_t size, uint64_t
   count_min_sketch c(nhashes, nbuckets, seed, allocator) ;
   const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
   if (is_empty) return c ; // sketch is empty, no need to read further.
+
+  ensure_minimum_memory(size, sizeof(W) * (1 + nbuckets * nhashes));
 
   // Long 2 is the weight.
   W weight;

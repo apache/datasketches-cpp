@@ -17,11 +17,10 @@
 
 from abc import ABC, abstractmethod
 
-from .TuplePolicy import TuplePolicy
 from _datasketches import _tuple_sketch, _compact_tuple_sketch, _update_tuple_sketch
 from _datasketches import  _tuple_union, _tuple_intersection
 from _datasketches import _tuple_a_not_b, _tuple_jaccard_similarity
-from _datasketches import PyObjectSerDe, theta_sketch
+from _datasketches import PyObjectSerDe, theta_sketch, TuplePolicy
 
 class tuple_sketch(ABC):
   """An abstract base class representing a Tuple Sketch."""
