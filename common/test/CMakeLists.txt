@@ -74,7 +74,7 @@ target_sources(common_test
 # now the integration test part
 add_executable(integration_test)
 
-target_link_libraries(integration_test cpc fi hll kll req sampling theta tuple common_test_lib)
+target_link_libraries(integration_test count cpc density fi hll kll req sampling theta tuple common_test_lib)
 
 set_target_properties(integration_test PROPERTIES
   CXX_STANDARD 11
