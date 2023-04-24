@@ -28,8 +28,6 @@
 #include "conditional_forward.hpp"
 #include "common_defs.hpp"
 
-#include <iomanip>
-
 namespace datasketches {
 
 template<typename T, typename C, typename A>

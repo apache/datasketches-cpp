@@ -20,7 +20,6 @@
 #ifndef KLL_HELPER_HPP_
 #define KLL_HELPER_HPP_
 
-#include <random>
 #include <stdexcept>
 
 namespace datasketches {
