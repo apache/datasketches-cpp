@@ -30,15 +30,19 @@ The unit tests are mostly structured in a tutorial style and can be used as a re
   - `kll_ints_sketch`
   - `kll_floats_sketch`
   - `kll_doubles_sketch`
+  - `kll_items_sketch`
 - Quantiles (Absolute Error Quantiles, inferior algorithm)
   - `quantiles_ints_sketch`
   - `quantiles_floats_sketch`
   - `quantiles_doubles_sketch`
+  - `quantiles_items_sketch`
 - REQ (Relative Error Quantiles)
   - `req_ints_sketch`
   - `req_floats_sketch`
+  - `req_items_sketch`
 - Frequent Items
   - `frequent_strings_sketch`
+  - `frequent_items_sketch`
   - Error types are `frequent_items_error_type.{NO_FALSE_NEGATIVES | NO_FALSE_POSITIVES}`
 - Theta
   - `update_theta_sketch`
@@ -46,6 +50,14 @@ The unit tests are mostly structured in a tutorial style and can be used as a re
   - `theta_union`
   - `theta_intersection`
   - `theta_a_not_b`
+  - `theta_jaccard_similarity`
+- Tuple
+  - `update_tuple_sketch`
+  - `compact_tuple_sketch` (cannot be instantiated directly)
+  - `tuple_union`
+  - `tuple_intersection`
+  - `tuple_a_not_b`
+  - `tuple_jaccard_similarity`
 - HLL
   - `hll_sketch`
   - `hll_union`
@@ -61,6 +73,10 @@ The unit tests are mostly structured in a tutorial style and can be used as a re
   - `vector_of_kll_floats_sketches`
 - Kolmogorov-Smirnov Test
   - `ks_test` applied to a pair of matched-type Absolute Error quantiles sketches
+- Density
+  - `density_sketch`
+- Count-min sketch
+  - `count_min_sketch`
 
 ## Known Differences from C++
 
