@@ -471,8 +471,14 @@ private:
 };
 
 template<typename Allocator>
-class wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator: public std::iterator<std::input_iterator_tag, uint64_t> {
+class wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator {
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = uint64_t;
+  using difference_type = void;
+  using pointer = uint64_t*;
+  using reference = uint64_t;
+
   const_iterator(const void* ptr, uint8_t entry_bits, uint32_t num_entries, uint32_t index);
   const_iterator& operator++();
   const_iterator operator++(int);
