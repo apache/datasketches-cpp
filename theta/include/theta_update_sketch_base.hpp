@@ -198,7 +198,8 @@ public:
   theta_iterator operator++(int);
   bool operator==(const theta_iterator& other) const;
   bool operator!=(const theta_iterator& other) const;
-  Entry& operator*() const;
+  reference operator*() const;
+  pointer operator->() const;
 
 private:
   Entry* entries_;
@@ -221,6 +222,7 @@ public:
   bool operator==(const theta_const_iterator& other) const;
   bool operator!=(const theta_const_iterator& other) const;
   reference operator*() const;
+  pointer operator->() const;
 
 private:
   const Entry* entries_;

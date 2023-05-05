@@ -869,13 +869,13 @@ bool wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::operator==(c
 }
 
 template<typename Allocator>
-const uint64_t& wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::operator*() const {
+auto wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::operator*() const -> reference {
   if (entry_bits_ == 64) return *reinterpret_cast<const uint64_t*>(ptr_);
   return buffer_[buf_i_];
 }
 
 template<typename Allocator>
-const uint64_t* wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::operator->() const {
+auto wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::operator->() const -> pointer {
   if (entry_bits_ == 64) return reinterpret_cast<const uint64_t*>(ptr_);
   return buffer_ + buf_i_;
 }

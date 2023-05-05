@@ -386,6 +386,11 @@ auto theta_iterator<Entry, ExtractKey>::operator*() const -> reference {
   return entries_[index_];
 }
 
+template<typename Entry, typename ExtractKey>
+auto theta_iterator<Entry, ExtractKey>::operator->() const -> pointer {
+  return entries_ + index_;
+}
+
 // const iterator
 
 template<typename Entry, typename ExtractKey>
@@ -419,8 +424,13 @@ bool theta_const_iterator<Entry, ExtractKey>::operator==(const theta_const_itera
 }
 
 template<typename Entry, typename ExtractKey>
-auto theta_const_iterator<Entry, ExtractKey>::operator*() const -> const Entry& {
+auto theta_const_iterator<Entry, ExtractKey>::operator*() const -> reference {
   return entries_[index_];
+}
+
+template<typename Entry, typename ExtractKey>
+auto theta_const_iterator<Entry, ExtractKey>::operator->() const -> pointer {
+  return entries_ + index_;
 }
 
 } /* namespace datasketches */
