@@ -50,7 +50,7 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
     is_valid_ = true;
     const uint8_t lg_size = lg_size_from_count(sketch.get_num_retained(), theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
     table_ = hash_table(lg_size, lg_size, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
-    for (auto& entry: sketch) {
+    for (auto&& entry: sketch) {
       auto result = table_.find(EK()(entry));
       if (result.second) {
         throw std::invalid_argument("duplicate key, possibly corrupted input sketch");
@@ -64,7 +64,7 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
     matched_entries.reserve(max_matches);
     uint32_t match_count = 0;
     uint32_t count = 0;
-    for (auto& entry: sketch) {
+    for (auto&& entry: sketch) {
       if (EK()(entry) < table_.theta_) {
         auto result = table_.find(EK()(entry));
         if (result.second) {

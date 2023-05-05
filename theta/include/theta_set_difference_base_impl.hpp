@@ -65,7 +65,7 @@ CS theta_set_difference_base<EN, EK, CS, A>::compute(FwdSketch&& a, const Sketch
       }
 
       // scan A lookup B
-      for (auto& entry: a) {
+      for (auto&& entry: a) {
         const uint64_t hash = EK()(entry);
         if (hash < theta) {
           auto result = table.find(hash);
