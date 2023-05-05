@@ -42,7 +42,7 @@ void theta_union_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   if (sketch.get_seed_hash() != compute_seed_hash(table_.seed_)) throw std::invalid_argument("seed hash mismatch");
   table_.is_empty_ = false;
   union_theta_ = std::min(union_theta_, sketch.get_theta64());
-  for (auto entry: sketch) {
+  for (auto&& entry: sketch) {
     const uint64_t hash = EK()(entry);
     if (hash < union_theta_ && hash < table_.theta_) {
       auto result = table_.find(hash);
