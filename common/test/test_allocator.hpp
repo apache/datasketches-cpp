@@ -33,16 +33,16 @@ extern long long test_allocator_net_allocations;
 
 template <class T> class test_allocator {
 public:
-  typedef T                 value_type;
-  typedef value_type*       pointer;
-  typedef const value_type* const_pointer;
-  typedef value_type&       reference;
-  typedef const value_type& const_reference;
-  typedef std::size_t       size_type;
-  typedef std::ptrdiff_t    difference_type;
+  using value_type = T;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
 
   template <class U>
-  struct rebind { typedef test_allocator<U> other; };
+  struct rebind { using other = test_allocator<U>; };
 
   // this is to test that a given instance of an allocator is used instead of instantiating
   static const bool DISALLOW_DEFAULT_CONSTRUCTOR = true;
@@ -66,7 +66,7 @@ public:
   }
 
   pointer allocate(size_type n, const_pointer = 0) {
-    void* p = new char[n * sizeof(value_type)];
+    void* p = ::operator new(n * sizeof(value_type));
     if (!p) throw std::bad_alloc();
     test_allocator_total_bytes += n * sizeof(value_type);
     ++test_allocator_net_allocations;
@@ -74,7 +74,7 @@ public:
   }
 
   void deallocate(pointer p, size_type n) {
-    if (p) delete[] (char*) p;
+    if (p) ::operator delete(p);
     test_allocator_total_bytes -= n * sizeof(value_type);
     --test_allocator_net_allocations;
   }
@@ -92,12 +92,12 @@ public:
 
 template<> class test_allocator<void> {
 public:
-  typedef void        value_type;
-  typedef void*       pointer;
-  typedef const void* const_pointer;
+  using value_type = void;
+  using pointer = void*;
+  using const_pointer = const void*;
 
   template <class U>
-  struct rebind { typedef test_allocator<U> other; };
+  struct rebind { using other = test_allocator<U>; };
 };
 
 
