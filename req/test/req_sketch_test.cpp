@@ -555,11 +555,11 @@ TEST_CASE("req sketch: type conversion - custom types") {
 
 TEST_CASE("get_rank equivalence") {
   req_sketch<int> sketch(12);
-  const size_t n = 1000;
-  for (size_t i = 0; i < n; ++i) sketch.update(i);
+  const int n = 1000;
+  for (int i = 0; i < n; ++i) sketch.update(i);
   REQUIRE(sketch.get_n() == n);
   auto view = sketch.get_sorted_view();
-  for (size_t i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i) {
     REQUIRE(sketch.get_rank(i) == view.get_rank(i));
   }
 }

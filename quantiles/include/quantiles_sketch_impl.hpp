@@ -140,9 +140,9 @@ min_item_(min_item.release()),
 max_item_(max_item.release()),
 sorted_view_(nullptr)
 {
-  uint32_t item_count = base_buffer_.size();
+  uint32_t item_count = static_cast<uint32_t>(base_buffer_.size());
   for (Level& lvl : levels_) {
-    item_count += lvl.size();
+    item_count += static_cast<uint32_t>(lvl.size());
   }
   if (item_count != compute_retained_items(k_, n_))
     throw std::logic_error("Item count does not match value computed from k, n");
