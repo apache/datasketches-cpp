@@ -36,11 +36,11 @@ static inline uint8_t pack_bits(uint64_t value, uint8_t bits, uint8_t*& ptr, uin
     bits -= chunk_bits;
   }
   while (bits >= 8) {
-    *ptr++ = value >> (bits - 8);
+    *ptr++ = static_cast<uint8_t>(value >> (bits - 8));
     bits -= 8;
   }
   if (bits > 0) {
-    *ptr = value << (8 - bits);
+    *ptr = static_cast<uint8_t>(value << (8 - bits));
     return bits;
   }
   return 0;
@@ -73,3146 +73,3146 @@ static inline uint8_t unpack_bits(uint64_t& value, uint8_t bits, const uint8_t*&
 // this assumption allows to avoid masking operations
 
 static inline void pack_bits_1(const uint64_t* values, uint8_t* ptr) {
-  *ptr = values[0] << 7;
-  *ptr |= values[1] << 6;
-  *ptr |= values[2] << 5;
-  *ptr |= values[3] << 4;
-  *ptr |= values[4] << 3;
-  *ptr |= values[5] << 2;
-  *ptr |= values[6] << 1;
-  *ptr |= values[7];
+  *ptr = static_cast<uint8_t>(values[0] << 7);
+  *ptr |= static_cast<uint8_t>(values[1] << 6);
+  *ptr |= static_cast<uint8_t>(values[2] << 5);
+  *ptr |= static_cast<uint8_t>(values[3] << 4);
+  *ptr |= static_cast<uint8_t>(values[4] << 3);
+  *ptr |= static_cast<uint8_t>(values[5] << 2);
+  *ptr |= static_cast<uint8_t>(values[6] << 1);
+  *ptr |= static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_2(const uint64_t* values, uint8_t* ptr) {
-  *ptr = values[0] << 6;
-  *ptr |= values[1] << 4;
-  *ptr |= values[2] << 2;
-  *ptr++ |= values[3];
+  *ptr = static_cast<uint8_t>(values[0] << 6);
+  *ptr |= static_cast<uint8_t>(values[1] << 4);
+  *ptr |= static_cast<uint8_t>(values[2] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[3]);
 
-  *ptr = values[4] << 6;
-  *ptr |= values[5] << 4;
-  *ptr |= values[6] << 2;
-  *ptr |= values[7];
+  *ptr = static_cast<uint8_t>(values[4] << 6);
+  *ptr |= static_cast<uint8_t>(values[5] << 4);
+  *ptr |= static_cast<uint8_t>(values[6] << 2);
+  *ptr |= static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_3(const uint64_t* values, uint8_t* ptr) {
-  *ptr = values[0] << 5;
-  *ptr |= values[1] << 2;
-  *ptr++ |= values[2] >> 1;
+  *ptr = static_cast<uint8_t>(values[0] << 5);
+  *ptr |= static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 1);
 
-  *ptr = values[2] << 7;
-  *ptr |= values[3] << 4;
-  *ptr |= values[4] << 1;
-  *ptr++ |= values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[2] << 7);
+  *ptr |= static_cast<uint8_t>(values[3] << 4);
+  *ptr |= static_cast<uint8_t>(values[4] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr |= values[6] << 3;
-  *ptr |= values[7];
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr |= static_cast<uint8_t>(values[6] << 3);
+  *ptr |= static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_4(const uint64_t* values, uint8_t* ptr) {
-  *ptr = values[0] << 4;
-  *ptr++ |= values[1];
+  *ptr = static_cast<uint8_t>(values[0] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[1]);
 
-  *ptr = values[2] << 4;
-  *ptr++ |= values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[3]);
 
-  *ptr = values[4] << 4;
-  *ptr++ |= values[5];
+  *ptr = static_cast<uint8_t>(values[4] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[5]);
 
-  *ptr = values[6] << 4;
-  *ptr |= values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 4);
+  *ptr |= static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_5(const uint64_t* values, uint8_t* ptr) {
-  *ptr = values[0] << 3;
-  *ptr++ |= values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr |= values[2] << 1;
-  *ptr++ |= values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr |= static_cast<uint8_t>(values[2] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 1;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 1);
 
-  *ptr = values[4] << 7;
-  *ptr |= values[5] << 2;
-  *ptr++ |= values[6] >> 3;
+  *ptr = static_cast<uint8_t>(values[4] << 7);
+  *ptr |= static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 3);
 
-  *ptr = values[6] << 5;
-  *ptr |= values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 5);
+  *ptr |= static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_6(const uint64_t* values, uint8_t* ptr) {
-  *ptr = values[0] << 2;
-  *ptr++ |= values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 2;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 2);
 
-  *ptr = values[2] << 6;
-  *ptr++ |= values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[3]);
 
-  *ptr = values[4] << 2;
-  *ptr++ |= values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 2;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 2);
 
-  *ptr = values[6] << 6;
-  *ptr |= values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 6);
+  *ptr |= static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_7(const uint64_t* values, uint8_t* ptr) {
-  *ptr = values[0] << 1;
-  *ptr++ |= values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 5;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 5);
 
-  *ptr = values[2] << 3;
-  *ptr++ |= values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 3;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 3);
 
-  *ptr = values[4] << 5;
-  *ptr++ |= values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 1;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 1);
 
-  *ptr = values[6] << 7;
-  *ptr |= values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 7);
+  *ptr |= static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_8(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0];
-  *ptr++ = values[1];
-  *ptr++ = values[2];
-  *ptr++ = values[3];
-  *ptr++ = values[4];
-  *ptr++ = values[5];
-  *ptr++ = values[6];
-  *ptr = values[7];
+  *ptr++ = static_cast<uint8_t>(values[0]);
+  *ptr++ = static_cast<uint8_t>(values[1]);
+  *ptr++ = static_cast<uint8_t>(values[2]);
+  *ptr++ = static_cast<uint8_t>(values[3]);
+  *ptr++ = static_cast<uint8_t>(values[4]);
+  *ptr++ = static_cast<uint8_t>(values[5]);
+  *ptr++ = static_cast<uint8_t>(values[6]);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_9(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 1);
 
-  *ptr = values[0] << 7;
-  *ptr++ |= values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 3;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 3);
 
-  *ptr = values[2] << 5;
-  *ptr++ |= values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 5;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 5);
 
-  *ptr = values[4] << 3;
-  *ptr++ |= values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 7;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 7);
 
-  *ptr = values[6] << 1;
-  *ptr++ |= values[7] >> 8;
+  *ptr = static_cast<uint8_t>(values[6] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_10(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 2);
 
-  *ptr = values[0] << 6;
-  *ptr++ |= values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 6;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 6);
 
-  *ptr = values[2] << 2;
-  *ptr++ |= values[3] >> 8;
+  *ptr = static_cast<uint8_t>(values[2] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 8);
 
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 2);
 
-  *ptr = values[4] << 6;
-  *ptr++ |= values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 6;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 6);
 
-  *ptr = values[6] << 2;
-  *ptr++ |= values[7] >> 8;
+  *ptr = static_cast<uint8_t>(values[6] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_11(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 3);
 
-  *ptr = values[0] << 5;
-  *ptr++ |= values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 9;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 9);
 
-  *ptr++ = values[2] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 1);
 
-  *ptr = values[2] << 7;
-  *ptr++ |= values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 7;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 7);
 
-  *ptr = values[4] << 1;
-  *ptr++ |= values[5] >> 10;
+  *ptr = static_cast<uint8_t>(values[4] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 10);
 
-  *ptr++ = values[5] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 5;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 5);
 
-  *ptr = values[6] << 3;
-  *ptr++ |= values[7] >> 8;
+  *ptr = static_cast<uint8_t>(values[6] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_12(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 4);
 
-  *ptr = values[0] << 4;
-  *ptr++ |= values[1] >> 8;
+  *ptr = static_cast<uint8_t>(values[0] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 8);
 
-  *ptr++ = values[1];
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 4);
 
-  *ptr = values[2] << 4;
-  *ptr++ |= values[3] >> 8;
+  *ptr = static_cast<uint8_t>(values[2] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 8);
 
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 4);
 
-  *ptr = values[4] << 4;
-  *ptr++ |= values[5] >> 8;
+  *ptr = static_cast<uint8_t>(values[4] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 8);
 
-  *ptr++ = values[5];
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 4);
 
-  *ptr = values[6] << 4;
-  *ptr++ |= values[7] >> 8;
+  *ptr = static_cast<uint8_t>(values[6] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_13(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 5);
 
-  *ptr = values[0] << 3;
-  *ptr++ |= values[1] >> 10;
+  *ptr = static_cast<uint8_t>(values[0] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 10);
 
-  *ptr++ = values[1] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 7;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 7);
 
-  *ptr = values[2] << 1;
-  *ptr++ |= values[3] >> 12;
+  *ptr = static_cast<uint8_t>(values[2] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 12);
 
-  *ptr++ = values[3] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] >> 4;
-  *ptr++ |= values[4] >> 9;
+  *ptr = static_cast<uint8_t>(values[3] >> 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 9);
 
-  *ptr++ = values[4] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 1);
 
-  *ptr = values[4] << 7;
-  *ptr++ |= values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 11;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 11);
 
-  *ptr++ = values[6] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 3);
 
-  *ptr = values[6] << 5;
-  *ptr++ |= values[7] >> 8;
+  *ptr = static_cast<uint8_t>(values[6] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_14(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 6);
 
-  *ptr = values[0] << 2;
-  *ptr++ |= values[1] >> 12;
+  *ptr = static_cast<uint8_t>(values[0] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 12);
 
-  *ptr++ = values[1] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 10;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 10);
 
-  *ptr++ = values[2] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 2);
 
-  *ptr = values[2] << 6;
-  *ptr++ |= values[3] >> 8;
+  *ptr = static_cast<uint8_t>(values[2] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 8);
 
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 6);
 
-  *ptr = values[4] << 2;
-  *ptr++ |= values[5] >> 12;
+  *ptr = static_cast<uint8_t>(values[4] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 12);
 
-  *ptr++ = values[5] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 10;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 10);
 
-  *ptr++ = values[6] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 2);
 
-  *ptr = values[6] << 6;
-  *ptr++ |= values[7] >> 8;
+  *ptr = static_cast<uint8_t>(values[6] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_15(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 7);
 
-  *ptr = values[0] << 1;
-  *ptr++ |= values[1] >> 14;
+  *ptr = static_cast<uint8_t>(values[0] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 14);
 
-  *ptr++ = values[1] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 13;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 13);
 
-  *ptr++ = values[2] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 5);
 
-  *ptr = values[2] << 3;
-  *ptr++ |= values[3] >> 12;
+  *ptr = static_cast<uint8_t>(values[2] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 12);
 
-  *ptr++ = values[3] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 11;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 11);
 
-  *ptr++ = values[4] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 3);
 
-  *ptr = values[4] << 5;
-  *ptr++ |= values[5] >> 10;
+  *ptr = static_cast<uint8_t>(values[4] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 10);
 
-  *ptr++ = values[5] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 9;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 9);
 
-  *ptr++ = values[6] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 1);
 
-  *ptr = values[6] << 7;
-  *ptr++ |= values[7] >> 8;
+  *ptr = static_cast<uint8_t>(values[6] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_16(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 8;
-  *ptr++ = values[0];
+  *ptr++ = static_cast<uint8_t>(values[0] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[0]);
 
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 8;
-  *ptr++ = values[2];
+  *ptr++ = static_cast<uint8_t>(values[2] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[2]);
 
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 8;
-  *ptr++ = values[4];
+  *ptr++ = static_cast<uint8_t>(values[4] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[4]);
 
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 8;
-  *ptr++ = values[6];
+  *ptr++ = static_cast<uint8_t>(values[6] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[6]);
 
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_17(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 9;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 9);
 
-  *ptr++ = values[0] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 1);
 
-  *ptr = values[0] << 7;
-  *ptr++ |= values[1] >> 10;
+  *ptr = static_cast<uint8_t>(values[0] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 10);
 
-  *ptr++ = values[1] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 11;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 11);
 
-  *ptr++ = values[2] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 3);
 
-  *ptr = values[2] << 5;
-  *ptr++ |= values[3] >> 12;
+  *ptr = static_cast<uint8_t>(values[2] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 12);
 
-  *ptr++ = values[3] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 13;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 13);
 
-  *ptr++ = values[4] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 5);
 
-  *ptr = values[4] << 3;
-  *ptr++ |= values[5] >> 14;
+  *ptr = static_cast<uint8_t>(values[4] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 14);
 
-  *ptr++ = values[5] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 15;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 15);
 
-  *ptr++ = values[6] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 7);
 
-  *ptr = values[6] << 1;
-  *ptr++ |= values[7] >> 16;
+  *ptr = static_cast<uint8_t>(values[6] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_18(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 10);
 
-  *ptr++ = values[0] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 2);
 
-  *ptr = values[0] << 6;
-  *ptr++ |= values[1] >> 12;
+  *ptr = static_cast<uint8_t>(values[0] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 12);
 
-  *ptr++ = values[1] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 14;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 14);
 
-  *ptr++ = values[2] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 6);
 
-  *ptr = values[2] << 2;
-  *ptr++ |= values[3] >> 16;
+  *ptr = static_cast<uint8_t>(values[2] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 16);
 
-  *ptr++ = values[3] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
 
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 10);
 
-  *ptr++ = values[4] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 2);
 
-  *ptr = values[4] << 6;
-  *ptr++ |= values[5] >> 12;
+  *ptr = static_cast<uint8_t>(values[4] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 12);
 
-  *ptr++ = values[5] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 14;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 14);
 
-  *ptr++ = values[6] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 6);
 
-  *ptr = values[6] << 2;
-  *ptr++ |= values[7] >> 16;
+  *ptr = static_cast<uint8_t>(values[6] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_19(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 11;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 11);
 
-  *ptr++ = values[0] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 3);
 
-  *ptr = values[0] << 5;
-  *ptr++ |= values[1] >> 14;
+  *ptr = static_cast<uint8_t>(values[0] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 14);
 
-  *ptr++ = values[1] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 17;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 17);
 
-  *ptr++ = values[2] >> 9;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 9);
 
-  *ptr++ = values[2] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 1);
 
-  *ptr = values[2] << 7;
-  *ptr++ |= values[3] >> 12;
+  *ptr = static_cast<uint8_t>(values[2] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 12);
 
-  *ptr++ = values[3] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 15;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 15);
 
-  *ptr++ |= values[4] >> 7;
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 7);
 
-  *ptr = values[4] << 1;
-  *ptr++ |= values[5] >> 18;
+  *ptr = static_cast<uint8_t>(values[4] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 18);
 
-  *ptr++ = values[5] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
 
-  *ptr++ = values[5] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 13;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 13);
 
-  *ptr++ = values[6] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 5);
 
-  *ptr = values[6] << 3;
-  *ptr++ |= values[7] >> 16;
+  *ptr = static_cast<uint8_t>(values[6] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_20(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 12);
 
-  *ptr++ = values[0] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 4);
 
-  *ptr = values[0] << 4;
-  *ptr++ |= values[1] >> 16;
+  *ptr = static_cast<uint8_t>(values[0] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 16);
 
-  *ptr++ = values[1] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
 
-  *ptr++ = values[1];
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 12);
 
-  *ptr++ = values[2] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 4);
 
-  *ptr = values[2] << 4;
-  *ptr++ |= values[3] >> 16;
+  *ptr = static_cast<uint8_t>(values[2] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 16);
 
-  *ptr++ = values[3] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
 
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 12);
 
-  *ptr++ = values[4] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 4);
 
-  *ptr = values[4] << 4;
-  *ptr++ |= values[5] >> 16;
+  *ptr = static_cast<uint8_t>(values[4] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 16);
 
-  *ptr++ = values[5] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
 
-  *ptr++ = values[5];
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 12);
 
-  *ptr++ = values[6] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 4);
 
-  *ptr = values[6] << 4;
-  *ptr++ |= values[7] >> 16;
+  *ptr = static_cast<uint8_t>(values[6] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_21(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 13;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 13);
 
-  *ptr++ = values[0] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 5);
 
-  *ptr = values[0] << 3;
-  *ptr++ |= values[1] >> 18;
+  *ptr = static_cast<uint8_t>(values[0] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 18);
 
-  *ptr++ = values[1] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
 
-  *ptr++ = values[1] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 15;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 15);
 
-  *ptr++ = values[2] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 7);
 
-  *ptr = values[2] << 1;
-  *ptr++ |= values[3] >> 20;
+  *ptr = static_cast<uint8_t>(values[2] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 20);
 
-  *ptr++ = values[3] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
 
-  *ptr++ = values[3] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 17;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 17);
 
-  *ptr++ = values[4] >> 9;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 9);
 
-  *ptr++ = values[4] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 1);
 
-  *ptr = values[4] << 7;
-  *ptr++ |= values[5] >> 14;
+  *ptr = static_cast<uint8_t>(values[4] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 14);
 
-  *ptr++ = values[5] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 19;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 19);
 
-  *ptr++ = values[6] >> 11;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 11);
 
-  *ptr++ = values[6] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 3);
 
-  *ptr = values[6] << 5;
-  *ptr++ |= values[7] >> 16;
+  *ptr = static_cast<uint8_t>(values[6] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_22(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 14;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 14);
 
-  *ptr++ = values[0] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 6);
 
-  *ptr = values[0] << 2;
-  *ptr++ |= values[1] >> 20;
+  *ptr = static_cast<uint8_t>(values[0] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 20);
 
-  *ptr++ = values[1] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
 
-  *ptr++ = values[1] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 18;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 18);
 
-  *ptr++ = values[2] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 10);
 
-  *ptr++ = values[2] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 2);
 
-  *ptr = values[2] << 6;
-  *ptr++ |= values[3] >> 16;
+  *ptr = static_cast<uint8_t>(values[2] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 16);
 
-  *ptr++ = values[3] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
 
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 14;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 14);
 
-  *ptr++ = values[4] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 6);
 
-  *ptr = values[4] << 2;
-  *ptr++ |= values[5] >> 20;
+  *ptr = static_cast<uint8_t>(values[4] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 20);
 
-  *ptr++ = values[5] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
 
-  *ptr++ = values[5] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 18;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 18);
 
-  *ptr++ = values[6] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 10);
 
-  *ptr++ = values[6] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 2);
 
-  *ptr = values[6] << 6;
-  *ptr++ |= values[7] >> 16;
+  *ptr = static_cast<uint8_t>(values[6] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_23(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 15;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 15);
 
-  *ptr++ = values[0] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 7);
 
-  *ptr = values[0] << 1;
-  *ptr++ |= values[1] >> 22;
+  *ptr = static_cast<uint8_t>(values[0] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 22);
 
-  *ptr++ = values[1] >> 14;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
 
-  *ptr++ = values[1] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 21;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 21);
 
-  *ptr++ = values[2] >> 13;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 13);
 
-  *ptr++ = values[2] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 5);
 
-  *ptr = values[2] << 3;
-  *ptr++ |= values[3] >> 20;
+  *ptr = static_cast<uint8_t>(values[2] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 20);
 
-  *ptr++ = values[3] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
 
-  *ptr++ = values[3] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 19;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 19);
 
-  *ptr++ = values[4] >> 11;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 11);
 
-  *ptr++ = values[4] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 3);
 
-  *ptr = values[4] << 5;
-  *ptr++ |= values[5] >> 18;
+  *ptr = static_cast<uint8_t>(values[4] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 18);
 
-  *ptr++ = values[5] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
 
-  *ptr++ = values[5] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 17;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 17);
 
-  *ptr++ = values[6] >> 9;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 9);
 
-  *ptr++ = values[6] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 1);
 
-  *ptr = values[6] << 7;
-  *ptr++ |= values[7] >> 16;
+  *ptr = static_cast<uint8_t>(values[6] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_24(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 16;
-  *ptr++ = values[0] >> 8;
-  *ptr++ = values[0];
+  *ptr++ = static_cast<uint8_t>(values[0] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[0]);
 
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 16;
-  *ptr++ = values[2] >> 8;
-  *ptr++ = values[2];
+  *ptr++ = static_cast<uint8_t>(values[2] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[2]);
 
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 16;
-  *ptr++ = values[4] >> 8;
-  *ptr++ = values[4];
+  *ptr++ = static_cast<uint8_t>(values[4] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[4]);
 
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 16;
-  *ptr++ = values[6] >> 8;
-  *ptr++ = values[6];
+  *ptr++ = static_cast<uint8_t>(values[6] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[6]);
 
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_25(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 17;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 17);
 
-  *ptr++ = values[0] >> 9;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 9);
 
-  *ptr++ = values[0] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 1);
 
-  *ptr = values[0] << 7;
-  *ptr++ |= values[1] >> 18;
+  *ptr = static_cast<uint8_t>(values[0] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 18);
 
-  *ptr++ = values[1] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
 
-  *ptr++ = values[1] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 19;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 19);
 
-  *ptr++ = values[2] >> 11;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 11);
 
-  *ptr++ = values[2] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 3);
 
-  *ptr = values[2] << 5;
-  *ptr++ |= values[3] >> 20;
+  *ptr = static_cast<uint8_t>(values[2] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 20);
 
-  *ptr++ = values[3] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
 
-  *ptr++ = values[3] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 21;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 21);
 
-  *ptr++ = values[4] >> 13;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 13);
 
-  *ptr++ = values[4] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 5);
 
-  *ptr = values[4] << 3;
-  *ptr++ |= values[5] >> 22;
+  *ptr = static_cast<uint8_t>(values[4] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 22);
 
-  *ptr++ = values[5] >> 14;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
 
-  *ptr++ = values[5] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 23;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 23);
 
-  *ptr++ = values[6] >> 15;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 15);
 
-  *ptr++ = values[6] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 7);
 
-  *ptr = values[6] << 1;
-  *ptr++ |= values[7] >> 24;
+  *ptr = static_cast<uint8_t>(values[6] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 24);
 
-  *ptr++ = values[7] >> 16;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_26(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 18;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 18);
 
-  *ptr++ = values[0] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 10);
 
-  *ptr++ = values[0] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 2);
 
-  *ptr = values[0] << 6;
-  *ptr++ |= values[1] >> 20;
+  *ptr = static_cast<uint8_t>(values[0] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 20);
 
-  *ptr++ = values[1] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
 
-  *ptr++ = values[1] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 22;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 22);
 
-  *ptr++ = values[2] >> 14;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 14);
 
-  *ptr++ = values[2] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 6);
 
-  *ptr = values[2] << 2;
-  *ptr++ |= values[3] >> 24;
+  *ptr = static_cast<uint8_t>(values[2] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 24);
 
-  *ptr++ = values[3] >> 16;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
 
-  *ptr++ = values[3] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
 
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 18;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 18);
 
-  *ptr++ = values[4] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 10);
 
-  *ptr++ = values[4] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 2);
 
-  *ptr = values[4] << 6;
-  *ptr++ |= values[5] >> 20;
+  *ptr = static_cast<uint8_t>(values[4] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 20);
 
-  *ptr++ = values[5] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
 
-  *ptr++ = values[5] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 22;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 22);
 
-  *ptr++ = values[6] >> 14;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 14);
 
-  *ptr++ = values[6] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 6);
 
-  *ptr = values[6] << 2;
-  *ptr++ |= values[7] >> 24;
+  *ptr = static_cast<uint8_t>(values[6] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 24);
 
-  *ptr++ = values[7] >> 16;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_27(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 19;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 19);
 
-  *ptr++ = values[0] >> 11;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 11);
 
-  *ptr++ = values[0] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 3);
 
-  *ptr = values[0] << 5;
-  *ptr++ |= values[1] >> 22;
+  *ptr = static_cast<uint8_t>(values[0] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 22);
 
-  *ptr++ = values[1] >> 14;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
 
-  *ptr++ = values[1] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 25;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 25);
 
-  *ptr++ = values[2] >> 17;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 17);
 
-  *ptr++ = values[2] >> 9;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 9);
 
-  *ptr++ = values[2] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 1);
 
-  *ptr = values[2] << 7;
-  *ptr++ |= values[3] >> 20;
+  *ptr = static_cast<uint8_t>(values[2] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 20);
 
-  *ptr++ = values[3] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
 
-  *ptr++ = values[3] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 23;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 23);
 
-  *ptr++ = values[4] >> 15;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 15);
 
-  *ptr++ = values[4] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 7);
 
-  *ptr = values[4] << 1;
-  *ptr++ |= values[5] >> 26;
+  *ptr = static_cast<uint8_t>(values[4] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 26);
 
-  *ptr++ = values[5] >> 18;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
 
-  *ptr++ = values[5] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
 
-  *ptr++ = values[5] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 21;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 21);
 
-  *ptr++ = values[6] >> 13;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 13);
 
-  *ptr++ = values[6] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 5);
 
-  *ptr = values[6] << 3;
-  *ptr++ |= values[7] >> 24;
+  *ptr = static_cast<uint8_t>(values[6] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 24);
 
-  *ptr++ = values[7] >> 16;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_28(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 20;
-  *ptr++ = values[0] >> 12;
-  *ptr++ = values[0] >> 4;
-  *ptr = values[0] << 4;
-  *ptr++ |= values[1] >> 24;
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
-  *ptr++ = values[2] >> 20;
-  *ptr++ = values[2] >> 12;
-  *ptr++ = values[2] >> 4;
-  *ptr = values[2] << 4;
-  *ptr++ |= values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
-  *ptr++ = values[4] >> 20;
-  *ptr++ = values[4] >> 12;
-  *ptr++ = values[4] >> 4;
-  *ptr = values[4] << 4;
-  *ptr++ |= values[5] >> 24;
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
-  *ptr++ = values[6] >> 20;
-  *ptr++ = values[6] >> 12;
-  *ptr++ = values[6] >> 4;
-  *ptr = values[6] << 4;
-  *ptr++ |= values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr++ = static_cast<uint8_t>(values[0] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 4);
+  *ptr = static_cast<uint8_t>(values[0] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 4);
+  *ptr = static_cast<uint8_t>(values[2] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 4);
+  *ptr = static_cast<uint8_t>(values[4] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 4);
+  *ptr = static_cast<uint8_t>(values[6] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_29(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 21;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 21);
 
-  *ptr++ = values[0] >> 13;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 13);
 
-  *ptr++ = values[0] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 5);
 
-  *ptr = values[0] << 3;
-  *ptr++ |= values[1] >> 26;
+  *ptr = static_cast<uint8_t>(values[0] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 26);
 
-  *ptr++ = values[1] >> 18;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 18);
 
-  *ptr++ = values[1] >> 10;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
 
-  *ptr++ = values[1] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 23;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 23);
 
-  *ptr++ = values[2] >> 15;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 15);
 
-  *ptr++ = values[2] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 7);
 
-  *ptr = values[2] << 1;
-  *ptr++ |= values[3] >> 28;
+  *ptr = static_cast<uint8_t>(values[2] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 28);
 
-  *ptr++ = values[3] >> 20;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
 
-  *ptr++ = values[3] >> 12;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
 
-  *ptr++ = values[3] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 25;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 25);
 
-  *ptr++ = values[4] >> 17;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 17);
 
-  *ptr++ = values[4] >> 9;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 9);
 
-  *ptr++ = values[4] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 1);
 
-  *ptr = values[4] << 7;
-  *ptr++ |= values[5] >> 22;
+  *ptr = static_cast<uint8_t>(values[4] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 22);
 
-  *ptr++ = values[5] >> 14;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
 
-  *ptr++ = values[5] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 27;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 27);
 
-  *ptr++ = values[6] >> 19;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 19);
 
-  *ptr++ = values[6] >> 11;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 11);
 
-  *ptr++ = values[6] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 3);
 
-  *ptr = values[6] << 5;
-  *ptr++ |= values[7] >> 24;
+  *ptr = static_cast<uint8_t>(values[6] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 24);
 
-  *ptr++ = values[7] >> 16;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
 
-  *ptr++ = values[7] >> 8;
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
 
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_30(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 22;
-  *ptr++ = values[0] >> 14;
-  *ptr++ = values[0] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 6);
 
-  *ptr = values[0] << 2;
-  *ptr++ |= values[1] >> 28;
-  *ptr++ = values[1] >> 20;
-  *ptr++ = values[1] >> 12;
-  *ptr++ = values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 26;
-  *ptr++ = values[2] >> 18;
-  *ptr++ = values[2] >> 10;
-  *ptr++ = values[2] >> 2;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 2);
 
-  *ptr = values[2] << 6;
-  *ptr++ |= values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 22;
-  *ptr++ = values[4] >> 14;
-  *ptr++ = values[4] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 6);
 
-  *ptr = values[4] << 2;
-  *ptr++ |= values[5] >> 28;
-  *ptr++ = values[5] >> 20;
-  *ptr++ = values[5] >> 12;
-  *ptr++ = values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 26;
-  *ptr++ = values[6] >> 18;
-  *ptr++ = values[6] >> 10;
-  *ptr++ = values[6] >> 2;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 2);
 
-  *ptr = values[6] << 6;
-  *ptr++ |= values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_31(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 23;
-  *ptr++ = values[0] >> 15;
-  *ptr++ = values[0] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 7);
 
-  *ptr = values[0] << 1;
-  *ptr++ |= values[1] >> 30;
-  *ptr++ = values[1] >> 22;
-  *ptr++ = values[1] >> 14;
-  *ptr++ = values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 29;
-  *ptr++ = values[2] >> 21;
-  *ptr++ = values[2] >> 13;
-  *ptr++ = values[2] >> 5;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 5);
 
-  *ptr = values[2] << 3;
-  *ptr++ |= values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 27;
-  *ptr++ = values[4] >> 19;
-  *ptr++ = values[4] >> 11;
-  *ptr++ = values[4] >> 3;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 3);
 
-  *ptr = values[4] << 5;
-  *ptr++ |= values[5] >> 26;
-  *ptr++ = values[5] >> 18;
-  *ptr++ = values[5] >> 10;
-  *ptr++ = values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 25;
-  *ptr++ = values[6] >> 17;
-  *ptr++ = values[6] >> 9;
-  *ptr++ = values[6] >> 1;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 1);
 
-  *ptr = values[6] << 7;
-  *ptr++ |= values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_32(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 24;
-  *ptr++ = values[0] >> 16;
-  *ptr++ = values[0] >> 8;
-  *ptr++ = values[0];
+  *ptr++ = static_cast<uint8_t>(values[0] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[0]);
 
-  *ptr++ = values[1] >> 24;
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr++ = static_cast<uint8_t>(values[1] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 24;
-  *ptr++ = values[2] >> 16;
-  *ptr++ = values[2] >> 8;
-  *ptr++ = values[2];
+  *ptr++ = static_cast<uint8_t>(values[2] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[2]);
 
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 24;
-  *ptr++ = values[4] >> 16;
-  *ptr++ = values[4] >> 8;
-  *ptr++ = values[4];
+  *ptr++ = static_cast<uint8_t>(values[4] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[4]);
 
-  *ptr++ = values[5] >> 24;
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr++ = static_cast<uint8_t>(values[5] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 24;
-  *ptr++ = values[6] >> 16;
-  *ptr++ = values[6] >> 8;
-  *ptr++ = values[6];
+  *ptr++ = static_cast<uint8_t>(values[6] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[6]);
 
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_33(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 25;
-  *ptr++ = values[0] >> 17;
-  *ptr++ = values[0] >> 9;
-  *ptr++ = values[0] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 1);
 
-  *ptr = values[0] << 7;
-  *ptr++ |= values[1] >> 26;
-  *ptr++ = values[1] >> 18;
-  *ptr++ = values[1] >> 10;
-  *ptr++ = values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 27;
-  *ptr++ = values[2] >> 19;
-  *ptr++ = values[2] >> 11;
-  *ptr++ = values[2] >> 3;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 3);
 
-  *ptr = values[2] << 5;
-  *ptr++ |= values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 29;
-  *ptr++ = values[4] >> 21;
-  *ptr++ = values[4] >> 13;
-  *ptr++ = values[4] >> 5;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 5);
 
-  *ptr = values[4] << 3;
-  *ptr++ |= values[5] >> 30;
-  *ptr++ = values[5] >> 22;
-  *ptr++ = values[5] >> 14;
-  *ptr++ = values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 31;
-  *ptr++ = values[6] >> 23;
-  *ptr++ = values[6] >> 15;
-  *ptr++ = values[6] >> 7;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 7);
 
-  *ptr = values[6] << 1;
-  *ptr++ |= values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_34(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 26;
-  *ptr++ = values[0] >> 18;
-  *ptr++ = values[0] >> 10;
-  *ptr++ = values[0] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 2);
 
-  *ptr = values[0] << 6;
-  *ptr++ |= values[1] >> 28;
-  *ptr++ = values[1] >> 20;
-  *ptr++ = values[1] >> 12;
-  *ptr++ = values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 30;
-  *ptr++ = values[2] >> 22;
-  *ptr++ = values[2] >> 14;
-  *ptr++ = values[2] >> 6;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 6);
 
-  *ptr = values[2] << 2;
-  *ptr++ |= values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 26;
-  *ptr++ = values[4] >> 18;
-  *ptr++ = values[4] >> 10;
-  *ptr++ = values[4] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 2);
 
-  *ptr = values[4] << 6;
-  *ptr++ |= values[5] >> 28;
-  *ptr++ = values[5] >> 20;
-  *ptr++ = values[5] >> 12;
-  *ptr++ = values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 30;
-  *ptr++ = values[6] >> 22;
-  *ptr++ = values[6] >> 14;
-  *ptr++ = values[6] >> 6;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 6);
 
-  *ptr = values[6] << 2;
-  *ptr++ |= values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_35(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 27;
-  *ptr++ = values[0] >> 19;
-  *ptr++ = values[0] >> 11;
-  *ptr++ = values[0] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 3);
 
-  *ptr = values[0] << 5;
-  *ptr++ |= values[1] >> 30;
-  *ptr++ = values[1] >> 22;
-  *ptr++ = values[1] >> 14;
-  *ptr++ = values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 33;
-  *ptr++ = values[2] >> 25;
-  *ptr++ = values[2] >> 17;
-  *ptr++ = values[2] >> 9;
-  *ptr++ = values[2] >> 1;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 1);
 
-  *ptr = values[2] << 7;
-  *ptr++ |= values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 31;
-  *ptr++ = values[4] >> 23;
-  *ptr++ = values[4] >> 15;
-  *ptr++ = values[4] >> 7;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 7);
 
-  *ptr = values[4] << 1;
-  *ptr++ |= values[5] >> 34;
-  *ptr++ = values[5] >> 26;
-  *ptr++ = values[5] >> 18;
-  *ptr++ = values[5] >> 10;
-  *ptr++ = values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 29;
-  *ptr++ = values[6] >> 21;
-  *ptr++ = values[6] >> 13;
-  *ptr++ = values[6] >> 5;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 5);
 
-  *ptr = values[6] << 3;
-  *ptr++ |= values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_36(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 28;
-  *ptr++ = values[0] >> 20;
-  *ptr++ = values[0] >> 12;
-  *ptr++ = values[0] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 4);
 
-  *ptr = values[0] << 4;
-  *ptr++ |= values[1] >> 32;
-  *ptr++ = values[1] >> 24;
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr = static_cast<uint8_t>(values[0] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 28;
-  *ptr++ = values[2] >> 20;
-  *ptr++ = values[2] >> 12;
-  *ptr++ = values[2] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 4);
 
-  *ptr = values[2] << 4;
-  *ptr++ |= values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 28;
-  *ptr++ = values[4] >> 20;
-  *ptr++ = values[4] >> 12;
-  *ptr++ = values[4] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 4);
 
-  *ptr = values[4] << 4;
-  *ptr++ |= values[5] >> 32;
-  *ptr++ = values[5] >> 24;
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr = static_cast<uint8_t>(values[4] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 28;
-  *ptr++ = values[6] >> 20;
-  *ptr++ = values[6] >> 12;
-  *ptr++ = values[6] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 4);
 
-  *ptr = values[6] << 4;
-  *ptr++ |= values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_37(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 29;
-  *ptr++ = values[0] >> 21;
-  *ptr++ = values[0] >> 13;
-  *ptr++ = values[0] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 5);
 
-  *ptr = values[0] << 3;
-  *ptr++ |= values[1] >> 34;
-  *ptr++ = values[1] >> 26;
-  *ptr++ = values[1] >> 18;
-  *ptr++ = values[1] >> 10;
-  *ptr++ = values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 31;
-  *ptr++ = values[2] >> 23;
-  *ptr++ = values[2] >> 15;
-  *ptr++ = values[2] >> 7;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 7);
 
-  *ptr = values[2] << 1;
-  *ptr++ |= values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 33;
-  *ptr++ = values[4] >> 25;
-  *ptr++ = values[4] >> 17;
-  *ptr++ = values[4] >> 9;
-  *ptr++ = values[4] >> 1;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 1);
 
-  *ptr = values[4] << 7;
-  *ptr++ |= values[5] >> 30;
-  *ptr++ = values[5] >> 22;
-  *ptr++ = values[5] >> 14;
-  *ptr++ = values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 35;
-  *ptr++ = values[6] >> 27;
-  *ptr++ = values[6] >> 19;
-  *ptr++ = values[6] >> 11;
-  *ptr++ = values[6] >> 3;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 3);
 
-  *ptr = values[6] << 5;
-  *ptr++ |= values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_38(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 30;
-  *ptr++ = values[0] >> 22;
-  *ptr++ = values[0] >> 14;
-  *ptr++ = values[0] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 6);
 
-  *ptr = values[0] << 2;
-  *ptr++ |= values[1] >> 36;
-  *ptr++ = values[1] >> 28;
-  *ptr++ = values[1] >> 20;
-  *ptr++ = values[1] >> 12;
-  *ptr++ = values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 34;
-  *ptr++ = values[2] >> 26;
-  *ptr++ = values[2] >> 18;
-  *ptr++ = values[2] >> 10;
-  *ptr++ = values[2] >> 2;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 2);
 
-  *ptr = values[2] << 6;
-  *ptr++ |= values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 30;
-  *ptr++ = values[4] >> 22;
-  *ptr++ = values[4] >> 14;
-  *ptr++ = values[4] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 6);
 
-  *ptr = values[4] << 2;
-  *ptr++ |= values[5] >> 36;
-  *ptr++ = values[5] >> 28;
-  *ptr++ = values[5] >> 20;
-  *ptr++ = values[5] >> 12;
-  *ptr++ = values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 34;
-  *ptr++ = values[6] >> 26;
-  *ptr++ = values[6] >> 18;
-  *ptr++ = values[6] >> 10;
-  *ptr++ = values[6] >> 2;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 2);
 
-  *ptr = values[6] << 6;
-  *ptr++ |= values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_39(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 31;
-  *ptr++ = values[0] >> 23;
-  *ptr++ = values[0] >> 15;
-  *ptr++ = values[0] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 7);
 
-  *ptr = values[0] << 1;
-  *ptr++ |= values[1] >> 38;
-  *ptr++ = values[1] >> 30;
-  *ptr++ = values[1] >> 22;
-  *ptr++ = values[1] >> 14;
-  *ptr++ = values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 37;
-  *ptr++ = values[2] >> 29;
-  *ptr++ = values[2] >> 21;
-  *ptr++ = values[2] >> 13;
-  *ptr++ = values[2] >> 5;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 5);
 
-  *ptr = values[2] << 3;
-  *ptr++ |= values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 35;
-  *ptr++ = values[4] >> 27;
-  *ptr++ = values[4] >> 19;
-  *ptr++ = values[4] >> 11;
-  *ptr++ = values[4] >> 3;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 3);
 
-  *ptr = values[4] << 5;
-  *ptr++ |= values[5] >> 34;
-  *ptr++ = values[5] >> 26;
-  *ptr++ = values[5] >> 18;
-  *ptr++ = values[5] >> 10;
-  *ptr++ = values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 33;
-  *ptr++ = values[6] >> 25;
-  *ptr++ = values[6] >> 17;
-  *ptr++ = values[6] >> 9;
-  *ptr++ = values[6] >> 1;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 1);
 
-  *ptr = values[6] << 7;
-  *ptr++ |= values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_40(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 32;
-  *ptr++ = values[0] >> 24;
-  *ptr++ = values[0] >> 16;
-  *ptr++ = values[0] >> 8;
-  *ptr++ = values[0];
+  *ptr++ = static_cast<uint8_t>(values[0] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[0]);
 
-  *ptr++ = values[1] >> 32;
-  *ptr++ = values[1] >> 24;
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr++ = static_cast<uint8_t>(values[1] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 32;
-  *ptr++ = values[2] >> 24;
-  *ptr++ = values[2] >> 16;
-  *ptr++ = values[2] >> 8;
-  *ptr++ = values[2];
+  *ptr++ = static_cast<uint8_t>(values[2] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[2]);
 
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 32;
-  *ptr++ = values[4] >> 24;
-  *ptr++ = values[4] >> 16;
-  *ptr++ = values[4] >> 8;
-  *ptr++ = values[4];
+  *ptr++ = static_cast<uint8_t>(values[4] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[4]);
 
-  *ptr++ = values[5] >> 32;
-  *ptr++ = values[5] >> 24;
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr++ = static_cast<uint8_t>(values[5] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 32;
-  *ptr++ = values[6] >> 24;
-  *ptr++ = values[6] >> 16;
-  *ptr++ = values[6] >> 8;
-  *ptr++ = values[6];
+  *ptr++ = static_cast<uint8_t>(values[6] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[6]);
 
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_41(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 33;
-  *ptr++ = values[0] >> 25;
-  *ptr++ = values[0] >> 17;
-  *ptr++ = values[0] >> 9;
-  *ptr++ = values[0] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 1);
 
-  *ptr = values[0] << 7;
-  *ptr++ |= values[1] >> 34;
-  *ptr++ = values[1] >> 26;
-  *ptr++ = values[1] >> 18;
-  *ptr++ = values[1] >> 10;
-  *ptr++ = values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 35;
-  *ptr++ = values[2] >> 27;
-  *ptr++ = values[2] >> 19;
-  *ptr++ = values[2] >> 11;
-  *ptr++ = values[2] >> 3;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 3);
 
-  *ptr = values[2] << 5;
-  *ptr++ |= values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 37;
-  *ptr++ = values[4] >> 29;
-  *ptr++ = values[4] >> 21;
-  *ptr++ = values[4] >> 13;
-  *ptr++ = values[4] >> 5;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 5);
 
-  *ptr = values[4] << 3;
-  *ptr++ |= values[5] >> 38;
-  *ptr++ = values[5] >> 30;
-  *ptr++ = values[5] >> 22;
-  *ptr++ = values[5] >> 14;
-  *ptr++ = values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 39;
-  *ptr++ = values[6] >> 31;
-  *ptr++ = values[6] >> 23;
-  *ptr++ = values[6] >> 15;
-  *ptr++ = values[6] >> 7;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 7);
 
-  *ptr = values[6] << 1;
-  *ptr++ |= values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_42(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 34;
-  *ptr++ = values[0] >> 26;
-  *ptr++ = values[0] >> 18;
-  *ptr++ = values[0] >> 10;
-  *ptr++ = values[0] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 2);
 
-  *ptr = values[0] << 6;
-  *ptr++ |= values[1] >> 36;
-  *ptr++ = values[1] >> 28;
-  *ptr++ = values[1] >> 20;
-  *ptr++ = values[1] >> 12;
-  *ptr++ = values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 38;
-  *ptr++ = values[2] >> 30;
-  *ptr++ = values[2] >> 22;
-  *ptr++ = values[2] >> 14;
-  *ptr++ = values[2] >> 6;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 6);
 
-  *ptr = values[2] << 2;
-  *ptr++ |= values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 34;
-  *ptr++ = values[4] >> 26;
-  *ptr++ = values[4] >> 18;
-  *ptr++ = values[4] >> 10;
-  *ptr++ = values[4] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 2);
 
-  *ptr = values[4] << 6;
-  *ptr++ |= values[5] >> 36;
-  *ptr++ = values[5] >> 28;
-  *ptr++ = values[5] >> 20;
-  *ptr++ = values[5] >> 12;
-  *ptr++ = values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 38;
-  *ptr++ = values[6] >> 30;
-  *ptr++ = values[6] >> 22;
-  *ptr++ = values[6] >> 14;
-  *ptr++ = values[6] >> 6;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 6);
 
-  *ptr = values[6] << 2;
-  *ptr++ |= values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_43(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 35;
-  *ptr++ = values[0] >> 27;
-  *ptr++ = values[0] >> 19;
-  *ptr++ = values[0] >> 11;
-  *ptr++ = values[0] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 3);
 
-  *ptr = values[0] << 5;
-  *ptr++ |= values[1] >> 38;
-  *ptr++ = values[1] >> 30;
-  *ptr++ = values[1] >> 22;
-  *ptr++ = values[1] >> 14;
-  *ptr++ = values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 41;
-  *ptr++ = values[2] >> 33;
-  *ptr++ = values[2] >> 25;
-  *ptr++ = values[2] >> 17;
-  *ptr++ = values[2] >> 9;
-  *ptr++ = values[2] >> 1;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 1);
 
-  *ptr = values[2] << 7;
-  *ptr++ |= values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 39;
-  *ptr++ = values[4] >> 31;
-  *ptr++ = values[4] >> 23;
-  *ptr++ = values[4] >> 15;
-  *ptr++ = values[4] >> 7;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 7);
 
-  *ptr = values[4] << 1;
-  *ptr++ |= values[5] >> 42;
-  *ptr++ = values[5] >> 34;
-  *ptr++ = values[5] >> 26;
-  *ptr++ = values[5] >> 18;
-  *ptr++ = values[5] >> 10;
-  *ptr++ = values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 37;
-  *ptr++ = values[6] >> 29;
-  *ptr++ = values[6] >> 21;
-  *ptr++ = values[6] >> 13;
-  *ptr++ = values[6] >> 5;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 5);
 
-  *ptr = values[6] << 3;
-  *ptr++ |= values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_44(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 36;
-  *ptr++ = values[0] >> 28;
-  *ptr++ = values[0] >> 20;
-  *ptr++ = values[0] >> 12;
-  *ptr++ = values[0] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 4);
 
-  *ptr = values[0] << 4;
-  *ptr++ |= values[1] >> 40;
-  *ptr++ = values[1] >> 32;
-  *ptr++ = values[1] >> 24;
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr = static_cast<uint8_t>(values[0] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 36;
-  *ptr++ = values[2] >> 28;
-  *ptr++ = values[2] >> 20;
-  *ptr++ = values[2] >> 12;
-  *ptr++ = values[2] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 4);
 
-  *ptr = values[2] << 4;
-  *ptr++ |= values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 36;
-  *ptr++ = values[4] >> 28;
-  *ptr++ = values[4] >> 20;
-  *ptr++ = values[4] >> 12;
-  *ptr++ = values[4] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 4);
 
-  *ptr = values[4] << 4;
-  *ptr++ |= values[5] >> 40;
-  *ptr++ = values[5] >> 32;
-  *ptr++ = values[5] >> 24;
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr = static_cast<uint8_t>(values[4] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 36;
-  *ptr++ = values[6] >> 28;
-  *ptr++ = values[6] >> 20;
-  *ptr++ = values[6] >> 12;
-  *ptr++ = values[6] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 4);
 
-  *ptr = values[6] << 4;
-  *ptr++ |= values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_45(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 37;
-  *ptr++ = values[0] >> 29;
-  *ptr++ = values[0] >> 21;
-  *ptr++ = values[0] >> 13;
-  *ptr++ = values[0] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 5);
 
-  *ptr = values[0] << 3;
-  *ptr++ |= values[1] >> 42;
-  *ptr++ = values[1] >> 34;
-  *ptr++ = values[1] >> 26;
-  *ptr++ = values[1] >> 18;
-  *ptr++ = values[1] >> 10;
-  *ptr++ = values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 39;
-  *ptr++ = values[2] >> 31;
-  *ptr++ = values[2] >> 23;
-  *ptr++ = values[2] >> 15;
-  *ptr++ = values[2] >> 7;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 7);
 
-  *ptr = values[2] << 1;
-  *ptr++ |= values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 41;
-  *ptr++ = values[4] >> 33;
-  *ptr++ = values[4] >> 25;
-  *ptr++ = values[4] >> 17;
-  *ptr++ = values[4] >> 9;
-  *ptr++ = values[4] >> 1;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 1);
 
-  *ptr = values[4] << 7;
-  *ptr++ |= values[5] >> 38;
-  *ptr++ = values[5] >> 30;
-  *ptr++ = values[5] >> 22;
-  *ptr++ = values[5] >> 14;
-  *ptr++ = values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 43;
-  *ptr++ = values[6] >> 35;
-  *ptr++ = values[6] >> 27;
-  *ptr++ = values[6] >> 19;
-  *ptr++ = values[6] >> 11;
-  *ptr++ = values[6] >> 3;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 3);
 
-  *ptr = values[6] << 5;
-  *ptr++ |= values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_46(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 38;
-  *ptr++ = values[0] >> 30;
-  *ptr++ = values[0] >> 22;
-  *ptr++ = values[0] >> 14;
-  *ptr++ = values[0] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 6);
 
-  *ptr = values[0] << 2;
-  *ptr++ |= values[1] >> 44;
-  *ptr++ = values[1] >> 36;
-  *ptr++ = values[1] >> 28;
-  *ptr++ = values[1] >> 20;
-  *ptr++ = values[1] >> 12;
-  *ptr++ = values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 42;
-  *ptr++ = values[2] >> 34;
-  *ptr++ = values[2] >> 26;
-  *ptr++ = values[2] >> 18;
-  *ptr++ = values[2] >> 10;
-  *ptr++ = values[2] >> 2;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 2);
 
-  *ptr = values[2] << 6;
-  *ptr++ |= values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 38;
-  *ptr++ = values[4] >> 30;
-  *ptr++ = values[4] >> 22;
-  *ptr++ = values[4] >> 14;
-  *ptr++ = values[4] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 6);
 
-  *ptr = values[4] << 2;
-  *ptr++ |= values[5] >> 44;
-  *ptr++ = values[5] >> 36;
-  *ptr++ = values[5] >> 28;
-  *ptr++ = values[5] >> 20;
-  *ptr++ = values[5] >> 12;
-  *ptr++ = values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 42;
-  *ptr++ = values[6] >> 34;
-  *ptr++ = values[6] >> 26;
-  *ptr++ = values[6] >> 18;
-  *ptr++ = values[6] >> 10;
-  *ptr++ = values[6] >> 2;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 2);
 
-  *ptr = values[6] << 6;
-  *ptr++ |= values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_47(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 39;
-  *ptr++ = values[0] >> 31;
-  *ptr++ = values[0] >> 23;
-  *ptr++ = values[0] >> 15;
-  *ptr++ = values[0] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 7);
 
-  *ptr = values[0] << 1;
-  *ptr++ |= values[1] >> 46;
-  *ptr++ = values[1] >> 38;
-  *ptr++ = values[1] >> 30;
-  *ptr++ = values[1] >> 22;
-  *ptr++ = values[1] >> 14;
-  *ptr++ = values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 45;
-  *ptr++ = values[2] >> 37;
-  *ptr++ = values[2] >> 29;
-  *ptr++ = values[2] >> 21;
-  *ptr++ = values[2] >> 13;
-  *ptr++ = values[2] >> 5;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 45);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 5);
 
-  *ptr = values[2] << 3;
-  *ptr++ |= values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 43;
-  *ptr++ = values[4] >> 35;
-  *ptr++ = values[4] >> 27;
-  *ptr++ = values[4] >> 19;
-  *ptr++ = values[4] >> 11;
-  *ptr++ = values[4] >> 3;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 3);
 
-  *ptr = values[4] << 5;
-  *ptr++ |= values[5] >> 42;
-  *ptr++ = values[5] >> 34;
-  *ptr++ = values[5] >> 26;
-  *ptr++ = values[5] >> 18;
-  *ptr++ = values[5] >> 10;
-  *ptr++ = values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 41;
-  *ptr++ = values[6] >> 33;
-  *ptr++ = values[6] >> 25;
-  *ptr++ = values[6] >> 17;
-  *ptr++ = values[6] >> 9;
-  *ptr++ = values[6] >> 1;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 1);
 
-  *ptr = values[6] << 7;
-  *ptr++ |= values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_48(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 40;
-  *ptr++ = values[0] >> 32;
-  *ptr++ = values[0] >> 24;
-  *ptr++ = values[0] >> 16;
-  *ptr++ = values[0] >> 8;
-  *ptr++ = values[0];
+  *ptr++ = static_cast<uint8_t>(values[0] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[0]);
 
-  *ptr++ = values[1] >> 40;
-  *ptr++ = values[1] >> 32;
-  *ptr++ = values[1] >> 24;
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr++ = static_cast<uint8_t>(values[1] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 40;
-  *ptr++ = values[2] >> 32;
-  *ptr++ = values[2] >> 24;
-  *ptr++ = values[2] >> 16;
-  *ptr++ = values[2] >> 8;
-  *ptr++ = values[2];
+  *ptr++ = static_cast<uint8_t>(values[2] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[2]);
 
-  *ptr++ = values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 40;
-  *ptr++ = values[4] >> 32;
-  *ptr++ = values[4] >> 24;
-  *ptr++ = values[4] >> 16;
-  *ptr++ = values[4] >> 8;
-  *ptr++ = values[4];
+  *ptr++ = static_cast<uint8_t>(values[4] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[4]);
 
-  *ptr++ = values[5] >> 40;
-  *ptr++ = values[5] >> 32;
-  *ptr++ = values[5] >> 24;
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr++ = static_cast<uint8_t>(values[5] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 40;
-  *ptr++ = values[6] >> 32;
-  *ptr++ = values[6] >> 24;
-  *ptr++ = values[6] >> 16;
-  *ptr++ = values[6] >> 8;
-  *ptr++ = values[6];
+  *ptr++ = static_cast<uint8_t>(values[6] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[6]);
 
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_49(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 41;
-  *ptr++ = values[0] >> 33;
-  *ptr++ = values[0] >> 25;
-  *ptr++ = values[0] >> 17;
-  *ptr++ = values[0] >> 9;
-  *ptr++ = values[0] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 1);
 
-  *ptr = values[0] << 7;
-  *ptr++ |= values[1] >> 42;
-  *ptr++ = values[1] >> 34;
-  *ptr++ = values[1] >> 26;
-  *ptr++ = values[1] >> 18;
-  *ptr++ = values[1] >> 10;
-  *ptr++ = values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 43;
-  *ptr++ = values[2] >> 35;
-  *ptr++ = values[2] >> 27;
-  *ptr++ = values[2] >> 19;
-  *ptr++ = values[2] >> 11;
-  *ptr++ = values[2] >> 3;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 3);
 
-  *ptr = values[2] << 5;
-  *ptr++ |= values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 45;
-  *ptr++ = values[4] >> 37;
-  *ptr++ = values[4] >> 29;
-  *ptr++ = values[4] >> 21;
-  *ptr++ = values[4] >> 13;
-  *ptr++ = values[4] >> 5;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 45);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 5);
 
-  *ptr = values[4] << 3;
-  *ptr++ |= values[5] >> 46;
-  *ptr++ = values[5] >> 38;
-  *ptr++ = values[5] >> 30;
-  *ptr++ = values[5] >> 22;
-  *ptr++ = values[5] >> 14;
-  *ptr++ = values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 47;
-  *ptr++ = values[6] >> 39;
-  *ptr++ = values[6] >> 31;
-  *ptr++ = values[6] >> 23;
-  *ptr++ = values[6] >> 15;
-  *ptr++ = values[6] >> 7;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 47);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 7);
 
-  *ptr = values[6] << 1;
-  *ptr++ |= values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_50(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 42;
-  *ptr++ = values[0] >> 34;
-  *ptr++ = values[0] >> 26;
-  *ptr++ = values[0] >> 18;
-  *ptr++ = values[0] >> 10;
-  *ptr++ = values[0] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 2);
 
-  *ptr = values[0] << 6;
-  *ptr++ |= values[1] >> 44;
-  *ptr++ = values[1] >> 36;
-  *ptr++ = values[1] >> 28;
-  *ptr++ = values[1] >> 20;
-  *ptr++ = values[1] >> 12;
-  *ptr++ = values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 46;
-  *ptr++ = values[2] >> 38;
-  *ptr++ = values[2] >> 30;
-  *ptr++ = values[2] >> 22;
-  *ptr++ = values[2] >> 14;
-  *ptr++ = values[2] >> 6;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 6);
 
-  *ptr = values[2] << 2;
-  *ptr++ |= values[3] >> 48;
-  *ptr++ = values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 42;
-  *ptr++ = values[4] >> 34;
-  *ptr++ = values[4] >> 26;
-  *ptr++ = values[4] >> 18;
-  *ptr++ = values[4] >> 10;
-  *ptr++ = values[4] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 2);
 
-  *ptr = values[4] << 6;
-  *ptr++ |= values[5] >> 44;
-  *ptr++ = values[5] >> 36;
-  *ptr++ = values[5] >> 28;
-  *ptr++ = values[5] >> 20;
-  *ptr++ = values[5] >> 12;
-  *ptr++ = values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 46;
-  *ptr++ = values[6] >> 38;
-  *ptr++ = values[6] >> 30;
-  *ptr++ = values[6] >> 22;
-  *ptr++ = values[6] >> 14;
-  *ptr++ = values[6] >> 6;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 6);
 
-  *ptr = values[6] << 2;
-  *ptr++ |= values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_51(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 43;
-  *ptr++ = values[0] >> 35;
-  *ptr++ = values[0] >> 27;
-  *ptr++ = values[0] >> 19;
-  *ptr++ = values[0] >> 11;
-  *ptr++ = values[0] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 3);
 
-  *ptr = values[0] << 5;
-  *ptr++ |= values[1] >> 46;
-  *ptr++ = values[1] >> 38;
-  *ptr++ = values[1] >> 30;
-  *ptr++ = values[1] >> 22;
-  *ptr++ = values[1] >> 14;
-  *ptr++ = values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 49;
-  *ptr++ = values[2] >> 41;
-  *ptr++ = values[2] >> 33;
-  *ptr++ = values[2] >> 25;
-  *ptr++ = values[2] >> 17;
-  *ptr++ = values[2] >> 9;
-  *ptr++ = values[2] >> 1;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 49);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 1);
 
-  *ptr = values[2] << 7;
-  *ptr++ |= values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 47;
-  *ptr++ = values[4] >> 39;
-  *ptr++ = values[4] >> 31;
-  *ptr++ = values[4] >> 23;
-  *ptr++ = values[4] >> 15;
-  *ptr++ = values[4] >> 7;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 47);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 7);
 
-  *ptr = values[4] << 1;
-  *ptr++ |= values[5] >> 50;
-  *ptr++ = values[5] >> 42;
-  *ptr++ = values[5] >> 34;
-  *ptr++ = values[5] >> 26;
-  *ptr++ = values[5] >> 18;
-  *ptr++ = values[5] >> 10;
-  *ptr++ = values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 45;
-  *ptr++ = values[6] >> 37;
-  *ptr++ = values[6] >> 29;
-  *ptr++ = values[6] >> 21;
-  *ptr++ = values[6] >> 13;
-  *ptr++ = values[6] >> 5;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 45);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 5);
 
-  *ptr = values[6] << 3;
-  *ptr++ |= values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_52(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 44;
-  *ptr++ = values[0] >> 36;
-  *ptr++ = values[0] >> 28;
-  *ptr++ = values[0] >> 20;
-  *ptr++ = values[0] >> 12;
-  *ptr++ = values[0] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 4);
 
-  *ptr = values[0] << 4;
-  *ptr++ |= values[1] >> 48;
-  *ptr++ = values[1] >> 40;
-  *ptr++ = values[1] >> 32;
-  *ptr++ = values[1] >> 24;
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr = static_cast<uint8_t>(values[0] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 44;
-  *ptr++ = values[2] >> 36;
-  *ptr++ = values[2] >> 28;
-  *ptr++ = values[2] >> 20;
-  *ptr++ = values[2] >> 12;
-  *ptr++ = values[2] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 4);
 
-  *ptr = values[2] << 4;
-  *ptr++ |= values[3] >> 48;
-  *ptr++ = values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 44;
-  *ptr++ = values[4] >> 36;
-  *ptr++ = values[4] >> 28;
-  *ptr++ = values[4] >> 20;
-  *ptr++ = values[4] >> 12;
-  *ptr++ = values[4] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 4);
 
-  *ptr = values[4] << 4;
-  *ptr++ |= values[5] >> 48;
-  *ptr++ = values[5] >> 40;
-  *ptr++ = values[5] >> 32;
-  *ptr++ = values[5] >> 24;
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr = static_cast<uint8_t>(values[4] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 44;
-  *ptr++ = values[6] >> 36;
-  *ptr++ = values[6] >> 28;
-  *ptr++ = values[6] >> 20;
-  *ptr++ = values[6] >> 12;
-  *ptr++ = values[6] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 4);
 
-  *ptr = values[6] << 4;
-  *ptr++ |= values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_53(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 45;
-  *ptr++ = values[0] >> 37;
-  *ptr++ = values[0] >> 29;
-  *ptr++ = values[0] >> 21;
-  *ptr++ = values[0] >> 13;
-  *ptr++ = values[0] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 45);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 5);
 
-  *ptr = values[0] << 3;
-  *ptr++ |= values[1] >> 50;
-  *ptr++ = values[1] >> 42;
-  *ptr++ = values[1] >> 34;
-  *ptr++ = values[1] >> 26;
-  *ptr++ = values[1] >> 18;
-  *ptr++ = values[1] >> 10;
-  *ptr++ = values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 47;
-  *ptr++ = values[2] >> 39;
-  *ptr++ = values[2] >> 31;
-  *ptr++ = values[2] >> 23;
-  *ptr++ = values[2] >> 15;
-  *ptr++ = values[2] >> 7;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 47);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 7);
 
-  *ptr = values[2] << 1;
-  *ptr++ |= values[3] >> 52;
-  *ptr++ = values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 49;
-  *ptr++ = values[4] >> 41;
-  *ptr++ = values[4] >> 33;
-  *ptr++ = values[4] >> 25;
-  *ptr++ = values[4] >> 17;
-  *ptr++ = values[4] >> 9;
-  *ptr++ = values[4] >> 1;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 49);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 1);
 
-  *ptr = values[4] << 7;
-  *ptr++ |= values[5] >> 46;
-  *ptr++ = values[5] >> 38;
-  *ptr++ = values[5] >> 30;
-  *ptr++ = values[5] >> 22;
-  *ptr++ = values[5] >> 14;
-  *ptr++ = values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 51;
-  *ptr++ = values[6] >> 43;
-  *ptr++ = values[6] >> 35;
-  *ptr++ = values[6] >> 27;
-  *ptr++ = values[6] >> 19;
-  *ptr++ = values[6] >> 11;
-  *ptr++ = values[6] >> 3;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 51);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 3);
 
-  *ptr = values[6] << 5;
-  *ptr++ |= values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_54(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 46;
-  *ptr++ = values[0] >> 38;
-  *ptr++ = values[0] >> 30;
-  *ptr++ = values[0] >> 22;
-  *ptr++ = values[0] >> 14;
-  *ptr++ = values[0] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 6);
 
-  *ptr = values[0] << 2;
-  *ptr++ |= values[1] >> 52;
-  *ptr++ = values[1] >> 44;
-  *ptr++ = values[1] >> 36;
-  *ptr++ = values[1] >> 28;
-  *ptr++ = values[1] >> 20;
-  *ptr++ = values[1] >> 12;
-  *ptr++ = values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 50;
-  *ptr++ = values[2] >> 42;
-  *ptr++ = values[2] >> 34;
-  *ptr++ = values[2] >> 26;
-  *ptr++ = values[2] >> 18;
-  *ptr++ = values[2] >> 10;
-  *ptr++ = values[2] >> 2;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 2);
 
-  *ptr = values[2] << 6;
-  *ptr++ |= values[3] >> 48;
-  *ptr++ = values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 46;
-  *ptr++ = values[4] >> 38;
-  *ptr++ = values[4] >> 30;
-  *ptr++ = values[4] >> 22;
-  *ptr++ = values[4] >> 14;
-  *ptr++ = values[4] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 6);
 
-  *ptr = values[4] << 2;
-  *ptr++ |= values[5] >> 52;
-  *ptr++ = values[5] >> 44;
-  *ptr++ = values[5] >> 36;
-  *ptr++ = values[5] >> 28;
-  *ptr++ = values[5] >> 20;
-  *ptr++ = values[5] >> 12;
-  *ptr++ = values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 50;
-  *ptr++ = values[6] >> 42;
-  *ptr++ = values[6] >> 34;
-  *ptr++ = values[6] >> 26;
-  *ptr++ = values[6] >> 18;
-  *ptr++ = values[6] >> 10;
-  *ptr++ = values[6] >> 2;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 2);
 
-  *ptr = values[6] << 6;
-  *ptr++ |= values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_55(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 47;
-  *ptr++ = values[0] >> 39;
-  *ptr++ = values[0] >> 31;
-  *ptr++ = values[0] >> 23;
-  *ptr++ = values[0] >> 15;
-  *ptr++ = values[0] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 47);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 7);
 
-  *ptr = values[0] << 1;
-  *ptr++ |= values[1] >> 54;
-  *ptr++ = values[1] >> 46;
-  *ptr++ = values[1] >> 38;
-  *ptr++ = values[1] >> 30;
-  *ptr++ = values[1] >> 22;
-  *ptr++ = values[1] >> 14;
-  *ptr++ = values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 54);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 53;
-  *ptr++ = values[2] >> 45;
-  *ptr++ = values[2] >> 37;
-  *ptr++ = values[2] >> 29;
-  *ptr++ = values[2] >> 21;
-  *ptr++ = values[2] >> 13;
-  *ptr++ = values[2] >> 5;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 53);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 45);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 5);
 
-  *ptr = values[2] << 3;
-  *ptr++ |= values[3] >> 52;
-  *ptr++ = values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 51;
-  *ptr++ = values[4] >> 43;
-  *ptr++ = values[4] >> 35;
-  *ptr++ = values[4] >> 27;
-  *ptr++ = values[4] >> 19;
-  *ptr++ = values[4] >> 11;
-  *ptr++ = values[4] >> 3;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 51);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 3);
 
-  *ptr = values[4] << 5;
-  *ptr++ |= values[5] >> 50;
-  *ptr++ = values[5] >> 42;
-  *ptr++ = values[5] >> 34;
-  *ptr++ = values[5] >> 26;
-  *ptr++ = values[5] >> 18;
-  *ptr++ = values[5] >> 10;
-  *ptr++ = values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 49;
-  *ptr++ = values[6] >> 41;
-  *ptr++ = values[6] >> 33;
-  *ptr++ = values[6] >> 25;
-  *ptr++ = values[6] >> 17;
-  *ptr++ = values[6] >> 9;
-  *ptr++ = values[6] >> 1;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 49);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 1);
 
-  *ptr = values[6] << 7;
-  *ptr++ |= values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_56(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 48;
-  *ptr++ = values[0] >> 40;
-  *ptr++ = values[0] >> 32;
-  *ptr++ = values[0] >> 24;
-  *ptr++ = values[0] >> 16;
-  *ptr++ = values[0] >> 8;
-  *ptr++ = values[0];
+  *ptr++ = static_cast<uint8_t>(values[0] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[0]);
 
-  *ptr++ = values[1] >> 48;
-  *ptr++ = values[1] >> 40;
-  *ptr++ = values[1] >> 32;
-  *ptr++ = values[1] >> 24;
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr++ = static_cast<uint8_t>(values[1] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 48;
-  *ptr++ = values[2] >> 40;
-  *ptr++ = values[2] >> 32;
-  *ptr++ = values[2] >> 24;
-  *ptr++ = values[2] >> 16;
-  *ptr++ = values[2] >> 8;
-  *ptr++ = values[2];
+  *ptr++ = static_cast<uint8_t>(values[2] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[2]);
 
-  *ptr++ = values[3] >> 48;
-  *ptr++ = values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr++ = static_cast<uint8_t>(values[3] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 48;
-  *ptr++ = values[4] >> 40;
-  *ptr++ = values[4] >> 32;
-  *ptr++ = values[4] >> 24;
-  *ptr++ = values[4] >> 16;
-  *ptr++ = values[4] >> 8;
-  *ptr++ = values[4];
+  *ptr++ = static_cast<uint8_t>(values[4] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[4]);
 
-  *ptr++ = values[5] >> 48;
-  *ptr++ = values[5] >> 40;
-  *ptr++ = values[5] >> 32;
-  *ptr++ = values[5] >> 24;
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr++ = static_cast<uint8_t>(values[5] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 48;
-  *ptr++ = values[6] >> 40;
-  *ptr++ = values[6] >> 32;
-  *ptr++ = values[6] >> 24;
-  *ptr++ = values[6] >> 16;
-  *ptr++ = values[6] >> 8;
-  *ptr++ = values[6];
+  *ptr++ = static_cast<uint8_t>(values[6] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[6]);
 
-  *ptr++ = values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr++ = static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_57(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 49;
-  *ptr++ = values[0] >> 41;
-  *ptr++ = values[0] >> 33;
-  *ptr++ = values[0] >> 25;
-  *ptr++ = values[0] >> 17;
-  *ptr++ = values[0] >> 9;
-  *ptr++ = values[0] >> 1;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 49);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 1);
 
-  *ptr = values[0] << 7;
-  *ptr++ |= values[1] >> 50;
-  *ptr++ = values[1] >> 42;
-  *ptr++ = values[1] >> 34;
-  *ptr++ = values[1] >> 26;
-  *ptr++ = values[1] >> 18;
-  *ptr++ = values[1] >> 10;
-  *ptr++ = values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 51;
-  *ptr++ = values[2] >> 43;
-  *ptr++ = values[2] >> 35;
-  *ptr++ = values[2] >> 27;
-  *ptr++ = values[2] >> 19;
-  *ptr++ = values[2] >> 11;
-  *ptr++ = values[2] >> 3;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 51);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 3);
 
-  *ptr = values[2] << 5;
-  *ptr++ |= values[3] >> 52;
-  *ptr++ = values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 53;
-  *ptr++ = values[4] >> 45;
-  *ptr++ = values[4] >> 37;
-  *ptr++ = values[4] >> 29;
-  *ptr++ = values[4] >> 21;
-  *ptr++ = values[4] >> 13;
-  *ptr++ = values[4] >> 5;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 53);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 45);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 5);
 
-  *ptr = values[4] << 3;
-  *ptr++ |= values[5] >> 54;
-  *ptr++ = values[5] >> 46;
-  *ptr++ = values[5] >> 38;
-  *ptr++ = values[5] >> 30;
-  *ptr++ = values[5] >> 22;
-  *ptr++ = values[5] >> 14;
-  *ptr++ = values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 54);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 55;
-  *ptr++ = values[6] >> 47;
-  *ptr++ = values[6] >> 39;
-  *ptr++ = values[6] >> 31;
-  *ptr++ = values[6] >> 23;
-  *ptr++ = values[6] >> 15;
-  *ptr++ = values[6] >> 7;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 55);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 47);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 7);
 
-  *ptr = values[6] << 1;
-  *ptr++ |= values[7] >> 56;
-  *ptr++ = values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_58(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 50;
-  *ptr++ = values[0] >> 42;
-  *ptr++ = values[0] >> 34;
-  *ptr++ = values[0] >> 26;
-  *ptr++ = values[0] >> 18;
-  *ptr++ = values[0] >> 10;
-  *ptr++ = values[0] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 2);
 
-  *ptr = values[0] << 6;
-  *ptr++ |= values[1] >> 52;
-  *ptr++ = values[1] >> 44;
-  *ptr++ = values[1] >> 36;
-  *ptr++ = values[1] >> 28;
-  *ptr++ = values[1] >> 20;
-  *ptr++ = values[1] >> 12;
-  *ptr++ = values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 54;
-  *ptr++ = values[2] >> 46;
-  *ptr++ = values[2] >> 38;
-  *ptr++ = values[2] >> 30;
-  *ptr++ = values[2] >> 22;
-  *ptr++ = values[2] >> 14;
-  *ptr++ = values[2] >> 6;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 54);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 6);
 
-  *ptr = values[2] << 2;
-  *ptr++ |= values[3] >> 56;
-  *ptr++ = values[3] >> 48;
-  *ptr++ = values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 50;
-  *ptr++ = values[4] >> 42;
-  *ptr++ = values[4] >> 34;
-  *ptr++ = values[4] >> 26;
-  *ptr++ = values[4] >> 18;
-  *ptr++ = values[4] >> 10;
-  *ptr++ = values[4] >> 2;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 2);
 
-  *ptr = values[4] << 6;
-  *ptr++ |= values[5] >> 52;
-  *ptr++ = values[5] >> 44;
-  *ptr++ = values[5] >> 36;
-  *ptr++ = values[5] >> 28;
-  *ptr++ = values[5] >> 20;
-  *ptr++ = values[5] >> 12;
-  *ptr++ = values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 54;
-  *ptr++ = values[6] >> 46;
-  *ptr++ = values[6] >> 38;
-  *ptr++ = values[6] >> 30;
-  *ptr++ = values[6] >> 22;
-  *ptr++ = values[6] >> 14;
-  *ptr++ = values[6] >> 6;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 54);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 6);
 
-  *ptr = values[6] << 2;
-  *ptr++ |= values[7] >> 56;
-  *ptr++ = values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_59(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 51;
-  *ptr++ = values[0] >> 43;
-  *ptr++ = values[0] >> 35;
-  *ptr++ = values[0] >> 27;
-  *ptr++ = values[0] >> 19;
-  *ptr++ = values[0] >> 11;
-  *ptr++ = values[0] >> 3;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 51);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 3);
 
-  *ptr = values[0] << 5;
-  *ptr++ |= values[1] >> 54;
-  *ptr++ = values[1] >> 46;
-  *ptr++ = values[1] >> 38;
-  *ptr++ = values[1] >> 30;
-  *ptr++ = values[1] >> 22;
-  *ptr++ = values[1] >> 14;
-  *ptr++ = values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 54);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 57;
-  *ptr++ = values[2] >> 49;
-  *ptr++ = values[2] >> 41;
-  *ptr++ = values[2] >> 33;
-  *ptr++ = values[2] >> 25;
-  *ptr++ = values[2] >> 17;
-  *ptr++ = values[2] >> 9;
-  *ptr++ = values[2] >> 1;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 57);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 49);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 1);
 
-  *ptr = values[2] << 7;
-  *ptr++ |= values[3] >> 52;
-  *ptr++ = values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 55;
-  *ptr++ = values[4] >> 47;
-  *ptr++ = values[4] >> 39;
-  *ptr++ = values[4] >> 31;
-  *ptr++ = values[4] >> 23;
-  *ptr++ = values[4] >> 15;
-  *ptr++ = values[4] >> 7;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 55);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 47);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 7);
 
-  *ptr = values[4] << 1;
-  *ptr++ |= values[5] >> 58;
-  *ptr++ = values[5] >> 50;
-  *ptr++ = values[5] >> 42;
-  *ptr++ = values[5] >> 34;
-  *ptr++ = values[5] >> 26;
-  *ptr++ = values[5] >> 18;
-  *ptr++ = values[5] >> 10;
-  *ptr++ = values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 58);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 53;
-  *ptr++ = values[6] >> 45;
-  *ptr++ = values[6] >> 37;
-  *ptr++ = values[6] >> 29;
-  *ptr++ = values[6] >> 21;
-  *ptr++ = values[6] >> 13;
-  *ptr++ = values[6] >> 5;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 53);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 45);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 5);
 
-  *ptr = values[6] << 3;
-  *ptr++ |= values[7] >> 56;
-  *ptr++ = values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_60(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 52;
-  *ptr++ = values[0] >> 44;
-  *ptr++ = values[0] >> 36;
-  *ptr++ = values[0] >> 28;
-  *ptr++ = values[0] >> 20;
-  *ptr++ = values[0] >> 12;
-  *ptr++ = values[0] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 4);
 
-  *ptr = values[0] << 4;
-  *ptr++ |= values[1] >> 56;
-  *ptr++ = values[1] >> 48;
-  *ptr++ = values[1] >> 40;
-  *ptr++ = values[1] >> 32;
-  *ptr++ = values[1] >> 24;
-  *ptr++ = values[1] >> 16;
-  *ptr++ = values[1] >> 8;
-  *ptr++ = values[1];
+  *ptr = static_cast<uint8_t>(values[0] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[1]);
 
-  *ptr++ = values[2] >> 52;
-  *ptr++ = values[2] >> 44;
-  *ptr++ = values[2] >> 36;
-  *ptr++ = values[2] >> 28;
-  *ptr++ = values[2] >> 20;
-  *ptr++ = values[2] >> 12;
-  *ptr++ = values[2] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[2] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 4);
 
-  *ptr = values[2] << 4;
-  *ptr++ |= values[3] >> 56;
-  *ptr++ = values[3] >> 48;
-  *ptr++ = values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 52;
-  *ptr++ = values[4] >> 44;
-  *ptr++ = values[4] >> 36;
-  *ptr++ = values[4] >> 28;
-  *ptr++ = values[4] >> 20;
-  *ptr++ = values[4] >> 12;
-  *ptr++ = values[4] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 4);
 
-  *ptr = values[4] << 4;
-  *ptr++ |= values[5] >> 56;
-  *ptr++ = values[5] >> 48;
-  *ptr++ = values[5] >> 40;
-  *ptr++ = values[5] >> 32;
-  *ptr++ = values[5] >> 24;
-  *ptr++ = values[5] >> 16;
-  *ptr++ = values[5] >> 8;
-  *ptr++ = values[5];
+  *ptr = static_cast<uint8_t>(values[4] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[5]);
 
-  *ptr++ = values[6] >> 52;
-  *ptr++ = values[6] >> 44;
-  *ptr++ = values[6] >> 36;
-  *ptr++ = values[6] >> 28;
-  *ptr++ = values[6] >> 20;
-  *ptr++ = values[6] >> 12;
-  *ptr++ = values[6] >> 4;
+  *ptr++ = static_cast<uint8_t>(values[6] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 4);
 
-  *ptr = values[6] << 4;
-  *ptr++ |= values[7] >> 56;
-  *ptr++ = values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_61(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 53;
-  *ptr++ = values[0] >> 45;
-  *ptr++ = values[0] >> 37;
-  *ptr++ = values[0] >> 29;
-  *ptr++ = values[0] >> 21;
-  *ptr++ = values[0] >> 13;
-  *ptr++ = values[0] >> 5;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 53);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 45);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 5);
 
-  *ptr = values[0] << 3;
-  *ptr++ |= values[1] >> 58;
-  *ptr++ = values[1] >> 50;
-  *ptr++ = values[1] >> 42;
-  *ptr++ = values[1] >> 34;
-  *ptr++ = values[1] >> 26;
-  *ptr++ = values[1] >> 18;
-  *ptr++ = values[1] >> 10;
-  *ptr++ = values[1] >> 2;
+  *ptr = static_cast<uint8_t>(values[0] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 58);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 2);
 
-  *ptr = values[1] << 6;
-  *ptr++ |= values[2] >> 55;
-  *ptr++ = values[2] >> 47;
-  *ptr++ = values[2] >> 39;
-  *ptr++ = values[2] >> 31;
-  *ptr++ = values[2] >> 23;
-  *ptr++ = values[2] >> 15;
-  *ptr++ = values[2] >> 7;
+  *ptr = static_cast<uint8_t>(values[1] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 55);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 47);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 7);
 
-  *ptr = values[2] << 1;
-  *ptr++ |= values[3] >> 60;
-  *ptr++ = values[3] >> 52;
-  *ptr++ = values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 60);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 57;
-  *ptr++ = values[4] >> 49;
-  *ptr++ = values[4] >> 41;
-  *ptr++ = values[4] >> 33;
-  *ptr++ = values[4] >> 25;
-  *ptr++ = values[4] >> 17;
-  *ptr++ = values[4] >> 9;
-  *ptr++ = values[4] >> 1;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 57);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 49);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 1);
 
-  *ptr = values[4] << 7;
-  *ptr++ |= values[5] >> 54;
-  *ptr++ = values[5] >> 46;
-  *ptr++ = values[5] >> 38;
-  *ptr++ = values[5] >> 30;
-  *ptr++ = values[5] >> 22;
-  *ptr++ = values[5] >> 14;
-  *ptr++ = values[5] >> 6;
+  *ptr = static_cast<uint8_t>(values[4] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 54);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 6);
 
-  *ptr = values[5] << 2;
-  *ptr++ |= values[6] >> 59;
-  *ptr++ = values[6] >> 51;
-  *ptr++ = values[6] >> 43;
-  *ptr++ = values[6] >> 35;
-  *ptr++ = values[6] >> 27;
-  *ptr++ = values[6] >> 19;
-  *ptr++ = values[6] >> 11;
-  *ptr++ = values[6] >> 3;
+  *ptr = static_cast<uint8_t>(values[5] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 59);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 51);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 3);
 
-  *ptr = values[6] << 5;
-  *ptr++ |= values[7] >> 56;
-  *ptr++ = values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_62(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 54;
-  *ptr++ = values[0] >> 46;
-  *ptr++ = values[0] >> 38;
-  *ptr++ = values[0] >> 30;
-  *ptr++ = values[0] >> 22;
-  *ptr++ = values[0] >> 14;
-  *ptr++ = values[0] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 54);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 6);
 
-  *ptr = values[0] << 2;
-  *ptr++ |= values[1] >> 60;
-  *ptr++ = values[1] >> 52;
-  *ptr++ = values[1] >> 44;
-  *ptr++ = values[1] >> 36;
-  *ptr++ = values[1] >> 28;
-  *ptr++ = values[1] >> 20;
-  *ptr++ = values[1] >> 12;
-  *ptr++ = values[1] >> 4;
+  *ptr = static_cast<uint8_t>(values[0] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 60);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 4);
 
-  *ptr = values[1] << 4;
-  *ptr++ |= values[2] >> 58;
-  *ptr++ = values[2] >> 50;
-  *ptr++ = values[2] >> 42;
-  *ptr++ = values[2] >> 34;
-  *ptr++ = values[2] >> 26;
-  *ptr++ = values[2] >> 18;
-  *ptr++ = values[2] >> 10;
-  *ptr++ = values[2] >> 2;
+  *ptr = static_cast<uint8_t>(values[1] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 58);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 2);
 
-  *ptr = values[2] << 6;
-  *ptr++ |= values[3] >> 56;
-  *ptr++ = values[3] >> 48;
-  *ptr++ = values[3] >> 40;
-  *ptr++ = values[3] >> 32;
-  *ptr++ = values[3] >> 24;
-  *ptr++ = values[3] >> 16;
-  *ptr++ = values[3] >> 8;
-  *ptr++ = values[3];
+  *ptr = static_cast<uint8_t>(values[2] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 8);
+  *ptr++ = static_cast<uint8_t>(values[3]);
 
-  *ptr++ = values[4] >> 54;
-  *ptr++ = values[4] >> 46;
-  *ptr++ = values[4] >> 38;
-  *ptr++ = values[4] >> 30;
-  *ptr++ = values[4] >> 22;
-  *ptr++ = values[4] >> 14;
-  *ptr++ = values[4] >> 6;
+  *ptr++ = static_cast<uint8_t>(values[4] >> 54);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 6);
 
-  *ptr = values[4] << 2;
-  *ptr++ |= values[5] >> 60;
-  *ptr++ = values[5] >> 52;
-  *ptr++ = values[5] >> 44;
-  *ptr++ = values[5] >> 36;
-  *ptr++ = values[5] >> 28;
-  *ptr++ = values[5] >> 20;
-  *ptr++ = values[5] >> 12;
-  *ptr++ = values[5] >> 4;
+  *ptr = static_cast<uint8_t>(values[4] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 60);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 4);
 
-  *ptr = values[5] << 4;
-  *ptr++ |= values[6] >> 58;
-  *ptr++ = values[6] >> 50;
-  *ptr++ = values[6] >> 42;
-  *ptr++ = values[6] >> 34;
-  *ptr++ = values[6] >> 26;
-  *ptr++ = values[6] >> 18;
-  *ptr++ = values[6] >> 10;
-  *ptr++ = values[6] >> 2;
+  *ptr = static_cast<uint8_t>(values[5] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 58);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 2);
 
-  *ptr = values[6] << 6;
-  *ptr++ |= values[7] >> 56;
-  *ptr++ = values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void pack_bits_63(const uint64_t* values, uint8_t* ptr) {
-  *ptr++ = values[0] >> 55;
-  *ptr++ = values[0] >> 47;
-  *ptr++ = values[0] >> 39;
-  *ptr++ = values[0] >> 31;
-  *ptr++ = values[0] >> 23;
-  *ptr++ = values[0] >> 15;
-  *ptr++ = values[0] >> 7;
+  *ptr++ = static_cast<uint8_t>(values[0] >> 55);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 47);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 39);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 31);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 23);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 15);
+  *ptr++ = static_cast<uint8_t>(values[0] >> 7);
 
-  *ptr = values[0] << 1;
-  *ptr++ |= values[1] >> 62;
-  *ptr++ = values[1] >> 54;
-  *ptr++ = values[1] >> 46;
-  *ptr++ = values[1] >> 38;
-  *ptr++ = values[1] >> 30;
-  *ptr++ = values[1] >> 22;
-  *ptr++ = values[1] >> 14;
-  *ptr++ = values[1] >> 6;
+  *ptr = static_cast<uint8_t>(values[0] << 1);
+  *ptr++ |= static_cast<uint8_t>(values[1] >> 62);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 54);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 46);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 38);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 30);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 22);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 14);
+  *ptr++ = static_cast<uint8_t>(values[1] >> 6);
 
-  *ptr = values[1] << 2;
-  *ptr++ |= values[2] >> 61;
-  *ptr++ = values[2] >> 53;
-  *ptr++ = values[2] >> 45;
-  *ptr++ = values[2] >> 37;
-  *ptr++ = values[2] >> 29;
-  *ptr++ = values[2] >> 21;
-  *ptr++ = values[2] >> 13;
-  *ptr++ = values[2] >> 5;
+  *ptr = static_cast<uint8_t>(values[1] << 2);
+  *ptr++ |= static_cast<uint8_t>(values[2] >> 61);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 53);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 45);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 37);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 29);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 21);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 13);
+  *ptr++ = static_cast<uint8_t>(values[2] >> 5);
 
-  *ptr = values[2] << 3;
-  *ptr++ |= values[3] >> 60;
-  *ptr++ = values[3] >> 52;
-  *ptr++ = values[3] >> 44;
-  *ptr++ = values[3] >> 36;
-  *ptr++ = values[3] >> 28;
-  *ptr++ = values[3] >> 20;
-  *ptr++ = values[3] >> 12;
-  *ptr++ = values[3] >> 4;
+  *ptr = static_cast<uint8_t>(values[2] << 3);
+  *ptr++ |= static_cast<uint8_t>(values[3] >> 60);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 52);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 44);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 36);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 28);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 20);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 12);
+  *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = values[3] << 4;
-  *ptr++ |= values[4] >> 59;
-  *ptr++ = values[4] >> 51;
-  *ptr++ = values[4] >> 43;
-  *ptr++ = values[4] >> 35;
-  *ptr++ = values[4] >> 27;
-  *ptr++ = values[4] >> 19;
-  *ptr++ = values[4] >> 11;
-  *ptr++ = values[4] >> 3;
+  *ptr = static_cast<uint8_t>(values[3] << 4);
+  *ptr++ |= static_cast<uint8_t>(values[4] >> 59);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 51);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 43);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 35);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 27);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 19);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 11);
+  *ptr++ = static_cast<uint8_t>(values[4] >> 3);
 
-  *ptr = values[4] << 5;
-  *ptr++ |= values[5] >> 58;
-  *ptr++ = values[5] >> 50;
-  *ptr++ = values[5] >> 42;
-  *ptr++ = values[5] >> 34;
-  *ptr++ = values[5] >> 26;
-  *ptr++ = values[5] >> 18;
-  *ptr++ = values[5] >> 10;
-  *ptr++ = values[5] >> 2;
+  *ptr = static_cast<uint8_t>(values[4] << 5);
+  *ptr++ |= static_cast<uint8_t>(values[5] >> 58);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 50);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 42);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 34);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 26);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 18);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 10);
+  *ptr++ = static_cast<uint8_t>(values[5] >> 2);
 
-  *ptr = values[5] << 6;
-  *ptr++ |= values[6] >> 57;
-  *ptr++ = values[6] >> 49;
-  *ptr++ = values[6] >> 41;
-  *ptr++ = values[6] >> 33;
-  *ptr++ = values[6] >> 25;
-  *ptr++ = values[6] >> 17;
-  *ptr++ = values[6] >> 9;
-  *ptr++ = values[6] >> 1;
+  *ptr = static_cast<uint8_t>(values[5] << 6);
+  *ptr++ |= static_cast<uint8_t>(values[6] >> 57);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 49);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 41);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 33);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 25);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 17);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 9);
+  *ptr++ = static_cast<uint8_t>(values[6] >> 1);
 
-  *ptr = values[6] << 7;
-  *ptr++ |= values[7] >> 56;
-  *ptr++ = values[7] >> 48;
-  *ptr++ = values[7] >> 40;
-  *ptr++ = values[7] >> 32;
-  *ptr++ = values[7] >> 24;
-  *ptr++ = values[7] >> 16;
-  *ptr++ = values[7] >> 8;
-  *ptr = values[7];
+  *ptr = static_cast<uint8_t>(values[6] << 7);
+  *ptr++ |= static_cast<uint8_t>(values[7] >> 56);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 48);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 40);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 32);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 24);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 16);
+  *ptr++ = static_cast<uint8_t>(values[7] >> 8);
+  *ptr = static_cast<uint8_t>(values[7]);
 }
 
 static inline void unpack_bits_1(uint64_t* values, const uint8_t* ptr) {
