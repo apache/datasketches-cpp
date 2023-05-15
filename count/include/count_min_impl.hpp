@@ -306,7 +306,7 @@ void count_min_sketch<W,A>::serialize(std::ostream& os) const {
   write(os, nhashes);
   write(os, seed_hash);
   write(os, unused8);
-  if (is_empty()) return ; // sketch is empty, no need to write further bytes.
+  if (is_empty()) return; // sketch is empty, no need to write further bytes.
 
   // Long 2
   write(os, _total_weight);
@@ -389,7 +389,7 @@ auto count_min_sketch<W,A>::serialize(unsigned header_size_bytes) const -> vecto
   ptr += copy_to_mem(nhashes, ptr);
   ptr += copy_to_mem(seed_hash, ptr);
   ptr += copy_to_mem(null_characters_8, ptr);
-  if (is_empty()) return bytes ; // sketch is empty, no need to write further bytes.
+  if (is_empty()) return bytes; // sketch is empty, no need to write further bytes.
 
   // Long 2
   const W t_weight = _total_weight;
