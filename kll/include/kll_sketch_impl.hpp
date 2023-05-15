@@ -192,7 +192,7 @@ template<typename T, typename C, typename A>
 template<typename FwdT>
 void kll_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_item(item)) { return; }
-  update_min_max(item);
+  update_min_max(static_cast<const T&>(item)); // min and max are always copies
   const uint32_t index = internal_update();
   new (&items_[index]) T(std::forward<FwdT>(item));
   reset_sorted_view();
@@ -820,7 +820,7 @@ quantiles_sorted_view<T, C, A> kll_sketch<T, C, A>::get_sorted_view() const {
   for (uint8_t level = 0; level < num_levels_; ++level) {
     const auto from = items_ + levels_[level];
     const auto to = items_ + levels_[level + 1]; // exclusive
-    view.add(from, to, 1 << level);
+    view.add(from, to, 1ULL << level);
   }
   view.convert_to_cummulative();
   return view;

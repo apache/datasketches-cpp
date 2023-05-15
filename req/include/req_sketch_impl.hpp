@@ -310,7 +310,7 @@ quantiles_sorted_view<T, C, A> req_sketch<T, C, A>::get_sorted_view() const {
   quantiles_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
 
   for (auto& compactor: compactors_) {
-    view.add(compactor.begin(), compactor.end(), 1 << compactor.get_lg_weight());
+    view.add(compactor.begin(), compactor.end(), 1ULL << compactor.get_lg_weight());
   }
 
   view.convert_to_cummulative();

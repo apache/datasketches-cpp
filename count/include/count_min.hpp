@@ -49,7 +49,7 @@ public:
    * The items inserted into the sketch can be arbitrary type, so long as they are hashable via murmurhash.
    * Only update and estimate methods are added for uint64_t and string types.
    */
-  count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator()) ;
+  count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
    * @return configured _num_hashes of this sketch
@@ -88,7 +88,7 @@ public:
    * sketch required in order to obtain the specified relative error.
    * [1] - Section 3 ``Data Structure'', page 6.
    */
-  static uint32_t suggest_num_buckets(double relative_error) ;
+  static uint32_t suggest_num_buckets(double relative_error);
 
   /*
    * @param confidence : double -- the desired confidence with which estimates should be correct.
@@ -98,7 +98,7 @@ public:
    * confidence = 1 - delta, with delta denoting the sketch failure probability in the literature.
    * [1] - Section 3 ``Data Structure'', page 6.
    */
-  static uint8_t suggest_num_hashes(double confidence) ;
+  static uint8_t suggest_num_hashes(double confidence);
 
   /**
    * Specific get_estimate function for uint64_t type
@@ -106,7 +106,7 @@ public:
    * @param item : uint64_t type.
    * @return an estimate of the item's frequency.
    */
-  W get_estimate(uint64_t item) const ;
+  W get_estimate(uint64_t item) const;
 
   /**
    * Specific get_estimate function for int64_t type
@@ -114,7 +114,7 @@ public:
    * @param item : uint64_t type.
    * @return an estimate of the item's frequency.
    */
-  W get_estimate(int64_t item) const ;
+  W get_estimate(int64_t item) const;
 
   /**
    * Specific get_estimate function for std::string type
@@ -132,7 +132,7 @@ public:
    * @return the estimated frequency of the item denoted f_est satisfying
    * f_true - relative_error*_total_weight <= f_est <= f_true
    */
-  W get_estimate(const void* item, size_t size) const ;
+  W get_estimate(const void* item, size_t size) const;
 
   /**
    * Query the sketch for the upper bound of a given item.
@@ -141,8 +141,8 @@ public:
    * f_true <= f_est + relative_error*_total_weight
    */
   W get_upper_bound(const void* item, size_t size) const;
-  W get_upper_bound(int64_t) const ;
-  W get_upper_bound(uint64_t) const ;
+  W get_upper_bound(int64_t) const;
+  W get_upper_bound(uint64_t) const;
   W get_upper_bound(const std::string& item) const;
 
   /**
@@ -151,10 +151,10 @@ public:
    * @return the lower bound for the query result, f_est, on the true frequency, f_est of the item
    * f_true - relative_error*_total_weight <= f_est
    */
-  W get_lower_bound(const void* item, size_t size) const ;
-  W get_lower_bound(int64_t) const ;
-  W get_lower_bound(uint64_t) const ;
-  W get_lower_bound(const std::string& item) const ;
+  W get_lower_bound(const void* item, size_t size) const;
+  W get_lower_bound(int64_t) const;
+  W get_lower_bound(uint64_t) const;
+  W get_lower_bound(const std::string& item) const;
 
   /*
    * Update this sketch with given data of any type.
@@ -164,7 +164,7 @@ public:
    * @param size of the data in bytes
    * @return vector of uint64_t which each represent the index to which `value' must update in the sketch
    */
-  void update(const void* item, size_t size, W weight) ;
+  void update(const void* item, size_t size, W weight);
 
   /**
    * Update this sketch with a given uint64_t item.
@@ -172,10 +172,10 @@ public:
    * @param weight : arithmetic type
    *  void function which inserts an item of type uint64_t into the sketch
    */
-  void update(uint64_t item, W weight) ;
-  void update(uint64_t item) ;
-  void update(int64_t item, W weight) ;
-  void update(int64_t item) ;
+  void update(uint64_t item, W weight);
+  void update(uint64_t item);
+  void update(int64_t item, W weight);
+  void update(int64_t item);
 
   /**
    * Update this sketch with a given string.
@@ -183,13 +183,13 @@ public:
    * @param weight : arithmetic type
    * void function which inserts an item of type std::string into the sketch
    */
-  void update(const std::string& item, W weight) ;
-  void update(const std::string& item) ;
+  void update(const std::string& item, W weight);
+  void update(const std::string& item);
 
   /*
    * merges a separate count_min_sketch into this count_min_sketch.
    */
-  void merge(const count_min_sketch &other_sketch) ;
+  void merge(const count_min_sketch &other_sketch);
 
   /**
    * Returns true if this sketch is empty.
@@ -197,7 +197,7 @@ public:
    * This can only ever happen if all items inserted to the sketch have weights that cancel each other out.
    * @return empty flag
    */
-  bool is_empty() const ;
+  bool is_empty() const;
 
   /**
    * @brief Returns a string describing the sketch
@@ -206,7 +206,7 @@ public:
   string<Allocator> to_string() const;
 
   // Iterators
-  using const_iterator = typename std::vector<W, Allocator>::const_iterator ;
+  using const_iterator = typename std::vector<W, Allocator>::const_iterator;
   const_iterator begin() const;
   const_iterator end() const;
 
@@ -308,12 +308,12 @@ public:
 
 private:
   Allocator _allocator;
-  uint8_t _num_hashes ;
-  uint32_t _num_buckets ;
-  std::vector<W, Allocator> _sketch_array ; // the array stored by the sketch
-  uint64_t _seed ;
-  W _total_weight ;
-  std::vector<uint64_t> hash_seeds ;
+  uint8_t _num_hashes;
+  uint32_t _num_buckets;
+  std::vector<W, Allocator> _sketch_array; // the array stored by the sketch
+  uint64_t _seed;
+  W _total_weight;
+  std::vector<uint64_t> hash_seeds;
 
   enum flags {IS_EMPTY};
   static const uint8_t PREAMBLE_LONGS_SHORT = 2; // Empty -> need second byte for sketch parameters

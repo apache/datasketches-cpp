@@ -357,7 +357,7 @@ void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
   write(os, flags_byte);
   write(os, get_seed_hash());
   if (preamble_longs > 1) {
-    write<uint32_t>(os, entries_.size());
+    write(os, static_cast<uint32_t>(entries_.size()));
     write<uint32_t>(os, 0); // unused
   }
   if (this->is_estimation_mode()) write(os, this->theta_);
@@ -385,7 +385,7 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
   *ptr++ = flags_byte;
   ptr += copy_to_mem(get_seed_hash(), ptr);
   if (preamble_longs > 1) {
-    ptr += copy_to_mem<uint32_t>(entries_.size(), ptr);
+    ptr += copy_to_mem(static_cast<uint32_t>(entries_.size()), ptr);
     ptr += sizeof(uint32_t); // unused
   }
   if (this->is_estimation_mode()) ptr += copy_to_mem(theta_, ptr);
@@ -432,7 +432,7 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
   const uint8_t entry_bits = 64 - compute_min_leading_zeros();
 
   // store num_entries as whole bytes since whole-byte blocks will follow (most probably)
-  const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(entries_.size()));
+  const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(static_cast<uint32_t>(entries_.size())));
 
   write(os, preamble_longs);
   write(os, COMPRESSED_SERIAL_VERSION);
@@ -447,7 +447,7 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
   write(os, flags_byte);
   write(os, get_seed_hash());
   if (this->is_estimation_mode()) write(os, this->theta_);
-  uint32_t num_entries = entries_.size();
+  uint32_t num_entries = static_cast<uint32_t>(entries_.size());
   for (unsigned i = 0; i < num_entries_bytes; ++i) {
     write<uint8_t>(os, num_entries & 0xff);
     num_entries >>= 8;
@@ -488,7 +488,7 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_byt
   const size_t compressed_bits = entry_bits * entries_.size();
 
   // store num_entries as whole bytes since whole-byte blocks will follow (most probably)
-  const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(entries_.size()));
+  const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(static_cast<uint32_t>(entries_.size())));
 
   const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + num_entries_bytes
       + whole_bytes_to_hold_bits(compressed_bits);
@@ -510,7 +510,7 @@ auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_byt
   if (this->is_estimation_mode()) {
     ptr += copy_to_mem(theta_, ptr);
   }
-  uint32_t num_entries = entries_.size();
+  uint32_t num_entries = static_cast<uint32_t>(entries_.size());
   for (unsigned i = 0; i < num_entries_bytes; ++i) {
     *ptr++ = num_entries & 0xff;
     num_entries >>= 8;
