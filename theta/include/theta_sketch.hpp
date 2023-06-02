@@ -149,7 +149,8 @@ protected:
 // forward declaration
 template<typename A> class compact_theta_sketch_alloc;
 
-template<typename Allocator = std::allocator<uint64_t>>
+template<typename Allocator = std::allocator<uint64_t>,
+        template<typename, typename, typename> class Table = theta_update_sketch_base>
 class update_theta_sketch_alloc: public theta_sketch_alloc<Allocator> {
 public:
   using Base = theta_sketch_alloc<Allocator>;
@@ -157,7 +158,7 @@ public:
   using ExtractKey = typename Base::ExtractKey;
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
-  using theta_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
+  using theta_table = Table<Entry, ExtractKey, Allocator>;
   using resize_factor = typename theta_table::resize_factor;
 
   // No constructor here. Use builder instead.
@@ -301,8 +302,7 @@ private:
   theta_table table_;
 
   // for builder
-  update_theta_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p,
-      uint64_t theta, uint64_t seed, const Allocator& allocator);
+  update_theta_sketch_alloc(theta_table&& table);
 
   virtual void print_specifics(std::ostringstream& os) const;
 };
@@ -425,9 +425,11 @@ private:
   virtual void print_specifics(std::ostringstream& os) const;
 };
 
-template<typename Allocator>
-class update_theta_sketch_alloc<Allocator>::builder: public theta_base_builder<builder, Allocator> {
+template<typename Allocator,template<typename, typename, typename> class Table>
+class update_theta_sketch_alloc<Allocator, Table>::builder: public theta_base_builder<builder, Allocator> {
 public:
+    using ThetaTable = update_theta_sketch_alloc::theta_table;
+
     builder(const Allocator& allocator = Allocator());
     update_theta_sketch_alloc build() const;
 };

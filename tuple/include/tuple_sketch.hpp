@@ -29,7 +29,7 @@ namespace datasketches {
 
 // forward-declarations
 template<typename S, typename A> class tuple_sketch;
-template<typename S, typename U, typename P, typename A> class update_tuple_sketch;
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T> class update_tuple_sketch;
 template<typename S, typename A> class compact_tuple_sketch;
 template<typename A> class theta_sketch_alloc;
 
@@ -203,7 +203,8 @@ template<
   typename Summary,
   typename Update = Summary,
   typename Policy = default_update_policy<Summary, Update>,
-  typename Allocator = std::allocator<Summary>
+  typename Allocator = std::allocator<Summary>,
+  template<typename, typename, typename> class Table = theta_update_sketch_base
 >
 class update_tuple_sketch: public tuple_sketch<Summary, Allocator> {
 public:
@@ -213,7 +214,7 @@ public:
   using iterator = typename Base::iterator;
   using const_iterator = typename Base::const_iterator;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
-  using tuple_map = theta_update_sketch_base<Entry, ExtractKey, AllocEntry>;
+  using tuple_map = Table<Entry, ExtractKey, AllocEntry>;
   using resize_factor = typename tuple_map::resize_factor;
 
   // No constructor here. Use builder instead.
@@ -524,7 +525,10 @@ protected:
 
 // builder
 
-template<typename Derived, typename Policy, typename Allocator>
+template<
+    typename Derived,
+    typename Policy,
+    typename Allocator>
 class tuple_base_builder: public theta_base_builder<Derived, Allocator> {
 public:
   tuple_base_builder(const Policy& policy, const Allocator& allocator);
@@ -533,8 +537,8 @@ protected:
   Policy policy_;
 };
 
-template<typename S, typename U, typename P, typename A>
-class update_tuple_sketch<S, U, P, A>::builder: public tuple_base_builder<builder, P, A> {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+class update_tuple_sketch<S, U, P, A, T>::builder: public tuple_base_builder<builder, P, A> {
 public:
   /**
    * Creates and instance of the builder with default parameters.
@@ -545,7 +549,7 @@ public:
    * This is to create an instance of the sketch with predefined parameters.
    * @return an instance of the sketch
    */
-  update_tuple_sketch<S, U, P, A> build() const;
+  update_tuple_sketch<S, U, P, A, T> build() const;
 };
 
 } /* namespace datasketches */

@@ -21,7 +21,7 @@ namespace datasketches {
 
 template<typename A>
 array_of_doubles_union_alloc<A>::array_of_doubles_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Policy& policy, const A& allocator):
-Base(lg_cur_size, lg_nom_size, rf, p, theta, seed, policy, allocator)
+Base(policy, typename Base::theta_table(lg_cur_size, lg_nom_size, rf, p, theta, seed, allocator))
 {}
 
 template<typename A>

@@ -20,35 +20,37 @@
 #ifndef THETA_UNION_IMPL_HPP_
 #define THETA_UNION_IMPL_HPP_
 
+#include <utility>
+
 namespace datasketches {
 
-template<typename A>
-theta_union_alloc<A>::theta_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const A& allocator):
-state_(lg_cur_size, lg_nom_size, rf, p, theta, seed, nop_policy(), allocator)
+template<typename A, template<typename, typename, typename> class T>
+theta_union_alloc<A, T>::theta_union_alloc(theta_table&& table):
+state_{nop_policy(), std::forward<T<Entry,ExtractKey,A>>(table)}
 {}
 
-template<typename A>
+template<typename A, template<typename, typename, typename> class T>
 template<typename SS>
-void theta_union_alloc<A>::update(SS&& sketch) {
+void theta_union_alloc<A, T>::update(SS&& sketch) {
   state_.update(std::forward<SS>(sketch));
 }
 
-template<typename A>
-auto theta_union_alloc<A>::get_result(bool ordered) const -> CompactSketch {
+template<typename A, template<typename, typename, typename> class T>
+auto theta_union_alloc<A, T>::get_result(bool ordered) const -> CompactSketch {
   return state_.get_result(ordered);
 }
 
-template<typename A>
-void theta_union_alloc<A>::reset() {
+template<typename A, template<typename, typename, typename> class T>
+void theta_union_alloc<A, T>::reset() {
   state_.reset();
 }
 
-template<typename A>
-theta_union_alloc<A>::builder::builder(const A& allocator): theta_base_builder<builder, A>(allocator) {}
+template<typename A, template<typename, typename, typename> class T>
+theta_union_alloc<A, T>::builder::builder(const A& allocator): theta_base_builder<builder, A>(allocator) {}
 
-template<typename A>
-auto theta_union_alloc<A>::builder::build() const -> theta_union_alloc {
-  return theta_union_alloc(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->allocator_);
+template<typename A, template<typename, typename, typename> class T>
+auto theta_union_alloc<A, T>::builder::build() const -> theta_union_alloc {
+  return theta_union_alloc(Table(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->allocator_));
 }
 
 } /* namespace datasketches */

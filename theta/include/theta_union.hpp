@@ -26,7 +26,8 @@
 
 namespace datasketches {
 
-template<typename Allocator = std::allocator<uint64_t>>
+template<typename Allocator = std::allocator<uint64_t>,
+        template<typename, typename, typename> class Table = theta_update_sketch_base>
 class theta_union_alloc {
 public:
   using Entry = uint64_t;
@@ -34,6 +35,8 @@ public:
   using Sketch = theta_sketch_alloc<Allocator>;
   using CompactSketch = compact_theta_sketch_alloc<Allocator>;
   using resize_factor = theta_constants::resize_factor;
+  using theta_table = Table<Entry, ExtractKey, Allocator>;
+
 
   struct nop_policy {
     void operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
@@ -41,7 +44,7 @@ public:
       unused(incoming_entry);
     }
   };
-  using State = theta_union_base<Entry, ExtractKey, nop_policy, Sketch, CompactSketch, Allocator>;
+  using State = theta_union_base<Entry, ExtractKey, nop_policy, Sketch, CompactSketch, Allocator, Table>;
 
   // No constructor here. Use builder instead.
   class builder;
@@ -69,19 +72,21 @@ private:
   State state_;
 
   // for builder
-  theta_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Allocator& allocator);
+  theta_union_alloc(theta_table&& table);
 };
 
-template<typename A>
-class theta_union_alloc<A>::builder: public theta_base_builder<builder, A> {
+template<typename A, template<typename, typename, typename> class T>
+class theta_union_alloc<A, T>::builder: public theta_base_builder<builder, A> {
 public:
+  using Table = theta_union_alloc::theta_table;
+
   builder(const A& allocator = A());
 
   /**
    * This is to create an instance of the union with predefined parameters.
    * @return an instance of the union
    */
-  theta_union_alloc<A> build() const;
+  theta_union_alloc<A, T> build() const;
 };
 
 // alias with default allocator for convenience

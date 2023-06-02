@@ -27,17 +27,16 @@
 
 namespace datasketches {
 
-template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-theta_union_base<EN, EK, P, S, CS, A>::theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
-    float p, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A, template<typename, typename, typename> class T>
+theta_union_base<EN, EK, P, S, CS, A, T>::theta_union_base(const P& policy, hash_table&& table):
 policy_(policy),
-table_(lg_cur_size, lg_nom_size, rf, p, theta, seed, allocator),
+table_(table),
 union_theta_(table_.theta_)
 {}
 
-template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A, template<typename, typename, typename> class T>
 template<typename SS>
-void theta_union_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
+void theta_union_base<EN, EK, P, S, CS, A, T>::update(SS&& sketch) {
   if (sketch.is_empty()) return;
   if (sketch.get_seed_hash() != compute_seed_hash(table_.seed_)) throw std::invalid_argument("seed hash mismatch");
   table_.is_empty_ = false;
@@ -58,8 +57,8 @@ void theta_union_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   union_theta_ = std::min(union_theta_, table_.theta_);
 }
 
-template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A, template<typename, typename, typename> class T>
+CS theta_union_base<EN, EK, P, S, CS, A, T>::get_result(bool ordered) const {
   std::vector<EN, A> entries(table_.allocator_);
   if (table_.is_empty_) return CS(true, true, compute_seed_hash(table_.seed_), union_theta_, std::move(entries));
   entries.reserve(table_.num_entries_);
@@ -80,13 +79,13 @@ CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
   return CS(table_.is_empty_, ordered, compute_seed_hash(table_.seed_), theta, std::move(entries));
 }
 
-template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-const P& theta_union_base<EN, EK, P, S, CS, A>::get_policy() const {
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A, template<typename, typename, typename> class T>
+const P& theta_union_base<EN, EK, P, S, CS, A, T>::get_policy() const {
   return policy_;
 }
 
-template<typename EN, typename EK, typename P, typename S, typename CS, typename A>
-void theta_union_base<EN, EK, P, S, CS, A>::reset() {
+template<typename EN, typename EK, typename P, typename S, typename CS, typename A, template<typename, typename, typename> class T>
+void theta_union_base<EN, EK, P, S, CS, A, T>::reset() {
   table_.reset();
   union_theta_ = table_.theta_;
 }

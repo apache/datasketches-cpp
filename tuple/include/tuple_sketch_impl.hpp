@@ -95,122 +95,122 @@ string<A> tuple_sketch<S, A>::to_string(bool detail) const {
 
 // update sketch
 
-template<typename S, typename U, typename P, typename A>
-update_tuple_sketch<S, U, P, A>::update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+update_tuple_sketch<S, U, P, A, T>::update_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
 policy_(policy),
 map_(lg_cur_size, lg_nom_size, rf, p, theta, seed, allocator)
 {}
 
-template<typename S, typename U, typename P, typename A>
-A update_tuple_sketch<S, U, P, A>::get_allocator() const {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+A update_tuple_sketch<S, U, P, A, T>::get_allocator() const {
   return map_.allocator_;
 }
 
-template<typename S, typename U, typename P, typename A>
-bool update_tuple_sketch<S, U, P, A>::is_empty() const {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+bool update_tuple_sketch<S, U, P, A, T>::is_empty() const {
   return map_.is_empty_;
 }
 
-template<typename S, typename U, typename P, typename A>
-bool update_tuple_sketch<S, U, P, A>::is_ordered() const {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+bool update_tuple_sketch<S, U, P, A, T>::is_ordered() const {
   return map_.num_entries_ > 1 ? false : true;;
 }
 
-template<typename S, typename U, typename P, typename A>
-uint64_t update_tuple_sketch<S, U, P, A>::get_theta64() const {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+uint64_t update_tuple_sketch<S, U, P, A, T>::get_theta64() const {
   return is_empty() ? theta_constants::MAX_THETA : map_.theta_;
 }
 
-template<typename S, typename U, typename P, typename A>
-uint32_t update_tuple_sketch<S, U, P, A>::get_num_retained() const {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+uint32_t update_tuple_sketch<S, U, P, A, T>::get_num_retained() const {
   return map_.num_entries_;
 }
 
-template<typename S, typename U, typename P, typename A>
-uint16_t update_tuple_sketch<S, U, P, A>::get_seed_hash() const {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+uint16_t update_tuple_sketch<S, U, P, A, T>::get_seed_hash() const {
   return compute_seed_hash(map_.seed_);
 }
 
-template<typename S, typename U, typename P, typename A>
-uint8_t update_tuple_sketch<S, U, P, A>::get_lg_k() const {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+uint8_t update_tuple_sketch<S, U, P, A, T>::get_lg_k() const {
   return map_.lg_nom_size_;
 }
 
-template<typename S, typename U, typename P, typename A>
-auto update_tuple_sketch<S, U, P, A>::get_rf() const -> resize_factor {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+auto update_tuple_sketch<S, U, P, A, T>::get_rf() const -> resize_factor {
   return map_.rf_;
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(uint64_t key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(uint64_t key, UU&& value) {
   update(&key, sizeof(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(int64_t key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(int64_t key, UU&& value) {
   update(&key, sizeof(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(uint32_t key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(uint32_t key, UU&& value) {
   update(static_cast<int32_t>(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(int32_t key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(int32_t key, UU&& value) {
   update(static_cast<int64_t>(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(uint16_t key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(uint16_t key, UU&& value) {
   update(static_cast<int16_t>(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(int16_t key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(int16_t key, UU&& value) {
   update(static_cast<int64_t>(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(uint8_t key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(uint8_t key, UU&& value) {
   update(static_cast<int8_t>(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(int8_t key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(int8_t key, UU&& value) {
   update(static_cast<int64_t>(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(const std::string& key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(const std::string& key, UU&& value) {
   if (key.empty()) return;
   update(key.c_str(), key.length(), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(double key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(double key, UU&& value) {
   update(canonical_double(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(float key, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(float key, UU&& value) {
   update(static_cast<double>(key), std::forward<UU>(value));
 }
 
-template<typename S, typename U, typename P, typename A>
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
 template<typename UU>
-void update_tuple_sketch<S, U, P, A>::update(const void* key, size_t length, UU&& value) {
+void update_tuple_sketch<S, U, P, A, T>::update(const void* key, size_t length, UU&& value) {
   const uint64_t hash = map_.hash_and_screen(key, length);
   if (hash == 0) return;
   auto result = map_.find(hash);
@@ -223,43 +223,43 @@ void update_tuple_sketch<S, U, P, A>::update(const void* key, size_t length, UU&
   }
 }
 
-template<typename S, typename U, typename P, typename A>
-void update_tuple_sketch<S, U, P, A>::trim() {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+void update_tuple_sketch<S, U, P, A, T>::trim() {
   map_.trim();
 }
 
-template<typename S, typename U, typename P, typename A>
-void update_tuple_sketch<S, U, P, A>::reset() {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+void update_tuple_sketch<S, U, P, A, T>::reset() {
   map_.reset();
 }
 
-template<typename S, typename U, typename P, typename A>
-auto update_tuple_sketch<S, U, P, A>::begin() -> iterator {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+auto update_tuple_sketch<S, U, P, A, T>::begin() -> iterator {
   return iterator(map_.entries_, 1 << map_.lg_cur_size_, 0);
 }
 
-template<typename S, typename U, typename P, typename A>
-auto update_tuple_sketch<S, U, P, A>::end() -> iterator {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+auto update_tuple_sketch<S, U, P, A, T>::end() -> iterator {
   return iterator(nullptr, 0, 1 << map_.lg_cur_size_);
 }
 
-template<typename S, typename U, typename P, typename A>
-auto update_tuple_sketch<S, U, P, A>::begin() const -> const_iterator {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+auto update_tuple_sketch<S, U, P, A, T>::begin() const -> const_iterator {
   return const_iterator(map_.entries_, 1 << map_.lg_cur_size_, 0);
 }
 
-template<typename S, typename U, typename P, typename A>
-auto update_tuple_sketch<S, U, P, A>::end() const -> const_iterator {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+auto update_tuple_sketch<S, U, P, A, T>::end() const -> const_iterator {
   return const_iterator(nullptr, 0, 1 << map_.lg_cur_size_);
 }
 
-template<typename S, typename U, typename P, typename A>
-compact_tuple_sketch<S, A> update_tuple_sketch<S, U, P, A>::compact(bool ordered) const {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+compact_tuple_sketch<S, A> update_tuple_sketch<S, U, P, A, T>::compact(bool ordered) const {
   return compact_tuple_sketch<S, A>(*this, ordered);
 }
 
-template<typename S, typename U, typename P, typename A>
-void update_tuple_sketch<S, U, P, A>::print_specifics(std::ostringstream& os) const {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+void update_tuple_sketch<S, U, P, A, T>::print_specifics(std::ostringstream& os) const {
   os << "   lg nominal size      : " << (int) map_.lg_nom_size_ << std::endl;
   os << "   lg current size      : " << (int) map_.lg_cur_size_ << std::endl;
   os << "   resize factor        : " << (1 << map_.rf_) << std::endl;
@@ -589,12 +589,12 @@ template<typename D, typename P, typename A>
 tuple_base_builder<D, P, A>::tuple_base_builder(const P& policy, const A& allocator):
 theta_base_builder<D, A>(allocator), policy_(policy) {}
 
-template<typename S, typename U, typename P, typename A>
-update_tuple_sketch<S, U, P, A>::builder::builder(const P& policy, const A& allocator):
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+update_tuple_sketch<S, U, P, A, T>::builder::builder(const P& policy, const A& allocator):
 tuple_base_builder<builder, P, A>(policy, allocator) {}
 
-template<typename S, typename U, typename P, typename A>
-auto update_tuple_sketch<S, U, P, A>::builder::build() const -> update_tuple_sketch {
+template<typename S, typename U, typename P, typename A, template<typename, typename, typename> class T>
+auto update_tuple_sketch<S, U, P, A, T>::builder::build() const -> update_tuple_sketch {
   return update_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 

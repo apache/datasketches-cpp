@@ -36,7 +36,8 @@ struct default_union_policy {
 template<
   typename Summary,
   typename Policy = default_union_policy<Summary>,
-  typename Allocator = std::allocator<Summary>
+  typename Allocator = std::allocator<Summary>,
+  template<typename, typename, typename> class Table = theta_update_sketch_base
 >
 class tuple_union {
 public:
@@ -46,6 +47,7 @@ public:
   using CompactSketch = compact_tuple_sketch<Summary, Allocator>;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using resize_factor = theta_constants::resize_factor;
+  using theta_table = Table<Entry, ExtractKey, AllocEntry>;
 
   // reformulate the external policy that operates on Summary
   // in terms of operations on Entry
@@ -61,7 +63,7 @@ public:
     Policy policy_;
   };
 
-  using State = theta_union_base<Entry, ExtractKey, internal_policy, Sketch, CompactSketch, AllocEntry>;
+  using State = theta_union_base<Entry, ExtractKey, internal_policy, Sketch, CompactSketch, AllocEntry, Table>;
 
   // No constructor here. Use builder instead.
   class builder;
@@ -89,12 +91,14 @@ protected:
   State state_;
 
   // for builder
-  tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
+  tuple_union(const Policy& policy, theta_table&& table);
 };
 
-template<typename S, typename P, typename A>
-class tuple_union<S, P, A>::builder: public tuple_base_builder<builder, P, A> {
+template<typename S, typename P, typename A, template<typename, typename, typename> class T>
+class tuple_union<S, P, A, T>::builder: public tuple_base_builder<builder, P, A> {
 public:
+  using Table = tuple_union::theta_table;
+
   /**
    * Creates and instance of the builder with default parameters.
    */

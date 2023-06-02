@@ -19,34 +19,34 @@
 
 namespace datasketches {
 
-template<typename S, typename P, typename A>
-tuple_union<S, P, A>::tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const P& policy, const A& allocator):
-state_(lg_cur_size, lg_nom_size, rf, p, theta, seed, internal_policy(policy), allocator)
+template<typename S, typename P, typename A, template<typename, typename, typename> class T>
+tuple_union<S, P, A, T>::tuple_union(const P& policy, theta_table&& table):
+state_{internal_policy(policy), std::forward<T<Entry,ExtractKey,AllocEntry>>(table)}
 {}
 
-template<typename S, typename P, typename A>
+template<typename S, typename P, typename A, template<typename, typename, typename> class T>
 template<typename SS>
-void tuple_union<S, P, A>::update(SS&& sketch) {
+void tuple_union<S, P, A, T>::update(SS&& sketch) {
   state_.update(std::forward<SS>(sketch));
 }
 
-template<typename S, typename P, typename A>
-auto tuple_union<S, P, A>::get_result(bool ordered) const -> CompactSketch {
+template<typename S, typename P, typename A, template<typename, typename, typename> class T>
+auto tuple_union<S, P, A, T>::get_result(bool ordered) const -> CompactSketch {
   return state_.get_result(ordered);
 }
 
-template<typename S, typename P, typename A>
-void tuple_union<S, P, A>::reset() {
+template<typename S, typename P, typename A, template<typename, typename, typename> class T>
+void tuple_union<S, P, A, T>::reset() {
   return state_.reset();
 }
 
-template<typename S, typename P, typename A>
-tuple_union<S, P, A>::builder::builder(const P& policy, const A& allocator):
+template<typename S, typename P, typename A, template<typename, typename, typename> class T>
+tuple_union<S, P, A, T>::builder::builder(const P& policy, const A& allocator):
 tuple_base_builder<builder, P, A>(policy, allocator) {}
 
-template<typename S, typename P, typename A>
-auto tuple_union<S, P, A>::builder::build() const -> tuple_union {
-  return tuple_union(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
+template<typename S, typename P, typename A, template<typename, typename, typename> class T>
+auto tuple_union<S, P, A, T>::builder::build() const -> tuple_union {
+  return tuple_union(this->policy_, Table(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->allocator_));
 }
 
 } /* namespace datasketches */

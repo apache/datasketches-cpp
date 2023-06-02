@@ -30,15 +30,16 @@ template<
   typename Policy,
   typename Sketch,
   typename CompactSketch,
-  typename Allocator
+  typename Allocator,
+  template<typename, typename, typename> class Table = theta_update_sketch_base
 >
 class theta_union_base {
 public:
-  using hash_table = theta_update_sketch_base<Entry, ExtractKey, Allocator>;
+  using hash_table = Table<Entry, ExtractKey, Allocator>;
   using resize_factor = typename hash_table::resize_factor;
   using comparator = compare_by_key<ExtractKey>;
 
-  theta_union_base(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
+  theta_union_base(const Policy& policy, hash_table&& table);
 
   template<typename FwdSketch>
   void update(FwdSketch&& sketch);
