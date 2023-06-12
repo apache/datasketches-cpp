@@ -137,6 +137,7 @@ void init_tuple(py::module &m) {
          "Updates the sketch with the given string item and summary value")
     .def("compact", &py_update_tuple::compact, py::arg("ordered")=true,
          "Returns a compacted form of the sketch, optionally sorting it")
+    .def("trim", &py_update_tuple::trim, "Removes retained entries in excess of the nominal size k (if any)")
     .def("reset", &py_update_tuple::reset, "Resets the sketch to the initial empty state")
   ;
 
