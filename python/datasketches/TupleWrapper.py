@@ -116,10 +116,13 @@ class update_tuple_sketch(tuple_sketch):
     """Returns a compacted form of the sketch, optionally sorting it."""
     return self._gadget.compact(ordered)
 
+  def trim(self):
+    """Removes retained entries in excess of the nominal size k (if any)."""
+    self._gadget.trim()
+
   def reset(self):
     """Resets the sketch to the initial empty state."""
     self._gadget.reset()
-
 
 class tuple_union:
   """An object that can merge Tuple Sketches. Requires a Policy object to handle merging Summaries."""

@@ -76,6 +76,8 @@ void init_theta(py::module &m) {
          "Updates the sketch with the given string")
     .def("compact", &update_theta_sketch::compact, py::arg("ordered")=true,
          "Returns a compacted form of the sketch, optionally sorting it")
+    .def("trim", &update_theta_sketch::trim, "Removes retained entries in excess of the nominal size k (if any)")
+    .def("reset", &update_theta_sketch::reset, "Resets the sketch to the initial empty state")
   ;
 
   py::class_<compact_theta_sketch, theta_sketch>(m, "compact_theta_sketch")

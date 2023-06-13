@@ -54,6 +54,14 @@ class ThetaTest(unittest.TestCase):
           count = count + 1
         self.assertEqual(count, new_sk.get_num_retained())
 
+        num = sk.get_num_retained()
+        sk.trim()
+        self.assertLessEqual(sk.get_num_retained(), num)
+
+        sk.reset()
+        self.assertTrue(sk.is_empty())
+        self.assertEqual(sk.get_num_retained(), 0)
+
     def test_theta_set_operations(self):
         lgk = 12    # 2^k = 4096 rows in the table
         n = 1 << 18 # ~256k unique values
