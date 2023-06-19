@@ -60,5 +60,10 @@ class CpcTest(unittest.TestCase):
     new_cpc = cpc_sketch.deserialize(sk_bytes)
     self.assertFalse(new_cpc.is_empty())
 
+  def test_cpc_get_lg_k(self):
+    lgk = 10
+    cpc = cpc_sketch(lgk)
+    self.assertEqual(cpc.get_lg_k(), lgk)
+
 if __name__ == '__main__':
     unittest.main()
