@@ -30,6 +30,7 @@
 
 namespace datasketches {
 
+/// Base class for Jaccard similarity
 template<typename Union, typename Intersection, typename ExtractKey>
 class jaccard_similarity_base {
 public:

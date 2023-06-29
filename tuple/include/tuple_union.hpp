@@ -33,6 +33,10 @@ struct default_union_policy {
   }
 };
 
+/**
+ * Tuple Union.
+ * Computes union of Tuple sketches. There is no constructor. Use builder instead.
+ */
 template<
   typename Summary,
   typename Policy = default_union_policy<Summary>,
@@ -92,11 +96,15 @@ protected:
   tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator);
 };
 
+/// Tuple union builder
 template<typename S, typename P, typename A>
 class tuple_union<S, P, A>::builder: public tuple_base_builder<builder, P, A> {
 public:
   /**
+   * Constructor.
    * Creates and instance of the builder with default parameters.
+   * @param policy
+   * @param allocator
    */
   builder(const P& policy = P(), const A& allocator = A());
 

@@ -27,16 +27,15 @@
 
 namespace datasketches {
 
-/*
+/// CPC union alias with default allocator
+using cpc_union = cpc_union_alloc<std::allocator<uint8_t>>;
+
+/**
  * High performance C++ implementation of Compressed Probabilistic Counting (CPC) Union
  *
  * author Kevin Lang
  * author Alexander Saydakov
  */
-
-// alias with default allocator for convenience
-using cpc_union = cpc_union_alloc<std::allocator<uint8_t>>;
-
 template<typename A>
 class cpc_union_alloc {
 public:
@@ -44,14 +43,36 @@ public:
    * Creates an instance of the union given the lg_k parameter and hash seed.
    * @param lg_k base 2 logarithm of the number of bins in the sketch
    * @param seed for hash function
+   * @param allocator instance of an allocator
    */
   explicit cpc_union_alloc(uint8_t lg_k = cpc_constants::DEFAULT_LG_K, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
 
+  /**
+   * Copy constructor
+   * @param other union to be copied
+   */
   cpc_union_alloc(const cpc_union_alloc<A>& other);
+
+  /**
+   * Move constructor
+   * @param other union to be moved
+   */
   cpc_union_alloc(cpc_union_alloc<A>&& other) noexcept;
+
   ~cpc_union_alloc();
 
+  /**
+   * Copy assignment
+   * @param other union to be copied
+   * @return reference to this union
+   */
   cpc_union_alloc<A>& operator=(const cpc_union_alloc<A>& other);
+
+  /**
+   * Move assignment
+   * @param other union to be moved
+   * @return reference to this union
+   */
   cpc_union_alloc<A>& operator=(cpc_union_alloc<A>&& other) noexcept;
 
   /**
@@ -73,9 +94,9 @@ public:
   cpc_sketch_alloc<A> get_result() const;
 
 private:
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint8_t> AllocU8;
-  typedef typename std::allocator_traits<A>::template rebind_alloc<uint64_t> AllocU64;
-  typedef typename std::allocator_traits<A>::template rebind_alloc<cpc_sketch_alloc<A>> AllocCpc;
+  using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
+  using AllocU64 = typename std::allocator_traits<A>::template rebind_alloc<uint64_t>;
+  using AllocCpc = typename std::allocator_traits<A>::template rebind_alloc<cpc_sketch_alloc<A>>;
 
   uint8_t lg_k;
   uint64_t seed;

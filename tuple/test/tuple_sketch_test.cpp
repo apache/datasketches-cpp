@@ -86,7 +86,7 @@ TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {
   REQUIRE(update_sketch.compact(false).is_ordered());
 }
 
-TEST_CASE("tuple sketch: single item", "[theta_sketch]") {
+TEST_CASE("tuple sketch: single item", "[tuple_sketch]") {
   auto update_sketch = update_tuple_sketch<float>::builder().build();
   update_sketch.update(1, 1.0f);
   REQUIRE_FALSE(update_sketch.is_empty());

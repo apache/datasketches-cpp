@@ -28,15 +28,6 @@
 
 #include "common_defs.hpp"
 
-/*
- * Based on the following paper:
- * Zohar Karnin, Edo Liberty "Discrepancy, Coresets, and Sketches in Machine Learning"
- * https://proceedings.mlr.press/v99/karnin19a/karnin19a.pdf
- *
- * Inspired by the following implementation:
- * https://github.com/edoliberty/streaming-quantiles/blob/f688c8161a25582457b0a09deb4630a81406293b/gde.py
- */
-
 namespace datasketches {
 
 template<typename T>
@@ -46,6 +37,18 @@ struct gaussian_kernel {
   }
 };
 
+/**
+ * Density sketch.
+ *
+ * Builds a coreset from the given set of input points. Provides density estimate at a given point.
+ *
+ * Based on the following paper:
+ * Zohar Karnin, Edo Liberty "Discrepancy, Coresets, and Sketches in Machine Learning"
+ * https://proceedings.mlr.press/v99/karnin19a/karnin19a.pdf
+ *
+ * Inspired by the following implementation:
+ * https://github.com/edoliberty/streaming-quantiles/blob/f688c8161a25582457b0a09deb4630a81406293b/gde.py
+ */
 template<
   typename T,
   typename Kernel = gaussian_kernel<T>,
@@ -118,6 +121,10 @@ public:
   template<typename FwdSketch>
   void merge(FwdSketch&& other);
 
+  /**
+   * Density estimate at a given point
+   * @return density estimate at a given point
+   */
   T get_estimate(const std::vector<T>& point) const;
 
   /**
@@ -172,7 +179,20 @@ public:
   string<Allocator> to_string(bool print_levels = false, bool print_items = false) const;
 
   class const_iterator;
+
+  /**
+   * Iterator pointing to the first item in the sketch.
+   * If the sketch is empty, the returned iterator must not be dereferenced or incremented.
+   * @return iterator pointing to the first item in the sketch
+   */
   const_iterator begin() const;
+
+  /**
+   * Iterator pointing to the past-the-end item in the sketch.
+   * The past-the-end item is the hypothetical item that would follow the last item.
+   * It does not point to any item, and must not be dereferenced or incremented.
+   * @return iterator pointing to the past-the-end item in the sketch
+   */
   const_iterator end() const;
 
 private:

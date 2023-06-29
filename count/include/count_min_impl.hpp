@@ -170,30 +170,14 @@ void count_min_sketch<W,A>::update(uint64_t item, W weight) {
 }
 
 template<typename W, typename A>
-void count_min_sketch<W,A>::update(uint64_t item) {
-  update(&item, sizeof(item), 1);
-}
-
-template<typename W, typename A>
 void count_min_sketch<W,A>::update(int64_t item, W weight) {
   update(&item, sizeof(item), weight);
-}
-
-template<typename W, typename A>
-void count_min_sketch<W,A>::update(int64_t item) {
-  update(&item, sizeof(item), 1);
 }
 
 template<typename W, typename A>
 void count_min_sketch<W,A>::update(const std::string& item, W weight) {
   if (item.empty()) return;
   update(item.c_str(), item.length(), weight);
-}
-
-template<typename W, typename A>
-void count_min_sketch<W,A>::update(const std::string& item) {
-  if (item.empty()) return;
-  update(item.c_str(), item.length(), 1);
 }
 
 template<typename W, typename A>

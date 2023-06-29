@@ -27,10 +27,14 @@
 
 namespace datasketches {
 
+/// REQ sketch constants
 namespace req_constants {
-  static const uint16_t MIN_K = 4;
-  static const uint8_t INIT_NUM_SECTIONS = 3;
-  static const unsigned MULTIPLIER = 2;
+  /// minimum value of parameter K
+  const uint16_t MIN_K = 4;
+  /// initial number of sections
+  const uint8_t INIT_NUM_SECTIONS = 3;
+  /// multiplier for nominal capacity
+  const unsigned MULTIPLIER = 2;
 }
 
 } /* namespace datasketches */

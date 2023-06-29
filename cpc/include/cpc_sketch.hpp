@@ -33,58 +33,56 @@
 
 namespace datasketches {
 
-/*
+// forward-declarations
+template<typename A> class cpc_sketch_alloc;
+template<typename A> class cpc_union_alloc;
+
+/// CPC sketch alias with default allocator
+using cpc_sketch = cpc_sketch_alloc<std::allocator<uint8_t>>;
+
+/**
+ * Allocation and initialization of global decompression (decoding) tables.
+ * Call this before anything else if you want to control the initialization time.
+ * For instance, to have this happen outside of a transaction context.
+ * Otherwise initialization happens on the first use (serialization or deserialization).
+ * It is safe to call more than once assuming no race conditions.
+ * This is not thread safe! Neither is the rest of the library.
+ */
+template<typename A> void cpc_init();
+
+/**
  * High performance C++ implementation of Compressed Probabilistic Counting (CPC) Sketch
  *
  * This is a very compact (in serialized form) distinct counting sketch.
  * The theory is described in the following paper:
  * https://arxiv.org/abs/1708.06839
  *
- * author Kevin Lang
- * author Alexander Saydakov
+ * @author Kevin Lang
+ * @author Alexander Saydakov
  */
-
-// forward-declarations
-template<typename A> class cpc_sketch_alloc;
-template<typename A> class cpc_union_alloc;
-
-// alias with default allocator for convenience
-using cpc_sketch = cpc_sketch_alloc<std::allocator<uint8_t>>;
-
-// allocation and initialization of global decompression (decoding) tables
-// call this before anything else if you want to control the initialization time
-// for instance, to have this happen outside of a transaction context
-// otherwise initialization happens on the first use (serialization or deserialization)
-// it is safe to call more than once assuming no race conditions
-// this is not thread safe! neither is the rest of the library
-template<typename A> void cpc_init();
-
 template<typename A>
 class cpc_sketch_alloc {
 public:
+  using allocator_type = A;
+
   /**
    * Creates an instance of the sketch given the lg_k parameter and hash seed.
    * @param lg_k base 2 logarithm of the number of bins in the sketch
    * @param seed for hash function
+   * @param allocator instance of an allocator
    */
   explicit cpc_sketch_alloc(uint8_t lg_k = cpc_constants::DEFAULT_LG_K, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
 
-  using allocator_type = A;
+  /// @return allocator
   A get_allocator() const;
 
-  /**
-   * @return configured lg_k of this sketch
-   */
+  /// @return configured lg_k of this sketch
   uint8_t get_lg_k() const;
 
-  /**
-   * @return true if this sketch represents an empty set
-   */
+  /// @return true if this sketch represents an empty set
   bool is_empty() const;
 
-  /**
-   * @return estimate of the distinct count of the input stream
-   */
+  /// @return estimate of the distinct count of the input stream
   double get_estimate() const;
 
   /**
@@ -189,13 +187,14 @@ public:
    * Otherwise two sketches that should represent overlapping sets will be disjoint
    * For instance, for signed 32-bit values call update(int32_t) method above,
    * which does widening conversion to int64_t, if compatibility with Java is expected
-   * @param data pointer to the data
-   * @param length of the data in bytes
+   * @param value pointer to the data
+   * @param size of the data in bytes
    */
   void update(const void* value, size_t size);
 
   /**
    * Returns a human-readable summary of this sketch
+   * @return a human-readable summary of this sketch
    */
   string<A> to_string() const;
 
@@ -215,6 +214,7 @@ public:
    * It is an uninitialized space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
+   * @return serialized sketch as a vector of bytes
    */
   vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
@@ -222,6 +222,7 @@ public:
    * This method deserializes a sketch from a given stream.
    * @param is input stream
    * @param seed the seed for the hash function that was used to create the sketch
+   * @param allocator instance of an Allocator
    * @return an instance of a sketch
    */
   static cpc_sketch_alloc<A> deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
@@ -231,6 +232,7 @@ public:
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
    * @param seed the seed for the hash function that was used to create the sketch
+   * @param allocator instance of an Allocator
    * @return an instance of the sketch
    */
   static cpc_sketch_alloc<A> deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED, const A& allocator = A());
@@ -246,10 +248,10 @@ public:
    */
   static size_t get_max_serialized_size_bytes(uint8_t lg_k);
 
-  // for internal use
+  /// @private for internal use
   uint32_t get_num_coupons() const;
 
-  // for debugging
+  /// @private for debugging
   // this should catch some forms of corruption during serialization-deserialization
   bool validate() const;
 

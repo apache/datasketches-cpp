@@ -91,7 +91,7 @@ public:
   /**
    * Computes size needed to serialize the current state of the union.
    * This version is for all other types and can be expensive since every item needs to be looked at.
-   * @param instance of a SerDe
+   * @param sd instance of a SerDe
    * @return size in bytes needed to serialize this sketch
    */
   template<typename SerDe = serde<T>>
@@ -108,7 +108,7 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
-   * @param instance of a SerDe
+   * @param sd instance of a SerDe
    */
   template<typename SerDe = serde<T>>
   vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
@@ -117,7 +117,7 @@ public:
    * NOTE: This method may be deprecated in a future version.
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
-   * @param instance of a SerDe
+   * @param sd instance of a SerDe
    */
   template<typename SerDe = serde<T>>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
@@ -126,8 +126,8 @@ public:
    * NOTE: This method may be deprecated in a future version.
    * This method deserializes a union from a given stream.
    * @param is input stream
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param sd instance of a SerDe
+   * @param allocator instance of an Allocator
    * @return an instance of a union
    */
   template<typename SerDe = serde<T>>
@@ -138,8 +138,8 @@ public:
    * This method deserializes a union from a given array of bytes.
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param sd instance of a SerDe
+   * @param allocator instance of an Allocator
    * @return an instance of a union
    */
   template<typename SerDe = serde<T>>

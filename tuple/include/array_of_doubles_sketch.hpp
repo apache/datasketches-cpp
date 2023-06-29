@@ -109,6 +109,10 @@ template<typename A> class compact_array_of_doubles_sketch_alloc;
 
 template<typename A> using AllocAOD = typename std::allocator_traits<A>::template rebind_alloc<aod<A>>;
 
+/**
+ * Update Array of doubles sketch.
+ * There is no constructor. Use builder instead.
+ */
 template<typename A = std::allocator<double>>
 class update_array_of_doubles_sketch_alloc: public update_tuple_sketch<aod<A>, aod<A>, array_of_doubles_update_policy<A>, AllocAOD<A>> {
 public:
@@ -118,6 +122,8 @@ public:
   class builder;
 
   compact_array_of_doubles_sketch_alloc<A> compact(bool ordered = true) const;
+
+  /// @return number of double values in array
   uint8_t get_num_values() const;
 
 private:
@@ -126,9 +132,10 @@ private:
       uint64_t seed, const array_of_doubles_update_policy<A>& policy, const A& allocator);
 };
 
-// alias with the default allocator for convenience
+/// alias with the default allocator for convenience
 using update_array_of_doubles_sketch = update_array_of_doubles_sketch_alloc<>;
 
+/// Update Array of doubles sketch builder
 template<typename A>
 class update_array_of_doubles_sketch_alloc<A>::builder: public tuple_base_builder<builder, array_of_doubles_update_policy<A>, A> {
 public:
@@ -136,6 +143,7 @@ public:
   update_array_of_doubles_sketch_alloc<A> build() const;
 };
 
+/// Compact Array of doubles sketch
 template<typename A = std::allocator<double>>
 class compact_array_of_doubles_sketch_alloc: public compact_tuple_sketch<aod<A>, AllocAOD<A>> {
 public:
@@ -153,6 +161,7 @@ public:
   template<typename Sketch>
   compact_array_of_doubles_sketch_alloc(const Sketch& other, bool ordered = true);
 
+  /// @return number of double values in array
   uint8_t get_num_values() const;
 
   void serialize(std::ostream& os) const;
@@ -169,7 +178,7 @@ private:
   uint8_t num_values_;
 };
 
-// alias with the default allocator for convenience
+/// alias with the default allocator for convenience
 using compact_array_of_doubles_sketch = compact_array_of_doubles_sketch_alloc<>;
 
 } /* namespace datasketches */

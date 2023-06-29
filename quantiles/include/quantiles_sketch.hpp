@@ -30,6 +30,16 @@
 
 namespace datasketches {
 
+/// Constants for Quantiles sketch
+namespace quantiles_constants {
+  /// default value of parameter K
+  const uint16_t DEFAULT_K = 128;
+  /// minimum value of parameter K
+  const uint16_t MIN_K = 2;
+  /// maximum value of parameter K
+  const uint16_t MAX_K = 1 << 15;
+}
+
 /**
  * This is a stochastic streaming sketch that enables near-real time analysis of the
  * approximate distribution from a very large stream in a single pass.
@@ -136,13 +146,6 @@ Table Guide for DoublesSketch Size in Bytes and Approximate Error:
  * @author Alexander Saydakov
  * @author Jon Malkin
  */
-
-namespace quantiles_constants {
-  const uint16_t DEFAULT_K = 128;
-  const uint16_t MIN_K = 2;
-  const uint16_t MAX_K = 1 << 15;
-}
-
 template <typename T,
           typename Comparator = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
           typename Allocator = std::allocator<T>>
@@ -151,13 +154,43 @@ public:
   using value_type = T;
   using allocator_type = Allocator;
   using comparator = Comparator;
+  using quantile_return_type = typename quantiles_sorted_view<T, Comparator, Allocator>::quantile_return_type;
+  using vector_double = typename quantiles_sorted_view<T, Comparator, Allocator>::vector_double;
 
+  /**
+   * Constructor
+   * @param k
+   * @param comparator
+   * @param allocator
+   */
   explicit quantiles_sketch(uint16_t k = quantiles_constants::DEFAULT_K,
       const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
+
+  /**
+   * Copy constructor
+   * @param other sketch to be copied
+   */
   quantiles_sketch(const quantiles_sketch& other);
+
+  /** Move constructor
+   * @param other sketch to be moved
+   */
   quantiles_sketch(quantiles_sketch&& other) noexcept;
+
   ~quantiles_sketch();
+
+  /**
+   * Copy assignment
+   * @param other sketch to be copied
+   * @return reference to this sketch
+   */
   quantiles_sketch& operator=(const quantiles_sketch& other);
+
+  /**
+   * Move assignment
+   * @param other sketch to be moved
+   * @return reference to this sketch
+   */
   quantiles_sketch& operator=(quantiles_sketch&& other) noexcept;
 
   /**
@@ -247,10 +280,11 @@ public:
    * If the sketch is empty this throws std::runtime_error.
    *
    * @param rank the specified normalized rank in the hypothetical sorted stream.
-   *
+   * @param inclusive if true the weight of the given item is included into the rank.
+   * Otherwise the rank equals the sum of the weights of all items that are less than the given item
+   * according to the Comparator.
    * @return the approximation to the item at the given rank
    */
-  using quantile_return_type = typename quantiles_sorted_view<T, Comparator, Allocator>::quantile_return_type;
   quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
   /**
@@ -264,7 +298,9 @@ public:
    * @param ranks given array of normalized ranks in the hypothetical sorted stream.
    * These ranks must be in the interval [0.0, 1.0], inclusive.
    * @param size the number of ranks in the array
-   *
+   * @param inclusive if true the weight of the given item is included into the rank.
+   * Otherwise the rank equals the sum of the weights of all items that are less than the given item
+   * according to the Comparator.
    * @return array of approximations to items associated with given ranks in the same order as given ranks
    * in the input array.
    *
@@ -282,7 +318,9 @@ public:
    * This must be an integer greater than 0. A value of 1 is equivalent to get_quantiles([0]).
    * A value of 2 is equivalent to get_quantiles([0, 1]). A value of 3 is equivalent to
    * get_quantiles([0, 0.5, 1]), etc.
-   *
+   * @param inclusive if true the weight of the given item is included into the rank.
+   * Otherwise the rank equals the sum of the weights of all items that are less than the given item
+   * according to the Comparator.
    * @return array of approximations to items associated with the given number of evenly-spaced normalized ranks.
    *
    * Deprecated. Will be removed in the next major version. Use get_quantile() instead.
@@ -300,7 +338,7 @@ public:
    * @param item to be ranked
    * @param inclusive if true the weight of the given item is included into the rank.
    * Otherwise the rank equals the sum of the weights of all items that are less than the given item
-   * according to the comparator C.
+   * according to the Comparator.
    * @return an approximate normalized rank of the given item
    */
   double get_rank(const T& item, bool inclusive = true) const;
@@ -327,7 +365,6 @@ public:
    * @return an array of m+1 doubles each of which is an approximation
    * to the fraction of the input stream items (the mass) that fall into one of those intervals.
    */
-  using vector_double = typename quantiles_sorted_view<T, Comparator, Allocator>::vector_double;
   vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
   /**
@@ -451,9 +488,26 @@ public:
   string<Allocator> to_string(bool print_levels = false, bool print_items = false) const;
 
   class const_iterator;
+
+  /**
+   * Iterator pointing to the first item in the sketch.
+   * If the sketch is empty, the returned iterator must not be dereferenced or incremented.
+   * @return iterator pointing to the first item in the sketch
+   */
   const_iterator begin() const;
+
+  /**
+   * Iterator pointing to the past-the-end item in the sketch.
+   * The past-the-end item is the hypothetical item that would follow the last item.
+   * It does not point to any item, and must not be dereferenced or incremented.
+   * @return iterator pointing to the past-the-end item in the sketch
+   */
   const_iterator end() const;
 
+  /**
+   * Gets the sorted view of this sketch
+   * @return the sorted view of this sketch
+   */
   quantiles_sorted_view<T, Comparator, Allocator> get_sorted_view() const;
 
 private:

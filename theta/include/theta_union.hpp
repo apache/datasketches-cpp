@@ -26,6 +26,10 @@
 
 namespace datasketches {
 
+/**
+ * Theta Union.
+ * Computes union of Theta sketches. There is no constructor. Use builder instead.
+ */
 template<typename Allocator = std::allocator<uint64_t>>
 class theta_union_alloc {
 public:
@@ -72,6 +76,7 @@ private:
   theta_union_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Allocator& allocator);
 };
 
+/// Theta union builder
 template<typename A>
 class theta_union_alloc<A>::builder: public theta_base_builder<builder, A> {
 public:

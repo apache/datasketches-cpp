@@ -38,6 +38,10 @@ struct example_intersection_policy {
 };
 */
 
+/**
+ * Tuple intersection.
+ * Computes intersection of Tuple sketches.
+ */
 template<
   typename Summary,
   typename Policy,
@@ -67,6 +71,12 @@ public:
 
   using State = theta_intersection_base<Entry, ExtractKey, internal_policy, Sketch, CompactSketch, AllocEntry>;
 
+  /**
+   * Constructor
+   * @param seed for the hash function that was used to create the sketch
+   * @param policy user-defined way of combining Summary during intersection
+   * @param allocator to use for allocating and deallocating memory
+   */
   explicit tuple_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy(), const Allocator& allocator = Allocator());
 
   /**

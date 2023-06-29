@@ -25,6 +25,10 @@
 
 namespace datasketches {
 
+/**
+ * Theta A-not-B (set difference).
+ * Computes set difference of Theta sketches.
+ */
 template<typename Allocator = std::allocator<uint64_t>>
 class theta_a_not_b_alloc {
 public:
@@ -33,6 +37,11 @@ public:
   using CompactSketch = compact_theta_sketch_alloc<Allocator>;
   using State = theta_set_difference_base<Entry, ExtractKey, CompactSketch, Allocator>;
 
+  /**
+   * Constructor
+   * @param seed for the hash function that was used to create the sketch
+   * @param allocator to use for allocating and deallocating memory
+   */
   explicit theta_a_not_b_alloc(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
