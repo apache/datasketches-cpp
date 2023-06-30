@@ -158,6 +158,12 @@ public:
   static const uint8_t SKETCH_TYPE = 3;
   enum flags { UNUSED1, UNUSED2, IS_EMPTY, HAS_ENTRIES, IS_ORDERED };
 
+  /**
+   * Copy constructor.
+   * Constructs a compact sketch from another AOD sketch (update or compact)
+   * @param other sketch to be constructed from
+   * @param ordered if true make the resulting sketch ordered
+   */
   template<typename Sketch>
   compact_array_of_doubles_sketch_alloc(const Sketch& other, bool ordered = true);
 

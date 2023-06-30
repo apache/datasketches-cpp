@@ -437,11 +437,33 @@ public:
    */
   compact_tuple_sketch(const Base& other, bool ordered);
 
-  compact_tuple_sketch(const compact_tuple_sketch&) = default;
+  /**
+   * Copy constructor.
+   * @param other sketch to be copied
+   */
+  compact_tuple_sketch(const compact_tuple_sketch& other) = default;
+
+  /**
+   * Move constructor.
+   * @param other sketch to be moved
+   */
   compact_tuple_sketch(compact_tuple_sketch&&) noexcept;
+
   virtual ~compact_tuple_sketch() = default;
-  compact_tuple_sketch& operator=(const compact_tuple_sketch&) = default;
-  compact_tuple_sketch& operator=(compact_tuple_sketch&&) = default;
+
+  /**
+   * Copy assignment
+   * @param other sketch to be copied
+   * @return reference to this sketch
+   */
+  compact_tuple_sketch& operator=(const compact_tuple_sketch& other) = default;
+
+  /**
+   * Move assignment
+   * @param other sketch to be moved
+   * @return reference to this sketch
+   */
+  compact_tuple_sketch& operator=(compact_tuple_sketch&& other) = default;
 
   /**
    * Constructor from Theta sketch

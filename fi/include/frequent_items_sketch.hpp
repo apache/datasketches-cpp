@@ -32,7 +32,11 @@
 
 namespace datasketches {
 
-enum frequent_items_error_type { NO_FALSE_POSITIVES, NO_FALSE_NEGATIVES };
+/// Frequent items error type
+enum frequent_items_error_type {
+  NO_FALSE_POSITIVES, ///< include an item in the result list if get_lower_bound(item) &gt; threshold
+  NO_FALSE_NEGATIVES ///< include an item in the result list if get_upper_bound(item) &gt; threshold
+};
 
 /**
  * Frequent Items sketch.

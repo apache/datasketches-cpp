@@ -170,11 +170,33 @@ public:
   // No constructor here. Use builder instead.
   class builder;
 
-  update_theta_sketch_alloc(const update_theta_sketch_alloc&) = default;
-  update_theta_sketch_alloc(update_theta_sketch_alloc&&) noexcept = default;
+  /**
+   * Copy constructor
+   * @param other sketch to be copied
+   */
+  update_theta_sketch_alloc(const update_theta_sketch_alloc& other) = default;
+
+  /**
+   * Move constructor
+   * @param other sketch to be moved
+   */
+  update_theta_sketch_alloc(update_theta_sketch_alloc&& other) noexcept = default;
+
   virtual ~update_theta_sketch_alloc() = default;
-  update_theta_sketch_alloc& operator=(const update_theta_sketch_alloc&) = default;
-  update_theta_sketch_alloc& operator=(update_theta_sketch_alloc&&) = default;
+
+  /**
+   * Copy assignment
+   * @param other sketch to be copied
+   * @return reference to this sketch
+   */
+  update_theta_sketch_alloc& operator=(const update_theta_sketch_alloc& other) = default;
+
+  /**
+   * Move assignment
+   * @param other sketch to be moved
+   * @return reference to this sketch
+   */
+  update_theta_sketch_alloc& operator=(update_theta_sketch_alloc&& other) = default;
 
   virtual Allocator get_allocator() const;
   virtual bool is_empty() const;
@@ -345,11 +367,33 @@ public:
   template<typename Other>
   compact_theta_sketch_alloc(const Other& other, bool ordered);
 
-  compact_theta_sketch_alloc(const compact_theta_sketch_alloc&) = default;
-  compact_theta_sketch_alloc(compact_theta_sketch_alloc&&) noexcept = default;
+  /**
+   * Copy constructor
+   * @param other sketch to be copied
+   */
+  compact_theta_sketch_alloc(const compact_theta_sketch_alloc& other) = default;
+
+  /**
+   * Move constructor
+   * @param other sketch to be moved
+   */
+  compact_theta_sketch_alloc(compact_theta_sketch_alloc&& other) noexcept = default;
+
   virtual ~compact_theta_sketch_alloc() = default;
-  compact_theta_sketch_alloc& operator=(const compact_theta_sketch_alloc&) = default;
-  compact_theta_sketch_alloc& operator=(compact_theta_sketch_alloc&&) = default;
+
+  /**
+   * Copy assignment
+   * @param other sketch to be copied
+   * @return reference to this sketch
+   */
+  compact_theta_sketch_alloc& operator=(const compact_theta_sketch_alloc& other) = default;
+
+  /**
+   * Move assignment
+   * @param other sketch to be moved
+   * @return reference to this sketch
+   */
+  compact_theta_sketch_alloc& operator=(compact_theta_sketch_alloc&& other) = default;
 
   virtual Allocator get_allocator() const;
   virtual bool is_empty() const;
