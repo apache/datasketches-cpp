@@ -42,10 +42,10 @@ public:
 
   /**
    * Creates an instance of the sketch given parameters _num_hashes, _num_buckets and hash seed, `seed`.
-   * @param num_hashes : number of hash functions in the sketch. Equivalently the number of rows in the array
-   * @param num_buckets : number of buckets that hash functions map into. Equivalently the number of columns in the array
+   * @param num_hashes number of hash functions in the sketch. Equivalently the number of rows in the array
+   * @param num_buckets number of buckets that hash functions map into. Equivalently the number of columns in the array
    * @param seed for hash function
-   * @param allocator to use by this instance
+   * @param allocator to acquire and release memory
    *
    * The items inserted into the sketch can be arbitrary type, so long as they are hashable via murmurhash.
    * Only update and estimate methods are added for uint64_t and string types.
@@ -68,14 +68,14 @@ public:
   uint64_t get_seed()  const;
 
   /**
-   * @return epsilon : double
+   * @return epsilon
    * The maximum permissible error for any frequency estimate query.
    * epsilon = ceil(e / _num_buckets)
    */
    double get_relative_error() const;
 
   /**
-   * @return _total_weight : typename W
+   * @return _total_weight
    * The total weight currently inserted into the stream.
    */
   W get_total_weight() const;
@@ -106,7 +106,7 @@ public:
   /**
    * Specific get_estimate function for uint64_t type
    * see generic get_estimate function
-   * @param item : uint64_t type.
+   * @param item uint64_t type.
    * @return an estimate of the item's frequency.
    */
   W get_estimate(uint64_t item) const;
@@ -114,7 +114,7 @@ public:
   /**
    * Specific get_estimate function for int64_t type
    * see generic get_estimate function
-   * @param item : int64_t type.
+   * @param item int64_t type.
    * @return an estimate of the item's frequency.
    */
   W get_estimate(int64_t item) const;
@@ -122,7 +122,7 @@ public:
   /**
    * Specific get_estimate function for std::string type
    * see generic get_estimate function
-   * @param item : std::string type
+   * @param item std::string type
    * @return an estimate of the item's frequency.
    */
   W get_estimate(const std::string& item) const;

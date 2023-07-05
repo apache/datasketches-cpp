@@ -95,8 +95,8 @@ public:
    * Value of 12 roughly corresponds to 1% relative error guarantee at 95% confidence.
    * @param hra if true, the default, the high ranks are prioritized for better
    * accuracy. Otherwise the low ranks are prioritized for better accuracy.
-   * @param comparator instance to use by this sketch instance
-   * @param allocator instance to use by this sketch instance
+   * @param comparator instance for use by this sketch instance
+   * @param allocator instance for use by this sketch instance
    */
   explicit req_sketch(uint16_t k, bool hra = true, const Comparator& comparator = Comparator(),
       const Allocator& allocator = Allocator());

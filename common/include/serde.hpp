@@ -43,10 +43,10 @@ template<typename T, typename Enable = void> struct serde {
   /**
    * Stream deserialization
    * @param is input stream
-   * @param items pointer to array of items
+   * @param items pointer to array of items (items in the array are allocated but not initialized)
    * @param num number of items
    */
-  void deserialize(std::istream& is, T* items, unsigned num) const; // items allocated but not initialized
+  void deserialize(std::istream& is, T* items, unsigned num) const;
 
   /**
    * Raw bytes serialization

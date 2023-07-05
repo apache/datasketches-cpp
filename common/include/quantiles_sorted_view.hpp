@@ -73,7 +73,7 @@ public:
   size_t size() const;
 
   /**
-   * Returns an approximation to the normalized rank of the given item from 0 to 1, inclusive.
+   * Returns an approximation to the normalized rank of the given item.
    *
    * <p>If the view is empty this throws std::runtime_error.
    *
@@ -82,7 +82,7 @@ public:
    * Otherwise the rank equals the sum of the weights of all items that are less than the given item
    * according to the Comparator.
    *
-   * @return an approximate rank of the given item
+   * @return an approximate normalized rank of the given item (0 to 1 inclusive)
    */
   double get_rank(const T& item, bool inclusive = true) const;
 
@@ -94,14 +94,14 @@ public:
 
   /**
    * Returns an item from the sketch that is the best approximation to an item
-   * from the original stream with the given rank.
+   * from the original stream with the given normalized rank.
    *
    * <p>If the view is empty this throws std::runtime_error.
    *
    * @param rank of an item in the hypothetical sorted stream.
    * @param inclusive if true, the given rank is considered inclusive (includes weight of an item)
    *
-   * @return approximate quantile associated with the given rank
+   * @return approximate quantile associated with the given normalized rank
    */
   quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 

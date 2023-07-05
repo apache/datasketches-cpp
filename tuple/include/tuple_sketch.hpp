@@ -580,7 +580,7 @@ protected:
 
 };
 
-// base builder
+/// Tuple base builder
 template<typename Derived, typename Policy, typename Allocator>
 class tuple_base_builder: public theta_base_builder<Derived, Allocator> {
 public:
