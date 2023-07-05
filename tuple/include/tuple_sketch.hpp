@@ -43,6 +43,10 @@ struct pair_extract_key {
   }
 };
 
+/**
+ * Base class for Tuple sketch.
+ * This is an extension of Theta sketch that allows keeping arbitrary Summary associated with each retained key.
+ */
 template<
   typename Summary,
   typename Allocator = std::allocator<Summary>
@@ -199,6 +203,11 @@ struct default_update_policy {
   }
 };
 
+/**
+ * Update Tuple sketch.
+ * The purpose of this class is to build a Tuple sketch from input data via the update() methods.
+ * There is no constructor. Use builder instead.
+ */
 template<
   typename Summary,
   typename Update = Summary,
@@ -244,21 +253,24 @@ public:
 
   /**
    * Update this sketch with a given string.
-   * @param value string to update the sketch with
+   * @param key string to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(const std::string& key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given unsigned 64-bit integer.
-   * @param value uint64_t to update the sketch with
+   * @param key uint64_t to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(uint64_t key, FwdUpdate&& value);
 
   /**
    * Update this sketch with a given signed 64-bit integer.
-   * @param value int64_t to update the sketch with
+   * @param key int64_t to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(int64_t key, FwdUpdate&& value);
@@ -266,7 +278,8 @@ public:
   /**
    * Update this sketch with a given unsigned 32-bit integer.
    * For compatibility with Java implementation.
-   * @param value uint32_t to update the sketch with
+   * @param key uint32_t to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(uint32_t key, FwdUpdate&& value);
@@ -274,7 +287,8 @@ public:
   /**
    * Update this sketch with a given signed 32-bit integer.
    * For compatibility with Java implementation.
-   * @param value int32_t to update the sketch with
+   * @param key int32_t to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(int32_t key, FwdUpdate&& value);
@@ -282,7 +296,8 @@ public:
   /**
    * Update this sketch with a given unsigned 16-bit integer.
    * For compatibility with Java implementation.
-   * @param value uint16_t to update the sketch with
+   * @param key uint16_t to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(uint16_t key, FwdUpdate&& value);
@@ -290,7 +305,8 @@ public:
   /**
    * Update this sketch with a given signed 16-bit integer.
    * For compatibility with Java implementation.
-   * @param value int16_t to update the sketch with
+   * @param key int16_t to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(int16_t key, FwdUpdate&& value);
@@ -298,7 +314,8 @@ public:
   /**
    * Update this sketch with a given unsigned 8-bit integer.
    * For compatibility with Java implementation.
-   * @param value uint8_t to update the sketch with
+   * @param key uint8_t to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(uint8_t key, FwdUpdate&& value);
@@ -306,7 +323,8 @@ public:
   /**
    * Update this sketch with a given signed 8-bit integer.
    * For compatibility with Java implementation.
-   * @param value int8_t to update the sketch with
+   * @param key int8_t to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(int8_t key, FwdUpdate&& value);
@@ -314,7 +332,8 @@ public:
   /**
    * Update this sketch with a given double-precision floating point value.
    * For compatibility with Java implementation.
-   * @param value double to update the sketch with
+   * @param key double to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(double key, FwdUpdate&& value);
@@ -322,7 +341,8 @@ public:
   /**
    * Update this sketch with a given floating point value.
    * For compatibility with Java implementation.
-   * @param value float to update the sketch with
+   * @param key float to update the sketch with
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   inline void update(float key, FwdUpdate&& value);
@@ -337,8 +357,9 @@ public:
    * Otherwise two sketches that should represent overlapping sets will be disjoint
    * For instance, for signed 32-bit values call update(int32_t) method above,
    * which does widening conversion to int64_t, if compatibility with Java is expected
-   * @param data pointer to the data
+   * @param key pointer to the data
    * @param length of the data in bytes
+   * @param value to update the sketch with
    */
   template<typename FwdUpdate>
   void update(const void* key, size_t length, FwdUpdate&& value);
@@ -375,8 +396,10 @@ protected:
   virtual void print_specifics(std::ostringstream& os) const;
 };
 
-// compact sketch
-
+/**
+ * Compact Tuple sketch.
+ * This is an immutable form of the Tuple sketch, the form that can be serialized and deserialized.
+ */
 template<
   typename Summary,
   typename Allocator = std::allocator<Summary>
@@ -406,13 +429,48 @@ public:
   // - as a result of a set operation
   // - by deserializing a previously serialized compact sketch
 
+  /**
+   * Copy constructor.
+   * Constructs a compact sketch from another sketch (either update or compact)
+   * @param other sketch to be copied
+   * @param ordered if true make the resulting sketch ordered
+   */
   compact_tuple_sketch(const Base& other, bool ordered);
-  compact_tuple_sketch(const compact_tuple_sketch&) = default;
-  compact_tuple_sketch(compact_tuple_sketch&&) noexcept;
-  virtual ~compact_tuple_sketch() = default;
-  compact_tuple_sketch& operator=(const compact_tuple_sketch&) = default;
-  compact_tuple_sketch& operator=(compact_tuple_sketch&&) = default;
 
+  /**
+   * Copy constructor.
+   * @param other sketch to be copied
+   */
+  compact_tuple_sketch(const compact_tuple_sketch& other) = default;
+
+  /**
+   * Move constructor.
+   * @param other sketch to be moved
+   */
+  compact_tuple_sketch(compact_tuple_sketch&&) noexcept;
+
+  virtual ~compact_tuple_sketch() = default;
+
+  /**
+   * Copy assignment
+   * @param other sketch to be copied
+   * @return reference to this sketch
+   */
+  compact_tuple_sketch& operator=(const compact_tuple_sketch& other) = default;
+
+  /**
+   * Move assignment
+   * @param other sketch to be moved
+   * @return reference to this sketch
+   */
+  compact_tuple_sketch& operator=(compact_tuple_sketch&& other) = default;
+
+  /**
+   * Constructor from Theta sketch
+   * @param other Theta sketch to be constructed from
+   * @param summary Summary instance to be associated with each entry
+   * @param ordered if true make the resulting sketch ordered
+   */
   compact_tuple_sketch(const theta_sketch_alloc<AllocU64>& other, const Summary& summary, bool ordered = true);
 
   virtual Allocator get_allocator() const;
@@ -425,7 +483,7 @@ public:
   /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
-   * @param instance of a SerDe
+   * @param sd instance of a SerDe
    */
   template<typename SerDe = serde<Summary>>
   void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
@@ -436,7 +494,7 @@ public:
    * It is a blank space of a given size.
    * This header is used in Datasketches PostgreSQL extension.
    * @param header_size_bytes space to reserve in front of the sketch
-   * @param instance of a SerDe
+   * @param sd instance of a SerDe
    * @return serialized sketch as a vector of bytes
    */
   template<typename SerDe = serde<Summary>>
@@ -451,8 +509,8 @@ public:
    * This method deserializes a sketch from a given stream.
    * @param is input stream
    * @param seed the seed for the hash function that was used to create the sketch
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param sd instance of a SerDe
+   * @param allocator instance of an Allocator
    * @return an instance of a sketch
    */
   template<typename SerDe = serde<Summary>>
@@ -464,8 +522,8 @@ public:
    * @param bytes pointer to the array of bytes
    * @param size the size of the array
    * @param seed the seed for the hash function that was used to create the sketch
-   * @param instance of a SerDe
-   * @param instance of an Allocator
+   * @param sd instance of a SerDe
+   * @param allocator instance of an Allocator
    * @return an instance of the sketch
    */
   template<typename SerDe = serde<Summary>>
@@ -522,8 +580,7 @@ protected:
 
 };
 
-// builder
-
+/// Tuple base builder
 template<typename Derived, typename Policy, typename Allocator>
 class tuple_base_builder: public theta_base_builder<Derived, Allocator> {
 public:
@@ -533,11 +590,15 @@ protected:
   Policy policy_;
 };
 
+/// Update Tuple sketch builder
 template<typename S, typename U, typename P, typename A>
 class update_tuple_sketch<S, U, P, A>::builder: public tuple_base_builder<builder, P, A> {
 public:
   /**
+   * Constructor
    * Creates and instance of the builder with default parameters.
+   * @param policy user-defined way of creating and updating Summary
+   * @param allocator instance of an Allocator to pass to created sketches
    */
   builder(const P& policy = P(), const A& allocator = A());
 

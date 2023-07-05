@@ -28,6 +28,7 @@
 #include <chrono>
 #include <thread>
 
+/// DataSketches namespace
 namespace datasketches {
 
 static const uint64_t DEFAULT_SEED = 9001;

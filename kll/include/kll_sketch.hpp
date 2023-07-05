@@ -29,7 +29,13 @@
 
 namespace datasketches {
 
-/*
+/// KLL sketch constants
+namespace kll_constants {
+  /// default value of parameter K
+  const uint16_t DEFAULT_K = 200;
+}
+
+/**
  * Implementation of a very compact quantiles sketch with lazy compaction scheme
  * and nearly optimal accuracy per retained item.
  * See <a href="https://arxiv.org/abs/1603.05346v2">Optimal Quantile Approximation in Streams</a>.
@@ -146,10 +152,6 @@ namespace datasketches {
  * author Lee Rhodes
  */
 
-namespace kll_constants {
-  const uint16_t DEFAULT_K = 200;
-}
-
 template <
   typename T,
   typename C = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
@@ -160,6 +162,13 @@ class kll_sketch {
     using value_type = T;
     using comparator = C;
     using vector_u32 = std::vector<uint32_t, typename std::allocator_traits<A>::template rebind_alloc<uint32_t>>;
+    using vector_double = typename quantiles_sorted_view<T, C, A>::vector_double;
+
+    /**
+     * Quantile return type.
+     * This is to return quantiles either by value (for arithmetic types) or by const reference (for all other types)
+     */
+    using quantile_return_type = typename quantiles_sorted_view<T, C, A>::quantile_return_type;
 
     static const uint8_t DEFAULT_M = 8;
     static const uint16_t MIN_K = DEFAULT_M;
@@ -262,7 +271,6 @@ class kll_sketch {
      *
      * @return approximate quantile associated with the given rank
      */
-    using quantile_return_type = typename quantiles_sorted_view<T, C, A>::quantile_return_type;
     quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
     /**
@@ -339,7 +347,6 @@ class kll_sketch {
      * @return an array of m+1 doubles each of which is an approximation
      * to the fraction of the input stream items (the mass) that fall into one of those intervals.
      */
-    using vector_double = typename quantiles_sorted_view<T, C, A>::vector_double;
     vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
     /**
@@ -489,9 +496,26 @@ class kll_sketch {
     string<A> to_string(bool print_levels = false, bool print_items = false) const;
 
     class const_iterator;
+
+    /**
+     * Iterator pointing to the first item in the sketch.
+     * If the sketch is empty, the returned iterator must not be dereferenced or incremented.
+     * @return iterator pointing to the first item in the sketch
+     */
     const_iterator begin() const;
+
+    /**
+     * Iterator pointing to the past-the-end item in the sketch.
+     * The past-the-end item is the hypothetical item that would follow the last item.
+     * It does not point to any item, and must not be dereferenced or incremented.
+     * @return iterator pointing to the past-the-end item in the sketch
+     */
     const_iterator end() const;
 
+    /**
+     * Gets the sorted view of this sketch
+     * @return the sorted view of this sketch
+     */
     quantiles_sorted_view<T, C, A> get_sorted_view() const;
 
   private:

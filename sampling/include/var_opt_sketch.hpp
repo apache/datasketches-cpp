@@ -26,22 +26,12 @@
 #include <iterator>
 #include <vector>
 
-
-/**
- * This sketch samples data from a stream of items, designed for optimal (minimum) variance when
- * querying the sketch to estimate subset sums of items matchng a provided predicate. Variance
- * optimal (varopt) sampling is related to reservoir sampling, with improved error bounds for
- * subset sum estimation.
- * 
- * author Kevin Lang 
- * author Jon Malkin
- */
 namespace datasketches {
 
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
 
-/**
+/*
  * A struct to hold the result of subset sum queries
  */
 struct subset_summary {
@@ -53,11 +43,23 @@ struct subset_summary {
 
 template <typename T, typename A> class var_opt_union; // forward declaration
 
+/// VarOpt sketch constants
 namespace var_opt_constants {
-    const resize_factor DEFAULT_RESIZE_FACTOR = resize_factor::X8;
-    const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2; 
+  /// default resize factor
+  const resize_factor DEFAULT_RESIZE_FACTOR = resize_factor::X8;
+  /// maximum value of parameter K
+  const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2;
 }
 
+/**
+ * This sketch samples data from a stream of items. Designed for optimal (minimum) variance when
+ * querying the sketch to estimate subset sums of items matching a provided predicate. Variance
+ * optimal (varopt) sampling is related to reservoir sampling, with improved error bounds for
+ * subset sum estimation.
+ *
+ * author Kevin Lang
+ * author Jon Malkin
+ */
 template<
   typename T,
   typename A = std::allocator<T>
@@ -68,15 +70,42 @@ class var_opt_sketch {
     static const resize_factor DEFAULT_RESIZE_FACTOR = var_opt_constants::DEFAULT_RESIZE_FACTOR;
     static const uint32_t MAX_K = var_opt_constants::MAX_K;
 
+    /**
+     * Constructor
+     * @param k sketch size
+     * @param rf resize factor
+     * @param allocator instance of an allocator
+     */
     explicit var_opt_sketch(uint32_t k,
       resize_factor rf = var_opt_constants::DEFAULT_RESIZE_FACTOR,
       const A& allocator = A());
+
+    /**
+     * Copy constructor
+     * @param other sketch to be copied
+     */
     var_opt_sketch(const var_opt_sketch& other);
+
+    /**
+     * Move constructor
+     * @param other sketch to be moved
+     */
     var_opt_sketch(var_opt_sketch&& other) noexcept;
 
     ~var_opt_sketch();
 
+    /**
+     * Copy assignment
+     * @param other sketch to be copied
+     * @return reference to this sketch
+     */
     var_opt_sketch& operator=(const var_opt_sketch& other);
+
+    /**
+     * Move assignment
+     * @param other sketch to be moved
+     * @return reference to this sketch
+     */
     var_opt_sketch& operator=(var_opt_sketch&& other);
 
     /**
@@ -85,7 +114,7 @@ class var_opt_sketch {
      * @param item an item from a stream of items
      * @param weight the weight of the item
      */
-    void update(const T& item, double weight=1.0);
+    void update(const T& item, double weight = 1.0);
 
     /**
      * Updates this sketch with the given data item with the given weight.
@@ -93,7 +122,7 @@ class var_opt_sketch {
      * @param item an item from a stream of items
      * @param weight the weight of the item
      */
-    void update(T&& item, double weight=1.0);
+    void update(T&& item, double weight = 1.0);
 
     /**
      * Returns the configured maximum sample size.
@@ -117,7 +146,7 @@ class var_opt_sketch {
      * Computes an estimated subset sum from the entire stream for objects matching a given
      * predicate. Provides a lower bound, estimate, and upper bound using a target of 2 standard
      * deviations. This is technically a heuristic method and tries to err on the conservative side.
-     * @param P a predicate function
+     * @param predicate a predicate function
      * @return a subset_summary item with estimate, upper and lower bounds,
      *         and total sketch weight
      */
@@ -138,7 +167,7 @@ class var_opt_sketch {
     /**
      * Computes size needed to serialize the current state of the sketch.
      * This version is for fixed-size arithmetic types (integral and floating point).
-     * @param instance of a SerDe
+     * @param sd instance of a SerDe
      * @return size in bytes needed to serialize this sketch
      */
     template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
@@ -147,7 +176,7 @@ class var_opt_sketch {
     /**
      * Computes size needed to serialize the current state of the sketch.
      * This version is for all other types and can be expensive since every item needs to be looked at.
-     * @param instance of a SerDe
+     * @param sd instance of a SerDe
      * @return size in bytes needed to serialize this sketch
      */
     template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
@@ -155,7 +184,7 @@ class var_opt_sketch {
 
     // This is a convenience alias for users
     // The type returned by the following serialize method
-    typedef vector_u8<A> vector_bytes;
+    using vector_bytes = vector_u8<A>;
 
     /**
      * This method serializes the sketch as a vector of bytes.
@@ -163,7 +192,7 @@ class var_opt_sketch {
      * It is a blank space of a given size.
      * This header is used in Datasketches PostgreSQL extension.
      * @param header_size_bytes space to reserve in front of the sketch
-     * @param instance of a SerDe
+     * @param sd instance of a SerDe
      */
     template<typename SerDe = serde<T>>
     vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
@@ -171,7 +200,7 @@ class var_opt_sketch {
     /**
      * This method serializes the sketch into a given stream in a binary form
      * @param os output stream
-     * @param instance of a SerDe
+     * @param sd instance of a SerDe
      */
     template<typename SerDe = serde<T>>
     void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
@@ -179,8 +208,8 @@ class var_opt_sketch {
     /**
      * This method deserializes a sketch from a given stream.
      * @param is input stream
-     * @param instance of a SerDe
-     * @param instance of an Allocator
+     * @param sd instance of a SerDe
+     * @param allocator instance of an allocator
      * @return an instance of a sketch
      */
     template<typename SerDe = serde<T>>
@@ -190,8 +219,8 @@ class var_opt_sketch {
      * This method deserializes a sketch from a given array of bytes.
      * @param bytes pointer to the array of bytes
      * @param size the size of the array
-     * @param instance of a SerDe
-     * @param instance of an Allocator
+     * @param sd instance of a SerDe
+     * @param allocator instance of an allocator
      * @return an instance of a sketch
      */
     template<typename SerDe = serde<T>>
@@ -213,7 +242,20 @@ class var_opt_sketch {
     string<A> items_to_string() const;
 
     class const_iterator;
+
+    /**
+     * Iterator pointing to the first item in the sketch.
+     * If the sketch is empty, the returned iterator must not be dereferenced or incremented.
+     * @return iterator pointing to the first item in the sketch
+     */
     const_iterator begin() const;
+
+    /**
+     * Iterator pointing to the past-the-end item in the sketch.
+     * The past-the-end item is the hypothetical item that would follow the last item.
+     * It does not point to any item, and must not be dereferenced or incremented.
+     * @return iterator pointing to the past-the-end item in the sketch
+     */
     const_iterator end() const;
 
   private:

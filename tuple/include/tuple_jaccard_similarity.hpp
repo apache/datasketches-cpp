@@ -26,6 +26,7 @@
 
 namespace datasketches {
 
+/// Tuple Jaccard similarity alias
 template<
   typename Summary,
   typename IntersectionPolicy,

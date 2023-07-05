@@ -25,6 +25,10 @@
 
 namespace datasketches {
 
+/**
+ * Theta intersection.
+ * Computes intersection of Theta sketches.
+ */
 template<typename Allocator = std::allocator<uint64_t>>
 class theta_intersection_alloc {
 public:
@@ -41,7 +45,7 @@ public:
   };
   using State = theta_intersection_base<Entry, ExtractKey, nop_policy, Sketch, CompactSketch, Allocator>;
 
-  /*
+  /**
    * Constructor
    * @param seed for the hash function that was used to create the sketch
    * @param allocator to use for allocating and deallocating memory

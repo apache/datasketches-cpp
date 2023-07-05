@@ -29,6 +29,7 @@
 namespace datasketches {
 
 /**
+ * Bounds on ratios in sampled sets.
  * This class is used to compute the bounds on the estimate of the ratio <i>|B| / |A|</i>, where:
  * <ul>
  * <li><i>|A|</i> is the unknown size of a set <i>A</i> of unique identifiers.</li>

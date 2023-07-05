@@ -28,9 +28,9 @@ state_(seed, nop_policy(), allocator)
 {}
 
 template<typename A>
-template<typename SS>
-void theta_intersection_alloc<A>::update(SS&& sketch) {
-  state_.update(std::forward<SS>(sketch));
+template<typename FwdSketch>
+void theta_intersection_alloc<A>::update(FwdSketch&& sketch) {
+  state_.update(std::forward<FwdSketch>(sketch));
 }
 
 template<typename A>

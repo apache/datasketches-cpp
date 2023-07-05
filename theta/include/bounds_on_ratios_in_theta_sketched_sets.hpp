@@ -28,6 +28,7 @@
 namespace datasketches {
 
 /**
+ * Bounds on ratios in Theta sketched sets.
  * This is to compute the bounds on the estimate of the ratio <i>B / A</i>, where:
  * <ul>
  * <li><i>A</i> is a Theta Sketch of population <i>PopA</i>.</li>
@@ -50,8 +51,8 @@ class bounds_on_ratios_in_theta_sketched_sets {
 public:
   /**
    * Gets the approximate lower bound for B over A based on a 95% confidence interval
-   * @param sketchA the sketch A
-   * @param sketchB the sketch B
+   * @param sketch_a the sketch A
+   * @param sketch_b the sketch B
    * @return the approximate lower bound for B over A
    */
   template<typename SketchA, typename SketchB>
@@ -72,8 +73,8 @@ public:
 
   /**
    * Gets the approximate upper bound for B over A based on a 95% confidence interval
-   * @param sketchA the sketch A
-   * @param sketchB the sketch B
+   * @param sketch_a the sketch A
+   * @param sketch_b the sketch B
    * @return the approximate upper bound for B over A
    */
   template<typename SketchA, typename SketchB>
@@ -94,8 +95,8 @@ public:
 
   /**
    * Gets the estimate for B over A
-   * @param sketchA the sketch A
-   * @param sketchB the sketch B
+   * @param sketch_a the sketch A
+   * @param sketch_b the sketch B
    * @return the estimate for B over A
    */
   template<typename SketchA, typename SketchB>

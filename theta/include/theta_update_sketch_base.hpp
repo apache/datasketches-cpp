@@ -91,13 +91,14 @@ struct theta_update_sketch_base {
   static void consolidate_non_empty(Entry* entries, size_t size, size_t num);
 };
 
-// builder
 
+/// Theta base builder
 template<typename Derived, typename Allocator>
 class theta_base_builder {
 public:
   /**
    * Creates and instance of the builder with default parameters.
+   * @param allocator instance of an Allocator to pass to created sketches
    */
   theta_base_builder(const Allocator& allocator);
 

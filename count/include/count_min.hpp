@@ -25,26 +25,27 @@
 
 namespace datasketches {
 
-  /*
-   * C++ implementation of the CountMin sketch data structure of Cormode and Muthukrishnan.
-   * [1] - http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
-   * The template type W is the type of the vector that contains the weights of the objects inserted into the sketch,
-   * not the type of the input items themselves.
-   * @author Charlie Dickens
-   */
-
+/**
+ * C++ implementation of the CountMin sketch data structure of Cormode and Muthukrishnan.
+ * [1] - http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
+ * The template type W is the type of the vector that contains the weights of the objects inserted into the sketch,
+ * not the type of the input items themselves.
+ * @author Charlie Dickens
+ */
 template <typename W,
           typename Allocator = std::allocator<W>>
 class count_min_sketch{
   static_assert(std::is_arithmetic<W>::value, "Arithmetic type expected");
 public:
   using allocator_type = Allocator;
+  using const_iterator = typename std::vector<W, Allocator>::const_iterator;
 
   /**
    * Creates an instance of the sketch given parameters _num_hashes, _num_buckets and hash seed, `seed`.
-   * @param num_hashes : number of hash functions in the sketch. Equivalently the number of rows in the array
-   * @param num_buckets : number of buckets that hash functions map into. Equivalently the number of columns in the array
+   * @param num_hashes number of hash functions in the sketch. Equivalently the number of rows in the array
+   * @param num_buckets number of buckets that hash functions map into. Equivalently the number of columns in the array
    * @param seed for hash function
+   * @param allocator to acquire and release memory
    *
    * The items inserted into the sketch can be arbitrary type, so long as they are hashable via murmurhash.
    * Only update and estimate methods are added for uint64_t and string types.
@@ -67,33 +68,35 @@ public:
   uint64_t get_seed()  const;
 
   /**
-   * @return epsilon : double
+   * @return epsilon
    * The maximum permissible error for any frequency estimate query.
    * epsilon = ceil(e / _num_buckets)
    */
    double get_relative_error() const;
 
   /**
-   * @return _total_weight : typename W
+   * @return _total_weight
    * The total weight currently inserted into the stream.
    */
   W get_total_weight() const;
 
-  /*
-   * @param relative_error : double -- the desired accuracy within which estimates should lie.
+  /**
+   * Suggests the number of buckets required to achieve the given relative error
+   * @param relative_error the desired accuracy within which estimates should lie.
    * For example, when relative_error = 0.05, then the returned frequency estimates satisfy the
    * `relative_error` guarantee that never overestimates the weights but may underestimate the weights
    * by 5% of the total weight in the sketch.
-   * @return number_of_buckets : the number of hash buckets at every level of the
+   * @return the number of hash buckets at every level of the
    * sketch required in order to obtain the specified relative error.
    * [1] - Section 3 ``Data Structure'', page 6.
    */
   static uint32_t suggest_num_buckets(double relative_error);
 
-  /*
-   * @param confidence : double -- the desired confidence with which estimates should be correct.
+  /**
+   * Suggests the number of hash functions required to achieve the given confidence
+   * @param confidence the desired confidence with which estimates should be correct.
    * For example, with 95% confidence, frequency estimates satisfy the `relative_error` guarantee.
-   * @return number_of_hashes : the number of hash functions that are required in
+   * @return the number of hash functions that are required in
    * order to achieve the specified confidence of the sketch.
    * confidence = 1 - delta, with delta denoting the sketch failure probability in the literature.
    * [1] - Section 3 ``Data Structure'', page 6.
@@ -103,7 +106,7 @@ public:
   /**
    * Specific get_estimate function for uint64_t type
    * see generic get_estimate function
-   * @param item : uint64_t type.
+   * @param item uint64_t type.
    * @return an estimate of the item's frequency.
    */
   W get_estimate(uint64_t item) const;
@@ -111,7 +114,7 @@ public:
   /**
    * Specific get_estimate function for int64_t type
    * see generic get_estimate function
-   * @param item : uint64_t type.
+   * @param item int64_t type.
    * @return an estimate of the item's frequency.
    */
   W get_estimate(int64_t item) const;
@@ -119,7 +122,7 @@ public:
   /**
    * Specific get_estimate function for std::string type
    * see generic get_estimate function
-   * @param item : std::string type
+   * @param item std::string type
    * @return an estimate of the item's frequency.
    */
   W get_estimate(const std::string& item) const;
@@ -127,8 +130,8 @@ public:
   /**
    * This is the generic estimate query function for any of the given datatypes.
    * Query the sketch for the estimate of a given item.
-   * @param item : pointer to the data item to be query from the sketch.
-   * @param size : size_t
+   * @param item pointer to the data item to be query from the sketch.
+   * @param size size of the item in bytes
    * @return the estimated frequency of the item denoted f_est satisfying
    * f_true - relative_error*_total_weight <= f_est <= f_true
    */
@@ -136,60 +139,106 @@ public:
 
   /**
    * Query the sketch for the upper bound of a given item.
-   * @param item : uint64_t or std::string to query
+   * @param item to query
+   * @param size of the item in bytes
    * @return the upper bound on the true frequency of the item
    * f_true <= f_est + relative_error*_total_weight
    */
   W get_upper_bound(const void* item, size_t size) const;
-  W get_upper_bound(int64_t) const;
-  W get_upper_bound(uint64_t) const;
+
+  /**
+   * Query the sketch for the upper bound of a given item.
+   * @param item to query
+   * @return the upper bound on the true frequency of the item
+   * f_true <= f_est + relative_error*_total_weight
+   */
+  W get_upper_bound(int64_t item) const;
+
+  /**
+   * Query the sketch for the upper bound of a given item.
+   * @param item to query
+   * @return the upper bound on the true frequency of the item
+   * f_true <= f_est + relative_error*_total_weight
+   */
+  W get_upper_bound(uint64_t item) const;
+
+  /**
+   * Query the sketch for the upper bound of a given item.
+   * @param item to query
+   * @return the upper bound on the true frequency of the item
+   * f_true <= f_est + relative_error*_total_weight
+   */
   W get_upper_bound(const std::string& item) const;
 
   /**
    * Query the sketch for the lower bound of a given item.
-   * @param item : uint64_t or std::string to query
+   * @param item to query
+   * @param size of the item in bytes
    * @return the lower bound for the query result, f_est, on the true frequency, f_est of the item
    * f_true - relative_error*_total_weight <= f_est
    */
   W get_lower_bound(const void* item, size_t size) const;
-  W get_lower_bound(int64_t) const;
-  W get_lower_bound(uint64_t) const;
+
+  /**
+   * Query the sketch for the lower bound of a given item.
+   * @param item to query
+   * @return the lower bound for the query result, f_est, on the true frequency, f_est of the item
+   * f_true - relative_error*_total_weight <= f_est
+   */
+  W get_lower_bound(int64_t item) const;
+
+  /**
+   * Query the sketch for the lower bound of a given item.
+   * @param item to query
+   * @return the lower bound for the query result, f_est, on the true frequency, f_est of the item
+   * f_true - relative_error*_total_weight <= f_est
+   */
+  W get_lower_bound(uint64_t item) const;
+
+  /**
+   * Query the sketch for the lower bound of a given item.
+   * @param item to query
+   * @return the lower bound for the query result, f_est, on the true frequency, f_est of the item
+   * f_true - relative_error*_total_weight <= f_est
+   */
   W get_lower_bound(const std::string& item) const;
 
-  /*
+  /**
    * Update this sketch with given data of any type.
-   * This is a "universal" update that covers all cases above,
-   * but may produce different hashes.
+   * This is a "universal" update that covers all cases,
+   * but may produce different hashes compared to specialized update methods.
    * @param item pointer to the data item to be inserted into the sketch.
    * @param size of the data in bytes
-   * @return vector of uint64_t which each represent the index to which `value' must update in the sketch
+   * @param weight arithmetic type
    */
   void update(const void* item, size_t size, W weight);
 
   /**
-   * Update this sketch with a given uint64_t item.
-   * @param item : uint64_t to update the sketch with
-   * @param weight : arithmetic type
-   *  void function which inserts an item of type uint64_t into the sketch
+   * Update this sketch with a given item.
+   * @param item to update the sketch with
+   * @param weight arithmetic type
    */
-  void update(uint64_t item, W weight);
-  void update(uint64_t item);
-  void update(int64_t item, W weight);
-  void update(int64_t item);
+  void update(uint64_t item, W weight = 1);
+
+  /**
+   * Update this sketch with a given item.
+   * @param item to update the sketch with
+   * @param weight arithmetic type
+   */
+  void update(int64_t item, W weight = 1);
 
   /**
    * Update this sketch with a given string.
-   * @param item : string to update the sketch with
-   * @param weight : arithmetic type
-   * void function which inserts an item of type std::string into the sketch
+   * @param item string to update the sketch with
+   * @param weight arithmetic type
    */
-  void update(const std::string& item, W weight);
-  void update(const std::string& item);
+  void update(const std::string& item, W weight = 1);
 
-  /*
-   * merges a separate count_min_sketch into this count_min_sketch.
+  /**
+   * Merges another count_min_sketch into this count_min_sketch.
+   * @param other_sketch
    */
-  void merge(const count_min_sketch &other_sketch);
+  void merge(const count_min_sketch& other_sketch);
 
   /**
    * Returns true if this sketch is empty.
@@ -205,15 +254,23 @@ public:
    */
   string<Allocator> to_string() const;
 
-  // Iterators
-  using const_iterator = typename std::vector<W, Allocator>::const_iterator;
+  /**
+   * Iterator pointing to the first item in the sketch.
+   * If the sketch is empty, the returned iterator must not be dereferenced or incremented.
+   * @return iterator pointing to the first item in the sketch
+   */
   const_iterator begin() const;
-  const_iterator end() const;
 
   /**
-   * This method serializes the sketch into a given stream in a binary form
-   * @param os output stream
-   * The byte output has the following structure
+   * Iterator pointing to the past-the-end item in the sketch.
+   * The past-the-end item is the hypothetical item that would follow the last item.
+   * It does not point to any item, and must not be dereferenced or incremented.
+   * @return iterator pointing to the past-the-end item in the sketch
+   */
+  const_iterator end() const;
+
+  /*
+   * The serialized sketch binary form has the following structure
    * Byte 0:
    * 1 - if and only if the sketch is empty
    * 0 - otherwise
@@ -254,8 +311,6 @@ public:
       ||---------------------------- sketch entries ---------------------------|
  ...
 
-   *
-   *
    */
 
   
@@ -266,7 +321,8 @@ public:
   size_t get_serialized_size_bytes() const;
 
   /**
-   * This method serializes a binary image of the sketch to an output stream.
+   * This method serializes the sketch into a given stream in a binary form
+   * @param os output stream
    */
   void serialize(std::ostream& os) const;
 
@@ -287,6 +343,7 @@ public:
   * This method deserializes a sketch from a given stream.
   * @param is input stream
   * @param seed the seed for the hash function that was used to create the sketch
+  * @param allocator instance of an Allocator
   * @return an instance of a sketch
   */
   static count_min_sketch deserialize(std::istream& is, uint64_t seed=DEFAULT_SEED, const Allocator& allocator = Allocator());
@@ -296,12 +353,12 @@ public:
   * @param bytes pointer to the array of bytes
   * @param size the size of the array
   * @param seed the seed for the hash function that was used to create the sketch
+  * @param allocator instance of an Allocator
   * @return an instance of the sketch
   */
   static count_min_sketch deserialize(const void* bytes, size_t size, uint64_t seed=DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
-   * Returns the allocator for this sketch.
    * @return allocator
    */
   allocator_type get_allocator() const;
@@ -330,9 +387,6 @@ private:
    * @param flags_byte
    */
   static void check_header_validity(uint8_t preamble_longs, uint8_t serial_version, uint8_t family_id, uint8_t flags_byte);
-
-
-
 
   /*
    * Obtain the hash values when inserting an item into the sketch.

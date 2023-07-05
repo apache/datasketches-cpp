@@ -26,10 +26,11 @@
 
 namespace datasketches {
 
+/// Theta Jaccard similarity alias
 template<typename Allocator = std::allocator<uint64_t>>
 using theta_jaccard_similarity_alloc = jaccard_similarity_base<theta_union_alloc<Allocator>, theta_intersection_alloc<Allocator>, trivial_extract_key>;
 
-// alias with default allocator for convenience
+/// Theta Jaccard similarity alias with default allocator
 using theta_jaccard_similarity = theta_jaccard_similarity_alloc<std::allocator<uint64_t>>;
 
 } /* namespace datasketches */

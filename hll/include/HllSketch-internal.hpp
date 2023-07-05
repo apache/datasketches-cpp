@@ -94,14 +94,14 @@ hll_sketch_alloc<A>::hll_sketch_alloc(HllSketchImpl<A>* that) :
 {}
 
 template<typename A>
-hll_sketch_alloc<A> hll_sketch_alloc<A>::operator=(const hll_sketch_alloc<A>& other) {
+hll_sketch_alloc<A>& hll_sketch_alloc<A>::operator=(const hll_sketch_alloc<A>& other) {
   sketch_impl->get_deleter()(sketch_impl);
   sketch_impl = other.sketch_impl->copy();
   return *this;
 }
 
 template<typename A>
-hll_sketch_alloc<A> hll_sketch_alloc<A>::operator=(hll_sketch_alloc<A>&& other) {
+hll_sketch_alloc<A>& hll_sketch_alloc<A>::operator=(hll_sketch_alloc<A>&& other) {
   std::swap(sketch_impl, other.sketch_impl);
   return *this;
 }

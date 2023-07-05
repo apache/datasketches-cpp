@@ -36,7 +36,7 @@
 
 namespace datasketches {
 
-/**
+/*
  * Implementation code for the VarOpt sketch.
  * 
  * author Kevin Lang 
@@ -895,7 +895,7 @@ void var_opt_sketch<T, A>::update_heavy_r_eq1(O&& item, double weight, bool mark
   grow_candidate_set(weights_[m_slot] + total_wt_r_, 2);
 }
 
-/**
+/*
  * Decreases sketch's value of k by 1, updating stored values as needed.
  *
  * <p>Subject to certain pre-conditions, decreasing k causes tau to increase. This fact is used by
@@ -1685,7 +1685,7 @@ bool var_opt_sketch<T, A>::iterator::get_mark() const {
   return sk_->marks_ == nullptr ? false : sk_->marks_[idx_];
 }
 
-/**
+/*
  * Checks if target sampling allocation is more than 50% of max sampling size.
  * If so, returns max sampling size, otherwise passes through target size.
  */

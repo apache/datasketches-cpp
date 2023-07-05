@@ -28,6 +28,48 @@
 
 namespace datasketches {
 
+/**
+ * Relative Error Quantiles Sketch.
+ * This is an implementation based on the paper
+ * "Relative Error Streaming Quantiles" by Graham Cormode, Zohar Karnin, Edo Liberty,
+ * Justin Thaler, Pavel Veselý, and loosely derived from a Python prototype written by Pavel Veselý.
+ *
+ * <p>Reference: https://arxiv.org/abs/2004.01668</p>
+ *
+ * <p>This implementation differs from the algorithm described in the paper in the following:</p>
+ *
+ * <ul>
+ * <li>The algorithm requires no upper bound on the stream length.
+ * Instead, each relative-compactor counts the number of compaction operations performed
+ * so far (via variable state). Initially, the relative-compactor starts with INIT_NUMBER_OF_SECTIONS.
+ * Each time the number of compactions (variable state) exceeds 2^{numSections - 1}, we double
+ * numSections. Note that after merging the sketch with another one variable state may not correspond
+ * to the number of compactions performed at a particular level, however, since the state variable
+ * never exceeds the number of compactions, the guarantees of the sketch remain valid.</li>
+ *
+ * <li>The size of each section (variable k and section_size in the code and parameter k in
+ * the paper) is initialized with a number set by the user via variable k.
+ * When the number of sections doubles, we decrease section_size by a factor of sqrt(2).
+ * This is applied at each level separately. Thus, when we double the number of sections, the
+ * nominal compactor size increases by a factor of approx. sqrt(2) (+/- rounding).</li>
+ *
+ * <li>The merge operation here does not perform "special compactions", which are used in the paper
+ * to allow for a tight mathematical analysis of the sketch.</li>
+ * </ul>
+ *
+ * <p>This implementation provides a number of capabilities not discussed in the paper or provided
+ * in the Python prototype.</p>
+ *
+ * <ul><li>The Python prototype only implemented high accuracy for low ranks. This implementation
+ * provides the user with the ability to choose either high rank accuracy or low rank accuracy at
+ * the time of sketch construction.</li>
+ * <li>The Python prototype only implemented a comparison criterion of "INCLUSIVE". This implementation
+ * allows the user to use both the "INCLUSIVE" criterion and the "EXCLUSIVE" criterion.</li>
+ * <li>This implementation provides extensive debug visibility into the operation of the sketch with
+ * two levels of detail output. This is not only useful for debugging, but is a powerful tool to
+ * help users understand how the sketch works.</li>
+ * </ul>
+ */
 template<
   typename T,
   typename Comparator = std::less<T>, // strict weak ordering function (see C++ named requirements: Compare)
@@ -39,6 +81,13 @@ public:
   using comparator = Comparator;
   using Compactor = req_compactor<T, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
+  using vector_double = typename quantiles_sorted_view<T, Comparator, Allocator>::vector_double;
+
+  /**
+   * Quantile return type.
+   * This is to return quantiles either by value (for arithmetic types) or by const reference (for all other types)
+   */
+  using quantile_return_type = typename quantiles_sorted_view<T, Comparator, Allocator>::quantile_return_type;
 
   /**
    * Constructor
@@ -46,19 +95,41 @@ public:
    * Value of 12 roughly corresponds to 1% relative error guarantee at 95% confidence.
    * @param hra if true, the default, the high ranks are prioritized for better
    * accuracy. Otherwise the low ranks are prioritized for better accuracy.
-   * @param comparator to use by this instance
-   * @param allocator to use by this instance
+   * @param comparator instance for use by this sketch instance
+   * @param allocator instance for use by this sketch instance
    */
   explicit req_sketch(uint16_t k, bool hra = true, const Comparator& comparator = Comparator(),
       const Allocator& allocator = Allocator());
 
-  ~req_sketch();
+  /**
+   * Copy constructor
+   * @param other sketch to be copied
+   */
   req_sketch(const req_sketch& other);
+
+  /**
+   * Move constructor
+   * @param other sketch to be moved
+   */
   req_sketch(req_sketch&& other) noexcept;
+
+  ~req_sketch();
+
+  /**
+   * Copy assignment
+   * @param other sketch to be copied
+   * @return reference to this sketch
+   */
   req_sketch& operator=(const req_sketch& other);
+
+  /**
+   * Move assignment
+   * @param other sketch to be moved
+   * @return reference to this sketch
+   */
   req_sketch& operator=(req_sketch&& other);
 
-  /*
+  /**
    * Type converting constructor.
    * @param other sketch of a different type
    * @param comparator instance of a Comparator
@@ -177,7 +248,6 @@ public:
    * @return an array of m+1 doubles each of which is an approximation
    * to the fraction of the input stream items (the mass) that fall into one of those intervals.
    */
-  using vector_double = typename quantiles_sorted_view<T, Comparator, Allocator>::vector_double;
   vector_double get_PMF(const T* split_points, uint32_t size, bool inclusive = true) const;
 
   /**
@@ -214,7 +284,6 @@ public:
    *
    * @return approximate quantile associated with the given rank
    */
-  using quantile_return_type = typename quantiles_sorted_view<T, Comparator, Allocator>::quantile_return_type;
   quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
   /**
@@ -223,6 +292,7 @@ public:
    *
    * @param ranks given array of normalized ranks.
    * @param size the number of ranks in the array.
+   * @param inclusive if true, the given rank is considered inclusive (includes weight of an item)
    *
    * @return array of quantiles that correspond to the given array of normalized ranks
    *
@@ -333,9 +403,26 @@ public:
   string<Allocator> to_string(bool print_levels = false, bool print_items = false) const;
 
   class const_iterator;
+
+  /**
+   * Iterator pointing to the first item in the sketch.
+   * If the sketch is empty, the returned iterator must not be dereferenced or incremented.
+   * @return iterator pointing to the first item in the sketch
+   */
   const_iterator begin() const;
+
+  /**
+   * Iterator pointing to the past-the-end item in the sketch.
+   * The past-the-end item is the hypothetical item that would follow the last item.
+   * It does not point to any item, and must not be dereferenced or incremented.
+   * @return iterator pointing to the past-the-end item in the sketch
+   */
   const_iterator end() const;
 
+  /**
+   * Gets the sorted view of this sketch
+   * @return the sorted view of this sketch
+   */
   quantiles_sorted_view<T, Comparator, Allocator> get_sorted_view() const;
 
 private:
