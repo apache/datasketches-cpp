@@ -1,0 +1,28 @@
+name: Doxygen
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Run Doxygen
+        uses: mattnotmitt/doxygen-action@v1.9.5
+        with:
+          doxyfile-path: ./Doxyfile
+          working-directory: .
+      - name: Pages Deployment
+        uses: peaceiris/actions-gh-pages@v3.9.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          destination_dir: docs/current
+          enable_jekyll: false
+          allow_empty_commit: false
+          force_orphan: true
+          publish_branch: gh-pages
