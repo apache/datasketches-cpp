@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   build-documentation:
@@ -21,8 +22,8 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
-          destination_dir: docs/current
+          destination_dir: docs/${{ github.ref_name }}
           enable_jekyll: false
           allow_empty_commit: false
-          force_orphan: true
+          force_orphan: false
           publish_branch: gh-pages
