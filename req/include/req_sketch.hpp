@@ -25,6 +25,7 @@
 #include "req_common.hpp"
 #include "req_compactor.hpp"
 #include "quantiles_sorted_view.hpp"
+#include "optional.hpp"
 
 namespace datasketches {
 
@@ -434,8 +435,8 @@ private:
   uint32_t num_retained_;
   uint64_t n_;
   std::vector<Compactor, AllocCompactor> compactors_;
-  T* min_item_;
-  T* max_item_;
+  optional<T> min_item_;
+  optional<T> max_item_;
   mutable quantiles_sorted_view<T, Comparator, Allocator>* sorted_view_;
 
   void setup_sorted_view() const; // modifies mutable state
@@ -462,9 +463,8 @@ private:
   static bool is_exact_rank(uint16_t k, uint8_t num_levels, double rank, uint64_t n, bool hra);
 
   // for deserialization
-  class item_deleter;
   req_sketch(uint16_t k, bool hra, uint64_t n,
-      std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item,
+      optional<T>&& min_item, optional<T>&& max_item,
       std::vector<Compactor, AllocCompactor>&& compactors, const Comparator& comparator);
 
   static void check_preamble_ints(uint8_t preamble_ints, uint8_t num_levels);
