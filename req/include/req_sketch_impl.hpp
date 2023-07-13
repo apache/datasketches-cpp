@@ -494,11 +494,11 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
     sd.deserialize(is, &*tmp, 1);
     // serde call did not throw, repackage and cleanup
     min_item.emplace(*tmp);
-    tmp->~T();
+    (*tmp).~T();
     sd.deserialize(is, &*tmp, 1);
     // serde call did not throw, repackage and cleanup
     max_item.emplace(*tmp);
-    tmp->~T();
+    (*tmp).~T();
   }
 
   if (raw_items) {
@@ -571,11 +571,11 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
     // serde call did not throw, repackage and cleanup
     min_item.emplace(*tmp);
-    tmp->~T();
+    (*tmp).~T();
     ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
     // serde call did not throw, repackage and cleanup
     max_item.emplace(*tmp);
-    tmp->~T();
+    (*tmp).~T();
   }
 
   if (raw_items) {
