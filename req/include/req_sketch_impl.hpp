@@ -35,8 +35,8 @@ max_nom_size_(0),
 num_retained_(0),
 n_(0),
 compactors_(allocator),
-min_item_(nullptr),
-max_item_(nullptr),
+min_item_(),
+max_item_(),
 sorted_view_(nullptr)
 {
   grow();
@@ -44,14 +44,6 @@ sorted_view_(nullptr)
 
 template<typename T, typename C, typename A>
 req_sketch<T, C, A>::~req_sketch() {
-  if (min_item_ != nullptr) {
-    min_item_->~T();
-    allocator_.deallocate(min_item_, 1);
-  }
-  if (max_item_ != nullptr) {
-    max_item_->~T();
-    allocator_.deallocate(max_item_, 1);
-  }
   reset_sorted_view();
 }
 
@@ -65,13 +57,10 @@ max_nom_size_(other.max_nom_size_),
 num_retained_(other.num_retained_),
 n_(other.n_),
 compactors_(other.compactors_),
-min_item_(nullptr),
-max_item_(nullptr),
+min_item_(other.min_item_),
+max_item_(other.max_item_),
 sorted_view_(nullptr)
-{
-  if (other.min_item_ != nullptr) min_item_ = new (allocator_.allocate(1)) T(*other.min_item_);
-  if (other.max_item_ != nullptr) max_item_ = new (allocator_.allocate(1)) T(*other.max_item_);
-}
+{}
 
 template<typename T, typename C, typename A>
 req_sketch<T, C, A>::req_sketch(req_sketch&& other) noexcept :
@@ -83,13 +72,10 @@ max_nom_size_(other.max_nom_size_),
 num_retained_(other.num_retained_),
 n_(other.n_),
 compactors_(std::move(other.compactors_)),
-min_item_(other.min_item_),
-max_item_(other.max_item_),
+min_item_(std::move(other.min_item_)),
+max_item_(std::move(other.max_item_)),
 sorted_view_(nullptr)
-{
-  other.min_item_ = nullptr;
-  other.max_item_ = nullptr;
-}
+{}
 
 template<typename T, typename C, typename A>
 req_sketch<T, C, A>& req_sketch<T, C, A>::operator=(const req_sketch& other) {
@@ -135,8 +121,8 @@ max_nom_size_(other.max_nom_size_),
 num_retained_(other.num_retained_),
 n_(other.n_),
 compactors_(allocator),
-min_item_(nullptr),
-max_item_(nullptr),
+min_item_(other.min_item_),
+max_item_(other.max_item_),
 sorted_view_(nullptr)
 {
   static_assert(
@@ -146,10 +132,6 @@ sorted_view_(nullptr)
   compactors_.reserve(other.compactors_.size());
   for (const auto& compactor: other.compactors_) {
     compactors_.push_back(req_compactor<T, C, A>(compactor, comparator_, allocator_));
-  }
-  if (!other.is_empty()) {
-    min_item_ = new (allocator_.allocate(1)) T(other.get_min_item());
-    max_item_ = new (allocator_.allocate(1)) T(other.get_max_item());
   }
 }
 
@@ -188,8 +170,8 @@ template<typename FwdT>
 void req_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_item(item)) { return; }
   if (is_empty()) {
-    min_item_ = new (allocator_.allocate(1)) T(item);
-    max_item_ = new (allocator_.allocate(1)) T(item);
+    min_item_.emplace(item);
+    max_item_.emplace(item);
   } else {
     if (comparator_(item, *min_item_)) *min_item_ = item;
     if (comparator_(*max_item_, item)) *max_item_ = item;
@@ -207,8 +189,8 @@ void req_sketch<T, C, A>::merge(FwdSk&& other) {
   if (is_HRA() != other.is_HRA()) throw std::invalid_argument("merging HRA and LRA is not valid");
   if (other.is_empty()) return;
   if (is_empty()) {
-    min_item_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.min_item_));
-    max_item_ = new (allocator_.allocate(1)) T(conditional_forward<FwdSk>(*other.max_item_));
+    min_item_.emplace(conditional_forward<FwdSk>(*other.min_item_));
+    max_item_.emplace(conditional_forward<FwdSk>(*other.max_item_));
   } else {
     if (comparator_(*other.min_item_, *min_item_)) *min_item_ = conditional_forward<FwdSk>(*other.min_item_);
     if (comparator_(*max_item_, *other.max_item_)) *max_item_ = conditional_forward<FwdSk>(*other.max_item_);
@@ -426,8 +408,8 @@ void req_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& sd) const {
   if (is_empty()) return;
   if (is_estimation_mode()) {
     write(os, n_);
-    sd.serialize(os, min_item_, 1);
-    sd.serialize(os, max_item_, 1);
+    sd.serialize(os, &*min_item_, 1);
+    sd.serialize(os, &*max_item_, 1);
   }
   if (raw_items) {
     sd.serialize(os, compactors_[0].begin(), num_raw_items);
@@ -466,8 +448,8 @@ auto req_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& sd)
   if (!is_empty()) {
     if (is_estimation_mode()) {
       ptr += copy_to_mem(n_, ptr);
-      ptr += sd.serialize(ptr, end_ptr - ptr, min_item_, 1);
-      ptr += sd.serialize(ptr, end_ptr - ptr, max_item_, 1);
+      ptr += sd.serialize(ptr, end_ptr - ptr, &*min_item_, 1);
+      ptr += sd.serialize(ptr, end_ptr - ptr, &*max_item_, 1);
     }
     if (raw_items) {
       ptr += sd.serialize(ptr, end_ptr - ptr, compactors_[0].begin(), num_raw_items);
@@ -498,12 +480,9 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   const bool hra = flags_byte & (1 << flags::IS_HIGH_RANK);
   if (is_empty) return req_sketch(k, hra, comparator, allocator);
 
-  A alloc(allocator);
-  auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
-  std::unique_ptr<T, decltype(item_buffer_deleter)> min_item_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, decltype(item_buffer_deleter)> max_item_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, item_deleter> min_item(nullptr, item_deleter(allocator));
-  std::unique_ptr<T, item_deleter> max_item(nullptr, item_deleter(allocator));
+  optional<T> tmp; // space to deserialize min and max
+  optional<T> min_item;
+  optional<T> max_item;
 
   const bool raw_items = flags_byte & (1 << flags::RAW_ITEMS);
   const bool is_level_0_sorted = flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED);
@@ -512,12 +491,14 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   uint64_t n = 1;
   if (num_levels > 1) {
     n = read<uint64_t>(is);
-    sd.deserialize(is, min_item_buffer.get(), 1);
-    // serde call did not throw, repackage with destrtuctor
-    min_item = std::unique_ptr<T, item_deleter>(min_item_buffer.release(), item_deleter(allocator));
-    sd.deserialize(is, max_item_buffer.get(), 1);
-    // serde call did not throw, repackage with destrtuctor
-    max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
+    sd.deserialize(is, &*tmp, 1);
+    // serde call did not throw, repackage and cleanup
+    min_item.emplace(*tmp);
+    (*tmp).~T();
+    sd.deserialize(is, &*tmp, 1);
+    // serde call did not throw, repackage and cleanup
+    max_item.emplace(*tmp);
+    (*tmp).~T();
   }
 
   if (raw_items) {
@@ -537,12 +518,8 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
       if (comparator(*it, *min_it)) min_it = it;
       if (comparator(*max_it, *it)) max_it = it;
     }
-    new (min_item_buffer.get()) T(*min_it);
-    // copy did not throw, repackage with destrtuctor
-    min_item = std::unique_ptr<T, item_deleter>(min_item_buffer.release(), item_deleter(allocator));
-    new (max_item_buffer.get()) T(*max_it);
-    // copy did not throw, repackage with destrtuctor
-    max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
+    min_item.emplace(*min_it);
+    max_item.emplace(*max_it);
   }
 
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
@@ -579,12 +556,9 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   const bool hra = flags_byte & (1 << flags::IS_HIGH_RANK);
   if (is_empty) return req_sketch(k, hra, comparator, allocator);
 
-  A alloc(allocator);
-  auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
-  std::unique_ptr<T, decltype(item_buffer_deleter)> min_item_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, decltype(item_buffer_deleter)> max_item_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, item_deleter> min_item(nullptr, item_deleter(allocator));
-  std::unique_ptr<T, item_deleter> max_item(nullptr, item_deleter(allocator));
+  optional<T> tmp; // space to deserialize min and max
+  optional<T> min_item;
+  optional<T> max_item;
 
   const bool raw_items = flags_byte & (1 << flags::RAW_ITEMS);
   const bool is_level_0_sorted = flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED);
@@ -594,12 +568,14 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   if (num_levels > 1) {
     ensure_minimum_memory(end_ptr - ptr, sizeof(n));
     ptr += copy_from_mem(ptr, n);
-    ptr += sd.deserialize(ptr, end_ptr - ptr, min_item_buffer.get(), 1);
-    // serde call did not throw, repackage with destrtuctor
-    min_item = std::unique_ptr<T, item_deleter>(min_item_buffer.release(), item_deleter(allocator));
-    ptr += sd.deserialize(ptr, end_ptr - ptr, max_item_buffer.get(), 1);
-    // serde call did not throw, repackage with destrtuctor
-    max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
+    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+    // serde call did not throw, repackage and cleanup
+    min_item.emplace(*tmp);
+    (*tmp).~T();
+    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+    // serde call did not throw, repackage and cleanup
+    max_item.emplace(*tmp);
+    (*tmp).~T();
   }
 
   if (raw_items) {
@@ -623,12 +599,8 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
       if (comparator(*it, *min_it)) min_it = it;
       if (comparator(*max_it, *it)) max_it = it;
     }
-    new (min_item_buffer.get()) T(*min_it);
-    // copy did not throw, repackage with destrtuctor
-    min_item = std::unique_ptr<T, item_deleter>(min_item_buffer.release(), item_deleter(allocator));
-    new (max_item_buffer.get()) T(*max_it);
-    // copy did not throw, repackage with destrtuctor
-    max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
+    min_item.emplace(*min_it);
+    max_item.emplace(*max_it);
   }
 
   return req_sketch(k, hra, n, std::move(min_item), std::move(max_item), std::move(compactors), comparator);
@@ -722,22 +694,8 @@ string<A> req_sketch<T, C, A>::to_string(bool print_levels, bool print_items) co
 }
 
 template<typename T, typename C, typename A>
-class req_sketch<T, C, A>::item_deleter {
-  public:
-  item_deleter(const A& allocator): allocator_(allocator) {}
-  void operator() (T* ptr) {
-    if (ptr != nullptr) {
-      ptr->~T();
-      allocator_.deallocate(ptr, 1);
-    }
-  }
-  private:
-  A allocator_;
-};
-
-template<typename T, typename C, typename A>
 req_sketch<T, C, A>::req_sketch(uint16_t k, bool hra, uint64_t n,
-    std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item,
+    optional<T>&& min_item, optional<T>&& max_item,
     std::vector<Compactor, AllocCompactor>&& compactors, const C& comparator):
 comparator_(comparator),
 allocator_(compactors.get_allocator()),
@@ -747,8 +705,8 @@ max_nom_size_(0),
 num_retained_(0),
 n_(n),
 compactors_(std::move(compactors)),
-min_item_(min_item.release()),
-max_item_(max_item.release()),
+min_item_(std::move(min_item)),
+max_item_(std::move(max_item)),
 sorted_view_(nullptr)
 {
   update_max_nom_size();
