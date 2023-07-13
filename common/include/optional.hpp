@@ -37,7 +37,7 @@ public:
 
   optional() noexcept: initialized_(false) {}
 
-  optional(const T& value) {
+  optional(const T& value) noexcept(std::is_nothrow_copy_constructible<T>::value) {
     new (&value_) T(value);
     initialized_ = true;
   }
@@ -47,8 +47,16 @@ public:
     initialized_ = true;
   }
 
+  // conversion from compatible types
   template<typename TT>
   optional(const TT& other) {
+    if (other.initialized_) {
+      new (&value_) T(other.value_);
+      initialized_ = true;
+    }
+  }
+
+  optional(const optional& other) noexcept(std::is_nothrow_copy_constructible<T>::value) {
     if (other.initialized_) {
       new (&value_) T(other.value_);
       initialized_ = true;
