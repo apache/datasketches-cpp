@@ -38,7 +38,7 @@ private:
   int val_;
 };
 
-TEST_CASE("optional", "common") {
+TEST_CASE("optional", "[common]") {
   optional<tt> opt;
   REQUIRE_FALSE(opt);
   opt.emplace(5);
@@ -73,6 +73,13 @@ TEST_CASE("optional", "common") {
   REQUIRE_FALSE(opt2);
   REQUIRE(bool(opt));
   REQUIRE(opt->get_val() == 8);
+}
+
+TEST_CASE("optional conversion", "[common]") {
+  optional<float> opt_f(1);
+  optional<double> opt_d(opt_f);
+  REQUIRE(bool(opt_d));
+  REQUIRE(*opt_d == static_cast<double>(*opt_f));
 }
 
 } /* namespace datasketches */
