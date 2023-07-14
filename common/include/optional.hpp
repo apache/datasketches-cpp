@@ -49,21 +49,21 @@ public:
 
   // conversion from compatible types
   template<typename TT>
-  optional(const TT& other) {
+  optional(const TT& other) noexcept(std::is_nothrow_constructible<T, TT>::value): initialized_(false) {
     if (other.initialized_) {
       new (&value_) T(other.value_);
       initialized_ = true;
     }
   }
 
-  optional(const optional& other) noexcept(std::is_nothrow_copy_constructible<T>::value) {
+  optional(const optional& other) noexcept(std::is_nothrow_copy_constructible<T>::value): initialized_(false) {
     if (other.initialized_) {
       new (&value_) T(other.value_);
       initialized_ = true;
     }
   }
 
-  optional(optional&& other) noexcept(std::is_nothrow_move_constructible<T>::value) {
+  optional(optional&& other) noexcept(std::is_nothrow_move_constructible<T>::value): initialized_(false) {
     if (other.initialized_) {
       new (&value_) T(std::move(other.value_));
       initialized_ = true;
@@ -78,8 +78,42 @@ public:
     return initialized_;
   }
 
+  optional& operator=(const optional& other)
+      noexcept(std::is_nothrow_copy_constructible<T>::value && std::is_nothrow_copy_assignable<T>::value) {
+    if (initialized_) {
+      if (other.initialized_) {
+        value_ = other.value_;
+      } else {
+        reset();
+      }
+    } else {
+      if (other.initialized_) {
+        new (&value_) T(other.value_);
+        initialized_ = true;
+      }
+    }
+    return *this;
+  }
+
+  optional& operator=(optional&& other)
+      noexcept(std::is_nothrow_move_constructible<T>::value && std::is_nothrow_move_assignable<T>::value) {
+    if (initialized_) {
+      if (other.initialized_) {
+        value_ = std::move(other.value_);
+      } else {
+        reset();
+      }
+    } else {
+      if (other.initialized_) {
+        new (&value_) T(std::move(other.value_));
+        initialized_ = true;
+      }
+    }
+    return *this;
+  }
+
   template<typename... Args>
-  void emplace(Args&&... args) {
+  void emplace(Args&&... args) noexcept(std::is_nothrow_constructible<T, Args...>::value) {
     new (&value_) T(args...);
     initialized_ = true;
   }

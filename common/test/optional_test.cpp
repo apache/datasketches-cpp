@@ -48,17 +48,31 @@ TEST_CASE("optional", "common") {
   opt.reset();
   REQUIRE_FALSE(opt);
 
-  optional<tt> opt2(std::move(opt));
+  optional<tt> opt2(opt);
+  REQUIRE_FALSE(opt2);
+
+  opt2.emplace(3);
   if (opt2) *opt2 = 6; // good if it is initialized
   REQUIRE(opt2->get_val() == 6);
 
-  optional<tt> opt3;
+  opt.reset();
+  REQUIRE_FALSE(opt);
+  optional<tt> opt3(std::move(opt));
   REQUIRE_FALSE(opt3);
   *opt3 = 7; // don't do this! may be dangerous for arbitrary T, and it still thinks it is not initialized
   REQUIRE_FALSE(opt3);
   opt3.emplace(8);
   REQUIRE(bool(opt3));
   REQUIRE(opt3->get_val() == 8);
+
+  std::swap(opt2, opt3);
+  REQUIRE(opt2->get_val() == 8);
+  REQUIRE(opt3->get_val() == 6);
+
+  std::swap(opt2, opt);
+  REQUIRE_FALSE(opt2);
+  REQUIRE(bool(opt));
+  REQUIRE(opt->get_val() == 8);
 }
 
 } /* namespace datasketches */
