@@ -49,7 +49,7 @@ public:
 
   // conversion from compatible types
   template<typename TT>
-  optional(const TT& other) noexcept(std::is_nothrow_constructible<T, TT>::value): initialized_(false) {
+  optional(const optional<TT>& other) noexcept(std::is_nothrow_constructible<T, TT>::value): initialized_(false) {
     if (other.initialized_) {
       new (&value_) T(other.value_);
       initialized_ = true;
