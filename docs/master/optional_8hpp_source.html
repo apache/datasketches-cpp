@@ -120,7 +120,7 @@ $(function() {
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;  <span class="comment">// conversion from compatible types</span></div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> TT&gt;</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;  optional(<span class="keyword">const</span> TT&amp; other) noexcept(std::is_nothrow_constructible&lt;T, TT&gt;::value): initialized_(false) {</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;  optional(<span class="keyword">const</span> optional&lt;TT&gt;&amp; other) noexcept(std::is_nothrow_constructible&lt;T, TT&gt;::value): initialized_(false) {</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">if</span> (other.initialized_) {</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;      <span class="keyword">new</span> (&amp;value_) T(other.value_);</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;      initialized_ = <span class="keyword">true</span>;</div>
