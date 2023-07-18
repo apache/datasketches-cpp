@@ -283,16 +283,16 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     // value pushed into higher level
     REQUIRE(sketch.get_rank(50, false) == Approx(0.49).margin(0.01));
     REQUIRE(sketch.get_rank(50, true) == 0.50);
-  
+
     // get_quantile()
     // value still in base buffer
     REQUIRE(sketch.get_quantile(0.70, false) == 71);
     REQUIRE(sketch.get_quantile(0.70, true) == 70);
-  
+
     // value pushed into higher levell
     int quantile = sketch.get_quantile(0.30, false);
     if (quantile != 31 && quantile != 32) { FAIL(); }
-    
+
     quantile = sketch.get_quantile(0.30, true);
     if (quantile != 29 && quantile != 30) { FAIL(); }
   }
@@ -550,7 +550,6 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch1.get_quantile(0.5) == Approx(n).margin(n * RANK_EPS_FOR_K_128));
   }
 
-
   SECTION("merge lower k") {
     quantiles_float_sketch sketch1(256, std::less<float>(), 0);
     quantiles_float_sketch sketch2(128, std::less<float>(), 0);
@@ -653,7 +652,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     for (int i = 0; i < 100 * k; i++) {
       sketch1.update(static_cast<float>(i));
     }
-    
+
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 101 * k);
     REQUIRE(sketch1.get_k() == 2 * k); // no reason to have shrunk
@@ -670,7 +669,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       sketch1.update(static_cast<float>(i));
       sketch2.update(static_cast<float>(i));
     }
-    
+
     for (int i = 0; i < 100 * k; i++) {
       sketch2.update(static_cast<float>(i));
     }
@@ -691,7 +690,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       sketch1.update(static_cast<float>(i));
       sketch2.update(static_cast<float>(-i));
     }
-    
+
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 200 * k);
     REQUIRE(sketch1.get_k() == k); // no reason to have shrunk
@@ -709,7 +708,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       sketch1.update(static_cast<float>(i));
       sketch2.update(static_cast<float>(k - i - 1));
     }
-    
+
     for (int i = k; i < 100 * k; i++) {
       sketch2.update(static_cast<float>(i));
     }
@@ -733,7 +732,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       sketch1.update(static_cast<float>(i));
       sketch2.update(static_cast<float>(2 * n - i - 1));
     }
-    
+
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 2 * n);
     REQUIRE(sketch1.get_k() == k);
@@ -752,7 +751,7 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
       sketch1.update(static_cast<float>(i));
       sketch2.update(static_cast<float>(2 * n - i - 1));
     }
-    
+
     sketch1.merge(sketch2);
     REQUIRE(sketch1.get_n() == 2 * n);
     REQUIRE(sketch1.get_k() == k);
@@ -909,10 +908,10 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     const uint16_t k = 8;
     const int n = 403;
     quantiles_sketch<double> sk_double(k);
-    
+
     quantiles_sketch<float> sk_float(k);
     REQUIRE(sk_float.is_empty());
-    
+
     for (int i = 0; i < n; ++i) sk_double.update(i + .01);
 
     quantiles_sketch<int> sk_int(sk_double);
@@ -921,13 +920,13 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sk_double.get_num_retained() == sk_int.get_num_retained());
 
     auto sv_double = sk_double.get_sorted_view();
-    std::vector<std::pair<double, uint64_t>> vec_double(sv_double.begin(), sv_double.end()); 
+    std::vector<std::pair<double, uint64_t>> vec_double(sv_double.begin(), sv_double.end());
 
     auto sv_int = sk_int.get_sorted_view();
-    std::vector<std::pair<int, uint64_t>> vec_int(sv_int.begin(), sv_int.end()); 
+    std::vector<std::pair<int, uint64_t>> vec_int(sv_int.begin(), sv_int.end());
 
     REQUIRE(vec_double.size() == vec_int.size());
-    
+
     for (size_t i = 0; i < vec_int.size(); ++i) {
       // known truncation with conversion so approximate result
       REQUIRE(vec_double[i].first == Approx(vec_int[i].first).margin(0.1));
