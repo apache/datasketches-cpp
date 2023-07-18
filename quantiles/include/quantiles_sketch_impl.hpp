@@ -257,7 +257,7 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
     }
   } else {
     // exact or empty
-    quantiles_sketch sk_copy(other);
+    quantiles_sketch sk_copy(std::forward<FwdSk>(other));
     if (k_ <= other.get_k()) {
       if (!is_empty()) {
         for (uint16_t i = 0; i < base_buffer_.size(); ++i) {
@@ -265,9 +265,9 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
         }
       }
     } else { // k_ > other.get_k()
-      downsampling_merge(sk_copy, *this);
+      downsampling_merge(sk_copy, std::move(*this));
     }
-    *this = sk_copy;
+    *this = std::move(sk_copy);
   }
   reset_sorted_view();
 }
