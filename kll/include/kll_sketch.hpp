@@ -26,6 +26,7 @@
 #include "common_defs.hpp"
 #include "serde.hpp"
 #include "quantiles_sorted_view.hpp"
+#include "optional.hpp"
 
 namespace datasketches {
 
@@ -553,16 +554,15 @@ class kll_sketch {
     vector_u32 levels_;
     T* items_;
     uint32_t items_size_;
-    T* min_item_;
-    T* max_item_;
+    optional<T> min_item_;
+    optional<T> max_item_;
     mutable quantiles_sorted_view<T, C, A>* sorted_view_;
 
     // for deserialization
-    class item_deleter;
     class items_deleter;
     kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, vector_u32&& levels,
-        std::unique_ptr<T, items_deleter> items, uint32_t items_size, std::unique_ptr<T, item_deleter> min_item,
-        std::unique_ptr<T, item_deleter> max_item, bool is_level_zero_sorted, const C& comparator);
+        std::unique_ptr<T, items_deleter> items, uint32_t items_size, optional<T>&& min_item,
+        optional<T>&& max_item, bool is_level_zero_sorted, const C& comparator);
 
     // common update code
     inline void update_min_max(const T& item);
