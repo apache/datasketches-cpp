@@ -20,7 +20,6 @@ add_executable(quantiles_test)
 target_link_libraries(quantiles_test quantiles common common_test_lib)
 
 set_target_properties(quantiles_test PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

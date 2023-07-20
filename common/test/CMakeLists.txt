@@ -34,7 +34,6 @@ FetchContent_MakeAvailable(Catch2)
 target_link_libraries(common_test_lib PUBLIC Catch2::Catch2)
 
 set_target_properties(common_test_lib PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

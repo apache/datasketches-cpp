@@ -20,7 +20,6 @@ add_executable(kll_test)
 target_link_libraries(kll_test kll common_test_lib)
 
 set_target_properties(kll_test PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

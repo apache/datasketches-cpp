@@ -20,7 +20,6 @@ add_executable(hll_test)
 target_link_libraries(hll_test hll common_test_lib)
 
 set_target_properties(hll_test PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

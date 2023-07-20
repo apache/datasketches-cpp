@@ -20,7 +20,6 @@ add_executable(density_test)
 target_link_libraries(density_test density common_test_lib)
 
 set_target_properties(density_test PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

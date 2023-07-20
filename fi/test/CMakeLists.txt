@@ -20,7 +20,6 @@ add_executable(fi_test)
 target_link_libraries(fi_test fi common_test_lib)
 
 set_target_properties(fi_test PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 
