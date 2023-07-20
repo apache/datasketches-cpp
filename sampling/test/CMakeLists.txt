@@ -20,7 +20,6 @@ add_executable(sampling_test)
 target_link_libraries(sampling_test sampling common_test_lib)
 
 set_target_properties(sampling_test PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

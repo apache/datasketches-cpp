@@ -20,24 +20,23 @@ add_executable(count_min_test)
 target_link_libraries(count_min_test count common_test_lib)
 
 set_target_properties(count_min_test PROPERTIES
-        CXX_STANDARD 11
-        CXX_STANDARD_REQUIRED YES
-        )
+  CXX_STANDARD_REQUIRED YES
+)
 
 file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" COUNT_TEST_BINARY_PATH)
 string(APPEND COUNT_TEST_BINARY_PATH "/")
 target_compile_definitions(count_min_test
-        PRIVATE
-        TEST_BINARY_INPUT_PATH="${COUNT_TEST_BINARY_PATH}"
-        )
+  PRIVATE
+    TEST_BINARY_INPUT_PATH="${COUNT_TEST_BINARY_PATH}"
+)
 
 add_test(
-        NAME count_min_test
-        COMMAND count_min_test
+  NAME count_min_test
+  COMMAND count_min_test
 )
 
 target_sources(count_min_test
-        PRIVATE
-        count_min_test.cpp
-        count_min_allocation_test.cpp
-        )
+  PRIVATE
+    count_min_test.cpp
+    count_min_allocation_test.cpp
+)

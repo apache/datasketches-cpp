@@ -20,7 +20,6 @@ add_executable(req_test)
 target_link_libraries(req_test req common_test_lib)
 
 set_target_properties(req_test PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

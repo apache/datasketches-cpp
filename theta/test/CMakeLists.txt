@@ -20,7 +20,6 @@ add_executable(theta_test)
 target_link_libraries(theta_test theta common_test_lib)
 
 set_target_properties(theta_test PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 

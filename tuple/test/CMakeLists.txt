@@ -20,7 +20,6 @@ add_executable(tuple_test)
 target_link_libraries(tuple_test tuple common_test_lib)
 
 set_target_properties(tuple_test PROPERTIES
-  CXX_STANDARD 11
   CXX_STANDARD_REQUIRED YES
 )
 
