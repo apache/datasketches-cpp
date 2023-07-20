@@ -27,6 +27,7 @@
 #include "quantiles_sorted_view.hpp"
 #include "common_defs.hpp"
 #include "serde.hpp"
+#include "optional.hpp"
 
 namespace datasketches {
 
@@ -547,19 +548,18 @@ private:
   uint64_t bit_pattern_;
   Level base_buffer_;
   VectorLevels levels_;
-  T* min_item_;
-  T* max_item_;
+  optional<T> min_item_;
+  optional<T> max_item_;
   mutable quantiles_sorted_view<T, Comparator, Allocator>* sorted_view_;
 
   void setup_sorted_view() const; // modifies mutable state
   void reset_sorted_view();
 
   // for deserialization
-  class item_deleter;
   class items_deleter;
   quantiles_sketch(uint16_t k, uint64_t n, uint64_t bit_pattern,
       Level&& base_buffer, VectorLevels&& levels,
-      std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item,
+      optional<T>&& min_item, optional<T>&& max_item,
       bool is_sorted, const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   void grow_base_buffer();
@@ -630,6 +630,9 @@ private:
   static inline bool check_update_item(TT) {
     return true;
   }
+
+  // for type converting constructor
+  template<typename From, typename FC, typename FA> friend class quantiles_sketch;
 };
 
 

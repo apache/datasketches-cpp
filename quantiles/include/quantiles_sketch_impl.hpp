@@ -41,8 +41,8 @@ n_(0),
 bit_pattern_(0),
 base_buffer_(allocator_),
 levels_(allocator_),
-min_item_(nullptr),
-max_item_(nullptr),
+min_item_(),
+max_item_(),
 sorted_view_(nullptr)
 {
   check_k(k_);
@@ -59,12 +59,10 @@ n_(other.n_),
 bit_pattern_(other.bit_pattern_),
 base_buffer_(other.base_buffer_),
 levels_(other.levels_),
-min_item_(nullptr),
-max_item_(nullptr),
+min_item_(other.min_item_),
+max_item_(other.max_item_),
 sorted_view_(nullptr)
 {
-  if (other.min_item_ != nullptr) min_item_ = new (allocator_.allocate(1)) T(*other.min_item_);
-  if (other.max_item_ != nullptr) max_item_ = new (allocator_.allocate(1)) T(*other.max_item_);
   for (size_t i = 0; i < levels_.size(); ++i) { 
     if (levels_[i].capacity() != other.levels_[i].capacity()) {
       levels_[i].reserve(other.levels_[i].capacity());
@@ -82,13 +80,10 @@ n_(other.n_),
 bit_pattern_(other.bit_pattern_),
 base_buffer_(std::move(other.base_buffer_)),
 levels_(std::move(other.levels_)),
-min_item_(other.min_item_),
-max_item_(other.max_item_),
+min_item_(std::move(other.min_item_)),
+max_item_(std::move(other.max_item_)),
 sorted_view_(nullptr)
-{
-  other.min_item_ = nullptr;
-  other.max_item_ = nullptr;
-}
+{}
 
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>& quantiles_sketch<T, C, A>::operator=(const quantiles_sketch& other) {
@@ -126,7 +121,7 @@ quantiles_sketch<T, C, A>& quantiles_sketch<T, C, A>::operator=(quantiles_sketch
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::quantiles_sketch(uint16_t k, uint64_t n, uint64_t bit_pattern,
       Level&& base_buffer, VectorLevels&& levels,
-      std::unique_ptr<T, item_deleter> min_item, std::unique_ptr<T, item_deleter> max_item,
+      optional<T>&& min_item, optional<T>&& max_item,
       bool is_sorted, const C& comparator, const A& allocator):
 comparator_(comparator),
 allocator_(allocator),
@@ -136,8 +131,8 @@ n_(n),
 bit_pattern_(bit_pattern),
 base_buffer_(std::move(base_buffer)),
 levels_(std::move(levels)),
-min_item_(min_item.release()),
-max_item_(max_item.release()),
+min_item_(std::move(min_item)),
+max_item_(std::move(max_item)),
 sorted_view_(nullptr)
 {
   uint32_t item_count = static_cast<uint32_t>(base_buffer_.size());
@@ -160,8 +155,8 @@ n_(other.get_n()),
 bit_pattern_(compute_bit_pattern(other.get_k(), other.get_n())),
 base_buffer_(allocator),
 levels_(allocator),
-min_item_(nullptr),
-max_item_(nullptr),
+min_item_(other.min_item_),
+max_item_(other.max_item_),
 sorted_view_(nullptr)
 {
   static_assert(std::is_constructible<T, From>::value,
@@ -170,9 +165,6 @@ sorted_view_(nullptr)
   base_buffer_.reserve(2 * std::min(quantiles_constants::MIN_K, k_));
 
   if (!other.is_empty()) {
-    min_item_ = new (allocator_.allocate(1)) T(other.get_min_item());
-    max_item_ = new (allocator_.allocate(1)) T(other.get_max_item());
-
     // reserve space in levels
     const uint8_t num_levels = compute_levels_needed(k_, n_);
     levels_.reserve(num_levels);
@@ -212,14 +204,6 @@ sorted_view_(nullptr)
 
 template<typename T, typename C, typename A>
 quantiles_sketch<T, C, A>::~quantiles_sketch() {
-  if (min_item_ != nullptr) {
-    min_item_->~T();
-    allocator_.deallocate(min_item_, 1);
-  }
-  if (max_item_ != nullptr) {
-    max_item_->~T();
-    allocator_.deallocate(max_item_, 1);
-  }
   reset_sorted_view();
 }
 
@@ -228,8 +212,8 @@ template<typename FwdT>
 void quantiles_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_item(item)) { return; }
   if (is_empty()) {
-    min_item_ = new (allocator_.allocate(1)) T(item);
-    max_item_ = new (allocator_.allocate(1)) T(item);
+    min_item_.emplace(item);
+    max_item_.emplace(item);
   } else {
     if (comparator_(item, *min_item_)) *min_item_ = item;
     if (comparator_(*max_item_, item)) *max_item_ = item;
@@ -263,17 +247,17 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
   // other has data and is in estimation mode
   if (is_estimation_mode()) {
     if (k_ == other.get_k()) {
-      standard_merge(*this, other);
+      standard_merge(*this, std::forward<FwdSk>(other));
     } else if (k_ > other.get_k()) {
-      quantiles_sketch sk_copy(other);
-      downsampling_merge(sk_copy, *this);
-      *this = sk_copy;
+      quantiles_sketch sk_copy(std::forward<FwdSk>(other));
+      downsampling_merge(sk_copy, std::move(*this));
+      *this = std::move(sk_copy);
     } else { // k_ < other.get_k()
-      downsampling_merge(*this, other);
+      downsampling_merge(*this, std::forward<FwdSk>(other));
     }
   } else {
     // exact or empty
-    quantiles_sketch sk_copy(other);
+    quantiles_sketch sk_copy(std::forward<FwdSk>(other));
     if (k_ <= other.get_k()) {
       if (!is_empty()) {
         for (uint16_t i = 0; i < base_buffer_.size(); ++i) {
@@ -281,9 +265,9 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
         }
       }
     } else { // k_ > other.get_k()
-      downsampling_merge(sk_copy, *this);
+      downsampling_merge(sk_copy, std::move(*this));
     }
-    *this = sk_copy;
+    *this = std::move(sk_copy);
   }
   reset_sorted_view();
 }
@@ -317,8 +301,8 @@ void quantiles_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& serde) 
     write(os, n_);
 
     // min and max
-    serde.serialize(os, min_item_, 1);
-    serde.serialize(os, max_item_, 1);
+    serde.serialize(os, &*min_item_, 1);
+    serde.serialize(os, &*max_item_, 1);
 
     // base buffer items
     serde.serialize(os, base_buffer_.data(), static_cast<unsigned>(base_buffer_.size()));
@@ -365,8 +349,8 @@ auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerD
     ptr += copy_to_mem(n_, ptr);
     
     // min and max
-    ptr += serde.serialize(ptr, end_ptr - ptr, min_item_, 1);
-    ptr += serde.serialize(ptr, end_ptr - ptr, max_item_, 1);
+    ptr += serde.serialize(ptr, end_ptr - ptr, &*min_item_, 1);
+    ptr += serde.serialize(ptr, end_ptr - ptr, &*max_item_, 1);
  
     // base buffer items
     if (base_buffer_.size() > 0)
@@ -409,19 +393,18 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
   const bool is_compact = (serial_version == 2) | ((flags_byte & (1 << flags::IS_COMPACT)) > 0);
   const bool is_sorted = (flags_byte & (1 << flags::IS_SORTED)) > 0;
 
-  A alloc(allocator);
-  auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
-  std::unique_ptr<T, decltype(item_buffer_deleter)> min_item_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, decltype(item_buffer_deleter)> max_item_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, item_deleter> min_item(nullptr, item_deleter(allocator));
-  std::unique_ptr<T, item_deleter> max_item(nullptr, item_deleter(allocator));
+  optional<T> tmp; // space to deserialize min and max
+  optional<T> min_item;
+  optional<T> max_item;
 
-  serde.deserialize(is, min_item_buffer.get(), 1);
-  // serde call did not throw, repackage with destrtuctor
-  min_item = std::unique_ptr<T, item_deleter>(min_item_buffer.release(), item_deleter(allocator));
-  serde.deserialize(is, max_item_buffer.get(), 1);
-  // serde call did not throw, repackage with destrtuctor
-  max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
+  serde.deserialize(is, &*tmp, 1);
+  // serde call did not throw, repackage and cleanup
+  min_item.emplace(*tmp);
+  (*tmp).~T();
+  serde.deserialize(is, &*tmp, 1);
+  // serde call did not throw, repackage and cleanup
+  max_item.emplace(*tmp);
+  (*tmp).~T();
 
   if (serial_version == 1) {
     read<uint64_t>(is); // no longer used
@@ -477,7 +460,7 @@ auto quantiles_sketch<T, C, A>::deserialize_array(std::istream& is, uint32_t num
   items.get_deleter().set_destroy(true);
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
 
-  // succesfully read, now put into a Level
+  // successfully read, now put into a Level
   Level level(allocator);
   level.reserve(capacity);
   level.insert(level.begin(),
@@ -524,19 +507,18 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
   const bool is_compact = (serial_version == 2) | ((flags_byte & (1 << flags::IS_COMPACT)) > 0);
   const bool is_sorted = (flags_byte & (1 << flags::IS_SORTED)) > 0;
 
-  A alloc(allocator);
-  auto item_buffer_deleter = [&alloc](T* ptr) { alloc.deallocate(ptr, 1); };
-  std::unique_ptr<T, decltype(item_buffer_deleter)> min_item_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, decltype(item_buffer_deleter)> max_item_buffer(alloc.allocate(1), item_buffer_deleter);
-  std::unique_ptr<T, item_deleter> min_item(nullptr, item_deleter(allocator));
-  std::unique_ptr<T, item_deleter> max_item(nullptr, item_deleter(allocator));
+  optional<T> tmp; // space to deserialize min and max
+  optional<T> min_item;
+  optional<T> max_item;
 
-  ptr += serde.deserialize(ptr, end_ptr - ptr, min_item_buffer.get(), 1);
-  // serde call did not throw, repackage with destrtuctor
-  min_item = std::unique_ptr<T, item_deleter>(min_item_buffer.release(), item_deleter(allocator));
-  ptr += serde.deserialize(ptr, end_ptr - ptr, max_item_buffer.get(), 1);
-  // serde call did not throw, repackage with destrtuctor
-  max_item = std::unique_ptr<T, item_deleter>(max_item_buffer.release(), item_deleter(allocator));
+  ptr += serde.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+  // serde call did not throw, repackage and cleanup
+  min_item.emplace(*tmp);
+  (*tmp).~T();
+  ptr += serde.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+  // serde call did not throw, repackage and cleanup
+  max_item.emplace(*tmp);
+  (*tmp).~T();
 
   if (serial_version == 1) {
     uint64_t unused_long;
@@ -1127,15 +1109,14 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch& tgt, FwdSk&& sr
   // update min and max items
   // can't just check is_empty() since min and max might not have been set if
   // there were no base buffer items added via update()
-  if (tgt.min_item_ == nullptr) {
-    tgt.min_item_ = new (tgt.allocator_.allocate(1)) T(*src.min_item_);
+  if (!tgt.min_item_) {
+    tgt.min_item_.emplace(conditional_forward<FwdSk>(*src.min_item_));
   } else {
     if (tgt.comparator_(*src.min_item_, *tgt.min_item_))
       *tgt.min_item_ = conditional_forward<FwdSk>(*src.min_item_);
   }
-
-  if (tgt.max_item_ == nullptr) {
-    tgt.max_item_ = new (tgt.allocator_.allocate(1)) T(*src.max_item_);
+  if (!tgt.max_item_) {
+    tgt.max_item_.emplace(conditional_forward<FwdSk>(*src.max_item_));
   } else {
     if (tgt.comparator_(*tgt.max_item_, *src.max_item_))
       *tgt.max_item_ = conditional_forward<FwdSk>(*src.max_item_);
@@ -1203,15 +1184,14 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch& tgt, FwdSk&
   // update min and max items
   // can't just check is_empty() since min and max might not have been set if
   // there were no base buffer items added via update()
-  if (tgt.min_item_ == nullptr) {
-    tgt.min_item_ = new (tgt.allocator_.allocate(1)) T(*src.min_item_);
+  if (!tgt.min_item_) {
+    tgt.min_item_.emplace(conditional_forward<FwdSk>(*src.min_item_));
   } else {
     if (tgt.comparator_(*src.min_item_, *tgt.min_item_))
       *tgt.min_item_ = conditional_forward<FwdSk>(*src.min_item_);
   }
-
-  if (tgt.max_item_ == nullptr) {
-    tgt.max_item_ = new (tgt.allocator_.allocate(1)) T(*src.max_item_);
+  if (!tgt.max_item_) {
+    tgt.max_item_.emplace(conditional_forward<FwdSk>(*src.max_item_));
   } else {
     if (tgt.comparator_(*tgt.max_item_, *src.max_item_))
       *tgt.max_item_ = conditional_forward<FwdSk>(*src.max_item_);
@@ -1229,20 +1209,6 @@ uint8_t quantiles_sketch<T, C, A>::lowest_zero_bit_starting_at(uint64_t bits, ui
   }
   return pos;
 }
-
-template<typename T, typename C, typename A>
-class quantiles_sketch<T, C, A>::item_deleter {
-  public:
-  item_deleter(const A& allocator): allocator_(allocator) {}
-  void operator() (T* ptr) {
-    if (ptr != nullptr) {
-      ptr->~T();
-      allocator_.deallocate(ptr, 1);
-    }
-  }
-  private:
-  A allocator_;
-};
 
 template<typename T, typename C, typename A>
 class quantiles_sketch<T, C, A>::items_deleter {

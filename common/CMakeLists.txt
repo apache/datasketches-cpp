@@ -35,19 +35,20 @@ install(TARGETS common EXPORT ${PROJECT_NAME})
 
 install(FILES 
 			${CMAKE_CURRENT_BINARY_DIR}/include/version.hpp
+      include/binomial_bounds.hpp
+      include/bounds_binomial_proportions.hpp
+      include/ceiling_power_of_2.hpp
 			include/common_defs.hpp
+      include/conditional_back_inserter.hpp
+      include/conditional_forward.hpp
+      include/count_zeros.hpp
+      include/inv_pow2_table.hpp
+      include/kolmogorov_smirnov_impl.hpp
+      include/kolmogorov_smirnov.hpp
 			include/memory_operations.hpp
 			include/MurmurHash3.h
-			include/serde.hpp
-			include/count_zeros.hpp
-			include/inv_pow2_table.hpp
-			include/binomial_bounds.hpp
-			include/conditional_back_inserter.hpp
-			include/conditional_forward.hpp
-			include/ceiling_power_of_2.hpp
-			include/bounds_binomial_proportions.hpp
+      include/optional.hpp
+      include/quantiles_sorted_view_impl.hpp
 			include/quantiles_sorted_view.hpp
-			include/quantiles_sorted_view_impl.hpp
-			include/kolmogorov_smirnov.hpp
-			include/kolmogorov_smirnov_impl.hpp
+      include/serde.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
