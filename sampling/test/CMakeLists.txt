@@ -40,4 +40,5 @@ target_sources(sampling_test
   var_opt_sketch_test.cpp
   var_opt_union_test.cpp
   var_opt_allocation_test.cpp
+  ebpps_sketch_test.cpp
 )
