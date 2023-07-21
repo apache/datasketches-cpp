@@ -18,7 +18,7 @@ jobs:
           repository: apache/datasketches-java
           path: java
       - name: Run Java
-        run: cd java && mvn test
+        run: cd java && mvn test -Dtestng.excludedgroups=
       - name: Run cmake
         run: cd build && cmake .. -DSERDE_COMPAT=true
       - name: Build C++ unit tests
