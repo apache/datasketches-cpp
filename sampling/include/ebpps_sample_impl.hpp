@@ -30,6 +30,7 @@
 
 // TODO: remove when done testing
 #include <unordered_set>
+#include <cassert>
 
 namespace datasketches {
 
