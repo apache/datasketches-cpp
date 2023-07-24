@@ -309,8 +309,11 @@ ebpps_sample<T, A>::const_iterator::const_iterator(const ebpps_sample* sample, b
   idx_(0),
   use_partial_(force_partial)
 {
+  if (sample == nullptr)
+    return;
+
   // determine in advance if we use the partial item
-  if (sample == nullptr || !sample->has_partial()) {
+  if (!sample->has_partial()) {
     use_partial_ = false; // override any option
   } else if (!force_partial) {
     double c_int;
@@ -337,7 +340,12 @@ template<typename T, typename A>
 typename ebpps_sample<T, A>::const_iterator& ebpps_sample<T, A>::const_iterator::operator++() {
   if (sample_ == nullptr)
     return *this;
-
+  else if (idx_ == PARTIAL_IDX) {
+    idx_ = sample_->data_.size();
+    sample_ = nullptr;
+    return * this;
+  }
+ 
   ++idx_;
 
   if (idx_ == sample_->data_.size()) {
@@ -345,9 +353,6 @@ typename ebpps_sample<T, A>::const_iterator& ebpps_sample<T, A>::const_iterator:
       idx_ = PARTIAL_IDX;
     else
       sample_ = nullptr;
-  } else if (idx_ == PARTIAL_IDX) {
-    sample_ = nullptr;
-    idx_ = sample_->data_.size();
   }
 
   return *this;

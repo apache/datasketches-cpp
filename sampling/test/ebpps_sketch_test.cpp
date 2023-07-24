@@ -158,8 +158,8 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
   //double expected_c = 4.9999999999999999; // i + 1, k=5
   //double expected_c = 1.5819768068010642; // exp(i) + 1
   //double expected_c = 5.999999999999998; // exp(i/10.0) + 1
-  //double expected_c = 3.163974760803654; // exp(i/2) + 1 -- integer division
-  double expected_c = 2.541507153714545; // exp(i/2.0) + 1
+  double expected_c = 3.163974760803654; // exp(i/2) + 1 -- integer division
+  //double expected_c = 2.541507153714545; // exp(i/2.0) + 1
 
   // create index and weight vectors
   std::vector<size_t> idx(n);
