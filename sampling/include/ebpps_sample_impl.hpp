@@ -269,7 +269,7 @@ double ebpps_sample<T,A>::get_c() const {
 
 template<typename T, typename A>
 bool ebpps_sample<T,A>::has_partial() const {
-  return partial_item_();
+  return bool(partial_item_);
 }
 
 template<typename T, typename A>
@@ -281,6 +281,108 @@ uint32_t ebpps_sample<T,A>::random_idx(uint32_t max) {
 template<typename T, typename A>
 double ebpps_sample<T,A>::next_double() {
   return random_utils::next_double(random_utils::rand);
+}
+
+template<typename T, typename A>
+const T& ebpps_sample<T,A>::get_partial_item() const {
+  if (!partial_item_)
+    throw std::logic_error("Request for partial item which does not exist");
+  return *partial_item_;
+}
+
+template<typename T, typename A>
+typename ebpps_sample<T, A>::const_iterator ebpps_sample<T, A>::begin() const {
+  return const_iterator(this, false);
+}
+
+template<typename T, typename A>
+typename ebpps_sample<T, A>::const_iterator ebpps_sample<T, A>::end() const {
+  return const_iterator(nullptr, false);
+}
+
+
+// -------- ebpps_sketch::const_iterator implementation ---------
+
+template<typename T, typename A>
+ebpps_sample<T, A>::const_iterator::const_iterator(const ebpps_sample* sample, bool force_partial) :
+  sample_(sample),
+  idx_(0),
+  use_partial_(force_partial)
+{
+  // determine in advance if we use the partial item
+  if (sample == nullptr || !sample->has_partial()) {
+    use_partial_ = false; // override any option
+  } else if (!force_partial) {
+    double c_int;
+    double c_frac = std::modf(sample_->get_c(), &c_int);
+    use_partial_ = sample->next_double() < c_frac;
+  }
+
+  // sample with no items
+  if (sample_->data_.size() == 0 && use_partial_) {
+    idx_ = PARTIAL_IDX;
+  }
+
+  if (sample_->c_== 0.0 || (sample_->data_.size() == 0 && !sample_->has_partial())) { sample_ = nullptr; }
+}
+
+template<typename T, typename A>
+ebpps_sample<T, A>::const_iterator::const_iterator(const const_iterator& other) :
+  sample_(other.sample_),
+  idx_(other.idx_),
+  use_partial_(other.use_partial_)
+{}
+
+template<typename T, typename A>
+typename ebpps_sample<T, A>::const_iterator& ebpps_sample<T, A>::const_iterator::operator++() {
+  if (sample_ == nullptr)
+    return *this;
+
+  ++idx_;
+
+  if (idx_ == sample_->data_.size()) {
+    if (use_partial_)
+      idx_ = PARTIAL_IDX;
+    else
+      sample_ = nullptr;
+  } else if (idx_ == PARTIAL_IDX) {
+    sample_ = nullptr;
+    idx_ = sample_->data_.size();
+  }
+
+  return *this;
+}
+
+template<typename T, typename A>
+typename ebpps_sample<T, A>::const_iterator& ebpps_sample<T, A>::const_iterator::operator++(int) {
+  const_iterator tmp(*this);
+  operator++();
+  return tmp;
+}
+
+template<typename T, typename A>
+bool ebpps_sample<T, A>::const_iterator::operator==(const const_iterator& other) const {
+  if (sample_ != other.sample_) return false;
+  if (sample_ == nullptr) return true; // end (and we know other.sample_ is also null)
+  return idx_ == other.idx_;
+}
+
+template<typename T, typename A>
+bool ebpps_sample<T, A>::const_iterator::operator!=(const const_iterator& other) const {
+  return !operator==(other);
+}
+
+template<typename T, typename A>
+auto ebpps_sample<T, A>::const_iterator::operator*() const -> reference {
+  if (idx_ == PARTIAL_IDX)
+    return sample_->get_partial_item();
+  else
+    return sample_->data_[idx_];
+}
+
+template<typename T, typename A>
+auto ebpps_sample<T, A>::const_iterator::operator->() const -> pointer {
+  return **this;
 }
 
 } // namespace datasketches

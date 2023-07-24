@@ -132,6 +132,104 @@ void ebpps_sketch<T, A>::merge(ebpps_sketch<T>&& sk) {
   unused(sk);
 }
 
+template<typename T, typename A>
+typename ebpps_sample<T, A>::const_iterator ebpps_sketch<T, A>::begin() const {
+  return sample_.begin();
+}
+
+template<typename T, typename A>
+typename ebpps_sample<T, A>::const_iterator ebpps_sketch<T, A>::end() const {
+  return sample_.end();
+}
+
+/*
+// -------- ebpps_sketch::const_iterator implementation ---------
+
+template<typename T, typename A>
+ebpps_sketch<T, A>::const_iterator::const_iterator(const ebpps_sketch& sk, bool is_end, bool force_partial) :
+  sk_(&sk),
+  idx_(is_end ? sk.data_.end() : 0),
+  use_partial_(force_partial)
+{
+  // determine in advance if we use the partial item
+  if (!force_partial) {
+    double c_int;
+    double c_frac = std::modf(sk.c_, &c_int);
+    use_partial_ = random_utils::next_double() < c_frac;
+  }
+
+  if (sk.data_.size() == 0 && use_partial_) {
+    idx = PARTIAL_IDX;
+  }
+
+  if (sk.is_empty()) { sk_ = nullptr; }
+}
+
+template<typename T, typename A>
+ebpps_sketch<T, A>::const_iterator::const_iterator(const const_iterator& other) :
+  sk_(other.sk_),
+  idx_(other.idx),
+  use_partial_(other.use_partial_)
+{}
+
+template<typename T, typename A>
+typename ebpps_sketch<T, A>::const_iterator& ebpps_sketch<T, A>::const_iterator::operator++() {
+  if (sk_ == nullptr)
+    return *this;
+
+  ++idx_;
+
+  if (idx_ == data_.end()) {
+    if (use_partial_)
+      idx_ = PARTIAL_IDX;
+    else
+      sk_ = nullptr;
+  } else if (idx_ == PARTIAL_IDX) {
+    sk_ = nullptr;
+    idx_ = data_.end();
+  }
+
+  return *this;
+}
+
+template<typename T, typename A>
+typename ebpps_sketch<T, A>::const_iterator& ebpps_sketch<T, A>::const_iterator::operator++(int) {
+  const_iterator tmp(*this);
+  operator++();
+  return tmp;
+}
+
+template<typename T, typename A>
+bool ebpps_sketch<T, A>::const_iterator::operator==(const const_iterator& other) const {
+  if (sk_ != other.sk_) return false;
+  if (sk_ == nullptr) return true; // end (and we know other.sk_ is also null)
+  return idx_ == other.idx_;
+}
+
+template<typename T, typename A>
+bool ebpps_sketch<T, A>::const_iterator::operator!=(const const_iterator& other) const {
+  return !operator==(other);
+}
+
+template<typename T, typename A>
+auto ebpps_sketch<T, A>::const_iterator::operator*() const -> reference {
+  if (idx_ == PARTIAL_IDX)
+    return value_type(sk_.get)
+
+  double wt;
+  if (idx_ < sk_->h_) {
+    wt = sk_->weights_[idx_];
+  } else {
+    wt = r_item_wt_;
+  }
+  return value_type(sk_->data_[idx_], wt);
+}
+
+template<typename T, typename A>
+auto ebpps_sketch<T, A>::const_iterator::operator->() const -> pointer {
+  return **this;
+}
+*/
 } // namespace datasketches
 
 #endif // _EBPPS_SKETCH_IMPL_HPP_

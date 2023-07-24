@@ -220,14 +220,12 @@ class ebpps_sketch {
      */
     //string<A> items_to_string() const;
 
-    class const_iterator;
-
     /**
      * Iterator pointing to the first item in the sketch.
      * If the sketch is empty, the returned iterator must not be dereferenced or incremented.
      * @return iterator pointing to the first item in the sketch
      */
-    const_iterator begin() const;
+    typename ebpps_sample<T,A>::const_iterator begin() const;
 
     /**
      * Iterator pointing to the past-the-end item in the sketch.
@@ -235,7 +233,7 @@ class ebpps_sketch {
      * It does not point to any item, and must not be dereferenced or incremented.
      * @return iterator pointing to the past-the-end item in the sketch
      */
-    const_iterator end() const;
+    typename ebpps_sample<T,A>::const_iterator end() const;
 
   private:
     typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocDouble;
@@ -266,10 +264,39 @@ class ebpps_sketch {
     static void check_preamble_longs(uint8_t preamble_longs, uint8_t flags);
     static void check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);
     static uint32_t validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n);
-
-    //class iterator;
 };
 
+/*
+template<typename T, typename A>
+class ebpps_sketch<T, A>::const_iterator {
+public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = const T&
+  using difference_type = void;
+  using pointer = const return_value_holder<value_type>;
+  using reference = const value_type;
+
+  const_iterator(const const_iterator& other);
+  const_iterator& operator++();
+  const_iterator& operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  reference operator*() const;
+  pointer operator->() const;
+
+private:
+  static const size_t PARTIAL_IDX = -1;
+
+  friend class ebpps_sketch<T, A>;
+
+  // default iterator over sketch
+  const_iterator(const ebpps_sample<T, A>& sample, bool force_partial = false);
+
+  const ebpps_sample<T, A>* sample_;
+  size_t idx_;
+  bool use_partial_;
+};
+*/
 } // namespace datasketches
 
 #include "ebpps_sketch_impl.hpp"

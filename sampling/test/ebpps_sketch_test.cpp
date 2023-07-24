@@ -151,15 +151,15 @@ double kl_divergence(std::vector<T> p_arr, std::vector<T> q_arr) {
 
 
 TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
-  uint32_t k = 5;
-  uint32_t n = 20;
+  uint32_t k = 6;
+  uint32_t n = 30;
   uint32_t num_trials = 1000000;
   //double expected_c = static_cast<double>(k);
   //double expected_c = 4.9999999999999999; // i + 1, k=5
-  double expected_c = 1.5819768068010642; // exp(i) + 1
+  //double expected_c = 1.5819768068010642; // exp(i) + 1
   //double expected_c = 5.999999999999998; // exp(i/10.0) + 1
   //double expected_c = 3.163974760803654; // exp(i/2) + 1 -- integer division
-  //double expected_c = 2.541507153714545; // exp(i/2.0) + 1
+  double expected_c = 2.541507153714545; // exp(i/2.0) + 1
 
   // create index and weight vectors
   std::vector<size_t> idx(n);
@@ -169,9 +169,9 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
     idx[i] = i;
     //wt[i] = 1.0;
     //wt[i] = i + 1.0;
-    wt[i] = std::exp(i) + 1;
+    //wt[i] = std::exp(i) + 1;
     //wt[i] = std::exp(i / 10.0) + 1;
-    //wt[i] = std::exp(i / 2) + 1;
+    wt[i] = std::exp(i / 2) + 1;
     total_wt += wt[i];
   }
 
@@ -196,11 +196,11 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
       sk.update(idx[*it], wt[idx[*it]]);
     }
 
-    auto r = sk.get_result();
+    //auto r = sk.get_result();
 
     // increment counts
-    for (uint32_t val : r) {
-    //for (auto val : sk) {
+    //for (uint32_t val : r) {
+    for (auto val : sk) {
       ++result[val];
       //++result[val.first];
     }

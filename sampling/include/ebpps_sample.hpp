@@ -51,9 +51,24 @@ class ebpps_sample {
     double get_c() const;
     bool has_partial() const;
     
-    // TODO: iterator over data_
-
     string<A> to_string() const;
+
+    class const_iterator;
+
+    /**
+     * Iterator pointing to the first item in the sample.
+     * If the sample is empty, the returned iterator must not be dereferenced or incremented
+     * @return iterator pointing to the first item in the sample
+     */
+    const_iterator begin() const;
+
+    /**
+     * Iterator pointing to the past-the-end item in the sample.
+     * The past-the-end item is the hypothetical item that would follow the last item.
+     * It does not point to any item, and must not be dereferenced or incremented.
+     * @return iterator pointing to the past-the-end item in the sample
+     */
+    const_iterator end() const;
 
   private:
     A allocator_;
@@ -67,10 +82,45 @@ class ebpps_sample {
     void move_one_to_partial();
     void subsample(uint32_t num_samples);
 
+    const T& get_partial_item() const;
+
     static inline uint32_t random_idx(uint32_t max);
     static inline double next_double();
 
+    // TODO: remove me
     void validate_sample() const;
+
+    friend class const_iterator;
+};
+
+template<typename T, typename A>
+class ebpps_sample<T, A>::const_iterator {
+public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = const T&;
+  using difference_type = void;
+  using pointer = const return_value_holder<value_type>;
+  using reference = const value_type;
+
+  const_iterator(const const_iterator& other);
+  const_iterator& operator++();
+  const_iterator& operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  reference operator*() const;
+  pointer operator->() const;
+
+private:
+  static const size_t PARTIAL_IDX = -1;
+
+  // default iterator over sample
+  const_iterator(const ebpps_sample<T, A>* sample, bool force_partial = false);
+
+  const ebpps_sample<T, A>* sample_;
+  size_t idx_;
+  bool use_partial_;
+
+  friend class ebpps_sample;
 };
 
 } // namespace datasketches
