@@ -149,7 +149,7 @@ double kl_divergence(std::vector<T> p_arr, std::vector<T> q_arr) {
   return D;
 }
 
-
+/*
 TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
   uint32_t k = 6;
   uint32_t n = 30;
@@ -158,11 +158,11 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
   //double expected_c = 4.9999999999999999; // i + 1, k=5
   //double expected_c = 1.5819768068010642; // exp(i) + 1
   //double expected_c = 5.999999999999998; // exp(i/10.0) + 1
-  double expected_c = 3.163974760803654; // exp(i/2) + 1 -- integer division
-  //double expected_c = 2.541507153714545; // exp(i/2.0) + 1
+  //double expected_c = 3.163974760803654; // exp(i/2) + 1 -- integer division
+  double expected_c = 2.541507153714545; // exp(i/2.0) + 1
 
   // create index and weight vectors
-  std::vector<size_t> idx(n);
+  std::vector<int> idx(n);
   std::vector<double> wt(n);
   double total_wt = 0.0;
   for (size_t i = 0; i < n; ++i) {
@@ -171,7 +171,8 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
     //wt[i] = i + 1.0;
     //wt[i] = std::exp(i) + 1;
     //wt[i] = std::exp(i / 10.0) + 1;
-    wt[i] = std::exp(i / 2) + 1;
+    //wt[i] = std::exp(i / 2) + 1;
+    wt[i] = std::exp(i / 2.0) + 1;
     total_wt += wt[i];
   }
 
@@ -224,4 +225,93 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
       << std::endl;
   }
 }
+*/
+
+TEST_CASE("ebpps sketch: merge", "[ebpps_sketch]") {
+  uint32_t k = 6;
+  uint32_t n = 30;
+  uint32_t num_trials = 100000;
+  //double expected_c = static_cast<double>(k);
+  //double expected_c = 4.9999999999999999; // i + 1, k=5
+  //double expected_c = 1.5819768068010642; // exp(i) + 1
+  //double expected_c = 5.999999999999998; // exp(i/10.0) + 1
+  //double expected_c = 3.163974760803654; // exp(i/2) + 1 -- integer division
+  double expected_c = 2.541507153714545; // exp(i/2.0) + 1
+
+  // create index and weight vectors
+  std::vector<int> idx(n);
+  std::vector<double> wt(n);
+  double total_wt = 0.0;
+  for (size_t i = 0; i < n; ++i) {
+    idx[i] = i;
+    //wt[i] = 1.0;
+    //wt[i] = i + 1.0;
+    //wt[i] = std::exp(i) + 1;
+    //wt[i] = std::exp(i / 10.0) + 1;
+    //wt[i] = std::exp(i / 2) + 1;
+    wt[i] = std::exp(i / 2.0) + 1;
+    total_wt += wt[i];
+  }
+
+  // create target vector
+  std::vector<double> tgt(n);
+  for (size_t i = 0; i < n; ++i) {
+    tgt[i] = num_trials * expected_c * wt[i] / total_wt;
+  }
+
+  std::vector<double> result(n); // double even though it'll hold counts
+  double c = 0;
+
+  for (uint32_t iter = 0; iter < num_trials; ++iter) {
+    ebpps_sketch<int> sk1(k);
+    ebpps_sketch<int> sk2(k);
+    //var_opt_sketch<int> sk(k);
+
+    int offset = n / 2;
+    for (unsigned i = 0; i < n / 2; ++i) {
+      sk1.update(idx[i], wt[i]);
+      sk2.update(idx[offset + i], wt[offset + i]);
+    }
+
+    /*
+    // feed in data
+    std::shuffle(idx.begin(), idx.end(), random_utils::rand);
+    auto it_start = idx.begin(); auto it_end = idx.end();
+    for (auto it = it_start; it != it_end; ++it) {
+      sk1.update(idx[*it], wt[idx[*it]]);
+    }
+
+    std::shuffle(idx.begin(), idx.end(), random_utils::rand);
+    it_start = idx.begin(); it_end = idx.end();
+    for (auto it = it_start; it != it_end; ++it) {
+      sk2.update(idx[*it], wt[idx[*it]]);
+    }
+    */
+
+    sk1.merge(sk2);
+
+    // increment counts
+    for (auto val : sk1)
+      ++result[val];
+
+    c = sk1.get_c();
+  }
+
+  const auto max_precision = std::numeric_limits<long double>::digits10 + 1;
+  std::cout << "c: " << std::setprecision(max_precision) << c << std::endl;
+  std::cout << "theoretical entropy: " << std::setprecision(12) << entropy(tgt) << std::endl;
+  std::cout << "observed entropy: " << std::setprecision(12) << entropy(result) << std::endl;
+  std::cout << "KL Divergence: " << std::setw(10) << kl_divergence(result, tgt) << std::endl;
+  std::cout << std::endl;
+  std::cout << "index\t tgt\t count\t\terror\t\trel error" << std::endl;
+  for (uint32_t i = 0; i < n; ++i) {
+    std::cout << std::setw(3) << i << "\t"
+      << std::setw(10) << std::setprecision(6) << tgt[i] << "\t"
+      << std::setw(6) << result[i] << "\t"
+      << std::setw(15) << std::setprecision(12) << (result[i] - tgt[i]) << "\t"
+      << std::setw(10) << std::setprecision(6) << (100.0 * std::abs(result[i] - tgt[i])/tgt[i])
+      << std::endl;
+  }
+}
+
 }

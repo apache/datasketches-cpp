@@ -99,7 +99,6 @@ void ebpps_sketch<T, A>::update(T&& item, double weight) {
 template<typename T, typename A>
 template<typename FwdItem>
 void ebpps_sketch<T, A>::internal_update(FwdItem&& item, double weight) {
-  //std::cout << "internal_update(" << item << ", " << weight << ")" << std::endl;
   double new_cum_wt = cumulative_wt_ + weight;
   double new_wt_max = std::max(wt_max_, weight);
   double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
@@ -124,12 +123,37 @@ auto ebpps_sketch<T,A>::get_result() const -> result_type {
 
 template<typename T, typename A>
 void ebpps_sketch<T, A>::merge(const ebpps_sketch<T>& sk) {
-  unused(sk);
+  double new_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
+  double new_wt_max = std::max(wt_max_, sk.wt_max_);
+  double new_rho = std::min(1.0 / new_wt_max, std::min(k_, sk.k_) / new_cum_wt);
+
+  sample_.downsample(new_rho / rho_);
+
+  ebpps_sample<T,A> other_sample(sk.sample_);
+  other_sample.downsample(new_rho / sk.rho_);
+
+  sample_.merge(other_sample);
+
+  cumulative_wt_ = new_cum_wt;
+  wt_max_ = new_wt_max;
+  rho_ = new_rho;
+  n_ += sk.n_;
 }
 
 template<typename T, typename A>
 void ebpps_sketch<T, A>::merge(ebpps_sketch<T>&& sk) {
-  unused(sk);
+  double new_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
+  double new_wt_max = std::max(wt_max_, sk.wt_max_);
+  double new_rho = std::min(1.0 / new_wt_max, std::min(k_, sk.k_) / new_cum_wt);
+
+  sample_.downsample(new_rho / rho_);
+  sk.sample_.downsample(new_rho / sk.rho_);
+  sample_.merge(sk.sample_);
+
+  cumulative_wt_ = new_cum_wt;
+  wt_max_ = new_wt_max;
+  rho_ = new_rho;
+  n_ += sk.n_;
 }
 
 template<typename T, typename A>

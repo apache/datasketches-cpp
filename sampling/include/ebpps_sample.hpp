@@ -100,7 +100,7 @@ public:
   using value_type = const T&;
   using difference_type = void;
   using pointer = const return_value_holder<value_type>;
-  using reference = const value_type;
+  using reference = value_type;
 
   const_iterator(const const_iterator& other);
   const_iterator& operator++();
@@ -111,7 +111,7 @@ public:
   pointer operator->() const;
 
 private:
-  static const size_t PARTIAL_IDX = -1;
+  static const size_t PARTIAL_IDX = static_cast<size_t>(-1);
 
   // default iterator over sample
   const_iterator(const ebpps_sample<T, A>* sample, bool force_partial = false);

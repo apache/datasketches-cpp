@@ -75,7 +75,7 @@ auto ebpps_sample<T,A>::get_sample() const -> result_type {
   double unused;
   double c_frac = std::modf(c_, &unused);
   bool include_partial = next_double() < c_frac;
-  uint32_t result_size = data_.size() + (include_partial ? 1 : 0);
+  uint32_t result_size = static_cast<uint32_t>(data_.size()) + (include_partial ? 1 : 0);
 
   result_type result;
   result.reserve(result_size);
@@ -213,7 +213,7 @@ void ebpps_sample<T,A>::subsample(uint32_t num_samples) {
   if (num_samples == data_.size()) return;
 
   auto erase_start = data_.begin();
-  size_t data_len = data_.size();
+  uint32_t data_len = static_cast<uint32_t>(data_.size());
   for (uint32_t i = 0; i < num_samples; ++i, ++erase_start) {
     uint32_t j = i + random_idx(data_len - i);
     std::swap(data_[i], data_[j]);
@@ -233,7 +233,7 @@ void ebpps_sample<T,A>::set_partial(FwdItem&& item) {
 
 template<typename T, typename A>
 void ebpps_sample<T,A>::move_one_to_partial() {
-  size_t idx = random_idx(data_.size());
+  size_t idx = random_idx(static_cast<uint32_t>(data_.size()));
   // swap selected item to end so we can delete it easily
   size_t last_idx = data_.size() - 1;
   if (idx != last_idx) {
@@ -248,7 +248,7 @@ void ebpps_sample<T,A>::move_one_to_partial() {
 template<typename T, typename A>
 void ebpps_sample<T,A>::swap_with_partial() {
   if (partial_item_) {
-    size_t idx = random_idx(data_.size());
+    size_t idx = random_idx(static_cast<uint32_t>(data_.size()));
     std::swap(data_[idx], *partial_item_);
   } else {
     move_one_to_partial();
