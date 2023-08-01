@@ -22,11 +22,15 @@
 
 #include "common_defs.hpp"
 #include "optional.hpp"
+#include "serde.hpp"
 
 #include <memory>
 #include <vector>
 
 namespace datasketches {
+
+template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
+template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
 
 template<
   typename T,
@@ -39,6 +43,9 @@ class ebpps_sample {
     ebpps_sample(const T& item, double theta, const A& allocator = A());
     ebpps_sample(T&& item, double theta, const A& allocator = A());
 
+    // constructor invoked by containign sketch during deserialization
+    ebpps_sample(std::vector<T>&& data, optional<T>&& partial_item, double c, const A& allocator = A());
+
     void reset();
     void downsample(double theta);
 
@@ -50,17 +57,46 @@ class ebpps_sample {
 
     double get_c() const;
     bool has_partial() const;
-    
+        
     string<A> to_string() const;
+
+    /**
+     * @brief Returns the number of items contained in the sample
+     * Computes the number of items, full or partial, currently in the sample.
+     * The result should match ceiling(c);
+     * @return the number of items contained in the sample
+     */
+    inline uint32_t get_num_retained_items() const;
+
+    /**
+     * Computes size needed to serialize the current state of the sample. Does not include the
+     * size of any metadata or constants in the sample.
+     * This version is for fixed-size arithmetic types (integral and floating point).
+     * @param sd instance of a SerDe
+     * @return size in bytes needed to serialize the items in this sample
+     */
+    template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
+    inline size_t get_serialized_item_size_bytes(const SerDe& sd = SerDe()) const;
+
+    /**
+     * Computes size needed to serialize the items in the sample. Does not include the
+     * size of any metadata or constants in the sample.
+     * This version is for all other types and can be expensive since every item needs to be looked at.
+     * @param sd instance of a SerDe
+     * @return size in bytes needed to serialize the items in this sample
+     */
+    template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
+    inline size_t get_serialized_item_size_bytes(const SerDe& sd = SerDe()) const;
 
     class const_iterator;
 
     /**
      * Iterator pointing to the first item in the sample.
      * If the sample is empty, the returned iterator must not be dereferenced or incremented
+     * @param force_partial forces the inclusion of the partial item, if one exists
      * @return iterator pointing to the first item in the sample
      */
-    const_iterator begin() const;
+    const_iterator begin(bool force_partial = false) const;
 
     /**
      * Iterator pointing to the past-the-end item in the sample.
@@ -81,8 +117,6 @@ class ebpps_sample {
     void swap_with_partial();
     void move_one_to_partial();
     void subsample(uint32_t num_samples);
-
-    const T& get_partial_item() const;
 
     static inline uint32_t random_idx(uint32_t max);
     static inline double next_double();

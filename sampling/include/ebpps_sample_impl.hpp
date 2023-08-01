@@ -71,6 +71,14 @@ ebpps_sample<T,A>::ebpps_sample(T&& item, double theta, const A& allocator) :
   }
 
 template<typename T, typename A>
+ebpps_sample<T,A>::ebpps_sample(std::vector<T>&& data, optional<T>&& partial_item, double c, const A& allocator) :
+  allocator_(allocator),
+  data_(data),
+  partial_item_(partial_item),
+  c_(c)
+  {}
+
+template<typename T, typename A>
 auto ebpps_sample<T,A>::get_sample() const -> result_type {
   double unused;
   double c_frac = std::modf(c_, &unused);
@@ -284,15 +292,34 @@ double ebpps_sample<T,A>::next_double() {
 }
 
 template<typename T, typename A>
-const T& ebpps_sample<T,A>::get_partial_item() const {
-  if (!partial_item_)
-    throw std::logic_error("Request for partial item which does not exist");
-  return *partial_item_;
+uint32_t ebpps_sample<T,A>::get_num_retained_items() const {
+  return static_cast<uint32_t>(data_.size() + (partial_item_ ? 1 : 0));
+}
+
+// implementation for fixed-size arithmetic types (integral and floating point)
+template<typename T, typename A>
+template<typename TT, typename SerDe, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
+size_t ebpps_sample<T, A>::get_serialized_item_size_bytes(const SerDe&) const {
+  return data_.size() + (partial_item_ ? 1 : 0) * sizeof(T);
+}
+
+// implementation for all other types
+template<typename T, typename A>
+template<typename TT, typename SerDe, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
+size_t ebpps_sample<T, A>::get_serialized_item_size_bytes(const SerDe& sd) const {
+  size_t num_bytes = 0;
+  for (auto it : data_)
+    num_bytes += sd.size_of_item(*it);
+
+  if (partial_item_)
+    num_bytes += sd.size_of_item(*partial_item_);
+
+  return num_bytes;
 }
 
 template<typename T, typename A>
-typename ebpps_sample<T, A>::const_iterator ebpps_sample<T, A>::begin() const {
-  return const_iterator(this, false);
+typename ebpps_sample<T, A>::const_iterator ebpps_sample<T, A>::begin(bool force_partial) const {
+  return const_iterator(this, force_partial);
 }
 
 template<typename T, typename A>
@@ -380,7 +407,7 @@ bool ebpps_sample<T, A>::const_iterator::operator!=(const const_iterator& other)
 template<typename T, typename A>
 auto ebpps_sample<T, A>::const_iterator::operator*() const -> reference {
   if (idx_ == PARTIAL_IDX)
-    return sample_->get_partial_item();
+    return *(sample_->partial_item_);
   else
     return sample_->data_[idx_];
 }

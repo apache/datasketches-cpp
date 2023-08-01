@@ -23,9 +23,8 @@
 #include "common_defs.hpp"
 #include "ebpps_sample.hpp"
 #include "optional.hpp"
-//#include "serde.hpp"
+#include "serde.hpp"
 
-//#include <iterator>
 #include <random>
 #include <string>
 #include <vector>
@@ -34,7 +33,6 @@ namespace datasketches {
 
 template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
 template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
-//template <typename T, typename A> class ebpps_union; // forward declaration
 
 /// EBPPS sketch constants
 namespace ebpps_constants {
@@ -145,21 +143,11 @@ class ebpps_sketch {
 
     /**
      * Computes size needed to serialize the current state of the sketch.
-     * This version is for fixed-size arithmetic types (integral and floating point).
      * @param sd instance of a SerDe
      * @return size in bytes needed to serialize this sketch
      */
-    // template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-    // inline size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
-
-    /**
-     * Computes size needed to serialize the current state of the sketch.
-     * This version is for all other types and can be expensive since every item needs to be looked at.
-     * @param sd instance of a SerDe
-     * @return size in bytes needed to serialize this sketch
-     */
-    // template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-    // inline size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
+    template<typename SerDe = serde<T>>
+    inline size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
     // This is a convenience alias for users
     // The type returned by the following serialize method
@@ -173,26 +161,16 @@ class ebpps_sketch {
      * @param header_size_bytes space to reserve in front of the sketch
      * @param sd instance of a SerDe
      */
-    //template<typename SerDe = serde<T>>
-    //vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
+    template<typename SerDe = serde<T>>
+    vector_bytes serialize(unsigned header_size_bytes = 0, const SerDe& sd = SerDe()) const;
 
     /**
      * This method serializes the sketch into a given stream in a binary form
      * @param os output stream
      * @param sd instance of a SerDe
      */
-    // template<typename SerDe = serde<T>>
-    // void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
-
-    /**
-     * This method deserializes a sketch from a given stream.
-     * @param is input stream
-     * @param sd instance of a SerDe
-     * @param allocator instance of an allocator
-     * @return an instance of a sketch
-     */
-    // template<typename SerDe = serde<T>>
-    // static ebpps_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
+    template<typename SerDe = serde<T>>
+    void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
 
     /**
      * This method deserializes a sketch from a given array of bytes.
@@ -202,8 +180,18 @@ class ebpps_sketch {
      * @param allocator instance of an allocator
      * @return an instance of a sketch
      */
-    // template<typename SerDe = serde<T>>
-    // static ebpps_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
+    template<typename SerDe = serde<T>>
+    static ebpps_sketch deserialize(const void* bytes, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
+
+    /**
+     * This method deserializes a sketch from a given stream.
+     * @param is input stream
+     * @param sd instance of a SerDe
+     * @param allocator instance of an allocator
+     * @return an instance of a sketch
+     */
+    template<typename SerDe = serde<T>>
+    static ebpps_sketch deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
 
     /**
      * Prints a summary of the sketch.
@@ -238,11 +226,12 @@ class ebpps_sketch {
   private:
     typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocDouble;
 
-    //static const uint8_t PREAMBLE_LONGS_EMPTY  = 1;
-    //static const uint8_t PREAMBLE_LONGS_FULL   = 4;
-    //static const uint8_t SER_VER = 2;
-    //static const uint8_t FAMILY_ID  = 15;
-    //static const uint8_t EMPTY_FLAG_MASK  = 4;
+    static const uint8_t PREAMBLE_LONGS_EMPTY  = 1;
+    static const uint8_t PREAMBLE_LONGS_FULL   = 5;
+    static const uint8_t SER_VER = 1;
+    static const uint8_t FAMILY_ID  = 19;
+    static const uint8_t EMPTY_FLAG_MASK  = 4;
+    static const uint8_t HAS_PARTIAL_ITEM_MASK = 8;
 
     A allocator_;
     uint32_t k_;                    // max size of sketch, in items
@@ -253,6 +242,9 @@ class ebpps_sketch {
     double rho_;                    // latest scaling parameter for downsampling
 
     ebpps_sample<T,A> sample_;      // Object holding the current state of the sample
+
+    ebpps_sketch(uint32_t k, uint64_t n, double cumulative_wt, double wt_max, double rho,
+                 ebpps_sample<T,A>&& sample, const A& allocator = A());
 
     string<A> items_to_string(bool print_gap) const;
 
@@ -266,37 +258,6 @@ class ebpps_sketch {
     static uint32_t validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n);
 };
 
-/*
-template<typename T, typename A>
-class ebpps_sketch<T, A>::const_iterator {
-public:
-  using iterator_category = std::input_iterator_tag;
-  using value_type = const T&
-  using difference_type = void;
-  using pointer = const return_value_holder<value_type>;
-  using reference = const value_type;
-
-  const_iterator(const const_iterator& other);
-  const_iterator& operator++();
-  const_iterator& operator++(int);
-  bool operator==(const const_iterator& other) const;
-  bool operator!=(const const_iterator& other) const;
-  reference operator*() const;
-  pointer operator->() const;
-
-private:
-  static const size_t PARTIAL_IDX = -1;
-
-  friend class ebpps_sketch<T, A>;
-
-  // default iterator over sketch
-  const_iterator(const ebpps_sample<T, A>& sample, bool force_partial = false);
-
-  const ebpps_sample<T, A>* sample_;
-  size_t idx_;
-  bool use_partial_;
-};
-*/
 } // namespace datasketches
 
 #include "ebpps_sketch_impl.hpp"

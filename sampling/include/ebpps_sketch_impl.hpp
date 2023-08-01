@@ -52,6 +52,20 @@ ebpps_sketch<T, A>::ebpps_sketch(uint32_t k, const A& allocator) :
       throw std::invalid_argument("k must be strictly positive and less than " + std::to_string(MAX_K));
   }
 
+
+template<typename T, typename A>
+ebpps_sketch<T,A>::ebpps_sketch(uint32_t k, uint64_t n, double cumulative_wt,
+                                double wt_max, double rho,
+                                ebpps_sample<T,A>&& sample, const A& allocator) :
+  allocator_(allocator),
+  k_(k),
+  n_(n),
+  cumulative_wt_(cumulative_wt),
+  wt_max_(wt_max),
+  rho_(rho),
+  sample_(sample)
+  {}
+
 template<typename T, typename A>
 uint32_t ebpps_sketch<T, A>::get_k() const {
   return k_;
@@ -99,6 +113,13 @@ void ebpps_sketch<T, A>::update(T&& item, double weight) {
 template<typename T, typename A>
 template<typename FwdItem>
 void ebpps_sketch<T, A>::internal_update(FwdItem&& item, double weight) {
+  if (weight < 0.0 || std::isnan(weight) || std::isinf(weight)) {
+    throw std::invalid_argument("Item weights must be nonnegative and finite. Found: "
+                                + std::to_string(weight));
+  } else if (weight == 0.0) {
+    return;
+  }
+
   double new_cum_wt = cumulative_wt_ + weight;
   double new_wt_max = std::max(wt_max_, weight);
   double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
@@ -156,6 +177,295 @@ void ebpps_sketch<T, A>::merge(ebpps_sketch<T>&& sk) {
   n_ += sk.n_;
 }
 
+/*
+ * An empty sketch requires 8 bytes.
+ *
+ * <pre>
+ * Long || Start Byte Adr:
+ * Adr:
+ *      ||       0        |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+ *  0   || Preamble_Longs | SerVer | FamID  |  Flags |---------Max Res. Size (K)---------|
+ * </pre>
+ *
+ * A non-empty sketch requires 48 bytes of preamble.
+ *
+ * The count of items seen is not used but preserved as the value seems like a useful
+ * count to track.
+ * 
+ * <pre>
+ * Long || Start Byte Adr:
+ * Adr:
+ *      ||       0        |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+ *  0   || Preamble_Longs | SerVer | FamID  |  Flags |---------Max Res. Size (K)---------|
+ *
+ *      ||       8        |    9   |   10   |   11   |   12   |   13   |   14   |   15   |
+ *  1   ||---------------------------Items Seen Count (N)--------------------------------|
+ *
+ *      ||      16        |   17   |   18   |   19   |   20   |   21   |   22   |   23   |
+ *  2   ||----------------------------Cumulative Weight----------------------------------|
+ *
+ *      ||      24        |   25   |   26   |   27   |   28   |   29   |   30   |   31   |
+ *  3   ||-----------------------------Max Item Weight-----------------------------------|
+ *
+ *      ||      32        |   33   |   34   |   35   |   36   |   37   |   38   |   39   |
+ *  4   ||----------------------------------Rho------------------------------------------|
+ *
+ *      ||      40        |   41   |   42   |   43   |   44   |   45   |   46   |   47   |
+ *  5   ||-----------------------------------C-------------------------------------------|
+ *
+ *      ||      40+                      |
+ *  6+  ||  {Items Array}                |
+ *      ||  {Optional Item (if needed)}  |
+ * </pre>
+ */
+
+template<typename T, typename A>
+template<typename SerDe>
+size_t ebpps_sketch<T, A>::get_serialized_size_bytes(const SerDe& sd) const {
+  if (is_empty()) { return PREAMBLE_LONGS_EMPTY << 3; }
+  return (PREAMBLE_LONGS_FULL << 3) + sample_.get_serialized_size_bytes(sd);
+}
+
+template<typename T, typename A>
+template<typename SerDe>
+auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) const -> vector_bytes {
+  const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
+  std::vector<uint8_t, A> bytes(size, 0, allocator_);
+  uint8_t* ptr = bytes.data() + header_size_bytes;
+  uint8_t* end_ptr = ptr + size;
+
+  bool empty = is_empty();
+  uint8_t prelongs = (empty ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_FULL);
+
+  uint8_t flags = 0;
+  if (empty) {
+    flags |= EMPTY_FLAG_MASK;
+  } else {
+    flags |= sample_.has_partial() ? HAS_PARTIAL_ITEM_MASK : 0;
+  }
+
+  // first prelong
+  uint8_t ser_ver = SER_VER;
+  uint8_t family = FAMILY_ID;
+  ptr += copy_to_mem(prelongs, ptr);
+  ptr += copy_to_mem(ser_ver, ptr);
+  ptr += copy_to_mem(family, ptr);
+  ptr += copy_to_mem(flags, ptr);
+  ptr += copy_to_mem(k_, ptr);
+
+  // remaining preamble
+  ptr += copy_to_mem(n_, ptr);
+  ptr += copy_to_mem(cumulative_wt_, ptr);
+  ptr += copy_to_mem(wt_max_, ptr);
+  ptr += copy_to_mem(rho_, ptr);
+  ptr += copy_to_mem(sample_.get_c(), ptr);
+
+  // force inclusion of the partial item in the iterator,
+  // which means we need to serialize one at a time rather
+  // than being able to use an array
+  auto it = sample_.begin(true);
+  auto it_end = sample_.end();
+  while (it != it_end)
+    ptr += sd.serialize(ptr, end_ptr - ptr, it++, 1);
+
+  return bytes;
+}
+
+template<typename T, typename A>
+template<typename SerDe>
+void ebpps_sketch<T,A>::serialize(std::ostream& os, const SerDe& sd) const {
+  const bool empty = is_empty();
+
+  const uint8_t prelongs = (empty ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_FULL);
+
+  uint8_t flags = 0;
+  if (empty) {
+    flags |= EMPTY_FLAG_MASK;
+  } else {
+    flags |= sample_.has_partial() ? HAS_PARTIAL_ITEM_MASK : 0;
+  }
+
+  // first prelong
+  const uint8_t ser_ver = SER_VER;
+  const uint8_t family = FAMILY_ID;
+  write(os, prelongs);
+  write(os, ser_ver);
+  write(os, family);
+  write(os, flags);
+  write(os, k_);
+
+  // remaining preamble
+  write(os, n_);
+  write(os, cumulative_wt_);
+  write(os, wt_max_);
+  write(os, rho_);
+  write(os, sample_.get_c());
+
+  // force inclusion of the partial item in the iterator,
+  // which means we need to serialize one at a time rather
+  // than being able to use an array
+  auto it = sample_.begin(true);
+  auto it_end = sample_.end();
+  while (it != it_end)
+    sd.serialize(os, it++, 1);
+
+  if (!os.good()) throw std::runtime_error("error writing to std::ostream");
+}
+
+template<typename T, typename A>
+template<typename SerDe>
+ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
+  ensure_minimum_memory(size, 8);
+  const char* ptr = static_cast<const char*>(bytes);
+  const char* end_ptr = ptr + size;
+  uint8_t prelongs;
+  ptr += copy_from_mem(ptr, prelongs);
+  uint8_t serial_version;
+  ptr += copy_from_mem(ptr, serial_version);
+  uint8_t family_id;
+  ptr += copy_from_mem(ptr, family_id);
+  uint8_t flags;
+  ptr += copy_from_mem(ptr, flags);
+  uint32_t k;
+  ptr += copy_from_mem(ptr, k);
+
+  check_preamble_longs(prelongs, flags);
+  check_family_and_serialization_version(family_id, serial_version);
+  ensure_minimum_memory(size, prelongs << 3);
+
+  const bool empty = flags & EMPTY_FLAG_MASK;
+  if (empty)
+    return ebpps_sketch(k, allocator);
+
+  uint64_t n;
+  ptr += copy_from_mem(ptr, n);
+  double cumulative_wt;
+  ptr += copy_from_mem(ptr, cumulative_wt);
+  double wt_max;
+  ptr += copy_from_mem(ptr, wt_max);
+  double rho;
+  ptr += copy_from_mem(ptr, rho);
+  double c;
+  ptr += copy_from_mem(ptr, c);
+
+  double c_int;
+  double c_frac = std::modf(c, &c_int);
+  bool has_partial = c_frac != 0.0;
+
+  if (has_partial != (flags & HAS_PARTIAL_ITEM_MASK))
+    throw std::runtime_error("sketch fails internal consistency check");
+
+  std::vector<T, A> data(allocator);
+  uint32_t num_full_items = static_cast<uint32_t>(c_int);
+  if (num_full_items > 0) {
+    data.reserve(num_full_items);
+    ptr += sd.deserialize(ptr, end_ptr - ptr, data.data, num_full_items);
+  }
+
+  optional<T> partial_item;
+  if (has_partial) {
+    optional<T> tmp; // space to deserialize
+    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+    // serde did not throw so place item and clean up
+    partial_item.emplace(*tmp);
+    (*tmp).~T();
+  }
+
+  auto sample = ebpps_sample<T,A>(data, partial_item, c, allocator);
+
+  return ebpps_sketch(k, n, cumulative_wt, wt_max, rho, std::move(sample), allocator);
+}
+
+template<typename T, typename A>
+template<typename SerDe>
+ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
+  const uint8_t prelongs = read<uint8_t>(is);
+  const uint8_t ser_ver = read<uint8_t>(is);
+  const uint8_t family = read<uint8_t>(is);
+  const uint8_t flags = read<uint8_t>(is);
+  const uint32_t k = read<uint32_t>(is);
+
+  check_family_and_serialization_version(family, ser_ver);
+  check_preamble_longs(prelongs, flags);
+
+  const bool empty = (flags & EMPTY_FLAG_MASK);
+  
+  if (empty)
+    return ebpps_sketch(k, allocator);
+
+  const uint64_t n = read<uint64_t>(is);
+  const double cumulative_wt = read<double>(is);
+  const double wt_max = read<double>(is);
+  const double rho = read<double>(is);
+  const double c = read<double>(is);
+
+  double c_int;
+  double c_frac = std::modf(c, &c_int);
+  bool has_partial = c_frac != 0.0;
+
+  if (has_partial != (flags & HAS_PARTIAL_ITEM_MASK))
+    throw std::runtime_error("sketch fails internal consistency check");
+
+  std::vector<T, A> data(allocator);
+  uint32_t num_full_items = static_cast<uint32_t>(c_int);
+  if (num_full_items > 0) {
+    data.reserve(num_full_items);
+    sd.deserialize(is, data.data, num_full_items);
+  }
+
+  optional<T> partial_item;
+  if (has_partial) {
+    optional<T> tmp; // space to deserialize
+    sd.deserialize(is, &*tmp, 1);
+    // serde did not throw so place item and clean up
+    partial_item.emplace(*tmp);
+    (*tmp).~T();
+  }
+
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+
+  auto sample = ebpps_sample<T,A>(data, partial_item, c, allocator);
+
+  return ebpps_sketch(k, n, cumulative_wt, wt_max, rho, std::move(sample), allocator);
+}
+
+template<typename T, typename A>
+void ebpps_sketch<T, A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags) {
+  const bool is_empty(flags & EMPTY_FLAG_MASK);
+  
+  if (is_empty) {
+    if (preamble_longs != PREAMBLE_LONGS_EMPTY) {
+      throw std::invalid_argument("Possible corruption: Preamble longs must be "
+        + std::to_string(PREAMBLE_LONGS_EMPTY) + " for an empty sketch. Found: "
+        + std::to_string(preamble_longs));
+    }
+    if (flags & HAS_PARTIAL_ITEM_MASK) {
+      throw std::invalid_argument("Possible corruption: Empty sketch must not "
+        "contain indications of the presence of any item");
+    }
+  } else {
+    if (preamble_longs != PREAMBLE_LONGS_FULL) {
+      throw std::invalid_argument("Possible corruption: Preamble longs must be "
+        + std::to_string(PREAMBLE_LONGS_FULL)
+        + " for a non-empty sketch. Found: " + std::to_string(preamble_longs));
+    }
+  }
+}
+
+template<typename T, typename A>
+void ebpps_sketch<T, A>::check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver) {
+  if (family_id == FAMILY_ID) {
+    if (ser_ver != SER_VER) {
+      throw std::invalid_argument("Possible corruption: EBPPS serialization version must be "
+        + std::to_string(SER_VER) + ". Found: " + std::to_string(ser_ver));
+    }
+    return;
+  }
+
+  throw std::invalid_argument("Possible corruption: EBPPS Sketch family id must be "
+    + std::to_string(FAMILY_ID) + ". Found: " + std::to_string(family_id));
+}
+
 template<typename T, typename A>
 typename ebpps_sample<T, A>::const_iterator ebpps_sketch<T, A>::begin() const {
   return sample_.begin();
@@ -166,94 +476,6 @@ typename ebpps_sample<T, A>::const_iterator ebpps_sketch<T, A>::end() const {
   return sample_.end();
 }
 
-/*
-// -------- ebpps_sketch::const_iterator implementation ---------
-
-template<typename T, typename A>
-ebpps_sketch<T, A>::const_iterator::const_iterator(const ebpps_sketch& sk, bool is_end, bool force_partial) :
-  sk_(&sk),
-  idx_(is_end ? sk.data_.end() : 0),
-  use_partial_(force_partial)
-{
-  // determine in advance if we use the partial item
-  if (!force_partial) {
-    double c_int;
-    double c_frac = std::modf(sk.c_, &c_int);
-    use_partial_ = random_utils::next_double() < c_frac;
-  }
-
-  if (sk.data_.size() == 0 && use_partial_) {
-    idx = PARTIAL_IDX;
-  }
-
-  if (sk.is_empty()) { sk_ = nullptr; }
-}
-
-template<typename T, typename A>
-ebpps_sketch<T, A>::const_iterator::const_iterator(const const_iterator& other) :
-  sk_(other.sk_),
-  idx_(other.idx),
-  use_partial_(other.use_partial_)
-{}
-
-template<typename T, typename A>
-typename ebpps_sketch<T, A>::const_iterator& ebpps_sketch<T, A>::const_iterator::operator++() {
-  if (sk_ == nullptr)
-    return *this;
-
-  ++idx_;
-
-  if (idx_ == data_.end()) {
-    if (use_partial_)
-      idx_ = PARTIAL_IDX;
-    else
-      sk_ = nullptr;
-  } else if (idx_ == PARTIAL_IDX) {
-    sk_ = nullptr;
-    idx_ = data_.end();
-  }
-
-  return *this;
-}
-
-template<typename T, typename A>
-typename ebpps_sketch<T, A>::const_iterator& ebpps_sketch<T, A>::const_iterator::operator++(int) {
-  const_iterator tmp(*this);
-  operator++();
-  return tmp;
-}
-
-template<typename T, typename A>
-bool ebpps_sketch<T, A>::const_iterator::operator==(const const_iterator& other) const {
-  if (sk_ != other.sk_) return false;
-  if (sk_ == nullptr) return true; // end (and we know other.sk_ is also null)
-  return idx_ == other.idx_;
-}
-
-template<typename T, typename A>
-bool ebpps_sketch<T, A>::const_iterator::operator!=(const const_iterator& other) const {
-  return !operator==(other);
-}
-
-template<typename T, typename A>
-auto ebpps_sketch<T, A>::const_iterator::operator*() const -> reference {
-  if (idx_ == PARTIAL_IDX)
-    return value_type(sk_.get)
-
-  double wt;
-  if (idx_ < sk_->h_) {
-    wt = sk_->weights_[idx_];
-  } else {
-    wt = r_item_wt_;
-  }
-  return value_type(sk_->data_[idx_], wt);
-}
-
-template<typename T, typename A>
-auto ebpps_sketch<T, A>::const_iterator::operator->() const -> pointer {
-  return **this;
-}
-*/
 } // namespace datasketches
 
 #endif // _EBPPS_SKETCH_IMPL_HPP_
