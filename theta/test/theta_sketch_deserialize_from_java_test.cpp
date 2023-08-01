@@ -45,4 +45,13 @@ TEST_CASE("theta sketch", "[serde_compat]") {
   }
 }
 
+TEST_CASE("theta sketch non-empty no entries", "[serde_compat]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(testBinaryInputPath + "theta_non_empty_no_entries.sk", std::ios::binary);
+  auto sketch = compact_theta_sketch::deserialize(is);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.get_num_retained() == 0);
+}
+
 } /* namespace datasketches */
