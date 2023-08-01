@@ -32,7 +32,6 @@
 
 // TODO: remove when done testing
 #include <iomanip>
-#include <numbers>
 #include <algorithm>
 
 #ifdef TEST_BINARY_INPUT_PATH
@@ -209,8 +208,7 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
     c = sk.get_c();
   }
 
-  const auto max_precision = std::numeric_limits<long double>::digits10 + 1;
-  std::cout << "c: " << std::setprecision(max_precision) << c << std::endl;
+  std::cout << "c: " << std::setprecision(18) << c << std::endl;
   std::cout << "theoretical entropy: " << std::setprecision(12) << entropy(tgt) << std::endl;
   std::cout << "observed entropy: " << std::setprecision(12) << entropy(result) << std::endl;
   std::cout << "KL Divergence: " << std::setw(10) << kl_divergence(result, tgt) << std::endl;
@@ -297,8 +295,7 @@ TEST_CASE("ebpps sketch: merge", "[ebpps_sketch]") {
     c = sk1.get_c();
   }
 
-  const auto max_precision = std::numeric_limits<long double>::digits10 + 1;
-  std::cout << "c: " << std::setprecision(max_precision) << c << std::endl;
+  std::cout << "c: " << std::setprecision(18) << c << std::endl;
   std::cout << "theoretical entropy: " << std::setprecision(12) << entropy(tgt) << std::endl;
   std::cout << "observed entropy: " << std::setprecision(12) << entropy(result) << std::endl;
   std::cout << "KL Divergence: " << std::setw(10) << kl_divergence(result, tgt) << std::endl;
