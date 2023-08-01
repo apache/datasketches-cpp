@@ -45,3 +45,10 @@ target_sources(theta_test
     theta_setop_test.cpp
     bit_packing_test.cpp
 )
+
+if (SERDE_COMPAT)
+target_sources(theta_test
+  PRIVATE
+    theta_sketch_deserialize_from_java_test.cpp
+)
+endif()
