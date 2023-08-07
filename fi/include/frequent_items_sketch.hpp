@@ -298,7 +298,9 @@ private:
   static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
   static const uint8_t PREAMBLE_LONGS_NONEMPTY = 4;
   static constexpr double EPSILON_FACTOR = 3.5;
-  enum flags { IS_EMPTY };
+  // due to a mistake different bits were used in C++ and Java to indicate empty sketch
+  // therefore both are set and checked for compatibility with historical binary format
+  enum flags { IS_EMPTY_1 = 0, IS_EMPTY_2 = 2 };
   W total_weight;
   W offset;
   reverse_purge_hash_map<T, W, H, E, A> map;

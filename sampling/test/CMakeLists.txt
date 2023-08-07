@@ -41,3 +41,10 @@ target_sources(sampling_test
   var_opt_union_test.cpp
   var_opt_allocation_test.cpp
 )
+
+if (SERDE_COMPAT)
+target_sources(sampling_test
+  PRIVATE
+   var_opt_sketch_deserialize_from_java_test.cpp
+)
+endif()
