@@ -61,4 +61,35 @@ TEST_CASE("frequent strings", "[serde_compat]") {
   }
 }
 
+TEST_CASE("frequent strings ascii", "[serde_compat]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(testBinaryInputPath + "frequent_string_ascii.sk", std::ios::binary);
+  auto sketch = frequent_items_sketch<std::string>::deserialize(is);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.get_maximum_error() == 0);
+  REQUIRE(sketch.get_total_weight() == 10);
+  REQUIRE(sketch.get_estimate("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 1);
+  REQUIRE(sketch.get_estimate("bbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 2);
+  REQUIRE(sketch.get_estimate("ccccccccccccccccccccccccccccc") == 3);
+  REQUIRE(sketch.get_estimate("ddddddddddddddddddddddddddddd") == 4);
+}
+
+TEST_CASE("frequent strings utf8", "[serde_compat]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(testBinaryInputPath + "frequent_string_utf8.sk", std::ios::binary);
+  auto sketch = frequent_items_sketch<std::string>::deserialize(is);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.get_maximum_error() == 0);
+  REQUIRE(sketch.get_total_weight() == 28);
+  REQUIRE(sketch.get_estimate("абвгд") == 1);
+  REQUIRE(sketch.get_estimate("еёжзи") == 2);
+  REQUIRE(sketch.get_estimate("йклмн") == 3);
+  REQUIRE(sketch.get_estimate("опрст") == 4);
+  REQUIRE(sketch.get_estimate("уфхцч") == 5);
+  REQUIRE(sketch.get_estimate("шщъыь") == 6);
+  REQUIRE(sketch.get_estimate("эюя") == 7);
+}
+
 } /* namespace datasketches */
