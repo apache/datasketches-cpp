@@ -29,7 +29,7 @@ static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "
 
 TEST_CASE("req float", "[serde_compat]") {
   unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
-  for (unsigned n: n_arr) {
+  for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "req_float_n" + std::to_string(n) + ".sk", std::ios::binary);
@@ -39,10 +39,10 @@ TEST_CASE("req float", "[serde_compat]") {
     REQUIRE(sketch.is_estimation_mode() == (n > 10));
     REQUIRE(sketch.get_n() == n);
     if (n > 0) {
-      REQUIRE(sketch.get_min_item() == 0.0);
-      REQUIRE(sketch.get_max_item() == static_cast<float>(n - 1));
+      REQUIRE(sketch.get_min_item() == 1.0f);
+      REQUIRE(sketch.get_max_item() == static_cast<float>(n));
       uint64_t weight = 0;
-      for (auto pair: sketch) {
+      for (const auto pair: sketch) {
         REQUIRE(pair.first >= sketch.get_min_item());
         REQUIRE(pair.first <= sketch.get_max_item());
         weight += pair.second;

@@ -29,7 +29,7 @@ static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "
 
 TEST_CASE("quantiles double", "[serde_compat]") {
   unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
-  for (unsigned n: n_arr) {
+  for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "quantiles_double_n" + std::to_string(n) + ".sk", std::ios::binary);
@@ -38,10 +38,10 @@ TEST_CASE("quantiles double", "[serde_compat]") {
     REQUIRE(sketch.is_estimation_mode() == (n > quantiles_constants::DEFAULT_K));
     REQUIRE(sketch.get_n() == n);
     if (n > 0) {
-      REQUIRE(sketch.get_min_item() == 0.0);
-      REQUIRE(sketch.get_max_item() == static_cast<double>(n - 1));
+      REQUIRE(sketch.get_min_item() == 1.0);
+      REQUIRE(sketch.get_max_item() == static_cast<double>(n));
       uint64_t weight = 0;
-      for (auto pair: sketch) {
+      for (const auto pair: sketch) {
         REQUIRE(pair.first >= sketch.get_min_item());
         REQUIRE(pair.first <= sketch.get_max_item());
         weight += pair.second;
@@ -51,23 +51,29 @@ TEST_CASE("quantiles double", "[serde_compat]") {
   }
 }
 
+struct string_as_number_less {
+  bool operator()(const std::string& a, const std::string& b) const {
+    return std::stoi(a) < std::stoi(b);
+  }
+};
+
 TEST_CASE("quantiles string", "[serde_compat]") {
   unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
-  for (unsigned n: n_arr) {
+  for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "quantiles_string_n" + std::to_string(n) + ".sk", std::ios::binary);
-    auto sketch = quantiles_sketch<std::string>::deserialize(is);
+    auto sketch = quantiles_sketch<std::string, string_as_number_less>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > quantiles_constants::DEFAULT_K));
     REQUIRE(sketch.get_n() == n);
     if (n > 0) {
-      REQUIRE(sketch.get_min_item() == "0");
-      REQUIRE(sketch.get_max_item() == std::to_string(n - 1));
+      REQUIRE(sketch.get_min_item() == "1");
+      REQUIRE(sketch.get_max_item() == std::to_string(n));
       uint64_t weight = 0;
-      for (auto pair: sketch) {
-        REQUIRE(pair.first >= sketch.get_min_item());
-        REQUIRE(pair.first <= sketch.get_max_item());
+      for (const auto pair: sketch) {
+        REQUIRE(std::stoi(pair.first) >= std::stoi(sketch.get_min_item()));
+        REQUIRE(std::stoi(pair.first) <= std::stoi(sketch.get_max_item()));
         weight += pair.second;
       }
       REQUIRE(weight == sketch.get_n());
