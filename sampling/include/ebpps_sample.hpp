@@ -43,7 +43,7 @@ class ebpps_sample {
     ebpps_sample(const T& item, double theta, const A& allocator = A());
     ebpps_sample(T&& item, double theta, const A& allocator = A());
 
-    // constructor invoked by containign sketch during deserialization
+    // constructor invoked by containing sketch during deserialization
     ebpps_sample(std::vector<T>&& data, optional<T>&& partial_item, double c, const A& allocator = A());
 
     void reset();
@@ -120,9 +120,6 @@ class ebpps_sample {
 
     static inline uint32_t random_idx(uint32_t max);
     static inline double next_double();
-
-    // TODO: remove me
-    void validate_sample() const;
 
     friend class const_iterator;
 };

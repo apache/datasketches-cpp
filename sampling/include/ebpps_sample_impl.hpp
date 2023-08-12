@@ -28,10 +28,6 @@
 #include <string>
 #include <sstream>
 
-// TODO: remove when done testing
-#include <unordered_set>
-#include <cassert>
-
 namespace datasketches {
 
 template<typename T, typename A>
@@ -195,20 +191,6 @@ string<A> ebpps_sample<T,A>::to_string() const {
 }
 
 template<typename T, typename A>
-void ebpps_sample<T,A>::validate_sample() const {
-  std::unordered_set<T> values;
-  for (auto item : data_) {
-    if (values.find(item) == values.end())
-      values.insert(item);
-    else
-      throw std::logic_error("Duplicate value detected!");
-  }
-  if (partial_item_)
-    if (values.find(*partial_item_) != values.end())
-      throw std::logic_error("Duplicate value detected in partial item!");
-}
-
-template<typename T, typename A>
 void ebpps_sample<T,A>::subsample(uint32_t num_samples) {
   // we can perform a Fisher-Yates style shuffle, stopping after
   // num_samples points since subsequent swaps would only be
@@ -216,8 +198,6 @@ void ebpps_sample<T,A>::subsample(uint32_t num_samples) {
   // point from anywhere in the initial array would be eligible
   // to end up in the final subsample.
 
-  // TODO: remove after testing
-  assert(num_samples <= data_.size());
   if (num_samples == data_.size()) return;
 
   auto erase_start = data_.begin();

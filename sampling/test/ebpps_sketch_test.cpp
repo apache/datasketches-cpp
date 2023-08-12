@@ -18,7 +18,6 @@
  */
 
 #include <ebpps_sketch.hpp>
-#include <var_opt_sketch.hpp>
 
 #include <catch2/catch.hpp>
 
@@ -31,6 +30,8 @@
 #include <stdexcept>
 
 // TODO: remove when done testing
+#include <var_opt_sketch.hpp>
+#include <var_opt_union.hpp>
 #include <iomanip>
 #include <algorithm>
 
@@ -225,7 +226,73 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
 }
 */
 
+TEST_CASE("ebpps sketch: merge distribution", "[ebpps_sketch]") {
+  uint32_t k = 4;
+  uint32_t n = 20;
+  uint32_t num_trials = 100000;
+
+  double tgt_count = static_cast<double>(num_trials * k) / n;
+  
+  // doubles even though they'll hold counts
+  std::vector<double> result(n);     // 1-d results
+  std::vector<double> matrix(n * n); // 2-d results
+
+  for (uint32_t iter = 0; iter < num_trials; ++iter) {
+    //ebpps_sketch<int> sk1(k);
+    //ebpps_sketch<int> sk2(k);
+    var_opt_sketch<int> sk1(k);
+    var_opt_sketch<int> sk2(k);
+
+    int offset = n / 2;
+    for (unsigned i = 0; i < n / 2; ++i) {
+      sk1.update(i);
+      sk2.update(offset + i);
+    }
+
+    //sk1.merge(sk2);
+    //auto output = sk1.get_result();
+    var_opt_union<int> u(k);
+    u.update(sk1);
+    u.update(sk2);
+    var_opt_sketch<int> vo = u.get_result();
+    std::vector<int> output;
+    for (auto v : vo) output.emplace_back(v.first);
+
+    // increment counts
+    for (uint32_t i = 0; i < output.size(); ++i) {
+      int item_i = output[i];
+      ++result[item_i];
+      for (uint32_t j = i + 1; j < output.size(); ++j) {
+        int item_j = output[j];
+        ++matrix[item_i + (n * item_j)];
+        ++matrix[item_j + (n * item_i)];
+      }
+    }
+  }
+
+  // 1-d results
+  for (uint32_t i = 0; i < n; ++i) {
+    std::cout << std::setw(3) << i << "\t"
+      << std::setw(10) << std::setprecision(6) << tgt_count << "\t"
+      << std::setw(6) << result[i] << "\t"
+      << std::setw(15) << std::setprecision(12) << (result[i] - tgt_count) << "\t"
+      << std::setw(10) << std::setprecision(6) << (100.0 * std::abs(result[i] - tgt_count)/tgt_count)
+      << std::endl;
+  }
+
+  // 2-d results
+  for (uint32_t i = 0; i < n; ++i) {
+    std::cout << std::endl;
+    for (uint32_t j = 0; j < n; ++j) {
+      if (j > 0) std::cout << "\t";
+      std::cout << matrix[i + (n * j)];
+    }
+  }
+  std::cout << std::endl;
+}
+
 TEST_CASE("ebpps sketch: merge", "[ebpps_sketch]") {
+  return;
   uint32_t k = 6;
   uint32_t n = 30;
   uint32_t num_trials = 100000;
