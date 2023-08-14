@@ -19,7 +19,7 @@
 
 #include <catch2/catch.hpp>
 #include <fstream>
-#include <req_sketch.hpp>
+#include <var_opt_sketch.hpp>
 
 namespace datasketches {
 
@@ -27,28 +27,15 @@ namespace datasketches {
 // in the subdirectory called "java" in the root directory of this project
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
-TEST_CASE("req float", "[serde_compat]") {
+TEST_CASE("var opt long", "[serde_compat]") {
   unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "req_float_n" + std::to_string(n) + ".sk", std::ios::binary);
-    auto sketch = req_sketch<float>::deserialize(is);
-    REQUIRE(sketch.is_HRA());
+    is.open(testBinaryInputPath + "varopt_long_n" + std::to_string(n) + ".sk", std::ios::binary);
+    auto sketch = var_opt_sketch<long>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
-    REQUIRE(sketch.is_estimation_mode() == (n > 10));
-    REQUIRE(sketch.get_n() == n);
-    if (n > 0) {
-      REQUIRE(sketch.get_min_item() == 1.0f);
-      REQUIRE(sketch.get_max_item() == static_cast<float>(n));
-      uint64_t weight = 0;
-      for (const auto pair: sketch) {
-        REQUIRE(pair.first >= sketch.get_min_item());
-        REQUIRE(pair.first <= sketch.get_max_item());
-        weight += pair.second;
-      }
-      REQUIRE(weight == sketch.get_n());
-    }
+    REQUIRE(sketch.get_num_samples() == (n > 10 ? 32 : n));
   }
 }
 

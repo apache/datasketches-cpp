@@ -264,19 +264,6 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     }
   }
 
-  SECTION("deserialize from java") {
-    std::ifstream is;
-    is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "kll_sketch_from_java.sk", std::ios::binary);
-    auto sketch = kll_float_sketch::deserialize(is, serde<float>(), std::less<float>(), 0);
-    REQUIRE_FALSE(sketch.is_empty());
-    REQUIRE(sketch.is_estimation_mode());
-    REQUIRE(sketch.get_n() == 1000000);
-    REQUIRE(sketch.get_num_retained() == 614);
-    REQUIRE(sketch.get_min_item() == 0.0);
-    REQUIRE(sketch.get_max_item() == 999999.0);
-  }
-
   SECTION("stream serialize deserialize empty") {
     kll_float_sketch sketch(200, std::less<float>(), 0);
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
