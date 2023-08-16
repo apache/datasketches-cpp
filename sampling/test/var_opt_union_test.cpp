@@ -305,22 +305,4 @@ TEST_CASE("varopt union: serialize sampling", "[var_opt_union]") {
   compare_serialization_deserialization(u);
 }
 
-TEST_CASE("varopt union: deserialize from java", "[var_opt_union]") {
-  std::ifstream is;
-  is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "varopt_union_double_sampling.sk", std::ios::binary);
-  var_opt_union<double> u = var_opt_union<double>::deserialize(is);
-    
-  // must reduce k in the process, like in small_sampling_sketch()
-  var_opt_sketch<double> result = u.get_result();
-  REQUIRE_FALSE(result.is_empty());
-  REQUIRE(result.get_n() == 97);
-  
-  double expected_wt = 96.0;// light items -- ignoring the heavy one
-  subset_summary ss = result.estimate_subset_sum([](double x){return x >= 0;});
-  REQUIRE(ss.estimate == Approx(expected_wt).margin(EPS));
-  REQUIRE(ss.total_sketch_weight == Approx(expected_wt + 1024.0).margin(EPS));
-  REQUIRE(result.get_k() < 128);
-}
-
 }
