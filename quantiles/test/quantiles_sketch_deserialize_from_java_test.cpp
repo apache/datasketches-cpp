@@ -32,7 +32,7 @@ TEST_CASE("quantiles double", "[serde_compat]") {
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "quantiles_double_n" + std::to_string(n) + ".sk", std::ios::binary);
+    is.open(testBinaryInputPath + "quantiles_double_n" + std::to_string(n) + "_java.sk", std::ios::binary);
     auto sketch = quantiles_sketch<double>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > quantiles_constants::DEFAULT_K));
@@ -62,7 +62,7 @@ TEST_CASE("quantiles string", "[serde_compat]") {
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "quantiles_string_n" + std::to_string(n) + ".sk", std::ios::binary);
+    is.open(testBinaryInputPath + "quantiles_string_n" + std::to_string(n) + "_java.sk", std::ios::binary);
     auto sketch = quantiles_sketch<std::string, string_as_number_less>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > quantiles_constants::DEFAULT_K));

@@ -32,7 +32,7 @@ TEST_CASE("cpc sketch", "[serde_compat]") {
   for (unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "cpc_n" + std::to_string(n) + ".sk", std::ios::binary);
+    is.open(testBinaryInputPath + "cpc_n" + std::to_string(n) + "_java.sk", std::ios::binary);
     auto sketch = cpc_sketch::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.02));
