@@ -28,12 +28,12 @@ namespace datasketches {
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
 TEST_CASE("cpc sketch", "[serde_compat]") {
-  unsigned n_arr[] = {0, 100, 200, 2000, 20000};
-  for (unsigned n: n_arr) {
+  const unsigned n_arr[] = {0, 100, 200, 2000, 20000};
+  for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "cpc_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    auto sketch = cpc_sketch::deserialize(is);
+    const auto sketch = cpc_sketch::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.02));
   }

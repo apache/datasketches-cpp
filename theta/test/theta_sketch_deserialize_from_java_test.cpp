@@ -28,16 +28,16 @@ namespace datasketches {
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
 TEST_CASE("theta sketch", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
-  for (unsigned n: n_arr) {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "theta_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    auto sketch = compact_theta_sketch::deserialize(is);
+    const auto sketch = compact_theta_sketch::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > 1000));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
-    for (auto hash: sketch) {
+    for (const auto hash: sketch) {
       REQUIRE(hash < sketch.get_theta64());
     }
     REQUIRE(sketch.is_ordered());
@@ -49,7 +49,7 @@ TEST_CASE("theta sketch non-empty no entries", "[serde_compat]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(testBinaryInputPath + "theta_non_empty_no_entries_java.sk", std::ios::binary);
-  auto sketch = compact_theta_sketch::deserialize(is);
+  const auto sketch = compact_theta_sketch::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 0);
 }

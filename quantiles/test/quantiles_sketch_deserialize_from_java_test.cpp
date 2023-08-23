@@ -28,12 +28,12 @@ namespace datasketches {
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
 TEST_CASE("quantiles double", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "quantiles_double_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    auto sketch = quantiles_sketch<double>::deserialize(is);
+    const auto sketch = quantiles_sketch<double>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > quantiles_constants::DEFAULT_K));
     REQUIRE(sketch.get_n() == n);
@@ -58,12 +58,12 @@ struct string_as_number_less {
 };
 
 TEST_CASE("quantiles string", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "quantiles_string_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    auto sketch = quantiles_sketch<std::string, string_as_number_less>::deserialize(is);
+    const auto sketch = quantiles_sketch<std::string, string_as_number_less>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > quantiles_constants::DEFAULT_K));
     REQUIRE(sketch.get_n() == n);

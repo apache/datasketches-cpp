@@ -28,12 +28,12 @@ namespace datasketches {
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
 TEST_CASE("frequent longs", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "frequent_long_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    auto sketch = frequent_items_sketch<int64_t>::deserialize(is);
+    const auto sketch = frequent_items_sketch<int64_t>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     if (n > 10) {
       REQUIRE(sketch.get_maximum_error() > 0);
@@ -45,12 +45,12 @@ TEST_CASE("frequent longs", "[serde_compat]") {
 }
 
 TEST_CASE("frequent strings", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "frequent_string_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    auto sketch = frequent_items_sketch<std::string>::deserialize(is);
+    const auto sketch = frequent_items_sketch<std::string>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     if (n > 10) {
       REQUIRE(sketch.get_maximum_error() > 0);
@@ -65,7 +65,7 @@ TEST_CASE("frequent strings ascii", "[serde_compat]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(testBinaryInputPath + "frequent_string_ascii_java.sk", std::ios::binary);
-  auto sketch = frequent_items_sketch<std::string>::deserialize(is);
+  const auto sketch = frequent_items_sketch<std::string>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_maximum_error() == 0);
   REQUIRE(sketch.get_total_weight() == 10);
@@ -79,7 +79,7 @@ TEST_CASE("frequent strings utf8", "[serde_compat]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
   is.open(testBinaryInputPath + "frequent_string_utf8_java.sk", std::ios::binary);
-  auto sketch = frequent_items_sketch<std::string>::deserialize(is);
+  const auto sketch = frequent_items_sketch<std::string>::deserialize(is);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_maximum_error() == 0);
   REQUIRE(sketch.get_total_weight() == 28);

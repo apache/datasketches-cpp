@@ -28,12 +28,12 @@ namespace datasketches {
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
 TEST_CASE("kll float", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_float_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    auto sketch = kll_sketch<float>::deserialize(is);
+    const auto sketch = kll_sketch<float>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > kll_constants::DEFAULT_K));
     REQUIRE(sketch.get_n() == n);
@@ -52,12 +52,12 @@ TEST_CASE("kll float", "[serde_compat]") {
 }
 
 TEST_CASE("kll double", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_double_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    auto sketch = kll_sketch<double>::deserialize(is);
+    const auto sketch = kll_sketch<double>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > kll_constants::DEFAULT_K));
     REQUIRE(sketch.get_n() == n);
@@ -77,12 +77,12 @@ TEST_CASE("kll double", "[serde_compat]") {
 
 // numbers are padded with leading spaces so that natural order works
 TEST_CASE("kll string", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
     is.open(testBinaryInputPath + "kll_string_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    auto sketch = kll_sketch<std::string>::deserialize(is);
+    const auto sketch = kll_sketch<std::string>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > kll_constants::DEFAULT_K));
     REQUIRE(sketch.get_n() == n);
