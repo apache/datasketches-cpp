@@ -19,7 +19,9 @@ jobs:
           repository: apache/datasketches-java
           path: java
       - name: Run Java
-        run: cd java && mvn test -Dtestng.excludedgroups=
+        run: cd java && mvn test -P generate-java-files
+      - name: Copy files
+        run: cp java/target/java_generated_files/*.sk java
       - name: Run cmake
         run: cd build && cmake .. -DSERDE_COMPAT=true
       - name: Build C++ unit tests

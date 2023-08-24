@@ -28,12 +28,12 @@ namespace datasketches {
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
 TEST_CASE("req float", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "req_float_n" + std::to_string(n) + ".sk", std::ios::binary);
-    auto sketch = req_sketch<float>::deserialize(is);
+    is.open(testBinaryInputPath + "req_float_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = req_sketch<float>::deserialize(is);
     REQUIRE(sketch.is_HRA());
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > 10));

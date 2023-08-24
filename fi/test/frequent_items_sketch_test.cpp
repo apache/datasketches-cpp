@@ -70,6 +70,7 @@ TEST_CASE("frequent items: several items, no resize, no purge", "[frequent_items
   REQUIRE(sketch.get_estimate("b") == 3);
   REQUIRE(sketch.get_estimate("c") == 2);
   REQUIRE(sketch.get_estimate("d") == 1);
+  REQUIRE(sketch.get_maximum_error() == 0);
 }
 
 TEST_CASE("frequent items: several items, with resize, no purge", "[frequent_items_sketch]") {
@@ -96,6 +97,7 @@ TEST_CASE("frequent items: several items, with resize, no purge", "[frequent_ite
   REQUIRE(sketch.get_estimate("b") == 3);
   REQUIRE(sketch.get_estimate("c") == 2);
   REQUIRE(sketch.get_estimate("d") == 1);
+  REQUIRE(sketch.get_maximum_error() == 0);
 }
 
 TEST_CASE("frequent items: estimation mode", "[frequent_items_sketch]") {
@@ -149,6 +151,7 @@ TEST_CASE("frequent items: merge exact mode", "[frequent_items_sketch]") {
   REQUIRE(sketch1.get_estimate(2) == 3);
   REQUIRE(sketch1.get_estimate(3) == 2);
   REQUIRE(sketch1.get_estimate(4) == 1);
+  REQUIRE(sketch1.get_maximum_error() == 0);
 }
 
 TEST_CASE("frequent items: merge estimation mode", "[frequent_items_sketch]") {

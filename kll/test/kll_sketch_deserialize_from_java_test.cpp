@@ -28,12 +28,12 @@ namespace datasketches {
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
 TEST_CASE("kll float", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "kll_float_n" + std::to_string(n) + ".sk", std::ios::binary);
-    auto sketch = kll_sketch<float>::deserialize(is);
+    is.open(testBinaryInputPath + "kll_float_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = kll_sketch<float>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > kll_constants::DEFAULT_K));
     REQUIRE(sketch.get_n() == n);
@@ -52,18 +52,43 @@ TEST_CASE("kll float", "[serde_compat]") {
 }
 
 TEST_CASE("kll double", "[serde_compat]") {
-  unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "kll_double_n" + std::to_string(n) + ".sk", std::ios::binary);
-    auto sketch = kll_sketch<double>::deserialize(is);
+    is.open(testBinaryInputPath + "kll_double_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = kll_sketch<double>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > kll_constants::DEFAULT_K));
     REQUIRE(sketch.get_n() == n);
     if (n > 0) {
       REQUIRE(sketch.get_min_item() == 1.0);
       REQUIRE(sketch.get_max_item() == static_cast<double>(n));
+      uint64_t weight = 0;
+      for (const auto pair: sketch) {
+        REQUIRE(pair.first >= sketch.get_min_item());
+        REQUIRE(pair.first <= sketch.get_max_item());
+        weight += pair.second;
+      }
+      REQUIRE(weight == sketch.get_n());
+    }
+  }
+}
+
+// numbers are padded with leading spaces so that natural order works
+TEST_CASE("kll string", "[serde_compat]") {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open(testBinaryInputPath + "kll_string_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = kll_sketch<std::string>::deserialize(is);
+    REQUIRE(sketch.is_empty() == (n == 0));
+    REQUIRE(sketch.is_estimation_mode() == (n > kll_constants::DEFAULT_K));
+    REQUIRE(sketch.get_n() == n);
+    if (n > 0) {
+      REQUIRE(std::stoul(sketch.get_min_item()) == 1);
+      REQUIRE(std::stoul(sketch.get_max_item()) == n);
       uint64_t weight = 0;
       for (const auto pair: sketch) {
         REQUIRE(pair.first >= sketch.get_min_item());

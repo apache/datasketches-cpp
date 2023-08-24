@@ -28,12 +28,12 @@ namespace datasketches {
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
 TEST_CASE("hll4 sketch", "[serde_compat]") {
-  unsigned n_arr[] = {0, 10, 100, 1000, 10000, 100000, 1000000};
-  for (unsigned n: n_arr) {
+  const unsigned n_arr[] = {0, 10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "hll4_n" + std::to_string(n) + ".sk", std::ios::binary);
-    auto sketch = hll_sketch::deserialize(is);
+    is.open(testBinaryInputPath + "hll4_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = hll_sketch::deserialize(is);
     REQUIRE(sketch.get_lg_config_k() == 12);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.02));
@@ -41,12 +41,12 @@ TEST_CASE("hll4 sketch", "[serde_compat]") {
 }
 
 TEST_CASE("hll6 sketch", "[serde_compat]") {
-  unsigned n_arr[] = {0, 10, 100, 1000, 10000, 100000, 1000000};
-  for (unsigned n: n_arr) {
+  const unsigned n_arr[] = {0, 10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "hll6_n" + std::to_string(n) + ".sk", std::ios::binary);
-    auto sketch = hll_sketch::deserialize(is);
+    is.open(testBinaryInputPath + "hll6_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = hll_sketch::deserialize(is);
     REQUIRE(sketch.get_lg_config_k() == 12);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.02));
@@ -54,12 +54,12 @@ TEST_CASE("hll6 sketch", "[serde_compat]") {
 }
 
 TEST_CASE("hll8 sketch", "[serde_compat]") {
-  unsigned n_arr[] = {0, 10, 100, 1000, 10000, 100000, 1000000};
-  for (unsigned n: n_arr) {
+  const unsigned n_arr[] = {0, 10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "hll8_n" + std::to_string(n) + ".sk", std::ios::binary);
-    auto sketch = hll_sketch::deserialize(is);
+    is.open(testBinaryInputPath + "hll8_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = hll_sketch::deserialize(is);
     REQUIRE(sketch.get_lg_config_k() == 12);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.02));

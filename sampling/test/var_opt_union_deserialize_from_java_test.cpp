@@ -19,7 +19,7 @@
 
 #include <catch2/catch.hpp>
 #include <fstream>
-#include <cpc_sketch.hpp>
+#include <var_opt_union.hpp>
 
 namespace datasketches {
 
@@ -27,16 +27,24 @@ namespace datasketches {
 // in the subdirectory called "java" in the root directory of this project
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
-TEST_CASE("cpc sketch", "[serde_compat]") {
-  const unsigned n_arr[] = {0, 100, 200, 2000, 20000};
-  for (const unsigned n: n_arr) {
-    std::ifstream is;
-    is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "cpc_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    const auto sketch = cpc_sketch::deserialize(is);
-    REQUIRE(sketch.is_empty() == (n == 0));
-    REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.02));
-  }
+TEST_CASE("var opt union double", "[serde_compat]") {
+  const double EPS = 1e-13;
+
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(testBinaryInputPath + "varopt_union_double_sampling_java.sk", std::ios::binary);
+  auto u = var_opt_union<double>::deserialize(is);
+
+  // must reduce k in the process
+  const auto result = u.get_result();
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE(result.get_n() == 97);
+
+  const double expected_wt = 96.0; // light items -- ignoring the heavy one
+  const subset_summary ss = result.estimate_subset_sum([](double x){return x >= 0;});
+  REQUIRE(ss.estimate == Approx(expected_wt).margin(EPS));
+  REQUIRE(ss.total_sketch_weight == Approx(expected_wt + 1024.0).margin(EPS));
+  REQUIRE(result.get_k() < 128);
 }
 
 } /* namespace datasketches */
