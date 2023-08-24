@@ -55,3 +55,10 @@ target_sources(hll_test
    hll_sketch_deserialize_from_java_test.cpp
 )
 endif()
+
+if (GENERATE)
+target_sources(hll_test
+  PRIVATE
+   hll_sketch_serialize_for_java.cpp
+)
+endif()

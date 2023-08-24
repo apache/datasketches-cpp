@@ -49,3 +49,10 @@ target_sources(cpc_test
     cpc_sketch_deserialize_from_java_test.cpp
 )
 endif()
+
+if (GENERATE)
+target_sources(cpc_test
+  PRIVATE
+    cpc_sketch_serialize_for_java.cpp
+)
+endif()
