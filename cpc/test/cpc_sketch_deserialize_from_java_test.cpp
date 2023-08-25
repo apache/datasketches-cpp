@@ -39,4 +39,22 @@ TEST_CASE("cpc sketch", "[serde_compat]") {
   }
 }
 
+TEST_CASE("cpc sketch negative one", "[serde_compat]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(testBinaryInputPath + "cpc_negative_one_java.sk", std::ios::binary);
+  auto sketch = cpc_sketch::deserialize(is);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.get_estimate() == Approx(1).margin(0.01));
+  sketch.update((uint64_t) -1);
+  sketch.update((int64_t) -1);
+  sketch.update((uint32_t) -1);
+  sketch.update((int32_t) -1);
+  sketch.update((uint16_t) -1);
+  sketch.update((int16_t) -1);
+  sketch.update((uint8_t) -1);
+  sketch.update((int8_t) -1);
+  REQUIRE(sketch.get_estimate() == Approx(1).margin(0.01));
+}
+
 } /* namespace datasketches */
