@@ -49,3 +49,11 @@ target_sources(sampling_test
    var_opt_union_deserialize_from_java_test.cpp
 )
 endif()
+
+if (GENERATE)
+target_sources(sampling_test
+  PRIVATE
+   var_opt_sketch_serialize_for_java.cpp
+   var_opt_union_serialize_for_java.cpp
+)
+endif()

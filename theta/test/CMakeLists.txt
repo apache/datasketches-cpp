@@ -52,3 +52,10 @@ target_sources(theta_test
     theta_sketch_deserialize_from_java_test.cpp
 )
 endif()
+
+if (GENERATE)
+target_sources(theta_test
+  PRIVATE
+    theta_sketch_serialize_for_java.cpp
+)
+endif()
