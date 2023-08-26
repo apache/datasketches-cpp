@@ -35,6 +35,18 @@ TEST_CASE("theta sketch generate", "[serialize_for_java]") {
   }
 }
 
+TEST_CASE("theta sketch generate compressed", "[serialize_for_java]") {
+  const unsigned n_arr[] = {10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
+    auto sketch = update_theta_sketch::builder().build();
+    for (unsigned i = 0; i < n; ++i) sketch.update(i);
+    REQUIRE_FALSE(sketch.is_empty());
+    REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
+    std::ofstream os("theta_compressed_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
+    sketch.compact().serialize(os);
+  }
+}
+
 TEST_CASE("theta sketch generate non-empty no entries", "[serialize_for_java]") {
   auto sketch = update_theta_sketch::builder().set_p(0.01).build();
   sketch.update(1);
