@@ -48,3 +48,10 @@ target_sources(quantiles_test
     quantiles_sketch_deserialize_from_java_test.cpp
 )
 endif()
+
+if (GENERATE)
+target_sources(quantiles_test
+  PRIVATE
+    quantiles_sketch_serialize_for_java.cpp
+)
+endif()

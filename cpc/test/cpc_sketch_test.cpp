@@ -88,9 +88,6 @@ TEST_CASE("cpc sketch: serialize deserialize empty", "[cpc_sketch]") {
   REQUIRE(deserialized.is_empty() == sketch.is_empty());
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
-
-  std::ofstream os("cpc-empty.bin");
-  sketch.serialize(os);
 }
 
 TEST_CASE("cpc sketch: serialize deserialize sparse", "[cpc_sketch]") {
@@ -108,9 +105,6 @@ TEST_CASE("cpc sketch: serialize deserialize sparse", "[cpc_sketch]") {
   for (int i = 0; i < n; i++) deserialized.update(i);
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
-
-  std::ofstream os("cpc-sparse.bin");
-  sketch.serialize(os);
 }
 
 TEST_CASE("cpc sketch: serialize deserialize hybrid", "[cpc_sketch]") {
@@ -128,9 +122,6 @@ TEST_CASE("cpc sketch: serialize deserialize hybrid", "[cpc_sketch]") {
   for (int i = 0; i < n; i++) deserialized.update(i);
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
-
-  std::ofstream os("cpc-hybrid.bin");
-  sketch.serialize(os);
 }
 
 TEST_CASE("cpc sketch: serialize deserialize pinned", "[cpc_sketch]") {
@@ -148,9 +139,6 @@ TEST_CASE("cpc sketch: serialize deserialize pinned", "[cpc_sketch]") {
   for (int i = 0; i < n; i++) deserialized.update(i);
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
-
-  std::ofstream os("cpc-pinned.bin");
-  sketch.serialize(os);
 }
 
 TEST_CASE("cpc sketch: serialize deserialize sliding", "[cpc_sketch]") {
@@ -168,9 +156,6 @@ TEST_CASE("cpc sketch: serialize deserialize sliding", "[cpc_sketch]") {
   for (int i = 0; i < n; i++) deserialized.update(i);
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
-
-  std::ofstream os("cpc-sliding.bin");
-  sketch.serialize(os);
 }
 
 TEST_CASE("cpc sketch: serializing deserialize sliding large", "[cpc_sketch]") {
@@ -188,9 +173,6 @@ TEST_CASE("cpc sketch: serializing deserialize sliding large", "[cpc_sketch]") {
   for (int i = 0; i < n; i++) deserialized.update(i);
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
-
-  std::ofstream os("cpc-sliding-large.bin");
-  sketch.serialize(os);
 }
 
 TEST_CASE("cpc sketch: serialize deserialize empty, bytes", "[cpc_sketch]") {
@@ -201,9 +183,6 @@ TEST_CASE("cpc sketch: serialize deserialize empty, bytes", "[cpc_sketch]") {
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
   REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
-
-  std::ofstream os("cpc-empty.bin");
-  sketch.serialize(os);
 }
 
 TEST_CASE("cpc sketch: serialize deserialize sparse, bytes", "[cpc_sketch]") {
@@ -261,8 +240,6 @@ TEST_CASE("cpc sketch: serialize deserialize pinned, bytes", "[cpc_sketch]") {
   for (int i = 0; i < n; i++) deserialized.update(i);
   REQUIRE(deserialized.get_estimate() == sketch.get_estimate());
   REQUIRE(deserialized.validate());
-
-  std::cout << sketch.to_string();
 }
 
 TEST_CASE("cpc sketch: serialize deserialize sliding, bytes", "[cpc_sketch]") {
@@ -380,8 +357,6 @@ TEST_CASE("cpc sketch: update int equivalence", "[cpc_sketch]") {
   sketch.update((uint8_t) -1);
   sketch.update((int8_t) -1);
   REQUIRE(sketch.get_estimate() == Approx(1).margin(RELATIVE_ERROR_FOR_LG_K_11));
-  std::ofstream os("cpc-negative-one.bin"); // to compare with Java
-  sketch.serialize(os);
 }
 
 TEST_CASE("cpc sketch: update float equivalence", "[cpc_sketch]") {

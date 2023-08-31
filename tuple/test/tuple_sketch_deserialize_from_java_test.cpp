@@ -19,7 +19,7 @@
 
 #include <catch2/catch.hpp>
 #include <fstream>
-#include <cpc_sketch.hpp>
+#include <tuple_sketch.hpp>
 
 namespace datasketches {
 
@@ -27,34 +27,21 @@ namespace datasketches {
 // in the subdirectory called "java" in the root directory of this project
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
-TEST_CASE("cpc sketch", "[serde_compat]") {
-  const unsigned n_arr[] = {0, 100, 200, 2000, 20000};
+TEST_CASE("tuple sketch int", "[serde_compat]") {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
     std::ifstream is;
     is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "cpc_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    const auto sketch = cpc_sketch::deserialize(is);
+    is.open(testBinaryInputPath + "tuple_int_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = compact_tuple_sketch<int>::deserialize(is);
     REQUIRE(sketch.is_empty() == (n == 0));
-    REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.02));
+    REQUIRE(sketch.is_estimation_mode() == (n > 1000));
+    REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
+    for (const auto& entry: sketch) {
+      REQUIRE(entry.first < sketch.get_theta64());
+      REQUIRE(entry.second < static_cast<int>(n));
+    }
   }
-}
-
-TEST_CASE("cpc sketch negative one", "[serde_compat]") {
-  std::ifstream is;
-  is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "cpc_negative_one_java.sk", std::ios::binary);
-  auto sketch = cpc_sketch::deserialize(is);
-  REQUIRE_FALSE(sketch.is_empty());
-  REQUIRE(sketch.get_estimate() == Approx(1).margin(0.01));
-  sketch.update((uint64_t) -1);
-  sketch.update((int64_t) -1);
-  sketch.update((uint32_t) -1);
-  sketch.update((int32_t) -1);
-  sketch.update((uint16_t) -1);
-  sketch.update((int16_t) -1);
-  sketch.update((uint8_t) -1);
-  sketch.update((int8_t) -1);
-  REQUIRE(sketch.get_estimate() == Approx(1).margin(0.01));
 }
 
 } /* namespace datasketches */

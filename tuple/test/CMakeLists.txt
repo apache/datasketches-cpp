@@ -51,5 +51,14 @@ if (SERDE_COMPAT)
 target_sources(tuple_test
   PRIVATE
     aod_sketch_deserialize_from_java_test.cpp
+    tuple_sketch_deserialize_from_java_test.cpp
+)
+endif()
+
+if (GENERATE)
+target_sources(tuple_test
+  PRIVATE
+    aod_sketch_serialize_for_java.cpp
+    tuple_sketch_serialize_for_java.cpp
 )
 endif()
