@@ -43,7 +43,7 @@ TEST_CASE("varopt sketch string exact", "[serialize_for_java]") {
 TEST_CASE("varopt sketch long sampling", "[serialize_for_java]") {
   var_opt_sketch<long> sketch(1024);
   for (unsigned i = 0; i < 2000; ++i) sketch.update(i);
-  // heavy items have negative weights to allow a simple predicate to filter
+  // negative heavy items to allow a simple predicate to filter
   sketch.update(-1L, 100000.0);
   sketch.update(-2L, 110000.0);
   sketch.update(-3L, 120000.0);

@@ -47,7 +47,7 @@ TEST_CASE("frequent strings sketch generate", "[serialize_for_java]") {
     for (unsigned i = 1; i <= n; ++i) sketch.update(std::to_string(i));
     REQUIRE(sketch.is_empty() == (n == 0));
     if (n > 10) {
-//      REQUIRE(sketch.get_maximum_error() > 0);
+      REQUIRE(sketch.get_maximum_error() > 0);
     } else {
       REQUIRE(sketch.get_maximum_error() == 0);
     }

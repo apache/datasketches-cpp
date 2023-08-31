@@ -49,6 +49,8 @@ TEST_CASE("theta sketch generate compressed", "[serialize_for_java]") {
 
 TEST_CASE("theta sketch generate non-empty no entries", "[serialize_for_java]") {
   auto sketch = update_theta_sketch::builder().set_p(0.01).build();
+  // here we rely on the fact that hash of 1 happens to be greater than 0.01 (when normalized)
+  // and therefore gets rejected
   sketch.update(1);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 0);

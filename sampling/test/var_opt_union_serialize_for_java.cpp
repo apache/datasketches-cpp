@@ -23,7 +23,7 @@
 
 namespace datasketches {
 
-TEST_CASE("var opt union doulbe sampling", "[serialize_for_java]") {
+TEST_CASE("var opt union double sampling", "[serialize_for_java]") {
   const unsigned k_small = 16;
   const unsigned k_max = 128;
   const unsigned n1 = 32;
@@ -32,7 +32,7 @@ TEST_CASE("var opt union doulbe sampling", "[serialize_for_java]") {
   // small k sketch, but sampling
   var_opt_sketch<double> sketch1(k_small);
   for (unsigned i = 0; i < n1; ++i) sketch1.update(i);
-  // heavy items have negative weights to allow a simple predicate to filter
+  // negative heavy item to allow a simple predicate to filter
   sketch1.update(-1, n1 * n1);
 
   // another one, but different n to get a different per-item weight
