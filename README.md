@@ -14,9 +14,7 @@ If you are interested in making contributions to this site please see our [Commu
 
 This code requires C++11.
 
-This includes Python bindings. For the Python interface, see the README notes in [the python subdirectory](https://github.com/apache/datasketches-cpp/tree/master/python).
-
-This library is header-only. The build process provided is only for building unit tests and the python library.
+This library is header-only. The build process provided is only for building unit tests.
 
 Building the unit tests requires cmake 3.12.0 or higher.
 
@@ -92,13 +90,6 @@ from GitHub using CMake's `ExternalProject` module. The code would look somethin
         GIT_SUBMODULES ""
         INSTALL_DIR /tmp/datasketches-prefix
         CMAKE_ARGS -DBUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=/tmp/datasketches-prefix
-
-        # Override the install command to add DESTDIR
-        # This is necessary to work around an oddity in the RPM (but not other) package
-        # generation, as CMake otherwise picks up the Datasketch files when building
-        # an RPM for a dependent package. (RPM scans the directory for files in addition to installing
-        # those files referenced in an "install" rule in the cmake file)
-        INSTALL_COMMAND env DESTDIR= ${CMAKE_COMMAND} --build . --target install
     )
     ExternalProject_Get_property(datasketches INSTALL_DIR)
     set(datasketches_INSTALL_DIR ${INSTALL_DIR})
