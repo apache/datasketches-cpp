@@ -14,9 +14,7 @@ If you are interested in making contributions to this site please see our [Commu
 
 This code requires C++11.
 
-This includes Python bindings. For the Python interface, see the README notes in [the python subdirectory](https://github.com/apache/datasketches-cpp/tree/master/python).
-
-This library is header-only. The build process provided is only for building unit tests and the python library.
+This library is header-only. The build process provided is only for building unit tests.
 
 Building the unit tests requires cmake 3.12.0 or higher.
 
