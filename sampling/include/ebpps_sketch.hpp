@@ -243,6 +243,11 @@ class ebpps_sketch {
 
     ebpps_sample<T,A> sample_;      // Object holding the current state of the sample
 
+    // handles merge after ensuring other.cumulative_wt_ <= this->cumulative_wt_
+    // so we can send items in individually
+    template<typename O>
+    void internal_merge(O&& other);
+
     ebpps_sketch(uint32_t k, uint64_t n, double cumulative_wt, double wt_max, double rho,
                  ebpps_sample<T,A>&& sample, const A& allocator = A());
 

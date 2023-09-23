@@ -39,29 +39,16 @@ ebpps_sample<T,A>::ebpps_sample(uint32_t reserved_size, const A& allocator) :
   }
 
 template<typename T, typename A>
-ebpps_sample<T,A>::ebpps_sample(const T& item, double theta, const A& allocator) :
+template<typename TT>
+ebpps_sample<T,A>::ebpps_sample(TT&& item, double theta, const A& allocator) :
   allocator_(allocator)
   {
     if (theta == 1.0) {
       data_.reserve(1);
-      data_.emplace_back(item);
+      data_.emplace_back(std::forward<TT>(item));
       c_ = 1.0;
     } else {
-      partial_item_.emplace(item);
-      c_ = theta;
-    }
-  }
-
-template<typename T, typename A>
-ebpps_sample<T,A>::ebpps_sample(T&& item, double theta, const A& allocator) :
-  allocator_(allocator)
-  {
-    if (theta == 1.0) {
-      data_.reserve(1);
-      data_.emplace_back(std::move(item));
-      c_ = 1.0;
-    } else {
-      partial_item_.emplace(std::move(item));
+      partial_item_.emplace(std::forward<TT>(item));
       c_ = theta;
     }
   }
@@ -103,30 +90,39 @@ void ebpps_sample<T,A>::downsample(double theta) {
   if (new_c_int == 0.0) {
     // no full items retained
     if (next_double() > (c_frac / c_)) {
+      //std::cout << "swap with partial (new_c == 0)";
       swap_with_partial();
-    }
+    } //else { std::cout << "skip (new_c == old_c)"; }
     data_.clear();
   } else if (new_c_int == c_int) {
     // no items deleted
-    if (next_double() > (1 - theta * c_frac)/(1 - new_c_frac))
+    if (next_double() > (1 - theta * c_frac)/(1 - new_c_frac)) {
+      //std::cout << "swap with partial (new_c == old_c)";
       swap_with_partial();
+    } //else { std::cout << "skip (new_c == old_c)"; }
   } else {
     if (next_double() < theta * c_frac) {
       // subsample data in random order; last item is partial
       // create sample size new_c_int then swap_with_partial()
+      //std::cout << "subsample + swap with partial";
       subsample(static_cast<uint32_t>(new_c_int));
       swap_with_partial();
     } else {
       // create sample size new_c_int + 1 then move_one_to_partial)
+      //std::cout << "subsample + move one to partial";
       subsample(static_cast<uint32_t>(new_c_int) + 1);
+      //std::cout << " (subsample done)";
       move_one_to_partial();
     }
   }
 
-  if (new_c == new_c_int)
+  if (new_c == new_c_int) {
+    //std::cout << " + reset";
     partial_item_.reset();
+  }
 
   c_ = new_c;
+  //std::cout << " -- done" << std::endl;
 }
 
 template<typename T, typename A>
@@ -256,8 +252,19 @@ double ebpps_sample<T,A>::get_c() const {
 }
 
 template<typename T, typename A>
-bool ebpps_sample<T,A>::has_partial() const {
+auto ebpps_sample<T,A>::get_full_items() const -> result_type {
+  return result_type(data_);
+}
+
+template<typename T, typename A>
+bool ebpps_sample<T,A>::has_partial_item() const {
   return bool(partial_item_);
+}
+
+template<typename T, typename A>
+T ebpps_sample<T,A>::get_partial_item() const {
+  if (!partial_item_) throw std::runtime_error("Call to get_partial_item() when no partial item exists");
+  return *partial_item_;
 }
 
 template<typename T, typename A>
@@ -320,7 +327,7 @@ ebpps_sample<T, A>::const_iterator::const_iterator(const ebpps_sample* sample, b
     return;
 
   // determine in advance if we use the partial item
-  if (!sample->has_partial()) {
+  if (!sample->has_partial_item()) {
     use_partial_ = false; // override any option
   } else if (!force_partial) {
     double c_int;
@@ -333,7 +340,7 @@ ebpps_sample<T, A>::const_iterator::const_iterator(const ebpps_sample* sample, b
     idx_ = PARTIAL_IDX;
   }
 
-  if (sample_->c_== 0.0 || (sample_->data_.size() == 0 && !sample_->has_partial())) { sample_ = nullptr; }
+  if (sample_->c_== 0.0 || (sample_->data_.size() == 0 && !sample_->has_partial_item())) { sample_ = nullptr; }
 }
 
 template<typename T, typename A>

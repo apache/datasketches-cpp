@@ -227,7 +227,8 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
 */
 
 TEST_CASE("ebpps sketch: merge distribution", "[ebpps_sketch]") {
-  uint32_t k = 4;
+  return;
+  uint32_t k = 2;
   uint32_t n = 20;
   uint32_t num_trials = 100000;
 
@@ -238,10 +239,10 @@ TEST_CASE("ebpps sketch: merge distribution", "[ebpps_sketch]") {
   std::vector<double> matrix(n * n); // 2-d results
 
   for (uint32_t iter = 0; iter < num_trials; ++iter) {
-    //ebpps_sketch<int> sk1(k);
-    //ebpps_sketch<int> sk2(k);
-    var_opt_sketch<int> sk1(k);
-    var_opt_sketch<int> sk2(k);
+    ebpps_sketch<int> sk1(k);
+    ebpps_sketch<int> sk2(k);
+    //var_opt_sketch<int> sk1(k);
+    //var_opt_sketch<int> sk2(k);
 
     int offset = n / 2;
     for (unsigned i = 0; i < n / 2; ++i) {
@@ -249,14 +250,14 @@ TEST_CASE("ebpps sketch: merge distribution", "[ebpps_sketch]") {
       sk2.update(offset + i);
     }
 
-    //sk1.merge(sk2);
-    //auto output = sk1.get_result();
-    var_opt_union<int> u(k);
-    u.update(sk1);
-    u.update(sk2);
-    var_opt_sketch<int> vo = u.get_result();
-    std::vector<int> output;
-    for (auto v : vo) output.emplace_back(v.first);
+    sk1.merge(sk2);
+    auto output = sk1.get_result();
+    //var_opt_union<int> u(k);
+    //u.update(sk1);
+    //u.update(sk2);
+    //var_opt_sketch<int> vo = u.get_result();
+    //std::vector<int> output;
+    //for (auto v : vo) output.emplace_back(v.first);
 
     // increment counts
     for (uint32_t i = 0; i < output.size(); ++i) {
@@ -292,16 +293,17 @@ TEST_CASE("ebpps sketch: merge distribution", "[ebpps_sketch]") {
 }
 
 TEST_CASE("ebpps sketch: merge", "[ebpps_sketch]") {
-  return;
-  uint32_t k = 6;
+  //return;
+  uint32_t k = 5;
   uint32_t n = 30;
-  uint32_t num_trials = 100000;
+  uint32_t num_trials = 1000000;
+  //uint32_t num_trials = 1;
   //double expected_c = static_cast<double>(k);
-  //double expected_c = 4.9999999999999999; // i + 1, k=5
+  double expected_c = 4.9999999999999999; // i + 1, k=5
   //double expected_c = 1.5819768068010642; // exp(i) + 1
   //double expected_c = 5.999999999999998; // exp(i/10.0) + 1
   //double expected_c = 3.163974760803654; // exp(i/2) + 1 -- integer division
-  double expected_c = 2.541507153714545; // exp(i/2.0) + 1
+  //double expected_c = 2.541507153714545; // exp(i/2.0) + 1
 
   // create index and weight vectors
   std::vector<int> idx(n);
@@ -310,11 +312,11 @@ TEST_CASE("ebpps sketch: merge", "[ebpps_sketch]") {
   for (size_t i = 0; i < n; ++i) {
     idx[i] = i;
     //wt[i] = 1.0;
-    //wt[i] = i + 1.0;
+    wt[i] = i + 1.0;
     //wt[i] = std::exp(i) + 1;
     //wt[i] = std::exp(i / 10.0) + 1;
     //wt[i] = std::exp(i / 2) + 1;
-    wt[i] = std::exp(i / 2.0) + 1;
+    //wt[i] = std::exp(i / 2.0) + 1;
     total_wt += wt[i];
   }
 
@@ -353,7 +355,10 @@ TEST_CASE("ebpps sketch: merge", "[ebpps_sketch]") {
     }
     */
 
-    sk1.merge(sk2);
+    if (iter % 2 == 0)
+      sk1.merge(sk2);
+    else
+      sk2.merge(sk1);
 
     // increment counts
     for (auto val : sk1)

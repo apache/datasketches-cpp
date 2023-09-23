@@ -142,6 +142,7 @@ auto ebpps_sketch<T,A>::get_result() const -> result_type {
   return sample_.get_sample();
 }
 
+/*
 template<typename T, typename A>
 void ebpps_sketch<T, A>::merge(const ebpps_sketch<T>& sk) {
   double new_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
@@ -175,6 +176,132 @@ void ebpps_sketch<T, A>::merge(ebpps_sketch<T>&& sk) {
   wt_max_ = new_wt_max;
   rho_ = new_rho;
   n_ += sk.n_;
+}
+*/
+
+/* Merging
+ * There is a trivial merge algorithm that involves downsampling each sketch A and B
+ * as A.cum_wt / (A.cum_wt + B.cum_wt) and B.cum_wt / (A.cum_wt + B.cum_wt),
+ * respectively. That merge does preserve first-order probabilities, specifically
+ * the probability proportional to size property, and like all other known merge
+ * algorithms distorts second-order probabilities (co-occurrences). There are
+ * pathological cases, most obvious with k=2 and A.cum_wt == B.cum_wt where that
+ * approach will always take exactly 1 item from A and 1 from B, meaning the
+ * co-occurrence rate for two items from either sketch is guaranteed to be 0.0.
+ * 
+ * With EBPPS, once an item is accepted into the sketch we no longer need to
+ * track the item's weight, All accepted items are treated equally. As a result, we
+ * can take inspiration from the reservoir sampling merge in the datasketches-java
+ * library. We need to merge the smaller sketch into the larger one, swapping as
+ * needed to ensure that, at which point we simply call update() with the items
+ * in the smaller sketch with a weight of cum_wt / result_size -- we cannot just
+ * divide by C since the number of items inserted will necesarily be an integer.
+ * Merging smaller into larger is necessary to ensure that no item has a
+ * contribution to C > 1.0.
+ */
+
+template<typename T, typename A>
+void ebpps_sketch<T, A>::merge(ebpps_sketch<T>&& sk) {
+  if (sk.get_cumulative_weight() == 0.0) return;
+  else if (sk.get_cumulative_weight() > get_cumulative_weight()) {
+    // need to swap this with sk to merge smaller into larger
+    std::swap(*this, sk);
+  }
+
+  internal_merge(sk);
+}
+
+template<typename T, typename A>
+void ebpps_sketch<T, A>::merge(const ebpps_sketch<T>& sk) {
+  if (sk.get_cumulative_weight() == 0.0) return;
+  else if (sk.get_cumulative_weight() > get_cumulative_weight()) {
+    // need to swap this with sk to merge, so make a copy, swap,
+    // and use that to merge
+    ebpps_sketch sk_copy(sk);
+    swap(*this, sk_copy);
+    internal_merge(sk_copy);
+  } else {
+    internal_merge(sk);
+  }
+}
+
+template<typename T, typename A>
+template<typename O>
+void ebpps_sketch<T, A>::internal_merge(O&& sk) {
+  if (sk.cumulative_wt_ > cumulative_wt_)
+    throw std::logic_error("internal_merge() trying to merge larger sketch into this");
+
+  //std::cout << "MERGE()" << std::endl;
+  const ebpps_sample<T>& other_sample = sk.sample_;
+
+  double final_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
+  double new_wt_max = std::max(wt_max_, sk.wt_max_);
+  k_ = std::min(k_, sk.k_);
+  uint64_t new_n = n_ + sk.n_;
+
+  // Insert sk's items with the cumulative weight
+  // split between the input items. We repeat the same process
+  // for full items and the partial item, scaling the input
+  // weight 
+  // point value, we need to divide by the actual number of items
+  // in the input. Consequently, we need to handle every 
+  // item explicitly rather than probabilistically including
+  // the partial item.
+  double avg_wt = sk.get_cumulative_weight() / sk.get_c();
+  auto items = other_sample.get_full_items();
+  //std::cout << "insert items" << std::endl;
+  for (size_t i = 0; i < items.size(); ++i) {
+    // new_wt_max is pre-computed
+    double new_cum_wt = cumulative_wt_ + avg_wt;
+    double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
+
+    if (cumulative_wt_ > 0.0) {
+      //std::cout << "downsample()";
+      sample_.downsample(new_rho / rho_);
+      //std::cout << " -- done" << std::endl;
+    }
+  
+    //std::cout << "create tmp sample";
+    ebpps_sample<T,A> tmp(conditional_forward<O>(items[i]), new_rho * avg_wt, allocator_);
+    //ebpps_sample<T,A> tmp(items[i], new_rho * avg_wt, allocator_);
+    //std::cout << " -- done" << std::endl;
+
+    //std::cout << "merge()";
+    sample_.merge(tmp);
+    //std::cout << " -- done" << std::endl;
+
+    cumulative_wt_ = new_cum_wt;
+    rho_ = new_rho;
+  }
+  //std::cout << "insert partial" << std::endl;
+  // insert partial item with weight scaled by the fractional part of C
+  if (other_sample.has_partial_item()) {
+    double unused;
+    double other_c_frac = std::modf(other_sample.get_c(), &unused);
+
+    double new_cum_wt = cumulative_wt_ + (other_c_frac * avg_wt);
+    double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
+
+    if (cumulative_wt_ > 0.0)
+      sample_.downsample(new_rho / rho_);
+  
+    ebpps_sample<T,A> tmp(conditional_forward<O>(other_sample.get_partial_item()), new_rho * other_c_frac * avg_wt, allocator_);
+    //ebpps_sample<T,A> tmp(other_sample.get_partial_item(), new_rho * other_c_frac * avg_wt, allocator_);
+
+    //std::cout << "before c: " << sample_.get_c() << "\t";
+    sample_.merge(tmp);
+    //std::cout << " after c: " << sample_.get_c() << std::endl;
+
+    cumulative_wt_ = new_cum_wt;
+    rho_ = new_rho;
+  }
+  //std::cout << "finish merge" << std::endl;
+  //std::cout << "end c: " << sample_.get_c() << std::endl;
+
+  // avoid numeric issues by setting cumulative weight to the
+  // pre-computed value
+  cumulative_wt_ = final_cum_wt;
+  n_ = new_n;
 }
 
 /*
@@ -241,7 +368,7 @@ auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) c
   if (empty) {
     flags |= EMPTY_FLAG_MASK;
   } else {
-    flags |= sample_.has_partial() ? HAS_PARTIAL_ITEM_MASK : 0;
+    flags |= sample_.has_partial_item() ? HAS_PARTIAL_ITEM_MASK : 0;
   }
 
   // first prelong
@@ -282,7 +409,7 @@ void ebpps_sketch<T,A>::serialize(std::ostream& os, const SerDe& sd) const {
   if (empty) {
     flags |= EMPTY_FLAG_MASK;
   } else {
-    flags |= sample_.has_partial() ? HAS_PARTIAL_ITEM_MASK : 0;
+    flags |= sample_.has_partial_item() ? HAS_PARTIAL_ITEM_MASK : 0;
   }
 
   // first prelong

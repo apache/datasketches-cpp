@@ -40,8 +40,8 @@ class ebpps_sample {
   public:
     explicit ebpps_sample(uint32_t k, const A& allocator = A());
 
-    ebpps_sample(const T& item, double theta, const A& allocator = A());
-    ebpps_sample(T&& item, double theta, const A& allocator = A());
+    template<typename TT>
+    ebpps_sample(TT&& item, double theta, const A& allocator = A());
 
     // constructor invoked by containing sketch during deserialization
     ebpps_sample(std::vector<T>&& data, optional<T>&& partial_item, double c, const A& allocator = A());
@@ -52,11 +52,20 @@ class ebpps_sample {
     template<typename FwdSample>
     void merge(FwdSample&& other);
 
+    // standard way to query the sample
     using result_type = std::vector<T, A>;
     result_type get_sample() const;
 
     double get_c() const;
-    bool has_partial() const;
+    
+    // intended for internal use
+    // returns only full items
+    result_type get_full_items() const;
+
+    // intended for internal use
+    // handles only the partial item
+    bool has_partial_item() const;
+    T get_partial_item() const;
         
     string<A> to_string() const;
 
