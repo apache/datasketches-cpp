@@ -90,39 +90,31 @@ void ebpps_sample<T,A>::downsample(double theta) {
   if (new_c_int == 0.0) {
     // no full items retained
     if (next_double() > (c_frac / c_)) {
-      //std::cout << "swap with partial (new_c == 0)";
       swap_with_partial();
-    } //else { std::cout << "skip (new_c == old_c)"; }
+    }
     data_.clear();
   } else if (new_c_int == c_int) {
     // no items deleted
     if (next_double() > (1 - theta * c_frac)/(1 - new_c_frac)) {
-      //std::cout << "swap with partial (new_c == old_c)";
       swap_with_partial();
-    } //else { std::cout << "skip (new_c == old_c)"; }
+    }
   } else {
     if (next_double() < theta * c_frac) {
       // subsample data in random order; last item is partial
       // create sample size new_c_int then swap_with_partial()
-      //std::cout << "subsample + swap with partial";
       subsample(static_cast<uint32_t>(new_c_int));
       swap_with_partial();
     } else {
       // create sample size new_c_int + 1 then move_one_to_partial)
-      //std::cout << "subsample + move one to partial";
       subsample(static_cast<uint32_t>(new_c_int) + 1);
-      //std::cout << " (subsample done)";
       move_one_to_partial();
     }
   }
 
-  if (new_c == new_c_int) {
-    //std::cout << " + reset";
+  if (new_c == new_c_int)
     partial_item_.reset();
-  }
 
   c_ = new_c;
-  //std::cout << " -- done" << std::endl;
 }
 
 template<typename T, typename A>

@@ -228,10 +228,10 @@ void ebpps_sketch<T, A>::merge(const ebpps_sketch<T>& sk) {
 template<typename T, typename A>
 template<typename O>
 void ebpps_sketch<T, A>::internal_merge(O&& sk) {
+  // TODO: remove after adding proper unit tests
   if (sk.cumulative_wt_ > cumulative_wt_)
     throw std::logic_error("internal_merge() trying to merge larger sketch into this");
 
-  //std::cout << "MERGE()" << std::endl;
   const ebpps_sample<T>& other_sample = sk.sample_;
 
   double final_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
@@ -249,31 +249,22 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
   // the partial item.
   double avg_wt = sk.get_cumulative_weight() / sk.get_c();
   auto items = other_sample.get_full_items();
-  //std::cout << "insert items" << std::endl;
   for (size_t i = 0; i < items.size(); ++i) {
     // new_wt_max is pre-computed
     double new_cum_wt = cumulative_wt_ + avg_wt;
     double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
 
     if (cumulative_wt_ > 0.0) {
-      //std::cout << "downsample()";
       sample_.downsample(new_rho / rho_);
-      //std::cout << " -- done" << std::endl;
     }
   
-    //std::cout << "create tmp sample";
     ebpps_sample<T,A> tmp(conditional_forward<O>(items[i]), new_rho * avg_wt, allocator_);
-    //ebpps_sample<T,A> tmp(items[i], new_rho * avg_wt, allocator_);
-    //std::cout << " -- done" << std::endl;
 
-    //std::cout << "merge()";
     sample_.merge(tmp);
-    //std::cout << " -- done" << std::endl;
 
     cumulative_wt_ = new_cum_wt;
     rho_ = new_rho;
   }
-  //std::cout << "insert partial" << std::endl;
   // insert partial item with weight scaled by the fractional part of C
   if (other_sample.has_partial_item()) {
     double unused;
@@ -286,17 +277,12 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
       sample_.downsample(new_rho / rho_);
   
     ebpps_sample<T,A> tmp(conditional_forward<O>(other_sample.get_partial_item()), new_rho * other_c_frac * avg_wt, allocator_);
-    //ebpps_sample<T,A> tmp(other_sample.get_partial_item(), new_rho * other_c_frac * avg_wt, allocator_);
 
-    //std::cout << "before c: " << sample_.get_c() << "\t";
     sample_.merge(tmp);
-    //std::cout << " after c: " << sample_.get_c() << std::endl;
 
     cumulative_wt_ = new_cum_wt;
     rho_ = new_rho;
   }
-  //std::cout << "finish merge" << std::endl;
-  //std::cout << "end c: " << sample_.get_c() << std::endl;
 
   // avoid numeric issues by setting cumulative weight to the
   // pre-computed value
