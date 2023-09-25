@@ -45,8 +45,8 @@ ebpps_sketch<T, A>::ebpps_sketch(uint32_t k, const A& allocator) :
   n_(0),
   cumulative_wt_(0.0),
   wt_max_(0.0),
-  rho_(1.0),
-  sample_(k)
+  rho_(1.0)
+  sample_((k == 0 || k > MAX_K ? 0 : k)
   {
     if (k == 0 || k > MAX_K)
       throw std::invalid_argument("k must be strictly positive and less than " + std::to_string(MAX_K));
