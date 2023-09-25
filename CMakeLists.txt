@@ -70,6 +70,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Enable testing
 option(BUILD_TESTS "Build unit tests" ON)
 if (BUILD_TESTS)
+  list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
   enable_testing()
 endif()
 
