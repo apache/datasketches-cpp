@@ -142,43 +142,6 @@ auto ebpps_sketch<T,A>::get_result() const -> result_type {
   return sample_.get_sample();
 }
 
-/*
-template<typename T, typename A>
-void ebpps_sketch<T, A>::merge(const ebpps_sketch<T>& sk) {
-  double new_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
-  double new_wt_max = std::max(wt_max_, sk.wt_max_);
-  double new_rho = std::min(1.0 / new_wt_max, std::min(k_, sk.k_) / new_cum_wt);
-
-  sample_.downsample(new_rho / rho_);
-
-  ebpps_sample<T,A> other_sample(sk.sample_);
-  other_sample.downsample(new_rho / sk.rho_);
-
-  sample_.merge(other_sample);
-
-  cumulative_wt_ = new_cum_wt;
-  wt_max_ = new_wt_max;
-  rho_ = new_rho;
-  n_ += sk.n_;
-}
-
-template<typename T, typename A>
-void ebpps_sketch<T, A>::merge(ebpps_sketch<T>&& sk) {
-  double new_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
-  double new_wt_max = std::max(wt_max_, sk.wt_max_);
-  double new_rho = std::min(1.0 / new_wt_max, std::min(k_, sk.k_) / new_cum_wt);
-
-  sample_.downsample(new_rho / rho_);
-  sk.sample_.downsample(new_rho / sk.rho_);
-  sample_.merge(sk.sample_);
-
-  cumulative_wt_ = new_cum_wt;
-  wt_max_ = new_wt_max;
-  rho_ = new_rho;
-  n_ += sk.n_;
-}
-*/
-
 /* Merging
  * There is a trivial merge algorithm that involves downsampling each sketch A and B
  * as A.cum_wt / (A.cum_wt + B.cum_wt) and B.cum_wt / (A.cum_wt + B.cum_wt),
@@ -190,13 +153,12 @@ void ebpps_sketch<T, A>::merge(ebpps_sketch<T>&& sk) {
  * co-occurrence rate for two items from either sketch is guaranteed to be 0.0.
  * 
  * With EBPPS, once an item is accepted into the sketch we no longer need to
- * track the item's weight, All accepted items are treated equally. As a result, we
+ * track the item's weight: All accepted items are treated equally. As a result, we
  * can take inspiration from the reservoir sampling merge in the datasketches-java
  * library. We need to merge the smaller sketch into the larger one, swapping as
  * needed to ensure that, at which point we simply call update() with the items
- * in the smaller sketch with a weight of cum_wt / result_size -- we cannot just
- * divide by C since the number of items inserted will necesarily be an integer.
- * Merging smaller into larger is necessary to ensure that no item has a
+ * in the smaller sketch as long as we adjust the weight appropriately.
+ * Merging smaller into larger is essential to ensure that no item has a
  * contribution to C > 1.0.
  */
 
@@ -242,11 +204,12 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
   // Insert sk's items with the cumulative weight
   // split between the input items. We repeat the same process
   // for full items and the partial item, scaling the input
-  // weight 
-  // point value, we need to divide by the actual number of items
-  // in the input. Consequently, we need to handle every 
-  // item explicitly rather than probabilistically including
-  // the partial item.
+  // weight appropriately.
+  // We handle all C input items, meaning we always process
+  // the partial item using a scaled down weight.
+  // Handling the partial item by probabilistically including
+  // it as a full item would be correct on average but would
+  // introduce bias for any specific merge operation.
   double avg_wt = sk.get_cumulative_weight() / sk.get_c();
   auto items = other_sample.get_full_items();
   for (size_t i = 0; i < items.size(); ++i) {
