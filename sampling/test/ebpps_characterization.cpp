@@ -43,69 +43,6 @@ static std::string testBinaryInputPath = "test/";
 
 namespace datasketches {
 
-static constexpr double EPS = 1e-13;
-
-static ebpps_sketch<int> create_unweighted_sketch(uint32_t k, uint64_t n) {
-  ebpps_sketch<int> sk(k);
-  for (uint64_t i = 0; i < n; ++i) {
-    sk.update(static_cast<int>(i), 1.0);
-  }
-  return sk;
-}
-
-template<typename T, typename A>
-static void check_if_equal(ebpps_sketch<T, A>& sk1, ebpps_sketch<T, A>& sk2) {
-  REQUIRE(sk1.get_k() == sk2.get_k());
-  REQUIRE(sk1.get_n() == sk2.get_n());
-  REQUIRE(sk1.get_num_samples() == sk2.get_num_samples());
-
-  auto it1 = sk1.begin();
-  auto it2 = sk2.begin();
-
-  while ((it1 != sk1.end()) && (it2 != sk2.end())) {
-    auto p1 = *it1;
-    auto p2 = *it2;
-    REQUIRE(p1.first == p2.first);   // data values
-    REQUIRE(p1.second == p2.second); // weights
-    ++it1;
-    ++it2;
-  }
-
-  REQUIRE((it1 == sk1.end() && it2 == sk2.end())); // iterators must end at the same time
-}
-
-TEST_CASE("ebpps sketch: invalid k", "[ebpps_sketch]") {
-  REQUIRE_THROWS_AS(ebpps_sketch<int>(0), std::invalid_argument);
-  REQUIRE_THROWS_AS(ebpps_sketch<int>(ebpps_constants::MAX_K + 1), std::invalid_argument);
-}
-
-TEST_CASE("ebpps sketch: insert items", "[ebpps_sketch]") {
-  size_t n = 0;
-  uint32_t k = 5;
-  ebpps_sketch<int> sk = create_unweighted_sketch(k, n);
-  REQUIRE(sk.is_empty());
-
-  n = k;
-  sk = create_unweighted_sketch(k, n);
-  REQUIRE_FALSE(sk.is_empty());
-  REQUIRE(sk.get_n() == n);
-  REQUIRE(sk.get_cumulative_weight() == static_cast<double>(n));
-  for (int val : sk.get_result())
-    REQUIRE(val < static_cast<int>(n));
-
-  n = k * 10;
-  sk = create_unweighted_sketch(k, n);
-  REQUIRE_FALSE(sk.is_empty());
-  REQUIRE(sk.get_n() == n);
-  REQUIRE(sk.get_cumulative_weight() == static_cast<double>(n));
-  
-  auto result = sk.get_result();
-  REQUIRE(result.size() == sk.get_k()); // uniform weights so should be exactly k
-  for (int val : sk.get_result())
-    REQUIRE(val < static_cast<int>(n));
-}
-
-/*
 template<typename T>
 double entropy(std::vector<T> x) {
   T sum = 0;
@@ -150,6 +87,7 @@ double kl_divergence(std::vector<T> p_arr, std::vector<T> q_arr) {
   return D;
 }
 
+/*
 TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
   uint32_t k = 6;
   uint32_t n = 30;
@@ -224,6 +162,7 @@ TEST_CASE("ebpps sketch: entropy", "[ebpps_sketch]") {
       << std::endl;
   }
 }
+*/
 
 TEST_CASE("ebpps sketch: merge distribution", "[ebpps_sketch]") {
   return;
@@ -339,18 +278,20 @@ TEST_CASE("ebpps sketch: merge", "[ebpps_sketch]") {
       sk2.update(idx[offset + i], wt[offset + i]);
     }
 
+    /*
     // feed in data
-    // std::shuffle(idx.begin(), idx.end(), random_utils::rand);
-    // auto it_start = idx.begin(); auto it_end = idx.end();
-    // for (auto it = it_start; it != it_end; ++it) {
-    //   sk1.update(idx[*it], wt[idx[*it]]);
-    // }
+    std::shuffle(idx.begin(), idx.end(), random_utils::rand);
+    auto it_start = idx.begin(); auto it_end = idx.end();
+    for (auto it = it_start; it != it_end; ++it) {
+      sk1.update(idx[*it], wt[idx[*it]]);
+    }
 
-    // std::shuffle(idx.begin(), idx.end(), random_utils::rand);
-    // it_start = idx.begin(); it_end = idx.end();
-    // for (auto it = it_start; it != it_end; ++it) {
-    //   sk2.update(idx[*it], wt[idx[*it]]);
-    // }
+    std::shuffle(idx.begin(), idx.end(), random_utils::rand);
+    it_start = idx.begin(); it_end = idx.end();
+    for (auto it = it_start; it != it_end; ++it) {
+      sk2.update(idx[*it], wt[idx[*it]]);
+    }
+    */
 
     if (iter % 2 == 0)
       sk1.merge(sk2);
@@ -379,5 +320,5 @@ TEST_CASE("ebpps sketch: merge", "[ebpps_sketch]") {
       << std::endl;
   }
 }
-*/
+
 }

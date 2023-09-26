@@ -297,35 +297,31 @@ size_t ebpps_sample<T, A>::get_serialized_item_size_bytes(const SerDe& sd) const
 }
 
 template<typename T, typename A>
-typename ebpps_sample<T, A>::const_iterator ebpps_sample<T, A>::begin(bool force_partial) const {
-  return const_iterator(this, force_partial);
+typename ebpps_sample<T, A>::const_iterator ebpps_sample<T, A>::begin() const {
+  return const_iterator(this);
 }
 
 template<typename T, typename A>
 typename ebpps_sample<T, A>::const_iterator ebpps_sample<T, A>::end() const {
-  return const_iterator(nullptr, false);
+  return const_iterator(nullptr);
 }
 
 
 // -------- ebpps_sketch::const_iterator implementation ---------
 
 template<typename T, typename A>
-ebpps_sample<T, A>::const_iterator::const_iterator(const ebpps_sample* sample, bool force_partial) :
+ebpps_sample<T, A>::const_iterator::const_iterator(const ebpps_sample* sample) :
   sample_(sample),
   idx_(0),
-  use_partial_(force_partial)
+  use_partial_(false)
 {
   if (sample == nullptr)
     return;
 
   // determine in advance if we use the partial item
-  if (!sample->has_partial_item()) {
-    use_partial_ = false; // override any option
-  } else if (!force_partial) {
-    double c_int;
-    double c_frac = std::modf(sample_->get_c(), &c_int);
-    use_partial_ = sample->next_double() < c_frac;
-  }
+  double c_int;
+  double c_frac = std::modf(sample_->get_c(), &c_int);
+  use_partial_ = sample->next_double() < c_frac;
 
   // sample with no items
   if (sample_->data_.size() == 0 && use_partial_) {

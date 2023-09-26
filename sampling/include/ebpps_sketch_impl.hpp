@@ -217,9 +217,8 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
     double new_cum_wt = cumulative_wt_ + avg_wt;
     double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
 
-    if (cumulative_wt_ > 0.0) {
+    if (cumulative_wt_ > 0.0)
       sample_.downsample(new_rho / rho_);
-    }
   
     ebpps_sample<T,A> tmp(conditional_forward<O>(items[i]), new_rho * avg_wt, allocator_);
 
@@ -228,6 +227,7 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
     cumulative_wt_ = new_cum_wt;
     rho_ = new_rho;
   }
+
   // insert partial item with weight scaled by the fractional part of C
   if (other_sample.has_partial_item()) {
     double unused;
@@ -336,13 +336,11 @@ auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) c
   ptr += copy_to_mem(rho_, ptr);
   ptr += copy_to_mem(sample_.get_c(), ptr);
 
-  // force inclusion of the partial item in the iterator,
-  // which means we need to serialize one at a time rather
-  // than being able to use an array
-  auto it = sample_.begin(true);
-  auto it_end = sample_.end();
-  while (it != it_end)
-    ptr += sd.serialize(ptr, end_ptr - ptr, it++, 1);
+  auto items = sample_.get_full_items();
+  ptr += sd.serialize(ptr, end_ptr - ptr, items.data(), static_cast<unsigned>(items.size()));
+
+  if (sample_.has_partial_item())
+    ptr += sd.serialize(ptr, end_ptr - ptr, sample_.get_partial_item(), 1);
 
   return bytes;
 }
@@ -377,14 +375,12 @@ void ebpps_sketch<T,A>::serialize(std::ostream& os, const SerDe& sd) const {
   write(os, rho_);
   write(os, sample_.get_c());
 
-  // force inclusion of the partial item in the iterator,
-  // which means we need to serialize one at a time rather
-  // than being able to use an array
-  auto it = sample_.begin(true);
-  auto it_end = sample_.end();
-  while (it != it_end)
-    sd.serialize(os, it++, 1);
+  auto items = sample_.get_full_items();
+  sd.serialize(os, items.data(), static_cast<unsigned>(items.size()));
 
+  if (sample_.has_partial_item())
+    sd.serialize(os, sample_.get_partial_item(), 1);
+ 
   if (!os.good()) throw std::runtime_error("error writing to std::ostream");
 }
 

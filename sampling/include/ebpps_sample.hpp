@@ -40,6 +40,7 @@ class ebpps_sample {
   public:
     explicit ebpps_sample(uint32_t k, const A& allocator = A());
 
+    // constructor used to create a sample to merge one itme
     template<typename TT>
     ebpps_sample(TT&& item, double theta, const A& allocator = A());
 
@@ -105,7 +106,7 @@ class ebpps_sample {
      * @param force_partial forces the inclusion of the partial item, if one exists
      * @return iterator pointing to the first item in the sample
      */
-    const_iterator begin(bool force_partial = false) const;
+    const_iterator begin() const;
 
     /**
      * Iterator pointing to the past-the-end item in the sample.
@@ -154,7 +155,7 @@ private:
   static const size_t PARTIAL_IDX = static_cast<size_t>(-1);
 
   // default iterator over sample
-  const_iterator(const ebpps_sample<T, A>* sample, bool force_partial = false);
+  const_iterator(const ebpps_sample<T, A>* sample);
 
   const ebpps_sample<T, A>* sample_;
   size_t idx_;
