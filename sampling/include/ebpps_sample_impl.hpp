@@ -56,9 +56,9 @@ ebpps_sample<T,A>::ebpps_sample(TT&& item, double theta, const A& allocator) :
 template<typename T, typename A>
 ebpps_sample<T,A>::ebpps_sample(std::vector<T>&& data, optional<T>&& partial_item, double c, const A& allocator) :
   allocator_(allocator),
-  data_(data),
+  c_(c),
   partial_item_(partial_item),
-  c_(c)
+  data_(data)
   {}
 
 template<typename T, typename A>
@@ -133,7 +133,7 @@ void ebpps_sample<T,A>::merge(FwdSample&& other) {
     data_.emplace_back(conditional_forward<FwdSample>(other.data_[i]));
 
   // This modifies the original algorithm slightly due to numeric
-  // precision issues. Specifically, the test if c_Frac + other_c_frac == 1.0
+  // precision issues. Specifically, the test if c_frac + other_c_frac == 1.0
   // happens before tests for < 1.0 or > 1.0 and can also be triggered
   // if c_ == floor(c_) (the updated value of c_, not the input).
   //

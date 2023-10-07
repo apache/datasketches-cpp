@@ -47,12 +47,73 @@ TEST_CASE("ebpps sample: pre-initialized", "[ebpps_sketch]") {
   REQUIRE(sample.get_c() == theta);
   REQUIRE(sample.get_num_retained_items() == 1);
   REQUIRE(sample.get_sample().size() == 1);
-
+  REQUIRE(sample.has_partial_item() == false);
+  
   theta = 1e-300;
   sample = ebpps_sample<int>(-1, theta);
   REQUIRE(sample.get_c() == theta);
   REQUIRE(sample.get_num_retained_items() == 1);
   REQUIRE(sample.get_sample().size() == 0); // assuming the random number is > 1e-300
+  REQUIRE(sample.has_partial_item());
+}
+
+TEST_CASE("ebpps sample: downsampling", "[ebpps_sketch]") {
+  ebpps_sample<char> sample = ebpps_sample<char>('a', 1.0);
+
+  sample.downsample(2.0); // no-op
+  REQUIRE(sample.get_c() == 1.0);
+  REQUIRE(sample.get_num_retained_items() == 1);
+  REQUIRE(sample.has_partial_item() == false);
+
+  // downsample and result in an empty sample
+  random_utils::override_seed(12);
+  std::vector<char> items = {'a', 'b'};
+  optional<char> opt; // empty
+  sample = ebpps_sample<char>(std::move(items), std::move(opt), 1.8);
+  sample.downsample(0.5);
+  REQUIRE(sample.get_c() == 0.9);
+  REQUIRE(sample.get_num_retained_items() == 0);
+  REQUIRE(sample.has_partial_item() == false);
+
+  // downsample and result in a sample with a partial item
+  items = {'a', 'b'};
+  opt.reset();
+  sample = ebpps_sample<char>(std::move(items), std::move(opt), 1.5);
+  sample.downsample(0.5);
+  REQUIRE(sample.get_c() == 0.75);
+  REQUIRE(sample.get_num_retained_items() == 1);
+  REQUIRE(sample.has_partial_item() == true);
+  for (char c : sample) {
+    REQUIRE((c == 'a' || c == 'b'));
+  }
+
+  // downsample to an exact integer c (7.5 * 0.8 = 6.0)
+  items = {'a', 'b', 'c', 'd', 'e', 'f', 'g'};
+  opt.emplace('h');
+  auto ref_items = items; // copy to check contents
+  ref_items.emplace_back('h'); // include partial item
+  sample = ebpps_sample<char>(std::move(items), std::move(opt), 7.5);
+  sample.downsample(0.8);
+  REQUIRE(sample.get_c() == 6.0);
+  REQUIRE(sample.get_num_retained_items() == 6);
+  REQUIRE(sample.has_partial_item() == false);
+  for (char c : sample) {
+    REQUIRE(std::find(ref_items.begin(), ref_items.end(), c) != ref_items.end());
+  }
+
+  // downsample to c > 1 with partial item
+  items = ref_items; // includes previous optional item
+  opt.emplace('i');
+  sample = ebpps_sample<char>(std::move(items), std::move(opt), 8.5);
+  REQUIRE(sample.get_partial_item() == 'i');
+  sample.downsample(0.8);
+  REQUIRE(sample.get_c() == Approx(6.8).margin(1e-15));
+  REQUIRE(sample.get_num_retained_items() == 7);
+  REQUIRE(sample.has_partial_item() == true);
+  ref_items.emplace_back('i');
+  for (char c : sample) {
+    REQUIRE(std::find(ref_items.begin(), ref_items.end(), c) != ref_items.end());
+  }
 }
 
 TEST_CASE("ebpps sample: merge unit samples", "[ebpps_sketch]") {
@@ -65,6 +126,11 @@ TEST_CASE("ebpps sample: merge unit samples", "[ebpps_sketch]") {
     REQUIRE(sample.get_c() == static_cast<double>(i));
     REQUIRE(sample.get_num_retained_items() == i);
   }
+
+  sample.reset();
+  REQUIRE(sample.get_c() == 0);
+  REQUIRE(sample.get_num_retained_items() == 0);
+  REQUIRE(sample.has_partial_item() == false);
 }
 
 } // namespace datasketches

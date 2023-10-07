@@ -48,6 +48,10 @@ namespace random_utils {
   static std::random_device rd; // possibly unsafe in MinGW with GCC < 9.2
   static thread_local std::mt19937_64 rand(rd());
   static thread_local std::uniform_real_distribution<> next_double(0.0, 1.0);
+
+  inline void override_seed(uint64_t s) {
+    rand.seed(s);
+  }
 }
 
 
