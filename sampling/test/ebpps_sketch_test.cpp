@@ -79,6 +79,22 @@ TEST_CASE("ebpps sketch: invalid k", "[ebpps_sketch]") {
   REQUIRE_THROWS_AS(ebpps_sketch<int>(ebpps_constants::MAX_K + 1), std::invalid_argument);
 }
 
+TEST_CASE("ebpps sketch: invalid weights", "[ebpps_sketch]") {
+  uint32_t k = 100;
+  ebpps_sketch<int> sk = create_unweighted_sketch(k, 3);
+  REQUIRE(sk.get_n() == 3);
+  REQUIRE(sk.get_cumulative_weight() == 3.0);
+  sk.update(-1, 0.0); // no-op
+  REQUIRE(sk.get_n() == 3);
+  REQUIRE(sk.get_cumulative_weight() == 3.0);
+
+  REQUIRE_THROWS_AS(sk.update(-2, -1.0), std::invalid_argument);
+
+  ebpps_sketch<float> sk2(k);
+  REQUIRE_THROWS_AS(sk2.update(-2, std::numeric_limits<float>::infinity()), std::invalid_argument);
+  REQUIRE_THROWS_AS(sk2.update(-2, nanf("")), std::invalid_argument);
+}
+
 TEST_CASE("ebpps sketch: insert items", "[ebpps_sketch]") {
   size_t n = 0;
   uint32_t k = 5;
