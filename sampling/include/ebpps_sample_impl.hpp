@@ -65,7 +65,6 @@ ebpps_sample<T,A>::ebpps_sample(std::unique_ptr<T, items_deleter>&& items, optio
     data_.reserve(num);
     for (size_t i = 0; i < num; ++i)
       data_.emplace_back(std::move(data[i]));
-    items.release();
   }
 
 template<typename T, typename A>
@@ -354,13 +353,11 @@ std::pair<ebpps_sample<T, A>, size_t> ebpps_sample<T, A>::deserialize(const uint
   bool has_partial = c_frac != 0.0;
 
   uint32_t num_full_items = static_cast<uint32_t>(c_int);
-  A alloc(allocator);
-  std::unique_ptr<T, items_deleter> items(alloc.allocate(num_full_items), items_deleter(allocator, false, num_full_items));
-  if (num_full_items > 0) {
-    ptr += sd.deserialize(ptr, end_ptr - ptr, items.get(), num_full_items);
-    // serde did not throw, enable destructors
-    items.get_deleter().set_destroy(true);
-  }
+  items_deleter deleter(A(allocator), false, num_full_items);
+  std::unique_ptr<T, items_deleter> items(A(allocator).allocate(num_full_items), deleter);
+  ptr += sd.deserialize(ptr, end_ptr - ptr, items.get(), num_full_items);
+  // serde did not throw, enable destructors
+  items.get_deleter().set_destroy(true);
 
   optional<T> partial_item;
   if (has_partial) {
@@ -388,13 +385,11 @@ ebpps_sample<T, A> ebpps_sample<T, A>::deserialize(std::istream& is, const SerDe
   bool has_partial = c_frac != 0.0;
 
   uint32_t num_full_items = static_cast<uint32_t>(c_int);
-  A alloc(allocator);
-  std::unique_ptr<T, items_deleter> items(alloc.allocate(num_full_items), items_deleter(allocator, false, num_full_items));
-  if (num_full_items > 0) {
-    sd.deserialize(is, items.get(), num_full_items);
-    // serde did not throw, enable destructors
-    items.get_deleter().set_destroy(true);
-  }
+  items_deleter deleter(A(allocator), false, num_full_items);
+  std::unique_ptr<T, items_deleter> items(A(allocator).allocate(num_full_items), deleter);
+  sd.deserialize(is, items.get(), num_full_items);
+  // serde did not throw, enable destructors
+  items.get_deleter().set_destroy(true);
 
   optional<T> partial_item;
   if (has_partial) {
