@@ -201,12 +201,13 @@ class ebpps_sketch {
 
     /**
      * Prints a summary of the sketch.
+     * @param detail if true, prints values of items
      * @return the summary as a string
      */
-    string<A> to_string() const;
+    string<A> to_string(bool detail = false) const;
 
     /**
-     * Prints the raw sketch items to a string. Calls items_to_stream() internally.
+     * Prints the raw sketch items to a string.
      * Only works for type T with a defined operator<<() and
      * kept separate from to_string() to allow compilation even if
      * T does not have such an operator defined.
@@ -233,7 +234,7 @@ class ebpps_sketch {
     typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocDouble;
 
     static const uint8_t PREAMBLE_LONGS_EMPTY  = 1;
-    static const uint8_t PREAMBLE_LONGS_FULL   = 5;
+    static const uint8_t PREAMBLE_LONGS_FULL   = 5; // C is part of sample_
     static const uint8_t SER_VER = 1;
     static const uint8_t FAMILY_ID  = 19;
     static const uint8_t EMPTY_FLAG_MASK  = 4;

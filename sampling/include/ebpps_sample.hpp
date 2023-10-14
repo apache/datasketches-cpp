@@ -44,8 +44,9 @@ class ebpps_sample {
     template<typename TT>
     ebpps_sample(TT&& item, double theta, const A& allocator = A());
 
-    // constructor invoked by containing sketch during deserialization
-    ebpps_sample(std::vector<T>&& data, optional<T>&& partial_item, double c, const A& allocator = A());
+    // for deserialization
+    class items_deleter;
+    ebpps_sample(std::unique_ptr<T, items_deleter>&& data, optional<T>&& partial_item, double c, const A& allocator = A());
 
     void reset();
     void downsample(double theta);
@@ -79,24 +80,65 @@ class ebpps_sample {
     inline uint32_t get_num_retained_items() const;
 
     /**
-     * Computes size needed to serialize the current state of the sample. Does not include the
-     * size of any metadata or constants in the sample.
+     * Computes size needed to serialize the current state of the sample.
      * This version is for fixed-size arithmetic types (integral and floating point).
      * @param sd instance of a SerDe
      * @return size in bytes needed to serialize the items in this sample
      */
     template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
-    inline size_t get_serialized_item_size_bytes(const SerDe& sd = SerDe()) const;
+    inline size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
     /**
-     * Computes size needed to serialize the items in the sample. Does not include the
-     * size of any metadata or constants in the sample.
+     * Computes size needed to serialize the items in the sample.
      * This version is for all other types and can be expensive since every item needs to be looked at.
      * @param sd instance of a SerDe
      * @return size in bytes needed to serialize the items in this sample
      */
     template<typename TT = T, typename SerDe = serde<T>, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type = 0>
-    inline size_t get_serialized_item_size_bytes(const SerDe& sd = SerDe()) const;
+    inline size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
+
+    // This is a convenience alias for users
+    // The type returned by the following serialize method
+    using vector_bytes = vector_u8<A>;
+
+    /**
+     * This method serializes the sample as a vector of bytes.
+     * @param ptr pointer to start of pre-allocated memory to use
+     * @param end_ptr pointer to end of pre-allocated memory to use
+     * @param sd instance of a SerDe
+     * @return number of bytes written
+     */
+    template<typename SerDe = serde<T>>
+    size_t serialize(uint8_t* ptr, const uint8_t* end_ptr, const SerDe& sd = SerDe()) const;
+
+    /**
+     * This method serializes the sample into a given stream in a binary form
+     * @param os output stream
+     * @param sd instance of a SerDe
+     */
+    template<typename SerDe = serde<T>>
+    void serialize(std::ostream& os, const SerDe& sd = SerDe()) const;
+
+    /**
+     * This method deserializes a sample from a given array of bytes.
+     * @param ptr pointer to the array of bytes
+     * @param size the size of the array
+     * @param sd instance of a SerDe
+     * @param allocator instance of an allocator
+     * @return a std::pair with a sample and the number of bytes read
+     */
+    template<typename SerDe = serde<T>>
+    static std::pair<ebpps_sample, size_t> deserialize(const uint8_t* ptr, size_t size, const SerDe& sd = SerDe(), const A& allocator = A());
+
+    /**
+     * This method deserializes a sample from a given stream.
+     * @param is input stream
+     * @param sd instance of a SerDe
+     * @param allocator instance of an allocator
+     * @return an instance of a sample
+     */
+    template<typename SerDe = serde<T>>
+    static ebpps_sample deserialize(std::istream& is, const SerDe& sd = SerDe(), const A& allocator = A());
 
     class const_iterator;
 

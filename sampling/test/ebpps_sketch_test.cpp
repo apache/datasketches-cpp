@@ -127,10 +127,12 @@ TEST_CASE("ebpps sketch: insert items", "[ebpps_sketch]") {
 
 TEST_CASE("ebpps sketch: serialize/deserialize bytes", "[ebpps_sketch]") {
   // since C <= k we don't have the usual sketch notion of exact vs estimation
-  // mode at any time. The onyl real serializaiton cases are empty vs non-empty.
+  // mode at any time. The only real serializaiton cases are empty and non-empty
+  // with and without a partial item
   uint32_t k = 10;
   ebpps_sketch<std::string> sk(k);
-  
+
+  // empty  
   auto bytes = sk.serialize();
   REQUIRE(bytes.size() == sk.get_serialized_size_bytes());
   REQUIRE_THROWS_AS(ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size()-1), std::out_of_range);
@@ -140,6 +142,15 @@ TEST_CASE("ebpps sketch: serialize/deserialize bytes", "[ebpps_sketch]") {
   for (uint32_t i = 0; i < k; ++i)
     sk.update(std::to_string(i));
 
+  // non-empty, no partial item
+  bytes = sk.serialize();
+  REQUIRE(bytes.size() == sk.get_serialized_size_bytes());
+  REQUIRE_THROWS_AS(ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size()-1), std::out_of_range);
+  sk2 = ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size());
+  check_if_equal(sk, sk2);
+
+  // non-empty with partial item
+  sk.update(std::to_string(2 * k), k * 1.7);
   bytes = sk.serialize();
   REQUIRE(bytes.size() == sk.get_serialized_size_bytes());
   REQUIRE_THROWS_AS(ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size()-1), std::out_of_range);

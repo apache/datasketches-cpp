@@ -54,12 +54,18 @@ ebpps_sample<T,A>::ebpps_sample(TT&& item, double theta, const A& allocator) :
   }
 
 template<typename T, typename A>
-ebpps_sample<T,A>::ebpps_sample(std::vector<T>&& data, optional<T>&& partial_item, double c, const A& allocator) :
+ebpps_sample<T,A>::ebpps_sample(std::unique_ptr<T, items_deleter>&& items, optional<T>&& partial_item, double c, const A& allocator) :
   allocator_(allocator),
   c_(c),
-  partial_item_(partial_item),
-  data_(data)
-  {}
+  partial_item_(partial_item)
+  {
+    T* data = items.get();
+    size_t num = static_cast<size_t>(c);
+    data_.reserve(num);
+    for (size_t i = 0; i < num; ++i)
+      data_.emplace_back(std::move(data[i]));
+    items.release();
+  }
 
 template<typename T, typename A>
 auto ebpps_sample<T,A>::get_sample() const -> result_type {
@@ -167,13 +173,12 @@ void ebpps_sample<T,A>::merge(FwdSample&& other) {
 }
 
 template<typename T, typename A>
-string<A> ebpps_sample<T,A>::to_string() const {
+string<A> ebpps_sample<T ,A>::to_string() const {
   std::ostringstream oss;
-  oss << "c     : " << c_ << std::endl
-      << "sample:" << std::endl;
+  oss << "   sample:" << std::endl;
   for (const T& item : data_)
     oss << "\t" << item << std::endl;
-  oss << "partial: " << (bool(partial_item_) ? std::to_string(*partial_item_) : "NULL") << std::endl;
+  oss << "   partial: " << (bool(partial_item_) ? (*partial_item_) : "NULL") << std::endl;
 
   return oss.str();
 }
@@ -278,15 +283,20 @@ uint32_t ebpps_sample<T,A>::get_num_retained_items() const {
 // implementation for fixed-size arithmetic types (integral and floating point)
 template<typename T, typename A>
 template<typename TT, typename SerDe, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
-size_t ebpps_sample<T, A>::get_serialized_item_size_bytes(const SerDe&) const {
-  return data_.size() + (partial_item_ ? 1 : 0) * sizeof(T);
+size_t ebpps_sample<T, A>::get_serialized_size_bytes(const SerDe&) const {
+  if (c_ == 0.0)
+    return 0;
+  else
+    return sizeof(c_) + (data_.size() + (partial_item_ ? 1 : 0)) * sizeof(T);
 }
 
 // implementation for all other types
 template<typename T, typename A>
 template<typename TT, typename SerDe, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
-size_t ebpps_sample<T, A>::get_serialized_item_size_bytes(const SerDe& sd) const {
-  size_t num_bytes = 0;
+size_t ebpps_sample<T, A>::get_serialized_size_bytes(const SerDe& sd) const {
+  if (c_ == 0.0) return 0;
+
+  size_t num_bytes = sizeof(c_);
   for (auto it : data_)
     num_bytes += sd.size_of_item(it);
 
@@ -295,6 +305,110 @@ size_t ebpps_sample<T, A>::get_serialized_item_size_bytes(const SerDe& sd) const
 
   return num_bytes;
 }
+
+template<typename T, typename A>
+template<typename SerDe>
+size_t ebpps_sample<T,A>::serialize(uint8_t* ptr, const uint8_t* end_ptr, const SerDe& sd) const {
+  uint8_t* st_ptr = ptr;
+  
+  ensure_minimum_memory(end_ptr - ptr, sizeof(c_));
+  ptr += copy_to_mem(c_, ptr);
+
+  ptr += sd.serialize(ptr, end_ptr - ptr, data_.data(), static_cast<unsigned>(data_.size()));
+
+  if (partial_item_) {
+    ptr += sd.serialize(ptr, end_ptr - ptr, &*partial_item_, 1);
+  }
+
+  return ptr - st_ptr;
+}
+
+template<typename T, typename A>
+template<typename SerDe>
+void ebpps_sample<T,A>::serialize(std::ostream& os, const SerDe& sd) const {
+  write(os, c_);
+
+  sd.serialize(os, data_.data(), static_cast<unsigned>(data_.size()));
+
+  if (partial_item_)
+    sd.serialize(os, &*partial_item_, 1);
+
+  if (!os.good()) throw std::runtime_error("error writing to std::ostream");
+}
+
+template<typename T, typename A>
+template<typename SerDe>
+std::pair<ebpps_sample<T, A>, size_t> ebpps_sample<T, A>::deserialize(const uint8_t* ptr, size_t size, const SerDe& sd, const A& allocator) {
+  const uint8_t* st_ptr = ptr;
+  const uint8_t* end_ptr = ptr + size;
+
+  ensure_minimum_memory(size, sizeof(double));
+  double c;
+  ptr += copy_from_mem(ptr, c);
+  if (c < 0.0)
+    throw std::runtime_error("sketch image has C < 0.0 during deserializaiton");
+
+  double c_int;
+  double c_frac = std::modf(c, &c_int);
+  bool has_partial = c_frac != 0.0;
+
+  uint32_t num_full_items = static_cast<uint32_t>(c_int);
+  A alloc(allocator);
+  std::unique_ptr<T, items_deleter> items(alloc.allocate(num_full_items), items_deleter(allocator, false, num_full_items));
+  if (num_full_items > 0) {
+    ptr += sd.deserialize(ptr, end_ptr - ptr, items.get(), num_full_items);
+    // serde did not throw, enable destructors
+    items.get_deleter().set_destroy(true);
+  }
+
+  optional<T> partial_item;
+  if (has_partial) {
+    optional<T> tmp; // space to deserialize
+    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+    // serde did not throw so place item and clean up
+    partial_item.emplace(*tmp);
+    (*tmp).~T();
+  }
+
+  return std::pair<ebpps_sample<T,A>, size_t>(
+    ebpps_sample<T,A>(std::move(items), std::move(partial_item), c, allocator),
+    ptr - st_ptr);
+}
+
+template<typename T, typename A>
+template<typename SerDe>
+ebpps_sample<T, A> ebpps_sample<T, A>::deserialize(std::istream& is, const SerDe& sd, const A& allocator) {
+  const double c = read<double>(is);
+  if (c < 0.0)
+    throw std::runtime_error("sketch image has C < 0.0 during deserializaiton");
+
+  double c_int;
+  double c_frac = std::modf(c, &c_int);
+  bool has_partial = c_frac != 0.0;
+
+  uint32_t num_full_items = static_cast<uint32_t>(c_int);
+  A alloc(allocator);
+  std::unique_ptr<T, items_deleter> items(alloc.allocate(num_full_items), items_deleter(allocator, false, num_full_items));
+  if (num_full_items > 0) {
+    sd.deserialize(is, items.get(), num_full_items);
+    // serde did not throw, enable destructors
+    items.get_deleter().set_destroy(true);
+  }
+
+  optional<T> partial_item;
+  if (has_partial) {
+    optional<T> tmp; // space to deserialize
+    sd.deserialize(is, &*tmp, 1);
+    // serde did not throw so place item and clean up
+    partial_item.emplace(*tmp);
+    (*tmp).~T();
+  }
+
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+
+  return ebpps_sample<T,A>(std::move(items), std::move(partial_item), c, allocator);
+}
+
 
 template<typename T, typename A>
 typename ebpps_sample<T, A>::const_iterator ebpps_sample<T, A>::begin() const {
@@ -391,6 +505,28 @@ template<typename T, typename A>
 auto ebpps_sample<T, A>::const_iterator::operator->() const -> pointer {
   return **this;
 }
+
+template<typename T, typename A>
+class ebpps_sample<T, A>::items_deleter {
+  public:
+  items_deleter(const A& allocator, bool destroy, size_t num): allocator_(allocator), destroy_(destroy), num_(num) {}
+  void operator() (T* ptr) {
+    if (ptr != nullptr) {
+      if (destroy_) {
+        for (size_t i = 0; i < num_; ++i) {
+          ptr[i].~T();
+        }
+      }
+      allocator_.deallocate(ptr, num_);
+    }
+  }
+  void set_destroy(bool destroy) { destroy_ = destroy; }
+  private:
+  A allocator_;
+  bool destroy_;
+  size_t num_;
+};
+
 
 } // namespace datasketches
 

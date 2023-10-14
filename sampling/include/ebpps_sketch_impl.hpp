@@ -101,6 +101,24 @@ void ebpps_sketch<T, A>::reset() {
 }
 
 template<typename T, typename A>
+string<A> ebpps_sketch<T, A>::to_string(bool detail) const {
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
+  os << "### EBPPS Sketch SUMMARY:" << std::endl;
+  os << "   k            : " << k_ << std::endl;
+  os << "   n            : " << n_ << std::endl;
+  os << "   cum. weight  : " << cumulative_wt_ << std::endl;
+  os << "   wt_mac       : " << wt_max_ << std::endl;
+  os << "   rho          : " << rho_ << std::endl;
+  os << "   C            : " << sample_.get_c() << std::endl;
+  if (detail)
+    os << sample_.to_string(); // assumes std::endl at end
+  os << "### END SKETCH SUMMARY" << std::endl;
+  return string<A>(os.str().c_str(), allocator_);
+}
+
+template<typename T, typename A>
 A ebpps_sketch<T, A>::get_allocator() const {
   return allocator_;
 }
@@ -268,7 +286,8 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
  *  0   || Preamble_Longs | SerVer | FamID  |  Flags |---------Max Res. Size (K)---------|
  * </pre>
  *
- * A non-empty sketch requires 48 bytes of preamble.
+ * A non-empty sketch requires 40 bytes of preamble. C looks like part of
+ * the preamble but is serialized as part of the internal sample state.
  *
  * The count of items seen is not used but preserved as the value seems like a useful
  * count to track.
@@ -304,19 +323,19 @@ template<typename T, typename A>
 template<typename SerDe>
 size_t ebpps_sketch<T, A>::get_serialized_size_bytes(const SerDe& sd) const {
   if (is_empty()) { return PREAMBLE_LONGS_EMPTY << 3; }
-  return (PREAMBLE_LONGS_FULL << 3) + sample_.get_serialized_item_size_bytes(sd);
+  return (PREAMBLE_LONGS_FULL << 3) + sample_.get_serialized_size_bytes(sd);
 }
 
 template<typename T, typename A>
 template<typename SerDe>
 auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) const -> vector_bytes {
-  const size_t size = header_size_bytes + sample_.get_serialized_item_size_bytes(sd);
+  bool empty = is_empty();
+  uint8_t prelongs = (empty ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_FULL);
+
+  const size_t size = header_size_bytes + (prelongs << 3) + sample_.get_serialized_size_bytes(sd);
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
   uint8_t* end_ptr = ptr + size;
-
-  bool empty = is_empty();
-  uint8_t prelongs = (empty ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_FULL);
 
   uint8_t flags = 0;
   if (empty) {
@@ -334,19 +353,13 @@ auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) c
   ptr += copy_to_mem(flags, ptr);
   ptr += copy_to_mem(k_, ptr);
 
-  // remaining preamble
-  ptr += copy_to_mem(n_, ptr);
-  ptr += copy_to_mem(cumulative_wt_, ptr);
-  ptr += copy_to_mem(wt_max_, ptr);
-  ptr += copy_to_mem(rho_, ptr);
-  ptr += copy_to_mem(sample_.get_c(), ptr);
-
-  auto items = sample_.get_full_items();
-  ptr += sd.serialize(ptr, end_ptr - ptr, items.data(), static_cast<unsigned>(items.size()));
-
-  if (sample_.has_partial_item()) {
-    T partial_item = sample_.get_partial_item();
-    ptr += sd.serialize(ptr, end_ptr - ptr, &partial_item, 1);
+  if (!empty) {
+    // remaining preamble
+    ptr += copy_to_mem(n_, ptr);
+    ptr += copy_to_mem(cumulative_wt_, ptr);
+    ptr += copy_to_mem(wt_max_, ptr);
+    ptr += copy_to_mem(rho_, ptr);
+    ptr += sample_.serialize(ptr, end_ptr, sd);
   }
 
   return bytes;
@@ -380,14 +393,9 @@ void ebpps_sketch<T,A>::serialize(std::ostream& os, const SerDe& sd) const {
   write(os, cumulative_wt_);
   write(os, wt_max_);
   write(os, rho_);
-  write(os, sample_.get_c());
 
-  auto items = sample_.get_full_items();
-  sd.serialize(os, items.data(), static_cast<unsigned>(items.size()));
+  sample_.serialize(os, sd);
 
-  if (sample_.has_partial_item())
-    sd.serialize(os, sample_.get_partial_item(), 1);
- 
   if (!os.good()) throw std::runtime_error("error writing to std::ostream");
 }
 
@@ -395,8 +403,8 @@ template<typename T, typename A>
 template<typename SerDe>
 ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(const void* bytes, size_t size, const SerDe& sd, const A& allocator) {
   ensure_minimum_memory(size, 8);
-  const char* ptr = static_cast<const char*>(bytes);
-  const char* end_ptr = ptr + size;
+  const uint8_t* ptr = static_cast<const uint8_t*>(bytes);
+  const uint8_t* end_ptr = ptr + size;
   uint8_t prelongs;
   ptr += copy_from_mem(ptr, prelongs);
   uint8_t serial_version;
@@ -424,33 +432,13 @@ ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(const void* bytes, size_t size,
   ptr += copy_from_mem(ptr, wt_max);
   double rho;
   ptr += copy_from_mem(ptr, rho);
-  double c;
-  ptr += copy_from_mem(ptr, c);
 
-  double c_int;
-  double c_frac = std::modf(c, &c_int);
-  bool has_partial = c_frac != 0.0;
+  auto pair = ebpps_sample<T, A>::deserialize(ptr, end_ptr - ptr, sd, allocator);
+  ebpps_sample<T, A> sample = pair.first;
+  ptr += pair.second;
 
-  if (has_partial != (flags & HAS_PARTIAL_ITEM_MASK))
+  if (sample.has_partial_item() != bool(flags & HAS_PARTIAL_ITEM_MASK))
     throw std::runtime_error("sketch fails internal consistency check");
-
-  std::vector<T, A> data(allocator);
-  uint32_t num_full_items = static_cast<uint32_t>(c_int);
-  if (num_full_items > 0) {
-    data.reserve(num_full_items);
-    ptr += sd.deserialize(ptr, end_ptr - ptr, data.data(), num_full_items);
-  }
-
-  optional<T> partial_item;
-  if (has_partial) {
-    optional<T> tmp; // space to deserialize
-    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
-    // serde did not throw so place item and clean up
-    partial_item.emplace(*tmp);
-    (*tmp).~T();
-  }
-
-  auto sample = ebpps_sample<T,A>(std::move(data), std::move(partial_item), c, allocator);
 
   return ebpps_sketch(k, n, cumulative_wt, wt_max, rho, std::move(sample), allocator);
 }
@@ -476,34 +464,11 @@ ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(std::istream& is, const SerDe& 
   const double cumulative_wt = read<double>(is);
   const double wt_max = read<double>(is);
   const double rho = read<double>(is);
-  const double c = read<double>(is);
 
-  double c_int;
-  double c_frac = std::modf(c, &c_int);
-  bool has_partial = c_frac != 0.0;
+  auto sample = ebpps_sample<T,A>::deserialize(is, sd, allocator);
 
-  if (has_partial != (flags & HAS_PARTIAL_ITEM_MASK))
+  if (sample.has_partial_item() != bool(flags & HAS_PARTIAL_ITEM_MASK))
     throw std::runtime_error("sketch fails internal consistency check");
-
-  std::vector<T, A> data(allocator);
-  uint32_t num_full_items = static_cast<uint32_t>(c_int);
-  if (num_full_items > 0) {
-    data.reserve(num_full_items);
-    sd.deserialize(is, data.data, num_full_items);
-  }
-
-  optional<T> partial_item;
-  if (has_partial) {
-    optional<T> tmp; // space to deserialize
-    sd.deserialize(is, &*tmp, 1);
-    // serde did not throw so place item and clean up
-    partial_item.emplace(*tmp);
-    (*tmp).~T();
-  }
-
-  if (!is.good()) throw std::runtime_error("error reading from std::istream");
-
-  auto sample = ebpps_sample<T,A>(std::move(data), std::move(partial_item), c, allocator);
 
   return ebpps_sketch(k, n, cumulative_wt, wt_max, rho, std::move(sample), allocator);
 }
