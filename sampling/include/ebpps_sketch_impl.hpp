@@ -29,7 +29,6 @@
 #include <utility>
 
 #include "ebpps_sketch.hpp"
-//#include "serde.hpp"
 
 namespace datasketches {
 

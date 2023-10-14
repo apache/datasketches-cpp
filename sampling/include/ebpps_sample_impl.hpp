@@ -23,6 +23,7 @@
 #include "common_defs.hpp"
 #include "conditional_forward.hpp"
 #include "ebpps_sample.hpp"
+#include "serde.hpp"
 
 #include <cmath>
 #include <string>

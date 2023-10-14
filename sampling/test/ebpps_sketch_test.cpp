@@ -103,6 +103,9 @@ TEST_CASE("ebpps sketch: insert items", "[ebpps_sketch]") {
   uint32_t k = 5;
   ebpps_sketch<int> sk = create_unweighted_sketch(k, n);
   REQUIRE(sk.get_k() == k);
+  REQUIRE(sk.get_n() == 0);
+  REQUIRE(sk.get_c() == 0.0);
+  REQUIRE(sk.get_cumulative_weight() == 0.0);
   REQUIRE(sk.is_empty());
 
   n = k;
@@ -125,7 +128,7 @@ TEST_CASE("ebpps sketch: insert items", "[ebpps_sketch]") {
     REQUIRE(val < static_cast<int>(n));
 }
 
-TEST_CASE("ebpps sketch: serialize/deserialize bytes", "[ebpps_sketch]") {
+TEST_CASE("ebpps sketch: serialize/deserialize string", "[ebpps_sketch]") {
   // since C <= k we don't have the usual sketch notion of exact vs estimation
   // mode at any time. The only real serializaiton cases are empty and non-empty
   // with and without a partial item
@@ -136,8 +139,14 @@ TEST_CASE("ebpps sketch: serialize/deserialize bytes", "[ebpps_sketch]") {
   auto bytes = sk.serialize();
   REQUIRE(bytes.size() == sk.get_serialized_size_bytes());
   REQUIRE_THROWS_AS(ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size()-1), std::out_of_range);
-  auto sk2 = ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size());
-  check_if_equal(sk, sk2);
+  auto sk_bytes = ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size());
+  check_if_equal(sk, sk_bytes);
+
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  sk.serialize(ss);
+  auto sk_stream = ebpps_sketch<std::string>::deserialize(ss);
+  check_if_equal(sk, sk_stream);
+  check_if_equal(sk_bytes, sk_stream); // should be redundant
 
   for (uint32_t i = 0; i < k; ++i)
     sk.update(std::to_string(i));
@@ -146,21 +155,58 @@ TEST_CASE("ebpps sketch: serialize/deserialize bytes", "[ebpps_sketch]") {
   bytes = sk.serialize();
   REQUIRE(bytes.size() == sk.get_serialized_size_bytes());
   REQUIRE_THROWS_AS(ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size()-1), std::out_of_range);
-  sk2 = ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size());
-  check_if_equal(sk, sk2);
+  sk_bytes = ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size());
+  check_if_equal(sk, sk_bytes);
+
+  ss.str("");
+  sk.serialize(ss);
+  sk_stream = ebpps_sketch<std::string>::deserialize(ss);
+  check_if_equal(sk, sk_stream);
+  check_if_equal(sk_bytes, sk_stream); // should be redundant
 
   // non-empty with partial item
-  sk.update(std::to_string(2 * k), k * 1.7);
+  sk.update(std::to_string(2 * k), 2.5);
+  REQUIRE(sk.get_cumulative_weight() == Approx(k + 2.5).margin(EPS));
   bytes = sk.serialize();
   REQUIRE(bytes.size() == sk.get_serialized_size_bytes());
   REQUIRE_THROWS_AS(ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size()-1), std::out_of_range);
-  sk2 = ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size());
-  check_if_equal(sk, sk2);
+  sk_bytes = ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size());
+  check_if_equal(sk, sk_bytes);
+
+  ss.str("");
+  sk.serialize(ss);
+  sk_stream = ebpps_sketch<std::string>::deserialize(ss);
+  check_if_equal(sk, sk_stream);
+  check_if_equal(sk_bytes, sk_stream); // should be redundant
 }
 
+TEST_CASE("ebpps sketch: serialize/deserialize ints", "[ebpps_sketch]") {
+  uint32_t k = 10;
+  ebpps_sketch<uint32_t> sk(k);
 
-TEST_CASE("ebpps sketch: serialize/deserialize stream", "[ebpps_sketch]") {
+  for (uint32_t i = 0; i < k; ++i)
+    sk.update(i);
+  sk.update(2 * k, 3.5);
+  REQUIRE(sk.get_cumulative_weight() == Approx(k + 3.5).margin(EPS));
 
+  auto bytes = sk.serialize();
+  REQUIRE(bytes.size() == sk.get_serialized_size_bytes());
+  REQUIRE_THROWS_AS(ebpps_sketch<uint32_t>::deserialize(bytes.data(), bytes.size()-1), std::out_of_range);
+  auto sk_bytes = ebpps_sketch<uint32_t>::deserialize(bytes.data(), bytes.size());
+  check_if_equal(sk, sk_bytes);
+
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  sk.serialize(ss);
+  auto sk_stream = ebpps_sketch<uint32_t>::deserialize(ss);
+  check_if_equal(sk, sk_stream);
+  check_if_equal(sk_bytes, sk_stream); // should be redundant
+
+  sk.reset();
+  REQUIRE(sk.get_k() == k);
+  REQUIRE(sk.get_n() == 0);
+  REQUIRE(sk.get_c() == 0.0);
+  REQUIRE(sk.get_cumulative_weight() == 0.0);
+  REQUIRE(sk.is_empty());
 }
 
 /*
