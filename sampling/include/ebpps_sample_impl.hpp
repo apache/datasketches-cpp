@@ -288,7 +288,7 @@ template<typename TT, typename SerDe, typename std::enable_if<!std::is_arithmeti
 size_t ebpps_sample<T, A>::get_serialized_item_size_bytes(const SerDe& sd) const {
   size_t num_bytes = 0;
   for (auto it : data_)
-    num_bytes += sd.size_of_item(*it);
+    num_bytes += sd.size_of_item(it);
 
   if (partial_item_)
     num_bytes += sd.size_of_item(*partial_item_);

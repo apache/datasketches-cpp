@@ -137,6 +137,12 @@ class ebpps_sketch {
     inline bool is_empty() const;
     
     /**
+     * Returns an instance of the allocator for this sketch.
+     * @return allocator
+     */
+    A get_allocator() const;
+
+    /**
      * Resets the sketch to its default, empty state.
      */
     void reset();

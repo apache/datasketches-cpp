@@ -101,6 +101,11 @@ void ebpps_sketch<T, A>::reset() {
 }
 
 template<typename T, typename A>
+A ebpps_sketch<T, A>::get_allocator() const {
+  return allocator_;
+}
+
+template<typename T, typename A>
 void ebpps_sketch<T, A>::update(const T& item, double weight) {
   return internal_update(item, weight);
 }
@@ -299,14 +304,14 @@ template<typename T, typename A>
 template<typename SerDe>
 size_t ebpps_sketch<T, A>::get_serialized_size_bytes(const SerDe& sd) const {
   if (is_empty()) { return PREAMBLE_LONGS_EMPTY << 3; }
-  return (PREAMBLE_LONGS_FULL << 3) + sample_.get_serialized_size_bytes(sd);
+  return (PREAMBLE_LONGS_FULL << 3) + sample_.get_serialized_item_size_bytes(sd);
 }
 
 template<typename T, typename A>
 template<typename SerDe>
 auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) const -> vector_bytes {
-  const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
-  std::vector<uint8_t, A> bytes(size, 0, allocator_);
+  const size_t size = header_size_bytes + sample_.get_serialized_item_size_bytes(sd);
+  vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
   uint8_t* end_ptr = ptr + size;
 
@@ -339,8 +344,10 @@ auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) c
   auto items = sample_.get_full_items();
   ptr += sd.serialize(ptr, end_ptr - ptr, items.data(), static_cast<unsigned>(items.size()));
 
-  if (sample_.has_partial_item())
-    ptr += sd.serialize(ptr, end_ptr - ptr, sample_.get_partial_item(), 1);
+  if (sample_.has_partial_item()) {
+    T partial_item = sample_.get_partial_item();
+    ptr += sd.serialize(ptr, end_ptr - ptr, &partial_item, 1);
+  }
 
   return bytes;
 }
@@ -431,7 +438,7 @@ ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(const void* bytes, size_t size,
   uint32_t num_full_items = static_cast<uint32_t>(c_int);
   if (num_full_items > 0) {
     data.reserve(num_full_items);
-    ptr += sd.deserialize(ptr, end_ptr - ptr, data.data, num_full_items);
+    ptr += sd.deserialize(ptr, end_ptr - ptr, data.data(), num_full_items);
   }
 
   optional<T> partial_item;
@@ -443,7 +450,7 @@ ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(const void* bytes, size_t size,
     (*tmp).~T();
   }
 
-  auto sample = ebpps_sample<T,A>(data, partial_item, c, allocator);
+  auto sample = ebpps_sample<T,A>(std::move(data), std::move(partial_item), c, allocator);
 
   return ebpps_sketch(k, n, cumulative_wt, wt_max, rho, std::move(sample), allocator);
 }
@@ -496,7 +503,7 @@ ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(std::istream& is, const SerDe& 
 
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
 
-  auto sample = ebpps_sample<T,A>(data, partial_item, c, allocator);
+  auto sample = ebpps_sample<T,A>(std::move(data), std::move(partial_item), c, allocator);
 
   return ebpps_sketch(k, n, cumulative_wt, wt_max, rho, std::move(sample), allocator);
 }

@@ -57,21 +57,24 @@ template<typename T, typename A>
 static void check_if_equal(ebpps_sketch<T, A>& sk1, ebpps_sketch<T, A>& sk2) {
   REQUIRE(sk1.get_k() == sk2.get_k());
   REQUIRE(sk1.get_n() == sk2.get_n());
-  REQUIRE(sk1.get_num_samples() == sk2.get_num_samples());
+  REQUIRE(sk1.get_c() == sk2.get_c());
+  REQUIRE(sk1.get_cumulative_weight() == sk2.get_cumulative_weight());
 
   auto it1 = sk1.begin();
   auto it2 = sk2.begin();
+  size_t count = 0;
 
   while ((it1 != sk1.end()) && (it2 != sk2.end())) {
-    auto p1 = *it1;
-    auto p2 = *it2;
-    REQUIRE(p1.first == p2.first);   // data values
-    REQUIRE(p1.second == p2.second); // weights
+    REQUIRE(*it1 == *it2);
     ++it1;
     ++it2;
+    ++count;
   }
 
-  REQUIRE((it1 == sk1.end() && it2 == sk2.end())); // iterators must end at the same time
+  REQUIRE(((count == std::floor(sk1.get_c())) || (count == std::ceil(sk1.get_c()))));
+
+  // if c != floor(c) one sketch may not have reached the end,
+  // but that's not testable from the external API
 }
 
 TEST_CASE("ebpps sketch: invalid k", "[ebpps_sketch]") {
@@ -99,6 +102,7 @@ TEST_CASE("ebpps sketch: insert items", "[ebpps_sketch]") {
   size_t n = 0;
   uint32_t k = 5;
   ebpps_sketch<int> sk = create_unweighted_sketch(k, n);
+  REQUIRE(sk.get_k() == k);
   REQUIRE(sk.is_empty());
 
   n = k;
@@ -119,6 +123,33 @@ TEST_CASE("ebpps sketch: insert items", "[ebpps_sketch]") {
   REQUIRE(result.size() == sk.get_k()); // uniform weights so should be exactly k
   for (int val : sk.get_result())
     REQUIRE(val < static_cast<int>(n));
+}
+
+TEST_CASE("ebpps sketch: serialize/deserialize bytes", "[ebpps_sketch]") {
+  // since C <= k we don't have the usual sketch notion of exact vs estimation
+  // mode at any time. The onyl real serializaiton cases are empty vs non-empty.
+  uint32_t k = 10;
+  ebpps_sketch<std::string> sk(k);
+  
+  auto bytes = sk.serialize();
+  REQUIRE(bytes.size() == sk.get_serialized_size_bytes());
+  REQUIRE_THROWS_AS(ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size()-1), std::out_of_range);
+  auto sk2 = ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size());
+  check_if_equal(sk, sk2);
+
+  for (uint32_t i = 0; i < k; ++i)
+    sk.update(std::to_string(i));
+
+  bytes = sk.serialize();
+  REQUIRE(bytes.size() == sk.get_serialized_size_bytes());
+  REQUIRE_THROWS_AS(ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size()-1), std::out_of_range);
+  sk2 = ebpps_sketch<std::string>::deserialize(bytes.data(), bytes.size());
+  check_if_equal(sk, sk2);
+}
+
+
+TEST_CASE("ebpps sketch: serialize/deserialize stream", "[ebpps_sketch]") {
+
 }
 
 /*
