@@ -102,6 +102,7 @@ TEST_CASE("ebpps sketch: insert items", "[ebpps_sketch]") {
   size_t n = 0;
   uint32_t k = 5;
   ebpps_sketch<int> sk = create_unweighted_sketch(k, n);
+  REQUIRE(sk.get_allocator() == std::allocator<int>());
   REQUIRE(sk.get_k() == k);
   REQUIRE(sk.get_n() == 0);
   REQUIRE(sk.get_c() == 0.0);

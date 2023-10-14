@@ -45,12 +45,8 @@ ebpps_sketch<T, A>::ebpps_sketch(uint32_t k, const A& allocator) :
   cumulative_wt_(0.0),
   wt_max_(0.0),
   rho_(1.0),
-  sample_(k == 0 || k > MAX_K ? 0 : k)
-  {
-    if (k == 0 || k > MAX_K)
-      throw std::invalid_argument("k must be strictly positive and less than " + std::to_string(MAX_K));
-  }
-
+  sample_(check_k(k))
+  {}
 
 template<typename T, typename A>
 ebpps_sketch<T,A>::ebpps_sketch(uint32_t k, uint64_t n, double cumulative_wt,
@@ -415,6 +411,7 @@ ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(const void* bytes, size_t size,
   uint32_t k;
   ptr += copy_from_mem(ptr, k);
 
+  check_k(k);
   check_preamble_longs(prelongs, flags);
   check_family_and_serialization_version(family_id, serial_version);
   ensure_minimum_memory(size, prelongs << 3);
@@ -451,6 +448,7 @@ ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(std::istream& is, const SerDe& 
   const uint8_t flags = read<uint8_t>(is);
   const uint32_t k = read<uint32_t>(is);
 
+  check_k(k);
   check_family_and_serialization_version(family, ser_ver);
   check_preamble_longs(prelongs, flags);
 
@@ -472,8 +470,31 @@ ebpps_sketch<T,A> ebpps_sketch<T,A>::deserialize(std::istream& is, const SerDe& 
   return ebpps_sketch(k, n, cumulative_wt, wt_max, rho, std::move(sample), allocator);
 }
 
+template <typename T, typename A>
+inline uint32_t ebpps_sketch<T, A>::check_k(uint32_t k)
+{
+  if (k == 0 || k > MAX_K)
+    throw std::invalid_argument("k must be strictly positive and less than " + std::to_string(MAX_K));
+  return k;
+}
+
 template<typename T, typename A>
-void ebpps_sketch<T, A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags) {
+void ebpps_sketch<T, A>::check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver) {
+  if (family_id == FAMILY_ID) {
+    if (ser_ver != SER_VER) {
+      throw std::invalid_argument("Possible corruption: EBPPS serialization version must be "
+        + std::to_string(SER_VER) + ". Found: " + std::to_string(ser_ver));
+    }
+    return;
+  }
+
+  throw std::invalid_argument("Possible corruption: EBPPS Sketch family id must be "
+    + std::to_string(FAMILY_ID) + ". Found: " + std::to_string(family_id));
+}
+
+template <typename T, typename A>
+void ebpps_sketch<T, A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags)
+{
   const bool is_empty(flags & EMPTY_FLAG_MASK);
   
   if (is_empty) {
@@ -493,20 +514,6 @@ void ebpps_sketch<T, A>::check_preamble_longs(uint8_t preamble_longs, uint8_t fl
         + " for a non-empty sketch. Found: " + std::to_string(preamble_longs));
     }
   }
-}
-
-template<typename T, typename A>
-void ebpps_sketch<T, A>::check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver) {
-  if (family_id == FAMILY_ID) {
-    if (ser_ver != SER_VER) {
-      throw std::invalid_argument("Possible corruption: EBPPS serialization version must be "
-        + std::to_string(SER_VER) + ". Found: " + std::to_string(ser_ver));
-    }
-    return;
-  }
-
-  throw std::invalid_argument("Possible corruption: EBPPS Sketch family id must be "
-    + std::to_string(FAMILY_ID) + ". Found: " + std::to_string(family_id));
 }
 
 template<typename T, typename A>

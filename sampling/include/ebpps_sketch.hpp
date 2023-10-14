@@ -265,6 +265,7 @@ class ebpps_sketch {
     inline void internal_update(FwdItem&& item, double weight);
 
     // validation
+    static uint32_t check_k(uint32_t k);
     static void check_preamble_longs(uint8_t preamble_longs, uint8_t flags);
     static void check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);
     static uint32_t validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n);
