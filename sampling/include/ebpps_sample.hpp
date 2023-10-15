@@ -46,7 +46,7 @@ class ebpps_sample {
 
     // for deserialization
     class items_deleter;
-    ebpps_sample(std::unique_ptr<T, items_deleter>&& data, optional<T>&& partial_item, double c, const A& allocator = A());
+    ebpps_sample(std::vector<T, A>&& data, optional<T>&& partial_item, double c, const A& allocator = A());
 
     void reset();
     void downsample(double theta);

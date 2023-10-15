@@ -33,14 +33,6 @@ namespace datasketches {
 
 static constexpr double EPS = 1e-15;
 
-template<typename T>
-static ebpps_sample<T> create_sample_array(std::vector<T>&& data, optional<T>&& opt, double c) {
-  std::allocator<T> alloc;
-  typename ebpps_sample<T>::items_deleter it_deleter(alloc, false, data.size());
-  std::unique_ptr<T, typename ebpps_sample<T>::items_deleter> items(data.data(), it_deleter);
-  return ebpps_sample<T>(std::move(items), std::move(opt), c);
-}
-
 TEST_CASE("ebpps sample: basic initialization", "[ebpps_sketch]") {
   ebpps_sample<int> sample = ebpps_sample<int>(0);
   REQUIRE(sample.get_c() == 0.0);
@@ -76,7 +68,7 @@ TEST_CASE("ebpps sample: downsampling", "[ebpps_sketch]") {
   random_utils::override_seed(12);
   std::vector<char> items = {'a', 'b'};
   optional<char> opt; // empty
-  sample = create_sample_array(std::move(items), std::move(opt), 1.8);
+  sample = ebpps_sample<char>(std::move(items), std::move(opt), 1.8);
   sample.downsample(0.5);
   REQUIRE(sample.get_c() == 0.9);
   REQUIRE(sample.get_num_retained_items() == 0);
@@ -85,7 +77,7 @@ TEST_CASE("ebpps sample: downsampling", "[ebpps_sketch]") {
   // downsample and result in a sample with a partial item
   items = {'a', 'b'};
   opt.reset();
-  sample = create_sample_array(std::move(items), std::move(opt), 1.5);
+  sample = ebpps_sample<char>(std::move(items), std::move(opt), 1.5);
   sample.downsample(0.5);
   REQUIRE(sample.get_c() == 0.75);
   REQUIRE(sample.get_num_retained_items() == 1);
@@ -99,7 +91,7 @@ TEST_CASE("ebpps sample: downsampling", "[ebpps_sketch]") {
   opt.emplace('h');
   auto ref_items = items; // copy to check contents
   ref_items.emplace_back('h'); // include partial item
-  sample = create_sample_array(std::move(items), std::move(opt), 7.5);
+  sample = ebpps_sample<char>(std::move(items), std::move(opt), 7.5);
   sample.downsample(0.8);
   REQUIRE(sample.get_c() == 6.0);
   REQUIRE(sample.get_num_retained_items() == 6);
@@ -111,7 +103,7 @@ TEST_CASE("ebpps sample: downsampling", "[ebpps_sketch]") {
   // downsample to c > 1 with partial item
   items = ref_items; // includes previous optional item
   opt.emplace('i');
-  sample = create_sample_array(std::move(items), std::move(opt), 8.5);
+  sample = ebpps_sample<char>(std::move(items), std::move(opt), 8.5);
   REQUIRE(sample.get_partial_item() == 'i');
   sample.downsample(0.8);
   REQUIRE(sample.get_c() == Approx(6.8).margin(EPS));

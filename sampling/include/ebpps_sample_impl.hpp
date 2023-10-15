@@ -55,17 +55,12 @@ ebpps_sample<T,A>::ebpps_sample(TT&& item, double theta, const A& allocator) :
   }
 
 template<typename T, typename A>
-ebpps_sample<T,A>::ebpps_sample(std::unique_ptr<T, items_deleter>&& items, optional<T>&& partial_item, double c, const A& allocator) :
+ebpps_sample<T,A>::ebpps_sample(std::vector<T, A>&& data, optional<T>&& partial_item, double c, const A& allocator) :
   allocator_(allocator),
   c_(c),
-  partial_item_(partial_item)
-  {
-    T* data = items.get();
-    size_t num = static_cast<size_t>(c);
-    data_.reserve(num);
-    for (size_t i = 0; i < num; ++i)
-      data_.emplace_back(std::move(data[i]));
-  }
+  partial_item_(partial_item),
+  data_(data)
+  {}
 
 template<typename T, typename A>
 auto ebpps_sample<T,A>::get_sample() const -> result_type {
@@ -353,11 +348,14 @@ std::pair<ebpps_sample<T, A>, size_t> ebpps_sample<T, A>::deserialize(const uint
   bool has_partial = c_frac != 0.0;
 
   uint32_t num_full_items = static_cast<uint32_t>(c_int);
-  items_deleter deleter(A(allocator), false, num_full_items);
-  std::unique_ptr<T, items_deleter> items(A(allocator).allocate(num_full_items), deleter);
+  A alloc(allocator);
+  std::unique_ptr<T, items_deleter> items(alloc.allocate(num_full_items), items_deleter(allocator, false, num_full_items));
   ptr += sd.deserialize(ptr, end_ptr - ptr, items.get(), num_full_items);
   // serde did not throw, enable destructors
   items.get_deleter().set_destroy(true);
+  std::vector<T, A> data(std::make_move_iterator(items.get()),
+                         std::make_move_iterator(items.get() + num_full_items),
+                         allocator);
 
   optional<T> partial_item;
   if (has_partial) {
@@ -369,7 +367,7 @@ std::pair<ebpps_sample<T, A>, size_t> ebpps_sample<T, A>::deserialize(const uint
   }
 
   return std::pair<ebpps_sample<T,A>, size_t>(
-    ebpps_sample<T,A>(std::move(items), std::move(partial_item), c, allocator),
+    ebpps_sample<T,A>(std::move(data), std::move(partial_item), c, allocator),
     ptr - st_ptr);
 }
 
@@ -385,11 +383,14 @@ ebpps_sample<T, A> ebpps_sample<T, A>::deserialize(std::istream& is, const SerDe
   bool has_partial = c_frac != 0.0;
 
   uint32_t num_full_items = static_cast<uint32_t>(c_int);
-  items_deleter deleter(A(allocator), false, num_full_items);
-  std::unique_ptr<T, items_deleter> items(A(allocator).allocate(num_full_items), deleter);
+  A alloc(allocator);
+  std::unique_ptr<T, items_deleter> items(alloc.allocate(num_full_items), items_deleter(allocator, false, num_full_items));
   sd.deserialize(is, items.get(), num_full_items);
   // serde did not throw, enable destructors
   items.get_deleter().set_destroy(true);
+  std::vector<T, A> data(std::make_move_iterator(items.get()),
+                         std::make_move_iterator(items.get() + num_full_items),
+                         allocator);
 
   optional<T> partial_item;
   if (has_partial) {
@@ -402,7 +403,7 @@ ebpps_sample<T, A> ebpps_sample<T, A>::deserialize(std::istream& is, const SerDe
 
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
 
-  return ebpps_sample<T,A>(std::move(items), std::move(partial_item), c, allocator);
+  return ebpps_sample<T,A>(std::move(data), std::move(partial_item), c, allocator);
 }
 
 
