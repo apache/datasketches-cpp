@@ -29,12 +29,6 @@
 #include <random>
 #include <stdexcept>
 
-// TODO: remove when done testing
-#include <var_opt_sketch.hpp>
-#include <var_opt_union.hpp>
-#include <iomanip>
-#include <algorithm>
-
 #ifdef TEST_BINARY_INPUT_PATH
 static std::string testBinaryInputPath = TEST_BINARY_INPUT_PATH;
 #else
@@ -267,4 +261,6 @@ TEST_CASE("ebpps sketch: merge small into large", "[ebpps_sketch]") {
   REQUIRE(sk1.get_c() < k);
   // cumulative weight is now (1.5 + 0.2) k
   REQUIRE(sk1.get_cumulative_weight() == Approx(1.7 * k).margin(EPS));
+}
+
 }
