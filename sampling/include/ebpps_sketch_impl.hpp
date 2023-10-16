@@ -208,10 +208,9 @@ void ebpps_sketch<T, A>::merge(const ebpps_sketch<T>& sk) {
 template<typename T, typename A>
 template<typename O>
 void ebpps_sketch<T, A>::internal_merge(O&& sk) {
-  // TODO: remove after adding proper unit tests
-  if (sk.cumulative_wt_ > cumulative_wt_)
-    throw std::logic_error("internal_merge() trying to merge larger sketch into this");
-
+  // assumes that sk.cumulative_wt_ <= cumulative_wt_,
+  // which must be checked before calling this
+  
   const ebpps_sample<T>& other_sample = sk.sample_;
 
   double final_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
