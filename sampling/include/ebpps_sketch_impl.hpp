@@ -32,11 +32,6 @@
 
 namespace datasketches {
 
-/*
- * Implementation code for the Exact PPS Sampling with Bounded Sample Size sketch.
- * 
- * author Jon Malkin
- */
 template<typename T, typename A>
 ebpps_sketch<T, A>::ebpps_sketch(uint32_t k, const A& allocator) :
   allocator_(allocator),
@@ -45,7 +40,7 @@ ebpps_sketch<T, A>::ebpps_sketch(uint32_t k, const A& allocator) :
   cumulative_wt_(0.0),
   wt_max_(0.0),
   rho_(1.0),
-  sample_(check_k(k))
+  sample_(check_k(k), allocator)
   {}
 
 template<typename T, typename A>
@@ -181,7 +176,7 @@ auto ebpps_sketch<T,A>::get_result() const -> result_type {
  */
 
 template<typename T, typename A>
-void ebpps_sketch<T, A>::merge(ebpps_sketch<T>&& sk) {
+void ebpps_sketch<T, A>::merge(ebpps_sketch<T, A>&& sk) {
   if (sk.get_cumulative_weight() == 0.0) return;
   else if (sk.get_cumulative_weight() > get_cumulative_weight()) {
     // need to swap this with sk to merge smaller into larger
@@ -192,7 +187,7 @@ void ebpps_sketch<T, A>::merge(ebpps_sketch<T>&& sk) {
 }
 
 template<typename T, typename A>
-void ebpps_sketch<T, A>::merge(const ebpps_sketch<T>& sk) {
+void ebpps_sketch<T, A>::merge(const ebpps_sketch<T, A>& sk) {
   if (sk.get_cumulative_weight() == 0.0) return;
   else if (sk.get_cumulative_weight() > get_cumulative_weight()) {
     // need to swap this with sk to merge, so make a copy, swap,
@@ -211,7 +206,7 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
   // assumes that sk.cumulative_wt_ <= cumulative_wt_,
   // which must be checked before calling this
   
-  const ebpps_sample<T>& other_sample = sk.sample_;
+  const ebpps_sample<T,A>& other_sample = sk.sample_;
 
   double final_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
   double new_wt_max = std::max(wt_max_, sk.wt_max_);

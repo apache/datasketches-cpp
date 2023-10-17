@@ -41,8 +41,8 @@ namespace ebpps_constants {
 }
 
 /**
- * An implementation of an Exact and Bounded Sampling Proportional to Size sketch
- * .
+ * An implementation of an Exact and Bounded Sampling Proportional to Size sketch.
+ * 
  * This sketch samples data from a stream of items propotional to the weight of each item.
  * The sample guarantees the presence of an item in the result is proportional to that item's
  * portion of the total weight seen by the sketch, and returns a sample no larger than size k.
@@ -50,7 +50,7 @@ namespace ebpps_constants {
  * The sample may be smaller than k and the resulting size of the sample potentially includes
  * a probabilistic component, meaning the resulting sample size is not always constant.
  *
- * author Jon Malkin
+ * @author Jon Malkin
  */
 template<
   typename T,
@@ -89,14 +89,14 @@ class ebpps_sketch {
      * This method takes an lvalue.
      * @param sketch the sketch to merge into the current object
      */
-    void merge(const ebpps_sketch<T>& sketch);
+    void merge(const ebpps_sketch<T, A>& sketch);
 
     /**
      * Merges the provided sketch into the current one.
      * This method takes an rvalue.
      * @param sketch the sketch to merge into the current object
      */
-    void merge(ebpps_sketch<T>&& sketch);
+    void merge(ebpps_sketch<T, A>&& sketch);
 
     using result_type = typename ebpps_sample<T,A>::result_type;
 

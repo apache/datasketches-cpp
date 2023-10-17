@@ -162,7 +162,7 @@ class ebpps_sample {
     A allocator_;
     double c_;                      // Current sample size, including fractional part
     optional<T> partial_item_;      // a sample item corresponding to a partial weight
-    std::vector<T> data_;           // stored sampled items
+    std::vector<T, A> data_;           // stored sampled items
 
     template<typename FwdItem>
     inline void set_partial(FwdItem&& item);

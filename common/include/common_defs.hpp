@@ -54,7 +54,6 @@ namespace random_utils {
   }
 }
 
-
 // utility function to hide unused compiler warning
 // usually has no additional cost
 template<typename T> void unused(T&&...) {}

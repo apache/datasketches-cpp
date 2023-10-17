@@ -34,7 +34,9 @@ namespace datasketches {
 template<typename T, typename A>
 ebpps_sample<T,A>::ebpps_sample(uint32_t reserved_size, const A& allocator) :
   allocator_(allocator),
-  c_(0.0)
+  c_(0.0),
+  partial_item_(),
+  data_(allocator)
   {
     data_.reserve(reserved_size);
   }
@@ -42,15 +44,16 @@ ebpps_sample<T,A>::ebpps_sample(uint32_t reserved_size, const A& allocator) :
 template<typename T, typename A>
 template<typename TT>
 ebpps_sample<T,A>::ebpps_sample(TT&& item, double theta, const A& allocator) :
-  allocator_(allocator)
+  allocator_(allocator),
+  c_(theta),
+  partial_item_(),
+  data_(allocator)
   {
     if (theta == 1.0) {
       data_.reserve(1);
       data_.emplace_back(std::forward<TT>(item));
-      c_ = 1.0;
     } else {
       partial_item_.emplace(std::forward<TT>(item));
-      c_ = theta;
     }
   }
 
@@ -59,7 +62,7 @@ ebpps_sample<T,A>::ebpps_sample(std::vector<T, A>&& data, optional<T>&& partial_
   allocator_(allocator),
   c_(c),
   partial_item_(partial_item),
-  data_(data)
+  data_(data, allocator)
   {}
 
 template<typename T, typename A>
