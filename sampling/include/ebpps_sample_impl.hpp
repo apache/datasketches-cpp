@@ -165,6 +165,7 @@ void ebpps_sample<T,A>::merge(FwdSample&& other) {
       data_.emplace_back(conditional_forward<FwdSample>(*other.partial_item_));
     } else {
       data_.emplace_back(std::move(*partial_item_));
+      partial_item_.reset();
       set_partial(conditional_forward<FwdSample>(*other.partial_item_));
     }
   }

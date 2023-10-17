@@ -35,24 +35,20 @@ TEST_CASE("ebpps allocation test", "[ebpps_sketch][test_type]") {
   test_allocator_net_allocations = 0;
   {
     ebpps_test_sketch sk1(10, 0);
-    std::cout << "ctor1" << std::endl;
     for (int i = 0; i < 100; ++i)
       sk1.update(i);
     auto bytes1 = sk1.serialize(0, test_type_serde());
     auto sk2 = ebpps_test_sketch::deserialize(bytes1.data(), bytes1.size(), test_type_serde(), 0);
-    std::cout << "deser1" << std::endl;
 
     std::stringstream ss;
     sk1.serialize(ss, test_type_serde());
     auto sk3 = ebpps_test_sketch::deserialize(ss, test_type_serde(), alloc(0));
-    std::cout << "deser2" << std::endl;
 
     sk1.merge(sk2); // same size into sk1
     sk3.merge(sk1); // larger into sk3
 
     auto bytes2 = sk1.serialize(0, test_type_serde());
     auto sk4 = ebpps_test_sketch::deserialize(bytes2.data(), bytes2.size(), test_type_serde(), 0);
-    std::cout << "end" << std::endl;
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);
