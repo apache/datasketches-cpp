@@ -91,7 +91,7 @@ void ebpps_sketch<T, A>::reset() {
 }
 
 template<typename T, typename A>
-string<A> ebpps_sketch<T, A>::to_string(bool detail) const {
+string<A> ebpps_sketch<T, A>::to_string() const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
@@ -102,9 +102,17 @@ string<A> ebpps_sketch<T, A>::to_string(bool detail) const {
   os << "   wt_mac       : " << wt_max_ << std::endl;
   os << "   rho          : " << rho_ << std::endl;
   os << "   C            : " << sample_.get_c() << std::endl;
-  if (detail)
-    os << sample_.to_string(); // assumes std::endl at end
   os << "### END SKETCH SUMMARY" << std::endl;
+  return string<A>(os.str().c_str(), allocator_);
+}
+
+template<typename T, typename A>
+string<A> ebpps_sketch<T, A>::items_to_string() const {
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream os;
+  os << "### Sketch Items" << std::endl;
+  os << sample_.to_string(); // assumes std::endl at end
   return string<A>(os.str().c_str(), allocator_);
 }
 

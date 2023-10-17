@@ -175,8 +175,9 @@ template<typename T, typename A>
 string<A> ebpps_sample<T ,A>::to_string() const {
   std::ostringstream oss;
   oss << "   sample:" << std::endl;
+  uint32_t idx = 0;
   for (const T& item : data_)
-    oss << "\t" << item << std::endl;
+    oss << "\t" << idx++ << ":\t" << item << std::endl;
   oss << "   partial: " << (bool(partial_item_) ? (*partial_item_) : "NULL") << std::endl;
 
   return oss.str();

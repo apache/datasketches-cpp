@@ -43,6 +43,9 @@ namespace ebpps_constants {
 /**
  * An implementation of an Exact and Bounded Sampling Proportional to Size sketch.
  * 
+ * From: "Exact PPS Sampling with Bounded Sample Size",
+ * B. Hentschel, P. J. Haas, Y. Tian. Information Processing Letters, 2023.
+ * 
  * This sketch samples data from a stream of items propotional to the weight of each item.
  * The sample guarantees the presence of an item in the result is proportional to that item's
  * portion of the total weight seen by the sketch, and returns a sample no larger than size k.
@@ -204,7 +207,7 @@ class ebpps_sketch {
      * @param detail if true, prints values of items
      * @return the summary as a string
      */
-    string<A> to_string(bool detail = false) const;
+    string<A> to_string() const;
 
     /**
      * Prints the raw sketch items to a string.
@@ -213,7 +216,7 @@ class ebpps_sketch {
      * T does not have such an operator defined.
      * @return a string with the sketch items
      */
-    //string<A> items_to_string() const;
+    string<A> items_to_string() const;
 
     /**
      * Iterator pointing to the first item in the sketch.
