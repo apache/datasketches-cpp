@@ -120,7 +120,7 @@ $(function() {
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;  <span class="keywordflow">if</span> (!is_valid_) { <span class="comment">// first update, copy or move incoming sketch</span></div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    is_valid_ = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <span class="keyword">const</span> uint8_t lg_size = lg_size_from_count(sketch.get_num_retained(), theta_update_sketch_base&lt;EN, EK, A&gt;::REBUILD_THRESHOLD);</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    table_ = hash_table(lg_size, lg_size, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    table_ = hash_table(lg_size, lg_size - 1, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);</div>
 <div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp;&amp; entry: sketch) {</div>
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;      <span class="keyword">auto</span> result = table_.find(EK()(entry));</div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;      <span class="keywordflow">if</span> (result.second) {</div>
@@ -159,8 +159,8 @@ $(function() {
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;      <span class="keywordflow">if</span> (table_.theta_ == theta_constants::MAX_THETA) table_.is_empty_ = <span class="keyword">true</span>;</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;      <span class="keyword">const</span> uint8_t lg_size = lg_size_from_count(match_count, theta_update_sketch_base&lt;EN, EK, A&gt;::REBUILD_THRESHOLD);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;      table_ = hash_table(lg_size, lg_size, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;      <span class="keywordflow">for</span> (uint32_t i = 0; i &lt; match_count; i++) {</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;      table_ = hash_table(lg_size, lg_size - 1, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;      <span class="keywordflow">for</span> (uint32_t i = 0; i &lt; match_count; ++i) {</div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        <span class="keyword">auto</span> result = table_.find(EK()(matched_entries[i]));</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        table_.insert(result.first, std::move(matched_entries[i]));</div>
 <div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;      }</div>
