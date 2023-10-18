@@ -70,6 +70,7 @@ TEST_CASE("frequent items: several items, no resize, no purge", "[frequent_items
   REQUIRE(sketch.get_estimate("b") == 3);
   REQUIRE(sketch.get_estimate("c") == 2);
   REQUIRE(sketch.get_estimate("d") == 1);
+  REQUIRE(sketch.get_maximum_error() == 0);
 }
 
 TEST_CASE("frequent items: several items, with resize, no purge", "[frequent_items_sketch]") {
@@ -96,6 +97,7 @@ TEST_CASE("frequent items: several items, with resize, no purge", "[frequent_ite
   REQUIRE(sketch.get_estimate("b") == 3);
   REQUIRE(sketch.get_estimate("c") == 2);
   REQUIRE(sketch.get_estimate("d") == 1);
+  REQUIRE(sketch.get_maximum_error() == 0);
 }
 
 TEST_CASE("frequent items: estimation mode", "[frequent_items_sketch]") {
@@ -149,6 +151,7 @@ TEST_CASE("frequent items: merge exact mode", "[frequent_items_sketch]") {
   REQUIRE(sketch1.get_estimate(2) == 3);
   REQUIRE(sketch1.get_estimate(3) == 2);
   REQUIRE(sketch1.get_estimate(4) == 1);
+  REQUIRE(sketch1.get_maximum_error() == 0);
 }
 
 TEST_CASE("frequent items: merge estimation mode", "[frequent_items_sketch]") {
@@ -197,48 +200,6 @@ TEST_CASE("frequent items: merge estimation mode", "[frequent_items_sketch]") {
   REQUIRE(11 <= items[0].get_estimate()); // always overestimated
   REQUIRE(items[1].get_item() == 1);
   REQUIRE(9 <= items[1].get_estimate()); // always overestimated
-}
-
-TEST_CASE("frequent items: deserialize from java long", "[frequent_items_sketch]") {
-  std::ifstream is;
-  is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "longs_sketch_from_java.sk", std::ios::binary);
-  auto sketch = frequent_items_sketch<long long>::deserialize(is);
-  REQUIRE_FALSE(sketch.is_empty());
-  REQUIRE(sketch.get_total_weight() == 4);
-  REQUIRE(sketch.get_num_active_items() == 4);
-  REQUIRE(sketch.get_estimate(1) == 1);
-  REQUIRE(sketch.get_estimate(2) == 1);
-  REQUIRE(sketch.get_estimate(3) == 1);
-  REQUIRE(sketch.get_estimate(4) == 1);
-}
-
-TEST_CASE("frequent items: deserialize from java string", "[frequent_items_sketch]") {
-  std::ifstream is;
-  is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "items_sketch_string_from_java.sk", std::ios::binary);
-  auto sketch = frequent_items_sketch<std::string>::deserialize(is);
-  REQUIRE_FALSE(sketch.is_empty());
-  REQUIRE(sketch.get_total_weight() == 4);
-  REQUIRE(sketch.get_num_active_items() == 4);
-  REQUIRE(sketch.get_estimate("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 1);
-  REQUIRE(sketch.get_estimate("bbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 1);
-  REQUIRE(sketch.get_estimate("ccccccccccccccccccccccccccccc") == 1);
-  REQUIRE(sketch.get_estimate("ddddddddddddddddddddddddddddd") == 1);
-}
-
-TEST_CASE("frequent items: deserialize from java string, utf-8", "[frequent_items_sketch]") {
-  std::ifstream is;
-  is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "items_sketch_string_utf8_from_java.sk", std::ios::binary);
-  auto sketch = frequent_items_sketch<std::string>::deserialize(is);
-  REQUIRE_FALSE(sketch.is_empty());
-  REQUIRE(sketch.get_total_weight() == 10);
-  REQUIRE(sketch.get_num_active_items() == 4);
-  REQUIRE(sketch.get_estimate("абвгд") == 1);
-  REQUIRE(sketch.get_estimate("еёжзи") == 2);
-  REQUIRE(sketch.get_estimate("йклмн") == 3);
-  REQUIRE(sketch.get_estimate("опрст") == 4);
 }
 
 TEST_CASE("frequent items: deserialize long64 stream", "[frequent_items_sketch]") {

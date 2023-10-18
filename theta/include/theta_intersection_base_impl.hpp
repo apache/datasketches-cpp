@@ -49,7 +49,7 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
   if (!is_valid_) { // first update, copy or move incoming sketch
     is_valid_ = true;
     const uint8_t lg_size = lg_size_from_count(sketch.get_num_retained(), theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
-    table_ = hash_table(lg_size, lg_size, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
+    table_ = hash_table(lg_size, lg_size - 1, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
     for (auto&& entry: sketch) {
       auto result = table_.find(EK()(entry));
       if (result.second) {
@@ -88,8 +88,8 @@ void theta_intersection_base<EN, EK, P, S, CS, A>::update(SS&& sketch) {
       if (table_.theta_ == theta_constants::MAX_THETA) table_.is_empty_ = true;
     } else {
       const uint8_t lg_size = lg_size_from_count(match_count, theta_update_sketch_base<EN, EK, A>::REBUILD_THRESHOLD);
-      table_ = hash_table(lg_size, lg_size, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
-      for (uint32_t i = 0; i < match_count; i++) {
+      table_ = hash_table(lg_size, lg_size - 1, resize_factor::X1, 1, table_.theta_, table_.seed_, table_.allocator_, table_.is_empty_);
+      for (uint32_t i = 0; i < match_count; ++i) {
         auto result = table_.find(EK()(matched_entries[i]));
         table_.insert(result.first, std::move(matched_entries[i]));
       }

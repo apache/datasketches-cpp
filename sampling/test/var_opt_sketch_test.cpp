@@ -489,41 +489,4 @@ TEST_CASE("varopt sketch: estimate subset sum", "[var_opt_sketch]") {
   REQUIRE(summary.estimate < total_weight); // exact mode, so know it must be strictly less
 }
 
-TEST_CASE("varopt sketch: deserialize exact from java", "[var_opt_sketch]") {
-  std::ifstream is;
-  is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "varopt_sketch_string_exact.sk", std::ios::binary);
-  var_opt_sketch<std::string> sketch = var_opt_sketch<std::string>::deserialize(is);
-  REQUIRE_FALSE(sketch.is_empty());
-  REQUIRE(sketch.get_k() == 1024);
-  REQUIRE(sketch.get_n() == 200);
-  REQUIRE(sketch.get_num_samples() == 200);
-  subset_summary ss = sketch.estimate_subset_sum([](std::string){ return true; });
-
-  double tgt_wt = 0.0;
-  for (int i = 1; i <= 200; ++i) { tgt_wt += 1000.0 / i; }
-  REQUIRE(ss.total_sketch_weight == Approx(tgt_wt).margin(EPS));
-}
-
-
-TEST_CASE("varopt sketch: deserialize sampling from java", "[var_opt_sketch]") {
-  std::ifstream is;
-  is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "varopt_sketch_long_sampling.sk", std::ios::binary);
-  var_opt_sketch<int64_t> sketch = var_opt_sketch<int64_t>::deserialize(is);
-  REQUIRE_FALSE(sketch.is_empty());
-  REQUIRE(sketch.get_k() == 1024);
-  REQUIRE(sketch.get_n() == 2003);
-  REQUIRE(sketch.get_num_samples() == sketch.get_k());
-  subset_summary ss = sketch.estimate_subset_sum([](int64_t){ return true; });
-  REQUIRE(ss.estimate == Approx(332000.0).margin(EPS));
-  REQUIRE(ss.total_sketch_weight == Approx(332000.0).margin(EPS));
-
-  ss = sketch.estimate_subset_sum([](int64_t x){ return x < 0; });
-  REQUIRE(ss.estimate == 330000.0); // heavy item, weight is exact
-
-  ss = sketch.estimate_subset_sum([](int64_t x){ return x >= 0; });
-  REQUIRE(ss.estimate == Approx(2000.0).margin(EPS));
-}
-
 }

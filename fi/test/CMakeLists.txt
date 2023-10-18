@@ -41,3 +41,17 @@ target_sources(fi_test
     frequent_items_sketch_test.cpp
     frequent_items_sketch_custom_type_test.cpp
 )
+
+if (SERDE_COMPAT)
+target_sources(fi_test
+  PRIVATE
+   frequent_items_sketch_deserialize_from_java_test.cpp
+)
+endif()
+
+if (GENERATE)
+target_sources(fi_test
+  PRIVATE
+   frequent_items_sketch_serialize_for_java.cpp
+)
+endif()

@@ -42,3 +42,17 @@ target_sources(kll_test
     kll_sketch_validation.cpp
     kolmogorov_smirnov_test.cpp
 )
+
+if (SERDE_COMPAT)
+target_sources(kll_test
+  PRIVATE
+    kll_sketch_deserialize_from_java_test.cpp
+)
+endif()
+
+if (GENERATE)
+target_sources(kll_test
+  PRIVATE
+    kll_sketch_serialize_for_java.cpp
+)
+endif()

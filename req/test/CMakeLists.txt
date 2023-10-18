@@ -40,3 +40,17 @@ target_sources(req_test
     req_sketch_test.cpp
     req_sketch_custom_type_test.cpp
 )
+
+if (SERDE_COMPAT)
+target_sources(req_test
+  PRIVATE
+    req_sketch_deserialize_from_java_test.cpp
+)
+endif()
+
+if (GENERATE)
+target_sources(req_test
+  PRIVATE
+    req_sketch_serialize_for_java.cpp
+)
+endif()

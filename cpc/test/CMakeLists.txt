@@ -23,12 +23,12 @@ set_target_properties(cpc_test PROPERTIES
   CXX_STANDARD_REQUIRED YES
 )
 
-#file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" CPC_TEST_BINARY_PATH)
-#string(APPEND CPC_TEST_BINARY_PATH "/")
-#target_compile_definitions(cpc_test
-#  PRIVATE
-#    TEST_BINARY_INPUT_PATH="${CPC_TEST_BINARY_PATH}"
-#)
+file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" CPC_TEST_BINARY_PATH)
+string(APPEND CPC_TEST_BINARY_PATH "/")
+target_compile_definitions(cpc_test
+  PRIVATE
+    TEST_BINARY_INPUT_PATH="${CPC_TEST_BINARY_PATH}"
+)
 
 add_test(
   NAME cpc_test
@@ -42,3 +42,17 @@ target_sources(cpc_test
     compression_test.cpp
     cpc_sketch_allocation_test.cpp
 )
+
+if (SERDE_COMPAT)
+target_sources(cpc_test
+  PRIVATE
+    cpc_sketch_deserialize_from_java_test.cpp
+)
+endif()
+
+if (GENERATE)
+target_sources(cpc_test
+  PRIVATE
+    cpc_sketch_serialize_for_java.cpp
+)
+endif()
