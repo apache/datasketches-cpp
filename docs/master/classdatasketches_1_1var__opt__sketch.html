@@ -825,7 +825,7 @@ class datasketches::var_opt_sketch&lt; T, A &gt;</h3>
 </div><div class="memdoc">
 
 <p>Prints the raw sketch items to a string. </p>
-<p>Calls items_to_stream() internally. Only works for type T with a defined operator&lt;&lt;() and kept separate from <a class="el" href="classdatasketches_1_1var__opt__sketch.html#aed372241c10ffd041bee85602edb199a" title="Prints a summary of the sketch.">to_string()</a> to allow compilation even if T does not have such an operator defined. </p><dl class="section return"><dt>Returns</dt><dd>a string with the sketch items </dd></dl>
+<p>Calls items_to_stream() internally. Only works for type T with a defined std::ostream&amp; operator&lt;&lt;(std::ostream&amp;, const T&amp;) and kept separate from <a class="el" href="classdatasketches_1_1var__opt__sketch.html#aed372241c10ffd041bee85602edb199a" title="Prints a summary of the sketch.">to_string()</a> to allow compilation even if T does not have such an operator defined. </p><dl class="section return"><dt>Returns</dt><dd>a string with the sketch items </dd></dl>
 
 </div>
 </div>

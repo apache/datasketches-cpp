@@ -184,221 +184,221 @@ $(function() {
 <div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160; </div>
 <div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;    string&lt;A&gt; <a class="code" href="classdatasketches_1_1var__opt__sketch.html#aed372241c10ffd041bee85602edb199a">to_string</a>() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160; </div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    string&lt;A&gt; <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a0fa52dd153f1e3cac57d4742e2fef6fc">items_to_string</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <span class="keyword">class </span>const_iterator;</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    const_iterator <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a0faac62cb9f27b09afc849def518f5cc">begin</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160; </div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    const_iterator <a class="code" href="classdatasketches_1_1var__opt__sketch.html#ae9e1e5356b5d10a177fa50f7bdfdfd96">end</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160; </div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;  <span class="keyword">private</span>:</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    <span class="keyword">typedef</span> <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;double&gt; AllocDouble;</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="keyword">typedef</span> <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;bool&gt; AllocBool;</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint32_t MIN_LG_ARR_ITEMS = 3;</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_EMPTY  = 1;</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_WARMUP = 3;</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_FULL   = 4;</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t SER_VER = 2;</div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t FAMILY_ID  = 13;</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t EMPTY_FLAG_MASK  = 4;</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t GADGET_FLAG_MASK = 128;</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160; </div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <span class="comment">// Number of standard deviations to use for subset sum error bounds</span></div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    constexpr <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">double</span> DEFAULT_KAPPA = 2.0;</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160; </div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;    <span class="comment">// TODO: should probably rearrange a bit to minimize gaps once aligned</span></div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    uint32_t k_;                    <span class="comment">// max size of sketch, in items</span></div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160; </div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    uint32_t h_;                    <span class="comment">// number of items in heap</span></div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    uint32_t m_;                    <span class="comment">// number of items in middle region</span></div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    uint32_t r_;                    <span class="comment">// number of items in reservoir-like region</span></div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;    uint64_t n_;                    <span class="comment">// total number of items processed by sketch</span></div>
-<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    <span class="keywordtype">double</span> total_wt_r_;             <span class="comment">// total weight of items in reservoir-like area</span></div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160; </div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;    resize_factor rf_;              <span class="comment">// resize factor</span></div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160; </div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;    uint32_t curr_items_alloc_;     <span class="comment">// currently allocated array size</span></div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    <span class="keywordtype">bool</span> filled_data_;              <span class="comment">// true if we&#39;ve explicitly set all entries in data_</span></div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160; </div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;    A allocator_;</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    T* data_;                       <span class="comment">// stored sampled items</span></div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    <span class="keywordtype">double</span>* weights_;               <span class="comment">// weights for sampled items</span></div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160; </div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    <span class="comment">// The next two fields are hidden from the user because they are part of the state of the</span></div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    <span class="comment">// unioning algorithm, NOT part of a varopt sketch, or even of a varopt &quot;gadget&quot; (our name for</span></div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <span class="comment">// the potentially invalid sketch that is maintained by the unioning algorithm). It would make</span></div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    <span class="comment">// more sense logically for these fields to be declared in the unioning object (whose entire</span></div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    <span class="comment">// purpose is storing the state of the unioning algorithm) but for reasons of programming</span></div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    <span class="comment">// convenience we are currently declaring them here. However, that could change in the future.</span></div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160; </div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;    <span class="comment">// Following int is:</span></div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="comment">//  1. Zero (for a varopt sketch)</span></div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <span class="comment">//  2. Count of marked items in H region, if part of a unioning algo&#39;s gadget</span></div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    uint32_t num_marks_in_h_;</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160; </div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="comment">// The following array is absent in a varopt sketch, and notionally present in a gadget</span></div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    <span class="comment">// (although it really belongs in the unioning object). If the array were to be made explicit,</span></div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <span class="comment">// some additional coding would need to be done to ensure that all of the necessary data motion</span></div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <span class="comment">// occurs and is properly tracked.</span></div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    <span class="keywordtype">bool</span>* marks_;</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160; </div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;    <span class="comment">// used during deserialization to avoid memory leaks upon errors</span></div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;    <span class="keyword">class </span>items_deleter;</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    <span class="keyword">class </span>weights_deleter;</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    <span class="keyword">class </span>marks_deleter;</div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;    <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a6df9f2226b7197a0f612ee4aec0233e7">var_opt_sketch</a>(uint32_t k, resize_factor rf, <span class="keywordtype">bool</span> is_gadget, <span class="keyword">const</span> A&amp; allocator);</div>
-<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a6df9f2226b7197a0f612ee4aec0233e7">var_opt_sketch</a>(uint32_t k, uint32_t h, uint32_t m, uint32_t r, uint64_t n, <span class="keywordtype">double</span> total_wt_r, resize_factor rf,</div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                   uint32_t curr_items_alloc, <span class="keywordtype">bool</span> filled_data, std::unique_ptr&lt;T, items_deleter&gt; items,</div>
-<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                   std::unique_ptr&lt;double, weights_deleter&gt; weights, uint32_t num_marks_in_h,</div>
-<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                   std::unique_ptr&lt;bool, marks_deleter&gt; marks, <span class="keyword">const</span> A&amp; allocator);</div>
-<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160; </div>
-<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__union.html">var_opt_union</a>&lt;T, A&gt;;</div>
-<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a6df9f2226b7197a0f612ee4aec0233e7">var_opt_sketch</a>(<span class="keyword">const</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch</a>&amp; other, <span class="keywordtype">bool</span> as_sketch, uint64_t adjusted_n);</div>
-<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    </div>
-<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    string&lt;A&gt; <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a0fa52dd153f1e3cac57d4742e2fef6fc">items_to_string</a>(<span class="keywordtype">bool</span> print_gap) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160; </div>
-<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;    <span class="comment">// internal-use-only update</span></div>
-<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a1125ed18baf3f257b5796321c7ec0f8f">update</a>(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
-<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    </div>
-<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
-<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> update_warmup_phase(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
-<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    </div>
-<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
-<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> update_light(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
-<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    </div>
-<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
-<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> update_heavy_r_eq1(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
-<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    </div>
-<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
-<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> update_heavy_general(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
-<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160; </div>
-<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">double</span> get_tau() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">double</span> peek_min() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">bool</span> is_marked(uint32_t idx) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    </div>
-<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    <span class="keyword">inline</span> uint32_t pick_random_slot_in_r() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;    <span class="keyword">inline</span> uint32_t choose_delete_slot(<span class="keywordtype">double</span> wt_cand, uint32_t num_cand) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    <span class="keyword">inline</span> uint32_t choose_weighted_delete_slot(<span class="keywordtype">double</span> wt_cand, uint32_t num_cand) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160; </div>
-<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
-<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> push(O&amp;&amp; item, <span class="keywordtype">double</span> wt, <span class="keywordtype">bool</span> mark);</div>
-<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> transition_from_warmup();</div>
-<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> convert_to_heap();</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> restore_towards_leaves(uint32_t slot_in);</div>
-<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> restore_towards_root(uint32_t slot_in);</div>
-<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> pop_min_to_m_region();</div>
-<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    <span class="keywordtype">void</span> grow_candidate_set(<span class="keywordtype">double</span> wt_cands, uint32_t num_cands);    </div>
-<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    <span class="keywordtype">void</span> decrease_k_by_1();</div>
-<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <span class="keywordtype">void</span> strip_marks();</div>
-<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    <span class="keywordtype">void</span> force_set_k(uint32_t k); <span class="comment">// used to resolve union gadget into sketch</span></div>
-<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="keywordtype">void</span> downsample_candidate_set(<span class="keywordtype">double</span> wt_cands, uint32_t num_cands);</div>
-<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> swap_values(uint32_t src, uint32_t dst);</div>
-<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    <span class="keywordtype">void</span> grow_data_arrays();</div>
-<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    <span class="keywordtype">void</span> allocate_data_arrays(uint32_t tgt_size, <span class="keywordtype">bool</span> use_marks);</div>
-<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160; </div>
-<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160;    <span class="comment">// validation</span></div>
-<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> check_preamble_longs(uint8_t preamble_longs, uint8_t flags);</div>
-<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);</div>
-<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    <span class="keyword">static</span> uint32_t validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n,</div>
-<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;                                                 uint32_t h, uint32_t r, resize_factor rf);</div>
-<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160; </div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;    <span class="comment">// things to move to common and be shared among sketches</span></div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <span class="keyword">static</span> uint32_t get_adjusted_size(uint32_t max_size, uint32_t resize_target);</div>
-<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <span class="keyword">static</span> uint32_t starting_sub_multiple(uint32_t lg_target, uint32_t lg_rf, uint32_t lg_min);</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">double</span> pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, <span class="keywordtype">double</span> sampling_rate);</div>
-<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">double</span> pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, <span class="keywordtype">double</span> sampling_rate);</div>
-<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">bool</span> is_power_of_2(uint32_t v);</div>
-<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <span class="keyword">static</span> uint32_t to_log_2(uint32_t v);</div>
-<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> uint32_t next_int(uint32_t max_value);</div>
-<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">double</span> next_double_exclude_zero();</div>
-<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160; </div>
-<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;    <span class="keyword">class </span>iterator;</div>
-<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;};</div>
-<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160; </div>
-<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;<span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch</a>&lt;T, A&gt;::const_iterator {</div>
-<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;  <span class="keyword">using</span> iterator_category = std::input_iterator_tag;</div>
-<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;  <span class="keyword">using</span> value_type = std::pair&lt;const T&amp;, const double&gt;;</div>
-<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;  <span class="keyword">using</span> difference_type = void;</div>
-<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;  <span class="keyword">using</span> pointer = <span class="keyword">const</span> return_value_holder&lt;value_type&gt;;</div>
-<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;  <span class="keyword">using</span> reference = <span class="keyword">const</span> value_type;</div>
-<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160; </div>
-<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;  const_iterator(<span class="keyword">const</span> const_iterator&amp; other);</div>
-<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;  const_iterator&amp; operator++();</div>
-<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;  const_iterator&amp; operator++(<span class="keywordtype">int</span>);</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;  <span class="keywordtype">bool</span> operator==(<span class="keyword">const</span> const_iterator&amp; other) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;  <span class="keywordtype">bool</span> operator!=(<span class="keyword">const</span> const_iterator&amp; other) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;  reference operator*() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;  pointer operator-&gt;() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160; </div>
-<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;  <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch</a>&lt;T, A&gt;;</div>
-<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;  <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__union.html">var_opt_union</a>&lt;T, A&gt;;</div>
-<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160; </div>
-<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160;  <span class="comment">// default iterator over full sketch</span></div>
-<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;  const_iterator(<span class="keyword">const</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch&lt;T, A&gt;</a>&amp; sk, <span class="keywordtype">bool</span> is_end);</div>
-<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;  </div>
-<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;  <span class="comment">// iterates over only one of the H or R regions</span></div>
-<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;  <span class="comment">// does not apply weight correction</span></div>
-<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;  const_iterator(<span class="keyword">const</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch&lt;T, A&gt;</a>&amp; sk, <span class="keywordtype">bool</span> is_end, <span class="keywordtype">bool</span> use_r_region);</div>
-<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160; </div>
-<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160;  <span class="keywordtype">bool</span> get_mark() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160; </div>
-<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160;  <span class="keyword">const</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch&lt;T, A&gt;</a>* sk_;</div>
-<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;  <span class="keywordtype">double</span> cum_r_weight_; <span class="comment">// used for weight correction</span></div>
-<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;  <span class="keywordtype">double</span> r_item_wt_;</div>
-<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;  <span class="keywordtype">size_t</span> idx_;</div>
-<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">size_t</span> final_idx_;</div>
-<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;};</div>
-<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160; </div>
-<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160;<span class="comment">// non-const iterator for internal use</span></div>
-<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;<span class="keyword">class </span>var_opt_sketch&lt;T, A&gt;::iterator {</div>
-<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;  <span class="keyword">using</span> iterator_category = std::input_iterator_tag;</div>
-<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;  <span class="keyword">using</span> value_type = std::pair&lt;T&amp;, double&gt;;</div>
-<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;  <span class="keyword">using</span> difference_type = void;</div>
-<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;  <span class="keyword">using</span> pointer = return_value_holder&lt;value_type&gt;;</div>
-<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;  <span class="keyword">using</span> reference = value_type;</div>
-<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160; </div>
-<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160;  iterator(<span class="keyword">const</span> iterator&amp; other);</div>
-<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;  iterator&amp; operator++();</div>
-<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;  iterator&amp; operator++(<span class="keywordtype">int</span>);</div>
-<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;  <span class="keywordtype">bool</span> operator==(<span class="keyword">const</span> iterator&amp; other) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;  <span class="keywordtype">bool</span> operator!=(<span class="keyword">const</span> iterator&amp; other) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;  reference operator*();</div>
-<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;  pointer operator-&gt;();</div>
-<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160; </div>
-<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;  <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__sketch.html#a6df9f2226b7197a0f612ee4aec0233e7">var_opt_sketch</a>&lt;T, A&gt;;</div>
-<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;  <span class="keyword">friend</span> <span class="keyword">class </span>var_opt_union&lt;T, A&gt;;</div>
-<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;  </div>
-<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;  <span class="comment">// iterates over only one of the H or R region, applying weight correction</span></div>
-<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;  <span class="comment">// if iterating over R region (can correct for numerical precision issues)</span></div>
-<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;  iterator(<span class="keyword">const</span> var_opt_sketch&lt;T, A&gt;&amp; sk, <span class="keywordtype">bool</span> is_end, <span class="keywordtype">bool</span> use_r_region);</div>
-<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160; </div>
-<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160;  <span class="keywordtype">bool</span> get_mark() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160; </div>
-<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160;  <span class="keyword">const</span> var_opt_sketch&lt;T, A&gt;* sk_;</div>
-<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;  <span class="keywordtype">double</span> cum_r_weight_; <span class="comment">// used for weight correction</span></div>
-<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;  <span class="keywordtype">double</span> r_item_wt_;</div>
-<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;  <span class="keywordtype">size_t</span> idx_;</div>
-<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">size_t</span> final_idx_;</div>
-<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;};</div>
-<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160; </div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    string&lt;A&gt; <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a0fa52dd153f1e3cac57d4742e2fef6fc">items_to_string</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keyword">class </span>const_iterator;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    const_iterator <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a0faac62cb9f27b09afc849def518f5cc">begin</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    const_iterator <a class="code" href="classdatasketches_1_1var__opt__sketch.html#ae9e1e5356b5d10a177fa50f7bdfdfd96">end</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160; </div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;  <span class="keyword">private</span>:</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="keyword">typedef</span> <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;double&gt; AllocDouble;</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    <span class="keyword">typedef</span> <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;bool&gt; AllocBool;</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint32_t MIN_LG_ARR_ITEMS = 3;</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_EMPTY  = 1;</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_WARMUP = 3;</div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_FULL   = 4;</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t SER_VER = 2;</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t FAMILY_ID  = 13;</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t EMPTY_FLAG_MASK  = 4;</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t GADGET_FLAG_MASK = 128;</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160; </div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;    <span class="comment">// Number of standard deviations to use for subset sum error bounds</span></div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    constexpr <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">double</span> DEFAULT_KAPPA = 2.0;</div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="comment">// TODO: should probably rearrange a bit to minimize gaps once aligned</span></div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    uint32_t k_;                    <span class="comment">// max size of sketch, in items</span></div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    uint32_t h_;                    <span class="comment">// number of items in heap</span></div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    uint32_t m_;                    <span class="comment">// number of items in middle region</span></div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    uint32_t r_;                    <span class="comment">// number of items in reservoir-like region</span></div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160; </div>
+<div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;    uint64_t n_;                    <span class="comment">// total number of items processed by sketch</span></div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    <span class="keywordtype">double</span> total_wt_r_;             <span class="comment">// total weight of items in reservoir-like area</span></div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160; </div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;    resize_factor rf_;              <span class="comment">// resize factor</span></div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160; </div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;    uint32_t curr_items_alloc_;     <span class="comment">// currently allocated array size</span></div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;    <span class="keywordtype">bool</span> filled_data_;              <span class="comment">// true if we&#39;ve explicitly set all entries in data_</span></div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160; </div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;    A allocator_;</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;    T* data_;                       <span class="comment">// stored sampled items</span></div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    <span class="keywordtype">double</span>* weights_;               <span class="comment">// weights for sampled items</span></div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160; </div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;    <span class="comment">// The next two fields are hidden from the user because they are part of the state of the</span></div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <span class="comment">// unioning algorithm, NOT part of a varopt sketch, or even of a varopt &quot;gadget&quot; (our name for</span></div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;    <span class="comment">// the potentially invalid sketch that is maintained by the unioning algorithm). It would make</span></div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    <span class="comment">// more sense logically for these fields to be declared in the unioning object (whose entire</span></div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;    <span class="comment">// purpose is storing the state of the unioning algorithm) but for reasons of programming</span></div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;    <span class="comment">// convenience we are currently declaring them here. However, that could change in the future.</span></div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;    <span class="comment">// Following int is:</span></div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <span class="comment">//  1. Zero (for a varopt sketch)</span></div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <span class="comment">//  2. Count of marked items in H region, if part of a unioning algo&#39;s gadget</span></div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    uint32_t num_marks_in_h_;</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160; </div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    <span class="comment">// The following array is absent in a varopt sketch, and notionally present in a gadget</span></div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;    <span class="comment">// (although it really belongs in the unioning object). If the array were to be made explicit,</span></div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;    <span class="comment">// some additional coding would need to be done to ensure that all of the necessary data motion</span></div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;    <span class="comment">// occurs and is properly tracked.</span></div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;    <span class="keywordtype">bool</span>* marks_;</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160; </div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;    <span class="comment">// used during deserialization to avoid memory leaks upon errors</span></div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;    <span class="keyword">class </span>items_deleter;</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;    <span class="keyword">class </span>weights_deleter;</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;    <span class="keyword">class </span>marks_deleter;</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160; </div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;    <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a6df9f2226b7197a0f612ee4aec0233e7">var_opt_sketch</a>(uint32_t k, resize_factor rf, <span class="keywordtype">bool</span> is_gadget, <span class="keyword">const</span> A&amp; allocator);</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;    <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a6df9f2226b7197a0f612ee4aec0233e7">var_opt_sketch</a>(uint32_t k, uint32_t h, uint32_t m, uint32_t r, uint64_t n, <span class="keywordtype">double</span> total_wt_r, resize_factor rf,</div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                   uint32_t curr_items_alloc, <span class="keywordtype">bool</span> filled_data, std::unique_ptr&lt;T, items_deleter&gt; items,</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                   std::unique_ptr&lt;double, weights_deleter&gt; weights, uint32_t num_marks_in_h,</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                   std::unique_ptr&lt;bool, marks_deleter&gt; marks, <span class="keyword">const</span> A&amp; allocator);</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160; </div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160;    <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__union.html">var_opt_union</a>&lt;T, A&gt;;</div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;    <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a6df9f2226b7197a0f612ee4aec0233e7">var_opt_sketch</a>(<span class="keyword">const</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch</a>&amp; other, <span class="keywordtype">bool</span> as_sketch, uint64_t adjusted_n);</div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;    </div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    string&lt;A&gt; <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a0fa52dd153f1e3cac57d4742e2fef6fc">items_to_string</a>(<span class="keywordtype">bool</span> print_gap) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160; </div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    <span class="comment">// internal-use-only update</span></div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html#a1125ed18baf3f257b5796321c7ec0f8f">update</a>(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160;    </div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> update_warmup_phase(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;    </div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> update_light(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;    </div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> update_heavy_r_eq1(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160;    </div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> update_heavy_general(O&amp;&amp; item, <span class="keywordtype">double</span> weight, <span class="keywordtype">bool</span> mark);</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160; </div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">double</span> get_tau() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">double</span> peek_min() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">bool</span> is_marked(uint32_t idx) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;    </div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;    <span class="keyword">inline</span> uint32_t pick_random_slot_in_r() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160;    <span class="keyword">inline</span> uint32_t choose_delete_slot(<span class="keywordtype">double</span> wt_cand, uint32_t num_cand) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;    <span class="keyword">inline</span> uint32_t choose_weighted_delete_slot(<span class="keywordtype">double</span> wt_cand, uint32_t num_cand) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160; </div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> push(O&amp;&amp; item, <span class="keywordtype">double</span> wt, <span class="keywordtype">bool</span> mark);</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> transition_from_warmup();</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> convert_to_heap();</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> restore_towards_leaves(uint32_t slot_in);</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> restore_towards_root(uint32_t slot_in);</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> pop_min_to_m_region();</div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;    <span class="keywordtype">void</span> grow_candidate_set(<span class="keywordtype">double</span> wt_cands, uint32_t num_cands);    </div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;    <span class="keywordtype">void</span> decrease_k_by_1();</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;    <span class="keywordtype">void</span> strip_marks();</div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;    <span class="keywordtype">void</span> force_set_k(uint32_t k); <span class="comment">// used to resolve union gadget into sketch</span></div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;    <span class="keywordtype">void</span> downsample_candidate_set(<span class="keywordtype">double</span> wt_cands, uint32_t num_cands);</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> swap_values(uint32_t src, uint32_t dst);</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;    <span class="keywordtype">void</span> grow_data_arrays();</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;    <span class="keywordtype">void</span> allocate_data_arrays(uint32_t tgt_size, <span class="keywordtype">bool</span> use_marks);</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160; </div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;    <span class="comment">// validation</span></div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> check_preamble_longs(uint8_t preamble_longs, uint8_t flags);</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);</div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;    <span class="keyword">static</span> uint32_t validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n,</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;                                                 uint32_t h, uint32_t r, resize_factor rf);</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160; </div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    <span class="comment">// things to move to common and be shared among sketches</span></div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;    <span class="keyword">static</span> uint32_t get_adjusted_size(uint32_t max_size, uint32_t resize_target);</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;    <span class="keyword">static</span> uint32_t starting_sub_multiple(uint32_t lg_target, uint32_t lg_rf, uint32_t lg_min);</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">double</span> pseudo_hypergeometric_ub_on_p(uint64_t n, uint32_t k, <span class="keywordtype">double</span> sampling_rate);</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">double</span> pseudo_hypergeometric_lb_on_p(uint64_t n, uint32_t k, <span class="keywordtype">double</span> sampling_rate);</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">bool</span> is_power_of_2(uint32_t v);</div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;    <span class="keyword">static</span> uint32_t to_log_2(uint32_t v);</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> uint32_t next_int(uint32_t max_value);</div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;    <span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">double</span> next_double_exclude_zero();</div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160; </div>
+<div class="line"><a name="l00388"></a><span class="lineno">  388</span>&#160;    <span class="keyword">class </span>iterator;</div>
+<div class="line"><a name="l00389"></a><span class="lineno">  389</span>&#160;};</div>
+<div class="line"><a name="l00390"></a><span class="lineno">  390</span>&#160; </div>
+<div class="line"><a name="l00391"></a><span class="lineno">  391</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00392"></a><span class="lineno">  392</span>&#160;<span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch</a>&lt;T, A&gt;::const_iterator {</div>
+<div class="line"><a name="l00393"></a><span class="lineno">  393</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00394"></a><span class="lineno">  394</span>&#160;  <span class="keyword">using</span> iterator_category = std::input_iterator_tag;</div>
+<div class="line"><a name="l00395"></a><span class="lineno">  395</span>&#160;  <span class="keyword">using</span> value_type = std::pair&lt;const T&amp;, const double&gt;;</div>
+<div class="line"><a name="l00396"></a><span class="lineno">  396</span>&#160;  <span class="keyword">using</span> difference_type = void;</div>
+<div class="line"><a name="l00397"></a><span class="lineno">  397</span>&#160;  <span class="keyword">using</span> pointer = <span class="keyword">const</span> return_value_holder&lt;value_type&gt;;</div>
+<div class="line"><a name="l00398"></a><span class="lineno">  398</span>&#160;  <span class="keyword">using</span> reference = <span class="keyword">const</span> value_type;</div>
+<div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160; </div>
+<div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160;  const_iterator(<span class="keyword">const</span> const_iterator&amp; other);</div>
+<div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;  const_iterator&amp; operator++();</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;  const_iterator&amp; operator++(<span class="keywordtype">int</span>);</div>
+<div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;  <span class="keywordtype">bool</span> operator==(<span class="keyword">const</span> const_iterator&amp; other) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;  <span class="keywordtype">bool</span> operator!=(<span class="keyword">const</span> const_iterator&amp; other) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;  reference operator*() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00406"></a><span class="lineno">  406</span>&#160;  pointer operator-&gt;() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00407"></a><span class="lineno">  407</span>&#160; </div>
+<div class="line"><a name="l00408"></a><span class="lineno">  408</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00409"></a><span class="lineno">  409</span>&#160;  <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch</a>&lt;T, A&gt;;</div>
+<div class="line"><a name="l00410"></a><span class="lineno">  410</span>&#160;  <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__union.html">var_opt_union</a>&lt;T, A&gt;;</div>
+<div class="line"><a name="l00411"></a><span class="lineno">  411</span>&#160; </div>
+<div class="line"><a name="l00412"></a><span class="lineno">  412</span>&#160;  <span class="comment">// default iterator over full sketch</span></div>
+<div class="line"><a name="l00413"></a><span class="lineno">  413</span>&#160;  const_iterator(<span class="keyword">const</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch&lt;T, A&gt;</a>&amp; sk, <span class="keywordtype">bool</span> is_end);</div>
+<div class="line"><a name="l00414"></a><span class="lineno">  414</span>&#160;  </div>
+<div class="line"><a name="l00415"></a><span class="lineno">  415</span>&#160;  <span class="comment">// iterates over only one of the H or R regions</span></div>
+<div class="line"><a name="l00416"></a><span class="lineno">  416</span>&#160;  <span class="comment">// does not apply weight correction</span></div>
+<div class="line"><a name="l00417"></a><span class="lineno">  417</span>&#160;  const_iterator(<span class="keyword">const</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch&lt;T, A&gt;</a>&amp; sk, <span class="keywordtype">bool</span> is_end, <span class="keywordtype">bool</span> use_r_region);</div>
+<div class="line"><a name="l00418"></a><span class="lineno">  418</span>&#160; </div>
+<div class="line"><a name="l00419"></a><span class="lineno">  419</span>&#160;  <span class="keywordtype">bool</span> get_mark() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00420"></a><span class="lineno">  420</span>&#160; </div>
+<div class="line"><a name="l00421"></a><span class="lineno">  421</span>&#160;  <span class="keyword">const</span> <a class="code" href="classdatasketches_1_1var__opt__sketch.html">var_opt_sketch&lt;T, A&gt;</a>* sk_;</div>
+<div class="line"><a name="l00422"></a><span class="lineno">  422</span>&#160;  <span class="keywordtype">double</span> cum_r_weight_; <span class="comment">// used for weight correction</span></div>
+<div class="line"><a name="l00423"></a><span class="lineno">  423</span>&#160;  <span class="keywordtype">double</span> r_item_wt_;</div>
+<div class="line"><a name="l00424"></a><span class="lineno">  424</span>&#160;  <span class="keywordtype">size_t</span> idx_;</div>
+<div class="line"><a name="l00425"></a><span class="lineno">  425</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">size_t</span> final_idx_;</div>
+<div class="line"><a name="l00426"></a><span class="lineno">  426</span>&#160;};</div>
+<div class="line"><a name="l00427"></a><span class="lineno">  427</span>&#160; </div>
+<div class="line"><a name="l00428"></a><span class="lineno">  428</span>&#160;<span class="comment">// non-const iterator for internal use</span></div>
+<div class="line"><a name="l00429"></a><span class="lineno">  429</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00430"></a><span class="lineno">  430</span>&#160;<span class="keyword">class </span>var_opt_sketch&lt;T, A&gt;::iterator {</div>
+<div class="line"><a name="l00431"></a><span class="lineno">  431</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00432"></a><span class="lineno">  432</span>&#160;  <span class="keyword">using</span> iterator_category = std::input_iterator_tag;</div>
+<div class="line"><a name="l00433"></a><span class="lineno">  433</span>&#160;  <span class="keyword">using</span> value_type = std::pair&lt;T&amp;, double&gt;;</div>
+<div class="line"><a name="l00434"></a><span class="lineno">  434</span>&#160;  <span class="keyword">using</span> difference_type = void;</div>
+<div class="line"><a name="l00435"></a><span class="lineno">  435</span>&#160;  <span class="keyword">using</span> pointer = return_value_holder&lt;value_type&gt;;</div>
+<div class="line"><a name="l00436"></a><span class="lineno">  436</span>&#160;  <span class="keyword">using</span> reference = value_type;</div>
+<div class="line"><a name="l00437"></a><span class="lineno">  437</span>&#160; </div>
+<div class="line"><a name="l00438"></a><span class="lineno">  438</span>&#160;  iterator(<span class="keyword">const</span> iterator&amp; other);</div>
+<div class="line"><a name="l00439"></a><span class="lineno">  439</span>&#160;  iterator&amp; operator++();</div>
+<div class="line"><a name="l00440"></a><span class="lineno">  440</span>&#160;  iterator&amp; operator++(<span class="keywordtype">int</span>);</div>
+<div class="line"><a name="l00441"></a><span class="lineno">  441</span>&#160;  <span class="keywordtype">bool</span> operator==(<span class="keyword">const</span> iterator&amp; other) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00442"></a><span class="lineno">  442</span>&#160;  <span class="keywordtype">bool</span> operator!=(<span class="keyword">const</span> iterator&amp; other) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00443"></a><span class="lineno">  443</span>&#160;  reference operator*();</div>
+<div class="line"><a name="l00444"></a><span class="lineno">  444</span>&#160;  pointer operator-&gt;();</div>
+<div class="line"><a name="l00445"></a><span class="lineno">  445</span>&#160; </div>
+<div class="line"><a name="l00446"></a><span class="lineno">  446</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00447"></a><span class="lineno">  447</span>&#160;  <span class="keyword">friend</span> <span class="keyword">class </span><a class="code" href="classdatasketches_1_1var__opt__sketch.html#a6df9f2226b7197a0f612ee4aec0233e7">var_opt_sketch</a>&lt;T, A&gt;;</div>
+<div class="line"><a name="l00448"></a><span class="lineno">  448</span>&#160;  <span class="keyword">friend</span> <span class="keyword">class </span>var_opt_union&lt;T, A&gt;;</div>
+<div class="line"><a name="l00449"></a><span class="lineno">  449</span>&#160;  </div>
+<div class="line"><a name="l00450"></a><span class="lineno">  450</span>&#160;  <span class="comment">// iterates over only one of the H or R region, applying weight correction</span></div>
+<div class="line"><a name="l00451"></a><span class="lineno">  451</span>&#160;  <span class="comment">// if iterating over R region (can correct for numerical precision issues)</span></div>
+<div class="line"><a name="l00452"></a><span class="lineno">  452</span>&#160;  iterator(<span class="keyword">const</span> var_opt_sketch&lt;T, A&gt;&amp; sk, <span class="keywordtype">bool</span> is_end, <span class="keywordtype">bool</span> use_r_region);</div>
+<div class="line"><a name="l00453"></a><span class="lineno">  453</span>&#160; </div>
+<div class="line"><a name="l00454"></a><span class="lineno">  454</span>&#160;  <span class="keywordtype">bool</span> get_mark() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00455"></a><span class="lineno">  455</span>&#160; </div>
+<div class="line"><a name="l00456"></a><span class="lineno">  456</span>&#160;  <span class="keyword">const</span> var_opt_sketch&lt;T, A&gt;* sk_;</div>
+<div class="line"><a name="l00457"></a><span class="lineno">  457</span>&#160;  <span class="keywordtype">double</span> cum_r_weight_; <span class="comment">// used for weight correction</span></div>
+<div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;  <span class="keywordtype">double</span> r_item_wt_;</div>
+<div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160;  <span class="keywordtype">size_t</span> idx_;</div>
+<div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">size_t</span> final_idx_;</div>
+<div class="line"><a name="l00461"></a><span class="lineno">  461</span>&#160;};</div>
 <div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160; </div>
-<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;} <span class="comment">// namespace datasketches</span></div>
-<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160; </div>
-<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160;<span class="preprocessor">#include &quot;var_opt_sketch_impl.hpp&quot;</span></div>
-<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160; </div>
-<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// _VAR_OPT_SKETCH_HPP_</span></div>
+<div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160; </div>
+<div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;} <span class="comment">// namespace datasketches</span></div>
+<div class="line"><a name="l00465"></a><span class="lineno">  465</span>&#160; </div>
+<div class="line"><a name="l00466"></a><span class="lineno">  466</span>&#160;<span class="preprocessor">#include &quot;var_opt_sketch_impl.hpp&quot;</span></div>
+<div class="line"><a name="l00467"></a><span class="lineno">  467</span>&#160; </div>
+<div class="line"><a name="l00468"></a><span class="lineno">  468</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// _VAR_OPT_SKETCH_HPP_</span></div>
 <div class="ttc" id="aclassdatasketches_1_1var__opt__sketch_html"><div class="ttname"><a href="classdatasketches_1_1var__opt__sketch.html">datasketches::var_opt_sketch</a></div><div class="ttdoc">This sketch samples data from a stream of items.</div><div class="ttdef"><b>Definition:</b> var_opt_sketch.hpp:67</div></div>
 <div class="ttc" id="aclassdatasketches_1_1var__opt__sketch_html_a0fa52dd153f1e3cac57d4742e2fef6fc"><div class="ttname"><a href="classdatasketches_1_1var__opt__sketch.html#a0fa52dd153f1e3cac57d4742e2fef6fc">datasketches::var_opt_sketch::items_to_string</a></div><div class="ttdeci">string&lt; A &gt; items_to_string() const</div><div class="ttdoc">Prints the raw sketch items to a string.</div><div class="ttdef"><b>Definition:</b> var_opt_sketch_impl.hpp:735</div></div>
 <div class="ttc" id="aclassdatasketches_1_1var__opt__sketch_html_a0faac62cb9f27b09afc849def518f5cc"><div class="ttname"><a href="classdatasketches_1_1var__opt__sketch.html#a0faac62cb9f27b09afc849def518f5cc">datasketches::var_opt_sketch::begin</a></div><div class="ttdeci">const_iterator begin() const</div><div class="ttdoc">Iterator pointing to the first item in the sketch.</div><div class="ttdef"><b>Definition:</b> var_opt_sketch_impl.hpp:1486</div></div>

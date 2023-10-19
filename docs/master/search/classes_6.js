@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['kll_5fsketch_216',['kll_sketch',['../classdatasketches_1_1kll__sketch.html',1,'datasketches']]],
-  ['kolmogorov_5fsmirnov_217',['kolmogorov_smirnov',['../classdatasketches_1_1kolmogorov__smirnov.html',1,'datasketches']]]
+  ['jaccard_5fsimilarity_5fbase_220',['jaccard_similarity_base',['../classdatasketches_1_1jaccard__similarity__base.html',1,'datasketches']]]
 ];
