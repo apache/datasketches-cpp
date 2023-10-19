@@ -29,9 +29,6 @@
 
 namespace datasketches {
 
-template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
-template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
-
 template<
   typename T,
   typename A = std::allocator<T>
@@ -99,7 +96,7 @@ class ebpps_sample {
 
     // This is a convenience alias for users
     // The type returned by the following serialize method
-    using vector_bytes = vector_u8<A>;
+    using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
 
     /**
      * This method serializes the sample as a vector of bytes.

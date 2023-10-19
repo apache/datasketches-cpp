@@ -141,9 +141,9 @@ void ebpps_sketch<T, A>::internal_update(FwdItem&& item, double weight) {
     return;
   }
 
-  double new_cum_wt = cumulative_wt_ + weight;
-  double new_wt_max = std::max(wt_max_, weight);
-  double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
+  const double new_cum_wt = cumulative_wt_ + weight;
+  const double new_wt_max = std::max(wt_max_, weight);
+  const double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
 
   if (cumulative_wt_ > 0.0)
     sample_.downsample(new_rho / rho_);
@@ -216,10 +216,10 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
   
   const ebpps_sample<T,A>& other_sample = sk.sample_;
 
-  double final_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
-  double new_wt_max = std::max(wt_max_, sk.wt_max_);
+  const double final_cum_wt = cumulative_wt_ + sk.cumulative_wt_;
+  const double new_wt_max = std::max(wt_max_, sk.wt_max_);
   k_ = std::min(k_, sk.k_);
-  uint64_t new_n = n_ + sk.n_;
+  const uint64_t new_n = n_ + sk.n_;
 
   // Insert sk's items with the cumulative weight
   // split between the input items. We repeat the same process
@@ -230,12 +230,12 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
   // Handling the partial item by probabilistically including
   // it as a full item would be correct on average but would
   // introduce bias for any specific merge operation.
-  double avg_wt = sk.get_cumulative_weight() / sk.get_c();
+  const double avg_wt = sk.get_cumulative_weight() / sk.get_c();
   auto items = other_sample.get_full_items();
   for (size_t i = 0; i < items.size(); ++i) {
     // new_wt_max is pre-computed
-    double new_cum_wt = cumulative_wt_ + avg_wt;
-    double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
+    const double new_cum_wt = cumulative_wt_ + avg_wt;
+    const double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
 
     if (cumulative_wt_ > 0.0)
       sample_.downsample(new_rho / rho_);
@@ -251,10 +251,10 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
   // insert partial item with weight scaled by the fractional part of C
   if (other_sample.has_partial_item()) {
     double unused;
-    double other_c_frac = std::modf(other_sample.get_c(), &unused);
+    const double other_c_frac = std::modf(other_sample.get_c(), &unused);
 
-    double new_cum_wt = cumulative_wt_ + (other_c_frac * avg_wt);
-    double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
+    const double new_cum_wt = cumulative_wt_ + (other_c_frac * avg_wt);
+    const double new_rho = std::min(1.0 / new_wt_max, k_ / new_cum_wt);
 
     if (cumulative_wt_ > 0.0)
       sample_.downsample(new_rho / rho_);
@@ -326,31 +326,30 @@ size_t ebpps_sketch<T, A>::get_serialized_size_bytes(const SerDe& sd) const {
 template<typename T, typename A>
 template<typename SerDe>
 auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) const -> vector_bytes {
-  bool empty = is_empty();
-  uint8_t prelongs = (empty ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_FULL);
+  const uint8_t prelongs = (is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_FULL);
 
   const size_t size = header_size_bytes + (prelongs << 3) + sample_.get_serialized_size_bytes(sd);
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  uint8_t* end_ptr = ptr + size;
+  const uint8_t* end_ptr = ptr + size;
 
   uint8_t flags = 0;
-  if (empty) {
+  if (is_empty()) {
     flags |= EMPTY_FLAG_MASK;
   } else {
     flags |= sample_.has_partial_item() ? HAS_PARTIAL_ITEM_MASK : 0;
   }
 
   // first prelong
-  uint8_t ser_ver = SER_VER;
-  uint8_t family = FAMILY_ID;
+  const uint8_t ser_ver = SER_VER;
+  const uint8_t family = FAMILY_ID;
   ptr += copy_to_mem(prelongs, ptr);
   ptr += copy_to_mem(ser_ver, ptr);
   ptr += copy_to_mem(family, ptr);
   ptr += copy_to_mem(flags, ptr);
   ptr += copy_to_mem(k_, ptr);
 
-  if (!empty) {
+  if (!is_empty()) {
     // remaining preamble
     ptr += copy_to_mem(n_, ptr);
     ptr += copy_to_mem(cumulative_wt_, ptr);
@@ -365,12 +364,10 @@ auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) c
 template<typename T, typename A>
 template<typename SerDe>
 void ebpps_sketch<T,A>::serialize(std::ostream& os, const SerDe& sd) const {
-  const bool empty = is_empty();
-
-  const uint8_t prelongs = (empty ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_FULL);
+  const uint8_t prelongs = (is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_FULL);
 
   uint8_t flags = 0;
-  if (empty) {
+  if (is_empty()) {
     flags |= EMPTY_FLAG_MASK;
   } else {
     flags |= sample_.has_partial_item() ? HAS_PARTIAL_ITEM_MASK : 0;
@@ -385,13 +382,14 @@ void ebpps_sketch<T,A>::serialize(std::ostream& os, const SerDe& sd) const {
   write(os, flags);
   write(os, k_);
 
-  // remaining preamble
-  write(os, n_);
-  write(os, cumulative_wt_);
-  write(os, wt_max_);
-  write(os, rho_);
-
-  sample_.serialize(os, sd);
+  if (!is_empty()) {
+    // remaining preamble
+    write(os, n_);
+    write(os, cumulative_wt_);
+    write(os, wt_max_);
+    write(os, rho_);
+    sample_.serialize(os, sd);
+  }
 
   if (!os.good()) throw std::runtime_error("error writing to std::ostream");
 }

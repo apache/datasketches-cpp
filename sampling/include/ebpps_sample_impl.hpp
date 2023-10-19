@@ -68,9 +68,9 @@ ebpps_sample<T,A>::ebpps_sample(std::vector<T, A>&& data, optional<T>&& partial_
 template<typename T, typename A>
 auto ebpps_sample<T,A>::get_sample() const -> result_type {
   double unused;
-  double c_frac = std::modf(c_, &unused);
-  bool include_partial = next_double() < c_frac;
-  uint32_t result_size = static_cast<uint32_t>(data_.size()) + (include_partial ? 1 : 0);
+  const double c_frac = std::modf(c_, &unused);
+  const bool include_partial = next_double() < c_frac;
+  const uint32_t result_size = static_cast<uint32_t>(data_.size()) + (include_partial ? 1 : 0);
 
   result_type result;
   result.reserve(result_size);
@@ -85,11 +85,11 @@ template<typename T, typename A>
 void ebpps_sample<T,A>::downsample(double theta) {
   if (theta >= 1.0) return;
 
-  double new_c = theta * c_;
+  const double new_c = theta * c_;
   double new_c_int;
-  double new_c_frac = std::modf(new_c, &new_c_int);
+  const double new_c_frac = std::modf(new_c, &new_c_int);
   double c_int;
-  double c_frac = std::modf(c_, &c_int);
+  const double c_frac = std::modf(c_, &c_int);
 
   if (new_c_int == 0.0) {
     // no full items retained
@@ -125,10 +125,10 @@ template<typename T, typename A>
 template<typename FwdSample>
 void ebpps_sample<T,A>::merge(FwdSample&& other) {
   double c_int;
-  double c_frac = std::modf(c_, &c_int);
+  const double c_frac = std::modf(c_, &c_int);
 
   double unused;
-  double other_c_frac = std::modf(other.c_, &unused);
+  const double other_c_frac = std::modf(other.c_, &unused);
 
   // update c_ here but do NOT recompute fractional part yet
   c_ += other.c_;
@@ -214,9 +214,9 @@ void ebpps_sample<T,A>::set_partial(FwdItem&& item) {
 
 template<typename T, typename A>
 void ebpps_sample<T,A>::move_one_to_partial() {
-  size_t idx = random_idx(static_cast<uint32_t>(data_.size()));
+  const size_t idx = random_idx(static_cast<uint32_t>(data_.size()));
   // swap selected item to end so we can delete it easily
-  size_t last_idx = data_.size() - 1;
+  const size_t last_idx = data_.size() - 1;
   if (idx != last_idx) {
     std::swap(data_[idx], data_[last_idx]);
   }
@@ -229,7 +229,7 @@ void ebpps_sample<T,A>::move_one_to_partial() {
 template<typename T, typename A>
 void ebpps_sample<T,A>::swap_with_partial() {
   if (partial_item_) {
-    size_t idx = random_idx(static_cast<uint32_t>(data_.size()));
+    const size_t idx = random_idx(static_cast<uint32_t>(data_.size()));
     std::swap(data_[idx], *partial_item_);
   } else {
     move_one_to_partial();
@@ -266,8 +266,8 @@ T ebpps_sample<T,A>::get_partial_item() const {
 
 template<typename T, typename A>
 uint32_t ebpps_sample<T,A>::random_idx(uint32_t max) {
-  std::uniform_int_distribution<uint32_t> dist(0, max - 1);
-  return dist(random_utils::rand);
+  static std::uniform_int_distribution<uint32_t> dist;
+  return dist(random_utils::rand, std::uniform_int_distribution<uint32_t>::param_type(0, max - 1));
 }
 
 template<typename T, typename A>
@@ -349,10 +349,10 @@ std::pair<ebpps_sample<T, A>, size_t> ebpps_sample<T, A>::deserialize(const uint
     throw std::runtime_error("sketch image has C < 0.0 during deserializaiton");
 
   double c_int;
-  double c_frac = std::modf(c, &c_int);
-  bool has_partial = c_frac != 0.0;
+  const double c_frac = std::modf(c, &c_int);
+  const bool has_partial = c_frac != 0.0;
 
-  uint32_t num_full_items = static_cast<uint32_t>(c_int);
+  const uint32_t num_full_items = static_cast<uint32_t>(c_int);
   A alloc(allocator);
   std::unique_ptr<T, items_deleter> items(alloc.allocate(num_full_items), items_deleter(allocator, false, num_full_items));
   ptr += sd.deserialize(ptr, end_ptr - ptr, items.get(), num_full_items);
@@ -384,10 +384,10 @@ ebpps_sample<T, A> ebpps_sample<T, A>::deserialize(std::istream& is, const SerDe
     throw std::runtime_error("sketch image has C < 0.0 during deserializaiton");
 
   double c_int;
-  double c_frac = std::modf(c, &c_int);
-  bool has_partial = c_frac != 0.0;
+  const double c_frac = std::modf(c, &c_int);
+  const bool has_partial = c_frac != 0.0;
 
-  uint32_t num_full_items = static_cast<uint32_t>(c_int);
+  const uint32_t num_full_items = static_cast<uint32_t>(c_int);
   A alloc(allocator);
   std::unique_ptr<T, items_deleter> items(alloc.allocate(num_full_items), items_deleter(allocator, false, num_full_items));
   sd.deserialize(is, items.get(), num_full_items);
@@ -436,7 +436,7 @@ ebpps_sample<T, A>::const_iterator::const_iterator(const ebpps_sample* sample) :
 
   // determine in advance if we use the partial item
   double c_int;
-  double c_frac = std::modf(sample_->get_c(), &c_int);
+  const double c_frac = std::modf(sample_->get_c(), &c_int);
   use_partial_ = sample->next_double() < c_frac;
 
   // sample with no items

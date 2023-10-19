@@ -31,9 +31,6 @@
 
 namespace datasketches {
 
-template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
-template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
-
 /// EBPPS sketch constants
 namespace ebpps_constants {
   /// maximum value of parameter K
@@ -128,8 +125,16 @@ class ebpps_sketch {
     inline double get_cumulative_weight() const;
 
     /**
-     * Returns the number of samples currently in the sketch
-     * @return stream length
+     * Returns the expected number of samples returned upon a call to
+     * get_result() or the creation of an iterator. The number is a
+     * floating point value, where the fractional portion represents
+     * the probability of including a "partial item" from the sample.
+     * 
+     * The value C should be no larger than the sketch's configured
+     * value of k, although numerical precision limitations mean it
+     * may exceed k by double precision floating point error margins
+     * in certain cases.
+     * @return The expected number of samples returned when querying the sketch
      */
     inline double get_c() const;
     
@@ -160,7 +165,7 @@ class ebpps_sketch {
 
     // This is a convenience alias for users
     // The type returned by the following serialize method
-    using vector_bytes = vector_u8<A>;
+    using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
 
     /**
      * This method serializes the sketch as a vector of bytes.
@@ -211,7 +216,8 @@ class ebpps_sketch {
 
     /**
      * Prints the raw sketch items to a string.
-     * Only works for type T with a defined operator<<() and
+     * Only works for type T with a defined
+     * std::ostream& operator<<(std::ostream&, const T&) and is
      * kept separate from to_string() to allow compilation even if
      * T does not have such an operator defined.
      * @return a string with the sketch items
@@ -234,8 +240,6 @@ class ebpps_sketch {
     typename ebpps_sample<T,A>::const_iterator end() const;
 
   private:
-    typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocDouble;
-
     static const uint8_t PREAMBLE_LONGS_EMPTY  = 1;
     static const uint8_t PREAMBLE_LONGS_FULL   = 5; // C is part of sample_
     static const uint8_t SER_VER = 1;
@@ -261,9 +265,6 @@ class ebpps_sketch {
     ebpps_sketch(uint32_t k, uint64_t n, double cumulative_wt, double wt_max, double rho,
                  ebpps_sample<T,A>&& sample, const A& allocator = A());
 
-    string<A> items_to_string(bool print_gap) const;
-
-    // internal-use-only update
     template<typename FwdItem>
     inline void internal_update(FwdItem&& item, double weight);
 
