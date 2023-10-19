@@ -41,4 +41,8 @@ install(FILES
 		include/var_opt_sketch_impl.hpp
 		include/var_opt_union.hpp
 		include/var_opt_union_impl.hpp
+    include/ebpps_sample.hpp
+    include/ebpps_sample_impl.hpp
+    include/ebpps_sketch.hpp
+    include/ebpps_sketch_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

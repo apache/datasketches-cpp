@@ -234,7 +234,8 @@ class var_opt_sketch {
 
     /**
      * Prints the raw sketch items to a string. Calls items_to_stream() internally.
-     * Only works for type T with a defined operator<<() and
+     * Only works for type T with a defined
+     * std::ostream& operator<<(std::ostream&, const T&) and
      * kept separate from to_string() to allow compilation even if
      * T does not have such an operator defined.
      * @return a string with the sketch items
