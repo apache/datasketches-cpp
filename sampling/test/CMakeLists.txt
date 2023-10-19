@@ -75,7 +75,7 @@ target_sources(ebpps_sampling_test
 
 # Compatibility
 if (SERDE_COMPAT)
-target_sources(sampling_test
+target_sources(var_opt_sampling_test
   PRIVATE
    var_opt_sketch_deserialize_from_java_test.cpp
    var_opt_union_deserialize_from_java_test.cpp
@@ -83,7 +83,7 @@ target_sources(sampling_test
 endif()
 
 if (GENERATE)
-target_sources(sampling_test
+target_sources(var_opt_sampling_test
   PRIVATE
    var_opt_sketch_serialize_for_java.cpp
    var_opt_union_serialize_for_java.cpp
