@@ -19,7 +19,8 @@
 
 #include <catch2/catch.hpp>
 #include <fstream>
-#include <array_of_doubles_sketch.hpp>
+
+#include "array_of_doubles_sketch.hpp"
 
 namespace datasketches {
 

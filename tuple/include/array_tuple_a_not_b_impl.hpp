@@ -19,13 +19,13 @@
 
 namespace datasketches {
 
-template<typename A>
-array_of_doubles_a_not_b_alloc<A>::array_of_doubles_a_not_b_alloc(uint64_t seed, const A& allocator):
+template<typename Array, typename Allocator>
+array_tuple_a_not_b<Array, Allocator>::array_tuple_a_not_b(uint64_t seed, const Allocator& allocator):
 Base(seed, allocator) {}
 
-template<typename A>
+template<typename Array, typename Allocator>
 template<typename FwdSketch, typename Sketch>
-auto array_of_doubles_a_not_b_alloc<A>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const -> CompactSketch {
+auto array_tuple_a_not_b<Array, Allocator>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const -> CompactSketch {
   return CompactSketch(a.get_num_values(), Base::compute(std::forward<FwdSketch>(a), b, ordered));
 }
 

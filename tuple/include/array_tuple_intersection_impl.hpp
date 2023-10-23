@@ -19,13 +19,13 @@
 
 namespace datasketches {
 
-template<typename P, typename A>
-array_of_doubles_intersection<P, A>::array_of_doubles_intersection(uint64_t seed, const P& policy, const A& allocator):
+template<typename Array, typename Policy, typename Allocator>
+array_tuple_intersection<Array, Policy, Allocator>::array_tuple_intersection(uint64_t seed, const Policy& policy, const Allocator& allocator):
 Base(seed, policy, allocator) {}
 
-template<typename P, typename A>
-auto array_of_doubles_intersection<P, A>::get_result(bool ordered) const -> CompactSketch {
-  return compact_array_of_doubles_sketch_alloc<A>(this->state_.get_policy().get_policy().get_num_values(), Base::get_result(ordered));
+template<typename Array, typename Policy, typename Allocator>
+auto array_tuple_intersection<Array, Policy, Allocator>::get_result(bool ordered) const -> CompactSketch {
+  return CompactSketch(this->state_.get_policy().get_policy().get_num_values(), Base::get_result(ordered));
 }
 
 } /* namespace datasketches */
