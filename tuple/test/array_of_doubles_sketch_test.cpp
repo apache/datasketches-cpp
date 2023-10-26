@@ -164,6 +164,8 @@ TEST_CASE("aod intersection: half overlap", "[tuple_sketch]") {
   auto update_sketch2 = update_array_of_doubles_sketch::builder().build();
   for (int i = 500; i < 1500; ++i) update_sketch2.update(i, a);
 
+  // there is no default policy for intersection
+  // let's combine values the same way as in union for testing
   array_of_doubles_intersection<default_array_of_doubles_union_policy> intersection;
   intersection.update(update_sketch1);
   intersection.update(update_sketch2);
