@@ -25,7 +25,7 @@ Base(seed, policy, allocator) {}
 
 template<typename Array, typename Policy, typename Allocator>
 auto array_tuple_intersection<Array, Policy, Allocator>::get_result(bool ordered) const -> CompactSketch {
-  return CompactSketch(this->state_.get_policy().get_policy().get_num_values(), Base::get_result(ordered));
+  return CompactSketch(this->state_.get_policy().get_external_policy().get_num_values(), Base::get_result(ordered));
 }
 
 } /* namespace datasketches */
