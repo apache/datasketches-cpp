@@ -125,15 +125,15 @@ $(function() {
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  <span class="comment">// reformulate the external policy that operates on Summary</span></div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;  <span class="comment">// in terms of operations on Entry</span></div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;  <span class="keyword">struct </span>internal_policy {</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    internal_policy(<span class="keyword">const</span> Policy&amp; policy): policy_(policy) {}</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    internal_policy(<span class="keyword">const</span> Policy&amp; external_policy): external_policy_(external_policy) {}</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="keywordtype">void</span> operator()(Entry&amp; internal_entry, <span class="keyword">const</span> Entry&amp; incoming_entry)<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;      policy_(internal_entry.second, incoming_entry.second);</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;      external_policy_(internal_entry.second, incoming_entry.second);</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    }</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordtype">void</span> operator()(Entry&amp; internal_entry, Entry&amp;&amp; incoming_entry)<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;      policy_(internal_entry.second, std::move(incoming_entry.second));</div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;      external_policy_(internal_entry.second, std::move(incoming_entry.second));</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    }</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">const</span> Policy&amp; get_policy()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> policy_; }</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    Policy policy_;</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    <span class="keyword">const</span> Policy&amp; get_external_policy()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> external_policy_; }</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    Policy external_policy_;</div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;  };</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;  <span class="keyword">using</span> State = theta_intersection_base&lt;Entry, ExtractKey, internal_policy, Sketch, CompactSketch, AllocEntry&gt;;</div>

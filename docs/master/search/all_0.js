@@ -2,5 +2,9 @@ var searchData=
 [
   ['apache_20datasketches_20core_20c_2b_2b_20library_20component_0',['Apache DataSketches Core C++ Library Component',['../index.html',1,'']]],
   ['approximate_5flower_5fbound_5fon_5fp_1',['approximate_lower_bound_on_p',['../classdatasketches_1_1bounds__binomial__proportions.html#aeaf7a3842e7bc82772b1dc33891f8c50',1,'datasketches::bounds_binomial_proportions']]],
-  ['approximate_5fupper_5fbound_5fon_5fp_2',['approximate_upper_bound_on_p',['../classdatasketches_1_1bounds__binomial__proportions.html#a497df40100e75dd55e6f0cdccd90b60a',1,'datasketches::bounds_binomial_proportions']]]
+  ['approximate_5fupper_5fbound_5fon_5fp_2',['approximate_upper_bound_on_p',['../classdatasketches_1_1bounds__binomial__proportions.html#a497df40100e75dd55e6f0cdccd90b60a',1,'datasketches::bounds_binomial_proportions']]],
+  ['array_5fof_5fdoubles_5fa_5fnot_5fb_3',['array_of_doubles_a_not_b',['../namespacedatasketches.html#a8d77b6f0c52087601aa9a3040e14a28a',1,'datasketches']]],
+  ['array_5fof_5fdoubles_5fintersection_4',['array_of_doubles_intersection',['../namespacedatasketches.html#a370e739ec492b40f8fef060acc9112b8',1,'datasketches']]],
+  ['array_5fof_5fdoubles_5funion_5',['array_of_doubles_union',['../namespacedatasketches.html#a58641285855c148e06ac9cb08ae0452e',1,'datasketches']]],
+  ['array_5ftuple_5funion_6',['array_tuple_union',['../classdatasketches_1_1array__tuple__union.html',1,'datasketches']]]
 ];

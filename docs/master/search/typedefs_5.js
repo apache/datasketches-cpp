@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['update_5farray_5fof_5fdoubles_5fsketch_409',['update_array_of_doubles_sketch',['../namespacedatasketches.html#a269dd40bee833d7e5f9b5fd547430127',1,'datasketches']]],
-  ['update_5ftheta_5fsketch_410',['update_theta_sketch',['../namespacedatasketches.html#acf9e476bd4c4a803558121dcd504a231',1,'datasketches']]]
+  ['quantile_5freturn_5ftype_418',['quantile_return_type',['../classdatasketches_1_1quantiles__sorted__view.html#a5ab4905c4f3ebeb14de4e7a2f5d92832',1,'datasketches::quantiles_sorted_view::quantile_return_type()'],['../classdatasketches_1_1kll__sketch.html#aa796209b1ef5dc41e83ed8158f77d280',1,'datasketches::kll_sketch::quantile_return_type()'],['../classdatasketches_1_1req__sketch.html#a4c80d2361c940f99df9f850615c2dcbe',1,'datasketches::req_sketch::quantile_return_type()']]]
 ];

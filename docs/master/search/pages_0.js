@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['apache_20datasketches_20core_20c_2b_2b_20library_20component_419',['Apache DataSketches Core C++ Library Component',['../index.html',1,'']]]
+  ['apache_20datasketches_20core_20c_2b_2b_20library_20component_433',['Apache DataSketches Core C++ Library Component',['../index.html',1,'']]]
 ];

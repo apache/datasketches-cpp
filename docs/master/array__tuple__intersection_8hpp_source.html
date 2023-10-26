@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.9.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>datasketches-cpp: tuple/include/array_of_doubles_a_not_b.hpp Source File</title>
+<title>datasketches-cpp: tuple/include/array_tuple_intersection.hpp Source File</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -66,7 +66,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="headertitle">
-<div class="title">array_of_doubles_a_not_b.hpp</div>  </div>
+<div class="title">array_tuple_intersection.hpp</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="fragment"><div class="line"><a name="l00001"></a><span class="lineno">    1</span>&#160;<span class="comment">/*</span></div>
@@ -88,39 +88,38 @@ $(function() {
 <div class="line"><a name="l00017"></a><span class="lineno">   17</span>&#160;<span class="comment"> * under the License.</span></div>
 <div class="line"><a name="l00018"></a><span class="lineno">   18</span>&#160;<span class="comment"> */</span></div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
-<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef ARRAY_OF_DOUBLES_A_NOT_B_HPP_</span></div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define ARRAY_OF_DOUBLES_A_NOT_B_HPP_</span></div>
+<div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef ARRAY_TUPLE_INTERSECTION_HPP_</span></div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define ARRAY_TUPLE_INTERSECTION_HPP_</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
 <div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &quot;array_of_doubles_sketch.hpp&quot;</span></div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &quot;tuple_a_not_b.hpp&quot;</span></div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &quot;array_tuple_sketch.hpp&quot;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &quot;tuple_intersection.hpp&quot;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacedatasketches.html">datasketches</a> {</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Allocator = std::allocator&lt;<span class="keywordtype">double</span>&gt;&gt;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">class </span>array_of_doubles_a_not_b_alloc: tuple_a_not_b&lt;aod&lt;Allocator&gt;, AllocAOD&lt;Allocator&gt;&gt; {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;  <span class="keyword">using</span> Summary = aod&lt;Allocator&gt;;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;  <span class="keyword">using</span> AllocSummary = AllocAOD&lt;Allocator&gt;;</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;  <span class="keyword">using</span> Base = tuple_a_not_b&lt;Summary, AllocSummary&gt;;</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;  <span class="keyword">using</span> CompactSketch = compact_array_of_doubles_sketch_alloc&lt;Allocator&gt;;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;  <span class="keyword">explicit</span> array_of_doubles_a_not_b_alloc(uint64_t seed = DEFAULT_SEED, <span class="keyword">const</span> Allocator&amp; allocator = Allocator());</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> FwdSketch, <span class="keyword">typename</span> Sketch&gt;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;  CompactSketch compute(FwdSketch&amp;&amp; a, <span class="keyword">const</span> Sketch&amp; b, <span class="keywordtype">bool</span> ordered = <span class="keyword">true</span>) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;};</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="comment">// alias with the default allocator for convenience</span></div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">using</span> array_of_doubles_a_not_b = array_of_doubles_a_not_b_alloc&lt;&gt;;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="preprocessor">#include &quot;array_of_doubles_a_not_b_impl.hpp&quot;</span></div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">template</span>&lt;</div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;  <span class="keyword">typename</span> Array,</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;  <span class="keyword">typename</span> Policy,</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;  <span class="keyword">typename</span> Allocator = <span class="keyword">typename</span> Array::allocator_type</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;&gt;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">class </span>array_tuple_intersection: <span class="keyword">public</span> tuple_intersection&lt;Array, Policy, Allocator&gt; {</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;  <span class="keyword">using</span> Base = tuple_intersection&lt;Array, Policy, Allocator&gt;;</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;  <span class="keyword">using</span> CompactSketch = compact_array_tuple_sketch&lt;Array, Allocator&gt;;</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;  <span class="keyword">using</span> resize_factor = theta_constants::resize_factor;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;  <span class="keyword">explicit</span> array_tuple_intersection(uint64_t seed = DEFAULT_SEED, <span class="keyword">const</span> Policy&amp; policy = Policy(), <span class="keyword">const</span> Allocator&amp; allocator = Allocator());</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;  CompactSketch get_result(<span class="keywordtype">bool</span> ordered = <span class="keyword">true</span>) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;};</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="preprocessor">#include &quot;array_tuple_intersection_impl.hpp&quot;</span></div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160; </div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition:</b> binomial_bounds.hpp:38</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
