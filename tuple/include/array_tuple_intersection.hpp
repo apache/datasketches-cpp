@@ -17,36 +17,35 @@
  * under the License.
  */
 
-#ifndef ARRAY_OF_DOUBLES_INTERSECTION_HPP_
-#define ARRAY_OF_DOUBLES_INTERSECTION_HPP_
+#ifndef ARRAY_TUPLE_INTERSECTION_HPP_
+#define ARRAY_TUPLE_INTERSECTION_HPP_
 
 #include <vector>
 #include <memory>
 
-#include "array_of_doubles_sketch.hpp"
+#include "array_tuple_sketch.hpp"
 #include "tuple_intersection.hpp"
 
 namespace datasketches {
 
 template<
+  typename Array,
   typename Policy,
-  typename Allocator = std::allocator<double>
+  typename Allocator = typename Array::allocator_type
 >
-class array_of_doubles_intersection: public tuple_intersection<aod<Allocator>, Policy, AllocAOD<Allocator>> {
+class array_tuple_intersection: public tuple_intersection<Array, Policy, Allocator> {
 public:
-  using Summary = aod<Allocator>;
-  using AllocSummary = AllocAOD<Allocator>;
-  using Base = tuple_intersection<Summary, Policy, AllocSummary>;
-  using CompactSketch = compact_array_of_doubles_sketch_alloc<Allocator>;
+  using Base = tuple_intersection<Array, Policy, Allocator>;
+  using CompactSketch = compact_array_tuple_sketch<Array, Allocator>;
   using resize_factor = theta_constants::resize_factor;
 
-  explicit array_of_doubles_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy(), const Allocator& allocator = Allocator());
+  explicit array_tuple_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy(), const Allocator& allocator = Allocator());
 
   CompactSketch get_result(bool ordered = true) const;
 };
 
 } /* namespace datasketches */
 
-#include "array_of_doubles_intersection_impl.hpp"
+#include "array_tuple_intersection_impl.hpp"
 
 #endif

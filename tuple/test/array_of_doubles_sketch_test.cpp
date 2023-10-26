@@ -23,10 +23,8 @@
 #include <array>
 
 #include <catch2/catch.hpp>
-#include <array_of_doubles_sketch.hpp>
-#include <array_of_doubles_union.hpp>
-#include <array_of_doubles_intersection.hpp>
-#include <array_of_doubles_a_not_b.hpp>
+
+#include "array_of_doubles_sketch.hpp"
 
 namespace datasketches {
 
@@ -166,7 +164,9 @@ TEST_CASE("aod intersection: half overlap", "[tuple_sketch]") {
   auto update_sketch2 = update_array_of_doubles_sketch::builder().build();
   for (int i = 500; i < 1500; ++i) update_sketch2.update(i, a);
 
-  array_of_doubles_intersection<array_of_doubles_union_policy> intersection;
+  // there is no default policy for intersection
+  // let's combine values the same way as in union for testing
+  array_of_doubles_intersection<default_array_of_doubles_union_policy> intersection;
   intersection.update(update_sketch1);
   intersection.update(update_sketch2);
   auto result = intersection.get_result();

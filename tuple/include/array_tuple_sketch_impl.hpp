@@ -19,56 +19,55 @@
 
 namespace datasketches {
 
-template<typename A>
-update_array_of_doubles_sketch_alloc<A>::update_array_of_doubles_sketch_alloc(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
-    float p, uint64_t theta, uint64_t seed, const array_of_doubles_update_policy<A>& policy, const A& allocator):
+template<typename Array, typename Policy, typename Allocator>
+update_array_tuple_sketch<Array, Policy, Allocator>::update_array_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf,
+    float p, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator):
 Base(lg_cur_size, lg_nom_size, rf, p, theta, seed, policy, allocator) {}
 
-
-template<typename A>
-uint8_t update_array_of_doubles_sketch_alloc<A>::get_num_values() const {
+template<typename Array, typename Policy, typename Allocator>
+uint8_t update_array_tuple_sketch<Array, Policy, Allocator>::get_num_values() const {
   return this->policy_.get_num_values();
 }
 
-template<typename A>
-compact_array_of_doubles_sketch_alloc<A> update_array_of_doubles_sketch_alloc<A>::compact(bool ordered) const {
-  return compact_array_of_doubles_sketch_alloc<A>(*this, ordered);
+template<typename Array, typename Policy, typename Allocator>
+compact_array_tuple_sketch<Array, Allocator> update_array_tuple_sketch<Array, Policy, Allocator>::compact(bool ordered) const {
+  return compact_array_tuple_sketch<Array, Allocator>(*this, ordered);
 }
 
 // builder
 
-template<typename A>
-update_array_of_doubles_sketch_alloc<A>::builder::builder(const array_of_doubles_update_policy<A>& policy, const A& allocator):
-tuple_base_builder<builder, array_of_doubles_update_policy<A>, A>(policy, allocator) {}
+template<typename Array, typename Policy, typename Allocator>
+update_array_tuple_sketch<Array, Policy, Allocator>::builder::builder(const Policy& policy, const Allocator& allocator):
+tuple_base_builder<builder, Policy, Allocator>(policy, allocator) {}
 
-template<typename A>
-update_array_of_doubles_sketch_alloc<A> update_array_of_doubles_sketch_alloc<A>::builder::build() const {
-  return update_array_of_doubles_sketch_alloc<A>(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
+template<typename Array, typename Policy, typename Allocator>
+auto update_array_tuple_sketch<Array, Policy, Allocator>::builder::build() const -> update_array_tuple_sketch {
+  return update_array_tuple_sketch(this->starting_lg_size(), this->lg_k_, this->rf_, this->p_, this->starting_theta(), this->seed_, this->policy_, this->allocator_);
 }
 
 // compact sketch
 
-template<typename A>
+template<typename Array, typename Allocator>
 template<typename S>
-compact_array_of_doubles_sketch_alloc<A>::compact_array_of_doubles_sketch_alloc(const S& other, bool ordered):
+compact_array_tuple_sketch<Array, Allocator>::compact_array_tuple_sketch(const S& other, bool ordered):
 Base(other, ordered), num_values_(other.get_num_values()) {}
 
-template<typename A>
-compact_array_of_doubles_sketch_alloc<A>::compact_array_of_doubles_sketch_alloc(bool is_empty, bool is_ordered,
+template<typename Array, typename Allocator>
+compact_array_tuple_sketch<Array, Allocator>::compact_array_tuple_sketch(bool is_empty, bool is_ordered,
     uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries, uint8_t num_values):
 Base(is_empty, is_ordered, seed_hash, theta, std::move(entries)), num_values_(num_values) {}
 
-template<typename A>
-compact_array_of_doubles_sketch_alloc<A>::compact_array_of_doubles_sketch_alloc(uint8_t num_values, Base&& base):
+template<typename Array, typename Allocator>
+compact_array_tuple_sketch<Array, Allocator>::compact_array_tuple_sketch(uint8_t num_values, Base&& base):
 Base(std::move(base)), num_values_(num_values) {}
 
-template<typename A>
-uint8_t compact_array_of_doubles_sketch_alloc<A>::get_num_values() const {
+template<typename Array, typename Allocator>
+uint8_t compact_array_tuple_sketch<Array, Allocator>::get_num_values() const {
   return num_values_;
 }
 
-template<typename A>
-void compact_array_of_doubles_sketch_alloc<A>::serialize(std::ostream& os) const {
+template<typename Array, typename Allocator>
+void compact_array_tuple_sketch<Array, Allocator>::serialize(std::ostream& os) const {
   const uint8_t preamble_longs = 1;
   write(os, preamble_longs);
   const uint8_t serial_version = SERIAL_VERSION;
@@ -96,17 +95,17 @@ void compact_array_of_doubles_sketch_alloc<A>::serialize(std::ostream& os) const
       write(os, it.first);
     }
     for (const auto& it: this->entries_) {
-      write(os, it.second.data(), it.second.size() * sizeof(double));
+      write(os, it.second.data(), it.second.size() * sizeof(typename Array::value_type));
     }
   }
 }
 
-template<typename A>
-auto compact_array_of_doubles_sketch_alloc<A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
+template<typename Array, typename Allocator>
+auto compact_array_tuple_sketch<Array, Allocator>::serialize(unsigned header_size_bytes) const -> vector_bytes {
   const uint8_t preamble_longs = 1;
   const size_t size = header_size_bytes + 16 // preamble and theta
       + (this->entries_.size() > 0 ? 8 : 0)
-      + (sizeof(uint64_t) + sizeof(double) * num_values_) * this->entries_.size();
+      + (sizeof(uint64_t) + sizeof(typename Array::value_type) * num_values_) * this->entries_.size();
   vector_bytes bytes(size, 0, this->entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
@@ -135,14 +134,14 @@ auto compact_array_of_doubles_sketch_alloc<A>::serialize(unsigned header_size_by
       ptr += copy_to_mem(it.first, ptr);
     }
     for (const auto& it: this->entries_) {
-      ptr += copy_to_mem(it.second.data(), ptr, it.second.size() * sizeof(double));
+      ptr += copy_to_mem(it.second.data(), ptr, it.second.size() * sizeof(typename Array::value_type));
     }
   }
   return bytes;
 }
 
-template<typename A>
-compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A>::deserialize(std::istream& is, uint64_t seed, const A& allocator) {
+template<typename Array, typename Allocator>
+compact_array_tuple_sketch<Array, Allocator> compact_array_tuple_sketch<Array, Allocator>::deserialize(std::istream& is, uint64_t seed, const Allocator& allocator) {
   read<uint8_t>(is); // unused
   const auto serial_version = read<uint8_t>(is);
   const auto family = read<uint8_t>(is);
@@ -165,19 +164,19 @@ compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A
     std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
     read(is, keys.data(), num_entries * sizeof(uint64_t));
     for (size_t i = 0; i < num_entries; ++i) {
-      aod<A> summary(num_values, allocator);
-      read(is, summary.data(), num_values * sizeof(double));
+      Array summary(num_values, 0, allocator);
+      read(is, summary.data(), num_values * sizeof(typename Array::value_type));
       entries.push_back(Entry(keys[i], std::move(summary)));
     }
   }
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  return compact_array_of_doubles_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);
+  return compact_array_tuple_sketch<Array, Allocator>(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);
 }
 
-template<typename A>
-compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A>::deserialize(const void* bytes, size_t size, uint64_t seed, const A& allocator) {
+template<typename Array, typename Allocator>
+compact_array_tuple_sketch<Array, Allocator> compact_array_tuple_sketch<Array, Allocator>::deserialize(const void* bytes, size_t size, uint64_t seed, const Allocator& allocator) {
   ensure_minimum_memory(size, 16);
   const char* ptr = static_cast<const char*>(bytes);
   ptr += sizeof(uint8_t); // unused
@@ -207,19 +206,19 @@ compact_array_of_doubles_sketch_alloc<A> compact_array_of_doubles_sketch_alloc<A
     uint32_t num_entries;
     ptr += copy_from_mem(ptr, num_entries);
     ptr += sizeof(uint32_t); // unused
-    ensure_minimum_memory(size, 24 + (sizeof(uint64_t) + sizeof(double) * num_values) * num_entries);
+    ensure_minimum_memory(size, 24 + (sizeof(uint64_t) + sizeof(typename Array::value_type) * num_values) * num_entries);
     entries.reserve(num_entries);
     std::vector<uint64_t, AllocU64> keys(num_entries, 0, allocator);
     ptr += copy_from_mem(ptr, keys.data(), sizeof(uint64_t) * num_entries);
     for (size_t i = 0; i < num_entries; ++i) {
-      aod<A> summary(num_values, allocator);
-      ptr += copy_from_mem(ptr, summary.data(), num_values * sizeof(double));
+      Array summary(num_values, 0, allocator);
+      ptr += copy_from_mem(ptr, summary.data(), num_values * sizeof(typename Array::value_type));
       entries.push_back(Entry(keys[i], std::move(summary)));
     }
   }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
-  return compact_array_of_doubles_sketch_alloc(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);
+  return compact_array_tuple_sketch<Array, Allocator>(is_empty, is_ordered, seed_hash, theta, std::move(entries), num_values);
 }
 
 } /* namespace datasketches */

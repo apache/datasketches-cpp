@@ -54,15 +54,15 @@ public:
   // reformulate the external policy that operates on Summary
   // in terms of operations on Entry
   struct internal_policy {
-    internal_policy(const Policy& policy): policy_(policy) {}
+    internal_policy(const Policy& external_policy): external_policy_(external_policy) {}
     void operator()(Entry& internal_entry, const Entry& incoming_entry) const {
-      policy_(internal_entry.second, incoming_entry.second);
+      external_policy_(internal_entry.second, incoming_entry.second);
     }
     void operator()(Entry& internal_entry, Entry&& incoming_entry) const {
-      policy_(internal_entry.second, std::move(incoming_entry.second));
+      external_policy_(internal_entry.second, std::move(incoming_entry.second));
     }
-    const Policy& get_policy() const { return policy_; }
-    Policy policy_;
+    const Policy& get_external_policy() const { return external_policy_; }
+    Policy external_policy_;
   };
 
   using State = theta_union_base<Entry, ExtractKey, internal_policy, Sketch, CompactSketch, AllocEntry>;
