@@ -28,6 +28,7 @@
 
 namespace datasketches {
 
+/// array tuple intersection
 template<
   typename Array,
   typename Policy,
@@ -39,8 +40,21 @@ public:
   using CompactSketch = compact_array_tuple_sketch<Array, Allocator>;
   using resize_factor = theta_constants::resize_factor;
 
+  /**
+   * Constructor
+   * @param seed for the hash function that was used to create the sketch
+   * @param policy user-defined way of combining Summary during intersection
+   * @param allocator to use for allocating and deallocating memory
+   */
   explicit array_tuple_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy(), const Allocator& allocator = Allocator());
 
+  /**
+   * Produces a copy of the current state of the intersection.
+   * If update() was not called, the state is the infinite "universe",
+   * which is considered an undefined state, and throws an exception.
+   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @return the result of the intersection as a compact sketch
+   */
   CompactSketch get_result(bool ordered = true) const;
 };
 

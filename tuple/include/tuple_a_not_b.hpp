@@ -37,11 +37,19 @@ public:
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
   using State = theta_set_difference_base<Entry, ExtractKey, CompactSketch, AllocEntry>;
 
+  /**
+   * Constructor
+   * @param seed for the hash function that was used to create the sketch
+   * @param allocator to use for allocating and deallocating memory
+   */
   explicit tuple_a_not_b(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
    * Computes the a-not-b set operation given two sketches.
-   * @return the result of a-not-b
+   * @param a sketch A
+   * @param b sketch B
+   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @return the result of a-not-b as a compact sketch
    */
   template<typename FwdSketch, typename Sketch>
   CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;

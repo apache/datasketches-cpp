@@ -209,7 +209,6 @@ class ebpps_sketch {
 
     /**
      * Prints a summary of the sketch.
-     * @param detail if true, prints values of items
      * @return the summary as a string
      */
     string<A> to_string() const;

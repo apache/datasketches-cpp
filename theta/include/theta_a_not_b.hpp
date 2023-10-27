@@ -46,7 +46,10 @@ public:
 
   /**
    * Computes the a-not-b set operation given two sketches.
-   * @return the result of a-not-b
+   * @param a sketch A
+   * @param b sketch B
+   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @return the result of a-not-b as a compact sketch
    */
   template<typename FwdSketch, typename Sketch>
   CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;
