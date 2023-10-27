@@ -28,11 +28,6 @@
 
 namespace datasketches {
 
-// This is a wrapper around tuple sketch to match the functionality and serialization format of ArrayOfDoublesSketch in Java.
-// For this the sketch must be configured with array<double> or std::vector<double>.
-// This is a more generic implementation for any integral type (serialization assumes contiguous array size_of(T) * num_values).
-// A set of type definitions for the ArrayOfDoubles equivalent is provided in a separate file array_of_doubles_sketch.hpp.
-
 // This simple array is faster than std::vector and should be sufficient for this application
 template<typename T, typename Allocator = std::allocator<T>>
 class array {
@@ -116,6 +111,10 @@ template<typename Array, typename Allocator> class compact_array_tuple_sketch;
 
 /**
  * Update array tuple sketch.
+ * This is a wrapper around tuple sketch to match the functionality and serialization format of ArrayOfDoublesSketch in Java.
+ * For this the sketch must be configured with array<double> or std::vector<double>.
+ * This is a more generic implementation for any integral type (serialization assumes contiguous array size_of(T) * num_values).
+ * A set of type definitions for the ArrayOfDoubles* equivalent is provided in a separate file array_of_doubles_sketch.hpp.
  * There is no constructor. Use builder instead.
  */
 template<
