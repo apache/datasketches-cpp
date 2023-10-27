@@ -179,7 +179,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 class datasketches::update_array_tuple_sketch&lt; Array, Policy, Allocator &gt;</h3>
 
 <p>Update array tuple sketch. </p>
-<p>There is no constructor. Use builder instead. </p>
+<p>This is a wrapper around tuple sketch to match the functionality and serialization format of ArrayOfDoublesSketch in Java. For this the sketch must be configured with array&lt;double&gt; or std::vector&lt;double&gt;. This is a more generic implementation for any arithmetic type (serialization assumes contiguous array size_of(T) * num_values). A set of type definitions for the ArrayOfDoubles* equivalent is provided in a separate file <a class="el" href="array__of__doubles__sketch_8hpp_source.html">array_of_doubles_sketch.hpp</a>. There is no constructor. Use builder instead. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a005404841e22f08ab76ce513d9b39bd1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a005404841e22f08ab76ce513d9b39bd1">&#9670;&nbsp;</a></span>get_num_values()</h2>

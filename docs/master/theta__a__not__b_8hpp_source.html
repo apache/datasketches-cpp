@@ -106,21 +106,21 @@ $(function() {
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  <span class="keyword">explicit</span> <a class="code" href="classdatasketches_1_1theta__a__not__b__alloc.html#aad68590e0fdd7ae1f794c1734b4e94e4">theta_a_not_b_alloc</a>(uint64_t seed = DEFAULT_SEED, <span class="keyword">const</span> Allocator&amp; allocator = Allocator());</div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> FwdSketch, <span class="keyword">typename</span> Sketch&gt;</div>
-<div class="line"><a name="l00052"></a><span class="lineno"><a class="line" href="classdatasketches_1_1theta__a__not__b__alloc.html#a3ee0c8ec70c980979f84c68065da3d9b">   52</a></span>&#160;  <a class="code" href="classdatasketches_1_1compact__theta__sketch__alloc.html">CompactSketch</a> <a class="code" href="classdatasketches_1_1theta__a__not__b__alloc.html#a3ee0c8ec70c980979f84c68065da3d9b">compute</a>(FwdSketch&amp;&amp; a, <span class="keyword">const</span> Sketch&amp; b, <span class="keywordtype">bool</span> ordered = <span class="keyword">true</span>) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160; </div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;  State state_;</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;};</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="comment">// alias with default allocator for convenience</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="keyword">using</span> <a class="code" href="classdatasketches_1_1theta__a__not__b__alloc.html">theta_a_not_b</a> = <a class="code" href="classdatasketches_1_1theta__a__not__b__alloc.html">theta_a_not_b_alloc&lt;std::allocator&lt;uint64_t&gt;</a>&gt;;</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> FwdSketch, <span class="keyword">typename</span> Sketch&gt;</div>
+<div class="line"><a name="l00055"></a><span class="lineno"><a class="line" href="classdatasketches_1_1theta__a__not__b__alloc.html#a3ee0c8ec70c980979f84c68065da3d9b">   55</a></span>&#160;  <a class="code" href="classdatasketches_1_1compact__theta__sketch__alloc.html">CompactSketch</a> <a class="code" href="classdatasketches_1_1theta__a__not__b__alloc.html#a3ee0c8ec70c980979f84c68065da3d9b">compute</a>(FwdSketch&amp;&amp; a, <span class="keyword">const</span> Sketch&amp; b, <span class="keywordtype">bool</span> ordered = <span class="keyword">true</span>) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160; </div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  State state_;</div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;};</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="preprocessor">#include &quot;theta_a_not_b_impl.hpp&quot;</span></div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="preprocessor"># endif</span></div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="comment">// alias with default allocator for convenience</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="keyword">using</span> <a class="code" href="classdatasketches_1_1theta__a__not__b__alloc.html">theta_a_not_b</a> = <a class="code" href="classdatasketches_1_1theta__a__not__b__alloc.html">theta_a_not_b_alloc&lt;std::allocator&lt;uint64_t&gt;</a>&gt;;</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#include &quot;theta_a_not_b_impl.hpp&quot;</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="preprocessor"># endif</span></div>
 <div class="ttc" id="aclassdatasketches_1_1compact__theta__sketch__alloc_html"><div class="ttname"><a href="classdatasketches_1_1compact__theta__sketch__alloc.html">datasketches::compact_theta_sketch_alloc</a></div><div class="ttdoc">Compact Theta sketch.</div><div class="ttdef"><b>Definition:</b> theta_sketch.hpp:344</div></div>
 <div class="ttc" id="aclassdatasketches_1_1theta__a__not__b__alloc_html"><div class="ttname"><a href="classdatasketches_1_1theta__a__not__b__alloc.html">datasketches::theta_a_not_b_alloc</a></div><div class="ttdoc">Theta A-not-B (set difference).</div><div class="ttdef"><b>Definition:</b> theta_a_not_b.hpp:33</div></div>
 <div class="ttc" id="aclassdatasketches_1_1theta__a__not__b__alloc_html_a3ee0c8ec70c980979f84c68065da3d9b"><div class="ttname"><a href="classdatasketches_1_1theta__a__not__b__alloc.html#a3ee0c8ec70c980979f84c68065da3d9b">datasketches::theta_a_not_b_alloc::compute</a></div><div class="ttdeci">CompactSketch compute(FwdSketch &amp;&amp;a, const Sketch &amp;b, bool ordered=true) const</div><div class="ttdoc">Computes the a-not-b set operation given two sketches.</div></div>

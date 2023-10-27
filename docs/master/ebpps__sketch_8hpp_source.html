@@ -162,55 +162,55 @@ $(function() {
 <div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> SerDe = serde&lt;T&gt;&gt;</div>
 <div class="line"><a name="l00208"></a><span class="lineno"><a class="line" href="classdatasketches_1_1ebpps__sketch.html#ada2a7bf12915615ea1d15ccfdcc525d2">  208</a></span>&#160;    <span class="keyword">static</span> <a class="code" href="classdatasketches_1_1ebpps__sketch.html">ebpps_sketch</a> <a class="code" href="classdatasketches_1_1ebpps__sketch.html#ada2a7bf12915615ea1d15ccfdcc525d2">deserialize</a>(std::istream&amp; is, <span class="keyword">const</span> SerDe&amp; sd = SerDe(), <span class="keyword">const</span> A&amp; allocator = A());</div>
 <div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160; </div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;    string&lt;A&gt; <a class="code" href="classdatasketches_1_1ebpps__sketch.html#aed372241c10ffd041bee85602edb199a">to_string</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160; </div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;    string&lt;A&gt; <a class="code" href="classdatasketches_1_1ebpps__sketch.html#a0fa52dd153f1e3cac57d4742e2fef6fc">items_to_string</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160; </div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;    <span class="keyword">typename</span> ebpps_sample&lt;T,A&gt;::const_iterator <a class="code" href="classdatasketches_1_1ebpps__sketch.html#a7f1f04c52ad57d836463132e260dee2f">begin</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;    <span class="keyword">typename</span> ebpps_sample&lt;T,A&gt;::const_iterator <a class="code" href="classdatasketches_1_1ebpps__sketch.html#a42825c759c3dec7ece362973012123a2">end</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160; </div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;  <span class="keyword">private</span>:</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_EMPTY  = 1;</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_FULL   = 5; <span class="comment">// C is part of sample_</span></div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t SER_VER = 1;</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t FAMILY_ID  = 19;</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t EMPTY_FLAG_MASK  = 4;</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t HAS_PARTIAL_ITEM_MASK = 8;</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160; </div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    A allocator_;</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    uint32_t k_;                    <span class="comment">// max size of sketch, in items</span></div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    uint64_t n_;                    <span class="comment">// total number of items processed by the sketch</span></div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <span class="keywordtype">double</span> cumulative_wt_;          <span class="comment">// total weight of items processed by the sketch</span></div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="keywordtype">double</span> wt_max_;                 <span class="comment">// maximum weight seen so far</span></div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="keywordtype">double</span> rho_;                    <span class="comment">// latest scaling parameter for downsampling</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160; </div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;    ebpps_sample&lt;T,A&gt; sample_;      <span class="comment">// Object holding the current state of the sample</span></div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160; </div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    <span class="comment">// handles merge after ensuring other.cumulative_wt_ &lt;= this-&gt;cumulative_wt_</span></div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <span class="comment">// so we can send items in individually</span></div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;    <span class="keywordtype">void</span> internal_merge(O&amp;&amp; other);</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;    <a class="code" href="classdatasketches_1_1ebpps__sketch.html#a15f1a34587bbc0a93cf97dfc2cc6c205">ebpps_sketch</a>(uint32_t k, uint64_t n, <span class="keywordtype">double</span> cumulative_wt, <span class="keywordtype">double</span> wt_max, <span class="keywordtype">double</span> rho,</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;                 ebpps_sample&lt;T,A&gt;&amp;&amp; sample, <span class="keyword">const</span> A&amp; allocator = A());</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160; </div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> FwdItem&gt;</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> internal_update(FwdItem&amp;&amp; item, <span class="keywordtype">double</span> weight);</div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160; </div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="comment">// validation</span></div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="keyword">static</span> uint32_t check_k(uint32_t k);</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> check_preamble_longs(uint8_t preamble_longs, uint8_t flags);</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;    <span class="keyword">static</span> uint32_t validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n);</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;};</div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160; </div>
-<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;} <span class="comment">// namespace datasketches</span></div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160; </div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;<span class="preprocessor">#include &quot;ebpps_sketch_impl.hpp&quot;</span></div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160; </div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// _EBPPS_SKETCH_HPP_</span></div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;    string&lt;A&gt; <a class="code" href="classdatasketches_1_1ebpps__sketch.html#aed372241c10ffd041bee85602edb199a">to_string</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160; </div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;    string&lt;A&gt; <a class="code" href="classdatasketches_1_1ebpps__sketch.html#a0fa52dd153f1e3cac57d4742e2fef6fc">items_to_string</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160; </div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;    <span class="keyword">typename</span> ebpps_sample&lt;T,A&gt;::const_iterator <a class="code" href="classdatasketches_1_1ebpps__sketch.html#a7f1f04c52ad57d836463132e260dee2f">begin</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;    <span class="keyword">typename</span> ebpps_sample&lt;T,A&gt;::const_iterator <a class="code" href="classdatasketches_1_1ebpps__sketch.html#a42825c759c3dec7ece362973012123a2">end</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160; </div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;  <span class="keyword">private</span>:</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_EMPTY  = 1;</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t PREAMBLE_LONGS_FULL   = 5; <span class="comment">// C is part of sample_</span></div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t SER_VER = 1;</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t FAMILY_ID  = 19;</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t EMPTY_FLAG_MASK  = 4;</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <span class="keyword">static</span> <span class="keyword">const</span> uint8_t HAS_PARTIAL_ITEM_MASK = 8;</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160; </div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;    A allocator_;</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;    uint32_t k_;                    <span class="comment">// max size of sketch, in items</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    uint64_t n_;                    <span class="comment">// total number of items processed by the sketch</span></div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160; </div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;    <span class="keywordtype">double</span> cumulative_wt_;          <span class="comment">// total weight of items processed by the sketch</span></div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;    <span class="keywordtype">double</span> wt_max_;                 <span class="comment">// maximum weight seen so far</span></div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="keywordtype">double</span> rho_;                    <span class="comment">// latest scaling parameter for downsampling</span></div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;    ebpps_sample&lt;T,A&gt; sample_;      <span class="comment">// Object holding the current state of the sample</span></div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160; </div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;    <span class="comment">// handles merge after ensuring other.cumulative_wt_ &lt;= this-&gt;cumulative_wt_</span></div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;    <span class="comment">// so we can send items in individually</span></div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> O&gt;</div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;    <span class="keywordtype">void</span> internal_merge(O&amp;&amp; other);</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160; </div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;    <a class="code" href="classdatasketches_1_1ebpps__sketch.html#a15f1a34587bbc0a93cf97dfc2cc6c205">ebpps_sketch</a>(uint32_t k, uint64_t n, <span class="keywordtype">double</span> cumulative_wt, <span class="keywordtype">double</span> wt_max, <span class="keywordtype">double</span> rho,</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;                 ebpps_sample&lt;T,A&gt;&amp;&amp; sample, <span class="keyword">const</span> A&amp; allocator = A());</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> FwdItem&gt;</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;    <span class="keyword">inline</span> <span class="keywordtype">void</span> internal_update(FwdItem&amp;&amp; item, <span class="keywordtype">double</span> weight);</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160; </div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;    <span class="comment">// validation</span></div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;    <span class="keyword">static</span> uint32_t check_k(uint32_t k);</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> check_preamble_longs(uint8_t preamble_longs, uint8_t flags);</div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;    <span class="keyword">static</span> <span class="keywordtype">void</span> check_family_and_serialization_version(uint8_t family_id, uint8_t ser_ver);</div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;    <span class="keyword">static</span> uint32_t validate_and_get_target_size(uint32_t preamble_longs, uint32_t k, uint64_t n);</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;};</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;} <span class="comment">// namespace datasketches</span></div>
+<div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;<span class="preprocessor">#include &quot;ebpps_sketch_impl.hpp&quot;</span></div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160; </div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// _EBPPS_SKETCH_HPP_</span></div>
 <div class="ttc" id="aclassdatasketches_1_1ebpps__sketch_html"><div class="ttname"><a href="classdatasketches_1_1ebpps__sketch.html">datasketches::ebpps_sketch</a></div><div class="ttdoc">An implementation of an Exact and Bounded Sampling Proportional to Size sketch.</div><div class="ttdef"><b>Definition:</b> ebpps_sketch.hpp:59</div></div>
 <div class="ttc" id="aclassdatasketches_1_1ebpps__sketch_html_a0fa52dd153f1e3cac57d4742e2fef6fc"><div class="ttname"><a href="classdatasketches_1_1ebpps__sketch.html#a0fa52dd153f1e3cac57d4742e2fef6fc">datasketches::ebpps_sketch::items_to_string</a></div><div class="ttdeci">string&lt; A &gt; items_to_string() const</div><div class="ttdoc">Prints the raw sketch items to a string.</div><div class="ttdef"><b>Definition:</b> ebpps_sketch_impl.hpp:110</div></div>
 <div class="ttc" id="aclassdatasketches_1_1ebpps__sketch_html_a1125ed18baf3f257b5796321c7ec0f8f"><div class="ttname"><a href="classdatasketches_1_1ebpps__sketch.html#a1125ed18baf3f257b5796321c7ec0f8f">datasketches::ebpps_sketch::update</a></div><div class="ttdeci">void update(const T &amp;item, double weight=1.0)</div><div class="ttdoc">Updates this sketch with the given data item with the given weight.</div><div class="ttdef"><b>Definition:</b> ebpps_sketch_impl.hpp:125</div></div>
