@@ -52,4 +52,3 @@ jobs:
         run: cmake --build build --config Release --target ${{ matrix.config.test_target }}
       - name: Install headers
         run: cmake --build build -t install
-        
