@@ -51,5 +51,5 @@ jobs:
       - name: Run C++ tests
         run: cmake --build build --config Release --target ${{ matrix.config.test_target }}
       - name: Install headers
-        run: sudo cmake --build build -t install
+        run: cmake --build build -t install
         
