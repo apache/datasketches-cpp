@@ -27,7 +27,7 @@
 
 namespace datasketches {
 
-// forward-declarations
+// forward declarations
 template<typename S, typename A> class tuple_sketch;
 template<typename S, typename U, typename P, typename A> class update_tuple_sketch;
 template<typename S, typename A> class compact_tuple_sketch;
@@ -530,9 +530,6 @@ public:
   static compact_tuple_sketch deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED,
       const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
-  // for internal use
-  compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
-
 protected:
   bool is_empty_;
   bool is_ordered_;
@@ -577,6 +574,12 @@ protected:
   };
 
   virtual void print_specifics(std::ostringstream& os) const;
+
+  // for internal use
+  template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_union_base;
+  template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_intersection_base;
+  template<typename E, typename EK, typename CS, typename A> friend class theta_set_difference_base;
+  compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
 
 };
 

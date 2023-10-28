@@ -25,6 +25,21 @@
 
 namespace datasketches {
 
+// forward declarations
+template<typename A> class theta_sketch_alloc;
+template<typename A> class update_theta_sketch_alloc;
+template<typename A> class compact_theta_sketch_alloc;
+template<typename A> class wrapped_compact_theta_sketch_alloc;
+
+/// Theta sketch alias with default allocator
+using theta_sketch = theta_sketch_alloc<std::allocator<uint64_t>>;
+/// Update Theta sketch alias with default allocator
+using update_theta_sketch = update_theta_sketch_alloc<std::allocator<uint64_t>>;
+/// Compact Theta sketch alias with default allocator
+using compact_theta_sketch = compact_theta_sketch_alloc<std::allocator<uint64_t>>;
+/// Wrapped Compact Theta sketch alias with default allocator
+using wrapped_compact_theta_sketch = wrapped_compact_theta_sketch_alloc<std::allocator<uint64_t>>;
+
 /// Abstract base class for Theta sketch
 template<typename Allocator = std::allocator<uint64_t>>
 class base_theta_sketch_alloc {
@@ -462,9 +477,6 @@ public:
   static compact_theta_sketch_alloc deserialize(const void* bytes, size_t size,
       uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
-  /// @private constructor for internal use
-  compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<uint64_t, Allocator>&& entries);
-
 private:
   enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
 
@@ -485,6 +497,12 @@ private:
   static compact_theta_sketch_alloc deserialize_v4(uint8_t preamble_longs, std::istream& is, uint64_t seed, const Allocator& allocator);
 
   virtual void print_specifics(std::ostringstream& os) const;
+
+  // constructor for internal use
+  template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_union_base;
+  template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_intersection_base;
+  template<typename E, typename EK, typename CS, typename A> friend class theta_set_difference_base;
+  compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<uint64_t, Allocator>&& entries);
 };
 
 /// Update Theta sketch builder
@@ -579,15 +597,6 @@ private:
   uint8_t offset_;
   uint64_t buffer_[8];
 };
-
-/// Theta sketch alias with default allocator
-using theta_sketch = theta_sketch_alloc<std::allocator<uint64_t>>;
-/// Update Theta sketch alias with default allocator
-using update_theta_sketch = update_theta_sketch_alloc<std::allocator<uint64_t>>;
-/// Compact Theta sketch alias with default allocator
-using compact_theta_sketch = compact_theta_sketch_alloc<std::allocator<uint64_t>>;
-/// Wrapped Compact Theta sketch alias with default allocator
-using wrapped_compact_theta_sketch = wrapped_compact_theta_sketch_alloc<std::allocator<uint64_t>>;
 
 } /* namespace datasketches */
 

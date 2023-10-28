@@ -33,12 +33,14 @@ class HllSketchImplFactory;
 template<typename A>
 class CouponList : public HllSketchImpl<A> {
   public:
+    using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
+
     CouponList(uint8_t lgConfigK, target_hll_type tgtHllType, hll_mode mode, const A& allocator);
     CouponList(const CouponList& that, target_hll_type tgtHllType);
 
     static CouponList* newList(const void* bytes, size_t len, const A& allocator);
     static CouponList* newList(std::istream& is, const A& allocator);
-    virtual vector_u8<A> serialize(bool compact, unsigned header_size_bytes) const;
+    virtual vector_bytes serialize(bool compact, unsigned header_size_bytes) const;
     virtual void serialize(std::ostream& os, bool compact) const;
 
     virtual ~CouponList() = default;

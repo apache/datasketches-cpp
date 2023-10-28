@@ -30,11 +30,13 @@ namespace datasketches {
 template<typename A>
 class HllSketchImpl {
   public:
+    using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
+
     HllSketchImpl(uint8_t lgConfigK, target_hll_type tgtHllType, hll_mode mode, bool startFullSize);
     virtual ~HllSketchImpl();
 
     virtual void serialize(std::ostream& os, bool compact) const = 0;
-    virtual vector_u8<A> serialize(bool compact, unsigned header_size_bytes) const = 0;
+    virtual vector_bytes serialize(bool compact, unsigned header_size_bytes) const = 0;
 
     virtual HllSketchImpl* copy() const = 0;
     virtual HllSketchImpl* copyAs(target_hll_type tgtHllType) const = 0;

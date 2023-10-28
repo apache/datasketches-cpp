@@ -29,7 +29,16 @@
 #include <vector>
 
 namespace datasketches {
-  
+
+// forward declarations
+template<typename A> class hll_sketch_alloc;
+template<typename A> class hll_union_alloc;
+
+/// HLL sketch alias with default allocator
+using hll_sketch = hll_sketch_alloc<std::allocator<uint8_t>>;
+/// HLL union alias with default allocator
+using hll_union = hll_union_alloc<std::allocator<uint8_t>>;
+
 /**
  * Specifies the target type of HLL sketch to be created. It is a target in that the actual
  * allocation of the HLL array is deferred until sufficient number of items have been received by
@@ -66,15 +75,6 @@ enum target_hll_type {
     HLL_8  ///< 8 bits per entry (fastest, fixed size)
 };
 
-template<typename A>
-class HllSketchImpl;
-
-template<typename A>
-class hll_union_alloc;
-
-template<typename A> using AllocU8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
-template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
-
 /**
  * This is a high performance implementation of Phillipe Flajolet's HLL sketch but with
  * significantly improved error behavior.  If the ONLY use case for sketching is counting
@@ -107,6 +107,9 @@ template<typename A> using vector_u8 = std::vector<uint8_t, AllocU8<A>>;
  * author Lee Rhodes
  * author Kevin Lang
  */
+
+// forward declaration
+template<typename A> class HllSketchImpl;
 
 template<typename A = std::allocator<uint8_t> >
 class hll_sketch_alloc final {
@@ -179,7 +182,9 @@ class hll_sketch_alloc final {
      */
     void reset();
 
-    using vector_bytes = vector_u8<A>; // alias for users
+    // This is a convenience alias for users
+    // The type returned by the following serialize method
+    using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
 
     /**
      * Serializes the sketch to a byte array, compacting data structures
@@ -407,8 +412,6 @@ class hll_sketch_alloc final {
     uint8_t get_serialization_version() const;
     bool is_out_of_order_flag() const;
     bool is_estimation_mode() const;
-
-    typedef typename std::allocator_traits<A>::template rebind_alloc<hll_sketch_alloc> AllocHllSketch;
 
     HllSketchImpl<A>* sketch_impl;
     friend hll_union_alloc<A>;
@@ -644,12 +647,6 @@ class hll_union_alloc {
     uint8_t lg_max_k_;
     hll_sketch_alloc<A> gadget_;
 };
-
-/// HLL sketch alias with default allocator
-using hll_sketch = hll_sketch_alloc<std::allocator<uint8_t>>;
-
-/// HLL union alias with default allocator
-using hll_union = hll_union_alloc<std::allocator<uint8_t>>;
 
 } // namespace datasketches
 

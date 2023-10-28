@@ -32,9 +32,6 @@ struct example_intersection_policy {
   void operator()(Summary& summary, const Summary& other) const {
     summary += other;
   }
-  void operator()(Summary& summary, Summary&& other) const {
-    summary += other;
-  }
 };
 */
 

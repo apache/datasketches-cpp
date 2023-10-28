@@ -25,6 +25,12 @@
 
 namespace datasketches {
 
+// forward declaration
+template<typename A> class theta_a_not_b_alloc;
+
+// alias with default allocator for convenience
+using theta_a_not_b = theta_a_not_b_alloc<std::allocator<uint64_t>>;
+
 /**
  * Theta A-not-B (set difference).
  * Computes set difference of Theta sketches.
@@ -45,11 +51,11 @@ public:
   explicit theta_a_not_b_alloc(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
-   * Computes the a-not-b set operation given two sketches.
+   * Computes the A-not-B set operation given two sketches.
    * @param a sketch A
    * @param b sketch B
    * @param ordered optional flag to specify if ordered sketch should be produced
-   * @return the result of a-not-b as a compact sketch
+   * @return the result of A-not-B as a compact sketch
    */
   template<typename FwdSketch, typename Sketch>
   CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;
@@ -57,9 +63,6 @@ public:
 private:
   State state_;
 };
-
-// alias with default allocator for convenience
-using theta_a_not_b = theta_a_not_b_alloc<std::allocator<uint64_t>>;
 
 } /* namespace datasketches */
 

@@ -33,7 +33,7 @@
 
 namespace datasketches {
 
-// forward-declarations
+// forward declarations
 template<typename A> class cpc_sketch_alloc;
 template<typename A> class cpc_union_alloc;
 

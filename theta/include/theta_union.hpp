@@ -26,6 +26,12 @@
 
 namespace datasketches {
 
+// forward declaration
+template<typename A> class theta_union_alloc;
+
+// alias with default allocator for convenience
+using theta_union = theta_union_alloc<std::allocator<uint64_t>>;
+
 /**
  * Theta Union.
  * Computes union of Theta sketches. There is no constructor. Use builder instead.
@@ -88,9 +94,6 @@ public:
    */
   theta_union_alloc<A> build() const;
 };
-
-// alias with default allocator for convenience
-using theta_union = theta_union_alloc<std::allocator<uint64_t>>;
 
 } /* namespace datasketches */
 

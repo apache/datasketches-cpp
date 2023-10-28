@@ -43,11 +43,11 @@ public:
   explicit array_tuple_a_not_b(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
   /**
-   * Computes the a-not-b set operation given two sketches.
+   * Computes the A-not-B set operation given two sketches.
    * @param a sketch A
    * @param b sketch B
    * @param ordered optional flag to specify if ordered sketch should be produced
-   * @return the result of a-not-b as a compact sketch
+   * @return the result of A-not-B as a compact sketch
    */
   template<typename FwdSketch, typename Sketch>
   CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;
