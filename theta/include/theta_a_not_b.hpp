@@ -54,7 +54,7 @@ public:
    * Computes the A-not-B set operation given two sketches.
    * @param a sketch A
    * @param b sketch B
-   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return the result of A-not-B as a compact sketch
    */
   template<typename FwdSketch, typename Sketch>

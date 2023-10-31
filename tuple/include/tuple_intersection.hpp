@@ -28,7 +28,7 @@ namespace datasketches {
 /*
 // for types with defined + operation
 template<typename Summary>
-struct example_intersection_policy {
+struct example_tuple_intersection_policy {
   void operator()(Summary& summary, const Summary& other) const {
     summary += other;
   }
@@ -89,7 +89,7 @@ public:
    * Produces a copy of the current state of the intersection.
    * If update() was not called, the state is the infinite "universe",
    * which is considered an undefined state, and throws an exception.
-   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return the result of the intersection
    */
   CompactSketch get_result(bool ordered = true) const;

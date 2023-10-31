@@ -49,9 +49,9 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   test_allocator_total_bytes = 0;
 
   SECTION("k limits") {
-    kll_float_sketch sketch1(kll_float_sketch::MIN_K, std::less<float>(), 0); // this should work
-    kll_float_sketch sketch2(kll_float_sketch::MAX_K, std::less<float>(), 0); // this should work
-    REQUIRE_THROWS_AS(new kll_float_sketch(kll_float_sketch::MIN_K - 1, std::less<float>(), 0), std::invalid_argument);
+    kll_float_sketch sketch1(kll_constants::MIN_K, std::less<float>(), 0); // this should work
+    kll_float_sketch sketch2(kll_constants::MAX_K, std::less<float>(), 0); // this should work
+    REQUIRE_THROWS_AS(new kll_float_sketch(kll_constants::MIN_K - 1, std::less<float>(), 0), std::invalid_argument);
     // MAX_K + 1 makes no sense because k is uint16_t
     //std::cout << "sizeof(kll_sketch<float>)=" << sizeof(kll_sketch<float>) << "\n";
     //std::cout << "sizeof(kll_sketch<double>)=" << sizeof(kll_sketch<double>) << "\n";

@@ -331,7 +331,7 @@ public:
 
   /**
    * Converts this sketch to a compact sketch (ordered or unordered).
-   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return compact sketch
    */
   compact_theta_sketch_alloc<Allocator> compact(bool ordered = true) const;
@@ -498,7 +498,6 @@ private:
 
   virtual void print_specifics(std::ostringstream& os) const;
 
-  // constructor for internal use
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_union_base;
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_intersection_base;
   template<typename E, typename EK, typename CS, typename A> friend class theta_set_difference_base;

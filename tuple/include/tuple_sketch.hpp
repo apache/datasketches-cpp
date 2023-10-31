@@ -194,7 +194,7 @@ protected:
 
 // for types with defined default constructor and + operation
 template<typename Summary, typename Update>
-struct default_update_policy {
+struct default_tuple_update_policy {
   Summary create() const {
     return Summary();
   }
@@ -211,7 +211,7 @@ struct default_update_policy {
 template<
   typename Summary,
   typename Update = Summary,
-  typename Policy = default_update_policy<Summary, Update>,
+  typename Policy = default_tuple_update_policy<Summary, Update>,
   typename Allocator = std::allocator<Summary>
 >
 class update_tuple_sketch: public tuple_sketch<Summary, Allocator> {
@@ -376,7 +376,7 @@ public:
 
   /**
    * Converts this sketch to a compact sketch (ordered or unordered).
-   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return compact sketch
    */
   compact_tuple_sketch<Summary, Allocator> compact(bool ordered = true) const;
@@ -575,7 +575,6 @@ protected:
 
   virtual void print_specifics(std::ostringstream& os) const;
 
-  // for internal use
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_union_base;
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_intersection_base;
   template<typename E, typename EK, typename CS, typename A> friend class theta_set_difference_base;

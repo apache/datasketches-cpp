@@ -214,8 +214,6 @@ public:
   using Base = typename quantiles_sorted_view<T, C, A>::Container::const_iterator;
   using value_type = typename std::conditional<std::is_arithmetic<T>::value, typename Base::value_type, std::pair<const T&, const uint64_t>>::type;
 
-  const_iterator(const Base& it, const Base& begin): Base(it), begin(begin) {}
-
   template<typename TT = T, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type = 0>
   const value_type operator*() const { return Base::operator*(); }
 
@@ -239,6 +237,9 @@ public:
 
 private:
   Base begin;
+
+  friend class quantiles_sorted_view<T, C, A>;
+  const_iterator(const Base& it, const Base& begin): Base(it), begin(begin) {}
 };
 
 } /* namespace datasketches */

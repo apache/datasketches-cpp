@@ -34,6 +34,11 @@ namespace datasketches {
 namespace kll_constants {
   /// default value of parameter K
   const uint16_t DEFAULT_K = 200;
+  const uint8_t DEFAULT_M = 8;
+  /// min value of parameter K
+  const uint16_t MIN_K = DEFAULT_M;
+  /// max value of parameter K
+  const uint16_t MAX_K = (1 << 16) - 1;
 }
 
 /**
@@ -170,10 +175,6 @@ class kll_sketch {
      * This is to return quantiles either by value (for arithmetic types) or by const reference (for all other types)
      */
     using quantile_return_type = typename quantiles_sorted_view<T, C, A>::quantile_return_type;
-
-    static const uint8_t DEFAULT_M = 8;
-    static const uint16_t MIN_K = DEFAULT_M;
-    static const uint16_t MAX_K = (1 << 16) - 1;
 
     explicit kll_sketch(uint16_t k = kll_constants::DEFAULT_K, const C& comparator = C(), const A& allocator = A());
     kll_sketch(const kll_sketch& other);
