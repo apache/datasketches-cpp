@@ -266,25 +266,6 @@ auto req_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> qua
 }
 
 template<typename T, typename C, typename A>
-std::vector<T, A> req_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size, bool inclusive) const {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
-  std::vector<T, A> quantiles(allocator_);
-  quantiles.reserve(size);
-
-  // possible side-effect of sorting level zero
-  setup_sorted_view();
-
-  for (uint32_t i = 0; i < size; ++i) {
-    const double rank = ranks[i];
-    if ((rank < 0.0) || (rank > 1.0)) {
-      throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
-    }
-    quantiles.push_back(sorted_view_->get_quantile(rank, inclusive));
-  }
-  return quantiles;
-}
-
-template<typename T, typename C, typename A>
 quantiles_sorted_view<T, C, A> req_sketch<T, C, A>::get_sorted_view() const {
   if (!compactors_[0].is_sorted()) {
     const_cast<Compactor&>(compactors_[0]).sort(); // allow this side effect

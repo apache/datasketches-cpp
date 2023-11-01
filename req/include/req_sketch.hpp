@@ -288,20 +288,6 @@ public:
   quantile_return_type get_quantile(double rank, bool inclusive = true) const;
 
   /**
-   * Returns an array of quantiles that correspond to the given array of normalized ranks.
-   * <p>If the sketch is empty this throws std::runtime_error.
-   *
-   * @param ranks given array of normalized ranks.
-   * @param size the number of ranks in the array.
-   * @param inclusive if true, the given rank is considered inclusive (includes weight of an item)
-   *
-   * @return array of quantiles that correspond to the given array of normalized ranks
-   *
-   * Deprecated. Will be removed in the next major version. Use get_quantile() instead.
-   */
-  std::vector<T, Allocator> get_quantiles(const double* ranks, uint32_t size, bool inclusive = true) const;
-
-  /**
    * Returns an approximate lower bound of the given normalized rank.
    * @param rank the given rank, a value between 0 and 1.0.
    * @param num_std_dev the number of standard deviations. Must be 1, 2, or 3.

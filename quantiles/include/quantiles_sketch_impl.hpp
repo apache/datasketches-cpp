@@ -752,42 +752,6 @@ auto quantiles_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const 
 }
 
 template<typename T, typename C, typename A>
-std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size, bool inclusive) const {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
-  std::vector<T, A> quantiles(allocator_);
-  quantiles.reserve(size);
-
-  // possible side-effect: sorting base buffer
-  setup_sorted_view();
-
-  for (uint32_t i = 0; i < size; ++i) {
-    const double rank = ranks[i];
-    if ((rank < 0.0) || (rank > 1.0)) {
-      throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
-    }
-    quantiles.push_back(sorted_view_->get_quantile(rank, inclusive));
-  }
-  return quantiles;
-}
-
-template<typename T, typename C, typename A>
-std::vector<T, A> quantiles_sketch<T, C, A>::get_quantiles(uint32_t num, bool inclusive) const {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
-  if (num == 0) {
-    throw std::invalid_argument("num must be > 0");
-  }
-  vector_double ranks(num, 0, allocator_);
-  ranks[0] = 0.0;
-  for (size_t i = 1; i < num; i++) {
-    ranks[i] = static_cast<double>(i) / (num - 1);
-  }
-  if (num > 1) {
-    ranks[num - 1] = 1.0;
-  }
-  return get_quantiles(ranks.data(), num, inclusive);
-}
-
-template<typename T, typename C, typename A>
 double quantiles_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
   if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   setup_sorted_view();
