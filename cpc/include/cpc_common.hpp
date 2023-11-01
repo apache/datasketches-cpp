@@ -26,10 +26,14 @@
 
 namespace datasketches {
 
+/// CPC constants
 namespace cpc_constants {
-    const uint8_t MIN_LG_K = 4;
-    const uint8_t MAX_LG_K = 26;
-    const uint8_t DEFAULT_LG_K = 11;
+  /// min log2 of K
+  const uint8_t MIN_LG_K = 4;
+  /// max log2 of K
+  const uint8_t MAX_LG_K = 26;
+  /// default log2 of K
+  const uint8_t DEFAULT_LG_K = 11;
 }
 
 // forward declaration
