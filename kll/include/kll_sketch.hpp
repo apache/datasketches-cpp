@@ -167,6 +167,7 @@ class kll_sketch {
   public:
     using value_type = T;
     using comparator = C;
+    using allocator_type = A;
     using vector_u32 = std::vector<uint32_t, typename std::allocator_traits<A>::template rebind_alloc<uint32_t>>;
     using vector_double = typename quantiles_sorted_view<T, C, A>::vector_double;
 
@@ -176,11 +177,41 @@ class kll_sketch {
      */
     using quantile_return_type = typename quantiles_sorted_view<T, C, A>::quantile_return_type;
 
+    /**
+     * Constructor
+     * @param k affects the size of the sketch and its estimation error
+     * @param comparator strict weak ordering function (see C++ named requirements: Compare)
+     * @param allocator used by this sketch to allocate memory
+     */
     explicit kll_sketch(uint16_t k = kll_constants::DEFAULT_K, const C& comparator = C(), const A& allocator = A());
+
+    /**
+     * Copy constructor
+     * @param other sketch to be copied
+     */
     kll_sketch(const kll_sketch& other);
+
+    /**
+     * Move constructor
+     * @param other sketch to be moved
+     */
     kll_sketch(kll_sketch&& other) noexcept;
+
+
     ~kll_sketch();
+
+    /**
+     * Copy assignment
+     * @param other sketch to be copied
+     * @return reference to this sketch
+     */
     kll_sketch& operator=(const kll_sketch& other);
+
+    /**
+     * Move assignment
+     * @param other sketch to be moved
+     * @return reference to this sketch
+     */
     kll_sketch& operator=(kll_sketch&& other);
 
     /*

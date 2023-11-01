@@ -160,9 +160,9 @@ public:
 
   /**
    * Constructor
-   * @param k
-   * @param comparator
-   * @param allocator
+   * @param k affects the size of the sketch and its estimation error
+   * @param comparator strict weak ordering function (see C++ named requirements: Compare)
+   * @param allocator used to allocate memory
    */
   explicit quantiles_sketch(uint16_t k = quantiles_constants::DEFAULT_K,
       const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());

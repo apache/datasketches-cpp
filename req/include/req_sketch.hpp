@@ -80,6 +80,7 @@ class req_sketch {
 public:
   using value_type = T;
   using comparator = Comparator;
+  using allocator_type = Allocator;
   using Compactor = req_compactor<T, Comparator, Allocator>;
   using AllocCompactor = typename std::allocator_traits<Allocator>::template rebind_alloc<Compactor>;
   using vector_double = typename quantiles_sorted_view<T, Comparator, Allocator>::vector_double;
@@ -96,8 +97,8 @@ public:
    * Value of 12 roughly corresponds to 1% relative error guarantee at 95% confidence.
    * @param hra if true, the default, the high ranks are prioritized for better
    * accuracy. Otherwise the low ranks are prioritized for better accuracy.
-   * @param comparator instance for use by this sketch instance
-   * @param allocator instance for use by this sketch instance
+   * @param comparator strict weak ordering function (see C++ named requirements: Compare)
+   * @param allocator used by this sketch to allocate memory
    */
   explicit req_sketch(uint16_t k, bool hra = true, const Comparator& comparator = Comparator(),
       const Allocator& allocator = Allocator());
