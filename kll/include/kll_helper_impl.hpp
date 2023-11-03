@@ -99,7 +99,7 @@ void kll_helper::randomly_halve_down(T* buf, uint32_t start, uint32_t length) {
 #ifdef KLL_VALIDATION
   const uint32_t offset = deterministic_offset();
 #else
-  const uint32_t offset = random_bit();
+  const uint32_t offset = random_utils::random_bit();
 #endif
   uint32_t j = start + offset;
   for (uint32_t i = start; i < (start + half_length); i++) {
@@ -115,7 +115,7 @@ void kll_helper::randomly_halve_up(T* buf, uint32_t start, uint32_t length) {
 #ifdef KLL_VALIDATION
   const uint32_t offset = deterministic_offset();
 #else
-  const uint32_t offset = random_bit();
+  const uint32_t offset = random_utils::random_bit();
 #endif
   uint32_t j = (start + length) - 1 - offset;
   for (uint32_t i = (start + length) - 1; i >= (start + half_length); i--) {

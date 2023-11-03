@@ -958,7 +958,7 @@ void quantiles_sketch<T, C, A>::zip_buffer(Level& buf_in, Level& buf_out) {
   uint32_t rand_offset = next_offset;
   next_offset = 1 - next_offset;
 #else
-  uint32_t rand_offset = random_bit();
+  uint32_t rand_offset = random_utils::random_bit();
 #endif
   if ((buf_in.size() != 2 * buf_out.capacity())
     || (buf_out.size() > 0)) {

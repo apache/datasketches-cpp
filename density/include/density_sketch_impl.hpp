@@ -143,7 +143,7 @@ template<typename T, typename K, typename A>
 void density_sketch<T, K, A>::compact_level(unsigned height) {
   auto& level = levels_[height];
   std::vector<bool> bits(level.size());
-  bits[0] = random_bit();
+  bits[0] = random_utils::random_bit();
   std::random_shuffle(level.begin(), level.end());
   for (unsigned i = 1; i < level.size(); ++i) {
     T delta = 0;
