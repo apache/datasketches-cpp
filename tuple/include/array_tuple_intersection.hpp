@@ -52,7 +52,7 @@ public:
    * Produces a copy of the current state of the intersection.
    * If update() was not called, the state is the infinite "universe",
    * which is considered an undefined state, and throws an exception.
-   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return the result of the intersection as a compact sketch
    */
   CompactSketch get_result(bool ordered = true) const;

@@ -146,7 +146,7 @@ var_opt_union<T, A> var_opt_union<T, A>::deserialize(std::istream& is, const Ser
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
 
-  if (max_k == 0 || max_k > MAX_K) {
+  if (max_k == 0 || max_k > var_opt_constants::MAX_K) {
     throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");
   }
 
@@ -190,7 +190,7 @@ var_opt_union<T, A> var_opt_union<T, A>::deserialize(const void* bytes, size_t s
   check_preamble_longs(preamble_longs, flags);
   check_family_and_serialization_version(family_id, serial_version);
 
-  if (max_k == 0 || max_k > MAX_K) {
+  if (max_k == 0 || max_k > var_opt_constants::MAX_K) {
     throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");
   }
 
@@ -448,7 +448,7 @@ var_opt_sketch<T, A> var_opt_union<T, A>::get_result() const {
 
 /**
  * When there are no marked items in H, the gadget is mathematically equivalent to a valid
- * varopt sketch. This method simply returns a copy (without perserving marks).
+ * varopt sketch. This method simply returns a copy (without preserving marks).
  *
  * @return A shallow copy of the gadget as valid varopt sketch
  */
@@ -549,7 +549,7 @@ void var_opt_union<T, A>::mark_moving_gadget_coercer(var_opt_sketch<T, A>& sk) c
 
   if (result_h + result_r != result_k) throw std::logic_error("H + R counts must equal k");
   if (std::abs(transferred_weight - outer_tau_numer_) > 1e-10) {
-    throw std::logic_error("uexpected mismatch in transferred weight");
+    throw std::logic_error("unexpected mismatch in transferred weight");
   }
 
   const double result_r_weight = gadget_.total_wt_r_ + transferred_weight;

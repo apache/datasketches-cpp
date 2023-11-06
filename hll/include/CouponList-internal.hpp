@@ -169,9 +169,9 @@ CouponList<A>* CouponList<A>::newList(std::istream& is, const A& allocator) {
 }
 
 template<typename A>
-vector_u8<A> CouponList<A>::serialize(bool compact, unsigned header_size_bytes) const {
+auto CouponList<A>::serialize(bool compact, unsigned header_size_bytes) const -> vector_bytes {
   const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes()) + header_size_bytes;
-  vector_u8<A> byteArr(sketchSizeBytes, 0, getAllocator());
+  vector_bytes byteArr(sketchSizeBytes, 0, getAllocator());
   uint8_t* bytes = byteArr.data() + header_size_bytes;
 
   bytes[hll_constants::PREAMBLE_INTS_BYTE] = static_cast<uint8_t>(getPreInts());

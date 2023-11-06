@@ -232,12 +232,12 @@ void hll_sketch_alloc<A>::serialize_updatable(std::ostream& os) const {
 }
 
 template<typename A>
-vector_u8<A> hll_sketch_alloc<A>::serialize_compact(unsigned header_size_bytes) const {
+auto hll_sketch_alloc<A>::serialize_compact(unsigned header_size_bytes) const -> vector_bytes {
   return sketch_impl->serialize(true, header_size_bytes);
 }
 
 template<typename A>
-vector_u8<A> hll_sketch_alloc<A>::serialize_updatable() const {
+auto hll_sketch_alloc<A>::serialize_updatable() const -> vector_bytes {
   return sketch_impl->serialize(false, 0);
 }
 

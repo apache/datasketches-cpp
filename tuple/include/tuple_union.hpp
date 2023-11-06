@@ -27,7 +27,7 @@ namespace datasketches {
 
 // for types with defined + operation
 template<typename Summary>
-struct default_union_policy {
+struct default_tuple_union_policy {
   void operator()(Summary& summary, const Summary& other) const {
     summary += other;
   }
@@ -39,7 +39,7 @@ struct default_union_policy {
  */
 template<
   typename Summary,
-  typename Policy = default_union_policy<Summary>,
+  typename Policy = default_tuple_union_policy<Summary>,
   typename Allocator = std::allocator<Summary>
 >
 class tuple_union {
@@ -71,15 +71,15 @@ public:
   class builder;
 
   /**
-   * This method is to update the union with a given sketch
+   * Update the union with a given sketch
    * @param sketch to update the union with
    */
   template<typename FwdSketch>
   void update(FwdSketch&& sketch);
 
   /**
-   * This method produces a copy of the current state of the union as a compact sketch.
-   * @param ordered optional flag to specify if ordered sketch should be produced
+   * Produces a copy of the current state of the union as a compact sketch.
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return the result of the union
    */
   CompactSketch get_result(bool ordered = true) const;
@@ -109,7 +109,7 @@ public:
   builder(const P& policy = P(), const A& allocator = A());
 
   /**
-   * This is to create an instance of the union with predefined parameters.
+   * Create an instance of the union with predefined parameters.
    * @return an instance of the union
    */
   tuple_union build() const;

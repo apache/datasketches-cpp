@@ -49,9 +49,9 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   test_allocator_total_bytes = 0;
 
   SECTION("k limits") {
-    kll_float_sketch sketch1(kll_float_sketch::MIN_K, std::less<float>(), 0); // this should work
-    kll_float_sketch sketch2(kll_float_sketch::MAX_K, std::less<float>(), 0); // this should work
-    REQUIRE_THROWS_AS(new kll_float_sketch(kll_float_sketch::MIN_K - 1, std::less<float>(), 0), std::invalid_argument);
+    kll_float_sketch sketch1(kll_constants::MIN_K, std::less<float>(), 0); // this should work
+    kll_float_sketch sketch2(kll_constants::MAX_K, std::less<float>(), 0); // this should work
+    REQUIRE_THROWS_AS(new kll_float_sketch(kll_constants::MIN_K - 1, std::less<float>(), 0), std::invalid_argument);
     // MAX_K + 1 makes no sense because k is uint16_t
     //std::cout << "sizeof(kll_sketch<float>)=" << sizeof(kll_sketch<float>) << "\n";
     //std::cout << "sizeof(kll_sketch<double>)=" << sizeof(kll_sketch<double>) << "\n";
@@ -67,8 +67,6 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_rank(0), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_quantile(0.5), std::runtime_error);
-    const double ranks[3] {0, 0.5, 1};
-    REQUIRE_THROWS_AS(sketch.get_quantiles(ranks, 3), std::runtime_error);
     const float split_points[1] {0};
     REQUIRE_THROWS_AS(sketch.get_PMF(split_points, 1), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::runtime_error);
@@ -99,12 +97,6 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch.get_min_item() == 1.0);
     REQUIRE(sketch.get_max_item() == 1.0);
     REQUIRE(sketch.get_quantile(0.5) == 1.0);
-    const double ranks[3] {0, 0.5, 1};
-    auto quantiles = sketch.get_quantiles(ranks, 3);
-    REQUIRE(quantiles.size() == 3);
-    REQUIRE(quantiles[0] == 1.0);
-    REQUIRE(quantiles[1] == 1.0);
-    REQUIRE(quantiles[2] == 1.0);
 
     int count = 0;
     for (auto pair: sketch) {
@@ -143,20 +135,6 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch.get_quantile(0) == 1);
     REQUIRE(sketch.get_max_item() == n);
     REQUIRE(sketch.get_quantile(1) == n);
-
-    const double ranks[3] {0, 0.5, 1};
-    auto quantiles = sketch.get_quantiles(ranks, 3);
-    REQUIRE(quantiles.size() == 3);
-    REQUIRE(quantiles[0] == 1);
-    REQUIRE(quantiles[1] == n / 2);
-    REQUIRE(quantiles[2] == n);
-
-    // alternative method must produce the same result
-    auto quantiles2 = sketch.get_quantiles(3);
-    REQUIRE(quantiles2.size() == 3);
-    REQUIRE(quantiles[0] == quantiles2[0]);
-    REQUIRE(quantiles[1] == quantiles2[1]);
-    REQUIRE(quantiles[2] == quantiles2[2]);
 
     for (uint32_t i = 1; i <= n; i++) {
       const double true_rank_inclusive = static_cast<double>(i) / n;

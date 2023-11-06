@@ -277,7 +277,7 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& nex
   if (compaction_range.second - compaction_range.first < 2) throw std::logic_error("compaction range error");
 
   if ((state_ & 1) == 1) { coin_ = !coin_; } // for odd flip coin;
-  else { coin_ = random_bit(); } // random coin flip
+  else { coin_ = random_utils::random_bit(); } // random coin flip
 
   const auto num = (compaction_range.second - compaction_range.first) / 2;
   next.ensure_space(num);
@@ -493,7 +493,7 @@ comparator_(comparator),
 allocator_(allocator),
 lg_weight_(lg_weight),
 hra_(hra),
-coin_(random_bit()),
+coin_(random_utils::random_bit()),
 sorted_(sorted),
 section_size_raw_(section_size_raw),
 section_size_(nearest_even(section_size_raw)),

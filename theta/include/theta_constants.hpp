@@ -25,15 +25,21 @@
 
 namespace datasketches {
 
+/// Theta constants
 namespace theta_constants {
+  /// hash table resize factor
   using resize_factor = datasketches::resize_factor;
-  //enum resize_factor { X1, X2, X4, X8 };
-  const uint64_t MAX_THETA = LLONG_MAX; // signed max for compatibility with Java
-  const uint8_t MIN_LG_K = 5;
-  const uint8_t MAX_LG_K = 26;
-
-  const uint8_t DEFAULT_LG_K = 12;
+  /// default resize factor
   const resize_factor DEFAULT_RESIZE_FACTOR = resize_factor::X8;
+
+  /// max theta - signed max for compatibility with Java
+  const uint64_t MAX_THETA = LLONG_MAX;
+  /// min log2 of K
+  const uint8_t MIN_LG_K = 5;
+  /// max log2 of K
+  const uint8_t MAX_LG_K = 26;
+  /// default log2 of K
+  const uint8_t DEFAULT_LG_K = 12;
 }
 
 } /* namespace datasketches */
