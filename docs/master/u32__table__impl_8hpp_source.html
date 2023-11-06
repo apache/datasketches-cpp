@@ -222,8 +222,8 @@ $(function() {
 <div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;  <span class="keyword">const</span> uint32_t old_size = 1 &lt;&lt; lg_size;</div>
 <div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;  <span class="keyword">const</span> uint32_t new_size = 1 &lt;&lt; new_lg_size;</div>
 <div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;  <span class="keywordflow">if</span> (new_size &lt;= num_items) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;new_size &lt;= num_items&quot;</span>);</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;  vector_u32&lt;A&gt; old_slots = std::move(slots);</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;  slots = vector_u32&lt;A&gt;(new_size, UINT32_MAX, old_slots.get_allocator());</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;  vector_u32 old_slots = std::move(slots);</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;  slots = vector_u32(new_size, UINT32_MAX, old_slots.get_allocator());</div>
 <div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;  lg_size = new_lg_size;</div>
 <div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;  <span class="keywordflow">for</span> (uint32_t i = 0; i &lt; old_size; i++) {</div>
 <div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <span class="keywordflow">if</span> (old_slots[i] != UINT32_MAX) {</div>
@@ -239,10 +239,10 @@ $(function() {
 <div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;<span class="comment">// and even then the subsequent sort would fix things up.</span></div>
 <div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;<span class="comment">// The result is nearly sorted, so make sure to use an efficient sort for that case</span></div>
 <div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;vector_u32&lt;A&gt; u32_table&lt;A&gt;::unwrapping_get_items()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;  <span class="keywordflow">if</span> (num_items == 0) <span class="keywordflow">return</span> vector_u32&lt;A&gt;(slots.get_allocator());</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;<span class="keyword">auto</span> u32_table&lt;A&gt;::unwrapping_get_items() const -&gt; vector_u32 {</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;  <span class="keywordflow">if</span> (num_items == 0) <span class="keywordflow">return</span> vector_u32(slots.get_allocator());</div>
 <div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;  <span class="keyword">const</span> uint32_t table_size = 1 &lt;&lt; lg_size;</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;  vector_u32&lt;A&gt; result(num_items, 0, slots.get_allocator());</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;  vector_u32 result(num_items, 0, slots.get_allocator());</div>
 <div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;  <span class="keywordtype">size_t</span> i = 0;</div>
 <div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;  <span class="keywordtype">size_t</span> l = 0;</div>
 <div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;  <span class="keywordtype">size_t</span> r = num_items - 1;</div>

@@ -240,9 +240,9 @@ $(function() {
 <div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;}</div>
 <div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160; </div>
 <div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;vector_u8&lt;A&gt; CouponList&lt;A&gt;::serialize(<span class="keywordtype">bool</span> compact, <span class="keywordtype">unsigned</span> header_size_bytes)<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;<span class="keyword">auto</span> CouponList&lt;A&gt;::serialize(<span class="keywordtype">bool</span> compact, <span class="keywordtype">unsigned</span> header_size_bytes) <span class="keyword">const</span> -&gt; vector_bytes {</div>
 <div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">size_t</span> sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes()) + header_size_bytes;</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;  vector_u8&lt;A&gt; byteArr(sketchSizeBytes, 0, getAllocator());</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;  vector_bytes byteArr(sketchSizeBytes, 0, getAllocator());</div>
 <div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;  uint8_t* bytes = byteArr.data() + header_size_bytes;</div>
 <div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
 <div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;  bytes[hll_constants::PREAMBLE_INTS_BYTE] = <span class="keyword">static_cast&lt;</span>uint8_t<span class="keyword">&gt;</span>(getPreInts());</div>
@@ -453,7 +453,7 @@ $(function() {
 <div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160; </div>
 <div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// _COUPONLIST_INTERNAL_HPP_</span></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition:</b> binomial_bounds.hpp:38</div></div>
-<div class="ttc" id="anamespacedatasketches_html_a76c1ad9235877691984d49415bb263e4"><div class="ttname"><a href="namespacedatasketches.html#a76c1ad9235877691984d49415bb263e4">datasketches::target_hll_type</a></div><div class="ttdeci">target_hll_type</div><div class="ttdoc">Specifies the target type of HLL sketch to be created.</div><div class="ttdef"><b>Definition:</b> hll.hpp:63</div></div>
+<div class="ttc" id="anamespacedatasketches_html_a76c1ad9235877691984d49415bb263e4"><div class="ttname"><a href="namespacedatasketches.html#a76c1ad9235877691984d49415bb263e4">datasketches::target_hll_type</a></div><div class="ttdeci">target_hll_type</div><div class="ttdoc">Specifies the target type of HLL sketch to be created.</div><div class="ttdef"><b>Definition:</b> hll.hpp:72</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

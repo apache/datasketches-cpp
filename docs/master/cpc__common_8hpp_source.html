@@ -97,50 +97,43 @@ $(function() {
 <div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacedatasketches.html">datasketches</a> {</div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span>cpc_constants {</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;    <span class="keyword">const</span> uint8_t MIN_LG_K = 4;</div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;    <span class="keyword">const</span> uint8_t MAX_LG_K = 26;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;    <span class="keyword">const</span> uint8_t DEFAULT_LG_K = 11;</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;}</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="comment">// TODO: Redundant and deprecated. Will be removed in next major version release.</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">static</span> <span class="keyword">const</span> uint8_t CPC_MIN_LG_K = cpc_constants::MIN_LG_K;</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">static</span> <span class="keyword">const</span> uint8_t CPC_MAX_LG_K = cpc_constants::MAX_LG_K;</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">static</span> <span class="keyword">const</span> uint8_t CPC_DEFAULT_LG_K = cpc_constants::DEFAULT_LG_K;</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt; <span class="keyword">using</span> AllocU8 = <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;uint8_t&gt;;</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt; <span class="keyword">using</span> AllocU16 = <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;uint16_t&gt;;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt; <span class="keyword">using</span> AllocU32 = <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;uint32_t&gt;;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt; <span class="keyword">using</span> AllocU64 = <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;uint64_t&gt;;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt; <span class="keyword">using</span> vector_u8 = std::vector&lt;uint8_t, AllocU8&lt;A&gt;&gt;;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt; <span class="keyword">using</span> vector_u32 = std::vector&lt;uint32_t, AllocU32&lt;A&gt;&gt;;</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt; <span class="keyword">using</span> vector_u64 = std::vector&lt;uint64_t, AllocU64&lt;A&gt;&gt;;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="comment">// forward declaration</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt; <span class="keyword">class </span>u32_table;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;<span class="keyword">struct </span>compressed_state {</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;  <span class="keyword">explicit</span> compressed_state(<span class="keyword">const</span> A&amp; allocator): table_data(allocator), table_data_words(0), table_num_entries(0),</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;      window_data(allocator), window_data_words(0) {}</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;  vector_u32&lt;A&gt; table_data;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;  uint32_t table_data_words;</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  uint32_t table_num_entries; <span class="comment">// can be different from the number of entries in the sketch in hybrid mode</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;  vector_u32&lt;A&gt; window_data;</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;  uint32_t window_data_words;</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;};</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="keyword">struct </span>uncompressed_state {</div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;  <span class="keyword">explicit</span> uncompressed_state(<span class="keyword">const</span> A&amp; allocator): table(allocator), window(allocator) {}</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;  u32_table&lt;A&gt; table;</div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;  vector_u8&lt;A&gt; window;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;};</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160; </div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno"><a class="line" href="namespacedatasketches_1_1cpc__constants.html">   30</a></span>&#160;<span class="keyword">namespace </span>cpc_constants {</div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespacedatasketches_1_1cpc__constants.html#a80c5dfefaf69318c0894ec34c34d0987">   32</a></span>&#160;  <span class="keyword">const</span> uint8_t <a class="code" href="namespacedatasketches_1_1cpc__constants.html#a80c5dfefaf69318c0894ec34c34d0987">MIN_LG_K</a> = 4;</div>
+<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="namespacedatasketches_1_1cpc__constants.html#ad15c7a6b3af91806e0a9743d27943d49">   34</a></span>&#160;  <span class="keyword">const</span> uint8_t <a class="code" href="namespacedatasketches_1_1cpc__constants.html#ad15c7a6b3af91806e0a9743d27943d49">MAX_LG_K</a> = 26;</div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="namespacedatasketches_1_1cpc__constants.html#a78468167a70640384c2de5e04fabe4fd">   36</a></span>&#160;  <span class="keyword">const</span> uint8_t <a class="code" href="namespacedatasketches_1_1cpc__constants.html#a78468167a70640384c2de5e04fabe4fd">DEFAULT_LG_K</a> = 11;</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;}</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160; </div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;<span class="comment">// forward declaration</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt; <span class="keyword">class </span>u32_table;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;<span class="keyword">struct </span>compressed_state {</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;  <span class="keyword">using</span> vector_u32 = std::vector&lt;uint32_t, typename std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;uint32_t&gt;&gt;;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;  <span class="keyword">explicit</span> compressed_state(<span class="keyword">const</span> A&amp; allocator): table_data(allocator), table_data_words(0), table_num_entries(0),</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;      window_data(allocator), window_data_words(0) {}</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;  vector_u32 table_data;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;  uint32_t table_data_words;</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;  uint32_t table_num_entries; <span class="comment">// can be different from the number of entries in the sketch in hybrid mode</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;  vector_u32 window_data;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;  uint32_t window_data_words;</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;};</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="keyword">struct </span>uncompressed_state {</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;  <span class="keyword">using</span> vector_bytes = std::vector&lt;uint8_t, typename std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;uint8_t&gt;&gt;;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;  <span class="keyword">explicit</span> uncompressed_state(<span class="keyword">const</span> A&amp; allocator): table(allocator), window(allocator) {}</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;  u32_table&lt;A&gt; table;</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;  vector_bytes window;</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;};</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="ttc" id="anamespacedatasketches_1_1cpc__constants_html_a78468167a70640384c2de5e04fabe4fd"><div class="ttname"><a href="namespacedatasketches_1_1cpc__constants.html#a78468167a70640384c2de5e04fabe4fd">datasketches::cpc_constants::DEFAULT_LG_K</a></div><div class="ttdeci">const uint8_t DEFAULT_LG_K</div><div class="ttdoc">default log2 of K</div><div class="ttdef"><b>Definition:</b> cpc_common.hpp:36</div></div>
+<div class="ttc" id="anamespacedatasketches_1_1cpc__constants_html_a80c5dfefaf69318c0894ec34c34d0987"><div class="ttname"><a href="namespacedatasketches_1_1cpc__constants.html#a80c5dfefaf69318c0894ec34c34d0987">datasketches::cpc_constants::MIN_LG_K</a></div><div class="ttdeci">const uint8_t MIN_LG_K</div><div class="ttdoc">min log2 of K</div><div class="ttdef"><b>Definition:</b> cpc_common.hpp:32</div></div>
+<div class="ttc" id="anamespacedatasketches_1_1cpc__constants_html_ad15c7a6b3af91806e0a9743d27943d49"><div class="ttname"><a href="namespacedatasketches_1_1cpc__constants.html#ad15c7a6b3af91806e0a9743d27943d49">datasketches::cpc_constants::MAX_LG_K</a></div><div class="ttdeci">const uint8_t MAX_LG_K</div><div class="ttdoc">max log2 of K</div><div class="ttdef"><b>Definition:</b> cpc_common.hpp:34</div></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition:</b> binomial_bounds.hpp:38</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

@@ -77,6 +77,9 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
+<tr class="memitem:namespacedatasketches_1_1cpc__constants"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedatasketches_1_1cpc__constants.html">cpc_constants</a></td></tr>
+<tr class="memdesc:namespacedatasketches_1_1cpc__constants"><td class="mdescLeft">&#160;</td><td class="mdescRight">CPC constants. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacedatasketches_1_1ebpps__constants"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedatasketches_1_1ebpps__constants.html">ebpps_constants</a></td></tr>
 <tr class="memdesc:namespacedatasketches_1_1ebpps__constants"><td class="mdescLeft">&#160;</td><td class="mdescRight">EBPPS sketch constants. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -88,6 +91,9 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacedatasketches_1_1req__constants"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedatasketches_1_1req__constants.html">req_constants</a></td></tr>
 <tr class="memdesc:namespacedatasketches_1_1req__constants"><td class="mdescLeft">&#160;</td><td class="mdescRight">REQ sketch constants. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespacedatasketches_1_1theta__constants"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedatasketches_1_1theta__constants.html">theta_constants</a></td></tr>
+<tr class="memdesc:namespacedatasketches_1_1theta__constants"><td class="mdescLeft">&#160;</td><td class="mdescRight">Theta constants. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespacedatasketches_1_1var__opt__constants"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedatasketches_1_1var__opt__constants.html">var_opt_constants</a></td></tr>
 <tr class="memdesc:namespacedatasketches_1_1var__opt__constants"><td class="mdescLeft">&#160;</td><td class="mdescRight">VarOpt sketch constants. <br /></td></tr>
@@ -122,8 +128,8 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1hll__union__alloc.html">hll_union_alloc</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This performs union operations for HLL sketches.  <a href="classdatasketches_1_1hll__union__alloc.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1hll__sketch__alloc.html">hll_sketch_alloc</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a high performance implementation of Phillipe Flajolet's HLL sketch but with significantly improved error behavior.  <a href="classdatasketches_1_1hll__sketch__alloc.html#details">More...</a><br /></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1HllSketchImpl.html">HllSketchImpl</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a high performance implementation of Phillipe Flajolet's HLL sketch but with significantly improved error behavior.  <a href="classdatasketches_1_1HllSketchImpl.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1kll__sketch.html">kll_sketch</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implementation of a very compact quantiles sketch with lazy compaction scheme and nearly optimal accuracy per retained item.  <a href="classdatasketches_1_1kll__sketch.html#details">More...</a><br /></td></tr>
@@ -143,20 +149,20 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1jaccard__similarity__base.html">jaccard_similarity_base</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base class for Jaccard similarity.  <a href="classdatasketches_1_1jaccard__similarity__base.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1base__theta__sketch__alloc.html">base_theta_sketch_alloc</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Abstract base class for Theta sketch.  <a href="classdatasketches_1_1base__theta__sketch__alloc.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1theta__sketch__alloc.html">theta_sketch_alloc</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base class for the Theta Sketch, a generalization of the Kth Minimum Value (KMV) sketch.  <a href="classdatasketches_1_1theta__sketch__alloc.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1compact__theta__sketch__alloc.html">compact_theta_sketch_alloc</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compact Theta sketch.  <a href="classdatasketches_1_1compact__theta__sketch__alloc.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1update__theta__sketch__alloc.html">update_theta_sketch_alloc</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update Theta sketch.  <a href="classdatasketches_1_1update__theta__sketch__alloc.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1compact__theta__sketch__alloc.html">compact_theta_sketch_alloc</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compact Theta sketch.  <a href="classdatasketches_1_1compact__theta__sketch__alloc.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1wrapped__compact__theta__sketch__alloc.html">wrapped_compact_theta_sketch_alloc</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrapped Compact Theta sketch.  <a href="classdatasketches_1_1wrapped__compact__theta__sketch__alloc.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1base__theta__sketch__alloc.html">base_theta_sketch_alloc</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Abstract base class for Theta sketch.  <a href="classdatasketches_1_1base__theta__sketch__alloc.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1theta__union__alloc.html">theta_union_alloc</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Theta Union.  <a href="classdatasketches_1_1theta__union__alloc.html#details">More...</a><br /></td></tr>
@@ -184,6 +190,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1array__tuple__union.html">array_tuple_union</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">array tuple union  <a href="classdatasketches_1_1array__tuple__union.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1tuple__a__not__b.html">tuple_a_not_b</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">tuple A-not-B  <a href="classdatasketches_1_1tuple__a__not__b.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1tuple__intersection.html">tuple_intersection</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tuple intersection.  <a href="classdatasketches_1_1tuple__intersection.html#details">More...</a><br /></td></tr>
@@ -239,7 +248,7 @@ using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nam
 <tr class="memdesc:ae1a38b6677f3d0d4f9b3e310413aa395"><td class="mdescLeft">&#160;</td><td class="mdescRight">CPC union alias with default allocator. <br /></td></tr>
 <tr class="separator:ae1a38b6677f3d0d4f9b3e310413aa395"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba485b07e1fa18592cbb0ba4b4544429"><td class="memItemLeft" align="right" valign="top"><a id="aba485b07e1fa18592cbb0ba4b4544429"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedatasketches.html#aba485b07e1fa18592cbb0ba4b4544429">hll_sketch</a> = <a class="el" href="classdatasketches_1_1hll__sketch__alloc.html">hll_sketch_alloc</a>&lt; std::allocator&lt; uint8_t &gt; &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedatasketches.html#aba485b07e1fa18592cbb0ba4b4544429">hll_sketch</a> = hll_sketch_alloc&lt; std::allocator&lt; uint8_t &gt; &gt;</td></tr>
 <tr class="memdesc:aba485b07e1fa18592cbb0ba4b4544429"><td class="mdescLeft">&#160;</td><td class="mdescRight">HLL sketch alias with default allocator. <br /></td></tr>
 <tr class="separator:aba485b07e1fa18592cbb0ba4b4544429"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c2cf15edaa7f14833a9b34b5b45d472"><td class="memItemLeft" align="right" valign="top"><a id="a4c2cf15edaa7f14833a9b34b5b45d472"></a>
@@ -301,7 +310,7 @@ using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="nam
 <tr class="memdesc:a8d77b6f0c52087601aa9a3040e14a28a"><td class="mdescLeft">&#160;</td><td class="mdescRight">convenience alias with default allocator, equivalent to ArrayOfDoublesAnotB in Java <br /></td></tr>
 <tr class="separator:a8d77b6f0c52087601aa9a3040e14a28a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9edbdcf6010c8d35813ca718d5127212"><td class="memTemplParams" colspan="2"><a id="a9edbdcf6010c8d35813ca718d5127212"></a>
-template&lt;typename Summary , typename IntersectionPolicy , typename UnionPolicy  = default_union_policy&lt;Summary&gt;, typename Allocator  = std::allocator&lt;Summary&gt;&gt; </td></tr>
+template&lt;typename Summary , typename IntersectionPolicy , typename UnionPolicy  = default_tuple_union_policy&lt;Summary&gt;, typename Allocator  = std::allocator&lt;Summary&gt;&gt; </td></tr>
 <tr class="memitem:a9edbdcf6010c8d35813ca718d5127212"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacedatasketches.html#a9edbdcf6010c8d35813ca718d5127212">tuple_jaccard_similarity</a> = <a class="el" href="classdatasketches_1_1jaccard__similarity__base.html">jaccard_similarity_base</a>&lt; <a class="el" href="classdatasketches_1_1tuple__union.html">tuple_union</a>&lt; Summary, UnionPolicy, Allocator &gt;, <a class="el" href="classdatasketches_1_1tuple__intersection.html">tuple_intersection</a>&lt; Summary, IntersectionPolicy, Allocator &gt;, pair_extract_key&lt; uint64_t, Summary &gt; &gt;</td></tr>
 <tr class="memdesc:a9edbdcf6010c8d35813ca718d5127212"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tuple Jaccard similarity alias. <br /></td></tr>
 <tr class="separator:a9edbdcf6010c8d35813ca718d5127212"><td class="memSeparator" colspan="2">&#160;</td></tr>

@@ -207,7 +207,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="separator:a60a5fe73c86554c313705666f8fb227a inherit pub_methods_classdatasketches_1_1tuple__sketch"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename Summary, typename Update = Summary, typename Policy = default_update_policy&lt;Summary, Update&gt;, typename Allocator = std::allocator&lt;Summary&gt;&gt;<br />
+<div class="textblock"><h3>template&lt;typename Summary, typename Update = Summary, typename Policy = default_tuple_update_policy&lt;Summary, Update&gt;, typename Allocator = std::allocator&lt;Summary&gt;&gt;<br />
 class datasketches::update_tuple_sketch&lt; Summary, Update, Policy, Allocator &gt;</h3>
 
 <p>Update Tuple sketch. </p>
@@ -951,7 +951,7 @@ class datasketches::update_tuple_sketch&lt; Summary, Update, Policy, Allocator &
 <p>Converts this sketch to a compact sketch (ordered or unordered). </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">ordered</td><td>optional flag to specify if ordered sketch should be produced </td></tr>
+    <tr><td class="paramname">ordered</td><td>optional flag to specify if an ordered sketch should be produced </td></tr>
   </table>
   </dd>
 </dl>

@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['wrapped_5fcompact_5ftheta_5fsketch_431',['wrapped_compact_theta_sketch',['../namespacedatasketches.html#aa3beeb0f7bcab82d98ea34a3bab848b6',1,'datasketches']]]
+  ['update_5farray_5fof_5fdoubles_5fsketch_432',['update_array_of_doubles_sketch',['../namespacedatasketches.html#a1f2cb976e39fb4c31b9d422290cab713',1,'datasketches']]],
+  ['update_5ftheta_5fsketch_433',['update_theta_sketch',['../namespacedatasketches.html#acf9e476bd4c4a803558121dcd504a231',1,'datasketches']]]
 ];

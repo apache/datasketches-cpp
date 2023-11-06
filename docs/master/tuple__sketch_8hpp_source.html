@@ -98,7 +98,7 @@ $(function() {
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespacedatasketches.html">datasketches</a> {</div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">// forward-declarations</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="comment">// forward declarations</span></div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt; <span class="keyword">class </span>tuple_sketch;</div>
 <div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> U, <span class="keyword">typename</span> P, <span class="keyword">typename</span> A&gt; <span class="keyword">class </span>update_tuple_sketch;</div>
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt; <span class="keyword">class </span>compact_tuple_sketch;</div>
@@ -179,7 +179,7 @@ $(function() {
 <div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
 <div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;<span class="comment">// for types with defined default constructor and + operation</span></div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Summary, <span class="keyword">typename</span> Update&gt;</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;<span class="keyword">struct </span>default_update_policy {</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;<span class="keyword">struct </span>default_tuple_update_policy {</div>
 <div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;  Summary create()<span class="keyword"> const </span>{</div>
 <div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;    <span class="keywordflow">return</span> Summary();</div>
 <div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;  }</div>
@@ -191,7 +191,7 @@ $(function() {
 <div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;<span class="keyword">template</span>&lt;</div>
 <div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;  <span class="keyword">typename</span> Summary,</div>
 <div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;  <span class="keyword">typename</span> Update = Summary,</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;  <span class="keyword">typename</span> Policy = default_update_policy&lt;Summary, Update&gt;,</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;  <span class="keyword">typename</span> Policy = default_tuple_update_policy&lt;Summary, Update&gt;,</div>
 <div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;  <span class="keyword">typename</span> Allocator = std::allocator&lt;Summary&gt;</div>
 <div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;&gt;</div>
 <div class="line"><a name="l00217"></a><span class="lineno"><a class="line" href="classdatasketches_1_1update__tuple__sketch.html">  217</a></span>&#160;<span class="keyword">class </span><a class="code" href="classdatasketches_1_1update__tuple__sketch.html">update_tuple_sketch</a>: <span class="keyword">public</span> <a class="code" href="classdatasketches_1_1tuple__sketch.html">tuple_sketch</a>&lt;Summary, Allocator&gt; {</div>
@@ -351,68 +351,70 @@ $(function() {
 <div class="line"><a name="l00530"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a37f6a609deea82bf072b744f2f3e4ea8">  530</a></span>&#160;  static <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html">compact_tuple_sketch</a> <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#aa4654837acac56f89e5c083198374eda">deserialize</a>(const <span class="keywordtype">void</span>* bytes, <span class="keywordtype">size_t</span> size, uint64_t seed = DEFAULT_SEED,</div>
 <div class="line"><a name="l00531"></a><span class="lineno">  531</span>&#160;      const SerDe&amp; sd = SerDe(), const Allocator&amp; allocator = Allocator());</div>
 <div class="line"><a name="l00532"></a><span class="lineno">  532</span>&#160; </div>
-<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;  <span class="comment">// for internal use</span></div>
-<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;  <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html">compact_tuple_sketch</a>(<span class="keywordtype">bool</span> <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>, <span class="keywordtype">bool</span> <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">is_ordered</a>, uint16_t seed_hash, uint64_t theta, std::vector&lt;Entry, AllocEntry&gt;&amp;&amp; entries);</div>
-<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160; </div>
-<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;protected:</div>
-<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;  <span class="keywordtype">bool</span> is_empty_;</div>
-<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;  <span class="keywordtype">bool</span> is_ordered_;</div>
-<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160;  uint16_t seed_hash_;</div>
-<div class="line"><a name="l00540"></a><span class="lineno">  540</span>&#160;  uint64_t theta_;</div>
-<div class="line"><a name="l00541"></a><span class="lineno">  541</span>&#160;  std::vector&lt;Entry, AllocEntry&gt; entries_;</div>
-<div class="line"><a name="l00542"></a><span class="lineno">  542</span>&#160; </div>
-<div class="line"><a name="l00548"></a><span class="lineno">  548</span>&#160;  template&lt;typename SerDe, typename SS = Summary, typename std::enable_if&lt;std::is_arithmetic&lt;SS&gt;::value, <span class="keywordtype">int</span>&gt;::type = 0&gt;</div>
-<div class="line"><a name="l00549"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#aebe0bd9f97ef071d15ae25b9c3418e65">  549</a></span>&#160;  <span class="keywordtype">size_t</span> <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#aebe0bd9f97ef071d15ae25b9c3418e65">get_serialized_size_summaries_bytes</a>(const SerDe&amp; sd) const;</div>
-<div class="line"><a name="l00550"></a><span class="lineno">  550</span>&#160; </div>
-<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;  template&lt;typename SerDe, typename SS = Summary, typename std::enable_if&lt;!std::is_arithmetic&lt;SS&gt;::value, <span class="keywordtype">int</span>&gt;::type = 0&gt;</div>
-<div class="line"><a name="l00557"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#aebe0bd9f97ef071d15ae25b9c3418e65">  557</a></span>&#160;  <span class="keywordtype">size_t</span> <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#aebe0bd9f97ef071d15ae25b9c3418e65">get_serialized_size_summaries_bytes</a>(const SerDe&amp; sd) const;</div>
-<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160; </div>
-<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;  <span class="comment">// for deserialize</span></div>
-<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;  class deleter_of_summaries {</div>
-<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;  <span class="keyword">public</span>:</div>
-<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;    deleter_of_summaries(uint32_t num, <span class="keywordtype">bool</span> destroy, <span class="keyword">const</span> Allocator&amp; allocator):</div>
-<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;      allocator_(allocator), num_(num), destroy_(destroy) {}</div>
-<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;    <span class="keywordtype">void</span> set_destroy(<span class="keywordtype">bool</span> destroy) { destroy_ = destroy; }</div>
-<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;    <span class="keywordtype">void</span> operator() (Summary* ptr) {</div>
-<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;      <span class="keywordflow">if</span> (ptr != <span class="keyword">nullptr</span>) {</div>
-<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;        <span class="keywordflow">if</span> (destroy_) {</div>
-<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;          <span class="keywordflow">for</span> (uint32_t i = 0; i &lt; num_; ++i) ptr[i].~Summary();</div>
-<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;        }</div>
-<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;        allocator_.deallocate(ptr, num_);</div>
-<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;      }</div>
-<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;    }</div>
-<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;  <span class="keyword">private</span>:</div>
-<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;    Allocator allocator_;</div>
-<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160;    uint32_t num_;</div>
-<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;    <span class="keywordtype">bool</span> destroy_;</div>
-<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160;  };</div>
-<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160; </div>
-<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;  <span class="keyword">virtual</span> <span class="keywordtype">void</span> print_specifics(std::ostringstream&amp; os) <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160; </div>
-<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;};</div>
+<div class="line"><a name="l00533"></a><span class="lineno">  533</span>&#160;protected:</div>
+<div class="line"><a name="l00534"></a><span class="lineno">  534</span>&#160;  <span class="keywordtype">bool</span> is_empty_;</div>
+<div class="line"><a name="l00535"></a><span class="lineno">  535</span>&#160;  <span class="keywordtype">bool</span> is_ordered_;</div>
+<div class="line"><a name="l00536"></a><span class="lineno">  536</span>&#160;  uint16_t seed_hash_;</div>
+<div class="line"><a name="l00537"></a><span class="lineno">  537</span>&#160;  uint64_t theta_;</div>
+<div class="line"><a name="l00538"></a><span class="lineno">  538</span>&#160;  std::vector&lt;Entry, AllocEntry&gt; entries_;</div>
+<div class="line"><a name="l00539"></a><span class="lineno">  539</span>&#160; </div>
+<div class="line"><a name="l00545"></a><span class="lineno">  545</span>&#160;  template&lt;typename SerDe, typename SS = Summary, typename std::enable_if&lt;std::is_arithmetic&lt;SS&gt;::value, <span class="keywordtype">int</span>&gt;::type = 0&gt;</div>
+<div class="line"><a name="l00546"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#aebe0bd9f97ef071d15ae25b9c3418e65">  546</a></span>&#160;  <span class="keywordtype">size_t</span> <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#aebe0bd9f97ef071d15ae25b9c3418e65">get_serialized_size_summaries_bytes</a>(const SerDe&amp; sd) const;</div>
+<div class="line"><a name="l00547"></a><span class="lineno">  547</span>&#160; </div>
+<div class="line"><a name="l00553"></a><span class="lineno">  553</span>&#160;  template&lt;typename SerDe, typename SS = Summary, typename std::enable_if&lt;!std::is_arithmetic&lt;SS&gt;::value, <span class="keywordtype">int</span>&gt;::type = 0&gt;</div>
+<div class="line"><a name="l00554"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#aebe0bd9f97ef071d15ae25b9c3418e65">  554</a></span>&#160;  <span class="keywordtype">size_t</span> <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#aebe0bd9f97ef071d15ae25b9c3418e65">get_serialized_size_summaries_bytes</a>(const SerDe&amp; sd) const;</div>
+<div class="line"><a name="l00555"></a><span class="lineno">  555</span>&#160; </div>
+<div class="line"><a name="l00556"></a><span class="lineno">  556</span>&#160;  <span class="comment">// for deserialize</span></div>
+<div class="line"><a name="l00557"></a><span class="lineno">  557</span>&#160;  class deleter_of_summaries {</div>
+<div class="line"><a name="l00558"></a><span class="lineno">  558</span>&#160;  <span class="keyword">public</span>:</div>
+<div class="line"><a name="l00559"></a><span class="lineno">  559</span>&#160;    deleter_of_summaries(uint32_t num, <span class="keywordtype">bool</span> destroy, <span class="keyword">const</span> Allocator&amp; allocator):</div>
+<div class="line"><a name="l00560"></a><span class="lineno">  560</span>&#160;      allocator_(allocator), num_(num), destroy_(destroy) {}</div>
+<div class="line"><a name="l00561"></a><span class="lineno">  561</span>&#160;    <span class="keywordtype">void</span> set_destroy(<span class="keywordtype">bool</span> destroy) { destroy_ = destroy; }</div>
+<div class="line"><a name="l00562"></a><span class="lineno">  562</span>&#160;    <span class="keywordtype">void</span> operator() (Summary* ptr) {</div>
+<div class="line"><a name="l00563"></a><span class="lineno">  563</span>&#160;      <span class="keywordflow">if</span> (ptr != <span class="keyword">nullptr</span>) {</div>
+<div class="line"><a name="l00564"></a><span class="lineno">  564</span>&#160;        <span class="keywordflow">if</span> (destroy_) {</div>
+<div class="line"><a name="l00565"></a><span class="lineno">  565</span>&#160;          <span class="keywordflow">for</span> (uint32_t i = 0; i &lt; num_; ++i) ptr[i].~Summary();</div>
+<div class="line"><a name="l00566"></a><span class="lineno">  566</span>&#160;        }</div>
+<div class="line"><a name="l00567"></a><span class="lineno">  567</span>&#160;        allocator_.deallocate(ptr, num_);</div>
+<div class="line"><a name="l00568"></a><span class="lineno">  568</span>&#160;      }</div>
+<div class="line"><a name="l00569"></a><span class="lineno">  569</span>&#160;    }</div>
+<div class="line"><a name="l00570"></a><span class="lineno">  570</span>&#160;  <span class="keyword">private</span>:</div>
+<div class="line"><a name="l00571"></a><span class="lineno">  571</span>&#160;    Allocator allocator_;</div>
+<div class="line"><a name="l00572"></a><span class="lineno">  572</span>&#160;    uint32_t num_;</div>
+<div class="line"><a name="l00573"></a><span class="lineno">  573</span>&#160;    <span class="keywordtype">bool</span> destroy_;</div>
+<div class="line"><a name="l00574"></a><span class="lineno">  574</span>&#160;  };</div>
+<div class="line"><a name="l00575"></a><span class="lineno">  575</span>&#160; </div>
+<div class="line"><a name="l00576"></a><span class="lineno">  576</span>&#160;  <span class="keyword">virtual</span> <span class="keywordtype">void</span> print_specifics(std::ostringstream&amp; os) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00577"></a><span class="lineno">  577</span>&#160; </div>
+<div class="line"><a name="l00578"></a><span class="lineno">  578</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> E, <span class="keyword">typename</span> EK, <span class="keyword">typename</span> P, <span class="keyword">typename</span> S, <span class="keyword">typename</span> CS, <span class="keyword">typename</span> A&gt; <span class="keyword">friend</span> <span class="keyword">class </span>theta_union_base;</div>
+<div class="line"><a name="l00579"></a><span class="lineno">  579</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> E, <span class="keyword">typename</span> EK, <span class="keyword">typename</span> P, <span class="keyword">typename</span> S, <span class="keyword">typename</span> CS, <span class="keyword">typename</span> A&gt; <span class="keyword">friend</span> <span class="keyword">class </span>theta_intersection_base;</div>
+<div class="line"><a name="l00580"></a><span class="lineno">  580</span>&#160;  <span class="keyword">template</span>&lt;<span class="keyword">typename</span> E, <span class="keyword">typename</span> EK, <span class="keyword">typename</span> CS, <span class="keyword">typename</span> A&gt; <span class="keyword">friend</span> <span class="keyword">class </span>theta_set_difference_base;</div>
+<div class="line"><a name="l00581"></a><span class="lineno">  581</span>&#160;  <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#a919843136e9bb921acd40bfea4ed5aef">compact_tuple_sketch</a>(<span class="keywordtype">bool</span> <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>, <span class="keywordtype">bool</span> <a class="code" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">is_ordered</a>, uint16_t seed_hash, uint64_t theta, std::vector&lt;Entry, AllocEntry&gt;&amp;&amp; entries);</div>
 <div class="line"><a name="l00582"></a><span class="lineno">  582</span>&#160; </div>
-<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Derived, <span class="keyword">typename</span> Policy, <span class="keyword">typename</span> Allocator&gt;</div>
-<div class="line"><a name="l00585"></a><span class="lineno"><a class="line" href="classdatasketches_1_1tuple__base__builder.html">  585</a></span>&#160;<span class="keyword">class </span><a class="code" href="classdatasketches_1_1tuple__base__builder.html">tuple_base_builder</a>: <span class="keyword">public</span> <a class="code" href="classdatasketches_1_1theta__base__builder.html">theta_base_builder</a>&lt;Derived, Allocator&gt; {</div>
-<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00587"></a><span class="lineno">  587</span>&#160;  <a class="code" href="classdatasketches_1_1tuple__base__builder.html">tuple_base_builder</a>(<span class="keyword">const</span> Policy&amp; policy, <span class="keyword">const</span> Allocator&amp; allocator);</div>
-<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160; </div>
-<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;<span class="keyword">protected</span>:</div>
-<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160;  Policy policy_;</div>
-<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;};</div>
-<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160; </div>
-<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> U, <span class="keyword">typename</span> P, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00595"></a><span class="lineno"><a class="line" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html">  595</a></span>&#160;<span class="keyword">class </span><a class="code" href="classdatasketches_1_1update__tuple__sketch.html">update_tuple_sketch</a>&lt;S, U, P, A&gt;::<a class="code" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html">builder</a>: <span class="keyword">public</span> <a class="code" href="classdatasketches_1_1tuple__base__builder.html">tuple_base_builder</a>&lt;builder, P, A&gt; {</div>
-<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00603"></a><span class="lineno">  603</span>&#160;  <a class="code" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html">builder</a>(<span class="keyword">const</span> P&amp; policy = P(), <span class="keyword">const</span> A&amp; allocator = A());</div>
-<div class="line"><a name="l00604"></a><span class="lineno">  604</span>&#160; </div>
-<div class="line"><a name="l00609"></a><span class="lineno">  609</span>&#160;  <a class="code" href="classdatasketches_1_1update__tuple__sketch.html">update_tuple_sketch&lt;S, U, P, A&gt;</a> build() <span class="keyword">const</span>;</div>
-<div class="line"><a name="l00610"></a><span class="lineno">  610</span>&#160;};</div>
-<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160; </div>
-<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a name="l00583"></a><span class="lineno">  583</span>&#160;};</div>
+<div class="line"><a name="l00584"></a><span class="lineno">  584</span>&#160; </div>
+<div class="line"><a name="l00586"></a><span class="lineno">  586</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> Derived, <span class="keyword">typename</span> Policy, <span class="keyword">typename</span> Allocator&gt;</div>
+<div class="line"><a name="l00587"></a><span class="lineno"><a class="line" href="classdatasketches_1_1tuple__base__builder.html">  587</a></span>&#160;<span class="keyword">class </span><a class="code" href="classdatasketches_1_1tuple__base__builder.html">tuple_base_builder</a>: <span class="keyword">public</span> <a class="code" href="classdatasketches_1_1theta__base__builder.html">theta_base_builder</a>&lt;Derived, Allocator&gt; {</div>
+<div class="line"><a name="l00588"></a><span class="lineno">  588</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00589"></a><span class="lineno">  589</span>&#160;  <a class="code" href="classdatasketches_1_1tuple__base__builder.html">tuple_base_builder</a>(<span class="keyword">const</span> Policy&amp; policy, <span class="keyword">const</span> Allocator&amp; allocator);</div>
+<div class="line"><a name="l00590"></a><span class="lineno">  590</span>&#160; </div>
+<div class="line"><a name="l00591"></a><span class="lineno">  591</span>&#160;<span class="keyword">protected</span>:</div>
+<div class="line"><a name="l00592"></a><span class="lineno">  592</span>&#160;  Policy policy_;</div>
+<div class="line"><a name="l00593"></a><span class="lineno">  593</span>&#160;};</div>
+<div class="line"><a name="l00594"></a><span class="lineno">  594</span>&#160; </div>
+<div class="line"><a name="l00596"></a><span class="lineno">  596</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> U, <span class="keyword">typename</span> P, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00597"></a><span class="lineno"><a class="line" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html">  597</a></span>&#160;<span class="keyword">class </span><a class="code" href="classdatasketches_1_1update__tuple__sketch.html">update_tuple_sketch</a>&lt;S, U, P, A&gt;::<a class="code" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html">builder</a>: <span class="keyword">public</span> <a class="code" href="classdatasketches_1_1tuple__base__builder.html">tuple_base_builder</a>&lt;builder, P, A&gt; {</div>
+<div class="line"><a name="l00598"></a><span class="lineno">  598</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00605"></a><span class="lineno">  605</span>&#160;  <a class="code" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html">builder</a>(<span class="keyword">const</span> P&amp; policy = P(), <span class="keyword">const</span> A&amp; allocator = A());</div>
+<div class="line"><a name="l00606"></a><span class="lineno">  606</span>&#160; </div>
+<div class="line"><a name="l00611"></a><span class="lineno">  611</span>&#160;  <a class="code" href="classdatasketches_1_1update__tuple__sketch.html">update_tuple_sketch&lt;S, U, P, A&gt;</a> build() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00612"></a><span class="lineno">  612</span>&#160;};</div>
 <div class="line"><a name="l00613"></a><span class="lineno">  613</span>&#160; </div>
-<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;<span class="preprocessor">#include &quot;tuple_sketch_impl.hpp&quot;</span></div>
+<div class="line"><a name="l00614"></a><span class="lineno">  614</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
 <div class="line"><a name="l00615"></a><span class="lineno">  615</span>&#160; </div>
-<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00616"></a><span class="lineno">  616</span>&#160;<span class="preprocessor">#include &quot;tuple_sketch_impl.hpp&quot;</span></div>
+<div class="line"><a name="l00617"></a><span class="lineno">  617</span>&#160; </div>
+<div class="line"><a name="l00618"></a><span class="lineno">  618</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aclassdatasketches_1_1compact__tuple__sketch_html"><div class="ttname"><a href="classdatasketches_1_1compact__tuple__sketch.html">datasketches::compact_tuple_sketch</a></div><div class="ttdoc">Compact Tuple sketch.</div><div class="ttdef"><b>Definition:</b> tuple_sketch.hpp:407</div></div>
 <div class="ttc" id="aclassdatasketches_1_1compact__tuple__sketch_html_a2b072fe55377eb51a6ee477827fc3b95"><div class="ttname"><a href="classdatasketches_1_1compact__tuple__sketch.html#a2b072fe55377eb51a6ee477827fc3b95">datasketches::compact_tuple_sketch::get_theta64</a></div><div class="ttdeci">virtual uint64_t get_theta64() const</div><div class="ttdef"><b>Definition:</b> tuple_sketch_impl.hpp:333</div></div>
 <div class="ttc" id="aclassdatasketches_1_1compact__tuple__sketch_html_a31fa76458d81a17dbebfcb828e531f14"><div class="ttname"><a href="classdatasketches_1_1compact__tuple__sketch.html#a31fa76458d81a17dbebfcb828e531f14">datasketches::compact_tuple_sketch::get_num_retained</a></div><div class="ttdeci">virtual uint32_t get_num_retained() const</div><div class="ttdef"><b>Definition:</b> tuple_sketch_impl.hpp:338</div></div>
@@ -428,8 +430,8 @@ $(function() {
 <div class="ttc" id="aclassdatasketches_1_1compact__tuple__sketch_html_ae38beebc4e0badbf382971d635dee089"><div class="ttname"><a href="classdatasketches_1_1compact__tuple__sketch.html#ae38beebc4e0badbf382971d635dee089">datasketches::compact_tuple_sketch::compact_tuple_sketch</a></div><div class="ttdeci">compact_tuple_sketch(const compact_tuple_sketch &amp;other)=default</div><div class="ttdoc">Copy constructor.</div></div>
 <div class="ttc" id="aclassdatasketches_1_1compact__tuple__sketch_html_aebe0bd9f97ef071d15ae25b9c3418e65"><div class="ttname"><a href="classdatasketches_1_1compact__tuple__sketch.html#aebe0bd9f97ef071d15ae25b9c3418e65">datasketches::compact_tuple_sketch::get_serialized_size_summaries_bytes</a></div><div class="ttdeci">size_t get_serialized_size_summaries_bytes(const SerDe &amp;sd) const</div><div class="ttdoc">Computes size needed to serialize summaries in the sketch.</div></div>
 <div class="ttc" id="aclassdatasketches_1_1theta__base__builder_html"><div class="ttname"><a href="classdatasketches_1_1theta__base__builder.html">datasketches::theta_base_builder</a></div><div class="ttdoc">Theta base builder.</div><div class="ttdef"><b>Definition:</b> theta_update_sketch_base.hpp:97</div></div>
-<div class="ttc" id="aclassdatasketches_1_1theta__sketch__alloc_html"><div class="ttname"><a href="classdatasketches_1_1theta__sketch__alloc.html">datasketches::theta_sketch_alloc</a></div><div class="ttdoc">Base class for the Theta Sketch, a generalization of the Kth Minimum Value (KMV) sketch.</div><div class="ttdef"><b>Definition:</b> theta_sketch.hpp:112</div></div>
-<div class="ttc" id="aclassdatasketches_1_1tuple__base__builder_html"><div class="ttname"><a href="classdatasketches_1_1tuple__base__builder.html">datasketches::tuple_base_builder</a></div><div class="ttdoc">Tuple base builder.</div><div class="ttdef"><b>Definition:</b> tuple_sketch.hpp:585</div></div>
+<div class="ttc" id="aclassdatasketches_1_1theta__sketch__alloc_html"><div class="ttname"><a href="classdatasketches_1_1theta__sketch__alloc.html">datasketches::theta_sketch_alloc</a></div><div class="ttdoc">Base class for the Theta Sketch, a generalization of the Kth Minimum Value (KMV) sketch.</div><div class="ttdef"><b>Definition:</b> theta_sketch.hpp:127</div></div>
+<div class="ttc" id="aclassdatasketches_1_1tuple__base__builder_html"><div class="ttname"><a href="classdatasketches_1_1tuple__base__builder.html">datasketches::tuple_base_builder</a></div><div class="ttdoc">Tuple base builder.</div><div class="ttdef"><b>Definition:</b> tuple_sketch.hpp:587</div></div>
 <div class="ttc" id="aclassdatasketches_1_1tuple__sketch_html"><div class="ttname"><a href="classdatasketches_1_1tuple__sketch.html">datasketches::tuple_sketch</a></div><div class="ttdoc">Base class for Tuple sketch.</div><div class="ttdef"><b>Definition:</b> tuple_sketch.hpp:54</div></div>
 <div class="ttc" id="aclassdatasketches_1_1tuple__sketch_html_a0526cde38fc4f1bc32839293567c8717"><div class="ttname"><a href="classdatasketches_1_1tuple__sketch.html#a0526cde38fc4f1bc32839293567c8717">datasketches::tuple_sketch::get_upper_bound</a></div><div class="ttdeci">double get_upper_bound(uint8_t num_std_devs, uint32_t num_subset_entries) const</div><div class="ttdoc">Returns the approximate upper error bound given a number of standard deviations over an arbitrary num...</div><div class="ttdef"><b>Definition:</b> tuple_sketch_impl.hpp:57</div></div>
 <div class="ttc" id="aclassdatasketches_1_1tuple__sketch_html_a250dc1485aaf4ef61332af5c5fdb4715"><div class="ttname"><a href="classdatasketches_1_1tuple__sketch.html#a250dc1485aaf4ef61332af5c5fdb4715">datasketches::tuple_sketch::begin</a></div><div class="ttdeci">virtual const_iterator begin() const =0</div><div class="ttdoc">Const iterator over entries in this sketch.</div></div>
@@ -447,7 +449,7 @@ $(function() {
 <div class="ttc" id="aclassdatasketches_1_1tuple__sketch_html_ae95a04b1d7dccb3d9b3f3c3d087aa8e6"><div class="ttname"><a href="classdatasketches_1_1tuple__sketch.html#ae95a04b1d7dccb3d9b3f3c3d087aa8e6">datasketches::tuple_sketch::is_estimation_mode</a></div><div class="ttdeci">bool is_estimation_mode() const</div><div class="ttdef"><b>Definition:</b> tuple_sketch_impl.hpp:29</div></div>
 <div class="ttc" id="aclassdatasketches_1_1tuple__sketch_html_ae99d253473075b7c10569d4565d7ee90"><div class="ttname"><a href="classdatasketches_1_1tuple__sketch.html#ae99d253473075b7c10569d4565d7ee90">datasketches::tuple_sketch::get_allocator</a></div><div class="ttdeci">virtual Allocator get_allocator() const =0</div></div>
 <div class="ttc" id="aclassdatasketches_1_1tuple__sketch_html_aef2e47ecd9c33fc2a6a9e905a2a0516a"><div class="ttname"><a href="classdatasketches_1_1tuple__sketch.html#aef2e47ecd9c33fc2a6a9e905a2a0516a">datasketches::tuple_sketch::get_theta64</a></div><div class="ttdeci">virtual uint64_t get_theta64() const =0</div></div>
-<div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_1_1builder_html"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch_1_1builder.html">datasketches::update_tuple_sketch::builder</a></div><div class="ttdoc">Update Tuple sketch builder.</div><div class="ttdef"><b>Definition:</b> tuple_sketch.hpp:595</div></div>
+<div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_1_1builder_html"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch_1_1builder.html">datasketches::update_tuple_sketch::builder</a></div><div class="ttdoc">Update Tuple sketch builder.</div><div class="ttdef"><b>Definition:</b> tuple_sketch.hpp:597</div></div>
 <div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_html"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch.html">datasketches::update_tuple_sketch</a></div><div class="ttdoc">Update Tuple sketch.</div><div class="ttdef"><b>Definition:</b> tuple_sketch.hpp:217</div></div>
 <div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_html_a0d3921cf5bcfbda1b545b043b0b1b830"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch.html#a0d3921cf5bcfbda1b545b043b0b1b830">datasketches::update_tuple_sketch::update</a></div><div class="ttdeci">void update(int16_t key, FwdUpdate &amp;&amp;value)</div><div class="ttdoc">Update this sketch with a given signed 16-bit integer.</div></div>
 <div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_html_a268ae12a22c9f97b84833e4c39fb2278"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch.html#a268ae12a22c9f97b84833e4c39fb2278">datasketches::update_tuple_sketch::trim</a></div><div class="ttdeci">void trim()</div><div class="ttdoc">Remove retained entries in excess of the nominal size k (if any)</div><div class="ttdef"><b>Definition:</b> tuple_sketch_impl.hpp:227</div></div>

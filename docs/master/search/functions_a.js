@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['lower_5fbound_5ffor_5fb_5fover_5fa_372',['lower_bound_for_b_over_a',['../classdatasketches_1_1bounds__on__ratios__in__sampled__sets.html#a64c2690d8b956838e5726128ab295211',1,'datasketches::bounds_on_ratios_in_sampled_sets::lower_bound_for_b_over_a()'],['../classdatasketches_1_1bounds__on__ratios__in__theta__sketched__sets.html#afca4842e0e5f98bf5eba713429b9e388',1,'datasketches::bounds_on_ratios_in_theta_sketched_sets::lower_bound_for_b_over_a()']]]
+  ['kll_5fsketch_371',['kll_sketch',['../classdatasketches_1_1kll__sketch.html#afca1c904b4598d7a9548a40a802ed2b4',1,'datasketches::kll_sketch::kll_sketch(uint16_t k=kll_constants::DEFAULT_K, const C &amp;comparator=C(), const A &amp;allocator=A())'],['../classdatasketches_1_1kll__sketch.html#af7352580134284b937cb2510d192434e',1,'datasketches::kll_sketch::kll_sketch(const kll_sketch &amp;other)'],['../classdatasketches_1_1kll__sketch.html#acd53c0366552f3211d54e4746e12f1fe',1,'datasketches::kll_sketch::kll_sketch(kll_sketch &amp;&amp;other) noexcept']]]
 ];

@@ -184,7 +184,7 @@ $(function() {
 <div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160; </div>
 <div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
 <div class="line"><a name="l00115"></a><span class="lineno"><a class="line" href="classdatasketches_1_1cpc__sketch__alloc.html#a5b93b5a6538ec1469b935b7d7d7bb283">  115</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="classdatasketches_1_1cpc__sketch__alloc.html#a58c0f2372495a3163616cb0f539395ea">cpc_sketch_alloc&lt;A&gt;::update</a>(uint64_t value) {</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;  <a class="code" href="classdatasketches_1_1cpc__sketch__alloc.html#a5b93b5a6538ec1469b935b7d7d7bb283">update</a>(&amp;value, <span class="keyword">sizeof</span>(value));</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;  update(&amp;value, <span class="keyword">sizeof</span>(value));</div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;}</div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160; </div>
 <div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
@@ -386,7 +386,7 @@ $(function() {
 <div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
 <div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160; </div>
 <div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;  <span class="comment">// Construct the full-sized bit matrix that corresponds to the sketch</span></div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;  vector_u64&lt;A&gt; bit_matrix = build_bit_matrix();</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;  vector_u64 bit_matrix = build_bit_matrix();</div>
 <div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
 <div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;  <span class="comment">// refresh the KXP register on every 8th window shift.</span></div>
 <div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;  <span class="keywordflow">if</span> ((new_offset &amp; 0x7) == 0) refresh_kxp(bit_matrix.data());</div>
@@ -529,7 +529,7 @@ $(function() {
 <div class="line"><a name="l00458"></a><span class="lineno">  458</span>&#160;}</div>
 <div class="line"><a name="l00459"></a><span class="lineno">  459</span>&#160; </div>
 <div class="line"><a name="l00460"></a><span class="lineno">  460</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00461"></a><span class="lineno"><a class="line" href="classdatasketches_1_1cpc__sketch__alloc.html#a17c173149d59ff6376ec74467e040b2e">  461</a></span>&#160;vector_u8&lt;A&gt; <a class="code" href="classdatasketches_1_1cpc__sketch__alloc.html#a1bcdd98ee6e6eb9b501b8dc5de5e8924">cpc_sketch_alloc&lt;A&gt;::serialize</a>(<span class="keywordtype">unsigned</span> header_size_bytes)<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00461"></a><span class="lineno"><a class="line" href="classdatasketches_1_1cpc__sketch__alloc.html#a1c7a57911806d47ee3cebe9fad59f836">  461</a></span>&#160;<span class="keyword">auto</span> <a class="code" href="classdatasketches_1_1cpc__sketch__alloc.html#a1bcdd98ee6e6eb9b501b8dc5de5e8924">cpc_sketch_alloc&lt;A&gt;::serialize</a>(<span class="keywordtype">unsigned</span> header_size_bytes) <span class="keyword">const</span> -&gt; vector_bytes {</div>
 <div class="line"><a name="l00462"></a><span class="lineno">  462</span>&#160;  compressed_state&lt;A&gt; compressed(sliding_window.get_allocator());</div>
 <div class="line"><a name="l00463"></a><span class="lineno">  463</span>&#160;  compressed.table_data_words = 0;</div>
 <div class="line"><a name="l00464"></a><span class="lineno">  464</span>&#160;  compressed.table_num_entries = 0;</div>
@@ -540,7 +540,7 @@ $(function() {
 <div class="line"><a name="l00469"></a><span class="lineno">  469</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">bool</span> has_window = compressed.window_data.size() &gt; 0;</div>
 <div class="line"><a name="l00470"></a><span class="lineno">  470</span>&#160;  <span class="keyword">const</span> uint8_t preamble_ints = get_preamble_ints(num_coupons, has_hip, has_table, has_window);</div>
 <div class="line"><a name="l00471"></a><span class="lineno">  471</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">size_t</span> size = header_size_bytes + (preamble_ints + compressed.table_data_words + compressed.window_data_words) * <span class="keyword">sizeof</span>(uint32_t);</div>
-<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;  vector_u8&lt;A&gt; bytes(size, 0, sliding_window.get_allocator());</div>
+<div class="line"><a name="l00472"></a><span class="lineno">  472</span>&#160;  vector_bytes bytes(size, 0, sliding_window.get_allocator());</div>
 <div class="line"><a name="l00473"></a><span class="lineno">  473</span>&#160;  uint8_t* ptr = bytes.data() + header_size_bytes;</div>
 <div class="line"><a name="l00474"></a><span class="lineno">  474</span>&#160;  ptr += copy_to_mem(preamble_ints, ptr);</div>
 <div class="line"><a name="l00475"></a><span class="lineno">  475</span>&#160;  <span class="keyword">const</span> uint8_t serial_version = SERIAL_VERSION;</div>
@@ -783,143 +783,146 @@ $(function() {
 <div class="line"><a name="l00712"></a><span class="lineno">  712</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
 <div class="line"><a name="l00713"></a><span class="lineno"><a class="line" href="classdatasketches_1_1cpc__sketch__alloc.html#a7fcd4a0f58526cadbf7557c5c7f540dc">  713</a></span>&#160;<span class="keywordtype">size_t</span> <a class="code" href="classdatasketches_1_1cpc__sketch__alloc.html#a7fcd4a0f58526cadbf7557c5c7f540dc">cpc_sketch_alloc&lt;A&gt;::get_max_serialized_size_bytes</a>(uint8_t lg_k) {</div>
 <div class="line"><a name="l00714"></a><span class="lineno">  714</span>&#160;  check_lg_k(lg_k);</div>
-<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;  <span class="keywordflow">if</span> (lg_k &lt;= CPC_EMPIRICAL_SIZE_MAX_LGK) <span class="keywordflow">return</span> CPC_EMPIRICAL_MAX_SIZE_BYTES[lg_k - CPC_MIN_LG_K] + CPC_MAX_PREAMBLE_SIZE_BYTES;</div>
-<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
-<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;  <span class="keywordflow">return</span> (<span class="keywordtype">int</span>) (CPC_EMPIRICAL_MAX_SIZE_FACTOR * k) + CPC_MAX_PREAMBLE_SIZE_BYTES;</div>
-<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;}</div>
-<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160; </div>
-<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160;<span class="keywordtype">void</span> <a class="code" href="classdatasketches_1_1cpc__sketch__alloc.html">cpc_sketch_alloc&lt;A&gt;::check_lg_k</a>(uint8_t lg_k) {</div>
-<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;  <span class="keywordflow">if</span> (lg_k &lt; CPC_MIN_LG_K || lg_k &gt; CPC_MAX_LG_K) {</div>
-<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;lg_k must be &gt;= &quot;</span> + std::to_string(CPC_MIN_LG_K) + <span class="stringliteral">&quot; and &lt;= &quot;</span> + std::to_string(CPC_MAX_LG_K) + <span class="stringliteral">&quot;: &quot;</span> + std::to_string(lg_k));</div>
-<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;  }</div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;}</div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160; </div>
-<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;uint32_t cpc_sketch_alloc&lt;A&gt;::get_num_coupons()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;  <span class="keywordflow">return</span> num_coupons;</div>
-<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;}</div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160; </div>
-<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;<span class="keywordtype">bool</span> cpc_sketch_alloc&lt;A&gt;::validate()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;  vector_u64&lt;A&gt; bit_matrix = build_bit_matrix();</div>
-<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;  <span class="keyword">const</span> uint64_t num_bits_set = count_bits_set_in_matrix(bit_matrix.data(), 1ULL &lt;&lt; lg_k);</div>
-<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;  <span class="keywordflow">return</span> num_bits_set == num_coupons;</div>
-<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;}</div>
-<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160; </div>
-<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;<a class="code" href="classdatasketches_1_1cpc__sketch__alloc.html#a39d6cd5eff1a9af78f58108ba5297b47">cpc_sketch_alloc&lt;A&gt;::cpc_sketch_alloc</a>(uint8_t lg_k, uint32_t num_coupons, uint8_t first_interesting_column,</div>
-<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160;    u32_table&lt;A&gt;&amp;&amp; table, vector_u8&lt;A&gt;&amp;&amp; window, <span class="keywordtype">bool</span> has_hip, <span class="keywordtype">double</span> kxp, <span class="keywordtype">double</span> hip_est_accum, uint64_t seed):</div>
-<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;lg_k(lg_k),</div>
-<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;seed(seed),</div>
-<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;was_merged(!has_hip),</div>
-<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;num_coupons(num_coupons),</div>
-<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;surprising_value_table(std::move(table)),</div>
-<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;sliding_window(std::move(window)),</div>
-<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;window_offset(determine_correct_offset(lg_k, num_coupons)),</div>
-<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;first_interesting_column(first_interesting_column),</div>
-<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;kxp(kxp),</div>
-<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;hip_est_accum(hip_est_accum)</div>
-<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;{}</div>
-<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160; </div>
-<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;uint8_t cpc_sketch_alloc&lt;A&gt;::get_preamble_ints(uint32_t num_coupons, <span class="keywordtype">bool</span> has_hip, <span class="keywordtype">bool</span> has_table, <span class="keywordtype">bool</span> has_window) {</div>
-<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160;  uint8_t preamble_ints = 2;</div>
-<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;  <span class="keywordflow">if</span> (num_coupons &gt; 0) {</div>
-<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;    preamble_ints += 1; <span class="comment">// number of coupons</span></div>
-<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;    <span class="keywordflow">if</span> (has_hip) {</div>
-<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;      preamble_ints += 4; <span class="comment">// HIP</span></div>
-<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;    }</div>
-<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;    <span class="keywordflow">if</span> (has_table) {</div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;      preamble_ints += 1; <span class="comment">// table data length</span></div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;      <span class="comment">// number of values (if there is no window it is the same as number of coupons)</span></div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;      <span class="keywordflow">if</span> (has_window) {</div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;        preamble_ints += 1;</div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;      }</div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;    }</div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;    <span class="keywordflow">if</span> (has_window) {</div>
-<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;      preamble_ints += 1; <span class="comment">// window length</span></div>
+<div class="line"><a name="l00715"></a><span class="lineno">  715</span>&#160;  <span class="keywordflow">if</span> (lg_k &lt;= CPC_EMPIRICAL_SIZE_MAX_LGK) {</div>
+<div class="line"><a name="l00716"></a><span class="lineno">  716</span>&#160;    <span class="keywordflow">return</span> CPC_EMPIRICAL_MAX_SIZE_BYTES[lg_k - <a class="code" href="namespacedatasketches_1_1cpc__constants.html#a80c5dfefaf69318c0894ec34c34d0987">cpc_constants::MIN_LG_K</a>] + CPC_MAX_PREAMBLE_SIZE_BYTES;</div>
+<div class="line"><a name="l00717"></a><span class="lineno">  717</span>&#160;  }</div>
+<div class="line"><a name="l00718"></a><span class="lineno">  718</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
+<div class="line"><a name="l00719"></a><span class="lineno">  719</span>&#160;  <span class="keywordflow">return</span> (<span class="keywordtype">int</span>) (CPC_EMPIRICAL_MAX_SIZE_FACTOR * k) + CPC_MAX_PREAMBLE_SIZE_BYTES;</div>
+<div class="line"><a name="l00720"></a><span class="lineno">  720</span>&#160;}</div>
+<div class="line"><a name="l00721"></a><span class="lineno">  721</span>&#160; </div>
+<div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;<span class="keywordtype">void</span> <a class="code" href="classdatasketches_1_1cpc__sketch__alloc.html">cpc_sketch_alloc&lt;A&gt;::check_lg_k</a>(uint8_t lg_k) {</div>
+<div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;  <span class="keywordflow">if</span> (lg_k &lt; cpc_constants::MIN_LG_K || lg_k &gt; <a class="code" href="namespacedatasketches_1_1cpc__constants.html#ad15c7a6b3af91806e0a9743d27943d49">cpc_constants::MAX_LG_K</a>) {</div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;lg_k must be &gt;= &quot;</span> + std::to_string(<a class="code" href="namespacedatasketches_1_1cpc__constants.html#a80c5dfefaf69318c0894ec34c34d0987">cpc_constants::MIN_LG_K</a>) + <span class="stringliteral">&quot; and &lt;= &quot;</span></div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;        + std::to_string(<a class="code" href="namespacedatasketches_1_1cpc__constants.html#ad15c7a6b3af91806e0a9743d27943d49">cpc_constants::MAX_LG_K</a>) + <span class="stringliteral">&quot;: &quot;</span> + std::to_string(lg_k));</div>
+<div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;  }</div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;}</div>
+<div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160; </div>
+<div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;uint32_t cpc_sketch_alloc&lt;A&gt;::get_num_coupons()<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;  <span class="keywordflow">return</span> num_coupons;</div>
+<div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160;}</div>
+<div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160; </div>
+<div class="line"><a name="l00735"></a><span class="lineno">  735</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00736"></a><span class="lineno">  736</span>&#160;<span class="keywordtype">bool</span> cpc_sketch_alloc&lt;A&gt;::validate()<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00737"></a><span class="lineno">  737</span>&#160;  vector_u64 bit_matrix = build_bit_matrix();</div>
+<div class="line"><a name="l00738"></a><span class="lineno">  738</span>&#160;  <span class="keyword">const</span> uint64_t num_bits_set = count_bits_set_in_matrix(bit_matrix.data(), 1ULL &lt;&lt; lg_k);</div>
+<div class="line"><a name="l00739"></a><span class="lineno">  739</span>&#160;  <span class="keywordflow">return</span> num_bits_set == num_coupons;</div>
+<div class="line"><a name="l00740"></a><span class="lineno">  740</span>&#160;}</div>
+<div class="line"><a name="l00741"></a><span class="lineno">  741</span>&#160; </div>
+<div class="line"><a name="l00742"></a><span class="lineno">  742</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00743"></a><span class="lineno">  743</span>&#160;<a class="code" href="classdatasketches_1_1cpc__sketch__alloc.html#a39d6cd5eff1a9af78f58108ba5297b47">cpc_sketch_alloc&lt;A&gt;::cpc_sketch_alloc</a>(uint8_t lg_k, uint32_t num_coupons, uint8_t first_interesting_column,</div>
+<div class="line"><a name="l00744"></a><span class="lineno">  744</span>&#160;    u32_table&lt;A&gt;&amp;&amp; table, vector_bytes&amp;&amp; window, <span class="keywordtype">bool</span> has_hip, <span class="keywordtype">double</span> kxp, <span class="keywordtype">double</span> hip_est_accum, uint64_t seed):</div>
+<div class="line"><a name="l00745"></a><span class="lineno">  745</span>&#160;lg_k(lg_k),</div>
+<div class="line"><a name="l00746"></a><span class="lineno">  746</span>&#160;seed(seed),</div>
+<div class="line"><a name="l00747"></a><span class="lineno">  747</span>&#160;was_merged(!has_hip),</div>
+<div class="line"><a name="l00748"></a><span class="lineno">  748</span>&#160;num_coupons(num_coupons),</div>
+<div class="line"><a name="l00749"></a><span class="lineno">  749</span>&#160;surprising_value_table(std::move(table)),</div>
+<div class="line"><a name="l00750"></a><span class="lineno">  750</span>&#160;sliding_window(std::move(window)),</div>
+<div class="line"><a name="l00751"></a><span class="lineno">  751</span>&#160;window_offset(determine_correct_offset(lg_k, num_coupons)),</div>
+<div class="line"><a name="l00752"></a><span class="lineno">  752</span>&#160;first_interesting_column(first_interesting_column),</div>
+<div class="line"><a name="l00753"></a><span class="lineno">  753</span>&#160;kxp(kxp),</div>
+<div class="line"><a name="l00754"></a><span class="lineno">  754</span>&#160;hip_est_accum(hip_est_accum)</div>
+<div class="line"><a name="l00755"></a><span class="lineno">  755</span>&#160;{}</div>
+<div class="line"><a name="l00756"></a><span class="lineno">  756</span>&#160; </div>
+<div class="line"><a name="l00757"></a><span class="lineno">  757</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00758"></a><span class="lineno">  758</span>&#160;uint8_t cpc_sketch_alloc&lt;A&gt;::get_preamble_ints(uint32_t num_coupons, <span class="keywordtype">bool</span> has_hip, <span class="keywordtype">bool</span> has_table, <span class="keywordtype">bool</span> has_window) {</div>
+<div class="line"><a name="l00759"></a><span class="lineno">  759</span>&#160;  uint8_t preamble_ints = 2;</div>
+<div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;  <span class="keywordflow">if</span> (num_coupons &gt; 0) {</div>
+<div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;    preamble_ints += 1; <span class="comment">// number of coupons</span></div>
+<div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160;    <span class="keywordflow">if</span> (has_hip) {</div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;      preamble_ints += 4; <span class="comment">// HIP</span></div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;    }</div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;    <span class="keywordflow">if</span> (has_table) {</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;      preamble_ints += 1; <span class="comment">// table data length</span></div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;      <span class="comment">// number of values (if there is no window it is the same as number of coupons)</span></div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;      <span class="keywordflow">if</span> (has_window) {</div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;        preamble_ints += 1;</div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;      }</div>
 <div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;    }</div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;  }</div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;  <span class="keywordflow">return</span> preamble_ints;</div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;}</div>
-<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160; </div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;<span class="keyword">typename</span> cpc_sketch_alloc&lt;A&gt;::flavor cpc_sketch_alloc&lt;A&gt;::determine_flavor()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;  <span class="keywordflow">return</span> determine_flavor(lg_k, num_coupons);</div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;}</div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160; </div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;<span class="keyword">typename</span> cpc_sketch_alloc&lt;A&gt;::flavor cpc_sketch_alloc&lt;A&gt;::determine_flavor(uint8_t lg_k, uint64_t c) {</div>
-<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
-<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;  <span class="keyword">const</span> uint64_t c2 = c &lt;&lt; 1;</div>
-<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;  <span class="keyword">const</span> uint64_t c8 = c &lt;&lt; 3;</div>
-<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;  <span class="keyword">const</span> uint64_t c32 = c &lt;&lt; 5;</div>
-<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;  <span class="keywordflow">if</span> (c == 0)      <span class="keywordflow">return</span> EMPTY;    <span class="comment">//    0  == C &lt;    1</span></div>
-<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;  <span class="keywordflow">if</span> (c32 &lt; 3 * k) <span class="keywordflow">return</span> SPARSE;   <span class="comment">//    1  &lt;= C &lt;   3K/32</span></div>
-<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;  <span class="keywordflow">if</span> (c2 &lt; k)      <span class="keywordflow">return</span> HYBRID;   <span class="comment">// 3K/32 &lt;= C &lt;   K/2</span></div>
-<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;  <span class="keywordflow">if</span> (c8 &lt; 27 * k) <span class="keywordflow">return</span> PINNED;   <span class="comment">//   K/2 &lt;= C &lt; 27K/8</span></div>
-<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;  <span class="keywordflow">else</span>             <span class="keywordflow">return</span> SLIDING;  <span class="comment">// 27K/8 &lt;= C</span></div>
-<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;}</div>
-<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160; </div>
-<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;uint8_t cpc_sketch_alloc&lt;A&gt;::determine_correct_offset(uint8_t lg_k, uint64_t c) {</div>
-<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
-<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;  <span class="keyword">const</span> int64_t tmp = <span class="keyword">static_cast&lt;</span>int64_t<span class="keyword">&gt;</span>(c &lt;&lt; 3) - <span class="keyword">static_cast&lt;</span>int64_t<span class="keyword">&gt;</span>(19 * k); <span class="comment">// 8C - 19K</span></div>
-<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;  <span class="keywordflow">if</span> (tmp &lt; 0) <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;  <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>uint8_t<span class="keyword">&gt;</span>(tmp &gt;&gt; (lg_k + 3)); <span class="comment">// tmp / 8K</span></div>
-<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;}</div>
-<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160; </div>
-<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;vector_u64&lt;A&gt; cpc_sketch_alloc&lt;A&gt;::build_bit_matrix()<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
-<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;  <span class="keywordflow">if</span> (window_offset &gt; 56) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;offset &gt; 56&quot;</span>);</div>
-<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160; </div>
-<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;  <span class="comment">// Fill the matrix with default rows in which the &quot;early zone&quot; is filled with ones.</span></div>
-<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;  <span class="comment">// This is essential for the routine&#39;s O(k) time cost (as opposed to O(C)).</span></div>
-<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160;  <span class="keyword">const</span> uint64_t default_row = (<span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(1) &lt;&lt; window_offset) - 1;</div>
-<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;  vector_u64&lt;A&gt; matrix(k, default_row, sliding_window.get_allocator());</div>
-<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160; </div>
-<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;  <span class="keywordflow">if</span> (num_coupons == 0) <span class="keywordflow">return</span> matrix;</div>
-<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160; </div>
-<div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160;  <span class="keywordflow">if</span> (sliding_window.size() &gt; 0) { <span class="comment">// In other words, we are in window mode, not sparse mode</span></div>
-<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; k; i++) { <span class="comment">// set the window bits, trusting the sketch&#39;s current offset</span></div>
-<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;      matrix[i] |= <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(sliding_window[i]) &lt;&lt; window_offset;</div>
-<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;    }</div>
-<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;  }</div>
-<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160; </div>
-<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;  <span class="keyword">const</span> uint32_t* slots = surprising_value_table.get_slots();</div>
-<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;  <span class="keyword">const</span> uint32_t num_slots = 1 &lt;&lt; surprising_value_table.get_lg_size();</div>
-<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_slots; i++) {</div>
-<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;    <span class="keyword">const</span> uint32_t row_col = slots[i];</div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;    <span class="keywordflow">if</span> (row_col != UINT32_MAX) {</div>
-<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;      <span class="keyword">const</span> uint8_t col = row_col &amp; 63;</div>
-<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;      <span class="keyword">const</span> uint32_t row = row_col &gt;&gt; 6;</div>
-<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;      <span class="comment">// Flip the specified matrix bit from its default value.</span></div>
-<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;      <span class="comment">// In the &quot;early&quot; zone the bit changes from 1 to 0.</span></div>
-<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;      <span class="comment">// In the &quot;late&quot; zone the bit changes from 0 to 1.</span></div>
-<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;      matrix[row] ^= <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(1) &lt;&lt; col;</div>
-<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;    }</div>
-<div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;  }</div>
-<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;  <span class="keywordflow">return</span> matrix;</div>
-<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160;}</div>
-<div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160; </div>
-<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160;<span class="keywordtype">void</span> cpc_sketch_alloc&lt;A&gt;::write_hip(std::ostream&amp; os)<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;  write(os, kxp);</div>
-<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;  write(os, hip_est_accum);</div>
-<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;}</div>
-<div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160; </div>
-<div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160;<span class="keywordtype">size_t</span> cpc_sketch_alloc&lt;A&gt;::copy_hip_to_mem(<span class="keywordtype">void</span>* dst)<span class="keyword"> const </span>{</div>
-<div class="line"><a name="l00844"></a><span class="lineno">  844</span>&#160;  memcpy(dst, &amp;kxp, <span class="keyword">sizeof</span>(kxp));</div>
-<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;  memcpy(<span class="keyword">static_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(dst) + <span class="keyword">sizeof</span>(kxp), &amp;hip_est_accum, <span class="keyword">sizeof</span>(hip_est_accum));</div>
-<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;  <span class="keywordflow">return</span> <span class="keyword">sizeof</span>(kxp) + <span class="keyword">sizeof</span>(hip_est_accum);</div>
-<div class="line"><a name="l00847"></a><span class="lineno">  847</span>&#160;}</div>
-<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160; </div>
-<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
-<div class="line"><a name="l00850"></a><span class="lineno">  850</span>&#160; </div>
-<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;    <span class="keywordflow">if</span> (has_window) {</div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;      preamble_ints += 1; <span class="comment">// window length</span></div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;    }</div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;  }</div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;  <span class="keywordflow">return</span> preamble_ints;</div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;}</div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160; </div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;<span class="keyword">typename</span> cpc_sketch_alloc&lt;A&gt;::flavor cpc_sketch_alloc&lt;A&gt;::determine_flavor()<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;  <span class="keywordflow">return</span> determine_flavor(lg_k, num_coupons);</div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;}</div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160; </div>
+<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;<span class="keyword">typename</span> cpc_sketch_alloc&lt;A&gt;::flavor cpc_sketch_alloc&lt;A&gt;::determine_flavor(uint8_t lg_k, uint64_t c) {</div>
+<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
+<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;  <span class="keyword">const</span> uint64_t c2 = c &lt;&lt; 1;</div>
+<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;  <span class="keyword">const</span> uint64_t c8 = c &lt;&lt; 3;</div>
+<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;  <span class="keyword">const</span> uint64_t c32 = c &lt;&lt; 5;</div>
+<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;  <span class="keywordflow">if</span> (c == 0)      <span class="keywordflow">return</span> EMPTY;    <span class="comment">//    0  == C &lt;    1</span></div>
+<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;  <span class="keywordflow">if</span> (c32 &lt; 3 * k) <span class="keywordflow">return</span> SPARSE;   <span class="comment">//    1  &lt;= C &lt;   3K/32</span></div>
+<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;  <span class="keywordflow">if</span> (c2 &lt; k)      <span class="keywordflow">return</span> HYBRID;   <span class="comment">// 3K/32 &lt;= C &lt;   K/2</span></div>
+<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;  <span class="keywordflow">if</span> (c8 &lt; 27 * k) <span class="keywordflow">return</span> PINNED;   <span class="comment">//   K/2 &lt;= C &lt; 27K/8</span></div>
+<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;  <span class="keywordflow">else</span>             <span class="keywordflow">return</span> SLIDING;  <span class="comment">// 27K/8 &lt;= C</span></div>
+<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;}</div>
+<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160; </div>
+<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;uint8_t cpc_sketch_alloc&lt;A&gt;::determine_correct_offset(uint8_t lg_k, uint64_t c) {</div>
+<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
+<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;  <span class="keyword">const</span> int64_t tmp = <span class="keyword">static_cast&lt;</span>int64_t<span class="keyword">&gt;</span>(c &lt;&lt; 3) - <span class="keyword">static_cast&lt;</span>int64_t<span class="keyword">&gt;</span>(19 * k); <span class="comment">// 8C - 19K</span></div>
+<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;  <span class="keywordflow">if</span> (tmp &lt; 0) <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;  <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>uint8_t<span class="keyword">&gt;</span>(tmp &gt;&gt; (lg_k + 3)); <span class="comment">// tmp / 8K</span></div>
+<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;}</div>
+<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160; </div>
+<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;<span class="keyword">auto</span> cpc_sketch_alloc&lt;A&gt;::build_bit_matrix() const -&gt; vector_u64 {</div>
+<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
+<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;  <span class="keywordflow">if</span> (window_offset &gt; 56) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;offset &gt; 56&quot;</span>);</div>
+<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160; </div>
+<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;  <span class="comment">// Fill the matrix with default rows in which the &quot;early zone&quot; is filled with ones.</span></div>
+<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160;  <span class="comment">// This is essential for the routine&#39;s O(k) time cost (as opposed to O(C)).</span></div>
+<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;  <span class="keyword">const</span> uint64_t default_row = (<span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(1) &lt;&lt; window_offset) - 1;</div>
+<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;  vector_u64 matrix(k, default_row, sliding_window.get_allocator());</div>
+<div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160; </div>
+<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;  <span class="keywordflow">if</span> (num_coupons == 0) <span class="keywordflow">return</span> matrix;</div>
+<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160; </div>
+<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;  <span class="keywordflow">if</span> (sliding_window.size() &gt; 0) { <span class="comment">// In other words, we are in window mode, not sparse mode</span></div>
+<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; k; i++) { <span class="comment">// set the window bits, trusting the sketch&#39;s current offset</span></div>
+<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;      matrix[i] |= <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(sliding_window[i]) &lt;&lt; window_offset;</div>
+<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;    }</div>
+<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;  }</div>
+<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160; </div>
+<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;  <span class="keyword">const</span> uint32_t* slots = surprising_value_table.get_slots();</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;  <span class="keyword">const</span> uint32_t num_slots = 1 &lt;&lt; surprising_value_table.get_lg_size();</div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_slots; i++) {</div>
+<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;    <span class="keyword">const</span> uint32_t row_col = slots[i];</div>
+<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;    <span class="keywordflow">if</span> (row_col != UINT32_MAX) {</div>
+<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;      <span class="keyword">const</span> uint8_t col = row_col &amp; 63;</div>
+<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;      <span class="keyword">const</span> uint32_t row = row_col &gt;&gt; 6;</div>
+<div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160;      <span class="comment">// Flip the specified matrix bit from its default value.</span></div>
+<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;      <span class="comment">// In the &quot;early&quot; zone the bit changes from 1 to 0.</span></div>
+<div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;      <span class="comment">// In the &quot;late&quot; zone the bit changes from 0 to 1.</span></div>
+<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;      matrix[row] ^= <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(1) &lt;&lt; col;</div>
+<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160;    }</div>
+<div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;  }</div>
+<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;  <span class="keywordflow">return</span> matrix;</div>
+<div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160;}</div>
+<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160; </div>
+<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;<span class="keywordtype">void</span> cpc_sketch_alloc&lt;A&gt;::write_hip(std::ostream&amp; os)<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;  write(os, kxp);</div>
+<div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;  write(os, hip_est_accum);</div>
+<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160;}</div>
+<div class="line"><a name="l00844"></a><span class="lineno">  844</span>&#160; </div>
+<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;<span class="keywordtype">size_t</span> cpc_sketch_alloc&lt;A&gt;::copy_hip_to_mem(<span class="keywordtype">void</span>* dst)<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00847"></a><span class="lineno">  847</span>&#160;  memcpy(dst, &amp;kxp, <span class="keyword">sizeof</span>(kxp));</div>
+<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160;  memcpy(<span class="keyword">static_cast&lt;</span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(dst) + <span class="keyword">sizeof</span>(kxp), &amp;hip_est_accum, <span class="keyword">sizeof</span>(hip_est_accum));</div>
+<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;  <span class="keywordflow">return</span> <span class="keyword">sizeof</span>(kxp) + <span class="keyword">sizeof</span>(hip_est_accum);</div>
+<div class="line"><a name="l00850"></a><span class="lineno">  850</span>&#160;}</div>
+<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160; </div>
+<div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160; </div>
+<div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html">datasketches::cpc_sketch_alloc</a></div><div class="ttdoc">High performance C++ implementation of Compressed Probabilistic Counting (CPC) Sketch.</div><div class="ttdef"><b>Definition:</b> cpc_sketch.hpp:64</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_a1bcdd98ee6e6eb9b501b8dc5de5e8924"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#a1bcdd98ee6e6eb9b501b8dc5de5e8924">datasketches::cpc_sketch_alloc::serialize</a></div><div class="ttdeci">void serialize(std::ostream &amp;os) const</div><div class="ttdoc">This method serializes the sketch into a given stream in a binary form.</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:408</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_a2afb71f2ef2d82290be4c8eafc08f2a2"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#a2afb71f2ef2d82290be4c8eafc08f2a2">datasketches::cpc_sketch_alloc::get_estimate</a></div><div class="ttdeci">double get_estimate() const</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:75</div></div>
@@ -927,13 +930,14 @@ $(function() {
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_a54ceaffd48627a356af3f72a7cc1d4ae"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#a54ceaffd48627a356af3f72a7cc1d4ae">datasketches::cpc_sketch_alloc::deserialize</a></div><div class="ttdeci">static cpc_sketch_alloc&lt; A &gt; deserialize(std::istream &amp;is, uint64_t seed=DEFAULT_SEED, const A &amp;allocator=A())</div><div class="ttdoc">This method deserializes a sketch from a given stream.</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:519</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_a58c0f2372495a3163616cb0f539395ea"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#a58c0f2372495a3163616cb0f539395ea">datasketches::cpc_sketch_alloc::update</a></div><div class="ttdeci">void update(const std::string &amp;value)</div><div class="ttdoc">Update this sketch with a given string.</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:109</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_a5a2b7a58dc85678d08752945ff655362"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#a5a2b7a58dc85678d08752945ff655362">datasketches::cpc_sketch_alloc::is_empty</a></div><div class="ttdeci">bool is_empty() const</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:70</div></div>
-<div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_a5b93b5a6538ec1469b935b7d7d7bb283"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#a5b93b5a6538ec1469b935b7d7d7bb283">datasketches::cpc_sketch_alloc::update</a></div><div class="ttdeci">void update(uint64_t value)</div><div class="ttdoc">Update this sketch with a given unsigned 64-bit integer.</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:115</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_a7fcd4a0f58526cadbf7557c5c7f540dc"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#a7fcd4a0f58526cadbf7557c5c7f540dc">datasketches::cpc_sketch_alloc::get_max_serialized_size_bytes</a></div><div class="ttdeci">static size_t get_max_serialized_size_bytes(uint8_t lg_k)</div><div class="ttdoc">The actual size of a compressed CPC sketch has a small random variance, but the following empirically...</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:713</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_a8f8b2691781d682411a6de23996a8be2"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#a8f8b2691781d682411a6de23996a8be2">datasketches::cpc_sketch_alloc::get_lg_k</a></div><div class="ttdeci">uint8_t get_lg_k() const</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:65</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_a9d85cf47c4ecd0580ec623c42006dd1b"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#a9d85cf47c4ecd0580ec623c42006dd1b">datasketches::cpc_sketch_alloc::get_allocator</a></div><div class="ttdeci">A get_allocator() const</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:60</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_ab43d2075a173e631d757b07da971fe3d"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#ab43d2075a173e631d757b07da971fe3d">datasketches::cpc_sketch_alloc::get_lower_bound</a></div><div class="ttdeci">double get_lower_bound(unsigned kappa) const</div><div class="ttdoc">Returns the approximate lower error bound given a parameter kappa (1, 2 or 3).</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:91</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_adbfa99fa21d0f4acb1ba00ced8d8d858"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#adbfa99fa21d0f4acb1ba00ced8d8d858">datasketches::cpc_sketch_alloc::get_upper_bound</a></div><div class="ttdeci">double get_upper_bound(unsigned kappa) const</div><div class="ttdoc">Returns the approximate upper error bound given a parameter kappa (1, 2 or 3).</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:100</div></div>
 <div class="ttc" id="aclassdatasketches_1_1cpc__sketch__alloc_html_aed372241c10ffd041bee85602edb199a"><div class="ttname"><a href="classdatasketches_1_1cpc__sketch__alloc.html#aed372241c10ffd041bee85602edb199a">datasketches::cpc_sketch_alloc::to_string</a></div><div class="ttdeci">string&lt; A &gt; to_string() const</div><div class="ttdoc">Returns a human-readable summary of this sketch.</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:383</div></div>
+<div class="ttc" id="anamespacedatasketches_1_1cpc__constants_html_a80c5dfefaf69318c0894ec34c34d0987"><div class="ttname"><a href="namespacedatasketches_1_1cpc__constants.html#a80c5dfefaf69318c0894ec34c34d0987">datasketches::cpc_constants::MIN_LG_K</a></div><div class="ttdeci">const uint8_t MIN_LG_K</div><div class="ttdoc">min log2 of K</div><div class="ttdef"><b>Definition:</b> cpc_common.hpp:32</div></div>
+<div class="ttc" id="anamespacedatasketches_1_1cpc__constants_html_ad15c7a6b3af91806e0a9743d27943d49"><div class="ttname"><a href="namespacedatasketches_1_1cpc__constants.html#ad15c7a6b3af91806e0a9743d27943d49">datasketches::cpc_constants::MAX_LG_K</a></div><div class="ttdeci">const uint8_t MAX_LG_K</div><div class="ttdoc">max log2 of K</div><div class="ttdef"><b>Definition:</b> cpc_common.hpp:34</div></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition:</b> binomial_bounds.hpp:38</div></div>
 <div class="ttc" id="anamespacedatasketches_html_a3a7ac5efb6156547a8da91e937a06b07"><div class="ttname"><a href="namespacedatasketches.html#a3a7ac5efb6156547a8da91e937a06b07">datasketches::cpc_init</a></div><div class="ttdeci">void cpc_init()</div><div class="ttdoc">Allocation and initialization of global decompression (decoding) tables.</div><div class="ttdef"><b>Definition:</b> cpc_sketch_impl.hpp:39</div></div>
 </div><!-- fragment --></div><!-- contents -->

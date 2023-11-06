@@ -128,8 +128,8 @@ $(function() {
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;  <span class="comment">// consistent way of initializing theta from p</span></div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  <span class="comment">// avoids multiplication if p == 1 since it might not yield MAX_THETA exactly</span></div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;  <span class="keyword">static</span> uint64_t starting_theta_from_p(<span class="keywordtype">float</span> p) {</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">if</span> (p &lt; 1) <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(theta_constants::MAX_THETA * p);</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordflow">return</span> theta_constants::MAX_THETA;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <span class="keywordflow">if</span> (p &lt; 1) <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(<a class="code" href="namespacedatasketches_1_1theta__constants.html#ae3243c6bd90c8d8577c32b86100d97ad">theta_constants::MAX_THETA</a> * p);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <span class="keywordflow">return</span> <a class="code" href="namespacedatasketches_1_1theta__constants.html#ae3243c6bd90c8d8577c32b86100d97ad">theta_constants::MAX_THETA</a>;</div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;  }</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;  <span class="keyword">static</span> uint8_t starting_sub_multiple(uint8_t lg_tgt, uint8_t lg_min, uint8_t lg_rf) {</div>
@@ -140,6 +140,7 @@ $(function() {
 <div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
 <div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160; </div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="ttc" id="anamespacedatasketches_1_1theta__constants_html_ae3243c6bd90c8d8577c32b86100d97ad"><div class="ttname"><a href="namespacedatasketches_1_1theta__constants.html#ae3243c6bd90c8d8577c32b86100d97ad">datasketches::theta_constants::MAX_THETA</a></div><div class="ttdeci">const uint64_t MAX_THETA</div><div class="ttdoc">max theta - signed max for compatibility with Java</div><div class="ttdef"><b>Definition:</b> theta_constants.hpp:36</div></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition:</b> binomial_bounds.hpp:38</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

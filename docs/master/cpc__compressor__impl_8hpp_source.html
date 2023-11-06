@@ -254,7 +254,7 @@ $(function() {
 <div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
 <div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;<span class="keywordtype">void</span> cpc_compressor&lt;A&gt;::compress_sparse_flavor(<span class="keyword">const</span> cpc_sketch_alloc&lt;A&gt;&amp; source, compressed_state&lt;A&gt;&amp; result)<span class="keyword"> const </span>{</div>
 <div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;  <span class="keywordflow">if</span> (source.sliding_window.size() &gt; 0) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;unexpected sliding window&quot;</span>);</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;  vector_u32&lt;A&gt; pairs = source.surprising_value_table.unwrapping_get_items();</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;  vector_u32 pairs = source.surprising_value_table.unwrapping_get_items();</div>
 <div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;  u32_table&lt;A&gt;::introspective_insertion_sort(pairs.data(), 0, pairs.size());</div>
 <div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;  compress_surprising_values(pairs, source.get_lg_k(), result);</div>
 <div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;}</div>
@@ -263,7 +263,7 @@ $(function() {
 <div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;<span class="keywordtype">void</span> cpc_compressor&lt;A&gt;::uncompress_sparse_flavor(<span class="keyword">const</span> compressed_state&lt;A&gt;&amp; source, uncompressed_state&lt;A&gt;&amp; target, uint8_t lg_k)<span class="keyword"> const </span>{</div>
 <div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;  <span class="keywordflow">if</span> (source.window_data.size() &gt; 0) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;unexpected sliding window&quot;</span>);</div>
 <div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;  <span class="keywordflow">if</span> (source.table_data.size() == 0) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;table is expected&quot;</span>);</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;  vector_u32&lt;A&gt; pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, source.table_num_entries,</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;  vector_u32 pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, source.table_num_entries,</div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;      lg_k, source.table_data.get_allocator());</div>
 <div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;  target.table = u32_table&lt;A&gt;::make_from_pairs(pairs.data(), source.table_num_entries, lg_k, pairs.get_allocator());</div>
 <div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;}</div>
@@ -275,12 +275,12 @@ $(function() {
 <div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;  <span class="keywordflow">if</span> (source.sliding_window.size() == 0) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;no sliding window&quot;</span>);</div>
 <div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;  <span class="keywordflow">if</span> (source.window_offset != 0) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;window_offset != 0&quot;</span>);</div>
 <div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; source.get_lg_k();</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;  vector_u32&lt;A&gt; pairs_from_table = source.surprising_value_table.unwrapping_get_items();</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;  vector_u32 pairs_from_table = source.surprising_value_table.unwrapping_get_items();</div>
 <div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;  <span class="keyword">const</span> uint32_t num_pairs_from_table = <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(pairs_from_table.size());</div>
 <div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;  <span class="keywordflow">if</span> (num_pairs_from_table &gt; 0) u32_table&lt;A&gt;::introspective_insertion_sort(pairs_from_table.data(), 0, num_pairs_from_table);</div>
 <div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;  <span class="keyword">const</span> uint32_t num_pairs_from_window = source.get_num_coupons() - num_pairs_from_table; <span class="comment">// because the window offset is zero</span></div>
 <div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160; </div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;  vector_u32&lt;A&gt; all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, num_pairs_from_table, source.get_allocator());</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;  vector_u32 all_pairs = tricky_get_pairs_from_window(source.sliding_window.data(), k, num_pairs_from_window, num_pairs_from_table, source.get_allocator());</div>
 <div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160; </div>
 <div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;  u32_table&lt;A&gt;::merge(</div>
 <div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;      pairs_from_table.data(), 0, pairs_from_table.size(),</div>
@@ -295,7 +295,7 @@ $(function() {
 <div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;<span class="keywordtype">void</span> cpc_compressor&lt;A&gt;::uncompress_hybrid_flavor(<span class="keyword">const</span> compressed_state&lt;A&gt;&amp; source, uncompressed_state&lt;A&gt;&amp; target, uint8_t lg_k)<span class="keyword"> const </span>{</div>
 <div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;  <span class="keywordflow">if</span> (source.window_data.size() &gt; 0) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;window is not expected&quot;</span>);</div>
 <div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;  <span class="keywordflow">if</span> (source.table_data.size() == 0) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;table is expected&quot;</span>);</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;  vector_u32&lt;A&gt; pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, source.table_num_entries,</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;  vector_u32 pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, source.table_num_entries,</div>
 <div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;      lg_k, source.table_data.get_allocator());</div>
 <div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;  <span class="comment">// In the hybrid flavor, some of these pairs actually</span></div>
@@ -321,7 +321,7 @@ $(function() {
 <div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
 <div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;<span class="keywordtype">void</span> cpc_compressor&lt;A&gt;::compress_pinned_flavor(<span class="keyword">const</span> cpc_sketch_alloc&lt;A&gt;&amp; source, compressed_state&lt;A&gt;&amp; result)<span class="keyword"> const </span>{</div>
 <div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;  compress_sliding_window(source.sliding_window.data(), source.get_lg_k(), source.get_num_coupons(), result);</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;  vector_u32&lt;A&gt; pairs = source.surprising_value_table.unwrapping_get_items();</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;  vector_u32 pairs = source.surprising_value_table.unwrapping_get_items();</div>
 <div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;  <span class="keywordflow">if</span> (pairs.size() &gt; 0) {</div>
 <div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;    <span class="comment">// Here we subtract 8 from the column indices. Because they are stored in the low 6 bits</span></div>
 <div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;    <span class="comment">// of each row_col pair, and because no column index is less than 8 for a &quot;Pinned&quot; sketch,</span></div>
@@ -348,7 +348,7 @@ $(function() {
 <div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    target.table = u32_table&lt;A&gt;(2, 6 + lg_k, source.table_data.get_allocator());</div>
 <div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="keywordflow">if</span> (source.table_data.size() == 0) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;table is expected&quot;</span>);</div>
-<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    vector_u32&lt;A&gt; pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, num_pairs,</div>
+<div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160;    vector_u32 pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, num_pairs,</div>
 <div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;        lg_k, source.table_data.get_allocator());</div>
 <div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    <span class="comment">// undo the compressor&#39;s 8-column shift</span></div>
 <div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keywordflow">for</span> (uint32_t i = 0; i &lt; num_pairs; i++) {</div>
@@ -362,7 +362,7 @@ $(function() {
 <div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
 <div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;<span class="keywordtype">void</span> cpc_compressor&lt;A&gt;::compress_sliding_flavor(<span class="keyword">const</span> cpc_sketch_alloc&lt;A&gt;&amp; source, compressed_state&lt;A&gt;&amp; result)<span class="keyword"> const </span>{</div>
 <div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;  compress_sliding_window(source.sliding_window.data(), source.get_lg_k(), source.get_num_coupons(), result);</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;  vector_u32&lt;A&gt; pairs = source.surprising_value_table.unwrapping_get_items();</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;  vector_u32 pairs = source.surprising_value_table.unwrapping_get_items();</div>
 <div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;  <span class="keywordflow">if</span> (pairs.size() &gt; 0) {</div>
 <div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;    <span class="comment">// Here we apply a complicated transformation to the column indices, which</span></div>
 <div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;    <span class="comment">// changes the implied ordering of the pairs, so we must do it before sorting.</span></div>
@@ -401,7 +401,7 @@ $(function() {
 <div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;    target.table = u32_table&lt;A&gt;(2, 6 + lg_k, source.table_data.get_allocator());</div>
 <div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;    <span class="keywordflow">if</span> (source.table_data.size() == 0) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;table is expected&quot;</span>);</div>
-<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    vector_u32&lt;A&gt; pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, num_pairs,</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;    vector_u32 pairs = uncompress_surprising_values(source.table_data.data(), source.table_data_words, num_pairs,</div>
 <div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;        lg_k, source.table_data.get_allocator());</div>
 <div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160; </div>
 <div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;    <span class="keyword">const</span> uint8_t pseudo_phase = determine_pseudo_phase(lg_k, num_coupons);</div>
@@ -427,7 +427,7 @@ $(function() {
 <div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;}</div>
 <div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160; </div>
 <div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;<span class="keywordtype">void</span> cpc_compressor&lt;A&gt;::compress_surprising_values(<span class="keyword">const</span> vector_u32&lt;A&gt;&amp; pairs, uint8_t lg_k, compressed_state&lt;A&gt;&amp; result)<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;<span class="keywordtype">void</span> cpc_compressor&lt;A&gt;::compress_surprising_values(<span class="keyword">const</span> vector_u32&amp; pairs, uint8_t lg_k, compressed_state&lt;A&gt;&amp; result)<span class="keyword"> const </span>{</div>
 <div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
 <div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;  <span class="keyword">const</span> uint32_t num_pairs = <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(pairs.size());</div>
 <div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160;  <span class="keyword">const</span> uint8_t num_base_bits = golomb_choose_number_of_base_bits(k + num_pairs, num_pairs);</div>
@@ -445,10 +445,10 @@ $(function() {
 <div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;}</div>
 <div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160; </div>
 <div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;vector_u32&lt;A&gt; cpc_compressor&lt;A&gt;::uncompress_surprising_values(<span class="keyword">const</span> uint32_t* data, uint32_t data_words, uint32_t num_pairs,</div>
-<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    uint8_t lg_k, <span class="keyword">const</span> A&amp; allocator)<span class="keyword"> const </span>{</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;<span class="keyword">auto</span> cpc_compressor&lt;A&gt;::uncompress_surprising_values(<span class="keyword">const</span> uint32_t* data, uint32_t data_words, uint32_t num_pairs,</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;    uint8_t lg_k, <span class="keyword">const</span> A&amp; allocator) <span class="keyword">const</span> -&gt; vector_u32 {</div>
 <div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
-<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;  vector_u32&lt;A&gt; pairs(num_pairs, 0, allocator);</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;  vector_u32 pairs(num_pairs, 0, allocator);</div>
 <div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;  <span class="keyword">const</span> uint8_t num_base_bits = golomb_choose_number_of_base_bits(k + num_pairs, num_pairs);</div>
 <div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;  low_level_uncompress_pairs(pairs.data(), num_pairs, num_base_bits, data, data_words);</div>
 <div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160;  <span class="keywordflow">return</span> pairs;</div>
@@ -470,7 +470,7 @@ $(function() {
 <div class="line"><a name="l00399"></a><span class="lineno">  399</span>&#160;}</div>
 <div class="line"><a name="l00400"></a><span class="lineno">  400</span>&#160; </div>
 <div class="line"><a name="l00401"></a><span class="lineno">  401</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;<span class="keywordtype">void</span> cpc_compressor&lt;A&gt;::uncompress_sliding_window(<span class="keyword">const</span> uint32_t* data, uint32_t data_words, vector_u8&lt;A&gt;&amp; window,</div>
+<div class="line"><a name="l00402"></a><span class="lineno">  402</span>&#160;<span class="keywordtype">void</span> cpc_compressor&lt;A&gt;::uncompress_sliding_window(<span class="keyword">const</span> uint32_t* data, uint32_t data_words, vector_bytes&amp; window,</div>
 <div class="line"><a name="l00403"></a><span class="lineno">  403</span>&#160;    uint8_t lg_k, uint32_t num_coupons)<span class="keyword"> const </span>{</div>
 <div class="line"><a name="l00404"></a><span class="lineno">  404</span>&#160;  <span class="keyword">const</span> uint32_t k = 1 &lt;&lt; lg_k;</div>
 <div class="line"><a name="l00405"></a><span class="lineno">  405</span>&#160;  window.resize(k); <span class="comment">// zeroing not needed here (unlike the Hybrid Flavor)</span></div>
@@ -793,10 +793,10 @@ $(function() {
 <div class="line"><a name="l00722"></a><span class="lineno">  722</span>&#160;<span class="comment">// The empty space that this leaves at the beginning of the output array</span></div>
 <div class="line"><a name="l00723"></a><span class="lineno">  723</span>&#160;<span class="comment">// will be filled in later by the caller.</span></div>
 <div class="line"><a name="l00724"></a><span class="lineno">  724</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;vector_u32&lt;A&gt; cpc_compressor&lt;A&gt;::tricky_get_pairs_from_window(<span class="keyword">const</span> uint8_t* window, uint32_t k, uint32_t num_pairs_to_get,</div>
-<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;    uint32_t empty_space, <span class="keyword">const</span> A&amp; allocator) {</div>
+<div class="line"><a name="l00725"></a><span class="lineno">  725</span>&#160;<span class="keyword">auto</span> cpc_compressor&lt;A&gt;::tricky_get_pairs_from_window(<span class="keyword">const</span> uint8_t* window, uint32_t k, uint32_t num_pairs_to_get,</div>
+<div class="line"><a name="l00726"></a><span class="lineno">  726</span>&#160;    uint32_t empty_space, <span class="keyword">const</span> A&amp; allocator) -&gt; vector_u32 {</div>
 <div class="line"><a name="l00727"></a><span class="lineno">  727</span>&#160;  <span class="keyword">const</span> <span class="keywordtype">size_t</span> output_length = empty_space + num_pairs_to_get;</div>
-<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;  vector_u32&lt;A&gt; pairs(output_length, 0, allocator);</div>
+<div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;  vector_u32 pairs(output_length, 0, allocator);</div>
 <div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;  <span class="keywordtype">size_t</span> pair_index = empty_space;</div>
 <div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;  <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> row_index = 0; row_index &lt; k; row_index++) {</div>
 <div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;    uint8_t <span class="keywordtype">byte</span> = window[row_index];</div>

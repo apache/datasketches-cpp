@@ -138,12 +138,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac02fcfb6e706148458a2ef89390223a9"><td class="memItemLeft" align="right" valign="top">quantile_return_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1quantiles__sketch.html#ac02fcfb6e706148458a2ef89390223a9">get_quantile</a> (double rank, bool inclusive=true) const</td></tr>
 <tr class="memdesc:ac02fcfb6e706148458a2ef89390223a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an approximation to the data item associated with the given rank of a hypothetical sorted version of the input stream so far.  <a href="classdatasketches_1_1quantiles__sketch.html#ac02fcfb6e706148458a2ef89390223a9">More...</a><br /></td></tr>
 <tr class="separator:ac02fcfb6e706148458a2ef89390223a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6812faca718d3196efeb752505e4e57a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; T, Allocator &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1quantiles__sketch.html#a6812faca718d3196efeb752505e4e57a">get_quantiles</a> (const double *ranks, uint32_t size, bool inclusive=true) const</td></tr>
-<tr class="memdesc:a6812faca718d3196efeb752505e4e57a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a multiple-query version of <a class="el" href="classdatasketches_1_1quantiles__sketch.html#ac02fcfb6e706148458a2ef89390223a9" title="Returns an approximation to the data item associated with the given rank of a hypothetical sorted ver...">get_quantile()</a>.  <a href="classdatasketches_1_1quantiles__sketch.html#a6812faca718d3196efeb752505e4e57a">More...</a><br /></td></tr>
-<tr class="separator:a6812faca718d3196efeb752505e4e57a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af05c27517259ff769821c0acece03801"><td class="memItemLeft" align="right" valign="top">std::vector&lt; T, Allocator &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1quantiles__sketch.html#af05c27517259ff769821c0acece03801">get_quantiles</a> (uint32_t num, bool inclusive=true) const</td></tr>
-<tr class="memdesc:af05c27517259ff769821c0acece03801"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a multiple-query version of <a class="el" href="classdatasketches_1_1quantiles__sketch.html#ac02fcfb6e706148458a2ef89390223a9" title="Returns an approximation to the data item associated with the given rank of a hypothetical sorted ver...">get_quantile()</a> that allows the caller to specify the number of evenly-spaced normalized ranks.  <a href="classdatasketches_1_1quantiles__sketch.html#af05c27517259ff769821c0acece03801">More...</a><br /></td></tr>
-<tr class="separator:af05c27517259ff769821c0acece03801"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a849dfa06c183fd2fdfe4fe4a7e29d918"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1quantiles__sketch.html#a849dfa06c183fd2fdfe4fe4a7e29d918">get_rank</a> (const T &amp;item, bool inclusive=true) const</td></tr>
 <tr class="memdesc:a849dfa06c183fd2fdfe4fe4a7e29d918"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an approximation to the normalized rank of the given item from 0 to 1, inclusive.  <a href="classdatasketches_1_1quantiles__sketch.html#a849dfa06c183fd2fdfe4fe4a7e29d918">More...</a><br /></td></tr>
 <tr class="separator:a849dfa06c183fd2fdfe4fe4a7e29d918"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -315,9 +309,9 @@ Jon Malkin </dd></dl>
 <p>Constructor. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">k</td><td></td></tr>
-    <tr><td class="paramname">comparator</td><td></td></tr>
-    <tr><td class="paramname">allocator</td><td></td></tr>
+    <tr><td class="paramname">k</td><td>affects the size of the sketch and its estimation error </td></tr>
+    <tr><td class="paramname">comparator</td><td>strict weak ordering function (see C++ named requirements: Compare) </td></tr>
+    <tr><td class="paramname">allocator</td><td>used to allocate memory </td></tr>
   </table>
   </dd>
 </dl>
@@ -740,94 +734,6 @@ Jon Malkin </dd></dl>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the approximation to the item at the given rank </dd></dl>
-
-</div>
-</div>
-<a id="a6812faca718d3196efeb752505e4e57a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6812faca718d3196efeb752505e4e57a">&#9670;&nbsp;</a></span>get_quantiles() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; T, A &gt; get_quantiles </td>
-          <td>(</td>
-          <td class="paramtype">const double *&#160;</td>
-          <td class="paramname"><em>ranks</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>size</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>inclusive</em> = <code>true</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>This is a multiple-query version of <a class="el" href="classdatasketches_1_1quantiles__sketch.html#ac02fcfb6e706148458a2ef89390223a9" title="Returns an approximation to the data item associated with the given rank of a hypothetical sorted ver...">get_quantile()</a>. </p>
-<p>This returns an array that could have been generated by using <a class="el" href="classdatasketches_1_1quantiles__sketch.html#ac02fcfb6e706148458a2ef89390223a9" title="Returns an approximation to the data item associated with the given rank of a hypothetical sorted ver...">get_quantile()</a> for each normalized rank separately.</p>
-<p>If the sketch is empty this throws std::runtime_error.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">ranks</td><td>given array of normalized ranks in the hypothetical sorted stream. These ranks must be in the interval [0.0, 1.0], inclusive. </td></tr>
-    <tr><td class="paramname">size</td><td>the number of ranks in the array </td></tr>
-    <tr><td class="paramname">inclusive</td><td>if true the weight of the given item is included into the rank. Otherwise the rank equals the sum of the weights of all items that are less than the given item according to the Comparator. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>array of approximations to items associated with given ranks in the same order as given ranks in the input array.</dd></dl>
-<p>Deprecated. Will be removed in the next major version. Use <a class="el" href="classdatasketches_1_1quantiles__sketch.html#ac02fcfb6e706148458a2ef89390223a9" title="Returns an approximation to the data item associated with the given rank of a hypothetical sorted ver...">get_quantile()</a> instead. </p>
-
-</div>
-</div>
-<a id="af05c27517259ff769821c0acece03801"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af05c27517259ff769821c0acece03801">&#9670;&nbsp;</a></span>get_quantiles() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">std::vector&lt; T, A &gt; get_quantiles </td>
-          <td>(</td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>num</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>inclusive</em> = <code>true</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>This is a multiple-query version of <a class="el" href="classdatasketches_1_1quantiles__sketch.html#ac02fcfb6e706148458a2ef89390223a9" title="Returns an approximation to the data item associated with the given rank of a hypothetical sorted ver...">get_quantile()</a> that allows the caller to specify the number of evenly-spaced normalized ranks. </p>
-<p>If the sketch is empty this throws std::runtime_error.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">num</td><td>an integer that specifies the number of evenly-spaced ranks. This must be an integer greater than 0. A value of 1 is equivalent to get_quantiles([0]). A value of 2 is equivalent to get_quantiles([0, 1]). A value of 3 is equivalent to get_quantiles([0, 0.5, 1]), etc. </td></tr>
-    <tr><td class="paramname">inclusive</td><td>if true the weight of the given item is included into the rank. Otherwise the rank equals the sum of the weights of all items that are less than the given item according to the Comparator. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>array of approximations to items associated with the given number of evenly-spaced normalized ranks.</dd></dl>
-<p>Deprecated. Will be removed in the next major version. Use <a class="el" href="classdatasketches_1_1quantiles__sketch.html#ac02fcfb6e706148458a2ef89390223a9" title="Returns an approximation to the data item associated with the given rank of a hypothetical sorted ver...">get_quantile()</a> instead. </p>
 
 </div>
 </div>

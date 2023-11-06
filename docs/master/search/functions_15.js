@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['_7ehll_5fsketch_5falloc_405',['~hll_sketch_alloc',['../classdatasketches_1_1hll__sketch__alloc.html#a41320c75046e57718fa6dbf66acd29e0',1,'datasketches::hll_sketch_alloc']]]
+  ['wrap_403',['wrap',['../classdatasketches_1_1wrapped__compact__theta__sketch__alloc.html#a7c8fcc5351cb17b746aef835e65b403a',1,'datasketches::wrapped_compact_theta_sketch_alloc']]]
 ];
