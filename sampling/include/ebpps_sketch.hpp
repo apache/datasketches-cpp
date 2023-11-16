@@ -43,7 +43,7 @@ namespace ebpps_constants {
  * From: "Exact PPS Sampling with Bounded Sample Size",
  * B. Hentschel, P. J. Haas, Y. Tian. Information Processing Letters, 2023.
  * 
- * This sketch samples data from a stream of items propotional to the weight of each item.
+ * This sketch samples data from a stream of items proportional to the weight of each item.
  * The sample guarantees the presence of an item in the result is proportional to that item's
  * portion of the total weight seen by the sketch, and returns a sample no larger than size k.
  * 
