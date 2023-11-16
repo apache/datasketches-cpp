@@ -30,7 +30,6 @@ target_include_directories(tuple
 )
 
 target_link_libraries(tuple INTERFACE common theta)
-target_compile_features(tuple INTERFACE cxx_std_11)
 
 install(TARGETS tuple
   EXPORT ${PROJECT_NAME}

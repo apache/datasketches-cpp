@@ -30,7 +30,6 @@ target_include_directories(cpc
 )
 
 target_link_libraries(cpc INTERFACE common)
-target_compile_features(cpc INTERFACE cxx_std_11)
 
 install(TARGETS cpc
   EXPORT ${PROJECT_NAME}

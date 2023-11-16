@@ -30,7 +30,6 @@ target_include_directories(req
 )
 
 target_link_libraries(req INTERFACE common)
-target_compile_features(req INTERFACE cxx_std_11)
 
 install(TARGETS req
   EXPORT ${PROJECT_NAME}
