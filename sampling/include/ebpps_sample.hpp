@@ -37,7 +37,7 @@ class ebpps_sample {
   public:
     explicit ebpps_sample(uint32_t k, const A& allocator = A());
 
-    // constructor used to create a sample to merge one time
+    // constructor used to create a sample to merge one item
     template<typename TT>
     ebpps_sample(TT&& item, double theta, const A& allocator = A());
 
