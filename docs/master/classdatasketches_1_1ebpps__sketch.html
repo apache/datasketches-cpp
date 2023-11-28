@@ -164,7 +164,7 @@ class datasketches::ebpps_sketch&lt; T, A &gt;</h3>
 
 <p>An implementation of an Exact and Bounded Sampling Proportional to Size sketch. </p>
 <p>From: "Exact PPS Sampling with Bounded Sample Size", B. Hentschel, P. J. Haas, Y. Tian. Information Processing Letters, 2023.</p>
-<p>This sketch samples data from a stream of items propotional to the weight of each item. The sample guarantees the presence of an item in the result is proportional to that item's portion of the total weight seen by the sketch, and returns a sample no larger than size k.</p>
+<p>This sketch samples data from a stream of items proportional to the weight of each item. The sample guarantees the presence of an item in the result is proportional to that item's portion of the total weight seen by the sketch, and returns a sample no larger than size k.</p>
 <p>The sample may be smaller than k and the resulting size of the sample potentially includes a probabilistic component, meaning the resulting sample size is not always constant.</p>
 <dl class="section author"><dt>Author</dt><dd>Jon Malkin </dd></dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
