@@ -30,7 +30,6 @@ target_include_directories(quantiles
 )
 
 target_link_libraries(quantiles INTERFACE common)
-target_compile_features(quantiles INTERFACE cxx_std_11)
 
 install(TARGETS quantiles
   EXPORT ${PROJECT_NAME}
