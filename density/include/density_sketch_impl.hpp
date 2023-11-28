@@ -144,7 +144,7 @@ void density_sketch<T, K, A>::compact_level(unsigned height) {
   auto& level = levels_[height];
   std::vector<bool> bits(level.size());
   bits[0] = random_utils::random_bit();
-  std::random_shuffle(level.begin(), level.end());
+  std::shuffle(level.begin(), level.end(), random_utils::rand);
   for (unsigned i = 1; i < level.size(); ++i) {
     T delta = 0;
     for (unsigned j = 0; j < i; ++j) {
