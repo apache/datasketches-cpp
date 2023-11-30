@@ -178,7 +178,11 @@ string<A> ebpps_sample<T ,A>::to_string() const {
   uint32_t idx = 0;
   for (const T& item : data_)
     oss << "\t" << idx++ << ":\t" << item << std::endl;
-  oss << "   partial: " << (bool(partial_item_) ? (*partial_item_) : "NULL") << std::endl;
+  oss << "   partial: ";
+  if (bool(partial_item_))
+    oss << (*partial_item_) << std::endl;
+  else
+    oss << "NULL" << std::endl;
 
   return oss.str();
 }
