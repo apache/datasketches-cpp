@@ -30,7 +30,6 @@ target_include_directories(tuple
 )
 
 target_link_libraries(tuple INTERFACE common theta)
-target_compile_features(tuple INTERFACE cxx_std_11)
 
 install(TARGETS tuple
   EXPORT ${PROJECT_NAME}
@@ -47,11 +46,12 @@ install(FILES
 		include/tuple_a_not_b_impl.hpp
 		include/tuple_jaccard_similarity.hpp
 		include/array_of_doubles_sketch.hpp
-		include/array_of_doubles_sketch_impl.hpp
-		include/array_of_doubles_union.hpp
-		include/array_of_doubles_union_impl.hpp
-		include/array_of_doubles_intersection.hpp
-		include/array_of_doubles_intersection_impl.hpp
-		include/array_of_doubles_a_not_b.hpp
-		include/array_of_doubles_a_not_b_impl.hpp
+		include/array_tuple_sketch.hpp
+		include/array_tuple_sketch_impl.hpp
+		include/array_tuple_union.hpp
+		include/array_tuple_union_impl.hpp
+		include/array_tuple_intersection.hpp
+		include/array_tuple_intersection_impl.hpp
+		include/array_tuple_a_not_b.hpp
+		include/array_tuple_a_not_b_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

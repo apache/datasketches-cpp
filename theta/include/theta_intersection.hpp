@@ -25,6 +25,12 @@
 
 namespace datasketches {
 
+// forward declaration
+template<typename A> class theta_intersection_alloc;
+
+// alias with default allocator for convenience
+using theta_intersection = theta_intersection_alloc<std::allocator<uint64_t>>;
+
 /**
  * Theta intersection.
  * Computes intersection of Theta sketches.
@@ -37,6 +43,7 @@ public:
   using Sketch = theta_sketch_alloc<Allocator>;
   using CompactSketch = compact_theta_sketch_alloc<Allocator>;
 
+  // there is no payload in Theta sketch entry
   struct nop_policy {
     void operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
       unused(incoming_entry);
@@ -65,7 +72,7 @@ public:
    * Produces a copy of the current state of the intersection.
    * If update() was not called, the state is the infinite "universe",
    * which is considered an undefined state, and throws an exception.
-   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return the result of the intersection
    */
   CompactSketch get_result(bool ordered = true) const;
@@ -79,9 +86,6 @@ public:
 private:
   State state_;
 };
-
-// alias with default allocator for convenience
-using theta_intersection = theta_intersection_alloc<std::allocator<uint64_t>>;
 
 } /* namespace datasketches */
 

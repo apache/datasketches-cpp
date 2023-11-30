@@ -28,11 +28,8 @@ namespace datasketches {
 /*
 // for types with defined + operation
 template<typename Summary>
-struct example_intersection_policy {
+struct example_tuple_intersection_policy {
   void operator()(Summary& summary, const Summary& other) const {
-    summary += other;
-  }
-  void operator()(Summary& summary, Summary&& other) const {
     summary += other;
   }
 };
@@ -58,15 +55,15 @@ public:
   // reformulate the external policy that operates on Summary
   // in terms of operations on Entry
   struct internal_policy {
-    internal_policy(const Policy& policy): policy_(policy) {}
+    internal_policy(const Policy& external_policy): external_policy_(external_policy) {}
     void operator()(Entry& internal_entry, const Entry& incoming_entry) const {
-      policy_(internal_entry.second, incoming_entry.second);
+      external_policy_(internal_entry.second, incoming_entry.second);
     }
     void operator()(Entry& internal_entry, Entry&& incoming_entry) const {
-      policy_(internal_entry.second, std::move(incoming_entry.second));
+      external_policy_(internal_entry.second, std::move(incoming_entry.second));
     }
-    const Policy& get_policy() const { return policy_; }
-    Policy policy_;
+    const Policy& get_external_policy() const { return external_policy_; }
+    Policy external_policy_;
   };
 
   using State = theta_intersection_base<Entry, ExtractKey, internal_policy, Sketch, CompactSketch, AllocEntry>;
@@ -92,7 +89,7 @@ public:
    * Produces a copy of the current state of the intersection.
    * If update() was not called, the state is the infinite "universe",
    * which is considered an undefined state, and throws an exception.
-   * @param ordered optional flag to specify if ordered sketch should be produced
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return the result of the intersection
    */
   CompactSketch get_result(bool ordered = true) const;

@@ -30,7 +30,6 @@ target_include_directories(count
         )
 
 target_link_libraries(count INTERFACE common)
-target_compile_features(count INTERFACE cxx_std_11)
 
 install(TARGETS count
         EXPORT ${PROJECT_NAME}

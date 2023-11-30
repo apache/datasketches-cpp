@@ -37,7 +37,7 @@ kll_sketch<T, C, A>::kll_sketch(uint16_t k, const C& comparator, const A& alloca
 comparator_(comparator),
 allocator_(allocator),
 k_(k),
-m_(DEFAULT_M),
+m_(kll_constants::DEFAULT_M),
 min_k_(k),
 num_levels_(1),
 is_level_zero_sorted_(false),
@@ -49,8 +49,9 @@ min_item_(),
 max_item_(),
 sorted_view_(nullptr)
 {
-  if (k < MIN_K || k > MAX_K) {
-    throw std::invalid_argument("K must be >= " + std::to_string(MIN_K) + " and <= " + std::to_string(MAX_K) + ": " + std::to_string(k));
+  if (k < kll_constants::MIN_K || k > kll_constants::MAX_K) {
+    throw std::invalid_argument("K must be >= " + std::to_string(kll_constants::MIN_K) + " and <= "
+        + std::to_string(kll_constants::MAX_K) + ": " + std::to_string(k));
   }
   levels_[0] = levels_[1] = k;
   items_ = allocator_.allocate(items_size_);
@@ -309,42 +310,6 @@ auto kll_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> qua
 }
 
 template<typename T, typename C, typename A>
-std::vector<T, A> kll_sketch<T, C, A>::get_quantiles(const double* ranks, uint32_t size, bool inclusive) const {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
-  std::vector<T, A> quantiles(allocator_);
-  quantiles.reserve(size);
-
-  // may have a side effect of sorting level zero if needed
-  setup_sorted_view();
-
-  for (uint32_t i = 0; i < size; i++) {
-    const double rank = ranks[i];
-    if ((rank < 0.0) || (rank > 1.0)) {
-      throw std::invalid_argument("normalized rank cannot be less than 0 or greater than 1");
-    }
-    quantiles.push_back(sorted_view_->get_quantile(rank, inclusive));
-  }
-  return quantiles;
-}
-
-template<typename T, typename C, typename A>
-std::vector<T, A> kll_sketch<T, C, A>::get_quantiles(uint32_t num, bool inclusive) const {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
-  if (num == 0) {
-    throw std::invalid_argument("num must be > 0");
-  }
-  vector_double ranks(num, 0, allocator_);
-  ranks[0] = 0.0;
-  for (size_t i = 1; i < num; i++) {
-    ranks[i] = static_cast<double>(i) / (num - 1);
-  }
-  if (num > 1) {
-    ranks[num - 1] = 1.0;
-  }
-  return get_quantiles(ranks.data(), num, inclusive);
-}
-
-template<typename T, typename C, typename A>
 double kll_sketch<T, C, A>::get_normalized_rank_error(bool pmf) const {
   return get_normalized_rank_error(min_k_, pmf);
 }
@@ -382,7 +347,7 @@ template<typename T, typename C, typename A>
 template<typename TT, typename std::enable_if<std::is_arithmetic<TT>::value, int>::type>
 size_t kll_sketch<T, C, A>::get_max_serialized_size_bytes(uint16_t k, uint64_t n) {
   const uint8_t num_levels = kll_helper::ub_on_num_levels(n);
-  const uint32_t max_num_retained = kll_helper::compute_total_capacity(k, DEFAULT_M, num_levels);
+  const uint32_t max_num_retained = kll_helper::compute_total_capacity(k, kll_constants::DEFAULT_M, num_levels);
   // the last integer in the levels_ array is not serialized because it can be derived
   return DATA_START + num_levels * sizeof(uint32_t) + (max_num_retained + 2) * sizeof(TT);
 }
@@ -392,7 +357,7 @@ template<typename T, typename C, typename A>
 template<typename TT, typename std::enable_if<!std::is_arithmetic<TT>::value, int>::type>
 size_t kll_sketch<T, C, A>::get_max_serialized_size_bytes(uint16_t k, uint64_t n, size_t max_item_size_bytes) {
   const uint8_t num_levels = kll_helper::ub_on_num_levels(n);
-  const uint32_t max_num_retained = kll_helper::compute_total_capacity(k, DEFAULT_M, num_levels);
+  const uint32_t max_num_retained = kll_helper::compute_total_capacity(k, kll_constants::DEFAULT_M, num_levels);
   // the last integer in the levels_ array is not serialized because it can be derived
   return DATA_START + num_levels * sizeof(uint32_t) + (max_num_retained + 2) * max_item_size_bytes;
 }
@@ -653,7 +618,7 @@ kll_sketch<T, C, A>::kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t 
 comparator_(comparator),
 allocator_(levels.get_allocator()),
 k_(k),
-m_(DEFAULT_M),
+m_(kll_constants::DEFAULT_M),
 min_k_(min_k),
 num_levels_(num_levels),
 is_level_zero_sorted_(is_level_zero_sorted),
@@ -895,8 +860,8 @@ uint32_t kll_sketch<T, C, A>::get_num_retained_above_level_zero() const {
 
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::check_m(uint8_t m) {
-  if (m != DEFAULT_M) {
-    throw std::invalid_argument("Possible corruption: M must be " + std::to_string(DEFAULT_M)
+  if (m != kll_constants::DEFAULT_M) {
+    throw std::invalid_argument("Possible corruption: M must be " + std::to_string(kll_constants::DEFAULT_M)
         + ": " + std::to_string(m));
   }
 }

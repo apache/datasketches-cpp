@@ -30,7 +30,6 @@ target_include_directories(density
 )
 
 target_link_libraries(density INTERFACE common)
-target_compile_features(density INTERFACE cxx_std_11)
 
 install(TARGETS density
   EXPORT ${PROJECT_NAME}

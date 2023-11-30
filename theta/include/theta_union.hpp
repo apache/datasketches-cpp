@@ -26,6 +26,12 @@
 
 namespace datasketches {
 
+// forward declaration
+template<typename A> class theta_union_alloc;
+
+// alias with default allocator for convenience
+using theta_union = theta_union_alloc<std::allocator<uint64_t>>;
+
 /**
  * Theta Union.
  * Computes union of Theta sketches. There is no constructor. Use builder instead.
@@ -39,6 +45,7 @@ public:
   using CompactSketch = compact_theta_sketch_alloc<Allocator>;
   using resize_factor = theta_constants::resize_factor;
 
+  // there is no payload in Theta sketch entry
   struct nop_policy {
     void operator()(uint64_t internal_entry, uint64_t incoming_entry) const {
       unused(internal_entry);
@@ -51,22 +58,20 @@ public:
   class builder;
 
   /**
-   * This method is to update the union with a given sketch
+   * Update the union with a given sketch
    * @param sketch to update the union with
    */
   template<typename FwdSketch>
   void update(FwdSketch&& sketch);
 
   /**
-   * This method produces a copy of the current state of the union as a compact sketch.
-   * @param ordered optional flag to specify if ordered sketch should be produced
+   * Produces a copy of the current state of the union as a compact sketch.
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return the result of the union
    */
   CompactSketch get_result(bool ordered = true) const;
 
-  /**
-   * Reset the union to the initial empty state
-   */
+  /// Reset the union to the initial empty state
   void reset();
 
 private:
@@ -83,14 +88,11 @@ public:
   builder(const A& allocator = A());
 
   /**
-   * This is to create an instance of the union with predefined parameters.
+   * Create an instance of the union with predefined parameters.
    * @return an instance of the union
    */
   theta_union_alloc<A> build() const;
 };
-
-// alias with default allocator for convenience
-using theta_union = theta_union_alloc<std::allocator<uint64_t>>;
 
 } /* namespace datasketches */
 

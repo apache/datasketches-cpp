@@ -30,7 +30,6 @@ target_include_directories(sampling
 )
 
 target_link_libraries(sampling INTERFACE common)
-target_compile_features(sampling INTERFACE cxx_std_11)
 
 install(TARGETS sampling
   EXPORT ${PROJECT_NAME}

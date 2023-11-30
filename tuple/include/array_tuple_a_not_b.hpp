@@ -17,36 +17,44 @@
  * under the License.
  */
 
-#ifndef ARRAY_OF_DOUBLES_A_NOT_B_HPP_
-#define ARRAY_OF_DOUBLES_A_NOT_B_HPP_
+#ifndef ARRAY_TUPLE_A_NOT_B_HPP_
+#define ARRAY_TUPLE_A_NOT_B_HPP_
 
 #include <vector>
 #include <memory>
 
-#include "array_of_doubles_sketch.hpp"
+#include "array_tuple_sketch.hpp"
 #include "tuple_a_not_b.hpp"
 
 namespace datasketches {
 
-template<typename Allocator = std::allocator<double>>
-class array_of_doubles_a_not_b_alloc: tuple_a_not_b<aod<Allocator>, AllocAOD<Allocator>> {
+/// array tuple A-not-B
+template<typename Array, typename Allocator = typename Array::allocator_type>
+class array_tuple_a_not_b: tuple_a_not_b<Array, Allocator> {
 public:
-  using Summary = aod<Allocator>;
-  using AllocSummary = AllocAOD<Allocator>;
-  using Base = tuple_a_not_b<Summary, AllocSummary>;
-  using CompactSketch = compact_array_of_doubles_sketch_alloc<Allocator>;
+  using Base = tuple_a_not_b<Array, Allocator>;
+  using CompactSketch = compact_array_tuple_sketch<Array, Allocator>;
 
-  explicit array_of_doubles_a_not_b_alloc(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
+  /**
+   * Constructor
+   * @param seed for the hash function that was used to create the sketch
+   * @param allocator to use for allocating and deallocating memory
+   */
+  explicit array_tuple_a_not_b(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
+  /**
+   * Computes the A-not-B set operation given two sketches.
+   * @param a sketch A
+   * @param b sketch B
+   * @param ordered optional flag to specify if an ordered sketch should be produced
+   * @return the result of A-not-B as a compact sketch
+   */
   template<typename FwdSketch, typename Sketch>
   CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;
 };
 
-// alias with the default allocator for convenience
-using array_of_doubles_a_not_b = array_of_doubles_a_not_b_alloc<>;
-
 } /* namespace datasketches */
 
-#include "array_of_doubles_a_not_b_impl.hpp"
+#include "array_tuple_a_not_b_impl.hpp"
 
 #endif

@@ -17,50 +17,49 @@
  * under the License.
  */
 
-#ifndef TUPLE_A_NOT_B_HPP_
-#define TUPLE_A_NOT_B_HPP_
+#ifndef ARRAY_TUPLE_INTERSECTION_HPP_
+#define ARRAY_TUPLE_INTERSECTION_HPP_
 
-#include "tuple_sketch.hpp"
-#include "theta_set_difference_base.hpp"
+#include <vector>
+#include <memory>
+
+#include "array_tuple_sketch.hpp"
+#include "tuple_intersection.hpp"
 
 namespace datasketches {
 
-/// tuple A-not-B
+/// array tuple intersection
 template<
-  typename Summary,
-  typename Allocator = std::allocator<Summary>
+  typename Array,
+  typename Policy,
+  typename Allocator = typename Array::allocator_type
 >
-class tuple_a_not_b {
+class array_tuple_intersection: public tuple_intersection<Array, Policy, Allocator> {
 public:
-  using Entry = std::pair<uint64_t, Summary>;
-  using ExtractKey = pair_extract_key<uint64_t, Summary>;
-  using CompactSketch = compact_tuple_sketch<Summary, Allocator>;
-  using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
-  using State = theta_set_difference_base<Entry, ExtractKey, CompactSketch, AllocEntry>;
+  using Base = tuple_intersection<Array, Policy, Allocator>;
+  using CompactSketch = compact_array_tuple_sketch<Array, Allocator>;
+  using resize_factor = theta_constants::resize_factor;
 
   /**
    * Constructor
    * @param seed for the hash function that was used to create the sketch
+   * @param policy user-defined way of combining Summary during intersection
    * @param allocator to use for allocating and deallocating memory
    */
-  explicit tuple_a_not_b(uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
+  explicit array_tuple_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy(), const Allocator& allocator = Allocator());
 
   /**
-   * Computes the A-not-B set operation given two sketches.
-   * @param a sketch A
-   * @param b sketch B
+   * Produces a copy of the current state of the intersection.
+   * If update() was not called, the state is the infinite "universe",
+   * which is considered an undefined state, and throws an exception.
    * @param ordered optional flag to specify if an ordered sketch should be produced
-   * @return the result of A-not-B as a compact sketch
+   * @return the result of the intersection as a compact sketch
    */
-  template<typename FwdSketch, typename Sketch>
-  CompactSketch compute(FwdSketch&& a, const Sketch& b, bool ordered = true) const;
-
-private:
-  State state_;
+  CompactSketch get_result(bool ordered = true) const;
 };
 
 } /* namespace datasketches */
 
-#include "tuple_a_not_b_impl.hpp"
+#include "array_tuple_intersection_impl.hpp"
 
 #endif

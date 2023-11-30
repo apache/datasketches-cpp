@@ -45,8 +45,10 @@ jobs:
           submodules: true
           persist-credentials: false
       - name: Configure
-        run: cd build && cmake ..
+        run: cmake -B build -S . -DCMAKE_INSTALL_PREFIX=./install_test
       - name: Build C++ unit tests
         run: cmake --build build --config Release
       - name: Run C++ tests
         run: cmake --build build --config Release --target ${{ matrix.config.test_target }}
+      - name: Install headers
+        run: cmake --build build -t install
