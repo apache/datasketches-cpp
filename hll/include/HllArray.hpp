@@ -31,13 +31,15 @@ class AuxHashMap;
 template<typename A>
 class HllArray : public HllSketchImpl<A> {
   public:
+    using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
+
     HllArray(uint8_t lgConfigK, target_hll_type tgtHllType, bool startFullSize, const A& allocator);
     explicit HllArray(const HllArray& other, target_hll_type tgtHllType);
 
     static HllArray* newHll(const void* bytes, size_t len, const A& allocator);
     static HllArray* newHll(std::istream& is, const A& allocator);
 
-    virtual vector_u8<A> serialize(bool compact, unsigned header_size_bytes) const;
+    virtual vector_bytes serialize(bool compact, unsigned header_size_bytes) const;
     virtual void serialize(std::ostream& os, bool compact) const;
 
     virtual ~HllArray() = default;
@@ -97,7 +99,7 @@ class HllArray : public HllSketchImpl<A> {
 
     virtual A getAllocator() const;
 
-    const vector_u8<A>& getHllArray() const;
+    const vector_bytes& getHllArray() const;
 
   protected:
     void hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue);
@@ -107,7 +109,7 @@ class HllArray : public HllSketchImpl<A> {
     double hipAccum_;
     double kxq0_;
     double kxq1_;
-    vector_u8<A> hllByteArr_; //init by sub-classes
+    vector_bytes hllByteArr_; //init by sub-classes
     uint8_t curMin_; //always zero for Hll6 and Hll8, only tracked by Hll4Array
     uint32_t numAtCurMin_; //interpreted as num zeros when curMin == 0
     bool oooFlag_; //Out-Of-Order Flag

@@ -28,10 +28,10 @@ namespace datasketches {
 static const double RELATIVE_ERROR_FOR_LG_K_11 = 0.02;
 
 TEST_CASE("cpc union: lg k limits", "[cpc_union]") {
-  cpc_union u1(CPC_MIN_LG_K); // this should work
-  cpc_union u2(CPC_MAX_LG_K); // this should work
-  REQUIRE_THROWS_AS(cpc_union(CPC_MIN_LG_K - 1), std::invalid_argument);
-  REQUIRE_THROWS_AS(cpc_union(CPC_MAX_LG_K + 1), std::invalid_argument);
+  cpc_union u1(cpc_constants::MIN_LG_K); // this should work
+  cpc_union u2(cpc_constants::MAX_LG_K); // this should work
+  REQUIRE_THROWS_AS(cpc_union(cpc_constants::MIN_LG_K - 1), std::invalid_argument);
+  REQUIRE_THROWS_AS(cpc_union(cpc_constants::MAX_LG_K + 1), std::invalid_argument);
 }
 
 TEST_CASE("cpc union: empty", "[cpc_union]") {

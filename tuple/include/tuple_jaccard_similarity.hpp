@@ -30,7 +30,7 @@ namespace datasketches {
 template<
   typename Summary,
   typename IntersectionPolicy,
-  typename UnionPolicy = default_union_policy<Summary>,
+  typename UnionPolicy = default_tuple_union_policy<Summary>,
   typename Allocator = std::allocator<Summary>>
 using tuple_jaccard_similarity = jaccard_similarity_base<tuple_union<Summary, UnionPolicy, Allocator>, tuple_intersection<Summary, IntersectionPolicy, Allocator>, pair_extract_key<uint64_t, Summary>>;
 

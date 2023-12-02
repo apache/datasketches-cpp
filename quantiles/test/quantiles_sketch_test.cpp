@@ -65,8 +65,6 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_rank(0), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_quantile(0.5), std::runtime_error);
-    const double fractions[3] {0, 0.5, 1};
-    REQUIRE_THROWS_AS(sketch.get_quantiles(fractions, 3).empty(), std::runtime_error);
     const float split_points[1] {0};
     REQUIRE_THROWS_AS(sketch.get_PMF(split_points, 1), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_CDF(split_points, 1), std::runtime_error);
@@ -97,13 +95,6 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch.get_min_item() == 1.0);
     REQUIRE(sketch.get_max_item() == 1.0);
     REQUIRE(sketch.get_quantile(0.5) == 1.0);
-
-    const double fractions[3] {0, 0.5, 1};
-    auto quantiles = sketch.get_quantiles(fractions, 3);
-    REQUIRE(quantiles.size() == 3);
-    REQUIRE(quantiles[0] == 1.0);
-    REQUIRE(quantiles[1] == 1.0);
-    REQUIRE(quantiles[2] == 1.0);
 
     int count = 0;
     for (auto pair: sketch) {
@@ -152,20 +143,6 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
     REQUIRE(sketch.get_quantile(0) == 1);
     REQUIRE(sketch.get_max_item() == n);
     REQUIRE(sketch.get_quantile(1) == n);
-
-    const double ranks[3] {0, 0.5, 1};
-    auto quantiles = sketch.get_quantiles(ranks, 3);
-    REQUIRE(quantiles.size() == 3);
-    REQUIRE(quantiles[0] == 1);
-    REQUIRE(quantiles[1] == static_cast<float>(n / 2));
-    REQUIRE(quantiles[2] == n);
-
-    // the alternative method must produce the same result
-    auto quantiles2 = sketch.get_quantiles(3);
-    REQUIRE(quantiles2.size() == 3);
-    REQUIRE(quantiles[0] == quantiles2[0]);
-    REQUIRE(quantiles[1] == quantiles2[1]);
-    REQUIRE(quantiles[2] == quantiles2[2]);
 
     int count = 0;
     for (auto pair: sketch) {

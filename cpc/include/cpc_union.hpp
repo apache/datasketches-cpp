@@ -39,6 +39,9 @@ using cpc_union = cpc_union_alloc<std::allocator<uint8_t>>;
 template<typename A>
 class cpc_union_alloc {
 public:
+  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
+  using vector_u64 = std::vector<uint64_t, typename std::allocator_traits<A>::template rebind_alloc<uint64_t>>;
+
   /**
    * Creates an instance of the union given the lg_k parameter and hash seed.
    * @param lg_k base 2 logarithm of the number of bins in the sketch
@@ -101,7 +104,7 @@ private:
   uint8_t lg_k;
   uint64_t seed;
   cpc_sketch_alloc<A>* accumulator;
-  vector_u64<A> bit_matrix;
+  vector_u64 bit_matrix;
 
   template<typename S> void internal_update(S&& sketch); // to support both rvalue and lvalue
 
@@ -111,8 +114,8 @@ private:
   void switch_to_bit_matrix();
   void walk_table_updating_sketch(const u32_table<A>& table);
   void or_table_into_matrix(const u32_table<A>& table);
-  void or_window_into_matrix(const vector_u8<A>& sliding_window, uint8_t offset, uint8_t src_lg_k);
-  void or_matrix_into_matrix(const vector_u64<A>& src_matrix, uint8_t src_lg_k);
+  void or_window_into_matrix(const vector_bytes& sliding_window, uint8_t offset, uint8_t src_lg_k);
+  void or_matrix_into_matrix(const vector_u64& src_matrix, uint8_t src_lg_k);
   void reduce_k(uint8_t new_lg_k);
 };
 

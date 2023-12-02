@@ -30,7 +30,6 @@ target_include_directories(theta
 )
 
 target_link_libraries(theta INTERFACE common)
-target_compile_features(theta INTERFACE cxx_std_11)
 
 install(TARGETS theta
   EXPORT ${PROJECT_NAME}

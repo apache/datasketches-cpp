@@ -25,7 +25,9 @@
 
 namespace datasketches {
 
-using tuple_jaccard_similarity_float = tuple_jaccard_similarity<float, default_union_policy<float>>;
+// there is no default policy for intersection
+// let's combine values the same way as in union for testing
+using tuple_jaccard_similarity_float = tuple_jaccard_similarity<float, default_tuple_union_policy<float>>;
 
 TEST_CASE("tuple jaccard: empty", "[tuple_sketch]") {
   auto sk_a = update_tuple_sketch<float>::builder().build();

@@ -19,13 +19,14 @@
 
 namespace datasketches {
 
-template<typename P, typename A>
-array_of_doubles_intersection<P, A>::array_of_doubles_intersection(uint64_t seed, const P& policy, const A& allocator):
-Base(seed, policy, allocator) {}
+template<typename Array, typename Allocator>
+array_tuple_a_not_b<Array, Allocator>::array_tuple_a_not_b(uint64_t seed, const Allocator& allocator):
+Base(seed, allocator) {}
 
-template<typename P, typename A>
-auto array_of_doubles_intersection<P, A>::get_result(bool ordered) const -> CompactSketch {
-  return compact_array_of_doubles_sketch_alloc<A>(this->state_.get_policy().get_policy().get_num_values(), Base::get_result(ordered));
+template<typename Array, typename Allocator>
+template<typename FwdSketch, typename Sketch>
+auto array_tuple_a_not_b<Array, Allocator>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const -> CompactSketch {
+  return CompactSketch(a.get_num_values(), Base::compute(std::forward<FwdSketch>(a), b, ordered));
 }
 
 } /* namespace datasketches */

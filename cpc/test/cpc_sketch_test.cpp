@@ -32,10 +32,10 @@ namespace datasketches {
 static const double RELATIVE_ERROR_FOR_LG_K_11 = 0.02;
 
 TEST_CASE("cpc sketch: lg k limits", "[cpc_sketch]") {
-  cpc_sketch s1(CPC_MIN_LG_K); // this should work
-  cpc_sketch s2(CPC_MAX_LG_K); // this should work
-  REQUIRE_THROWS_AS(cpc_sketch(CPC_MIN_LG_K - 1), std::invalid_argument);
-  REQUIRE_THROWS_AS(cpc_sketch(CPC_MAX_LG_K + 1), std::invalid_argument);
+  cpc_sketch s1(cpc_constants::MIN_LG_K); // this should work
+  cpc_sketch s2(cpc_constants::MAX_LG_K); // this should work
+  REQUIRE_THROWS_AS(cpc_sketch(cpc_constants::MIN_LG_K - 1), std::invalid_argument);
+  REQUIRE_THROWS_AS(cpc_sketch(cpc_constants::MAX_LG_K + 1), std::invalid_argument);
 }
 
 TEST_CASE("cpc sketch: empty", "[cpc_sketch]") {

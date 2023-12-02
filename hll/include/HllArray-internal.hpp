@@ -216,9 +216,9 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is, const A& allocator) {
 }
 
 template<typename A>
-vector_u8<A> HllArray<A>::serialize(bool compact, unsigned header_size_bytes) const {
+auto HllArray<A>::serialize(bool compact, unsigned header_size_bytes) const -> vector_bytes {
   const size_t sketchSizeBytes = (compact ? getCompactSerializationBytes() : getUpdatableSerializationBytes()) + header_size_bytes;
-  vector_u8<A> byteArr(sketchSizeBytes, 0, getAllocator());
+  vector_bytes byteArr(sketchSizeBytes, 0, getAllocator());
   uint8_t* bytes = byteArr.data() + header_size_bytes;
   AuxHashMap<A>* auxHashMap = getAuxHashMap();
 
@@ -537,7 +537,7 @@ AuxHashMap<A>* HllArray<A>::getAuxHashMap() const {
 }
 
 template<typename A>
-const vector_u8<A>& HllArray<A>::getHllArray() const {
+auto HllArray<A>::getHllArray() const -> const vector_bytes& {
   return hllByteArr_;
 }
 

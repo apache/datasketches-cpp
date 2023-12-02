@@ -33,7 +33,7 @@
 
 namespace datasketches {
 
-// forward-declarations
+// forward declarations
 template<typename A> class cpc_sketch_alloc;
 template<typename A> class cpc_union_alloc;
 
@@ -64,6 +64,8 @@ template<typename A>
 class cpc_sketch_alloc {
 public:
   using allocator_type = A;
+  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
+  using vector_u64 = std::vector<uint64_t, typename std::allocator_traits<A>::template rebind_alloc<uint64_t>>;
 
   /**
    * Creates an instance of the sketch given the lg_k parameter and hash seed.
@@ -204,10 +206,6 @@ public:
    */
   void serialize(std::ostream& os) const;
 
-  // This is a convenience alias for users
-  // The type returned by the following serialize method
-  using vector_bytes = vector_u8<A>;
-
   /**
    * This method serializes the sketch as a vector of bytes.
    * An optional header can be reserved in front of the sketch.
@@ -278,7 +276,7 @@ private:
   uint32_t num_coupons; // the number of coupons collected so far
 
   u32_table<A> surprising_value_table;
-  vector_u8<A> sliding_window;
+  vector_bytes sliding_window;
   uint8_t window_offset; // derivable from num_coupons, but made explicit for speed
   uint8_t first_interesting_column; // This is part of a speed optimization
 
@@ -287,7 +285,7 @@ private:
 
   // for deserialization and cpc_union::get_result()
   cpc_sketch_alloc(uint8_t lg_k, uint32_t num_coupons, uint8_t first_interesting_column, u32_table<A>&& table,
-      vector_u8<A>&& window, bool has_hip, double kxp, double hip_est_accum, uint64_t seed);
+      vector_bytes&& window, bool has_hip, double kxp, double hip_est_accum, uint64_t seed);
 
   inline void row_col_update(uint32_t row_col);
   inline void update_sparse(uint32_t row_col);
@@ -310,7 +308,7 @@ private:
   static inline uint8_t determine_correct_offset(uint8_t lg_k, uint64_t c);
 
   // this produces a full-size k-by-64 bit matrix
-  vector_u64<A> build_bit_matrix() const;
+  vector_u64 build_bit_matrix() const;
 
   static uint8_t get_preamble_ints(uint32_t num_coupons, bool has_hip, bool has_table, bool has_window);
   inline void write_hip(std::ostream& os) const;

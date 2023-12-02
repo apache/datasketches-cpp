@@ -52,7 +52,6 @@ template<
 class var_opt_union {
 
 public:
-  static const uint32_t MAX_K = ((uint32_t) 1 << 31) - 2;
 
   explicit var_opt_union(uint32_t max_k, const A& allocator = A());
   var_opt_union(const var_opt_union& other);
@@ -152,9 +151,9 @@ public:
   string<A> to_string() const;
 
 private:
-  typedef typename std::allocator_traits<A>::template rebind_alloc<var_opt_sketch<T, A>> AllocSketch;
-  typedef typename std::allocator_traits<A>::template rebind_alloc<double> AllocDouble;
-  typedef typename std::allocator_traits<A>::template rebind_alloc<bool> AllocBool;
+  using AllocSketch = typename std::allocator_traits<A>::template rebind_alloc<var_opt_sketch<T, A>>;
+  using AllocDouble = typename std::allocator_traits<A>::template rebind_alloc<double>;
+  using AllocBool = typename std::allocator_traits<A>::template rebind_alloc<bool>;
 
   static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
   static const uint8_t PREAMBLE_LONGS_NON_EMPTY = 4;
