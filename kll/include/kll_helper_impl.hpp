@@ -230,7 +230,8 @@ kll_helper::compress_result kll_helper::general_compress(uint16_t k, uint8_t m, 
       // move level over as is
       // make sure we are not moving data upwards
       if (raw_beg < out_levels[current_level]) throw std::logic_error("wrong move");
-      std::move(items + raw_beg, items + raw_lim, items + out_levels[current_level]);
+      if (raw_beg != out_levels[current_level])
+        std::move(items + raw_beg, items + raw_lim, items + out_levels[current_level]);
       out_levels[current_level + 1] = out_levels[current_level] + raw_pop;
     } else {
       // The sketch is too full AND this level is too full, so we compact it
@@ -243,7 +244,8 @@ kll_helper::compress_result kll_helper::general_compress(uint16_t k, uint8_t m, 
       const auto half_adj_pop = adj_pop / 2;
 
       if (odd_pop) { // move one guy over
-        items[out_levels[current_level]] = std::move(items[raw_beg]);
+        if (out_levels[current_level] != raw_beg)
+          items[out_levels[current_level]] = std::move(items[raw_beg]);
         out_levels[current_level + 1] = out_levels[current_level] + 1;
       } else { // even number of items
         out_levels[current_level + 1] = out_levels[current_level];
