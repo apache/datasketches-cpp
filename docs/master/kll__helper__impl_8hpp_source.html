@@ -301,96 +301,98 @@ $(function() {
 <div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;      <span class="comment">// move level over as is</span></div>
 <div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;      <span class="comment">// make sure we are not moving data upwards</span></div>
 <div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;      <span class="keywordflow">if</span> (raw_beg &lt; out_levels[current_level]) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;wrong move&quot;</span>);</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;      std::move(items + raw_beg, items + raw_lim, items + out_levels[current_level]);</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;      out_levels[current_level + 1] = out_levels[current_level] + raw_pop;</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;      <span class="comment">// The sketch is too full AND this level is too full, so we compact it</span></div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;      <span class="comment">// Note: this can add a level and thus change the sketches capacities</span></div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160; </div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;      <span class="keyword">const</span> <span class="keyword">auto</span> pop_above = in_levels[current_level + 2] - raw_lim;</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">bool</span> odd_pop = is_odd(raw_pop);</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;      <span class="keyword">const</span> <span class="keyword">auto</span> adj_beg = odd_pop ? 1 + raw_beg : raw_beg;</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;      <span class="keyword">const</span> <span class="keyword">auto</span> adj_pop = odd_pop ? raw_pop - 1 : raw_pop;</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;      <span class="keyword">const</span> <span class="keyword">auto</span> half_adj_pop = adj_pop / 2;</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160; </div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;      <span class="keywordflow">if</span> (odd_pop) { <span class="comment">// move one guy over</span></div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;        items[out_levels[current_level]] = std::move(items[raw_beg]);</div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        out_levels[current_level + 1] = out_levels[current_level] + 1;</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;      } <span class="keywordflow">else</span> { <span class="comment">// even number of items</span></div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        out_levels[current_level + 1] = out_levels[current_level];</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;      }</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160; </div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;      <span class="comment">// level zero might not be sorted, so we must sort it if we wish to compact it</span></div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;      <span class="keywordflow">if</span> ((current_level == 0) &amp;&amp; !is_level_zero_sorted) {</div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;        std::sort(items + adj_beg, items + adj_beg + adj_pop, C());</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;      }</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;      <span class="keywordflow">if</span> (pop_above == 0) { <span class="comment">// Level above is empty, so halve up</span></div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;        randomly_halve_up(items, adj_beg, adj_pop);</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;      } <span class="keywordflow">else</span> { <span class="comment">// Level above is nonempty, so halve down, then merge up</span></div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        randomly_halve_down(items, adj_beg, adj_pop);</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;        merge_sorted_arrays&lt;T, C&gt;(items, adj_beg, half_adj_pop, raw_lim, pop_above, adj_beg + half_adj_pop);</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;      }</div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160; </div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;      <span class="comment">// track the fact that we just eliminated some data</span></div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;      current_item_count -= half_adj_pop;</div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160; </div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;      <span class="comment">// adjust the boundaries of the level above</span></div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;      in_levels[current_level + 1] = in_levels[current_level + 1] - half_adj_pop;</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160; </div>
-<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;      <span class="comment">// increment num_levels if we just compacted the old top level</span></div>
-<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;      <span class="comment">// this creates some more capacity (the size of the new bottom level)</span></div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;      <span class="keywordflow">if</span> (current_level == (current_num_levels - 1)) {</div>
-<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        current_num_levels++;</div>
-<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;        target_item_count += level_capacity(k, current_num_levels, 0, m);</div>
-<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;      }</div>
-<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160; </div>
-<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;    } <span class="comment">// end of code for compacting a level</span></div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;      <span class="keywordflow">if</span> (raw_beg != out_levels[current_level])</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;        std::move(items + raw_beg, items + raw_lim, items + out_levels[current_level]);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;      out_levels[current_level + 1] = out_levels[current_level] + raw_pop;</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;      <span class="comment">// The sketch is too full AND this level is too full, so we compact it</span></div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;      <span class="comment">// Note: this can add a level and thus change the sketches capacities</span></div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160; </div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;      <span class="keyword">const</span> <span class="keyword">auto</span> pop_above = in_levels[current_level + 2] - raw_lim;</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;      <span class="keyword">const</span> <span class="keywordtype">bool</span> odd_pop = is_odd(raw_pop);</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;      <span class="keyword">const</span> <span class="keyword">auto</span> adj_beg = odd_pop ? 1 + raw_beg : raw_beg;</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;      <span class="keyword">const</span> <span class="keyword">auto</span> adj_pop = odd_pop ? raw_pop - 1 : raw_pop;</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;      <span class="keyword">const</span> <span class="keyword">auto</span> half_adj_pop = adj_pop / 2;</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;      <span class="keywordflow">if</span> (odd_pop) { <span class="comment">// move one guy over</span></div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        <span class="keywordflow">if</span> (out_levels[current_level] != raw_beg)</div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;          items[out_levels[current_level]] = std::move(items[raw_beg]);</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        out_levels[current_level + 1] = out_levels[current_level] + 1;</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;      } <span class="keywordflow">else</span> { <span class="comment">// even number of items</span></div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        out_levels[current_level + 1] = out_levels[current_level];</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;      }</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;      <span class="comment">// level zero might not be sorted, so we must sort it if we wish to compact it</span></div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;      <span class="keywordflow">if</span> ((current_level == 0) &amp;&amp; !is_level_zero_sorted) {</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;        std::sort(items + adj_beg, items + adj_beg + adj_pop, C());</div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;      }</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160; </div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;      <span class="keywordflow">if</span> (pop_above == 0) { <span class="comment">// Level above is empty, so halve up</span></div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;        randomly_halve_up(items, adj_beg, adj_pop);</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;      } <span class="keywordflow">else</span> { <span class="comment">// Level above is nonempty, so halve down, then merge up</span></div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;        randomly_halve_down(items, adj_beg, adj_pop);</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;        merge_sorted_arrays&lt;T, C&gt;(items, adj_beg, half_adj_pop, raw_lim, pop_above, adj_beg + half_adj_pop);</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;      }</div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;      <span class="comment">// track the fact that we just eliminated some data</span></div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;      current_item_count -= half_adj_pop;</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160; </div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;      <span class="comment">// adjust the boundaries of the level above</span></div>
+<div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;      in_levels[current_level + 1] = in_levels[current_level + 1] - half_adj_pop;</div>
+<div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160; </div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;      <span class="comment">// increment num_levels if we just compacted the old top level</span></div>
+<div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;      <span class="comment">// this creates some more capacity (the size of the new bottom level)</span></div>
+<div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160;      <span class="keywordflow">if</span> (current_level == (current_num_levels - 1)) {</div>
+<div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        current_num_levels++;</div>
+<div class="line"><a name="l00276"></a><span class="lineno">  276</span>&#160;        target_item_count += level_capacity(k, current_num_levels, 0, m);</div>
+<div class="line"><a name="l00277"></a><span class="lineno">  277</span>&#160;      }</div>
 <div class="line"><a name="l00278"></a><span class="lineno">  278</span>&#160; </div>
-<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    <span class="comment">// determine whether we have processed all levels yet (including any new levels that we created)</span></div>
+<div class="line"><a name="l00279"></a><span class="lineno">  279</span>&#160;    } <span class="comment">// end of code for compacting a level</span></div>
 <div class="line"><a name="l00280"></a><span class="lineno">  280</span>&#160; </div>
-<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <span class="keywordflow">if</span> (current_level == (current_num_levels - 1)) done_yet = <span class="keyword">true</span>;</div>
-<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160;    current_level++;</div>
-<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;  } <span class="comment">// end of loop over levels</span></div>
-<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
-<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;  <span class="keywordflow">if</span> ((out_levels[current_num_levels] - out_levels[0]) != current_item_count) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;inconsistent state&quot;</span>);</div>
+<div class="line"><a name="l00281"></a><span class="lineno">  281</span>&#160;    <span class="comment">// determine whether we have processed all levels yet (including any new levels that we created)</span></div>
+<div class="line"><a name="l00282"></a><span class="lineno">  282</span>&#160; </div>
+<div class="line"><a name="l00283"></a><span class="lineno">  283</span>&#160;    <span class="keywordflow">if</span> (current_level == (current_num_levels - 1)) done_yet = <span class="keyword">true</span>;</div>
+<div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160;    current_level++;</div>
+<div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;  } <span class="comment">// end of loop over levels</span></div>
 <div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160; </div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;  <span class="keywordflow">for</span> (uint32_t i = current_item_count; i &lt; starting_item_count; i++) items[i].~T();</div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;  <span class="keywordflow">if</span> ((out_levels[current_num_levels] - out_levels[0]) != current_item_count) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;inconsistent state&quot;</span>);</div>
 <div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160; </div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;  compress_result result;</div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;  result.final_num_levels = current_num_levels;</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;  result.final_capacity = target_item_count;</div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;  result.final_num_items = current_item_count;</div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;  <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;}</div>
-<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160; </div>
-<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;<span class="keywordtype">void</span> kll_helper::copy_construct(<span class="keyword">const</span> T* src, <span class="keywordtype">size_t</span> src_first, <span class="keywordtype">size_t</span> src_last, T* dst, <span class="keywordtype">size_t</span> dst_first) {</div>
-<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;  <span class="keywordflow">while</span> (src_first != src_last) {</div>
-<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;    <span class="keyword">new</span> (&amp;dst[dst_first++]) T(src[src_first++]);</div>
-<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;  }</div>
-<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;}</div>
-<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160; </div>
-<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;<span class="keywordtype">void</span> kll_helper::move_construct(T* src, <span class="keywordtype">size_t</span> src_first, <span class="keywordtype">size_t</span> src_last, T* dst, <span class="keywordtype">size_t</span> dst_first, <span class="keywordtype">bool</span> destroy) {</div>
-<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;  <span class="keywordflow">while</span> (src_first != src_last) {</div>
-<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;    <span class="keyword">new</span> (&amp;dst[dst_first++]) T(std::move(src[src_first]));</div>
-<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;    <span class="keywordflow">if</span> (destroy) src[src_first].~T();</div>
-<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    src_first++;</div>
-<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;  }</div>
-<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;}</div>
-<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160; </div>
-<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;<span class="preprocessor">#ifdef KLL_VALIDATION</span></div>
-<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;uint32_t kll_helper::deterministic_offset() {</div>
-<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;  <span class="keyword">const</span> uint32_t result(kll_next_offset);</div>
-<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;  kll_next_offset = 1 - kll_next_offset;</div>
-<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;  <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;}</div>
-<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;<span class="preprocessor">#endif</span></div>
-<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
-<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;  <span class="keywordflow">for</span> (uint32_t i = current_item_count; i &lt; starting_item_count; i++) items[i].~T();</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160; </div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;  compress_result result;</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;  result.final_num_levels = current_num_levels;</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;  result.final_capacity = target_item_count;</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;  result.final_num_items = current_item_count;</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160;  <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;}</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160; </div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;<span class="keywordtype">void</span> kll_helper::copy_construct(<span class="keyword">const</span> T* src, <span class="keywordtype">size_t</span> src_first, <span class="keywordtype">size_t</span> src_last, T* dst, <span class="keywordtype">size_t</span> dst_first) {</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;  <span class="keywordflow">while</span> (src_first != src_last) {</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;    <span class="keyword">new</span> (&amp;dst[dst_first++]) T(src[src_first++]);</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;  }</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;}</div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160; </div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;<span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;<span class="keywordtype">void</span> kll_helper::move_construct(T* src, <span class="keywordtype">size_t</span> src_first, <span class="keywordtype">size_t</span> src_last, T* dst, <span class="keywordtype">size_t</span> dst_first, <span class="keywordtype">bool</span> destroy) {</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;  <span class="keywordflow">while</span> (src_first != src_last) {</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;    <span class="keyword">new</span> (&amp;dst[dst_first++]) T(std::move(src[src_first]));</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;    <span class="keywordflow">if</span> (destroy) src[src_first].~T();</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160;    src_first++;</div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;  }</div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;}</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160; </div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;<span class="preprocessor">#ifdef KLL_VALIDATION</span></div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;uint32_t kll_helper::deterministic_offset() {</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;  <span class="keyword">const</span> uint32_t result(kll_next_offset);</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;  kll_next_offset = 1 - kll_next_offset;</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;  <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160;}</div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;<span class="preprocessor">#endif</span></div>
 <div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160; </div>
-<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// KLL_HELPER_IMPL_HPP_</span></div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160; </div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;<span class="preprocessor">#endif </span><span class="comment">// KLL_HELPER_IMPL_HPP_</span></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition:</b> binomial_bounds.hpp:38</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
