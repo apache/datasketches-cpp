@@ -118,6 +118,7 @@ add_subdirectory(req)
 add_subdirectory(quantiles)
 add_subdirectory(count)
 add_subdirectory(density)
+add_subdirectory(tdigest)
 
 if (WITH_PYTHON)
   add_subdirectory(python)
