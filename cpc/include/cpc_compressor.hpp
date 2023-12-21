@@ -113,7 +113,7 @@ private:
   };
 
   cpc_compressor();
-  friend cpc_compressor<A>& get_compressor();
+  friend cpc_compressor& get_compressor<A>();
   
   ~cpc_compressor();
   friend void destroy_compressor<A>();
