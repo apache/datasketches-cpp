@@ -38,8 +38,8 @@ namespace datasketches {
 template<typename A>
 cpc_compressor<A>& get_compressor() {
   static cpc_compressor<A>* instance = new cpc_compressor<A>(); // use new for global initialization
-  static int req_result = std::atexit(destroy_compressor<A>); // just to clean up a little more nicely; don't worry if it fails
-  unused(result);
+  static int reg_result = std::atexit(destroy_compressor<A>); // just to clean up a little more nicely; don't worry if it fails
+  unused(reg_result);
   return *instance;
 }
 
