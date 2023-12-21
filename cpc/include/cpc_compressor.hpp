@@ -114,9 +114,9 @@ private:
 
   cpc_compressor();
   template<typename T> friend cpc_compressor<T>& get_compressor();
-  friend void destroy_compressor<A>();
   
   ~cpc_compressor();
+  friend void destroy_compressor<A>();
 
   void make_decoding_tables(); // call this at startup
   void free_decoding_tables(); // call this at the end
