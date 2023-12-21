@@ -113,7 +113,7 @@ private:
   };
 
   cpc_compressor();
-  template<typename T> friend cpc_compressor<T>& get_compressor();
+  friend cpc_compressor<A>& get_compressor();
   
   ~cpc_compressor();
   friend void destroy_compressor<A>();
