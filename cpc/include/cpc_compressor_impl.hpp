@@ -22,6 +22,7 @@
 #ifndef CPC_COMPRESSOR_IMPL_HPP_
 #define CPC_COMPRESSOR_IMPL_HPP_
 
+#include <cstdlib>
 #include <memory>
 #include <stdexcept>
 
@@ -35,8 +36,19 @@ namespace datasketches {
 // construct on first use
 template<typename A>
 cpc_compressor<A>& get_compressor() {
+  static bool do_init = true;
   static cpc_compressor<A>* instance = new cpc_compressor<A>(); // use new for global initialization
+  if (do_init) {
+    std::atexit(destroy_compressor<A>); // just to clean up a little more nicely; don't worry if it fails
+    do_init = false;
+  }
   return *instance;
+}
+
+// register to call compressor destructor at exit
+template<typename A>
+void destroy_compressor() {
+  delete std::addressof(get_compressor<A>());
 }
 
 template<typename A>

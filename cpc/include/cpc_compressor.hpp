@@ -44,6 +44,10 @@ template<typename A> class cpc_compressor;
 template<typename A>
 inline cpc_compressor<A>& get_compressor();
 
+// function called atexit to clean up compression tables
+template<typename A>
+void destroy_compressor();
+
 template<typename A>
 class cpc_compressor {
 public:
@@ -110,6 +114,8 @@ private:
 
   cpc_compressor();
   template<typename T> friend cpc_compressor<T>& get_compressor();
+  friend void destroy_compressor<A>();
+  
   ~cpc_compressor();
 
   void make_decoding_tables(); // call this at startup
