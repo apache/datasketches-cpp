@@ -36,12 +36,8 @@ namespace datasketches {
 // construct on first use
 template<typename A>
 cpc_compressor<A>& get_compressor() {
-  static bool do_init = true;
   static cpc_compressor<A>* instance = new cpc_compressor<A>(); // use new for global initialization
-  if (do_init) {
-    std::atexit(destroy_compressor<A>); // just to clean up a little more nicely; don't worry if it fails
-    do_init = false;
-  }
+  static int req_result = std::atexit(destroy_compressor<A>); // just to clean up a little more nicely; don't worry if it fails
   return *instance;
 }
 
