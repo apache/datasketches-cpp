@@ -26,6 +26,7 @@
 #include <memory>
 #include <stdexcept>
 
+#include "common_defs.hpp"
 #include "compression_data.hpp"
 #include "cpc_util.hpp"
 #include "cpc_common.hpp"
@@ -38,6 +39,7 @@ template<typename A>
 cpc_compressor<A>& get_compressor() {
   static cpc_compressor<A>* instance = new cpc_compressor<A>(); // use new for global initialization
   static int req_result = std::atexit(destroy_compressor<A>); // just to clean up a little more nicely; don't worry if it fails
+  unused(result);
   return *instance;
 }
 
