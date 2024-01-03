@@ -76,6 +76,13 @@ TEST_CASE("ebpps sketch: invalid k", "[ebpps_sketch]") {
   REQUIRE_THROWS_AS(ebpps_sketch<int>(ebpps_constants::MAX_K + 1), std::invalid_argument);
 }
 
+TEST_CASE("leak memory", "[ebpps_sketch]") {
+  int* x = new int[4];
+  x[0] = 5;
+  x[1] = x[0] - 3;
+  REQUIRE(x[0] == x[1] + 3);
+}
+
 TEST_CASE("ebpps sketch: invalid weights", "[ebpps_sketch]") {
   uint32_t k = 100;
   ebpps_sketch<int> sk = create_unweighted_sketch(k, 3);
