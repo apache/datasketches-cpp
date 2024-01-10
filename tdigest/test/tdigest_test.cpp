@@ -108,4 +108,43 @@ TEST_CASE("rank - repeated block", "[tdigest]") {
   REQUIRE(td.get_rank(3.01) == 1);
 }
 
+TEST_CASE("merge small", "[tdigest]") {
+  tdigest_double td1(10);
+  td1.update(1);
+  td1.update(2);
+  tdigest_double td2(10);
+  td2.update(2);
+  td2.update(3);
+  td1.merge(td2);
+  REQUIRE(td1.get_min_value() == 1);
+  REQUIRE(td1.get_max_value() == 3);
+  REQUIRE(td1.get_total_weight() == 4);
+  REQUIRE(td1.get_rank(0.99) == 0);
+  REQUIRE(td1.get_rank(1) == 0.125);
+  REQUIRE(td1.get_rank(2) == 0.5);
+  REQUIRE(td1.get_rank(3) == 0.875);
+  REQUIRE(td1.get_rank(3.01) == 1);
+}
+
+TEST_CASE("merge large", "[tdigest]") {
+  const size_t n = 10000;
+  tdigest_double td1(100);
+  tdigest_double td2(100);
+  for (size_t i = 0; i < n / 2; ++i) {
+    td1.update(i);
+    td2.update(n / 2 + i);
+  }
+  td1.merge(td2);
+//  td1.compress();
+//  std::cout << td1.to_string(true);
+  REQUIRE(td1.get_total_weight() == n);
+  REQUIRE(td1.get_min_value() == 0);
+  REQUIRE(td1.get_max_value() == n - 1);
+  REQUIRE(td1.get_rank(0) == Approx(0).margin(0.0001));
+  REQUIRE(td1.get_rank(n / 4) == Approx(0.25).margin(0.0001));
+  REQUIRE(td1.get_rank(n / 2) == Approx(0.5).margin(0.0001));
+  REQUIRE(td1.get_rank(n * 3 / 4) == Approx(0.75).margin(0.0001));
+  REQUIRE(td1.get_rank(n) == 1);
+}
+
 } /* namespace datasketches */

@@ -55,6 +55,8 @@ buffered_weight_(0)
     centroids_capacity_ = internal_k_ + fudge;
   }
   if (buffer_capacity_ < 2 * centroids_capacity_) buffer_capacity_ = 2 * centroids_capacity_;
+  centroids_.reserve(centroids_capacity_);
+  buffer_.reserve(buffer_capacity_);
 }
 
 template<typename T, typename A>
@@ -69,6 +71,18 @@ void tdigest<T, A>::update(T value) {
 
 template<typename T, typename A>
 void tdigest<T, A>::merge(tdigest& other) {
+  if (other.is_empty()) return;
+  size_t num = buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size();
+  buffer_.reserve(num);
+  std::copy(other.buffer_.begin(), other.buffer_.end(), std::back_inserter(buffer_));
+  std::copy(other.centroids_.begin(), other.centroids_.end(), std::back_inserter(buffer_));
+  buffered_weight_ += other.get_total_weight();
+  if (num > buffer_capacity_) {
+    merge_new_values(internal_k_);
+  } else {
+    min_ = std::min(min_, other.get_min_value());
+    max_ = std::max(max_, other.get_max_value());
+  }
 }
 
 template<typename T, typename A>
@@ -205,28 +219,24 @@ void tdigest<T, A>::merge_new_values() {
 template<typename T, typename A>
 void tdigest<T, A>::merge_new_values(bool force, uint16_t k) {
   if (total_weight_ == 0 && buffered_weight_ == 0) return;
-  if (force || buffered_weight_ > 0) {
-    merge_new_values(buffer_, buffered_weight_, k, USE_ALTERNATING_SORT & (merge_count_ & 1));
-    ++merge_count_;
-    buffer_.clear();
-    buffered_weight_ = 0;
-  }
+  if (force || buffered_weight_ > 0) merge_new_values(k);
 }
 
 template<typename T, typename A>
-void tdigest<T, A>::merge_new_values(vector_centroid& incoming_centroids, uint64_t weight, uint16_t k, bool reverse) {
-  for (const auto& centroid: centroids_) incoming_centroids.push_back(centroid);
+void tdigest<T, A>::merge_new_values(uint16_t k) {
+  const bool reverse = USE_ALTERNATING_SORT & (merge_count_ & 1);
+  for (const auto& centroid: centroids_) buffer_.push_back(centroid);
   centroids_.clear();
-  std::stable_sort(incoming_centroids.begin(), incoming_centroids.end(), centroid_cmp(reverse));
-  total_weight_ += weight;
-  auto it = incoming_centroids.begin();
+  std::stable_sort(buffer_.begin(), buffer_.end(), centroid_cmp(reverse));
+  total_weight_ += buffered_weight_;
+  auto it = buffer_.begin();
   centroids_.push_back(*it);
   ++it;
   double weight_so_far = 0;
   const double normalizer = scale_function().normalizer(k, total_weight_);
   double k1 = scale_function().k(0, normalizer);
   double w_limit = total_weight_ * scale_function().q(k1 + 1, normalizer);
-  while (it != incoming_centroids.end()) {
+  while (it != buffer_.end()) {
     const double proposed_weight = centroids_.back().get_weight() + it->get_weight();
     const double projected_weight = weight_so_far + proposed_weight;
     bool add_this;
@@ -237,7 +247,7 @@ void tdigest<T, A>::merge_new_values(vector_centroid& incoming_centroids, uint64
     } else {
       add_this = projected_weight <= w_limit;
     }
-    if (std::distance(incoming_centroids.begin(), it) == 1 || std::distance(incoming_centroids.end(), it) == 1) {
+    if (std::distance(buffer_.begin(), it) == 1 || std::distance(buffer_.end(), it) == 1) {
       add_this = false;
     }
     if (add_this) {
@@ -257,6 +267,9 @@ void tdigest<T, A>::merge_new_values(vector_centroid& incoming_centroids, uint64
     min_ = std::min(min_, centroids_.front().get_mean());
     max_ = std::max(max_, centroids_.back().get_mean());
   }
+  ++merge_count_;
+  buffer_.clear();
+  buffered_weight_ = 0;
 }
 
 } /* namespace datasketches */

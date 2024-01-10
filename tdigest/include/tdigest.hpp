@@ -192,7 +192,7 @@ private:
 
   void merge_new_values();
   void merge_new_values(bool force, uint16_t k);
-  void merge_new_values(vector_centroid& centroids, uint64_t weight, uint16_t k, bool reverse);
+  void merge_new_values(uint16_t k);
 };
 
 } /* namespace datasketches */
