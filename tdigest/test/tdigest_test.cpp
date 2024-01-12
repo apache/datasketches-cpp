@@ -46,6 +46,9 @@ TEST_CASE("one value", "[tdigest]") {
   REQUIRE(td.get_rank(0.99) == 0);
   REQUIRE(td.get_rank(1) == 0.5);
   REQUIRE(td.get_rank(1.01) == 1);
+  REQUIRE(td.get_quantile(0) == 1);
+  REQUIRE(td.get_quantile(0.5) == 1);
+  REQUIRE(td.get_quantile(1) == 1);
 }
 
 TEST_CASE("many values", "[tdigest]") {
@@ -63,6 +66,11 @@ TEST_CASE("many values", "[tdigest]") {
   REQUIRE(td.get_rank(n / 2) == Approx(0.5).margin(0.0001));
   REQUIRE(td.get_rank(n * 3 / 4) == Approx(0.75).margin(0.0001));
   REQUIRE(td.get_rank(n) == 1);
+  REQUIRE(td.get_quantile(0) == 0);
+  REQUIRE(td.get_quantile(0.5) == Approx(n / 2).epsilon(0.01));
+  REQUIRE(td.get_quantile(0.9) == Approx(n * 0.9).epsilon(0.01));
+  REQUIRE(td.get_quantile(0.95) == Approx(n * 0.95).epsilon(0.01));
+  REQUIRE(td.get_quantile(1) == n - 1);
 }
 
 TEST_CASE("rank - two values", "[tdigest]") {

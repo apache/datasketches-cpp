@@ -193,6 +193,8 @@ private:
   void merge_new_values();
   void merge_new_values(bool force, uint16_t k);
   void merge_new_values(uint16_t k);
+
+  static double weighted_average(double x1, double w1, double x2, double w2);
 };
 
 } /* namespace datasketches */

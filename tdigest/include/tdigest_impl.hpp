@@ -172,7 +172,50 @@ double tdigest<T, A>::get_rank(T value) const {
 template<typename T, typename A>
 T tdigest<T, A>::get_quantile(double rank) const {
   if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
-  return 0;
+  if ((rank < 0.0) || (rank > 1.0)) {
+    throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
+  }
+  const_cast<tdigest*>(this)->merge_new_values(); // side effect
+  if (centroids_.size() == 1) return centroids_.front().get_mean();
+
+  // at least 2 centroids
+  const double weight = rank * total_weight_;
+  if (weight < 1) return min_;
+  if (weight > total_weight_ - 1.0) return max_;
+  const double first_weight = centroids_.front().get_weight();
+  if (first_weight > 1 && weight < first_weight / 2.0) {
+    return min_ + (weight - 1.0) / (first_weight / 2.0 - 1.0) * (centroids_.front().get_mean() - min_);
+  }
+  const double last_weight = centroids_.back().get_weight();
+  if (last_weight > 1 && total_weight_ - weight <= last_weight / 2.0) {
+    return max_ + (total_weight_ - weight - 1.0) / (last_weight / 2.0 - 1.0) * (max_ - centroids_.back().get_mean());
+  }
+
+  // interpolate between extremes
+  double weight_so_far = first_weight / 2.0;
+  for (size_t i = 0; i < centroids_.size() - 1; ++i) {
+    const double dw = (centroids_[i].get_weight() + centroids_[i + 1].get_weight()) / 2.0;
+    if (weight_so_far + dw > weight) {
+      // the target weight is between centroids i and i+1
+      double left_weight = 0;
+      if (centroids_[i].get_weight() == 1) {
+        if (weight - weight_so_far < 0.5) return centroids_[i].get_mean();
+        left_weight = 0.5;
+      }
+      double right_weight = 0;
+      if (centroids_[i + 1].get_weight() == 1) {
+        if (weight_so_far + dw - weight <= 0.5) return centroids_[i + 1].get_mean();
+        right_weight = 0.5;
+      }
+      const double w1 = weight - weight_so_far - left_weight;
+      const double w2 = weight_so_far + dw - weight - right_weight;
+      return weighted_average(centroids_[i].get_mean(), w1, centroids_[i + 1].get_mean(), w2);
+    }
+    weight_so_far += dw;
+  }
+  const double w1 = weight - total_weight_ - centroids_.back().get_weight() / 2.0;
+  const double w2 = centroids_.back().get_weight() / 2.0 - w1;
+  return weighted_average(centroids_.back().get_weight(), w1, max_, w2);
 }
 
 template<typename T, typename A>
@@ -270,6 +313,11 @@ void tdigest<T, A>::merge_new_values(uint16_t k) {
   ++merge_count_;
   buffer_.clear();
   buffered_weight_ = 0;
+}
+
+template<typename T, typename A>
+double tdigest<T, A>::weighted_average(double x1, double w1, double x2, double w2) {
+  return (x1 * w1 + x2 * w2) / (w1 + w2);
 }
 
 } /* namespace datasketches */
