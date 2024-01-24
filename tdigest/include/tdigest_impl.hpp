@@ -35,7 +35,7 @@ tdigest(false, k, std::numeric_limits<T>::infinity(), -std::numeric_limits<T>::i
 
 template<typename T, typename A>
 void tdigest<T, A>::update(T value) {
-  // check for NaN
+  if (std::isnan(value)) return;
   if (buffer_.size() >= buffer_capacity_ - centroids_.size()) merge_new_values();
   buffer_.push_back(centroid(value, 1));
   ++buffered_weight_;
@@ -89,7 +89,7 @@ uint64_t tdigest<T, A>::get_total_weight() const {
 template<typename T, typename A>
 double tdigest<T, A>::get_rank(T value) const {
   if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
-  // check for NaN
+  if (std::isnan(value)) throw std::invalid_argument("operation is undefined for NaN");
   if (value < min_) return 0;
   if (value > max_) return 1;
   // one centroid and value == min_ == max_
