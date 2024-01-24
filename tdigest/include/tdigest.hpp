@@ -96,6 +96,7 @@ public:
     uint64_t weight_;
   };
   using vector_centroid = std::vector<centroid, typename std::allocator_traits<Allocator>::template rebind_alloc<centroid>>;
+  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;
 
   struct centroid_cmp {
     centroid_cmp(bool reverse): reverse_(reverse) {}
@@ -176,11 +177,43 @@ public:
    */
   string<Allocator> to_string(bool print_centroids = false) const;
 
+  /**
+   * This method serializes t-Digest into a given stream in a binary form
+   * @param os output stream
+   */
+  void serialize(std::ostream& os) const;
+
+  /**
+   * This method serializes t-Digest as a vector of bytes.
+   * An optional header can be reserved in front of the sketch.
+   * It is an uninitialized space of a given size.
+   * @param header_size_bytes space to reserve in front of the sketch
+   * @return serialized sketch as a vector of bytes
+   */
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+
+  /**
+   * This method deserializes t-Digest from a given stream.
+   * @param is input stream
+   * @param allocator instance of an Allocator
+   * @return an instance of t-Digest
+   */
+  static tdigest deserialize(std::istream& is, const Allocator& allocator = Allocator());
+
+  /**
+   * This method deserializes t-Digest from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param allocator instance of an Allocator
+   * @return an instance of t-Digest
+   */
+  static tdigest deserialize(const void* bytes, size_t size, const Allocator& allocator = Allocator());
+
 private:
   Allocator allocator_;
+  bool reverse_merge_;
   uint16_t k_;
   uint16_t internal_k_;
-  uint32_t merge_count_;
   T min_;
   T max_;
   size_t centroids_capacity_;
@@ -189,6 +222,16 @@ private:
   size_t buffer_capacity_;
   vector_centroid buffer_;
   uint64_t buffered_weight_;
+
+  static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
+  static const uint8_t PREAMBLE_LONGS_NON_EMPTY = 2;
+  static const uint8_t SERIAL_VERSION = 1;
+  static const uint8_t SKETCH_TYPE = 20;
+
+  enum flags { IS_EMPTY, REVERSE_MERGE };
+
+  // for deserialize
+  tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t total_weight_, const Allocator& allocator);
 
   void merge_new_values();
   void merge_new_values(bool force, uint16_t k);
