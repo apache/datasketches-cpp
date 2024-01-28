@@ -40,7 +40,8 @@ ebpps_sketch<T, A>::ebpps_sketch(uint32_t k, const A& allocator) :
   cumulative_wt_(0.0),
   wt_max_(0.0),
   rho_(1.0),
-  sample_(check_k(k), allocator)
+  sample_(check_k(k), allocator),
+  tmp_(1, allocator)
   {}
 
 template<typename T, typename A>
@@ -53,7 +54,8 @@ ebpps_sketch<T,A>::ebpps_sketch(uint32_t k, uint64_t n, double cumulative_wt,
   cumulative_wt_(cumulative_wt),
   wt_max_(wt_max),
   rho_(rho),
-  sample_(sample)
+  sample_(sample),
+  tmp_(1, allocator)
   {}
 
 template<typename T, typename A>
@@ -148,9 +150,8 @@ void ebpps_sketch<T, A>::internal_update(FwdItem&& item, double weight) {
   if (cumulative_wt_ > 0.0)
     sample_.downsample(new_rho / rho_);
   
-  ebpps_sample<T,A> tmp(conditional_forward<FwdItem>(item), new_rho * weight, allocator_);
-
-  sample_.merge(tmp);
+  tmp_.replace_content(conditional_forward<FwdItem>(item), new_rho * weight);
+  sample_.merge(tmp_);
 
   cumulative_wt_ = new_cum_wt;
   wt_max_ = new_wt_max;
@@ -240,9 +241,8 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
     if (cumulative_wt_ > 0.0)
       sample_.downsample(new_rho / rho_);
   
-    ebpps_sample<T,A> tmp(conditional_forward<O>(items[i]), new_rho * avg_wt, allocator_);
-
-    sample_.merge(tmp);
+    tmp_.replace_content(conditional_forward<O>(items[i]), new_rho * avg_wt);
+    sample_.merge(tmp_);
 
     cumulative_wt_ = new_cum_wt;
     rho_ = new_rho;
@@ -259,9 +259,8 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
     if (cumulative_wt_ > 0.0)
       sample_.downsample(new_rho / rho_);
   
-    ebpps_sample<T,A> tmp(conditional_forward<O>(other_sample.get_partial_item()), new_rho * other_c_frac * avg_wt, allocator_);
-
-    sample_.merge(tmp);
+    tmp_.replace_content(conditional_forward<O>(other_sample.get_partial_item()), new_rho * other_c_frac * avg_wt);
+    sample_.merge(tmp_);
 
     cumulative_wt_ = new_cum_wt;
     rho_ = new_rho;
