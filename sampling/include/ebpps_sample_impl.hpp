@@ -54,9 +54,9 @@ template<typename TT>
 void ebpps_sample<T,A>::replace_content(TT&& item, double theta) {
   c_ = theta;
   data_.clear();
+  partial_item_.reset();
   if (theta == 1.0) {
     data_.emplace_back(std::forward<TT>(item));
-    partial_item_.reset();
   } else {
     partial_item_.emplace(std::forward<TT>(item));
   }
