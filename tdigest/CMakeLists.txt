@@ -17,7 +17,7 @@
 
 add_library(tdigest INTERFACE)
 
-add_library(${PROJECT_NAME}::QUANTILES ALIAS tdigest)
+add_library(${PROJECT_NAME}::TDIGEST ALIAS tdigest)
 
 if (BUILD_TESTS)
   add_subdirectory(test)
