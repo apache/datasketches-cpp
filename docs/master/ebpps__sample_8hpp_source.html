@@ -108,13 +108,13 @@ $(function() {
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;  <span class="keyword">public</span>:</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">explicit</span> ebpps_sample(uint32_t k, <span class="keyword">const</span> A&amp; allocator = A());</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="comment">// constructor used to create a sample to merge one item</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> TT&gt;</div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    ebpps_sample(TT&amp;&amp; item, <span class="keywordtype">double</span> theta, <span class="keyword">const</span> A&amp; allocator = A());</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="comment">// for deserialization</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="keyword">class </span>items_deleter;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    ebpps_sample(std::vector&lt;T, A&gt;&amp;&amp; data, optional&lt;T&gt;&amp;&amp; partial_item, <span class="keywordtype">double</span> c, <span class="keyword">const</span> A&amp; allocator = A());</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="comment">// for deserialization</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">class </span>items_deleter;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    ebpps_sample(std::vector&lt;T, A&gt;&amp;&amp; data, optional&lt;T&gt;&amp;&amp; partial_item, <span class="keywordtype">double</span> c, <span class="keyword">const</span> A&amp; allocator = A());</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="comment">// used instead of having a single-item constructor for update/merge calls</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <span class="keyword">template</span>&lt;<span class="keyword">typename</span> TT&gt;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordtype">void</span> replace_content(TT&amp;&amp; item, <span class="keywordtype">double</span> theta);</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <span class="keywordtype">void</span> reset();</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordtype">void</span> downsample(<span class="keywordtype">double</span> theta);</div>
