@@ -37,13 +37,13 @@ class ebpps_sample {
   public:
     explicit ebpps_sample(uint32_t k, const A& allocator = A());
 
-    // constructor used to create a sample to merge one item
-    template<typename TT>
-    ebpps_sample(TT&& item, double theta, const A& allocator = A());
-
     // for deserialization
     class items_deleter;
     ebpps_sample(std::vector<T, A>&& data, optional<T>&& partial_item, double c, const A& allocator = A());
+
+    // used instead of having a single-item constructor for update/merge calls
+    template<typename TT>
+    void replace_content(TT&& item, double theta);
 
     void reset();
     void downsample(double theta);

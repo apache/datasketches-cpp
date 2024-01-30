@@ -42,28 +42,25 @@ ebpps_sample<T,A>::ebpps_sample(uint32_t reserved_size, const A& allocator) :
   }
 
 template<typename T, typename A>
-template<typename TT>
-ebpps_sample<T,A>::ebpps_sample(TT&& item, double theta, const A& allocator) :
-  allocator_(allocator),
-  c_(theta),
-  partial_item_(),
-  data_(allocator)
-  {
-    if (theta == 1.0) {
-      data_.reserve(1);
-      data_.emplace_back(std::forward<TT>(item));
-    } else {
-      partial_item_.emplace(std::forward<TT>(item));
-    }
-  }
-
-template<typename T, typename A>
 ebpps_sample<T,A>::ebpps_sample(std::vector<T, A>&& data, optional<T>&& partial_item, double c, const A& allocator) :
   allocator_(allocator),
   c_(c),
   partial_item_(partial_item),
   data_(data, allocator)
   {}
+
+template<typename T, typename A>
+template<typename TT>
+void ebpps_sample<T,A>::replace_content(TT&& item, double theta) {
+  c_ = theta;
+  data_.clear();
+  partial_item_.reset();
+  if (theta == 1.0) {
+    data_.emplace_back(std::forward<TT>(item));
+  } else {
+    partial_item_.emplace(std::forward<TT>(item));
+  }
+}
 
 template<typename T, typename A>
 auto ebpps_sample<T,A>::get_sample() const -> result_type {

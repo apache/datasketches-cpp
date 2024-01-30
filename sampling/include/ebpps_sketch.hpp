@@ -256,6 +256,8 @@ class ebpps_sketch {
 
     ebpps_sample<T,A> sample_;      // Object holding the current state of the sample
 
+    ebpps_sample<T,A> tmp_;         // Temporary sample of size 1 used in updates
+
     // handles merge after ensuring other.cumulative_wt_ <= this->cumulative_wt_
     // so we can send items in individually
     template<typename O>
