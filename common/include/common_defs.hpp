@@ -91,6 +91,23 @@ static inline void write(std::ostream& os, const T* ptr, size_t size_bytes) {
   os.write(reinterpret_cast<const char*>(ptr), size_bytes);
 }
 
+template<typename T>
+T byteswap(T value) {
+  char* ptr = static_cast<char*>(static_cast<void*>(&value));
+  const int len = sizeof(T);
+  for (size_t i = 0; i < len / 2; ++i) {
+    std::swap(ptr[i], ptr[len - i - 1]);
+  }
+  return value;
+}
+
+template<typename T>
+static inline T read_big_endian(std::istream& is) {
+  T value;
+  is.read(reinterpret_cast<char*>(&value), sizeof(T));
+  return byteswap(value);
+}
+
 // wrapper for iterators to implement operator-> returning temporary value
 template<typename T>
 class return_value_holder {

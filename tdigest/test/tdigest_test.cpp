@@ -19,6 +19,7 @@
 
 #include <catch2/catch.hpp>
 #include <iostream>
+#include <fstream>
 
 #include "tdigest.hpp"
 
@@ -227,6 +228,72 @@ TEST_CASE("serialize deserialize steam and bytes equivalence", "[tdigest]") {
   REQUIRE(deserialized_td1.get_max_value() == deserialized_td2.get_max_value());
   REQUIRE(deserialized_td1.get_rank(500) == deserialized_td2.get_rank(500));
   REQUIRE(deserialized_td1.get_quantile(0.5) == deserialized_td2.get_quantile(0.5));
+}
+
+TEST_CASE("deserialize from reference implementation stream double", "[tdigest]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(std::string(TEST_BINARY_INPUT_PATH) + "tdigest_ref_k100_n10000_double.sk", std::ios::binary);
+  const auto td = tdigest<double>::deserialize(is);
+  const size_t n = 10000;
+  REQUIRE(td.get_total_weight() == n);
+  REQUIRE(td.get_min_value() == 0);
+  REQUIRE(td.get_max_value() == n - 1);
+  REQUIRE(td.get_rank(0) == Approx(0).margin(0.0001));
+  REQUIRE(td.get_rank(n / 4) == Approx(0.25).margin(0.0001));
+  REQUIRE(td.get_rank(n / 2) == Approx(0.5).margin(0.0001));
+  REQUIRE(td.get_rank(n * 3 / 4) == Approx(0.75).margin(0.0001));
+  REQUIRE(td.get_rank(n) == 1);
+}
+
+TEST_CASE("deserialize from reference implementation stream float", "[tdigest]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(std::string(TEST_BINARY_INPUT_PATH) + "tdigest_ref_k100_n10000_float.sk", std::ios::binary);
+  const auto td = tdigest<float>::deserialize(is);
+  const size_t n = 10000;
+  REQUIRE(td.get_total_weight() == n);
+  REQUIRE(td.get_min_value() == 0);
+  REQUIRE(td.get_max_value() == n - 1);
+  REQUIRE(td.get_rank(0) == Approx(0).margin(0.0001));
+  REQUIRE(td.get_rank(n / 4) == Approx(0.25).margin(0.0001));
+  REQUIRE(td.get_rank(n / 2) == Approx(0.5).margin(0.0001));
+  REQUIRE(td.get_rank(n * 3 / 4) == Approx(0.75).margin(0.0001));
+  REQUIRE(td.get_rank(n) == 1);
+}
+
+TEST_CASE("deserialize from reference implementation bytes double", "[tdigest]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(std::string(TEST_BINARY_INPUT_PATH) + "tdigest_ref_k100_n10000_double.sk", std::ios::binary);
+  std::vector<char> bytes((std::istreambuf_iterator<char>(is)), (std::istreambuf_iterator<char>()));
+  const auto td = tdigest<double>::deserialize(bytes.data(), bytes.size());
+  const size_t n = 10000;
+  REQUIRE(td.get_total_weight() == n);
+  REQUIRE(td.get_min_value() == 0);
+  REQUIRE(td.get_max_value() == n - 1);
+  REQUIRE(td.get_rank(0) == Approx(0).margin(0.0001));
+  REQUIRE(td.get_rank(n / 4) == Approx(0.25).margin(0.0001));
+  REQUIRE(td.get_rank(n / 2) == Approx(0.5).margin(0.0001));
+  REQUIRE(td.get_rank(n * 3 / 4) == Approx(0.75).margin(0.0001));
+  REQUIRE(td.get_rank(n) == 1);
+}
+
+TEST_CASE("deserialize from reference implementation bytes float", "[tdigest]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(std::string(TEST_BINARY_INPUT_PATH) + "tdigest_ref_k100_n10000_float.sk", std::ios::binary);
+  std::vector<char> bytes((std::istreambuf_iterator<char>(is)), (std::istreambuf_iterator<char>()));
+  const auto td = tdigest<double>::deserialize(bytes.data(), bytes.size());
+  const size_t n = 10000;
+  REQUIRE(td.get_total_weight() == n);
+  REQUIRE(td.get_min_value() == 0);
+  REQUIRE(td.get_max_value() == n - 1);
+  REQUIRE(td.get_rank(0) == Approx(0).margin(0.0001));
+  REQUIRE(td.get_rank(n / 4) == Approx(0.25).margin(0.0001));
+  REQUIRE(td.get_rank(n / 2) == Approx(0.5).margin(0.0001));
+  REQUIRE(td.get_rank(n * 3 / 4) == Approx(0.75).margin(0.0001));
+  REQUIRE(td.get_rank(n) == 1);
 }
 
 } /* namespace datasketches */

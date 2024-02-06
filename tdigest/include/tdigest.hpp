@@ -228,6 +228,9 @@ private:
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t SKETCH_TYPE = 20;
 
+  static const uint8_t COMPAT_DOUBLE = 1;
+  static const uint8_t COMPAT_FLOAT = 2;
+
   enum flags { IS_EMPTY, REVERSE_MERGE };
 
   // for deserialize
@@ -238,6 +241,10 @@ private:
   void merge_new_values(uint16_t k);
 
   static double weighted_average(double x1, double w1, double x2, double w2);
+
+  // for compatibility with format of the reference implementation
+  static tdigest deserialize_compat(std::istream& is, const Allocator& allocator = Allocator());
+  static tdigest deserialize_compat(const void* bytes, size_t size, const Allocator& allocator = Allocator());
 };
 
 } /* namespace datasketches */
