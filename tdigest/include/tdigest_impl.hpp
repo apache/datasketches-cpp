@@ -428,13 +428,17 @@ tdigest<T, A> tdigest<T, A>::deserialize(const void* bytes, size_t size, const A
   return tdigest(reverse_merge, k, min, max, std::move(centroids), total_weight, allocator);
 }
 
+// compatibility with the format of the reference implementation
+// default byte order of ByteBuffer is used there, which is big endian
 template<typename T, typename A>
 tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& allocator) {
+  // this method was called because the first three bytes were zeros
+  // so read one more byte to see if it looks like the reference implementation format
   const auto type = read<uint8_t>(is);
   if (type != COMPAT_DOUBLE && type != COMPAT_FLOAT) {
     throw std::invalid_argument("unexpected sketch preamble: 0 0 0 " + std::to_string(type));
   }
-  if (type == COMPAT_DOUBLE) {
+  if (type == COMPAT_DOUBLE) { // compatibility with asBytes()
     const auto min = read_big_endian<double>(is);
     const auto max = read_big_endian<double>(is);
     const auto k = static_cast<uint16_t>(read_big_endian<double>(is));
@@ -449,10 +453,12 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
     }
     return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
   }
-  // compatibility with asSmallBytes()
+  // COMPAT_FLOAT: compatibility with asSmallBytes()
   const auto min = read_big_endian<double>(is); // reference implementation uses doubles for min and max
   const auto max = read_big_endian<double>(is);
   const auto k = static_cast<uint16_t>(read_big_endian<float>(is));
+  // reference implementation stores capacities of the array of centroids and the buffer as shorts
+  // they can be derived from k in the constructor
   read<uint32_t>(is); // unused
   const auto num_centroids = read_big_endian<uint16_t>(is);
   vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
@@ -466,15 +472,19 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
   return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
 }
 
+// compatibility with the format of the reference implementation
+// default byte order of ByteBuffer is used there, which is big endian
 template<typename T, typename A>
 tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, const A& allocator) {
   const char* ptr = static_cast<const char*>(bytes);
+  // this method was called because the first three bytes were zeros
+  // so read one more byte to see if it looks like the reference implementation format
   const auto type = *ptr++;
   if (type != COMPAT_DOUBLE && type != COMPAT_FLOAT) {
     throw std::invalid_argument("unexpected sketch preamble: 0 0 0 " + std::to_string(type));
   }
   const char* end_ptr = static_cast<const char*>(bytes) + size;
-  if (type == COMPAT_DOUBLE) {
+  if (type == COMPAT_DOUBLE) { // compatibility with asBytes()
     ensure_minimum_memory(end_ptr - ptr, sizeof(double) * 3 + sizeof(uint32_t));
     double min;
     ptr += copy_from_mem(ptr, min);
@@ -503,8 +513,9 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
     }
     return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
   }
+  // COMPAT_FLOAT: compatibility with asSmallBytes()
   ensure_minimum_memory(end_ptr - ptr, sizeof(double) * 2 + sizeof(float) + sizeof(uint16_t) * 3);
-  double min;
+  double min; // reference implementation uses doubles for min and max
   ptr += copy_from_mem(ptr, min);
   min = byteswap(min);
   double max;
@@ -513,6 +524,8 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
   float k_float;
   ptr += copy_from_mem(ptr, k_float);
   const uint16_t k = static_cast<uint16_t>(byteswap(k_float));
+  // reference implementation stores capacities of the array of centroids and the buffer as shorts
+  // they can be derived from k in the constructor
   ptr += sizeof(uint32_t); // unused
   uint16_t num_centroids;
   ptr += copy_from_mem(ptr, num_centroids);
