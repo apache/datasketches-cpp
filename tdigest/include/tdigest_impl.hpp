@@ -352,6 +352,7 @@ tdigest<T, A> tdigest<T, A>::deserialize(std::istream& is, const A& allocator) {
   const auto serial_version = read<uint8_t>(is);
   const auto sketch_type = read<uint8_t>(is);
   if (sketch_type != SKETCH_TYPE) {
+    if (preamble_longs == 0 && serial_version == 0 && sketch_type == 0) return deserialize_compat(is, allocator);
     throw std::invalid_argument("sketch type mismatch: expected " + std::to_string(SKETCH_TYPE) + ", actual " + std::to_string(sketch_type));
   }
   if (serial_version != SERIAL_VERSION) {
@@ -391,6 +392,7 @@ tdigest<T, A> tdigest<T, A>::deserialize(const void* bytes, size_t size, const A
   const uint8_t serial_version = *ptr++;
   const uint8_t sketch_type = *ptr++;
   if (sketch_type != SKETCH_TYPE) {
+    if (preamble_longs == 0 && serial_version == 0 && sketch_type == 0) return deserialize_compat(ptr, end_ptr - ptr, allocator);
     throw std::invalid_argument("sketch type mismatch: expected " + std::to_string(SKETCH_TYPE) + ", actual " + std::to_string(sketch_type));
   }
   if (serial_version != SERIAL_VERSION) {
@@ -424,6 +426,124 @@ tdigest<T, A> tdigest<T, A>::deserialize(const void* bytes, size_t size, const A
   for (const auto& c: centroids) total_weight += c.get_weight();
   const bool reverse_merge = flags_byte & (1 << flags::REVERSE_MERGE);
   return tdigest(reverse_merge, k, min, max, std::move(centroids), total_weight, allocator);
+}
+
+// compatibility with the format of the reference implementation
+// default byte order of ByteBuffer is used there, which is big endian
+template<typename T, typename A>
+tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& allocator) {
+  // this method was called because the first three bytes were zeros
+  // so read one more byte to see if it looks like the reference implementation format
+  const auto type = read<uint8_t>(is);
+  if (type != COMPAT_DOUBLE && type != COMPAT_FLOAT) {
+    throw std::invalid_argument("unexpected sketch preamble: 0 0 0 " + std::to_string(type));
+  }
+  if (type == COMPAT_DOUBLE) { // compatibility with asBytes()
+    const auto min = read_big_endian<double>(is);
+    const auto max = read_big_endian<double>(is);
+    const auto k = static_cast<uint16_t>(read_big_endian<double>(is));
+    const auto num_centroids = read_big_endian<uint32_t>(is);
+    vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
+    uint64_t total_weight = 0;
+    for (auto& c: centroids) {
+      const uint64_t weight = static_cast<uint64_t>(read_big_endian<double>(is));
+      const auto mean = read_big_endian<double>(is);
+      c = centroid(mean, weight);
+      total_weight += weight;
+    }
+    return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
+  }
+  // COMPAT_FLOAT: compatibility with asSmallBytes()
+  const auto min = read_big_endian<double>(is); // reference implementation uses doubles for min and max
+  const auto max = read_big_endian<double>(is);
+  const auto k = static_cast<uint16_t>(read_big_endian<float>(is));
+  // reference implementation stores capacities of the array of centroids and the buffer as shorts
+  // they can be derived from k in the constructor
+  read<uint32_t>(is); // unused
+  const auto num_centroids = read_big_endian<uint16_t>(is);
+  vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
+  uint64_t total_weight = 0;
+  for (auto& c: centroids) {
+    const uint64_t weight = static_cast<uint64_t>(read_big_endian<float>(is));
+    const auto mean = read_big_endian<float>(is);
+    c = centroid(mean, weight);
+    total_weight += weight;
+  }
+  return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
+}
+
+// compatibility with the format of the reference implementation
+// default byte order of ByteBuffer is used there, which is big endian
+template<typename T, typename A>
+tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, const A& allocator) {
+  const char* ptr = static_cast<const char*>(bytes);
+  // this method was called because the first three bytes were zeros
+  // so read one more byte to see if it looks like the reference implementation format
+  const auto type = *ptr++;
+  if (type != COMPAT_DOUBLE && type != COMPAT_FLOAT) {
+    throw std::invalid_argument("unexpected sketch preamble: 0 0 0 " + std::to_string(type));
+  }
+  const char* end_ptr = static_cast<const char*>(bytes) + size;
+  if (type == COMPAT_DOUBLE) { // compatibility with asBytes()
+    ensure_minimum_memory(end_ptr - ptr, sizeof(double) * 3 + sizeof(uint32_t));
+    double min;
+    ptr += copy_from_mem(ptr, min);
+    min = byteswap(min);
+    double max;
+    ptr += copy_from_mem(ptr, max);
+    max = byteswap(max);
+    double k_double;
+    ptr += copy_from_mem(ptr, k_double);
+    const uint16_t k = static_cast<uint16_t>(byteswap(k_double));
+    uint32_t num_centroids;
+    ptr += copy_from_mem(ptr, num_centroids);
+    num_centroids = byteswap(num_centroids);
+    ensure_minimum_memory(end_ptr - ptr, sizeof(double) * num_centroids * 2);
+    vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
+    uint64_t total_weight = 0;
+    for (auto& c: centroids) {
+      double weight;
+      ptr += copy_from_mem(ptr, weight);
+      weight = byteswap(weight);
+      double mean;
+      ptr += copy_from_mem(ptr, mean);
+      mean = byteswap(mean);
+      c = centroid(mean, static_cast<uint64_t>(weight));
+      total_weight += static_cast<uint64_t>(weight);
+    }
+    return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
+  }
+  // COMPAT_FLOAT: compatibility with asSmallBytes()
+  ensure_minimum_memory(end_ptr - ptr, sizeof(double) * 2 + sizeof(float) + sizeof(uint16_t) * 3);
+  double min; // reference implementation uses doubles for min and max
+  ptr += copy_from_mem(ptr, min);
+  min = byteswap(min);
+  double max;
+  ptr += copy_from_mem(ptr, max);
+  max = byteswap(max);
+  float k_float;
+  ptr += copy_from_mem(ptr, k_float);
+  const uint16_t k = static_cast<uint16_t>(byteswap(k_float));
+  // reference implementation stores capacities of the array of centroids and the buffer as shorts
+  // they can be derived from k in the constructor
+  ptr += sizeof(uint32_t); // unused
+  uint16_t num_centroids;
+  ptr += copy_from_mem(ptr, num_centroids);
+  num_centroids = byteswap(num_centroids);
+  ensure_minimum_memory(end_ptr - ptr, sizeof(float) * num_centroids * 2);
+  vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
+  uint64_t total_weight = 0;
+  for (auto& c: centroids) {
+    float weight;
+    ptr += copy_from_mem(ptr, weight);
+    weight = byteswap(weight);
+    float mean;
+    ptr += copy_from_mem(ptr, mean);
+    mean = byteswap(mean);
+    c = centroid(mean, static_cast<uint64_t>(weight));
+    total_weight += static_cast<uint64_t>(weight);
+  }
+  return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
 }
 
 template<typename T, typename A>
