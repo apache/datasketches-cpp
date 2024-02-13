@@ -28,6 +28,8 @@
 namespace datasketches {
 
 // this is equivalent of K_2 (default) in the Java implementation mentioned below
+// Generates cluster sizes proportional to q*(1-q).
+// The use of a normalizing function results in a strictly bounded number of clusters no matter how many samples.
 struct scale_function {
   double k(double q, double normalizer) const {
     return limit([normalizer] (double q) { return std::log(q / (1 - q)) * normalizer; }, q, 1e-15, 1 - 1e-15);
@@ -99,12 +101,11 @@ public:
   using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;
 
   struct centroid_cmp {
-    centroid_cmp(bool reverse): reverse_(reverse) {}
+    centroid_cmp() {}
     bool operator()(const centroid& a, const centroid& b) const {
-      if (a.get_mean() < b.get_mean()) return !reverse_;
-      return reverse_;
+      if (a.get_mean() < b.get_mean()) return true;
+      return false;
     }
-    bool reverse_;
   };
 
   /**
@@ -218,7 +219,7 @@ private:
   T max_;
   size_t centroids_capacity_;
   vector_centroid centroids_;
-  uint64_t total_weight_;
+  uint64_t centroids_weight_;
   size_t buffer_capacity_;
   vector_centroid buffer_;
   uint64_t buffered_weight_;
@@ -236,9 +237,7 @@ private:
   // for deserialize
   tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t total_weight_, const Allocator& allocator);
 
-  void merge_new_values();
-  void merge_new_values(bool force, uint16_t k);
-  void merge_new_values(uint16_t k);
+  void merge_buffered();
 
   static double weighted_average(double x1, double w1, double x2, double w2);
 
