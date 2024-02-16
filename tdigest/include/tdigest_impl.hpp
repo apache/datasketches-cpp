@@ -112,7 +112,7 @@ double tdigest<T, A>::get_rank(T value) const {
   if (value > last_mean) {
     if (max_ - last_mean > 0) {
       if (value == max_) return 1.0 - 0.5 / centroids_weight_;
-        return 1 - ((1 + (max_ - value) / (max_ - last_mean) * (centroids_.back().get_weight() / 2.0 - 1.0)) / centroids_weight_); // ?
+        return 1.0 - ((1.0 + (max_ - value) / (max_ - last_mean) * (centroids_.back().get_weight() / 2.0 - 1.0)) / centroids_weight_); // ?
     }
     return 1; // should never happen
   }
@@ -122,7 +122,7 @@ double tdigest<T, A>::get_rank(T value) const {
   auto upper = std::upper_bound(lower, centroids_.end(), centroid(value, 1), centroid_cmp());
   if (upper == centroids_.begin()) throw std::logic_error("upper == begin in get_rank()");
   if (value < lower->get_mean()) --lower;
-  if (upper == centroids_.end() || (upper != centroids_.begin() && !((upper - 1)->get_mean() < value))) --upper;
+  if (upper == centroids_.end() || !((upper - 1)->get_mean() < value)) --upper;
   double weight_below = 0;
   auto it = centroids_.begin();
   while (it != lower) {
