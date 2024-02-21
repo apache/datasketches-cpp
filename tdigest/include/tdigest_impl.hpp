@@ -320,7 +320,7 @@ template<typename T, typename A>
 auto tdigest<T, A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
   const_cast<tdigest*>(this)->merge_buffered(); // side effect
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NON_EMPTY;
-  const size_t size_bytes = preamble_longs * sizeof(uint64_t) + sizeof(T) * 2 + sizeof(centroid) * centroids_.size();
+  const size_t size_bytes = preamble_longs * sizeof(uint64_t) + (is_empty() ? 0 : sizeof(T) * 2 + sizeof(centroid) * centroids_.size());
   vector_bytes bytes(size_bytes, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
