@@ -39,3 +39,10 @@ target_sources(tdigest_test
   PRIVATE
     tdigest_test.cpp
 )
+
+if (GENERATE)
+target_sources(tdigest_test
+  PRIVATE
+    tdigest_serialize_for_java.cpp
+)
+endif()
