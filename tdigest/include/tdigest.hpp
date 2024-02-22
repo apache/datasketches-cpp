@@ -74,7 +74,8 @@ using tdigest_double = tdigest<double>;
  */
 template <typename T, typename Allocator>
 class tdigest {
-  static_assert(std::is_floating_point<T>::value, "Floating-point type expected");
+  // exclude long double by not using std::is_floating_point
+  static_assert(std::is_same<T, double>::value || std::is_same<T, float>::value, "Either double or float type expected");
   static_assert(std::numeric_limits<T>::is_iec559, "IEEE 754 compatibility required");
 public:
   using value_type = T;
@@ -84,18 +85,20 @@ public:
   static const bool USE_TWO_LEVEL_COMPRESSION = true;
   static const bool USE_WEIGHT_LIMIT = true;
 
+  using W = typename std::conditional<std::is_same<T, double>::value, uint64_t, uint32_t>::type;
+
   class centroid {
   public:
-    centroid(T value, uint64_t weight): mean_(value), weight_(weight) {}
+    centroid(T value, W weight): mean_(value), weight_(weight) {}
     void add(const centroid& other) {
       weight_ += other.weight_;
       mean_ += (other.mean_ - mean_) * other.weight_ / weight_;
     }
     T get_mean() const { return mean_; }
-    uint64_t get_weight() const { return weight_; }
+    T get_weight() const { return weight_; }
   private:
     T mean_;
-    uint64_t weight_;
+    W weight_;
   };
   using vector_centroid = std::vector<centroid, typename std::allocator_traits<Allocator>::template rebind_alloc<centroid>>;
   using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;

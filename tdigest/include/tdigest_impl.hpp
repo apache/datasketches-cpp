@@ -445,7 +445,7 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
     vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
     uint64_t total_weight = 0;
     for (auto& c: centroids) {
-      const uint64_t weight = static_cast<uint64_t>(read_big_endian<double>(is));
+      const W weight = static_cast<W>(read_big_endian<double>(is));
       const auto mean = read_big_endian<double>(is);
       c = centroid(mean, weight);
       total_weight += weight;
@@ -463,7 +463,7 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
   vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
   uint64_t total_weight = 0;
   for (auto& c: centroids) {
-    const uint64_t weight = static_cast<uint64_t>(read_big_endian<float>(is));
+    const W weight = static_cast<W>(read_big_endian<float>(is));
     const auto mean = read_big_endian<float>(is);
     c = centroid(mean, weight);
     total_weight += weight;
@@ -507,7 +507,7 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
       double mean;
       ptr += copy_from_mem(ptr, mean);
       mean = byteswap(mean);
-      c = centroid(mean, static_cast<uint64_t>(weight));
+      c = centroid(mean, static_cast<W>(weight));
       total_weight += static_cast<uint64_t>(weight);
     }
     return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
@@ -539,7 +539,7 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
     float mean;
     ptr += copy_from_mem(ptr, mean);
     mean = byteswap(mean);
-    c = centroid(mean, static_cast<uint64_t>(weight));
+    c = centroid(mean, static_cast<W>(weight));
     total_weight += static_cast<uint64_t>(weight);
   }
   return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);

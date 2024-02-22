@@ -34,4 +34,14 @@ TEST_CASE("tdigest double generate", "[serialize_for_java]") {
   }
 }
 
+TEST_CASE("tdigest float generate", "[serialize_for_java]") {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
+    tdigest_float td(100);
+    for (unsigned i = 1; i <= n; ++i) td.update(i);
+    std::ofstream os("tdigest_float_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
+    td.serialize(os);
+  }
+}
+
 } /* namespace datasketches */
