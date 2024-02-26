@@ -95,7 +95,7 @@ public:
       mean_ += (other.mean_ - mean_) * other.weight_ / weight_;
     }
     T get_mean() const { return mean_; }
-    T get_weight() const { return weight_; }
+    W get_weight() const { return weight_; }
   private:
     T mean_;
     W weight_;
