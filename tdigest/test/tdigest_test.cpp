@@ -220,14 +220,18 @@ TEST_CASE("serialize deserialize steam and bytes equivalence empty", "[tdigest]"
   auto deserialized_td2 = tdigest<double>::deserialize(bytes.data(), bytes.size());
   REQUIRE(bytes.size() == static_cast<size_t>(s.tellg()));
 
-  REQUIRE(deserialized_td1.get_k() == deserialized_td2.get_k());
-  REQUIRE(deserialized_td1.get_total_weight() == deserialized_td2.get_total_weight());
-  REQUIRE(deserialized_td1.is_empty() == deserialized_td2.is_empty());
+  REQUIRE(deserialized_td1.is_empty());
+  REQUIRE(deserialized_td2.is_empty());
+  REQUIRE(deserialized_td1.get_k() == 100);
+  REQUIRE(deserialized_td2.get_k() == 100);
+  REQUIRE(deserialized_td1.get_total_weight() == 0);
+  REQUIRE(deserialized_td2.get_total_weight() == 0);
 }
 
 TEST_CASE("serialize deserialize steam and bytes equivalence", "[tdigest]") {
   tdigest<double> td(100);
-  for (int i = 0; i < 1000; ++i) td.update(i);
+  const int n = 1000;
+  for (int i = 0; i < n; ++i) td.update(i);
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   td.serialize(s);
   auto bytes = td.serialize();
@@ -242,12 +246,19 @@ TEST_CASE("serialize deserialize steam and bytes equivalence", "[tdigest]") {
   auto deserialized_td2 = tdigest<double>::deserialize(bytes.data(), bytes.size());
   REQUIRE(bytes.size() == static_cast<size_t>(s.tellg()));
 
-  REQUIRE(deserialized_td1.get_k() == deserialized_td2.get_k());
-  REQUIRE(deserialized_td1.get_total_weight() == deserialized_td2.get_total_weight());
-  REQUIRE(deserialized_td1.is_empty() == deserialized_td2.is_empty());
-  REQUIRE(deserialized_td1.get_min_value() == deserialized_td2.get_min_value());
-  REQUIRE(deserialized_td1.get_max_value() == deserialized_td2.get_max_value());
-  REQUIRE(deserialized_td1.get_rank(500) == deserialized_td2.get_rank(500));
+  REQUIRE_FALSE(deserialized_td1.is_empty());
+  REQUIRE(deserialized_td1.get_k() == 100);
+  REQUIRE(deserialized_td1.get_total_weight() == n);
+  REQUIRE(deserialized_td1.get_min_value() == 0);
+  REQUIRE(deserialized_td1.get_max_value() == n - 1);
+
+  REQUIRE_FALSE(deserialized_td2.is_empty());
+  REQUIRE(deserialized_td2.get_k() == 100);
+  REQUIRE(deserialized_td2.get_total_weight() == n);
+  REQUIRE(deserialized_td2.get_min_value() == 0);
+  REQUIRE(deserialized_td2.get_max_value() == n - 1);
+
+  REQUIRE(deserialized_td1.get_rank(n / 2) == deserialized_td2.get_rank(n / 2));
   REQUIRE(deserialized_td1.get_quantile(0.5) == deserialized_td2.get_quantile(0.5));
 }
 
