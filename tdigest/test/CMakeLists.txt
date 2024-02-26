@@ -38,6 +38,7 @@ add_test(
 target_sources(tdigest_test
   PRIVATE
     tdigest_test.cpp
+    tdigest_custom_allocator_test.cpp
 )
 
 if (GENERATE)
