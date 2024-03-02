@@ -85,6 +85,8 @@ public:
   static const bool USE_TWO_LEVEL_COMPRESSION = true;
   static const bool USE_WEIGHT_LIMIT = true;
 
+  static const uint16_t DEFAULT_K = 200;
+
   using W = typename std::conditional<std::is_same<T, double>::value, uint64_t, uint32_t>::type;
 
   class centroid {
@@ -116,7 +118,7 @@ public:
    * @param k affects the size of the sketch and its estimation error
    * @param allocator used to allocate memory
    */
-  explicit tdigest(uint16_t k = 100, const Allocator& allocator = Allocator());
+  explicit tdigest(uint16_t k = DEFAULT_K, const Allocator& allocator = Allocator());
 
   /**
    * Update this t-Digest with the given value
@@ -227,15 +229,17 @@ private:
   vector_centroid buffer_;
   uint64_t buffered_weight_;
 
-  static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
-  static const uint8_t PREAMBLE_LONGS_NON_EMPTY = 2;
+  static const uint8_t PREAMBLE_LONGS_EMPTY_OR_SINGLE = 1;
+  static const uint8_t PREAMBLE_LONGS_MULTIPLE = 2;
   static const uint8_t SERIAL_VERSION = 1;
   static const uint8_t SKETCH_TYPE = 20;
 
   static const uint8_t COMPAT_DOUBLE = 1;
   static const uint8_t COMPAT_FLOAT = 2;
 
-  enum flags { IS_EMPTY, REVERSE_MERGE };
+  enum flags { IS_EMPTY, IS_SINGLE_VALUE, REVERSE_MERGE };
+
+  bool is_single_value() const;
 
   // for deserialize
   tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t total_weight_, const Allocator& allocator);

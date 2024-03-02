@@ -166,7 +166,20 @@ TEST_CASE("serialize deserialize stream empty", "[tdigest]") {
   REQUIRE(td.is_empty() == deserialized_td.is_empty());
 }
 
-TEST_CASE("serialize deserialize stream non empty", "[tdigest]") {
+TEST_CASE("serialize deserialize stream single value", "[tdigest]") {
+  tdigest<double> td;
+  td.update(123);
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  td.serialize(s);
+  auto deserialized_td = tdigest<double>::deserialize(s);
+  REQUIRE(deserialized_td.get_k() == 200);
+  REQUIRE(deserialized_td.get_total_weight() == 1);
+  REQUIRE_FALSE(deserialized_td.is_empty());
+  REQUIRE(deserialized_td.get_min_value() == 123);
+  REQUIRE(deserialized_td.get_max_value() == 123);
+}
+
+TEST_CASE("serialize deserialize stream many values", "[tdigest]") {
   tdigest<double> td(100);
   for (int i = 0; i < 1000; ++i) td.update(i);
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
@@ -190,7 +203,19 @@ TEST_CASE("serialize deserialize bytes empty", "[tdigest]") {
   REQUIRE(td.is_empty() == deserialized_td.is_empty());
 }
 
-TEST_CASE("serialize deserialize bytes non empty", "[tdigest]") {
+TEST_CASE("serialize deserialize bytes single value", "[tdigest]") {
+  tdigest<double> td(200);
+  td.update(123);
+  auto bytes = td.serialize();
+  auto deserialized_td = tdigest<double>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(deserialized_td.get_k() == 200);
+  REQUIRE(deserialized_td.get_total_weight() == 1);
+  REQUIRE_FALSE(deserialized_td.is_empty());
+  REQUIRE(deserialized_td.get_min_value() == 123);
+  REQUIRE(deserialized_td.get_max_value() == 123);
+}
+
+TEST_CASE("serialize deserialize bytes many values", "[tdigest]") {
   tdigest<double> td(100);
   for (int i = 0; i < 1000; ++i) td.update(i);
   auto bytes = td.serialize();
