@@ -295,18 +295,24 @@ double tdigest<T, A>::weighted_average(double x1, double w1, double x2, double w
 template<typename T, typename A>
 void tdigest<T, A>::serialize(std::ostream& os) const {
   const_cast<tdigest*>(this)->merge_buffered(); // side effect
-  write(os, is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NON_EMPTY);
+  write(os, is_empty() || is_single_value() ? PREAMBLE_LONGS_EMPTY_OR_SINGLE : PREAMBLE_LONGS_MULTIPLE);
   write(os, SERIAL_VERSION);
   write(os, SKETCH_TYPE);
   write(os, k_);
   const uint8_t flags_byte(
     (is_empty() ? 1 << flags::IS_EMPTY : 0) |
+    (is_single_value() ? 1 << flags::IS_SINGLE_VALUE : 0) |
     (reverse_merge_ ? 1 << flags::REVERSE_MERGE : 0)
   );
   write(os, flags_byte);
   write<uint16_t>(os, 0); // unused
 
   if (is_empty()) return;
+
+  if (is_single_value()) {
+    write(os, min_);
+    return;
+  }
 
   write(os, static_cast<uint32_t>(centroids_.size()));
   write<uint32_t>(os, 0); // unused
@@ -319,8 +325,9 @@ void tdigest<T, A>::serialize(std::ostream& os) const {
 template<typename T, typename A>
 auto tdigest<T, A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
   const_cast<tdigest*>(this)->merge_buffered(); // side effect
-  const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NON_EMPTY;
-  const size_t size_bytes = preamble_longs * sizeof(uint64_t) + (is_empty() ? 0 : sizeof(T) * 2 + sizeof(centroid) * centroids_.size());
+  const uint8_t preamble_longs = is_empty() || is_single_value() ? PREAMBLE_LONGS_EMPTY_OR_SINGLE : PREAMBLE_LONGS_MULTIPLE;
+  const size_t size_bytes = preamble_longs * sizeof(uint64_t) +
+      (is_empty() ? 0 : (is_single_value() ? sizeof(T) : sizeof(T) * 2 + sizeof(centroid) * centroids_.size()));
   vector_bytes bytes(size_bytes, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
@@ -330,11 +337,17 @@ auto tdigest<T, A>::serialize(unsigned header_size_bytes) const -> vector_bytes 
   ptr += copy_to_mem(k_, ptr);
   const uint8_t flags_byte(
     (is_empty() ? 1 << flags::IS_EMPTY : 0) |
+    (is_single_value() ? 1 << flags::IS_SINGLE_VALUE : 0) |
     (reverse_merge_ ? 1 << flags::REVERSE_MERGE : 0)
   );
   *ptr++ = flags_byte;
   ptr += 2; // unused
   if (is_empty()) return bytes;
+
+  if (is_single_value()) {
+    copy_to_mem(min_, ptr);
+    return bytes;
+  }
 
   ptr += copy_to_mem(static_cast<uint32_t>(centroids_.size()), ptr);
   ptr += 4; // unused
@@ -360,13 +373,20 @@ tdigest<T, A> tdigest<T, A>::deserialize(std::istream& is, const A& allocator) {
   const auto k = read<uint16_t>(is);
   const auto flags_byte = read<uint8_t>(is);
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
-  const uint8_t expected_preamble_longs = is_empty ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NON_EMPTY;
+  const bool is_single_value = flags_byte & (1 << flags::IS_SINGLE_VALUE);
+  const uint8_t expected_preamble_longs = is_empty || is_single_value ? PREAMBLE_LONGS_EMPTY_OR_SINGLE : PREAMBLE_LONGS_MULTIPLE;
   if (preamble_longs != expected_preamble_longs) {
     throw std::invalid_argument("preamble longs mismatch: expected " + std::to_string(expected_preamble_longs) + ", actual " + std::to_string(preamble_longs));
   }
   read<uint16_t>(is); // unused
 
   if (is_empty) return tdigest(k, allocator);
+
+  const bool reverse_merge = flags_byte & (1 << flags::REVERSE_MERGE);
+  if (is_single_value) {
+    const T value = read<T>(is);
+    return tdigest(reverse_merge, k, value, value, vector_centroid(1, centroid(value, 1), allocator), 1, allocator);
+  }
 
   const auto num_centroids = read<uint32_t>(is);
   read<uint32_t>(is); // unused
@@ -377,7 +397,6 @@ tdigest<T, A> tdigest<T, A>::deserialize(std::istream& is, const A& allocator) {
   read(is, centroids.data(), num_centroids * sizeof(centroid));
   uint64_t total_weight = 0;
   for (const auto& c: centroids) total_weight += c.get_weight();
-  const bool reverse_merge = flags_byte & (1 << flags::REVERSE_MERGE);
   return tdigest(reverse_merge, k, min, max, std::move(centroids), total_weight, allocator);
 }
 
@@ -401,13 +420,22 @@ tdigest<T, A> tdigest<T, A>::deserialize(const void* bytes, size_t size, const A
   ptr += copy_from_mem(ptr, k);
   const uint8_t flags_byte = *ptr++;
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
-  const uint8_t expected_preamble_longs = is_empty ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NON_EMPTY;
+  const bool is_single_value = flags_byte & (1 << flags::IS_SINGLE_VALUE);
+  const uint8_t expected_preamble_longs = is_empty || is_single_value ? PREAMBLE_LONGS_EMPTY_OR_SINGLE : PREAMBLE_LONGS_MULTIPLE;
   if (preamble_longs != expected_preamble_longs) {
     throw std::invalid_argument("preamble longs mismatch: expected " + std::to_string(expected_preamble_longs) + ", actual " + std::to_string(preamble_longs));
   }
   ptr += 2; // unused
 
   if (is_empty) return tdigest(k, allocator);
+
+  const bool reverse_merge = flags_byte & (1 << flags::REVERSE_MERGE);
+  if (is_single_value) {
+    ensure_minimum_memory(end_ptr - ptr, sizeof(T));
+    T value;
+    ptr += copy_from_mem(ptr, value);
+    return tdigest(reverse_merge, k, value, value, vector_centroid(1, centroid(value, 1), allocator), 1, allocator);
+  }
 
   ensure_minimum_memory(end_ptr - ptr, 8);
   uint32_t num_centroids;
@@ -423,7 +451,6 @@ tdigest<T, A> tdigest<T, A>::deserialize(const void* bytes, size_t size, const A
   copy_from_mem(ptr, centroids.data(), sizeof(centroid) * num_centroids);
   uint64_t total_weight = 0;
   for (const auto& c: centroids) total_weight += c.get_weight();
-  const bool reverse_merge = flags_byte & (1 << flags::REVERSE_MERGE);
   return tdigest(reverse_merge, k, min, max, std::move(centroids), total_weight, allocator);
 }
 
@@ -543,6 +570,11 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
     total_weight += static_cast<uint64_t>(weight);
   }
   return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
+}
+
+template<typename T, typename A>
+bool tdigest<T, A>::is_single_value() const {
+  return get_total_weight() == 1;
 }
 
 template<typename T, typename A>
