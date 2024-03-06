@@ -41,6 +41,13 @@ target_sources(tdigest_test
     tdigest_custom_allocator_test.cpp
 )
 
+if (SERDE_COMPAT)
+target_sources(tdigest_test
+  PRIVATE
+    tdigest_deserialize_from_java_test.cpp
+)
+endif()
+
 if (GENERATE)
 target_sources(tdigest_test
   PRIVATE
