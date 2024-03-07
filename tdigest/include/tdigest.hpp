@@ -81,10 +81,6 @@ public:
   using value_type = T;
   using allocator_type = Allocator;
 
-  static const bool USE_ALTERNATING_SORT = true;
-  static const bool USE_TWO_LEVEL_COMPRESSION = true;
-  static const bool USE_WEIGHT_LIMIT = true;
-
   static const uint16_t DEFAULT_K = 200;
 
   using W = typename std::conditional<std::is_same<T, double>::value, uint64_t, uint32_t>::type;

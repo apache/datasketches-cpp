@@ -240,44 +240,33 @@ string<A> tdigest<T, A>::to_string(bool print_centroids) const {
 template<typename T, typename A>
 void tdigest<T, A>::merge_buffered() {
   if (buffered_weight_ == 0) return;
-  const bool reverse = USE_ALTERNATING_SORT && reverse_merge_;
   std::copy(centroids_.begin(), centroids_.end(), std::back_inserter(buffer_));
   centroids_.clear();
   std::stable_sort(buffer_.begin(), buffer_.end(), centroid_cmp());
-  if (reverse) std::reverse(buffer_.begin(), buffer_.end());
+  if (reverse_merge_) std::reverse(buffer_.begin(), buffer_.end());
   centroids_weight_ += buffered_weight_;
   auto it = buffer_.begin();
   centroids_.push_back(*it);
   ++it;
   double weight_so_far = 0;
-  const double normalizer = scale_function().normalizer(internal_k_, centroids_weight_);
-  double k1 = scale_function().k(0, normalizer);
-  double w_limit = centroids_weight_ * scale_function().q(k1 + 1, normalizer);
   while (it != buffer_.end()) {
     const double proposed_weight = centroids_.back().get_weight() + it->get_weight();
-    bool add_this;
-    if (std::distance(buffer_.begin(), it) == 1 || std::distance(buffer_.end(), it) == 1) {
-      add_this = false;
-    } else if (USE_WEIGHT_LIMIT) {
+    bool add_this = false;
+    if (std::distance(buffer_.begin(), it) != 1 && std::distance(buffer_.end(), it) != 1) {
       const double q0 = weight_so_far / centroids_weight_;
       const double q2 = (weight_so_far + proposed_weight) / centroids_weight_;
+      const double normalizer = scale_function().normalizer(internal_k_, centroids_weight_);
       add_this = proposed_weight <= centroids_weight_ * std::min(scale_function().max(q0, normalizer), scale_function().max(q2, normalizer));
-    } else {
-      add_this = weight_so_far + proposed_weight <= w_limit;
     }
     if (add_this) {
       centroids_.back().add(*it);
     } else {
       weight_so_far += centroids_.back().get_weight();
-      if (!USE_WEIGHT_LIMIT) {
-        k1 = scale_function().k(weight_so_far / centroids_weight_, normalizer);
-        w_limit = centroids_weight_ * scale_function().q(k1 + 1, normalizer);
-      }
       centroids_.push_back(*it);
     }
     ++it;
   }
-  if (reverse) std::reverse(centroids_.begin(), centroids_.end());
+  if (reverse_merge_) std::reverse(centroids_.begin(), centroids_.end());
   if (centroids_weight_ > 0) {
     min_ = std::min(min_, centroids_.front().get_mean());
     max_ = std::max(max_, centroids_.back().get_mean());
@@ -593,15 +582,10 @@ buffer_(allocator),
 buffered_weight_(0)
 {
   if (k < 10) throw std::invalid_argument("k must be at least 10");
-  size_t fudge = 0;
-  if (USE_WEIGHT_LIMIT) {
-    fudge = 10;
-    if (k < 30) fudge +=20;
-  }
+  const size_t fudge = k < 30 ? 30 : 10;
   centroids_capacity_ = 2 * k_ + fudge;
   buffer_capacity_ = 5 * centroids_capacity_;
-  double scale = std::max(1.0, static_cast<double>(buffer_capacity_) / centroids_capacity_ - 1.0);
-  if (!USE_TWO_LEVEL_COMPRESSION) scale = 1;
+  const double scale = std::max(1.0, static_cast<double>(buffer_capacity_) / centroids_capacity_ - 1.0);
   internal_k_ = std::ceil(std::sqrt(scale) * k_);
   centroids_capacity_ = std::max(centroids_capacity_, internal_k_ + fudge);
   buffer_capacity_ = std::max(buffer_capacity_, 2 * centroids_capacity_);
