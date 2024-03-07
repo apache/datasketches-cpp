@@ -31,13 +31,6 @@ namespace datasketches {
 // Generates cluster sizes proportional to q*(1-q).
 // The use of a normalizing function results in a strictly bounded number of clusters no matter how many samples.
 struct scale_function {
-  double k(double q, double normalizer) const {
-    return limit([normalizer] (double q) { return std::log(q / (1 - q)) * normalizer; }, q, 1e-15, 1 - 1e-15);
-  }
-  double q(double k, double normalizer) const {
-    const double w = std::exp(k / normalizer);
-    return w / (1 + w);
-  }
   double max(double q, double normalizer) const {
     return q * (1 - q) / normalizer;
   }
@@ -46,13 +39,6 @@ struct scale_function {
   }
   double z(double compression, double n) const {
     return 4 * std::log(n / compression) + 24;
-  }
-
-  template<typename Func>
-  double limit(Func f, double x, double low, double high) const {
-    if (x < low) return f(low);
-    if (x > high) return f(high);
-    return f(x);
   }
 };
 
