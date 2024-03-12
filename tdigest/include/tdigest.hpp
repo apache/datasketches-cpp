@@ -20,8 +20,9 @@
 #ifndef _TDIGEST_HPP_
 #define _TDIGEST_HPP_
 
-#include <type_traits>
+#include <cstddef>
 #include <limits>
+#include <type_traits>
 
 #include "common_defs.hpp"
 
@@ -166,6 +167,12 @@ public:
   string<Allocator> to_string(bool print_centroids = false) const;
 
   /**
+   * Computes size needed to serialize the current state.
+   * @return size in bytes needed to serialize this tdigest
+   */
+  size_t get_serialized_size_bytes() const;
+
+  /**
    * This method serializes t-Digest into a given stream in a binary form
    * @param os output stream
    */
@@ -222,11 +229,11 @@ private:
   enum flags { IS_EMPTY, IS_SINGLE_VALUE, REVERSE_MERGE };
 
   bool is_single_value() const;
+  uint8_t get_preamble_longs() const;
+  void merge_buffered();
 
   // for deserialize
   tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t total_weight_, const Allocator& allocator);
-
-  void merge_buffered();
 
   static double weighted_average(double x1, double w1, double x2, double w2);
 

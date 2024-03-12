@@ -312,15 +312,23 @@ void tdigest<T, A>::serialize(std::ostream& os) const {
 }
 
 template<typename T, typename A>
+uint8_t tdigest<T, A>::get_preamble_longs() const {
+  return is_empty() || is_single_value() ? PREAMBLE_LONGS_EMPTY_OR_SINGLE : PREAMBLE_LONGS_MULTIPLE;
+}
+
+template<typename T, typename A>
+size_t tdigest<T, A>::get_serialized_size_bytes() const {
+  return get_preamble_longs() * sizeof(uint64_t) +
+      (is_empty() ? 0 : (is_single_value() ? sizeof(T) : sizeof(T) * 2 + sizeof(centroid) * centroids_.size()));
+}
+
+template<typename T, typename A>
 auto tdigest<T, A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
   const_cast<tdigest*>(this)->merge_buffered(); // side effect
-  const uint8_t preamble_longs = is_empty() || is_single_value() ? PREAMBLE_LONGS_EMPTY_OR_SINGLE : PREAMBLE_LONGS_MULTIPLE;
-  const size_t size_bytes = preamble_longs * sizeof(uint64_t) +
-      (is_empty() ? 0 : (is_single_value() ? sizeof(T) : sizeof(T) * 2 + sizeof(centroid) * centroids_.size()));
-  vector_bytes bytes(size_bytes, 0, allocator_);
+  vector_bytes bytes(get_serialized_size_bytes(), 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
-  *ptr++ = preamble_longs;
+  *ptr++ = get_preamble_longs();
   *ptr++ = SERIAL_VERSION;
   *ptr++ = SKETCH_TYPE;
   ptr += copy_to_mem(k_, ptr);
