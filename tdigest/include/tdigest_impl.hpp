@@ -318,6 +318,7 @@ uint8_t tdigest<T, A>::get_preamble_longs() const {
 
 template<typename T, typename A>
 size_t tdigest<T, A>::get_serialized_size_bytes() const {
+  const_cast<tdigest*>(this)->merge_buffered(); // side effect
   return get_preamble_longs() * sizeof(uint64_t) +
       (is_empty() ? 0 : (is_single_value() ? sizeof(T) : sizeof(T) * 2 + sizeof(centroid) * centroids_.size()));
 }
