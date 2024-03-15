@@ -30,15 +30,14 @@ namespace datasketches {
 
 template<typename T, typename A>
 tdigest<T, A>::tdigest(uint16_t k, const A& allocator):
-tdigest(false, k, std::numeric_limits<T>::infinity(), -std::numeric_limits<T>::infinity(), vector_centroid(allocator), 0, allocator)
+tdigest(false, k, std::numeric_limits<T>::infinity(), -std::numeric_limits<T>::infinity(), vector_centroid(allocator), 0, vector_t(allocator))
 {}
 
 template<typename T, typename A>
 void tdigest<T, A>::update(T value) {
   if (std::isnan(value)) return;
-  if (buffer_.size() >= buffer_capacity_ - centroids_.size()) merge_buffered();
-  buffer_.push_back(centroid(value, 1));
-  ++buffered_weight_;
+  if (buffer_.size() >= buffer_capacity_ - centroids_.size()) compress();
+  buffer_.push_back(value);
   min_ = std::min(min_, value);
   max_ = std::max(max_, value);
 }
@@ -46,22 +45,21 @@ void tdigest<T, A>::update(T value) {
 template<typename T, typename A>
 void tdigest<T, A>::merge(tdigest& other) {
   if (other.is_empty()) return;
-  size_t num = buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size();
-  buffer_.reserve(num);
-  std::copy(other.buffer_.begin(), other.buffer_.end(), std::back_inserter(buffer_));
-  std::copy(other.centroids_.begin(), other.centroids_.end(), std::back_inserter(buffer_));
-  buffered_weight_ += other.get_total_weight();
-  if (num > buffer_capacity_) {
-    merge_buffered();
-  } else {
-    min_ = std::min(min_, other.get_min_value());
-    max_ = std::max(max_, other.get_max_value());
-  }
+  vector_centroid tmp(buffer_.get_allocator());
+  tmp.reserve(buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size());
+  for (const T value: buffer_) tmp.push_back(centroid(value, 1));
+  for (const T value: other.buffer_) tmp.push_back(centroid(value, 1));
+  std::copy(other.centroids_.begin(), other.centroids_.end(), std::back_inserter(tmp));
+  merge(tmp, buffer_.size() + other.get_total_weight());
 }
 
 template<typename T, typename A>
 void tdigest<T, A>::compress() {
-  merge_buffered();
+  if (buffer_.size() == 0) return;
+  vector_centroid tmp(buffer_.get_allocator());
+  tmp.reserve(buffer_.size() + centroids_.size());
+  for (const T value: buffer_) tmp.push_back(centroid(value, 1));
+  merge(tmp, buffer_.size());
 }
 
 template<typename T, typename A>
@@ -83,7 +81,7 @@ T tdigest<T, A>::get_max_value() const {
 
 template<typename T, typename A>
 uint64_t tdigest<T, A>::get_total_weight() const {
-  return centroids_weight_ + buffered_weight_;
+  return centroids_weight_ + buffer_.size();
 }
 
 template<typename T, typename A>
@@ -95,7 +93,7 @@ double tdigest<T, A>::get_rank(T value) const {
   // one centroid and value == min_ == max_
   if ((centroids_.size() + buffer_.size()) == 1) return 0.5;
 
-  const_cast<tdigest*>(this)->merge_buffered(); // side effect
+  const_cast<tdigest*>(this)->compress(); // side effect
 
   // left tail
   const T first_mean = centroids_.front().get_mean();
@@ -149,7 +147,7 @@ T tdigest<T, A>::get_quantile(double rank) const {
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("Normalized rank cannot be less than 0 or greater than 1");
   }
-  const_cast<tdigest*>(this)->merge_buffered(); // side effect
+  const_cast<tdigest*>(this)->compress(); // side effect
   if (centroids_.size() == 1) return centroids_.front().get_mean();
 
   // at least 2 centroids
@@ -210,7 +208,6 @@ string<A> tdigest<T, A>::to_string(bool print_centroids) const {
   os << "   Centroids capacity : " << centroids_capacity_ << std::endl;
   os << "   Buffer capacity    : " << buffer_capacity_ << std::endl;
   os << "   Centroids Weight   : " << centroids_weight_ << std::endl;
-  os << "   Buffered Weight    : " << buffered_weight_ << std::endl;
   os << "   Total Weight       : " << get_total_weight() << std::endl;
   os << "   Reverse Merge      : " << (reverse_merge_ ? "true" : "false") << std::endl;
   if (!is_empty()) {
@@ -229,30 +226,30 @@ string<A> tdigest<T, A>::to_string(bool print_centroids) const {
     if (buffer_.size() > 0) {
       os << "Buffer:" << std::endl;
       int i = 0;
-      for (const auto& b: buffer_) {
-        os << i++ << ": " << b.get_mean() << ", " << b.get_weight() << std::endl;
+      for (const T value: buffer_) {
+        os << i++ << ": " << value << std::endl;
       }
     }
   }
-  return string<A>(os.str().c_str(), allocator_);
+  return string<A>(os.str().c_str(), buffer_.get_allocator());
 }
 
+// assumes that there is enough room in the input buffer to add centroids from this tdigest
 template<typename T, typename A>
-void tdigest<T, A>::merge_buffered() {
-  if (buffered_weight_ == 0) return;
-  std::copy(centroids_.begin(), centroids_.end(), std::back_inserter(buffer_));
+void tdigest<T, A>::merge(vector_centroid& buffer, W weight) {
+  std::copy(centroids_.begin(), centroids_.end(), std::back_inserter(buffer));
   centroids_.clear();
-  std::stable_sort(buffer_.begin(), buffer_.end(), centroid_cmp());
-  if (reverse_merge_) std::reverse(buffer_.begin(), buffer_.end());
-  centroids_weight_ += buffered_weight_;
-  auto it = buffer_.begin();
+  std::stable_sort(buffer.begin(), buffer.end(), centroid_cmp());
+  if (reverse_merge_) std::reverse(buffer.begin(), buffer.end());
+  centroids_weight_ += weight;
+  auto it = buffer.begin();
   centroids_.push_back(*it);
   ++it;
   double weight_so_far = 0;
-  while (it != buffer_.end()) {
+  while (it != buffer.end()) {
     const double proposed_weight = centroids_.back().get_weight() + it->get_weight();
     bool add_this = false;
-    if (std::distance(buffer_.begin(), it) != 1 && std::distance(buffer_.end(), it) != 1) {
+    if (std::distance(buffer.begin(), it) != 1 && std::distance(buffer.end(), it) != 1) {
       const double q0 = weight_so_far / centroids_weight_;
       const double q2 = (weight_so_far + proposed_weight) / centroids_weight_;
       const double normalizer = scale_function().normalizer(internal_k_, centroids_weight_);
@@ -267,13 +264,10 @@ void tdigest<T, A>::merge_buffered() {
     ++it;
   }
   if (reverse_merge_) std::reverse(centroids_.begin(), centroids_.end());
-  if (centroids_weight_ > 0) {
-    min_ = std::min(min_, centroids_.front().get_mean());
-    max_ = std::max(max_, centroids_.back().get_mean());
-  }
+  min_ = std::min(min_, centroids_.front().get_mean());
+  max_ = std::max(max_, centroids_.back().get_mean());
   reverse_merge_ = !reverse_merge_;
   buffer_.clear();
-  buffered_weight_ = 0;
 }
 
 template<typename T, typename A>
@@ -282,33 +276,30 @@ double tdigest<T, A>::weighted_average(double x1, double w1, double x2, double w
 }
 
 template<typename T, typename A>
-void tdigest<T, A>::serialize(std::ostream& os) const {
-  const_cast<tdigest*>(this)->merge_buffered(); // side effect
+void tdigest<T, A>::serialize(std::ostream& os, bool with_buffer) const {
+  if (!with_buffer) const_cast<tdigest*>(this)->compress(); // side effect
   write(os, is_empty() || is_single_value() ? PREAMBLE_LONGS_EMPTY_OR_SINGLE : PREAMBLE_LONGS_MULTIPLE);
   write(os, SERIAL_VERSION);
   write(os, SKETCH_TYPE);
   write(os, k_);
   const uint8_t flags_byte(
-    (is_empty() ? 1 << flags::IS_EMPTY : 0) |
-    (is_single_value() ? 1 << flags::IS_SINGLE_VALUE : 0) |
-    (reverse_merge_ ? 1 << flags::REVERSE_MERGE : 0)
+     (is_empty() ? 1 << flags::IS_EMPTY : 0)
+   | (is_single_value() ? 1 << flags::IS_SINGLE_VALUE : 0)
+   | (reverse_merge_ ? 1 << flags::REVERSE_MERGE : 0)
   );
   write(os, flags_byte);
   write<uint16_t>(os, 0); // unused
-
   if (is_empty()) return;
-
   if (is_single_value()) {
     write(os, min_);
     return;
   }
-
   write(os, static_cast<uint32_t>(centroids_.size()));
-  write<uint32_t>(os, 0); // unused
-
+  write(os, static_cast<uint32_t>(buffer_.size()));
   write(os, min_);
   write(os, max_);
-  write(os, centroids_.data(), centroids_.size() * sizeof(centroid));
+  if (centroids_.size() > 0) write(os, centroids_.data(), centroids_.size() * sizeof(centroid));
+  if (buffer_.size() > 0) write(os, buffer_.data(), buffer_.size() * sizeof(T));
 }
 
 template<typename T, typename A>
@@ -317,42 +308,44 @@ uint8_t tdigest<T, A>::get_preamble_longs() const {
 }
 
 template<typename T, typename A>
-size_t tdigest<T, A>::get_serialized_size_bytes() const {
-  const_cast<tdigest*>(this)->merge_buffered(); // side effect
-  return get_preamble_longs() * sizeof(uint64_t) +
-      (is_empty() ? 0 : (is_single_value() ? sizeof(T) : sizeof(T) * 2 + sizeof(centroid) * centroids_.size()));
+size_t tdigest<T, A>::get_serialized_size_bytes(bool with_buffer) const {
+  if (!with_buffer) const_cast<tdigest*>(this)->compress(); // side effect
+  size_t size_bytes = get_preamble_longs() * sizeof(uint64_t);
+  if (is_empty()) return size_bytes;
+  if (is_single_value()) return size_bytes + sizeof(T);
+  size_bytes += sizeof(T) * 2 // min and max
+      + sizeof(centroid) * centroids_.size();
+  if (with_buffer) size_bytes += sizeof(T) * buffer_.size(); // count is a part of preamble
+  return size_bytes;
 }
 
 template<typename T, typename A>
-auto tdigest<T, A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
-  const_cast<tdigest*>(this)->merge_buffered(); // side effect
-  vector_bytes bytes(get_serialized_size_bytes(), 0, allocator_);
+auto tdigest<T, A>::serialize(unsigned header_size_bytes, bool with_buffer) const -> vector_bytes {
+  if (!with_buffer) const_cast<tdigest*>(this)->compress(); // side effect
+  vector_bytes bytes(get_serialized_size_bytes(with_buffer), 0, buffer_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
-
   *ptr++ = get_preamble_longs();
   *ptr++ = SERIAL_VERSION;
   *ptr++ = SKETCH_TYPE;
   ptr += copy_to_mem(k_, ptr);
   const uint8_t flags_byte(
-    (is_empty() ? 1 << flags::IS_EMPTY : 0) |
-    (is_single_value() ? 1 << flags::IS_SINGLE_VALUE : 0) |
-    (reverse_merge_ ? 1 << flags::REVERSE_MERGE : 0)
+      (is_empty() ? 1 << flags::IS_EMPTY : 0)
+    | (is_single_value() ? 1 << flags::IS_SINGLE_VALUE : 0)
+    | (reverse_merge_ ? 1 << flags::REVERSE_MERGE : 0)
   );
   *ptr++ = flags_byte;
   ptr += 2; // unused
   if (is_empty()) return bytes;
-
   if (is_single_value()) {
     copy_to_mem(min_, ptr);
     return bytes;
   }
-
   ptr += copy_to_mem(static_cast<uint32_t>(centroids_.size()), ptr);
-  ptr += 4; // unused
-
+  ptr += copy_to_mem(static_cast<uint32_t>(buffer_.size()), ptr);
   ptr += copy_to_mem(min_, ptr);
   ptr += copy_to_mem(max_, ptr);
-  copy_to_mem(centroids_.data(), ptr, centroids_.size() * sizeof(centroid));
+  if (centroids_.size() > 0) ptr += copy_to_mem(centroids_.data(), ptr, centroids_.size() * sizeof(centroid));
+  if (buffer_.size() > 0) copy_to_mem(buffer_.data(), ptr, buffer_.size() * sizeof(T));
   return bytes;
 }
 
@@ -383,19 +376,21 @@ tdigest<T, A> tdigest<T, A>::deserialize(std::istream& is, const A& allocator) {
   const bool reverse_merge = flags_byte & (1 << flags::REVERSE_MERGE);
   if (is_single_value) {
     const T value = read<T>(is);
-    return tdigest(reverse_merge, k, value, value, vector_centroid(1, centroid(value, 1), allocator), 1, allocator);
+    return tdigest(reverse_merge, k, value, value, vector_centroid(1, centroid(value, 1), allocator), 1, vector_t(allocator));
   }
 
   const auto num_centroids = read<uint32_t>(is);
-  read<uint32_t>(is); // unused
+  const auto num_buffered = read<uint32_t>(is);
 
   const T min = read<T>(is);
   const T max = read<T>(is);
   vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
-  read(is, centroids.data(), num_centroids * sizeof(centroid));
-  uint64_t total_weight = 0;
-  for (const auto& c: centroids) total_weight += c.get_weight();
-  return tdigest(reverse_merge, k, min, max, std::move(centroids), total_weight, allocator);
+  if (num_centroids > 0) read(is, centroids.data(), num_centroids * sizeof(centroid));
+  vector_t buffer(num_buffered, 0, allocator);
+  if (num_buffered > 0) read(is, buffer.data(), num_buffered * sizeof(T));
+  uint64_t weight = 0;
+  for (const auto& c: centroids) weight += c.get_weight();
+  return tdigest(reverse_merge, k, min, max, std::move(centroids), weight, std::move(buffer));
 }
 
 template<typename T, typename A>
@@ -432,24 +427,27 @@ tdigest<T, A> tdigest<T, A>::deserialize(const void* bytes, size_t size, const A
     ensure_minimum_memory(end_ptr - ptr, sizeof(T));
     T value;
     ptr += copy_from_mem(ptr, value);
-    return tdigest(reverse_merge, k, value, value, vector_centroid(1, centroid(value, 1), allocator), 1, allocator);
+    return tdigest(reverse_merge, k, value, value, vector_centroid(1, centroid(value, 1), allocator), 1, vector_t(allocator));
   }
 
   ensure_minimum_memory(end_ptr - ptr, 8);
   uint32_t num_centroids;
   ptr += copy_from_mem(ptr, num_centroids);
-  ptr += 4; // unused
+  uint32_t num_buffered;
+  ptr += copy_from_mem(ptr, num_buffered);
 
-  ensure_minimum_memory(end_ptr - ptr, sizeof(T) * 2 + sizeof(centroid) * num_centroids);
+  ensure_minimum_memory(end_ptr - ptr, sizeof(T) * 2 + sizeof(centroid) * num_centroids + sizeof(T) * num_buffered);
   T min;
   ptr += copy_from_mem(ptr, min);
   T max;
   ptr += copy_from_mem(ptr, max);
   vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
-  copy_from_mem(ptr, centroids.data(), sizeof(centroid) * num_centroids);
-  uint64_t total_weight = 0;
-  for (const auto& c: centroids) total_weight += c.get_weight();
-  return tdigest(reverse_merge, k, min, max, std::move(centroids), total_weight, allocator);
+  if (num_centroids > 0) ptr += copy_from_mem(ptr, centroids.data(), num_centroids * sizeof(centroid));
+  vector_t buffer(num_buffered, 0, allocator);
+  if (num_buffered > 0) copy_from_mem(ptr, buffer.data(), num_buffered * sizeof(T));
+  uint64_t weight = 0;
+  for (const auto& c: centroids) weight += c.get_weight();
+  return tdigest(reverse_merge, k, min, max, std::move(centroids), weight, std::move(buffer));
 }
 
 // compatibility with the format of the reference implementation
@@ -475,7 +473,7 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
       c = centroid(mean, weight);
       total_weight += weight;
     }
-    return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
+    return tdigest(false, k, min, max, std::move(centroids), total_weight, vector_t(allocator));
   }
   // COMPAT_FLOAT: compatibility with asSmallBytes()
   const auto min = read_big_endian<double>(is); // reference implementation uses doubles for min and max
@@ -493,7 +491,7 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
     c = centroid(mean, weight);
     total_weight += weight;
   }
-  return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
+  return tdigest(false, k, min, max, std::move(centroids), total_weight, vector_t(allocator));
 }
 
 // compatibility with the format of the reference implementation
@@ -535,7 +533,7 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
       c = centroid(mean, static_cast<W>(weight));
       total_weight += static_cast<uint64_t>(weight);
     }
-    return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
+    return tdigest(false, k, min, max, std::move(centroids), total_weight, vector_t(allocator));
   }
   // COMPAT_FLOAT: compatibility with asSmallBytes()
   ensure_minimum_memory(end_ptr - ptr, sizeof(double) * 2 + sizeof(float) + sizeof(uint16_t) * 3);
@@ -567,7 +565,7 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
     c = centroid(mean, static_cast<W>(weight));
     total_weight += static_cast<uint64_t>(weight);
   }
-  return tdigest(false, k, min, max, std::move(centroids), total_weight, allocator);
+  return tdigest(false, k, min, max, std::move(centroids), total_weight, vector_t(allocator));
 }
 
 template<typename T, typename A>
@@ -576,8 +574,7 @@ bool tdigest<T, A>::is_single_value() const {
 }
 
 template<typename T, typename A>
-tdigest<T, A>::tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t total_weight, const A& allocator):
-allocator_(allocator),
+tdigest<T, A>::tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t weight, vector_t&& buffer):
 reverse_merge_(reverse_merge),
 k_(k),
 internal_k_(k),
@@ -585,10 +582,9 @@ min_(min),
 max_(max),
 centroids_capacity_(0),
 centroids_(std::move(centroids)),
-centroids_weight_(total_weight),
+centroids_weight_(weight),
 buffer_capacity_(0),
-buffer_(allocator),
-buffered_weight_(0)
+buffer_(std::move(buffer))
 {
   if (k < 10) throw std::invalid_argument("k must be at least 10");
   const size_t fudge = k < 30 ? 30 : 10;
