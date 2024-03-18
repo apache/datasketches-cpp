@@ -36,7 +36,7 @@ tdigest(false, k, std::numeric_limits<T>::infinity(), -std::numeric_limits<T>::i
 template<typename T, typename A>
 void tdigest<T, A>::update(T value) {
   if (std::isnan(value)) return;
-  if (buffer_.size() >= buffer_capacity_ - centroids_.size()) compress();
+  if (buffer_.size() == centroids_capacity_ * BUFFER_MULTIPLIER) compress();
   buffer_.push_back(value);
   min_ = std::min(min_, value);
   max_ = std::max(max_, value);
@@ -202,11 +202,10 @@ string<A> tdigest<T, A>::to_string(bool print_centroids) const {
   std::ostringstream os;
   os << "### t-Digest summary:" << std::endl;
   os << "   Nominal k          : " << k_ << std::endl;
-  os << "   Internal k         : " << internal_k_ << std::endl;
   os << "   Centroids          : " << centroids_.size() << std::endl;
   os << "   Buffered           : " << buffer_.size() << std::endl;
   os << "   Centroids capacity : " << centroids_capacity_ << std::endl;
-  os << "   Buffer capacity    : " << buffer_capacity_ << std::endl;
+  os << "   Buffer capacity    : " << centroids_capacity_ * BUFFER_MULTIPLIER << std::endl;
   os << "   Centroids Weight   : " << centroids_weight_ << std::endl;
   os << "   Total Weight       : " << get_total_weight() << std::endl;
   os << "   Reverse Merge      : " << (reverse_merge_ ? "true" : "false") << std::endl;
@@ -252,7 +251,7 @@ void tdigest<T, A>::merge(vector_centroid& buffer, W weight) {
     if (std::distance(buffer.begin(), it) != 1 && std::distance(buffer.end(), it) != 1) {
       const double q0 = weight_so_far / centroids_weight_;
       const double q2 = (weight_so_far + proposed_weight) / centroids_weight_;
-      const double normalizer = scale_function().normalizer(internal_k_, centroids_weight_);
+      const double normalizer = scale_function().normalizer(2 * k_, centroids_weight_);
       add_this = proposed_weight <= centroids_weight_ * std::min(scale_function().max(q0, normalizer), scale_function().max(q2, normalizer));
     }
     if (add_this) {
@@ -577,25 +576,18 @@ template<typename T, typename A>
 tdigest<T, A>::tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t weight, vector_t&& buffer):
 reverse_merge_(reverse_merge),
 k_(k),
-internal_k_(k),
 min_(min),
 max_(max),
 centroids_capacity_(0),
 centroids_(std::move(centroids)),
 centroids_weight_(weight),
-buffer_capacity_(0),
 buffer_(std::move(buffer))
 {
   if (k < 10) throw std::invalid_argument("k must be at least 10");
   const size_t fudge = k < 30 ? 30 : 10;
   centroids_capacity_ = 2 * k_ + fudge;
-  buffer_capacity_ = 5 * centroids_capacity_;
-  const double scale = std::max(1.0, static_cast<double>(buffer_capacity_) / centroids_capacity_ - 1.0);
-  internal_k_ = std::ceil(std::sqrt(scale) * k_);
-  centroids_capacity_ = std::max(centroids_capacity_, internal_k_ + fudge);
-  buffer_capacity_ = std::max(buffer_capacity_, 2 * centroids_capacity_);
   centroids_.reserve(centroids_capacity_);
-  buffer_.reserve(buffer_capacity_);
+  buffer_.reserve(centroids_capacity_ * BUFFER_MULTIPLIER);
 }
 
 } /* namespace datasketches */

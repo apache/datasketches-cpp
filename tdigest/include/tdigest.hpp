@@ -221,6 +221,8 @@ private:
   size_t buffer_capacity_;
   vector_t buffer_;
 
+  static const size_t BUFFER_MULTIPLIER = 4;
+
   static const uint8_t PREAMBLE_LONGS_EMPTY_OR_SINGLE = 1;
   static const uint8_t PREAMBLE_LONGS_MULTIPLE = 2;
   static const uint8_t SERIAL_VERSION = 1;
