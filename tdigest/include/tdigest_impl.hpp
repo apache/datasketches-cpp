@@ -277,7 +277,7 @@ double tdigest<T, A>::weighted_average(double x1, double w1, double x2, double w
 template<typename T, typename A>
 void tdigest<T, A>::serialize(std::ostream& os, bool with_buffer) const {
   if (!with_buffer) const_cast<tdigest*>(this)->compress(); // side effect
-  write(os, is_empty() || is_single_value() ? PREAMBLE_LONGS_EMPTY_OR_SINGLE : PREAMBLE_LONGS_MULTIPLE);
+  write(os, get_preamble_longs());
   write(os, SERIAL_VERSION);
   write(os, SKETCH_TYPE);
   write(os, k_);
