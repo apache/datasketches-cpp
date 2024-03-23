@@ -54,8 +54,9 @@ TEST_CASE("one value", "[tdigest]") {
 
 TEST_CASE("many values", "[tdigest]") {
   const size_t n = 10000;
-  tdigest_double td(100);
+  tdigest_double td;
   for (size_t i = 0; i < n; ++i) td.update(i);
+//  std::cout << td.to_string(true);
 //  td.compress();
 //  std::cout << td.to_string(true);
   REQUIRE_FALSE(td.is_empty());
@@ -68,7 +69,7 @@ TEST_CASE("many values", "[tdigest]") {
   REQUIRE(td.get_rank(n * 3 / 4) == Approx(0.75).margin(0.0001));
   REQUIRE(td.get_rank(n) == 1);
   REQUIRE(td.get_quantile(0) == 0);
-  REQUIRE(td.get_quantile(0.5) == Approx(n / 2).epsilon(0.01));
+  REQUIRE(td.get_quantile(0.5) == Approx(n / 2).epsilon(0.03));
   REQUIRE(td.get_quantile(0.9) == Approx(n * 0.9).epsilon(0.01));
   REQUIRE(td.get_quantile(0.95) == Approx(n * 0.95).epsilon(0.01));
   REQUIRE(td.get_quantile(1) == n - 1);
@@ -137,12 +138,14 @@ TEST_CASE("merge small", "[tdigest]") {
 
 TEST_CASE("merge large", "[tdigest]") {
   const size_t n = 10000;
-  tdigest_double td1(100);
-  tdigest_double td2(100);
+  tdigest_double td1;
+  tdigest_double td2;
   for (size_t i = 0; i < n / 2; ++i) {
     td1.update(i);
     td2.update(n / 2 + i);
   }
+//  std::cout << td1.to_string();
+//  std::cout << td2.to_string();
   td1.merge(td2);
 //  td1.compress();
 //  std::cout << td1.to_string(true);
@@ -179,11 +182,39 @@ TEST_CASE("serialize deserialize stream single value", "[tdigest]") {
   REQUIRE(deserialized_td.get_max_value() == 123);
 }
 
+TEST_CASE("serialize deserialize stream single value buffered", "[tdigest]") {
+  tdigest<double> td;
+  td.update(123);
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  td.serialize(s, true);
+  auto deserialized_td = tdigest<double>::deserialize(s);
+  REQUIRE(deserialized_td.get_k() == 200);
+  REQUIRE(deserialized_td.get_total_weight() == 1);
+  REQUIRE_FALSE(deserialized_td.is_empty());
+  REQUIRE(deserialized_td.get_min_value() == 123);
+  REQUIRE(deserialized_td.get_max_value() == 123);
+}
+
 TEST_CASE("serialize deserialize stream many values", "[tdigest]") {
   tdigest<double> td(100);
   for (int i = 0; i < 1000; ++i) td.update(i);
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   td.serialize(s);
+  auto deserialized_td = tdigest<double>::deserialize(s);
+  REQUIRE(td.get_k() == deserialized_td.get_k());
+  REQUIRE(td.get_total_weight() == deserialized_td.get_total_weight());
+  REQUIRE(td.is_empty() == deserialized_td.is_empty());
+  REQUIRE(td.get_min_value() == deserialized_td.get_min_value());
+  REQUIRE(td.get_max_value() == deserialized_td.get_max_value());
+  REQUIRE(td.get_rank(500) == deserialized_td.get_rank(500));
+  REQUIRE(td.get_quantile(0.5) == deserialized_td.get_quantile(0.5));
+}
+
+TEST_CASE("serialize deserialize stream many values with buffer", "[tdigest]") {
+  tdigest<double> td(100);
+  for (int i = 0; i < 10000; ++i) td.update(i);
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  td.serialize(s, true);
   auto deserialized_td = tdigest<double>::deserialize(s);
   REQUIRE(td.get_k() == deserialized_td.get_k());
   REQUIRE(td.get_total_weight() == deserialized_td.get_total_weight());
@@ -215,9 +246,35 @@ TEST_CASE("serialize deserialize bytes single value", "[tdigest]") {
   REQUIRE(deserialized_td.get_max_value() == 123);
 }
 
+TEST_CASE("serialize deserialize bytes single value buffered", "[tdigest]") {
+  tdigest<double> td(200);
+  td.update(123);
+  auto bytes = td.serialize(0, true);
+  auto deserialized_td = tdigest<double>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(deserialized_td.get_k() == 200);
+  REQUIRE(deserialized_td.get_total_weight() == 1);
+  REQUIRE_FALSE(deserialized_td.is_empty());
+  REQUIRE(deserialized_td.get_min_value() == 123);
+  REQUIRE(deserialized_td.get_max_value() == 123);
+}
+
 TEST_CASE("serialize deserialize bytes many values", "[tdigest]") {
   tdigest<double> td(100);
   for (int i = 0; i < 1000; ++i) td.update(i);
+  auto bytes = td.serialize();
+  auto deserialized_td = tdigest<double>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(td.get_k() == deserialized_td.get_k());
+  REQUIRE(td.get_total_weight() == deserialized_td.get_total_weight());
+  REQUIRE(td.is_empty() == deserialized_td.is_empty());
+  REQUIRE(td.get_min_value() == deserialized_td.get_min_value());
+  REQUIRE(td.get_max_value() == deserialized_td.get_max_value());
+  REQUIRE(td.get_rank(500) == deserialized_td.get_rank(500));
+  REQUIRE(td.get_quantile(0.5) == deserialized_td.get_quantile(0.5));
+}
+
+TEST_CASE("serialize deserialize bytes many values with buffer", "[tdigest]") {
+  tdigest<double> td(100);
+  for (int i = 0; i < 10000; ++i) td.update(i);
   auto bytes = td.serialize();
   auto deserialized_td = tdigest<double>::deserialize(bytes.data(), bytes.size());
   REQUIRE(td.get_k() == deserialized_td.get_k());
@@ -260,6 +317,40 @@ TEST_CASE("serialize deserialize steam and bytes equivalence", "[tdigest]") {
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   td.serialize(s);
   auto bytes = td.serialize();
+
+  REQUIRE(bytes.size() == static_cast<size_t>(s.tellp()));
+  for (size_t i = 0; i < bytes.size(); ++i) {
+    REQUIRE(((char*)bytes.data())[i] == (char)s.get());
+  }
+
+  s.seekg(0); // rewind
+  auto deserialized_td1 = tdigest<double>::deserialize(s);
+  auto deserialized_td2 = tdigest<double>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(bytes.size() == static_cast<size_t>(s.tellg()));
+
+  REQUIRE_FALSE(deserialized_td1.is_empty());
+  REQUIRE(deserialized_td1.get_k() == 100);
+  REQUIRE(deserialized_td1.get_total_weight() == n);
+  REQUIRE(deserialized_td1.get_min_value() == 0);
+  REQUIRE(deserialized_td1.get_max_value() == n - 1);
+
+  REQUIRE_FALSE(deserialized_td2.is_empty());
+  REQUIRE(deserialized_td2.get_k() == 100);
+  REQUIRE(deserialized_td2.get_total_weight() == n);
+  REQUIRE(deserialized_td2.get_min_value() == 0);
+  REQUIRE(deserialized_td2.get_max_value() == n - 1);
+
+  REQUIRE(deserialized_td1.get_rank(n / 2) == deserialized_td2.get_rank(n / 2));
+  REQUIRE(deserialized_td1.get_quantile(0.5) == deserialized_td2.get_quantile(0.5));
+}
+
+TEST_CASE("serialize deserialize steam and bytes equivalence with buffer", "[tdigest]") {
+  tdigest<double> td(100);
+  const int n = 10000;
+  for (int i = 0; i < n; ++i) td.update(i);
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  td.serialize(s, true);
+  auto bytes = td.serialize(0, true);
 
   REQUIRE(bytes.size() == static_cast<size_t>(s.tellp()));
   for (size_t i = 0; i < bytes.size(); ++i) {

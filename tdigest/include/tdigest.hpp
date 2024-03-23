@@ -20,8 +20,10 @@
 #ifndef _TDIGEST_HPP_
 #define _TDIGEST_HPP_
 
-#include <type_traits>
+#include <cstddef>
 #include <limits>
+#include <type_traits>
+#include <vector>
 
 #include "common_defs.hpp"
 
@@ -84,6 +86,7 @@ public:
     T mean_;
     W weight_;
   };
+  using vector_t = std::vector<T, Allocator>;
   using vector_centroid = std::vector<centroid, typename std::allocator_traits<Allocator>::template rebind_alloc<centroid>>;
   using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;
 
@@ -166,19 +169,28 @@ public:
   string<Allocator> to_string(bool print_centroids = false) const;
 
   /**
+   * Computes size needed to serialize the current state.
+   * @param with_buffer optionally serialize buffered values avoiding compression
+   * @return size in bytes needed to serialize this tdigest
+   */
+  size_t get_serialized_size_bytes(bool with_buffer = false) const;
+
+  /**
    * This method serializes t-Digest into a given stream in a binary form
    * @param os output stream
+   * @param with_buffer optionally serialize buffered values avoiding compression
    */
-  void serialize(std::ostream& os) const;
+  void serialize(std::ostream& os, bool with_buffer = false) const;
 
   /**
    * This method serializes t-Digest as a vector of bytes.
    * An optional header can be reserved in front of the sketch.
    * It is an uninitialized space of a given size.
    * @param header_size_bytes space to reserve in front of the sketch
+   * @param with_buffer optionally serialize buffered values avoiding compression
    * @return serialized sketch as a vector of bytes
    */
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+  vector_bytes serialize(unsigned header_size_bytes = 0, bool with_buffer = false) const;
 
   /**
    * This method deserializes t-Digest from a given stream.
@@ -198,7 +210,6 @@ public:
   static tdigest deserialize(const void* bytes, size_t size, const Allocator& allocator = Allocator());
 
 private:
-  Allocator allocator_;
   bool reverse_merge_;
   uint16_t k_;
   uint16_t internal_k_;
@@ -208,8 +219,9 @@ private:
   vector_centroid centroids_;
   uint64_t centroids_weight_;
   size_t buffer_capacity_;
-  vector_centroid buffer_;
-  uint64_t buffered_weight_;
+  vector_t buffer_;
+
+  static const size_t BUFFER_MULTIPLIER = 4;
 
   static const uint8_t PREAMBLE_LONGS_EMPTY_OR_SINGLE = 1;
   static const uint8_t PREAMBLE_LONGS_MULTIPLE = 2;
@@ -222,11 +234,11 @@ private:
   enum flags { IS_EMPTY, IS_SINGLE_VALUE, REVERSE_MERGE };
 
   bool is_single_value() const;
+  uint8_t get_preamble_longs() const;
+  void merge(vector_centroid& buffer, W weight);
 
   // for deserialize
-  tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t total_weight_, const Allocator& allocator);
-
-  void merge_buffered();
+  tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t total_weight_, vector_t&& buffer);
 
   static double weighted_average(double x1, double w1, double x2, double w2);
 
