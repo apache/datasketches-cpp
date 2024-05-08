@@ -24,11 +24,11 @@
 #include <vector>
 #include <stdexcept>
 
-#include "serde.hpp"
 #include "binomial_bounds.hpp"
 #include "theta_helpers.hpp"
 #include "count_zeros.hpp"
 #include "bit_packing.hpp"
+#include "memory_operations.hpp"
 
 namespace datasketches {
 
@@ -342,6 +342,34 @@ template<typename A>
 void compact_theta_sketch_alloc<A>::print_specifics(std::ostringstream&) const {}
 
 template<typename A>
+uint8_t compact_theta_sketch_alloc<A>::get_preamble_longs(bool compressed) const {
+  if (compressed) {
+    return this->is_estimation_mode() ? 2 : 1;
+  }
+  return this->is_estimation_mode() ? 3 : this->is_empty() || entries_.size() == 1 ? 1 : 2;
+}
+
+template<typename A>
+size_t compact_theta_sketch_alloc<A>::get_serialized_size_bytes(bool compressed) const {
+  if (compressed && is_suitable_for_compression()) {
+    return get_compressed_serialized_size_bytes(compute_entry_bits(), get_num_entries_bytes());
+  }
+  return sizeof(uint64_t) * get_preamble_longs(false) + sizeof(uint64_t) * entries_.size();
+}
+
+// store num_entries as whole bytes since whole-byte blocks will follow (most probably)
+template<typename A>
+uint8_t compact_theta_sketch_alloc<A>::get_num_entries_bytes() const {
+  return whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(static_cast<uint32_t>(entries_.size())));
+}
+
+template<typename A>
+size_t compact_theta_sketch_alloc<A>::get_compressed_serialized_size_bytes(uint8_t entry_bits, uint8_t num_entries_bytes) const {
+  const size_t compressed_bits = entry_bits * entries_.size();
+  return sizeof(uint64_t) * get_preamble_longs(true) + num_entries_bytes + whole_bytes_to_hold_bits(compressed_bits);
+}
+
+template<typename A>
 void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
   const uint8_t preamble_longs = this->is_estimation_mode() ? 3 : this->is_empty() || entries_.size() == 1 ? 1 : 2;
   write(os, preamble_longs);
@@ -366,12 +394,10 @@ void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
 
 template<typename A>
 auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
-  const uint8_t preamble_longs = this->is_estimation_mode() ? 3 : this->is_empty() || entries_.size() == 1 ? 1 : 2;
-  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs
-      + sizeof(uint64_t) * entries_.size();
+  const size_t size = get_serialized_size_bytes() + header_size_bytes;
   vector_bytes bytes(size, 0, entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
-
+  const uint8_t preamble_longs = get_preamble_longs(false);
   *ptr++ = preamble_longs;
   *ptr++ = UNCOMPRESSED_SERIAL_VERSION;
   *ptr++ = SKETCH_TYPE;
@@ -413,7 +439,7 @@ auto compact_theta_sketch_alloc<A>::serialize_compressed(unsigned header_size_by
 }
 
 template<typename A>
-uint8_t compact_theta_sketch_alloc<A>::compute_min_leading_zeros() const {
+uint8_t compact_theta_sketch_alloc<A>::compute_entry_bits() const {
   // compression is based on leading zeros in deltas between ordered hash values
   // assumes ordered sketch
   uint64_t previous = 0;
@@ -423,16 +449,14 @@ uint8_t compact_theta_sketch_alloc<A>::compute_min_leading_zeros() const {
     ored |= delta;
     previous = entry;
   }
-  return count_leading_zeros_in_u64(ored);
+  return 64 - count_leading_zeros_in_u64(ored);
 }
 
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const {
   const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
-  const uint8_t entry_bits = 64 - compute_min_leading_zeros();
-
-  // store num_entries as whole bytes since whole-byte blocks will follow (most probably)
-  const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(static_cast<uint32_t>(entries_.size())));
+  const uint8_t entry_bits = compute_entry_bits();
+  const uint8_t num_entries_bytes = get_num_entries_bytes();
 
   write(os, preamble_longs);
   write(os, COMPRESSED_SERIAL_VERSION);
@@ -483,19 +507,13 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
 
 template<typename A>
 auto compact_theta_sketch_alloc<A>::serialize_version_4(unsigned header_size_bytes) const -> vector_bytes {
-  const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
-  const uint8_t entry_bits = 64 - compute_min_leading_zeros();
-  const size_t compressed_bits = entry_bits * entries_.size();
-
-  // store num_entries as whole bytes since whole-byte blocks will follow (most probably)
-  const uint8_t num_entries_bytes = whole_bytes_to_hold_bits<uint8_t>(32 - count_leading_zeros_in_u32(static_cast<uint32_t>(entries_.size())));
-
-  const size_t size = header_size_bytes + sizeof(uint64_t) * preamble_longs + num_entries_bytes
-      + whole_bytes_to_hold_bits(compressed_bits);
+  const uint8_t entry_bits = compute_entry_bits();
+  const uint8_t num_entries_bytes = get_num_entries_bytes();
+  const size_t size = get_compressed_serialized_size_bytes(entry_bits, num_entries_bytes) + header_size_bytes;
   vector_bytes bytes(size, 0, entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
 
-  *ptr++ = preamble_longs;
+  *ptr++ = get_preamble_longs(true);
   *ptr++ = COMPRESSED_SERIAL_VERSION;
   *ptr++ = SKETCH_TYPE;
   *ptr++ = entry_bits;
