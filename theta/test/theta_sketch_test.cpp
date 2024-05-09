@@ -563,7 +563,7 @@ TEST_CASE("max serialized size", "[theta_sketch]") {
   auto sketch = update_theta_sketch::builder().set_lg_k(lg_k).build();
   int value = 0;
   for (int i = 0; i < (1 << lg_k) * 2; ++i) sketch.update(value++);
-  size_t max_size_bytes;
+  size_t max_size_bytes = 0;
   for (int i = 0; i < (1 << lg_k) * 2; ++i) {
     sketch.update(value++);
     auto bytes = sketch.compact().serialize();
