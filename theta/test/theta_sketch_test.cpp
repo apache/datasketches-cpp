@@ -273,9 +273,11 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalence", "[
   for (int i = 0; i < n; i++) update_sketch.update(i);
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
-  update_sketch.compact().serialize(s);
-  auto bytes = update_sketch.compact().serialize();
+  auto compact_sketch = update_sketch.compact();
+  compact_sketch.serialize(s);
+  auto bytes = compact_sketch.serialize();
   REQUIRE(bytes.size() == static_cast<size_t>(s.tellp()));
+  REQUIRE(bytes.size() == compact_sketch.get_serialized_size_bytes());
   for (size_t i = 0; i < bytes.size(); ++i) {
     REQUIRE(((char*)bytes.data())[i] == (char)s.get());
   }
@@ -521,6 +523,7 @@ TEST_CASE("theta sketch: serialize deserialize compressed", "[theta_sketch]") {
   auto compact_sketch = update_sketch.compact();
 
   auto bytes = compact_sketch.serialize_compressed();
+  REQUIRE(bytes.size() == compact_sketch.get_serialized_size_bytes(true));
   { // deserialize bytes
     auto deserialized_sketch = compact_theta_sketch::deserialize(bytes.data(), bytes.size());
     REQUIRE(deserialized_sketch.get_num_retained() == compact_sketch.get_num_retained());
@@ -544,6 +547,7 @@ TEST_CASE("theta sketch: serialize deserialize compressed", "[theta_sketch]") {
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   compact_sketch.serialize_compressed(s);
+  REQUIRE(static_cast<size_t>(s.tellp()) == compact_sketch.get_serialized_size_bytes(true));
   auto deserialized_sketch = compact_theta_sketch::deserialize(s);
   REQUIRE(deserialized_sketch.get_num_retained() == compact_sketch.get_num_retained());
   REQUIRE(deserialized_sketch.get_theta() == compact_sketch.get_theta());
@@ -552,6 +556,20 @@ TEST_CASE("theta sketch: serialize deserialize compressed", "[theta_sketch]") {
     REQUIRE(*iter == key);
     ++iter;
   }
+}
+
+TEST_CASE("max serialized size", "[theta_sketch]") {
+  const uint8_t lg_k = 10;
+  auto sketch = update_theta_sketch::builder().set_lg_k(lg_k).build();
+  int value = 0;
+  for (int i = 0; i < (1 << lg_k) * 2; ++i) sketch.update(value++);
+  size_t max_size_bytes;
+  for (int i = 0; i < (1 << lg_k) * 2; ++i) {
+    sketch.update(value++);
+    auto bytes = sketch.compact().serialize();
+    max_size_bytes = std::max(max_size_bytes, bytes.size());
+  }
+  REQUIRE(max_size_bytes == compact_theta_sketch::get_max_serialized_size_bytes(lg_k));
 }
 
 } /* namespace datasketches */

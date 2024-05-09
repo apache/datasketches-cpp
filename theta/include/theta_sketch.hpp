@@ -418,6 +418,12 @@ public:
   virtual uint16_t get_seed_hash() const;
 
   /**
+   * Computes maximum serialized size in bytes
+   * @param lg_k nominal number of entries in the sketch
+   */
+  static size_t get_max_serialized_size_bytes(uint8_t lg_k);
+
+  /**
    * Computes size in bytes required to serialize the current state of the sketch.
    * Computing compressed size is expensive. It takes iterating over all retained hashes,
    * and the actual serialization will have to look at them again.

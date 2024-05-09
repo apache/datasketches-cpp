@@ -350,6 +350,11 @@ uint8_t compact_theta_sketch_alloc<A>::get_preamble_longs(bool compressed) const
 }
 
 template<typename A>
+size_t compact_theta_sketch_alloc<A>::get_max_serialized_size_bytes(uint8_t lg_k) {
+  return sizeof(uint64_t) * (3 + update_theta_sketch_alloc<A>::theta_table::get_capacity(lg_k + 1, lg_k));
+}
+
+template<typename A>
 size_t compact_theta_sketch_alloc<A>::get_serialized_size_bytes(bool compressed) const {
   if (compressed && is_suitable_for_compression()) {
     return get_compressed_serialized_size_bytes(compute_entry_bits(), get_num_entries_bytes());
