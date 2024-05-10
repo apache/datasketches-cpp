@@ -43,6 +43,7 @@ target_sources(tuple_test
     tuple_intersection_test.cpp
     tuple_a_not_b_test.cpp
     tuple_jaccard_similarity_test.cpp
+    tuple_filter_test.cpp
     array_of_doubles_sketch_test.cpp
     engagement_test.cpp
 )

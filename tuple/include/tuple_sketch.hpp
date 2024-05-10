@@ -578,6 +578,7 @@ protected:
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_union_base;
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_intersection_base;
   template<typename E, typename EK, typename CS, typename A> friend class theta_set_difference_base;
+  template<typename S, typename A> friend class tuple_filter;
   compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
 
 };
