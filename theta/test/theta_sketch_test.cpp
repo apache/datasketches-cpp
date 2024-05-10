@@ -273,9 +273,11 @@ TEST_CASE("theta sketch: serialize deserialize stream and bytes equivalence", "[
   for (int i = 0; i < n; i++) update_sketch.update(i);
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
-  update_sketch.compact().serialize(s);
-  auto bytes = update_sketch.compact().serialize();
+  auto compact_sketch = update_sketch.compact();
+  compact_sketch.serialize(s);
+  auto bytes = compact_sketch.serialize();
   REQUIRE(bytes.size() == static_cast<size_t>(s.tellp()));
+  REQUIRE(bytes.size() == compact_sketch.get_serialized_size_bytes());
   for (size_t i = 0; i < bytes.size(); ++i) {
     REQUIRE(((char*)bytes.data())[i] == (char)s.get());
   }
@@ -521,6 +523,7 @@ TEST_CASE("theta sketch: serialize deserialize compressed", "[theta_sketch]") {
   auto compact_sketch = update_sketch.compact();
 
   auto bytes = compact_sketch.serialize_compressed();
+  REQUIRE(bytes.size() == compact_sketch.get_serialized_size_bytes(true));
   { // deserialize bytes
     auto deserialized_sketch = compact_theta_sketch::deserialize(bytes.data(), bytes.size());
     REQUIRE(deserialized_sketch.get_num_retained() == compact_sketch.get_num_retained());
@@ -544,6 +547,7 @@ TEST_CASE("theta sketch: serialize deserialize compressed", "[theta_sketch]") {
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   compact_sketch.serialize_compressed(s);
+  REQUIRE(static_cast<size_t>(s.tellp()) == compact_sketch.get_serialized_size_bytes(true));
   auto deserialized_sketch = compact_theta_sketch::deserialize(s);
   REQUIRE(deserialized_sketch.get_num_retained() == compact_sketch.get_num_retained());
   REQUIRE(deserialized_sketch.get_theta() == compact_sketch.get_theta());
@@ -552,6 +556,32 @@ TEST_CASE("theta sketch: serialize deserialize compressed", "[theta_sketch]") {
     REQUIRE(*iter == key);
     ++iter;
   }
+}
+
+// The sketch reaches capacity for the first time at 2 * K * 15/16,
+// but at that point it is still in exact mode, so the serialized size is not the maximum
+// (theta in not serialized in the exact mode).
+// So we need to catch the second time, but some updates will be ignored in the estimation mode,
+// so we update more than enough times keeping track of the maximum.
+// Potentially the exact number of updates to reach the peak can be figured out given this particular sequence,
+// but not assuming that might be even better (say, in case we change the load factor or hash function
+// or just out of principle not to rely on implementation details too much).
+TEST_CASE("max serialized size", "[theta_sketch]") {
+  const uint8_t lg_k = 10;
+  auto sketch = update_theta_sketch::builder().set_lg_k(lg_k).build();
+  int value = 0;
+
+  // this will go over the first peak, which is not the highest
+  for (int i = 0; i < (1 << lg_k) * 2; ++i) sketch.update(value++);
+
+  // this will to over the second peak keeping track of the max size
+  size_t max_size_bytes = 0;
+  for (int i = 0; i < (1 << lg_k) * 2; ++i) {
+    sketch.update(value++);
+    auto bytes = sketch.compact().serialize();
+    max_size_bytes = std::max(max_size_bytes, bytes.size());
+  }
+  REQUIRE(max_size_bytes == compact_theta_sketch::get_max_serialized_size_bytes(lg_k));
 }
 
 } /* namespace datasketches */

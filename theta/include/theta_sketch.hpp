@@ -418,6 +418,20 @@ public:
   virtual uint16_t get_seed_hash() const;
 
   /**
+   * Computes maximum serialized size in bytes
+   * @param lg_k nominal number of entries in the sketch
+   */
+  static size_t get_max_serialized_size_bytes(uint8_t lg_k);
+
+  /**
+   * Computes size in bytes required to serialize the current state of the sketch.
+   * Computing compressed size is expensive. It takes iterating over all retained hashes,
+   * and the actual serialization will have to look at them again.
+   * @param compressed if true compressed size is returned (if applicable)
+   */
+  size_t get_serialized_size_bytes(bool compressed = false) const;
+
+  /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
    */
@@ -486,8 +500,11 @@ private:
   uint64_t theta_;
   std::vector<uint64_t, Allocator> entries_;
 
+  uint8_t get_preamble_longs(bool compressed) const;
   bool is_suitable_for_compression() const;
-  uint8_t compute_min_leading_zeros() const;
+  uint8_t compute_entry_bits() const;
+  uint8_t get_num_entries_bytes() const;
+  size_t get_compressed_serialized_size_bytes(uint8_t entry_bits, uint8_t num_entries_bytes) const;
   void serialize_version_4(std::ostream& os) const;
   vector_bytes serialize_version_4(unsigned header_size_bytes = 0) const;
 
