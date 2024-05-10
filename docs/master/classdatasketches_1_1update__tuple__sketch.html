@@ -171,6 +171,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="memitem:a8adfe3908612dc77d3708cecddb65515"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classdatasketches_1_1compact__tuple__sketch.html">compact_tuple_sketch</a>&lt; Summary, Allocator &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1update__tuple__sketch.html#a8adfe3908612dc77d3708cecddb65515">compact</a> (bool ordered=true) const</td></tr>
 <tr class="memdesc:a8adfe3908612dc77d3708cecddb65515"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts this sketch to a compact sketch (ordered or unordered).  <a href="classdatasketches_1_1update__tuple__sketch.html#a8adfe3908612dc77d3708cecddb65515">More...</a><br /></td></tr>
 <tr class="separator:a8adfe3908612dc77d3708cecddb65515"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa37bb6b08780486ee17d59be552db371"><td class="memTemplParams" colspan="2">template&lt;typename Predicate &gt; </td></tr>
+<tr class="memitem:aa37bb6b08780486ee17d59be552db371"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classdatasketches_1_1compact__tuple__sketch.html">compact_tuple_sketch</a>&lt; Summary, Allocator &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1update__tuple__sketch.html#aa37bb6b08780486ee17d59be552db371">filter</a> (const Predicate &amp;predicate) const</td></tr>
+<tr class="memdesc:aa37bb6b08780486ee17d59be552db371"><td class="mdescLeft">&#160;</td><td class="mdescRight">Produces a Compact Tuple sketch from this sketch by applying a given predicate to each entry.  <a href="classdatasketches_1_1update__tuple__sketch.html#aa37bb6b08780486ee17d59be552db371">More...</a><br /></td></tr>
+<tr class="separator:aa37bb6b08780486ee17d59be552db371"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad950587c89b4306f927b08b5e5cb7e89"><td class="memItemLeft" align="right" valign="top">virtual iterator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1update__tuple__sketch.html#ad950587c89b4306f927b08b5e5cb7e89">begin</a> ()</td></tr>
 <tr class="memdesc:ad950587c89b4306f927b08b5e5cb7e89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterator over entries in this sketch.  <a href="classdatasketches_1_1update__tuple__sketch.html#ad950587c89b4306f927b08b5e5cb7e89">More...</a><br /></td></tr>
 <tr class="separator:ad950587c89b4306f927b08b5e5cb7e89"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -956,6 +960,33 @@ class datasketches::update_tuple_sketch&lt; Summary, Update, Policy, Allocator &
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>compact sketch </dd></dl>
+
+</div>
+</div>
+<a id="aa37bb6b08780486ee17d59be552db371"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa37bb6b08780486ee17d59be552db371">&#9670;&nbsp;</a></span>filter()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classdatasketches_1_1compact__tuple__sketch.html">compact_tuple_sketch</a>&lt;Summary, Allocator&gt; filter </td>
+          <td>(</td>
+          <td class="paramtype">const Predicate &amp;&#160;</td>
+          <td class="paramname"><em>predicate</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Produces a Compact Tuple sketch from this sketch by applying a given predicate to each entry. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">predicate</td><td>should return true for the entries to keep </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>compact sketch with the entries retained according to the predicate </dd></dl>
 
 </div>
 </div>
