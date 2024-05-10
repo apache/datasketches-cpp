@@ -558,11 +558,23 @@ TEST_CASE("theta sketch: serialize deserialize compressed", "[theta_sketch]") {
   }
 }
 
+// The sketch reaches capacity for the first time at 2 * K * 15/16,
+// but at that point it is still in exact mode, so the serialized size is not the maximum
+// (theta in not serialized in the exact mode).
+// So we need to catch the second time, but some updates will be ignored in the estimation mode,
+// so we update more than enough times keeping track of the maximum.
+// Potentially the exact number of updates to reach the peak can be figured out given this particular sequence,
+// but not assuming that might be even better (say, in case we change the load factor or hash function
+// or just out of principle not to rely on implementation details too much).
 TEST_CASE("max serialized size", "[theta_sketch]") {
   const uint8_t lg_k = 10;
   auto sketch = update_theta_sketch::builder().set_lg_k(lg_k).build();
   int value = 0;
+
+  // this will go over the first peak, which is not the highest
   for (int i = 0; i < (1 << lg_k) * 2; ++i) sketch.update(value++);
+
+  // this will to over the second peak keeping track of the max size
   size_t max_size_bytes = 0;
   for (int i = 0; i < (1 << lg_k) * 2; ++i) {
     sketch.update(value++);
