@@ -24,6 +24,9 @@
 
 namespace datasketches {
 
+/**
+ * Filter entries in a Tuple sketch according to a predicate.
+ */
 template<typename Summary, typename Allocator = std::allocator<Summary>>
 class tuple_filter {
 public:
@@ -31,8 +34,19 @@ public:
   using CompactSketch = compact_tuple_sketch<Summary, Allocator>;
   using AllocEntry = typename std::allocator_traits<Allocator>::template rebind_alloc<Entry>;
 
+  /**
+   * Constructor
+   * @param allocator to use for allocating and deallocating memory
+   */
   explicit tuple_filter(const Allocator& allocator = Allocator());
 
+  /**
+   * Produces a Compact Tuple sketch from a given sketch (Update or Compact)
+   * by applying a given predicate to each entry.
+   * @param sketch input sketch
+   * @param predicate should return true for the entries to keep
+   * @return compact sketch with the entries retained according to the predicate
+   */
   template<typename Sketch, typename Predicate>
   CompactSketch compute(const Sketch& sketch, const Predicate& predicate) const;
 
