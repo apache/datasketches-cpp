@@ -381,6 +381,15 @@ public:
    */
   compact_tuple_sketch<Summary, Allocator> compact(bool ordered = true) const;
 
+  /**
+   * Produces a Compact Tuple sketch from this sketch
+   * by applying a given predicate to each entry.
+   * @param predicate should return true for the entries to keep
+   * @return compact sketch with the entries retained according to the predicate
+   */
+  template<typename Predicate>
+  compact_tuple_sketch<Summary, Allocator> filter(const Predicate& predicate) const;
+
   virtual iterator begin();
   virtual iterator end();
   virtual const_iterator begin() const;
@@ -481,6 +490,25 @@ public:
   virtual uint16_t get_seed_hash() const;
 
   /**
+   * Produces a Compact Tuple sketch from this sketch
+   * by applying a given predicate to each entry.
+   * @param predicate should return true for the entries to keep
+   * @return compact sketch with the entries retained according to the predicate
+   */
+  template<typename Predicate>
+  compact_tuple_sketch filter(const Predicate& predicate) const;
+
+  /**
+   * Produces a Compact Tuple sketch from a given sketch (Update or Compact)
+   * by applying a given predicate to each entry.
+   * @param sketch input sketch
+   * @param predicate should return true for the entries to keep
+   * @return compact sketch with the entries retained according to the predicate
+   */
+  template<typename Sketch, typename Predicate>
+  static compact_tuple_sketch filter(const Sketch& sketch, const Predicate& predicate);
+
+  /**
    * This method serializes the sketch into a given stream in a binary form
    * @param os output stream
    * @param sd instance of a SerDe
@@ -579,7 +607,6 @@ protected:
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_intersection_base;
   template<typename E, typename EK, typename CS, typename A> friend class theta_set_difference_base;
   compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
-
 };
 
 /// Tuple base builder

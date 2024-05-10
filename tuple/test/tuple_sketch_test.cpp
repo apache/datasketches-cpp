@@ -310,4 +310,65 @@ TEST_CASE("tuple sketch: float, update with different types of keys", "[tuple_sk
   REQUIRE(sketch.get_num_retained() == 3);
 }
 
+TEST_CASE("filter", "[tuple_sketch]") {
+  auto usk = update_tuple_sketch<int>::builder().build();
+
+  { // empty update sketch
+    auto sk = usk.filter([](int){return true;});
+    REQUIRE(sk.is_empty());
+    REQUIRE(sk.is_ordered());
+    REQUIRE(sk.get_num_retained() == 0);
+  }
+
+  { // empty compact sketch
+    auto sk = usk.compact().filter([](int){return true;});
+    REQUIRE(sk.is_empty());
+    REQUIRE(sk.is_ordered());
+    REQUIRE(sk.get_num_retained() == 0);
+  }
+
+  usk.update(1, 1);
+  usk.update(1, 1);
+  usk.update(2, 1);
+  usk.update(2, 1);
+  usk.update(3, 1);
+
+  { // exact mode update sketch
+    auto sk = usk.filter([](int v){return v > 1;});
+    REQUIRE_FALSE(sk.is_empty());
+    REQUIRE_FALSE(sk.is_ordered());
+    REQUIRE_FALSE(sk.is_estimation_mode());
+    REQUIRE(sk.get_num_retained() == 2);
+  }
+
+  { // exact mode compact sketch
+    auto sk = usk.compact().filter([](int v){return v > 1;});
+    REQUIRE_FALSE(sk.is_empty());
+    REQUIRE(sk.is_ordered());
+    REQUIRE_FALSE(sk.is_estimation_mode());
+    REQUIRE(sk.get_num_retained() == 2);
+  }
+
+  // only keys 1 and 2 had values of 2, which will become 3 after this update
+  // some entries are discarded in estimation mode, but these happen to survive
+  // the process is deterministic, so the test will always work
+  for (int i = 0; i < 10000; ++i) usk.update(i, 1);
+
+  { // estimation mode update sketch
+    auto sk = usk.filter([](int v){return v > 2;});
+    REQUIRE_FALSE(sk.is_empty());
+    REQUIRE_FALSE(sk.is_ordered());
+    REQUIRE(sk.is_estimation_mode());
+    REQUIRE(sk.get_num_retained() == 2);
+  }
+
+  { // estimation mode compact sketch
+    auto sk = usk.compact().filter([](int v){return v > 2;});
+    REQUIRE_FALSE(sk.is_empty());
+    REQUIRE(sk.is_ordered());
+    REQUIRE(sk.is_estimation_mode());
+    REQUIRE(sk.get_num_retained() == 2);
+  }
+}
+
 } /* namespace datasketches */

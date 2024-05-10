@@ -259,6 +259,12 @@ compact_tuple_sketch<S, A> update_tuple_sketch<S, U, P, A>::compact(bool ordered
 }
 
 template<typename S, typename U, typename P, typename A>
+template<typename Predicate>
+compact_tuple_sketch<S, A> update_tuple_sketch<S, U, P, A>::filter(const Predicate& predicate) const {
+  return compact_tuple_sketch<S, A>::filter(*this, predicate);
+}
+
+template<typename S, typename U, typename P, typename A>
 void update_tuple_sketch<S, U, P, A>::print_specifics(std::ostringstream& os) const {
   os << "   lg nominal size      : " << (int) map_.lg_nom_size_ << std::endl;
   os << "   lg current size      : " << (int) map_.lg_cur_size_ << std::endl;
@@ -342,6 +348,33 @@ uint32_t compact_tuple_sketch<S, A>::get_num_retained() const {
 template<typename S, typename A>
 uint16_t compact_tuple_sketch<S, A>::get_seed_hash() const {
   return seed_hash_;
+}
+
+template<typename S, typename A>
+template<typename Predicate>
+compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::filter(const Predicate& predicate) const {
+  return filter(*this, predicate);
+}
+
+template<typename S, typename A>
+template<typename Sketch, typename Predicate>
+compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::filter(const Sketch& sketch, const Predicate& predicate) {
+  std::vector<Entry, AllocEntry> entries(sketch.get_allocator());
+  entries.reserve(sketch.get_num_retained());
+  std::copy_if(
+    sketch.begin(),
+    sketch.end(),
+    std::back_inserter(entries),
+    [&predicate](const Entry& e) {return predicate(e.second);}
+  );
+  entries.shrink_to_fit();
+  return compact_tuple_sketch(
+    !sketch.is_estimation_mode() && entries.empty(),
+    sketch.is_ordered(),
+    sketch.get_seed_hash(),
+    sketch.get_theta64(),
+    std::move(entries)
+  );
 }
 
 // implementation for fixed-size arithmetic types (integral and floating point)
