@@ -45,6 +45,8 @@ install(FILES
 		include/tuple_a_not_b.hpp
 		include/tuple_a_not_b_impl.hpp
 		include/tuple_jaccard_similarity.hpp
+		include/tuple_filter.hpp
+		include/tuple_filter_impl.hpp
 		include/array_of_doubles_sketch.hpp
 		include/array_tuple_sketch.hpp
 		include/array_tuple_sketch_impl.hpp
