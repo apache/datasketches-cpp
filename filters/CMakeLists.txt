@@ -35,7 +35,7 @@ install(TARGETS filters
   EXPORT ${PROJECT_NAME}
 )
 
-install(FILES 
-			include/quotient_filter.hpp
-      include/quotient_filter_impl.hpp
+install(FILES
+    include/quotient_filter.hpp
+    include/quotient_filter_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
