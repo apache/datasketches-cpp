@@ -22,7 +22,7 @@
 
 #include <bitset>
 #include <memory>
-#include <ostream>
+#include <sstream>
 
 #include "common_defs.hpp"
 #include "bit_array.hpp"
