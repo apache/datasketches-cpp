@@ -38,11 +38,15 @@ class quotient_filter_alloc {
 public:
   using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;
 
+  static constexpr float DEFAULT_LOAD_FACTOR = 0.8;
+
   /**
    * @param lg_q
-   * @param num_bits_per_entry length of remainder in bits + 3 metadata bits
+   * @param num_fingerprint_bits length of fingerprint in bits
+   * @param load_factor threshold for the ratio of the number of entries to the number of slots for expansion
+   * @param allocator for use by this sketch to allocate memory
    */
-  explicit quotient_filter_alloc(uint8_t lg_q, uint8_t num_bits_per_entry, const Allocator& allocator = Allocator());
+  explicit quotient_filter_alloc(uint8_t lg_q, uint8_t num_fingerprint_bits, float load_factor = DEFAULT_LOAD_FACTOR, const Allocator& allocator = Allocator());
 
   /**
    * Update this filter with given unsigned 64-bit integer.
@@ -91,6 +95,9 @@ public:
    */
   bool query(const void* data, size_t length) const;
 
+
+  void merge(const quotient_filter_alloc& other);
+
   size_t get_num_entries() const;
 
   uint8_t get_lg_q() const;
@@ -119,12 +126,11 @@ public:
 private:
   Allocator allocator_;
   uint8_t lg_q_;
-  uint8_t num_bits_per_entry_;
+  uint8_t num_fingerprint_bits_;
   uint8_t num_expansions_;
+  float load_factor_;
   size_t num_entries_;
   vector_bytes bytes_;
-
-  static constexpr double LOAD_FACTOR = 0.9;
 
   inline size_t get_q() const;
   inline size_t get_slot_mask() const;

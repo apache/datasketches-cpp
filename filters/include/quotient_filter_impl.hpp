@@ -83,17 +83,18 @@ static inline uint64_t get_bits(uint8_t bits, const uint8_t* ptr, uint8_t offset
 }
 
 template<typename A>
-quotient_filter_alloc<A>::quotient_filter_alloc(uint8_t lg_q, uint8_t bits_per_entry, const A& allocator):
+quotient_filter_alloc<A>::quotient_filter_alloc(uint8_t lg_q, uint8_t num_fingerprint_bits, float load_factor, const A& allocator):
 allocator_(allocator),
 lg_q_(lg_q),
-num_bits_per_entry_(bits_per_entry),
+num_fingerprint_bits_(num_fingerprint_bits),
 num_expansions_(0),
+load_factor_(load_factor),
 num_entries_(0),
 bytes_(allocator)
 {
   // check input
   // allocate multiples of 8 bytes to match Java
-  bytes_.resize(u64_to_hold_bits(get_q() * bits_per_entry) * sizeof(uint64_t));
+  bytes_.resize(u64_to_hold_bits(get_q() * get_num_bits_per_entry()) * sizeof(uint64_t));
 }
 
 template<typename A>
@@ -141,6 +142,31 @@ bool quotient_filter_alloc<A>::query(const void* data, size_t length) const {
 }
 
 template<typename A>
+void quotient_filter_alloc<A>::merge(const quotient_filter_alloc& other) {
+  if (lg_q_ + num_fingerprint_bits_ != other.lg_q_ + other.num_fingerprint_bits_) {
+    throw std::invalid_argument("incompatible sketches in merge");
+  }
+  // find cluster start
+  size_t i = 0;
+  if (!other.is_slot_empty(i)) while (other.get_is_shifted(i)) i = (i - 1) & other.get_slot_mask();
+
+  std::queue<size_t> fifo;
+  size_t count = 0;
+  while (count < other.num_entries_) {
+    if (!other.is_slot_empty(i)) {
+      if (other.get_is_occupied(i)) fifo.push(i);
+      const size_t quotient = fifo.front();
+      const uint64_t value = other.get_value(i);
+      const uint64_t hash = quotient << other.num_fingerprint_bits_ | value;
+      insert(quotient_from_hash(hash), value_from_hash(hash));
+      ++count;
+    }
+    i = (i + 1) & other.get_slot_mask();
+    if (!fifo.empty() && !other.get_is_continuation(i)) fifo.pop();
+  }
+}
+
+template<typename A>
 size_t quotient_filter_alloc<A>::get_q() const {
   return static_cast<size_t>(1) << get_lg_q();
 }
@@ -177,12 +203,12 @@ uint8_t quotient_filter_alloc<A>::get_lg_q() const {
 
 template<typename A>
 uint8_t quotient_filter_alloc<A>::get_num_bits_per_entry() const {
-  return num_bits_per_entry_;
+  return num_fingerprint_bits_ + 3;
 }
 
 template<typename A>
 uint8_t quotient_filter_alloc<A>::get_num_bits_in_value() const {
-  return num_bits_per_entry_ - 3;
+  return num_fingerprint_bits_;
 }
 
 template<typename A>
@@ -201,10 +227,11 @@ string<A> quotient_filter_alloc<A>::to_string(bool print_entries) const {
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
   os << "### Quotient filter summary:" << std::endl;
-  os << "   LgQ            : " << std::to_string(lg_q_) << std::endl;
-  os << "   Bits per entry : " << std::to_string(num_bits_per_entry_) << std::endl;
-  os << "   Num expansions : " << std::to_string(num_expansions_) << std::endl;
-  os << "   Num entries    : " << num_entries_ << std::endl;
+  os << "   LgQ              : " << std::to_string(lg_q_) << std::endl;
+  os << "   Fingerprint bits : " << std::to_string(num_fingerprint_bits_) << std::endl;
+  os << "   Load factor      : " << std::to_string(load_factor_) << std::endl;
+  os << "   Num expansions   : " << std::to_string(num_expansions_) << std::endl;
+  os << "   Num entries      : " << num_entries_ << std::endl;
   os << "### End filter summary" << std::endl;
 
   if (print_entries) {
@@ -242,12 +269,10 @@ size_t quotient_filter_alloc<A>::find_run_start(size_t slot) const {
     slot = (slot - 1) & get_slot_mask();
     if (get_is_occupied(slot)) ++num_runs_to_skip;
   }
-//  std::cout << "cluster start " << slot << " " << num_runs_to_skip << " runs to skip\n";
   while (num_runs_to_skip > 0) {
     slot = (slot + 1) & get_slot_mask();
     if (!get_is_continuation(slot)) --num_runs_to_skip;
   }
-//  std::cout << "run start " << slot << "\n";
   return slot;
 }
 
@@ -306,13 +331,13 @@ void quotient_filter_alloc<A>::insert_and_shift(size_t quotient, size_t slot, ui
 
   if (is_new_run) set_is_occupied(quotient, true);
   ++num_entries_;
-  if (num_entries_ == static_cast<size_t>(get_q() * LOAD_FACTOR)) expand();
+  if (num_entries_ == static_cast<size_t>(get_q() * load_factor_)) expand();
 }
 
 template<typename A>
 void quotient_filter_alloc<A>::expand() {
   if (get_num_bits_in_value() < 2) throw std::logic_error("for expansion value must have at least 2 bits");
-  quotient_filter_alloc other(lg_q_ + 1, num_bits_per_entry_ - 1, allocator_);
+  quotient_filter_alloc other(lg_q_ + 1, num_fingerprint_bits_ - 1, load_factor_, allocator_);
 
   // find cluster start
   size_t i = 0;

@@ -26,9 +26,9 @@
 namespace datasketches {
 
 TEST_CASE("empty", "[quotient_filter]") {
-  quotient_filter f(10, 9);
+  quotient_filter f(10, 6);
   REQUIRE(f.get_lg_q() == 10);
-  REQUIRE(f.get_num_bits_per_entry() == 9);
+  REQUIRE(f.get_num_bits_in_value() == 6);
   REQUIRE(f.get_num_entries() == 0);
 }
 
@@ -55,7 +55,7 @@ TEST_CASE("several entries", "[quotient_filter]") {
 
 TEST_CASE("many entries no expansion 1", "[quotient_filter]") {
   quotient_filter f(4, 9);
-  const size_t n = 12;
+  const size_t n = 11;
   for (size_t i = 0; i < n; ++i) f.update(i);
 //  std::cout << f.to_string(true);
 
@@ -146,9 +146,55 @@ TEST_CASE("expansion", "[quotient_filter]") {
   positives = 0;
   for (size_t i = 0; i < n; ++i) if (f.query(i + n)) ++positives;
   REQUIRE(positives < 7);
+}
 
-  for (size_t i = 0; i < n * 2; ++i) if (f.update(i + n)) ++positives;
-  std::cout << f.to_string();
+TEST_CASE("merge empty", "[quotient_filter]") {
+  quotient_filter qf1(4, 3);
+  quotient_filter qf2(4, 3);
+  qf1.merge(qf2);
+  REQUIRE(qf1.get_lg_q() == 4);
+  REQUIRE(qf1.get_num_bits_in_value() == 3);
+  REQUIRE(qf1.get_num_entries() == 0);
+}
+
+TEST_CASE("merge", "[quotient_filter]") {
+  quotient_filter qf1(16, 12);
+  quotient_filter qf2(16, 12);
+  const size_t n = 50000;
+  for (size_t i = 0; i < n / 2; ++i) {
+    qf1.update(i);
+    qf2.update(i + n / 2);
+  }
+  qf1.merge(qf2);
+  REQUIRE(qf1.get_num_expansions() == 0);
+  REQUIRE(qf1.get_num_entries() > n * 0.9999); // allow a few hash collisions
+
+  // query the same keys
+  size_t positives = 0;
+  for (size_t i = 0; i < n; ++i) if (qf1.query(i)) ++positives;
+  REQUIRE(positives == n);
+
+  // query novel keys
+  positives = 0;
+  for (size_t i = 0; i < n; ++i) if (qf1.query(i + n)) ++positives;
+  REQUIRE(positives < 6);
+}
+
+TEST_CASE("merge different configuration", "[quotient_filter]") {
+  quotient_filter qf1(6, 5);
+  quotient_filter qf2(5, 6);
+  for (int i = 0; i < 10; ++i) {
+    qf1.update(i);
+    qf2.update(i);
+  }
+  qf1.merge(qf2);
+  REQUIRE(qf1.get_num_entries() == 10);
+}
+
+TEST_CASE("merge incompatible", "[quotient_filter]") {
+  quotient_filter qf1(6, 5);
+  quotient_filter qf2(6, 6);
+  REQUIRE_THROWS_AS(qf1.merge(qf2), std::invalid_argument);
 }
 
 TEST_CASE("serialize", "[quotient_filter]") {
