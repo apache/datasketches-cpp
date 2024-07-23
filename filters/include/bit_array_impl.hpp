@@ -108,20 +108,33 @@ bool bit_array_alloc<A>::get_and_set_bit(const uint64_t index) {
 }
 
 template<typename A>
+uint64_t bit_array_alloc<A>::count_bits_set() const {
+  uint64_t num_bits_set = 0;
+
+  // we rounded up to a multiple of 64 so we know we can use 64-bit operations
+  const uint64_t* data64 = reinterpret_cast<const uint64_t*>(data_.data());
+  // Calculate the number of 64-bit chunks
+  uint64_t num_longs = data_.size() / 8; // 8 bytes per 64 bits
+  for (uint64_t i = 0; i < num_longs; ++i) {
+    // Wrap the 64-bit chunk with std::bitset for easy bit counting
+    std::bitset<64> bits(data64[i]);
+    num_bits_set += bits.count();
+  }
+  return num_bits_set;
+}
+
+template<typename A>
 uint64_t bit_array_alloc<A>::get_num_bits_set() {
   if (is_dirty_) {
-    num_bits_set_ = 0;
+    num_bits_set_ = count_bits_set();
+  }
+  return num_bits_set_;
+}
 
-    // we rounded up to a multiple of 64 so we know we can use 64-bit operations
-    const uint64_t* data64 = reinterpret_cast<const uint64_t*>(data_.data());
-    // Calculate the number of 64-bit chunks
-    uint64_t num_longs = data_.size() / 8; // 8 bytes per 64 bits
-    for (uint64_t i = 0; i < num_longs; ++i) {
-      // Wrap the 64-bit chunk with std::bitset for easy bit counting
-      std::bitset<64> bits(data64[i]);
-      num_bits_set_ += bits.count();
-    }
-    is_dirty_ = false;
+template<typename A>
+uint64_t bit_array_alloc<A>::get_num_bits_set() const {
+  if (is_dirty_) {
+    return count_bits_set();
   }
   return num_bits_set_;
 }

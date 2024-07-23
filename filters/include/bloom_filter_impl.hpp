@@ -46,7 +46,7 @@ bool bloom_filter_alloc<A>::is_empty() const {
 }
 
 template<typename A>
-uint64_t bloom_filter_alloc<A>::get_bits_used() const {
+uint64_t bloom_filter_alloc<A>::get_bits_used() {
   return bit_array_.get_num_bits_set();
 }
 
@@ -130,11 +130,11 @@ void bloom_filter_alloc<A>::update(const double item) {
     int64_t long_value;
     double double_value;
   } ldu;
-  ldu.doubleBytes = static_cast<double>(item);
+  ldu.double_value = static_cast<double>(item);
   if (item == 0.0) {
-    ldu.doubleBytes = 0.0; // canonicalize -0.0 to 0.0
-  } else if (std::isnan(ldu.doubleBytes)) {
-    ldu.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
+    ldu.double_value = 0.0; // canonicalize -0.0 to 0.0
+  } else if (std::isnan(ldu.double_value)) {
+    ldu.long_value = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
   }
   const uint64_t h0 = XXHash64::hash(&ldu, sizeof(ldu), seed_);
   const uint64_t h1 = XXHash64::hash(&ldu, sizeof(ldu), h0);
@@ -223,11 +223,11 @@ bool bloom_filter_alloc<A>::query_and_update(const double item) {
     int64_t long_value;
     double double_value;
   } ldu;
-  ldu.doubleBytes = item;
+  ldu.double_value = item;
   if (item == 0.0) {
-    ldu.doubleBytes = 0.0; // canonicalize -0.0 to 0.0
-  } else if (std::isnan(ldu.doubleBytes)) {
-    ldu.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
+    ldu.double_value = 0.0; // canonicalize -0.0 to 0.0
+  } else if (std::isnan(ldu.double_value)) {
+    ldu.long_value = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
   }
   const uint64_t h0 = XXHash64::hash(&ldu, sizeof(ldu), seed_);
   const uint64_t h1 = XXHash64::hash(&ldu, sizeof(ldu), h0);
@@ -251,7 +251,7 @@ template<typename A>
 bool bloom_filter_alloc<A>::internal_query_and_update(const uint64_t h0, const uint64_t h1) {
   const uint64_t num_bits = bit_array_.get_capacity();
   bool value_exists = true;
-  for (uint16_t i = 0; i < num_hashes_; i++) {
+  for (uint16_t i = 1; i <= num_hashes_; i++) {
     const uint64_t hash_index = ((h0 + i * h1) >> 1) % num_bits;
     value_exists &= bit_array_.get_and_set_bit(hash_index);
   }
@@ -345,7 +345,7 @@ bool bloom_filter_alloc<A>::query(const void* item, size_t size) const {
 template<typename A>
 bool bloom_filter_alloc<A>::internal_query(const uint64_t h0, const uint64_t h1) const {
   const uint64_t num_bits = bit_array_.get_capacity();
-  for (uint16_t i = 0; i < num_hashes_; i++) {
+  for (uint16_t i = 1; i <= num_hashes_; i++) {
     const uint64_t hash_index = ((h0 + i * h1) >> 1) % num_bits;
     if (!bit_array_.get_bit(hash_index))
       return false;
@@ -380,6 +380,28 @@ template<typename A>
 void bloom_filter_alloc<A>::invert() {
   bit_array_.invert();
 }
+
+template<typename A>
+string<A> bloom_filter_alloc<A>::to_string(bool print_filter) const {
+  // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
+  // The stream does not support passing an allocator instance, and alternatives are complicated.
+  std::ostringstream oss;
+  oss << "### Bloom Filter Summary:" << std::endl;
+  oss << "   num_bits   : " << bit_array_.get_capacity() << std::endl;
+  oss << "   num_hashes : " << num_hashes_ << std::endl;
+  oss << "   seed       : " << seed_ << std::endl;
+  oss << "   bits_used  : " << bit_array_.get_num_bits_set() << std::endl;
+  oss << "   fill %     : " << static_cast<double>(bit_array_.get_num_bits_set() * 100) / bit_array_.get_capacity() << std::endl;
+  oss << "### End filter summary" << std::endl;
+
+  if (print_filter) {
+    oss << bit_array_.to_string();
+  }
+
+  oss << std::endl;
+  return oss.str();
+}
+
 
 } // namespace datasketches
 

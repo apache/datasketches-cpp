@@ -30,18 +30,44 @@ namespace datasketches {
 
 // forward declarations
 template<typename A> class bloom_filter_alloc;
+template<typename A> class bloom_filter_builder_alloc;
 
-/// bit_array alias with default allocator
+// aliases with default allocator
 using bloom_filter = bloom_filter_alloc<std::allocator<uint8_t>>;
+using bloom_filter_builder = bloom_filter_builder_alloc<std::allocator<uint8_t>>;
 
+template<typename Allocator = std::allocator<uint8_t>>
+class bloom_filter_builder_alloc {
+  using A = Allocator;
+
+public:
+  static uint16_t suggest_num_hashes(const uint64_t num_distinct_items, const uint64_t num_filter_bits);
+  static uint16_t suggest_num_hashes(const double target_false_positive_prob);
+  static uint64_t suggest_num_filter_bits(const uint64_t num_distinct_items, const double target_false_positive_prob);
+
+  static bloom_filter_alloc<A> create_by_accuracy(const uint64_t num_distinct_items,
+                                                  const double target_false_positive_prob,
+                                                  const Allocator& allocator = Allocator());
+  static bloom_filter_alloc<A> create_by_accuracy(const uint64_t num_distinct_items,
+                                                  const double target_false_positive_prob,
+                                                  const uint64_t seed,
+                                                  const Allocator& allocator = Allocator());
+
+  static bloom_filter_alloc<A> create_by_size(const uint64_t num_bits,
+                                              const uint16_t num_hashes,
+                                              const Allocator& allocator = Allocator());
+  static bloom_filter_alloc<A> create_by_size(const uint64_t num_bits,
+                                              const uint16_t num_hashes,
+                                              const uint64_t seed,
+                                              const Allocator& allocator = Allocator());
+
+};
 
 template<typename Allocator = std::allocator<uint8_t>>
 class bloom_filter_alloc {
   using A = Allocator;
 
 public:
-
-  bloom_filter_alloc(const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const Allocator& allocator = Allocator());
 
   /**
    * Checks if the Bloom Filter has processed any items
@@ -53,7 +79,7 @@ public:
    * Returns the number of bits in the Bloom Filter that are set to 1.
    * @return The number of bits in use in this filter
    */
-  uint64_t get_bits_used() const;
+  uint64_t get_bits_used();
 
   /**
    * Returns the total number of bits in the Bloom Filter.
@@ -412,8 +438,17 @@ public:
 
   // TODO: Serialization
 
+  /**
+   * @brief Returns a human-readable string representation of the Bloom Filter.
+   * @param print_filter If true, the filter bits will be printed as well.
+   * @return A human-readable string representation of the Bloom Filter.
+   */
+  string<A> to_string(bool print_filter = false) const;
+
 
 private:
+  bloom_filter_alloc(const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const Allocator& allocator = Allocator());
+
   // internal query/update methods
   void internal_update(const uint64_t h0, const uint64_t h1);
   bool internal_query_and_update(const uint64_t h0, const uint64_t h1);
@@ -423,10 +458,13 @@ private:
   uint64_t seed_;
   uint16_t num_hashes_;
   bit_array_alloc<A> bit_array_;
+
+  friend class bloom_filter_builder_alloc<A>;
 };
 
 } // namespace datasketches
 
+#include "bloom_filter_builder_impl.hpp"
 #include "bloom_filter_impl.hpp"
 
 #endif // _BLOOM_FILTER_HPP_ b

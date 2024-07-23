@@ -93,6 +93,12 @@ public:
    * @brief Gets the number of bits set in the bit array.
    * @return the number of bits set in the bit array.
    */
+  uint64_t get_num_bits_set() const;
+
+  /**
+   * @brief Gets the number of bits set in the bit array.
+   * @return the number of bits set in the bit array.
+   */
   uint64_t get_num_bits_set();
 
   /**
@@ -148,6 +154,8 @@ private:
   uint64_t num_bits_set_;  // if -1, need to recompute value
   bool is_dirty_;
   std::vector<uint8_t, A> data_;
+
+  uint64_t count_bits_set() const;
 };
 
 } // namespace datasketches

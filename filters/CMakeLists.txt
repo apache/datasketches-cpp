@@ -38,6 +38,7 @@ install(TARGETS filters
 install(FILES
 		include/bloom_filter.hpp
 		include/bloom_filter_impl.hpp
+    include/bloom_filter_builder_impl.hpp
 		include/bit_array.hpp
 		include/bit_array_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
