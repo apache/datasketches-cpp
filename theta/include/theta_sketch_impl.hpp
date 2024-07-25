@@ -506,6 +506,7 @@ void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const 
       previous = entries_[i];
       offset = pack_bits(delta, entry_bits, ptr, offset);
     }
+    if (offset > 0) ++ptr;
     write(os, buffer.data(), ptr - buffer.data());
   }
 }
