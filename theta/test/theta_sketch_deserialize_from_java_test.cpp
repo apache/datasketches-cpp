@@ -45,6 +45,23 @@ TEST_CASE("theta sketch", "[serde_compat]") {
   }
 }
 
+TEST_CASE("theta sketch compressed", "[serde_compat]") {
+  const unsigned n_arr[] = {10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open(testBinaryInputPath + "theta_compressed_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = compact_theta_sketch::deserialize(is);
+    REQUIRE(sketch.is_estimation_mode() == (n > 1000));
+    REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
+    for (const auto hash: sketch) {
+      REQUIRE(hash < sketch.get_theta64());
+    }
+    REQUIRE(sketch.is_ordered());
+    REQUIRE(std::is_sorted(sketch.begin(), sketch.end()));
+  }
+}
+
 TEST_CASE("theta sketch non-empty no entries", "[serde_compat]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);
