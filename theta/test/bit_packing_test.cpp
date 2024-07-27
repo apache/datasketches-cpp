@@ -30,29 +30,30 @@ static const uint64_t IGOLDEN64 = 0x9e3779b97f4a7c13ULL;
 
 TEST_CASE("pack unpack bits") {
   for (uint8_t bits = 1; bits <= 63; ++bits) {
+    int n = 8;
     const uint64_t mask = (1ULL << bits) - 1;
-    std::vector<uint64_t> input(8, 0);
+    std::vector<uint64_t> input(n, 0);
     const uint64_t igolden64 = IGOLDEN64;
     uint64_t value = 0xaa55aa55aa55aa55ULL; // arbitrary starting value
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < n; ++i) {
       input[i] = value & mask;
       value += igolden64;
     }
-    std::vector<uint8_t> bytes(8 * sizeof(uint64_t), 0);
+    std::vector<uint8_t> bytes(n * sizeof(uint64_t), 0);
     uint8_t offset = 0;
     uint8_t* ptr = bytes.data();
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < n; ++i) {
       offset = pack_bits(input[i], bits, ptr, offset);
     }
 
-    std::vector<uint64_t> output(8, 0);
+    std::vector<uint64_t> output(n, 0);
     offset = 0;
     const uint8_t* cptr = bytes.data();
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < n; ++i) {
       offset = unpack_bits(output[i], bits, cptr, offset);
     }
-    for (int i = 0; i < 8; ++i) {
-      REQUIRE((input[i] & mask) == output[i]);
+    for (int i = 0; i < n; ++i) {
+      REQUIRE(input[i] == output[i]);
     }
   }
 }
