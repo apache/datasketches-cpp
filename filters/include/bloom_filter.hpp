@@ -20,10 +20,10 @@
 #ifndef _BLOOM_FILTER_HPP_
 #define _BLOOM_FILTER_HPP_
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
-#include "bit_array.hpp"
 #include "common_defs.hpp"
 
 namespace datasketches {
@@ -445,8 +445,15 @@ public:
    */
   string<A> to_string(bool print_filter = false) const;
 
+  /**
+   * @brief Destroy the bloom filter alloc object
+   */
+  ~bloom_filter_alloc();
 
 private:
+  static const uint64_t MAX_HEADER_SIZE_BYTES = 32; // 4 Java Longs
+  static const uint64_t MAX_FILTER_SIZE_BITS = (INT32_MAX - MAX_HEADER_SIZE_BYTES) * sizeof(uint64_t);
+
   bloom_filter_alloc(const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const Allocator& allocator = Allocator());
 
   // internal query/update methods
@@ -457,7 +464,13 @@ private:
   A allocator_;
   uint64_t seed_;
   uint16_t num_hashes_;
-  bit_array_alloc<A> bit_array_;
+  bool is_dirty_;
+  bool is_owned_; // if true, data is not owned by filter AND data_ holdes the entire filter not just the bit array
+  bool is_read_only_; // if true, filter is read-only
+  uint64_t capacity_bits_;
+  uint64_t num_bits_set_;
+  uint8_t* bit_array_;  // data backing bit_array_, regardless of ownership
+  uint8_t* memory_; // if wrapped, pointer to the start of the filter, otheriwse nullptr
 
   friend class bloom_filter_builder_alloc<A>;
 };

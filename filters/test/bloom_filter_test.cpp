@@ -18,9 +18,6 @@
  */
 
 #include <catch2/catch.hpp>
-//#include <sstream>
-//#include <fstream>
-//#include <stdexcept>
 
 #include "bloom_filter.hpp"
 
@@ -89,7 +86,6 @@ TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
   REQUIRE(bf.get_num_hashes() == num_hashes);
   REQUIRE(bf.get_bits_used() == 0);
 }
-
 
 TEST_CASE("bloom_filter: inversion", "[bloom_filter]") {
   uint64_t num_bits = 8192;

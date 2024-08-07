@@ -40,6 +40,6 @@ add_test(
 
 target_sources(bloom_filter_test
   PRIVATE
-  bit_array_test.cpp
+  bit_array_ops_test.cpp
   bloom_filter_test.cpp
 )

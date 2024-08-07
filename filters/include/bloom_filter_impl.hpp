@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "common_defs.hpp"
+#include "bit_array_ops.hpp"
 #include "xxhash64.h"
 
 namespace datasketches {
@@ -33,26 +34,64 @@ bloom_filter_alloc<A>::bloom_filter_alloc(const uint64_t num_bits, const uint16_
   allocator_(allocator),
   seed_(seed),
   num_hashes_(num_hashes),
-  bit_array_(num_bits, allocator)
+  is_dirty_(false),
+  is_owned_(true),
+  is_read_only_(false),
+  capacity_bits_(((num_bits + 63) >> 6) << 6), // can round to nearest multiple of 64 prior to bounds checks
+  num_bits_set_(0)
   {
     if (num_hashes == 0) {
       throw std::invalid_argument("Must have at least 1 hash function");
     }
+    if (num_bits == 0) {
+      throw std::invalid_argument("Number of bits must be greater than zero");
+    } else if (num_bits > MAX_FILTER_SIZE_BITS) {
+      throw std::invalid_argument("Filter may not exceed " + std::to_string(MAX_FILTER_SIZE_BITS) + " bits");
+    }
+
+    const uint64_t num_bytes = capacity_bits_ >> 3;
+    bit_array_ = allocator_.allocate(num_bytes);
+    std::fill_n(bit_array_, num_bytes, 0);
+    if (bit_array_ == nullptr) {
+      throw std::bad_alloc();
+    }
+    memory_ = nullptr;
   }
 
 template<typename A>
+bloom_filter_alloc<A>::~bloom_filter_alloc() {
+  // TODO: handle when only bit_array_ is used
+  // TODO: handle when memory_ is used and bit_array_ is a pointer into it
+  /*
+  if (is_owned_ && memory_ != nullptr) {
+    allocator_.deallocate(memory_, capacity_bits_ >> 3);
+    memory_ = nullptr;
+    bit_array_ = nullptr; // just to be safe
+  }
+  */
+  if (memory_ == nullptr && bit_array_ != nullptr) {
+    allocator_.deallocate(bit_array_, capacity_bits_ >> 3);
+    bit_array_ = nullptr;
+  }
+}
+
+template<typename A>
 bool bloom_filter_alloc<A>::is_empty() const {
-  return bit_array_.is_empty();
+  return !is_dirty_ && num_bits_set_ == 0;
 }
 
 template<typename A>
 uint64_t bloom_filter_alloc<A>::get_bits_used() {
-  return bit_array_.get_num_bits_set();
+  if (is_dirty_) {
+    num_bits_set_ = bit_array_ops::count_num_bits_set(bit_array_, capacity_bits_ >> 3);
+    is_dirty_ = false;
+  }
+  return num_bits_set_;
 }
 
 template<typename A>
 uint64_t bloom_filter_alloc<A>::get_capacity() const {
-  return bit_array_.get_capacity();
+  return capacity_bits_;
 }
 
 template<typename A>
@@ -67,7 +106,10 @@ uint64_t bloom_filter_alloc<A>::get_seed() const {
 
 template<typename A>
 void bloom_filter_alloc<A>::reset() {
-  bit_array_.reset();
+  // TODO: if wrapped, update num_bits_set in memory, too
+  num_bits_set_ = 0;
+  is_dirty_ = false;
+  std::fill(bit_array_, bit_array_ + (capacity_bits_ >> 3), 0);
 }
 
 // UPDATE METHODS
@@ -156,11 +198,12 @@ void bloom_filter_alloc<A>::update(const void* item, size_t size) {
 
 template<typename A>
 void bloom_filter_alloc<A>::internal_update(const uint64_t h0, const uint64_t h1) {
-  const uint64_t num_bits = bit_array_.get_capacity();
+  const uint64_t num_bits = get_capacity();
   for (uint16_t i = 1; i <= num_hashes_; i++) {
     const uint64_t hash_index = ((h0 + i * h1) >> 1) % num_bits;
-    bit_array_.set_bit(hash_index);
+    bit_array_ops::set_bit(bit_array_, hash_index);
   }
+  is_dirty_ = true;
 }
 
 // QUERY-AND-UPDATE METHODS
@@ -249,11 +292,13 @@ bool bloom_filter_alloc<A>::query_and_update(const void* item, size_t size) {
 
 template<typename A>
 bool bloom_filter_alloc<A>::internal_query_and_update(const uint64_t h0, const uint64_t h1) {
-  const uint64_t num_bits = bit_array_.get_capacity();
+  const uint64_t num_bits = get_capacity();
   bool value_exists = true;
   for (uint16_t i = 1; i <= num_hashes_; i++) {
     const uint64_t hash_index = ((h0 + i * h1) >> 1) % num_bits;
-    value_exists &= bit_array_.get_and_set_bit(hash_index);
+    bool value = bit_array_ops::get_and_set_bit(bit_array_, hash_index);
+    num_bits_set_ += value ? 0 : 1;
+    value_exists &= value;
   }
   return value_exists;
 }
@@ -344,10 +389,10 @@ bool bloom_filter_alloc<A>::query(const void* item, size_t size) const {
 
 template<typename A>
 bool bloom_filter_alloc<A>::internal_query(const uint64_t h0, const uint64_t h1) const {
-  const uint64_t num_bits = bit_array_.get_capacity();
+  const uint64_t num_bits = get_capacity();
   for (uint16_t i = 1; i <= num_hashes_; i++) {
     const uint64_t hash_index = ((h0 + i * h1) >> 1) % num_bits;
-    if (!bit_array_.get_bit(hash_index))
+    if (!bit_array_ops::get_bit(bit_array_, hash_index))
       return false;
   }
   return true;
@@ -357,7 +402,10 @@ bool bloom_filter_alloc<A>::internal_query(const uint64_t h0, const uint64_t h1)
 
 template<typename A>
 bool bloom_filter_alloc<A>::is_compatible(const bloom_filter_alloc& other) const {
-  return seed_ == other.seed_ && num_hashes_ == other.num_hashes_ && bit_array_.get_capacity() == other.bit_array_.get_capacity();
+  return seed_ == other.seed_
+    && num_hashes_ == other.num_hashes_
+    && get_capacity() == other.get_capacity()
+    ;
 }
 
 template<typename A>
@@ -365,7 +413,8 @@ void bloom_filter_alloc<A>::union_with(const bloom_filter_alloc& other) {
   if (!is_compatible(other)) {
     throw std::invalid_argument("Incompatible bloom filters");
   }
-  bit_array_.union_with(other.bit_array_);
+  num_bits_set_ = bit_array_ops::union_with(bit_array_, other.bit_array_, capacity_bits_ >> 3);
+  is_dirty_ = false;
 }
 
 template<typename A>
@@ -373,12 +422,14 @@ void bloom_filter_alloc<A>::intersect(const bloom_filter_alloc& other) {
   if (!is_compatible(other)) {
     throw std::invalid_argument("Incompatible bloom filters");
   }
-  bit_array_.intersect(other.bit_array_);
+  num_bits_set_ = bit_array_ops::intersect(bit_array_, other.bit_array_, capacity_bits_ >> 3);
+  is_dirty_ = false;
 }
 
 template<typename A>
 void bloom_filter_alloc<A>::invert() {
-  bit_array_.invert();
+  num_bits_set_ = bit_array_ops::invert(bit_array_, capacity_bits_ >> 3);
+  is_dirty_ = false;
 }
 
 template<typename A>
@@ -387,19 +438,30 @@ string<A> bloom_filter_alloc<A>::to_string(bool print_filter) const {
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream oss;
   oss << "### Bloom Filter Summary:" << std::endl;
-  oss << "   num_bits   : " << bit_array_.get_capacity() << std::endl;
+  oss << "   num_bits   : " << get_capacity() << std::endl;
   oss << "   num_hashes : " << num_hashes_ << std::endl;
   oss << "   seed       : " << seed_ << std::endl;
-  oss << "   bits_used  : " << bit_array_.get_num_bits_set() << std::endl;
-  oss << "   fill %     : " << static_cast<double>(bit_array_.get_num_bits_set() * 100) / bit_array_.get_capacity() << std::endl;
+  oss << "   bits_used  : " << get_bits_used() << std::endl;
+  oss << "   fill %     : " << (get_bits_used() * 100.0) / get_capacity() << std::endl;
   oss << "### End filter summary" << std::endl;
 
   if (print_filter) {
-    oss << bit_array_.to_string();
+    uint64_t num_blocks = capacity_bits_ >> 6; // groups of 64 bits
+    for (uint64_t i = 0; i < num_blocks; ++i) {
+      oss << i << ": ";
+      for (uint64_t j = 0; j < 8; ++j) { // bytes w/in a block
+        for (uint64_t b = 0; b < 8; ++b) { // bits w/in a byte
+          oss << ((bit_array_[i * 8 + j] & (1 << b)) ? "1" : "0");
+        }
+        oss << " ";
+      }
+      oss << std::endl;
+    }
+    oss << std::endl;
   }
 
   oss << std::endl;
-  return oss.str();
+  return string<A>(oss.str(), allocator_);
 }
 
 
