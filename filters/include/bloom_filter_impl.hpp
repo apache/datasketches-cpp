@@ -21,6 +21,7 @@
 #define _BLOOM_FILTER_IMPL_HPP_
 
 #include <memory>
+#include <sstream>
 #include <vector>
 
 #include "common_defs.hpp"
