@@ -20,6 +20,8 @@
 #ifndef _BIT_ARRAY_OPS_HPP_
 #define _BIT_ARRAY_OPS_HPP_
 
+#include <bitset>
+
 namespace datasketches {
 
 /**
