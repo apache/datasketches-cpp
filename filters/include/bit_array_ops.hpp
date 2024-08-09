@@ -40,28 +40,41 @@ namespace bit_array_ops {
    * @param index the index of the bit to get
    * @return the value of the bit at the given index.
    */
-  static bool get_bit(uint8_t* array, const uint64_t index);
+  static inline bool get_bit(uint8_t* array, const uint64_t index) {
+    return (array[index >> 3] & (1 << (index & 7))) != 0;
+  }
 
   /**
    * Set the bit at the given index to 1.
    * @param array the array of bits
    * @param index the index of the bit to set.
    */
-  static void set_bit(uint8_t* array, const uint64_t index);
+  static inline void set_bit(uint8_t* array, const uint64_t index) {
+    array[index >> 3] |= (1 << (index & 7));
+  }
 
   /**
    * Set the bit at the given index to 0.
    * @param array the array of bits
    * @param index the index of the bit to clear.
    */
-  static void clear_bit(uint8_t* array, const uint64_t index);
+  static inline void clear_bit(uint8_t* array, const uint64_t index) {
+    array[index >> 3] &= ~(1 << (index & 7));
+  }
 
   /**
    * Assign the value of the bit at the given index.
    * @param array the array of bits
    * @param index the index of the bit to set.
    */
-  static void assign_bit(uint8_t* array, const uint64_t index, const bool value);
+  static inline void assign_bit(uint8_t* array, const uint64_t index, const bool value) {
+    // read-only checks handled by set_bit() and clear_bit()
+    if (value) {
+      set_bit(array, index);
+    } else {
+      clear_bit(array, index);
+    }
+  }
 
   /**
    * Gets teh value of a bit at the specified index and sets it to true
@@ -69,7 +82,16 @@ namespace bit_array_ops {
    * @param index the index of the bit to get and set
    * @return the value of the bit at the specified index
    */
-  static bool get_and_set_bit(uint8_t* array, const uint64_t index);
+  static inline bool get_and_set_bit(uint8_t* array, const uint64_t index) {
+    const uint64_t offset = index >> 3;
+    const uint8_t mask = 1 << (index & 7);
+    if ((array[offset] & mask) != 0) {
+      return true;
+    } else {
+      array[offset] |= mask;
+      return false;
+    }
+  }
 
   /**
    * @brief Gets the number of bits set in the bit array.
@@ -77,7 +99,20 @@ namespace bit_array_ops {
    * @param length_bytes the length of the array, in bytes
    * @return the number of bits set in the bit array.
    */
-  static uint64_t count_num_bits_set(uint8_t* array, const uint64_t length_bytes);
+  static inline uint64_t count_num_bits_set(uint8_t* array, const uint64_t length_bytes) {
+    uint64_t num_bits_set = 0;
+
+    // we rounded up to a multiple of 64 so we know we can use 64-bit operations
+    const uint64_t* array64 = reinterpret_cast<const uint64_t*>(array);
+    // Calculate the number of 64-bit chunks
+    uint64_t num_longs = length_bytes / 8; // 8 bytes per 64 bits
+    for (uint64_t i = 0; i < num_longs; ++i) {
+      // Wrap the 64-bit chunk with std::bitset for easy bit counting
+      std::bitset<64> bits(array64[i]);
+      num_bits_set += bits.count();
+    }
+    return num_bits_set;
+  }
 
   /**
    * Performs a union operation on one bit array with another bit array.
@@ -89,7 +124,15 @@ namespace bit_array_ops {
    * @param length_bytes the length of the two arrays, in bytes
    * @return the number of bits set in the resulting array
    */
-  static uint64_t union_with(uint8_t* tgt, const uint8_t* src, const uint64_t length_bytes);
+  static inline uint64_t union_with(uint8_t* tgt, const uint8_t* src, const uint64_t length_bytes) {
+    uint64_t num_bits_set = 0;
+    for (uint64_t i = 0; i < length_bytes; ++i) {
+      tgt[i] |= src[i];
+      std::bitset<8> bits(tgt[i]);
+      num_bits_set += bits.count();
+    }
+    return num_bits_set;
+  }
 
   /**
    * Performs an intersection operation on one bit array with another bit array.
@@ -101,7 +144,15 @@ namespace bit_array_ops {
    * @param length_bytes the length of the two arrays, in bytes
    * @return the number of bits set in the resulting array
    */
-  static uint64_t intersect(uint8_t* tgt, const uint8_t* src, const uint64_t length_bytes);
+  static inline uint64_t intersect(uint8_t* tgt, const uint8_t* src, const uint64_t length_bytes) {
+    uint64_t num_bits_set = 0;
+    for (uint64_t i = 0; i < length_bytes; ++i) {
+      tgt[i] &= src[i];
+      std::bitset<8> bits(tgt[i]);
+      num_bits_set += bits.count();
+    }
+    return num_bits_set;
+  }
 
   /**
    * Inverts the bits of this bit array.
@@ -110,12 +161,18 @@ namespace bit_array_ops {
    * @param length_bytes the length of the array, in bytes
    * @return the number of bits set in the resulting array
    */
-  static uint64_t invert(uint8_t* array, const uint64_t length_bytes);
+  static inline uint64_t invert(uint8_t* array, const uint64_t length_bytes) {
+    uint64_t num_bits_set = 0;
+    for (uint64_t i = 0; i < length_bytes; ++i) {
+      array[i] = ~array[i];
+      std::bitset<8> bits(array[i]);
+      num_bits_set += bits.count();
+    }
+    return num_bits_set;
+  }
 
 } // namespace bit_array_ops
 
 } // namespace datasketches
-
-#include "bit_array_ops_impl.hpp"
 
 #endif // _BIT_ARRAY_OPS_HPP_

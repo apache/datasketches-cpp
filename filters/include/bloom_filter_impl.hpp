@@ -26,7 +26,13 @@
 
 #include "common_defs.hpp"
 #include "bit_array_ops.hpp"
+#include "memory_operations.hpp"
 #include "xxhash64.h"
+
+// memory scenarios:
+// * on-heap: owned, bit_array_ set, memory_ null
+// * direct: not owned, bit_array_ set, memory_ set
+//   * read-only an option for direct
 
 namespace datasketches {
 
@@ -60,21 +66,184 @@ bloom_filter_alloc<A>::bloom_filter_alloc(const uint64_t num_bits, const uint16_
   }
 
 template<typename A>
-bloom_filter_alloc<A>::~bloom_filter_alloc() {
-  // TODO: handle when only bit_array_ is used
-  // TODO: handle when memory_ is used and bit_array_ is a pointer into it
-  /*
-  if (is_owned_ && memory_ != nullptr) {
-    allocator_.deallocate(memory_, capacity_bits_ >> 3);
-    memory_ = nullptr;
-    bit_array_ = nullptr; // just to be safe
+bloom_filter_alloc<A>::bloom_filter_alloc(const uint64_t seed,
+                                          const uint16_t num_hashes,
+                                          const bool is_dirty,
+                                          const bool is_owned,
+                                          const bool is_read_only,
+                                          const uint64_t capacity_bits,
+                                          const uint64_t num_bits_set,
+                                          uint8_t* bit_array,
+                                          uint8_t* memory,
+                                          const A& allocator) :
+  allocator_(allocator),
+  seed_(seed),
+  num_hashes_(num_hashes),
+  is_dirty_(is_dirty),
+  is_owned_(is_owned),
+  is_read_only_(is_read_only),
+  capacity_bits_(capacity_bits),
+  num_bits_set_(num_bits_set),
+  bit_array_(bit_array),
+  memory_(memory)
+{
+  // no consistency checks since we should have done those during reading
+  if (is_read_only_ && memory_ != nullptr && num_bits_set == DIRTY_BITS_VALUE) {
+    num_bits_set_ = bit_array_ops::count_num_bits_set(bit_array_, capacity_bits_ >> 3);
   }
-  */
-  if (memory_ == nullptr && bit_array_ != nullptr) {
-    allocator_.deallocate(bit_array_, capacity_bits_ >> 3);
+}
+
+template<typename A>
+bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(const void* bytes, size_t length_bytes, const A& allocator) {
+  return internal_deserialize_or_wrap(bytes, length_bytes, false, false, allocator);
+}
+
+template<typename A>
+bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const A& allocator) {
+  const uint8_t prelongs = read<uint8_t>(is);
+  const uint8_t ser_ver = read<uint8_t>(is);
+  const uint8_t family = read<uint8_t>(is);
+  const uint8_t flags = read<uint8_t>(is);
+
+  if (prelongs < 1 || prelongs > 4) {
+    throw std::invalid_argument("Possible corruption: Incorrect number of preamble bytes specified in header");
+  }
+  if (ser_ver != SER_VER) {
+    throw std::invalid_argument("Possible corruption: Unrecognized serialization version: " + std::to_string(ser_ver));
+  }
+  if (family != FAMILY_ID) {
+    throw std::invalid_argument("Possible corruption: Incorrect Family ID for bloom filter. Found: " + std::to_string(family));
+  }
+
+  const bool is_empty = (flags & EMPTY_FLAG_MASK) != 0;
+
+  const uint16_t num_hashes = read<uint16_t>(is);
+  read<uint16_t>(is); // unused
+  const uint64_t seed = read<uint64_t>(is);
+  const uint64_t num_longs = read<uint64_t>(is); // sized in java longs
+  read<uint32_t>(is); // unused
+
+  // if empty, stop reading
+  if (is_empty) {
+    return bloom_filter_alloc<A>(num_longs << 6, num_hashes, seed, allocator);
+  }
+
+  const uint64_t num_bits_set = read<uint64_t>(is);
+  const bool is_dirty = (num_bits_set == DIRTY_BITS_VALUE);
+
+  // allocate memory
+  const uint64_t num_bytes = num_longs << 3;
+  uint8_t* bit_array = allocator_.allocate(num_bytes);
+  if (bit_array == nullptr) {
+    throw std::bad_alloc();
+  }
+  read(is, bit_array, num_bytes);
+
+  // pass to constructor
+  return bloom_filter_alloc<A>(seed, num_hashes, is_dirty, false, false, num_longs << 6, num_bits_set, bit_array, nullptr, allocator);
+}
+
+template<typename A>
+bloom_filter_alloc<A> bloom_filter_alloc<A>::wrap(const void* bytes, size_t length_bytes, const A& allocator) {
+  // read-only flag means we won't modify the memory, but cast away the const
+  return internal_deserialize_or_wrap(const_cast<void*>(bytes), length_bytes, true, true, allocator);
+}
+
+template<typename A>
+bloom_filter_alloc<A> bloom_filter_alloc<A>::writable_wrap(void* bytes, size_t length_bytes, const A& allocator) {
+  return internal_deserialize_or_wrap(bytes, length_bytes, false, true, allocator);
+}
+
+template<typename A>
+bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* bytes,
+                                                                          size_t length_bytes,
+                                                                          bool read_only,
+                                                                          bool wrap,
+                                                                          const A& allocator)
+{
+  ensure_minimum_memory(length_bytes, 8);
+  if (bytes == nullptr) {
+    throw std::invalid_argument("Input data is null or empty");
+  }
+  const uint8_t* ptr = static_cast<const uint8_t*>(bytes);
+  const uint8_t* end_ptr = ptr + length_bytes;
+  const uint8_t prelongs = *ptr++;
+  const uint8_t ser_ver = *ptr++;
+  const uint8_t family = *ptr++;
+  const uint8_t flags = *ptr++;
+
+  if (prelongs < 1 || prelongs > 4) {
+    throw std::invalid_argument("Possible corruption: Incorrect number of preamble bytes specified in header");
+  }
+  if (ser_ver != SER_VER) {
+    throw std::invalid_argument("Possible corruption: Unrecognized serialization version: " + std::to_string(ser_ver));
+  }
+  if (family != FAMILY_ID) {
+    throw std::invalid_argument("Possible corruption: Incorrect Family ID for bloom filter. Found: " + std::to_string(family));
+  }
+
+  const bool is_empty = (flags & EMPTY_FLAG_MASK) != 0;
+
+  ensure_minimum_memory(length_bytes, prelongs * sizeof(uint64_t));
+
+  uint16_t num_hashes;
+  ptr += copy_from_mem(ptr, num_hashes);
+  ptr += sizeof(uint16_t); // 16 bits unused after num_hashes
+  uint64_t seed;
+  ptr += copy_from_mem(ptr, seed);
+
+  uint64_t num_longs;
+  ptr += copy_from_mem(ptr, num_longs); // sized in java longs
+  ptr += sizeof(sizeof(uint32_t)); // unused 32 bits follow
+
+  // if empty, stop reading
+  if (wrap && is_empty && !read_only) {
+    throw std::invalid_argument("Cannot wrap an empty filter for writing");
+  } else if (is_empty) {
+    return bloom_filter_alloc<A>(num_longs << 6, num_hashes, seed, allocator);
+  }
+
+  uint64_t num_bits_set;
+  ptr += copy_from_mem(ptr, num_bits_set);
+  const bool is_dirty = (num_bits_set == DIRTY_BITS_VALUE);
+
+  uint8_t* bit_array;
+  uint8_t* memory;
+  if (wrap) {
+    memory = static_cast<uint8_t*>(bytes);
+    bit_array = memory + BIT_ARRAY_OFFSET_BYTES;
+  } else {
+    // allocate memory
+    memory = nullptr;
+    const uint64_t num_bytes = num_longs << 3;
+    ensure_minimum_memory(end_ptr - ptr, num_bytes);
+    bit_array = allocator_.allocate(num_bytes);
+    if (bit_array == nullptr) {
+      throw std::bad_alloc();
+    }
+    copy_from_mem(ptr, bit_array, num_bytes);
+  }
+
+  // pass to constructor
+  return bloom_filter_alloc<A>(seed, num_hashes, is_dirty, wrap, read_only, num_longs << 6, num_bits_set, bit_array, memory, allocator);
+}
+
+template<typename A>
+bloom_filter_alloc<A>::~bloom_filter_alloc() {
+  if (is_owned_) {
+    if (memory_ != nullptr) {
+      // deallocate total memory_ block, including preamble
+      allocator_.deallocate(memory_, (capacity_bits_ >> 3) + BIT_ARRAY_OFFSET_BYTES);
+    } else if (bit_array_ != nullptr) {
+      // only need to deallocate bit_array_
+      allocator_.deallocate(bit_array_, capacity_bits_ >> 3);
+    }
+    memory_ = nullptr;
     bit_array_ = nullptr;
   }
 }
+
+
 
 template<typename A>
 bool bloom_filter_alloc<A>::is_empty() const {
@@ -106,11 +275,31 @@ uint64_t bloom_filter_alloc<A>::get_seed() const {
 }
 
 template<typename A>
+bool bloom_filter_alloc<A>::is_read_only() const {
+  return is_read_only_;
+}
+
+template<typename A>
+bool bloom_filter_alloc<A>::has_backing_memory() const {
+  return memory_ != nullptr;
+}
+
+template<typename A>
 void bloom_filter_alloc<A>::reset() {
-  // TODO: if wrapped, update num_bits_set in memory, too
-  num_bits_set_ = 0;
+  if (is_read_only_) {
+    throw std::logic_error("Cannot reset a read-only filter");
+  }
+  update_num_bits_set(0);
+  std::fill_n(bit_array_, capacity_bits_ >> 3, 0);
+}
+
+template<typename A>
+void bloom_filter_alloc<A>::update_num_bits_set(uint64_t num_bits_set) {
+  num_bits_set_ = num_bits_set;
   is_dirty_ = false;
-  std::fill(bit_array_, bit_array_ + (capacity_bits_ >> 3), 0);
+  if (memory_ != nullptr && !is_read_only_) {
+    copy_to_mem(num_bits_set_, memory_ + NUM_BITS_SET_OFFSET_BYTES);
+  }
 }
 
 // UPDATE METHODS
@@ -199,6 +388,9 @@ void bloom_filter_alloc<A>::update(const void* item, size_t size) {
 
 template<typename A>
 void bloom_filter_alloc<A>::internal_update(const uint64_t h0, const uint64_t h1) {
+  if (is_read_only_) {
+    throw std::logic_error("Cannot update a read-only filter");
+  }
   const uint64_t num_bits = get_capacity();
   for (uint16_t i = 1; i <= num_hashes_; i++) {
     const uint64_t hash_index = ((h0 + i * h1) >> 1) % num_bits;
@@ -293,12 +485,15 @@ bool bloom_filter_alloc<A>::query_and_update(const void* item, size_t size) {
 
 template<typename A>
 bool bloom_filter_alloc<A>::internal_query_and_update(const uint64_t h0, const uint64_t h1) {
+  if (is_read_only_) {
+    throw std::logic_error("Cannot update a read-only filter");
+  }
   const uint64_t num_bits = get_capacity();
   bool value_exists = true;
   for (uint16_t i = 1; i <= num_hashes_; i++) {
     const uint64_t hash_index = ((h0 + i * h1) >> 1) % num_bits;
     bool value = bit_array_ops::get_and_set_bit(bit_array_, hash_index);
-    num_bits_set_ += value ? 0 : 1;
+    update_num_bits_set(num_bits_set_ + (value ? 0 : 1));
     value_exists &= value;
   }
   return value_exists;
@@ -390,6 +585,7 @@ bool bloom_filter_alloc<A>::query(const void* item, size_t size) const {
 
 template<typename A>
 bool bloom_filter_alloc<A>::internal_query(const uint64_t h0, const uint64_t h1) const {
+  if (is_empty()) return false;
   const uint64_t num_bits = get_capacity();
   for (uint16_t i = 1; i <= num_hashes_; i++) {
     const uint64_t hash_index = ((h0 + i * h1) >> 1) % num_bits;
@@ -414,8 +610,8 @@ void bloom_filter_alloc<A>::union_with(const bloom_filter_alloc& other) {
   if (!is_compatible(other)) {
     throw std::invalid_argument("Incompatible bloom filters");
   }
-  num_bits_set_ = bit_array_ops::union_with(bit_array_, other.bit_array_, capacity_bits_ >> 3);
-  is_dirty_ = false;
+  uint64_t bits_set = bit_array_ops::union_with(bit_array_, other.bit_array_, capacity_bits_ >> 3);
+  update_num_bits_set(bits_set);
 }
 
 template<typename A>
@@ -423,14 +619,14 @@ void bloom_filter_alloc<A>::intersect(const bloom_filter_alloc& other) {
   if (!is_compatible(other)) {
     throw std::invalid_argument("Incompatible bloom filters");
   }
-  num_bits_set_ = bit_array_ops::intersect(bit_array_, other.bit_array_, capacity_bits_ >> 3);
-  is_dirty_ = false;
+  uint64_t bits_set = bit_array_ops::intersect(bit_array_, other.bit_array_, capacity_bits_ >> 3);
+  update_num_bits_set(bits_set);
 }
 
 template<typename A>
 void bloom_filter_alloc<A>::invert() {
-  num_bits_set_ = bit_array_ops::invert(bit_array_, capacity_bits_ >> 3);
-  is_dirty_ = false;
+  uint64_t bits_set = bit_array_ops::invert(bit_array_, capacity_bits_ >> 3);
+  update_num_bits_set(bits_set);
 }
 
 template<typename A>

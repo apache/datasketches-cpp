@@ -69,6 +69,14 @@ class bloom_filter_alloc {
 
 public:
 
+  bloom_filter_alloc deserialize(const void* bytes, size_t length_bytes, const Allocator& allocator = Allocator());
+
+  bloom_filter_alloc deserialize(std::istream& is, const A& allocator = A());
+
+  bloom_filter_alloc wrap(const void* data, size_t length_bytes, const Allocator& allocator = Allocator());
+
+  bloom_filter_alloc writable_wrap(void* data, size_t length_bytes, const Allocator& allocator = Allocator());
+
   /**
    * Checks if the Bloom Filter has processed any items
    * @return True if the BloomFilter is empty, otherwise False
@@ -439,6 +447,20 @@ public:
   // TODO: Serialization
 
   /**
+   * @brief Checks if the Bloom Filter is read-only.
+   *
+   * @return True if the filter is read-only, otherwise false.
+   */
+  bool is_read_only() const;
+
+  /**
+   * @brief Checks if the Bloom Filter has backing memory.
+   *
+   * @return True if the filter has backing memory, otherwise false.
+   */
+  bool has_backing_memory() const;
+
+  /**
    * @brief Returns a human-readable string representation of the Bloom Filter.
    * @param print_filter If true, the filter bits will be printed as well.
    * @return A human-readable string representation of the Bloom Filter.
@@ -451,15 +473,42 @@ public:
   ~bloom_filter_alloc();
 
 private:
+  static const uint64_t DIRTY_BITS_VALUE = static_cast<uint64_t>(-1LL);
   static const uint64_t MAX_HEADER_SIZE_BYTES = 32; // 4 Java Longs
+  static const uint64_t BIT_ARRAY_LENGTH_OFFSET_BYTES = 16;
+  static const uint64_t NUM_BITS_SET_OFFSET_BYTES = 24;
+  static const uint64_t BIT_ARRAY_OFFSET_BYTES = 32;
   static const uint64_t MAX_FILTER_SIZE_BITS = (INT32_MAX - MAX_HEADER_SIZE_BYTES) * sizeof(uint64_t);
 
+  static const uint8_t FAMILY_ID = 21;
+  static const uint8_t SER_VER = 1;
+  static const uint8_t EMPTY_FLAG_MASK = 4;
+
   bloom_filter_alloc(const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const Allocator& allocator = Allocator());
+
+  bloom_filter_alloc(const uint64_t seed,
+                     const uint16_t num_hashes,
+                     const bool is_dirty,
+                     const bool is_owned,
+                     const bool is_read_only,
+                     const uint64_t capacity_bits,
+                     const uint64_t num_bits_set,
+                     uint8_t* bit_array,
+                     uint8_t* memory,
+                     const Allocator& allocator = Allocator());
+
+  bloom_filter_alloc internal_deserialize_or_wrap(void* bytes,
+                                                  size_t length_bytes,
+                                                  bool read_only,
+                                                  bool wrap,
+                                                  const A& allocator);
 
   // internal query/update methods
   void internal_update(const uint64_t h0, const uint64_t h1);
   bool internal_query_and_update(const uint64_t h0, const uint64_t h1);
   bool internal_query(const uint64_t h0, const uint64_t h1) const;
+
+  void update_num_bits_set(const uint64_t num_bits_set);
 
   A allocator_;
   uint64_t seed_;
