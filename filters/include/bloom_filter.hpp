@@ -69,13 +69,18 @@ class bloom_filter_alloc {
 
 public:
 
-  bloom_filter_alloc deserialize(const void* bytes, size_t length_bytes, const Allocator& allocator = Allocator());
+  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
 
-  bloom_filter_alloc deserialize(std::istream& is, const A& allocator = A());
+  void serialize(std::ostream& os) const;
 
-  bloom_filter_alloc wrap(const void* data, size_t length_bytes, const Allocator& allocator = Allocator());
+  static bloom_filter_alloc deserialize(const void* bytes, size_t length_bytes, const Allocator& allocator = Allocator());
 
-  bloom_filter_alloc writable_wrap(void* data, size_t length_bytes, const Allocator& allocator = Allocator());
+  static bloom_filter_alloc deserialize(std::istream& is, const A& allocator = Allocator());
+
+  static const bloom_filter_alloc wrap(const void* data, size_t length_bytes, const Allocator& allocator = Allocator());
+
+  static bloom_filter_alloc writable_wrap(void* data, size_t length_bytes, const Allocator& allocator = Allocator());
 
   /**
    * Checks if the Bloom Filter has processed any items
@@ -461,6 +466,19 @@ public:
   bool has_backing_memory() const;
 
   /**
+   * @brief Gets the serialized size of the Bloom Filter in bytes
+   * @return The serialized size of the Bloom Filter in bytes
+   */
+  size_t get_serialized_size_bytes() const;
+
+  /**
+   * @brief Gets the serialized size of the Bloom Filter with the given number of bits, in bytes
+   * @param num_bits The number of bits in the Bloom Filter for the size calculation
+   * @return The serialized size of a Bloom Filter with a capacity of num_bits, in bytes
+   */
+  static size_t get_serialized_size_bytes(const uint64_t num_bits);
+
+  /**
    * @brief Returns a human-readable string representation of the Bloom Filter.
    * @param print_filter If true, the filter bits will be printed as well.
    * @return A human-readable string representation of the Bloom Filter.
@@ -480,11 +498,13 @@ private:
   static const uint64_t BIT_ARRAY_OFFSET_BYTES = 32;
   static const uint64_t MAX_FILTER_SIZE_BITS = (INT32_MAX - MAX_HEADER_SIZE_BYTES) * sizeof(uint64_t);
 
+  static const uint8_t PREAMBLE_LONGS_EMPTY = 3;
+  static const uint8_t PREAMBLE_LONGS_STANDARD = 4;
   static const uint8_t FAMILY_ID = 21;
   static const uint8_t SER_VER = 1;
   static const uint8_t EMPTY_FLAG_MASK = 4;
 
-  bloom_filter_alloc(const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const Allocator& allocator = Allocator());
+  bloom_filter_alloc(const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const A& allocator);
 
   bloom_filter_alloc(const uint64_t seed,
                      const uint16_t num_hashes,
@@ -495,13 +515,13 @@ private:
                      const uint64_t num_bits_set,
                      uint8_t* bit_array,
                      uint8_t* memory,
-                     const Allocator& allocator = Allocator());
+                     const A& allocator);
 
-  bloom_filter_alloc internal_deserialize_or_wrap(void* bytes,
-                                                  size_t length_bytes,
-                                                  bool read_only,
-                                                  bool wrap,
-                                                  const A& allocator);
+  static bloom_filter_alloc internal_deserialize_or_wrap(void* bytes,
+                                                         size_t length_bytes,
+                                                         bool read_only,
+                                                         bool wrap,
+                                                         const A& allocator);
 
   // internal query/update methods
   void internal_update(const uint64_t h0, const uint64_t h1);

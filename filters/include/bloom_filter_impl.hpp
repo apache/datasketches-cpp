@@ -94,8 +94,27 @@ bloom_filter_alloc<A>::bloom_filter_alloc(const uint64_t seed,
 }
 
 template<typename A>
+bloom_filter_alloc<A>::~bloom_filter_alloc() {
+  if (is_owned_) {
+    if (memory_ != nullptr) {
+      // deallocate total memory_ block, including preamble
+      allocator_.deallocate(memory_, (capacity_bits_ >> 3) + BIT_ARRAY_OFFSET_BYTES);
+    } else if (bit_array_ != nullptr) {
+      // only need to deallocate bit_array_
+      allocator_.deallocate(bit_array_, capacity_bits_ >> 3);
+    }
+    memory_ = nullptr;
+    bit_array_ = nullptr;
+  }
+}
+
+// TODO: copy, move constructors
+// TODO: copy, move assignment operators
+
+template<typename A>
 bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(const void* bytes, size_t length_bytes, const A& allocator) {
-  return internal_deserialize_or_wrap(bytes, length_bytes, false, false, allocator);
+  // not wrapping so we can cast away const as we're not modifying the memory
+  return internal_deserialize_or_wrap(const_cast<void*>(bytes), length_bytes, false, false, allocator);
 }
 
 template<typename A>
@@ -120,7 +139,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   const uint16_t num_hashes = read<uint16_t>(is);
   read<uint16_t>(is); // unused
   const uint64_t seed = read<uint64_t>(is);
-  const uint64_t num_longs = read<uint64_t>(is); // sized in java longs
+  const uint32_t num_longs = read<uint32_t>(is); // sized in java longs
   read<uint32_t>(is); // unused
 
   // if empty, stop reading
@@ -133,7 +152,8 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
 
   // allocate memory
   const uint64_t num_bytes = num_longs << 3;
-  uint8_t* bit_array = allocator_.allocate(num_bytes);
+  A alloc(allocator);
+  uint8_t* bit_array = alloc.allocate(num_bytes);
   if (bit_array == nullptr) {
     throw std::bad_alloc();
   }
@@ -144,9 +164,9 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
 }
 
 template<typename A>
-bloom_filter_alloc<A> bloom_filter_alloc<A>::wrap(const void* bytes, size_t length_bytes, const A& allocator) {
+const bloom_filter_alloc<A> bloom_filter_alloc<A>::wrap(const void* bytes, size_t length_bytes, const A& allocator) {
   // read-only flag means we won't modify the memory, but cast away the const
-  return internal_deserialize_or_wrap(const_cast<void*>(bytes), length_bytes, true, true, allocator);
+  return const_cast<const bloom_filter_alloc<A>>(internal_deserialize_or_wrap(const_cast<void*>(bytes), length_bytes, true, true, allocator));
 }
 
 template<typename A>
@@ -172,7 +192,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
   const uint8_t family = *ptr++;
   const uint8_t flags = *ptr++;
 
-  if (prelongs < 1 || prelongs > 4) {
+  if (prelongs < PREAMBLE_LONGS_EMPTY || prelongs > PREAMBLE_LONGS_STANDARD) {
     throw std::invalid_argument("Possible corruption: Incorrect number of preamble bytes specified in header");
   }
   if (ser_ver != SER_VER) {
@@ -192,9 +212,9 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
   uint64_t seed;
   ptr += copy_from_mem(ptr, seed);
 
-  uint64_t num_longs;
+  uint32_t num_longs;
   ptr += copy_from_mem(ptr, num_longs); // sized in java longs
-  ptr += sizeof(sizeof(uint32_t)); // unused 32 bits follow
+  ptr += sizeof(uint32_t); // unused 32 bits follow
 
   // if empty, stop reading
   if (wrap && is_empty && !read_only) {
@@ -217,7 +237,8 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
     memory = nullptr;
     const uint64_t num_bytes = num_longs << 3;
     ensure_minimum_memory(end_ptr - ptr, num_bytes);
-    bit_array = allocator_.allocate(num_bytes);
+    A alloc(allocator);
+    bit_array = alloc.allocate(num_bytes);
     if (bit_array == nullptr) {
       throw std::bad_alloc();
     }
@@ -229,21 +250,72 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
 }
 
 template<typename A>
-bloom_filter_alloc<A>::~bloom_filter_alloc() {
-  if (is_owned_) {
-    if (memory_ != nullptr) {
-      // deallocate total memory_ block, including preamble
-      allocator_.deallocate(memory_, (capacity_bits_ >> 3) + BIT_ARRAY_OFFSET_BYTES);
-    } else if (bit_array_ != nullptr) {
-      // only need to deallocate bit_array_
-      allocator_.deallocate(bit_array_, capacity_bits_ >> 3);
-    }
-    memory_ = nullptr;
-    bit_array_ = nullptr;
+void bloom_filter_alloc<A>::serialize(std::ostream& os) const {
+  const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_STANDARD;
+  write(os, preamble_longs);
+  const uint8_t serial_version = SER_VER;
+  write(os, serial_version);
+  const uint8_t family = FAMILY_ID;
+  write(os, family);
+  const uint8_t flags_byte = is_empty() ? EMPTY_FLAG_MASK : 0;
+  write(os, flags_byte);
+
+  write(os, num_hashes_);
+  write(os, static_cast<uint16_t>(0)); // 2 bytes unused
+  write(os, seed_);
+  write(os, static_cast<int32_t>(capacity_bits_ >> 6)); // sized in java longs
+  write(os, static_cast<uint32_t>(0)); // 4 bytes unused
+
+  if (!is_empty()) {
+    write(os, is_dirty_ ? DIRTY_BITS_VALUE : num_bits_set_);
+    write(os, bit_array_, capacity_bits_ >> 3);
   }
+
+  os.flush();
 }
 
+template<typename A>
+auto bloom_filter_alloc<A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
+  const size_t size = header_size_bytes + get_serialized_size_bytes();
+  vector_bytes bytes(size, 0, allocator_);
+  uint8_t* ptr = bytes.data() + header_size_bytes;
 
+  const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_STANDARD;
+  ptr += copy_to_mem(preamble_longs, ptr);
+  const uint8_t serial_version = SER_VER;
+  ptr += copy_to_mem(serial_version, ptr);
+  const uint8_t family = FAMILY_ID;
+  ptr += copy_to_mem(family, ptr);
+  const uint8_t flags_byte = is_empty() ? EMPTY_FLAG_MASK : 0;
+  ptr += copy_to_mem(flags_byte, ptr);
+
+  ptr += copy_to_mem(num_hashes_, ptr);
+  ptr += copy_to_mem(static_cast<uint16_t>(0), ptr); // 2 bytes unused
+  ptr += copy_to_mem(seed_, ptr);
+  ptr += copy_to_mem(static_cast<int32_t>(capacity_bits_ >> 6), ptr); // sized in java longs
+  ptr += copy_to_mem(static_cast<uint32_t>(0), ptr); // 4 bytes unused
+
+  if (!is_empty()) {
+    ptr += copy_to_mem(is_dirty_ ? DIRTY_BITS_VALUE : num_bits_set_, ptr);
+    ptr += copy_to_mem(bit_array_, ptr, capacity_bits_ >> 3);
+  }
+
+  return bytes;
+}
+
+template<typename A>
+size_t bloom_filter_alloc<A>::get_serialized_size_bytes() const {
+  return sizeof(uint64_t) * (is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_STANDARD + (capacity_bits_ >> 6));
+}
+
+template<typename A>
+size_t bloom_filter_alloc<A>::get_serialized_size_bytes(uint64_t num_bits) {
+  if (num_bits == 0)
+    throw std::invalid_argument("Number of bits must be greater than zero");
+
+  size_t num_bytes = ((num_bits + 63) >> 6) << 6;
+  return sizeof(uint64_t) * (PREAMBLE_LONGS_STANDARD + num_bytes);
+}
 
 template<typename A>
 bool bloom_filter_alloc<A>::is_empty() const {
@@ -559,11 +631,11 @@ bool bloom_filter_alloc<A>::query(const double item) const {
     int64_t long_value;
     double double_value;
   } ldu;
-  ldu.doubleBytes = static_cast<double>(item);
+  ldu.double_value = static_cast<double>(item);
   if (item == 0.0) {
-    ldu.doubleBytes = 0.0; // canonicalize -0.0 to 0.0
-  } else if (std::isnan(ldu.doubleBytes)) {
-    ldu.longBytes = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
+    ldu.double_value = 0.0; // canonicalize -0.0 to 0.0
+  } else if (std::isnan(ldu.double_value)) {
+    ldu.long_value = 0x7ff8000000000000L; // canonicalize NaN using value from Java's Double.doubleToLongBits()
   }
   const uint64_t h0 = XXHash64::hash(&ldu, sizeof(ldu), seed_);
   const uint64_t h1 = XXHash64::hash(&ldu, sizeof(ldu), h0);
@@ -634,12 +706,18 @@ string<A> bloom_filter_alloc<A>::to_string(bool print_filter) const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream oss;
+  uint64_t num_bits_set = num_bits_set_;
+  if (is_dirty_) {
+    num_bits_set = bit_array_ops::count_num_bits_set(bit_array_, capacity_bits_ >> 3);
+  }
+
   oss << "### Bloom Filter Summary:" << std::endl;
   oss << "   num_bits   : " << get_capacity() << std::endl;
   oss << "   num_hashes : " << num_hashes_ << std::endl;
   oss << "   seed       : " << seed_ << std::endl;
-  oss << "   bits_used  : " << get_bits_used() << std::endl;
-  oss << "   fill %     : " << (get_bits_used() * 100.0) / get_capacity() << std::endl;
+  oss << "   is_dirty   : " << (is_dirty_ ? "true" : "false") << std::endl;
+  oss << "   bits_used  : " << num_bits_set << std::endl;
+  oss << "   fill %     : " << (num_bits_set * 100.0) / get_capacity() << std::endl;
   oss << "### End filter summary" << std::endl;
 
   if (print_filter) {
