@@ -249,7 +249,7 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   REQUIRE(bf.get_seed() == bf_bytes.get_seed());
   REQUIRE(bf.get_num_hashes() == bf_bytes.get_num_hashes());
   REQUIRE(!bf_bytes.is_empty());
-  int count_bytes = 0;
+  uint64_t count_bytes = 0;
   for (uint64_t i = 0; i < num_bits; ++i) {
     bool val = bf_bytes.query(0.5 + i);
     if (val) ++count_bytes;
@@ -264,7 +264,7 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   REQUIRE(bf.get_seed() == bf_stream.get_seed());
   REQUIRE(bf.get_num_hashes() == bf_stream.get_num_hashes());
   REQUIRE(!bf_stream.is_empty());
-  int count_stream = 0;
+  uint64_t count_stream = 0;
   for (uint64_t i = 0; i < num_bits; ++i) {
     bool val = bf_stream.query(0.5 + i);
     if (val) ++count_stream;
