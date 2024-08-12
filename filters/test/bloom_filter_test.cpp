@@ -201,7 +201,7 @@ TEST_CASE("bloom_filter: basic intersection", "[bloom_filter]") {
 
   REQUIRE(num_found < num_bits / 10); // not being super strict
 }
-/*
+
 TEST_CASE("bloom_filter: empty serialization", "[bloom_filter]") {
   const uint64_t num_bits = 32769;
   const uint16_t num_hashes = 7;
@@ -224,7 +224,7 @@ TEST_CASE("bloom_filter: empty serialization", "[bloom_filter]") {
   REQUIRE(bf.get_num_hashes() == bf_stream.get_num_hashes());
   REQUIRE(bf_stream.is_empty());
 }
-*/
+
 TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   const uint64_t num_bits = 32768;
   const uint16_t num_hashes = 5;
@@ -236,9 +236,11 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   }
 
   // test more items without updating, assuming some false positives
-  int count = 0;
+  // so we can check that we get the same number of false positives
+  // with the same query items
+  uint64_t fp_count = 0;
   for (uint64_t i = n; i < num_bits; ++i) {
-    count += bf.query(0.5 + i) ? 1 : 0;
+    fp_count += bf.query(0.5 + i) ? 1 : 0;
   }
 
   auto bytes = bf.serialize();
@@ -249,13 +251,15 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   REQUIRE(bf.get_seed() == bf_bytes.get_seed());
   REQUIRE(bf.get_num_hashes() == bf_bytes.get_num_hashes());
   REQUIRE(!bf_bytes.is_empty());
-  uint64_t count_bytes = 0;
+  uint64_t fp_count_bytes = 0;
   for (uint64_t i = 0; i < num_bits; ++i) {
     bool val = bf_bytes.query(0.5 + i);
-    if (val) ++count_bytes;
-    if (i < n) REQUIRE(val);
+    if (i < n)
+      REQUIRE(val);
+    else if (val)
+      ++fp_count_bytes;
   }
-  REQUIRE(count_bytes == n + count);
+  REQUIRE(fp_count_bytes == fp_count);
 
   std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
   bf.serialize(ss);
@@ -264,13 +268,15 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   REQUIRE(bf.get_seed() == bf_stream.get_seed());
   REQUIRE(bf.get_num_hashes() == bf_stream.get_num_hashes());
   REQUIRE(!bf_stream.is_empty());
-  uint64_t count_stream = 0;
+  uint64_t fp_count_stream = 0;
   for (uint64_t i = 0; i < num_bits; ++i) {
     bool val = bf_stream.query(0.5 + i);
-    if (val) ++count_stream;
-    if (i < n) REQUIRE(val);
+    if (i < n)
+      REQUIRE(val);
+    else if (val)
+      ++fp_count_stream;
   }
-  REQUIRE(count_stream == n + count);
+  REQUIRE(fp_count_stream == fp_count);
 }
 
 } // namespace datasketches
