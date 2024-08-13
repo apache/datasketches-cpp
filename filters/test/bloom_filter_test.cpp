@@ -47,44 +47,99 @@ TEST_CASE("bloom_filter: standard constructors", "[bloom_filter]") {
   uint64_t adjusted_num_bits = (num_bits + 63) & ~0x3F; // round up to the nearest multiple of 64
   REQUIRE(bf.get_capacity() == adjusted_num_bits);
   REQUIRE(bf.get_num_hashes() == num_hashes);
+  REQUIRE(bf.get_seed() == seed);
   REQUIRE(bf.is_empty());
+
+  // should match above
+  bf = bloom_filter_builder::create_by_accuracy(num_items, fpp, seed);
+  REQUIRE(bf.get_capacity() == adjusted_num_bits);
+  REQUIRE(bf.get_num_hashes() == num_hashes);
+  REQUIRE(bf.get_seed() == seed);
+  REQUIRE(bf.is_empty());
+
+  // same for initializing memory in-place
+  size_t serialized_size_bytes = bloom_filter::get_serialized_size_bytes(num_bits);
+  uint8_t* bytes = new uint8_t[serialized_size_bytes];
+
+  bf = bloom_filter_builder::initialize_by_size(bytes, serialized_size_bytes, num_bits, num_hashes, seed);
+  REQUIRE(bf.get_capacity() == adjusted_num_bits);
+  REQUIRE(bf.get_num_hashes() == num_hashes);
+  REQUIRE(bf.get_seed() == seed);
+  REQUIRE(bf.is_empty());
+
+  bf = bloom_filter_builder::initialize_by_accuracy(bytes, serialized_size_bytes, num_items, fpp, seed);
+  REQUIRE(bf.get_capacity() == adjusted_num_bits);
+  REQUIRE(bf.get_num_hashes() == num_hashes);
+  REQUIRE(bf.get_seed() == seed);
+  REQUIRE(bf.is_empty());
+
+  delete [] bytes;
 }
 
 TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
-  uint64_t num_bits = 8192;
-  uint16_t num_hashes = 3;
+  uint64_t num_items = 5000;
+  double fpp = 0.01;
 
-  auto bf = bloom_filter_builder::create_by_size(num_bits, num_hashes);
+  auto bf = bloom_filter_builder::create_by_accuracy(num_items, fpp);
   REQUIRE(bf.is_empty());
-  REQUIRE(bf.get_capacity() == num_bits); // num_bits is multiple of 64 so should be exact
-  REQUIRE(bf.get_num_hashes() == num_hashes);
   REQUIRE(bf.get_bits_used() == 0);
 
-  uint64_t n = 1000;
-  for (uint64_t i = 0; i < n; ++i) {
+  for (uint64_t i = 0; i < num_items; ++i) {
     bf.query_and_update(i);
   }
 
   REQUIRE(!bf.is_empty());
-  // these assume the filter isn't too close to capacity
-  REQUIRE(bf.get_bits_used() <= n * num_hashes);
-  REQUIRE(bf.get_bits_used() >= n * (num_hashes - 1));
+  // filter is about 50% full at target capacity
+  REQUIRE(bf.get_bits_used() == Approx(0.5 * bf.get_capacity()).epsilon(0.05));
 
   uint32_t num_found = 0;
-  for (uint64_t i = 0; i < n; ++i) {
+  for (uint64_t i = num_items; i < bf.get_capacity(); ++i) {
     if (bf.query(i)) {
       ++num_found;
     }
   }
-  REQUIRE(num_found >= n);
-  REQUIRE(num_found < 1.1 * n);
+  // fpp is average with significant variance
+  REQUIRE(num_found == Approx((bf.get_capacity() - num_items) * fpp).epsilon(0.12));
+  auto bytes = bf.serialize();
 
+  // initialize in memory and run the same tests
+  // also checking against the results from the first part
+  uint8_t* bf_memory = new uint8_t[bytes.size()];
+  auto bf2 = bloom_filter_builder::initialize_by_accuracy(bf_memory, bytes.size(), num_items, fpp, bf.get_seed());
+  REQUIRE(bf2.is_empty());
+  REQUIRE(bf2.get_bits_used() == 0);
+
+  for (uint64_t i = 0; i < num_items; ++i) {
+    bf2.query_and_update(i);
+  }
+
+  REQUIRE(!bf2.is_empty());
+  REQUIRE(bf2.get_bits_used() == bf.get_bits_used()); // should exactly match above
+
+  uint32_t num_found2 = 0;
+  for (uint64_t i = num_items; i < bf2.get_capacity(); ++i) {
+    if (bf2.query(i)) {
+      ++num_found2;
+    }
+  }
+  REQUIRE(num_found == num_found2); // should exactly match above
+  auto bytes2 = bf2.serialize();
+
+  // ensure the filters reset properly
   bf.reset();
-  // repeat initial tests from above
   REQUIRE(bf.is_empty());
-  REQUIRE(bf.get_capacity() == num_bits);
-  REQUIRE(bf.get_num_hashes() == num_hashes);
   REQUIRE(bf.get_bits_used() == 0);
+
+  bf2.reset();
+  REQUIRE(bf2.is_empty());
+  REQUIRE(bf2.get_bits_used() == 0);
+
+  REQUIRE(bytes.size() == bytes2.size());
+  for (size_t i = 0; i < bytes.size(); ++i) {
+    REQUIRE(bytes[i] == bytes2[i]);
+  }
+
+  delete [] bf_memory;
 }
 
 TEST_CASE("bloom_filter: inversion", "[bloom_filter]") {

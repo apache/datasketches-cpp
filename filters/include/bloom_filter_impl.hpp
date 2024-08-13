@@ -44,26 +44,79 @@ bloom_filter_alloc<A>::bloom_filter_alloc(const uint64_t num_bits, const uint16_
   is_dirty_(false),
   is_owned_(true),
   is_read_only_(false),
-  capacity_bits_(((num_bits + 63) >> 6) << 6), // can round to nearest multiple of 64 prior to bounds checks
+  capacity_bits_((num_bits + 63) & ~0x3F), // can round to nearest multiple of 64 prior to bounds checks
   num_bits_set_(0)
-  {
-    if (num_hashes == 0) {
-      throw std::invalid_argument("Must have at least 1 hash function");
-    }
-    if (num_bits == 0) {
-      throw std::invalid_argument("Number of bits must be greater than zero");
-    } else if (num_bits > MAX_FILTER_SIZE_BITS) {
-      throw std::invalid_argument("Filter may not exceed " + std::to_string(MAX_FILTER_SIZE_BITS) + " bits");
-    }
-
-    const uint64_t num_bytes = capacity_bits_ >> 3;
-    bit_array_ = allocator_.allocate(num_bytes);
-    std::fill_n(bit_array_, num_bytes, 0);
-    if (bit_array_ == nullptr) {
-      throw std::bad_alloc();
-    }
-    memory_ = nullptr;
+{
+  if (num_hashes == 0) {
+    throw std::invalid_argument("Must have at least 1 hash function");
   }
+  if (num_bits == 0) {
+    throw std::invalid_argument("Number of bits must be greater than zero");
+  } else if (num_bits > MAX_FILTER_SIZE_BITS) {
+    throw std::invalid_argument("Filter may not exceed " + std::to_string(MAX_FILTER_SIZE_BITS) + " bits");
+  }
+
+  const uint64_t num_bytes = capacity_bits_ >> 3;
+  bit_array_ = allocator_.allocate(num_bytes);
+  std::fill_n(bit_array_, num_bytes, 0);
+  if (bit_array_ == nullptr) {
+    throw std::bad_alloc();
+  }
+  memory_ = nullptr;
+}
+
+template<typename A>
+bloom_filter_alloc<A>::bloom_filter_alloc(uint8_t* memory,
+                                          size_t length_bytes,
+                                          const uint64_t num_bits,
+                                          const uint16_t num_hashes,
+                                          const uint64_t seed,
+                                          const A& allocator) :
+  allocator_(allocator),
+  seed_(seed),
+  num_hashes_(num_hashes),
+  is_dirty_(false),
+  is_owned_(false),
+  is_read_only_(false),
+  capacity_bits_((num_bits + 63) & ~0x3F), // can round to nearest multiple of 64 prior to bounds checks
+  num_bits_set_(0)
+{
+  if (num_hashes == 0) {
+    throw std::invalid_argument("Must have at least 1 hash function");
+  }
+  if (num_bits == 0) {
+    throw std::invalid_argument("Number of bits must be greater than zero");
+  } else if (num_bits > MAX_FILTER_SIZE_BITS) {
+    throw std::invalid_argument("Filter may not exceed " + std::to_string(MAX_FILTER_SIZE_BITS) + " bits");
+  }
+
+  const size_t num_bytes = get_serialized_size_bytes(capacity_bits_);
+  if (length_bytes < num_bytes) {
+    throw std::invalid_argument("Input memory block is too small");
+  }
+
+  // fill in header info
+  uint8_t* ptr = memory;
+  const uint8_t preamble_longs = PREAMBLE_LONGS_STANDARD; // no resizing so assume non-empty
+  ptr += copy_to_mem(preamble_longs, ptr);
+  const uint8_t serial_version = SER_VER;
+  ptr += copy_to_mem(serial_version, ptr);
+  const uint8_t family = FAMILY_ID;
+  ptr += copy_to_mem(family, ptr);
+  const uint8_t flags_byte = 0; // again, assuming non-empty
+  ptr += copy_to_mem(flags_byte, ptr);
+
+  ptr += copy_to_mem(num_hashes_, ptr);
+  ptr += copy_to_mem(static_cast<uint16_t>(0), ptr); // 2 bytes unused
+  ptr += copy_to_mem(seed_, ptr);
+  ptr += copy_to_mem(static_cast<int32_t>(capacity_bits_ >> 6), ptr); // sized in java longs
+  ptr += copy_to_mem(static_cast<uint32_t>(0), ptr); // 4 bytes unused
+
+  // rest of memory is num bits and bit array, so start with zeroes
+  std::fill_n(ptr, sizeof(uint64_t) * ((capacity_bits_ >> 6) + 1), 0);
+  bit_array_ = memory + BIT_ARRAY_OFFSET_BYTES;
+  memory_ = memory;
+}
 
 template<typename A>
 bloom_filter_alloc<A>::bloom_filter_alloc(const uint64_t seed,
@@ -82,12 +135,13 @@ bloom_filter_alloc<A>::bloom_filter_alloc(const uint64_t seed,
   is_dirty_(is_dirty),
   is_owned_(is_owned),
   is_read_only_(is_read_only),
-  capacity_bits_(capacity_bits),
+  capacity_bits_((capacity_bits + 63) & ~0x3F),
   num_bits_set_(num_bits_set),
   bit_array_(bit_array),
   memory_(memory)
 {
-  // no consistency checks since we should have done those during reading
+  // private constructor
+  // no consistency checks since we should have done those prior to calling this
   if (is_read_only_ && memory_ != nullptr && num_bits_set == DIRTY_BITS_VALUE) {
     num_bits_set_ = bit_array_ops::count_num_bits_set(bit_array_, capacity_bits_ >> 3);
   }
@@ -251,6 +305,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
 
 template<typename A>
 void bloom_filter_alloc<A>::serialize(std::ostream& os) const {
+  // Should we serialize memory_ directly if it exists?
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_STANDARD;
   write(os, preamble_longs);
   const uint8_t serial_version = SER_VER;
@@ -276,6 +331,7 @@ void bloom_filter_alloc<A>::serialize(std::ostream& os) const {
 
 template<typename A>
 auto bloom_filter_alloc<A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
+  // Should we serialize memory_ directly if it exists?
   const size_t size = header_size_bytes + get_serialized_size_bytes();
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
@@ -309,11 +365,11 @@ size_t bloom_filter_alloc<A>::get_serialized_size_bytes() const {
 }
 
 template<typename A>
-size_t bloom_filter_alloc<A>::get_serialized_size_bytes(uint64_t num_bits) {
+size_t bloom_filter_alloc<A>::get_serialized_size_bytes(const uint64_t num_bits) {
   if (num_bits == 0)
     throw std::invalid_argument("Number of bits must be greater than zero");
 
-  size_t num_bytes = ((num_bits + 63) >> 6) << 6;
+  size_t num_bytes = (num_bits + 63) >> 6;
   return sizeof(uint64_t) * (PREAMBLE_LONGS_STANDARD + num_bytes);
 }
 
@@ -354,6 +410,11 @@ bool bloom_filter_alloc<A>::is_read_only() const {
 template<typename A>
 bool bloom_filter_alloc<A>::has_backing_memory() const {
   return memory_ != nullptr;
+}
+
+template<typename A>
+const uint8_t* bloom_filter_alloc<A>::get_backing_memory() const {
+  return memory_;
 }
 
 template<typename A>

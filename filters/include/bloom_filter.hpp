@@ -3,6 +3,7 @@
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
+
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
@@ -47,20 +48,34 @@ public:
 
   static bloom_filter_alloc<A> create_by_accuracy(const uint64_t num_distinct_items,
                                                   const double target_false_positive_prob,
-                                                  const Allocator& allocator = Allocator());
-  static bloom_filter_alloc<A> create_by_accuracy(const uint64_t num_distinct_items,
-                                                  const double target_false_positive_prob,
-                                                  const uint64_t seed,
+                                                  const uint64_t seed = generate_random_seed(),
                                                   const Allocator& allocator = Allocator());
 
   static bloom_filter_alloc<A> create_by_size(const uint64_t num_bits,
                                               const uint16_t num_hashes,
-                                              const Allocator& allocator = Allocator());
-  static bloom_filter_alloc<A> create_by_size(const uint64_t num_bits,
-                                              const uint16_t num_hashes,
-                                              const uint64_t seed,
+                                              const uint64_t seed = generate_random_seed(),
                                               const Allocator& allocator = Allocator());
 
+  static bloom_filter_alloc<A> initialize_by_accuracy(void* memory,
+                                                      const size_t length_bytes,
+                                                      const uint64_t num_distinct_items,
+                                                      const double target_false_positive_prob,
+                                                      const uint64_t seed = generate_random_seed(),
+                                                      const Allocator& allocator = Allocator());
+
+  static bloom_filter_alloc<A> initialize_by_size(void* memory,
+                                                  const size_t length_bytes,
+                                                  const uint64_t num_bits,
+                                                  const uint16_t num_hashes,
+                                                  const uint64_t seed = generate_random_seed(),
+                                                  const Allocator& allocator = Allocator());
+
+  /**
+   * @brief Generates a random 64-bit seed value
+   *
+   * @return uint64_t a random value over the range of unsigned 64-bit integers
+   */
+  static uint64_t generate_random_seed();
 };
 
 template<typename Allocator = std::allocator<uint8_t>>
@@ -466,6 +481,12 @@ public:
   bool has_backing_memory() const;
 
   /**
+   * @brief Returns a pointer to the backing memory, if it exists.
+   * @return A pointer to the backing memory, or nullptr if it does not exist.
+   */
+  const uint8_t* get_backing_memory() const;
+
+  /**
    * @brief Gets the serialized size of the Bloom Filter in bytes
    * @return The serialized size of the Bloom Filter in bytes
    */
@@ -504,8 +525,11 @@ private:
   static const uint8_t SER_VER = 1;
   static const uint8_t EMPTY_FLAG_MASK = 4;
 
+  // used by builder methods
   bloom_filter_alloc(const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const A& allocator);
+  bloom_filter_alloc(uint8_t* memory, size_t length_bytes, const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const A& allocator);
 
+  // used by deserialize and wrap
   bloom_filter_alloc(const uint64_t seed,
                      const uint16_t num_hashes,
                      const bool is_dirty,
