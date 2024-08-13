@@ -658,6 +658,8 @@ public:
   string<A> to_string(bool print_filter = false) const;
 
 private:
+  using AllocUint8 = typename std::allocator_traits<A>::template rebind_alloc<uint8_t>;
+
   static const uint64_t DIRTY_BITS_VALUE = static_cast<uint64_t>(-1LL);
   static const uint64_t MAX_HEADER_SIZE_BYTES = 32; // 4 Java Longs
   static const uint64_t BIT_ARRAY_LENGTH_OFFSET_BYTES = 16;

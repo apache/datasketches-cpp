@@ -57,7 +57,7 @@ bloom_filter_alloc<A>::bloom_filter_alloc(const uint64_t num_bits, const uint16_
   }
 
   const uint64_t num_bytes = capacity_bits_ >> 3;
-  bit_array_ = allocator_.allocate(num_bytes);
+  bit_array_ = AllocUint8(allocator_).allocate(num_bytes);
   std::fill_n(bit_array_, num_bytes, 0);
   if (bit_array_ == nullptr) {
     throw std::bad_alloc();
@@ -160,7 +160,7 @@ bloom_filter_alloc<A>::bloom_filter_alloc(const bloom_filter_alloc& other) :
 {
   if (is_owned_) {
     const size_t num_bytes = capacity_bits_ >> 3;
-    bit_array_ = allocator_.allocate(num_bytes);
+    bit_array_ = AllocUint8(allocator_).allocate(num_bytes);
     if (bit_array_ == nullptr) {
       throw std::bad_alloc();
     }
@@ -228,10 +228,10 @@ bloom_filter_alloc<A>::~bloom_filter_alloc() {
   if (is_owned_) {
     if (memory_ != nullptr) {
       // deallocate total memory_ block, including preamble
-      allocator_.deallocate(memory_, (capacity_bits_ >> 3) + BIT_ARRAY_OFFSET_BYTES);
+      AllocUint8(allocator_).deallocate(memory_, (capacity_bits_ >> 3) + BIT_ARRAY_OFFSET_BYTES);
     } else if (bit_array_ != nullptr) {
       // only need to deallocate bit_array_
-      allocator_.deallocate(bit_array_, capacity_bits_ >> 3);
+      AllocUint8(allocator_).deallocate(bit_array_, capacity_bits_ >> 3);
     }
     memory_ = nullptr;
     bit_array_ = nullptr;
@@ -279,7 +279,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
 
   // allocate memory
   const uint64_t num_bytes = num_longs << 3;
-  A alloc(allocator);
+  AllocUint8 alloc(allocator);
   uint8_t* bit_array = alloc.allocate(num_bytes);
   if (bit_array == nullptr) {
     throw std::bad_alloc();
@@ -364,7 +364,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
     memory = nullptr;
     const uint64_t num_bytes = num_longs << 3;
     ensure_minimum_memory(end_ptr - ptr, num_bytes);
-    A alloc(allocator);
+    AllocUint8 alloc(allocator);
     bit_array = alloc.allocate(num_bytes);
     if (bit_array == nullptr) {
       throw std::bad_alloc();
