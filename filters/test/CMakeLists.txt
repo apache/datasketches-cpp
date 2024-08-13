@@ -44,3 +44,17 @@ target_sources(bloom_filter_test
   bloom_filter_test.cpp
   bloom_filter_allocation_test.cpp
 )
+
+if (SERDE_COMPAT)
+target_sources(bloom_filter_test
+  PRIVATE
+    bloom_filter_deserialize_from_java_test.cpp
+)
+endif()
+
+if (GENERATE)
+target_sources(bloom_filter_test
+  PRIVATE
+    bloom_filter_serialize_for_java.cpp
+)
+endif()
