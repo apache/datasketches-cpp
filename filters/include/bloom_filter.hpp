@@ -464,14 +464,18 @@ public:
    */
    bool is_compatible(const bloom_filter_alloc& other) const;
 
-  // TODO: Serialization
-
   /**
    * @brief Checks if the Bloom Filter is read-only.
    *
    * @return True if the filter is read-only, otherwise false.
    */
   bool is_read_only() const;
+
+  /**
+   * @brief Returns whether the filter owns its underlying memory
+   * @return True if the filter owns its memory, otherwise false
+   */
+  bool is_memory_owned() const;
 
   /**
    * @brief Checks if the Bloom Filter has backing memory.

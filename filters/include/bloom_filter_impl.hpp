@@ -214,13 +214,13 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   read(is, bit_array, num_bytes);
 
   // pass to constructor
-  return bloom_filter_alloc<A>(seed, num_hashes, is_dirty, false, false, num_longs << 6, num_bits_set, bit_array, nullptr, allocator);
+  return bloom_filter_alloc<A>(seed, num_hashes, is_dirty, true, false, num_longs << 6, num_bits_set, bit_array, nullptr, allocator);
 }
 
 template<typename A>
 const bloom_filter_alloc<A> bloom_filter_alloc<A>::wrap(const void* bytes, size_t length_bytes, const A& allocator) {
   // read-only flag means we won't modify the memory, but cast away the const
-  return const_cast<const bloom_filter_alloc<A>>(internal_deserialize_or_wrap(const_cast<void*>(bytes), length_bytes, true, true, allocator));
+  return internal_deserialize_or_wrap(const_cast<void*>(bytes), length_bytes, true, true, allocator);
 }
 
 template<typename A>
@@ -299,8 +299,8 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
     copy_from_mem(ptr, bit_array, num_bytes);
   }
 
-  // pass to constructor
-  return bloom_filter_alloc<A>(seed, num_hashes, is_dirty, wrap, read_only, num_longs << 6, num_bits_set, bit_array, memory, allocator);
+  // pass to constructor -- !wrap == is_owned_
+  return bloom_filter_alloc<A>(seed, num_hashes, is_dirty, !wrap, read_only, num_longs << 6, num_bits_set, bit_array, memory, allocator);
 }
 
 template<typename A>
@@ -410,6 +410,11 @@ bool bloom_filter_alloc<A>::is_read_only() const {
 template<typename A>
 bool bloom_filter_alloc<A>::has_backing_memory() const {
   return memory_ != nullptr;
+}
+
+template<typename A>
+bool bloom_filter_alloc<A>::is_memory_owned() const {
+  return is_owned_;
 }
 
 template<typename A>

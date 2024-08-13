@@ -285,6 +285,16 @@ TEST_CASE("bloom_filter: empty serialization", "[bloom_filter]") {
   REQUIRE(bf.get_seed() == bf_stream.get_seed());
   REQUIRE(bf.get_num_hashes() == bf_stream.get_num_hashes());
   REQUIRE(bf_stream.is_empty());
+
+  // read-only wrap should work
+  auto bf_wrap = bloom_filter::wrap(bytes.data(), bytes.size());
+  REQUIRE(bf.get_capacity() == bf_wrap.get_capacity());
+  REQUIRE(bf.get_seed() == bf_wrap.get_seed());
+  REQUIRE(bf.get_num_hashes() == bf_wrap.get_num_hashes());
+  REQUIRE(bf_wrap.is_empty());
+
+  // writable wrap should not
+  REQUIRE_THROWS_AS(bloom_filter::writable_wrap(bytes.data(), bytes.size()), std::invalid_argument);
 }
 
 TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
@@ -313,6 +323,7 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   REQUIRE(bf.get_seed() == bf_bytes.get_seed());
   REQUIRE(bf.get_num_hashes() == bf_bytes.get_num_hashes());
   REQUIRE(!bf_bytes.is_empty());
+  REQUIRE(bf.is_memory_owned());
   uint64_t fp_count_bytes = 0;
   for (uint64_t i = 0; i < num_bits; ++i) {
     bool val = bf_bytes.query(0.5 + i);
@@ -330,6 +341,7 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   REQUIRE(bf.get_seed() == bf_stream.get_seed());
   REQUIRE(bf.get_num_hashes() == bf_stream.get_num_hashes());
   REQUIRE(!bf_stream.is_empty());
+  REQUIRE(bf_stream.is_memory_owned());
   uint64_t fp_count_stream = 0;
   for (uint64_t i = 0; i < num_bits; ++i) {
     bool val = bf_stream.query(0.5 + i);
@@ -339,6 +351,50 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
       ++fp_count_stream;
   }
   REQUIRE(fp_count_stream == fp_count);
+
+  // read-only wrap
+  auto bf_wrap = bloom_filter::wrap(bytes.data(), bytes.size());
+  REQUIRE(bf.get_capacity() == bf_wrap.get_capacity());
+  REQUIRE(bf.get_seed() == bf_wrap.get_seed());
+  REQUIRE(bf.get_num_hashes() == bf_wrap.get_num_hashes());
+  REQUIRE(!bf_wrap.is_empty());
+  REQUIRE(!bf_wrap.is_memory_owned());
+  uint64_t fp_count_wrap = 0;
+  for (uint64_t i = 0; i < num_bits; ++i) {
+    bool val = bf_wrap.query(0.5 + i);
+    if (i < n)
+      REQUIRE(val);
+    else if (val)
+      ++fp_count_wrap;
+  }
+  REQUIRE(fp_count_wrap == fp_count);
+  REQUIRE_THROWS_AS(bf_wrap.update(0.5), std::logic_error);
+  REQUIRE_THROWS_AS(bf_wrap.reset(), std::logic_error);
+
+  // writable wrap
+  auto bf_writable = bloom_filter::writable_wrap(bytes.data(), bytes.size());
+  REQUIRE(bf.get_capacity() == bf_writable.get_capacity());
+  REQUIRE(bf.get_seed() == bf_writable.get_seed());
+  REQUIRE(bf.get_num_hashes() == bf_writable.get_num_hashes());
+  REQUIRE(!bf_writable.is_empty());
+  REQUIRE(!bf_writable.is_memory_owned());
+  uint64_t fp_count_writable = 0;
+  for (uint64_t i = 0; i < num_bits; ++i) {
+    bool val = bf_writable.query(0.5 + i);
+    if (i < n)
+      REQUIRE(val);
+    else if (val)
+      ++fp_count_writable;
+  }
+  REQUIRE(fp_count_writable == fp_count);
+
+  REQUIRE(!bf_writable.query(-1.0));
+  bf_writable.update(-1.0);
+  REQUIRE(bf_writable.query(-1.0));
+
+  // not good memory management to do this, but because we wrapped the same bytes as both
+  // read-only adn writable, that update should ahve changed the read-only version, too
+  REQUIRE(bf_wrap.query(-1.0));
 }
 
 } // namespace datasketches
