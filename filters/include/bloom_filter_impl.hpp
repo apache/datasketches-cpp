@@ -148,6 +148,82 @@ bloom_filter_alloc<A>::bloom_filter_alloc(const uint64_t seed,
 }
 
 template<typename A>
+bloom_filter_alloc<A>::bloom_filter_alloc(const bloom_filter_alloc& other) :
+  allocator_(other.allocator_),
+  seed_(other.seed_),
+  num_hashes_(other.num_hashes_),
+  is_dirty_(other.is_dirty_),
+  is_owned_(other.is_owned_),
+  is_read_only_(other.is_read_only_),
+  capacity_bits_(other.capacity_bits_),
+  num_bits_set_(other.num_bits_set_)
+{
+  if (is_owned_) {
+    const size_t num_bytes = capacity_bits_ >> 3;
+    bit_array_ = allocator_.allocate(num_bytes);
+    if (bit_array_ == nullptr) {
+      throw std::bad_alloc();
+    }
+    std::copy_n(other.bit_array_, num_bytes, bit_array_);
+    memory_ = nullptr;
+  } else {
+    bit_array_ = other.bit_array_;
+    memory_ = other.memory_;
+  }
+}
+
+template<typename A>
+bloom_filter_alloc<A>::bloom_filter_alloc(bloom_filter_alloc&& other) noexcept :
+  allocator_(std::move(other.allocator_)),
+  seed_(other.seed_),
+  num_hashes_(other.num_hashes_),
+  is_dirty_(other.is_dirty_),
+  is_owned_(other.is_owned_),
+  is_read_only_(other.is_read_only_),
+  capacity_bits_(other.capacity_bits_),
+  num_bits_set_(other.num_bits_set_),
+  bit_array_(std::move(other.bit_array_)),
+  memory_(std::move(other.memory_))
+{
+  // ensure destructor on other will behave nicely
+  other.is_owned_ = false;
+  other.bit_array_ = nullptr;
+  other.memory_ = nullptr;
+}
+
+template<typename A>
+bloom_filter_alloc<A>& bloom_filter_alloc<A>::operator=(const bloom_filter_alloc& other) {
+  bloom_filter_alloc<A> copy(other);
+  std::swap(allocator_, copy.allocator_);
+  std::swap(seed_, copy.seed_);
+  std::swap(num_hashes_, copy.num_hashes_);
+  std::swap(is_dirty_, copy.is_dirty_);
+  std::swap(is_owned_, copy.is_owned_);
+  std::swap(is_read_only_, copy.is_read_only_);
+  std::swap(capacity_bits_, copy.capacity_bits_);
+  std::swap(num_bits_set_, copy.num_bits_set_);
+  std::swap(bit_array_, copy.bit_array_);
+  std::swap(memory_, copy.memory_);
+  return *this;
+}
+
+template<typename A>
+bloom_filter_alloc<A>& bloom_filter_alloc<A>::operator=(bloom_filter_alloc&& other) {
+  if (this == &other) { return *this; }
+  std::swap(allocator_, other.allocator_);
+  std::swap(seed_, other.seed_);
+  std::swap(num_hashes_, other.num_hashes_);
+  std::swap(is_dirty_, other.is_dirty_);
+  std::swap(is_owned_, other.is_owned_);
+  std::swap(is_read_only_, other.is_read_only_);
+  std::swap(capacity_bits_, other.capacity_bits_);
+  std::swap(num_bits_set_, other.num_bits_set_);
+  std::swap(bit_array_, other.bit_array_);
+  std::swap(memory_, other.memory_);
+  return *this;
+}
+
+template<typename A>
 bloom_filter_alloc<A>::~bloom_filter_alloc() {
   if (is_owned_) {
     if (memory_ != nullptr) {
@@ -161,9 +237,6 @@ bloom_filter_alloc<A>::~bloom_filter_alloc() {
     bit_array_ = nullptr;
   }
 }
-
-// TODO: copy, move constructors
-// TODO: copy, move assignment operators
 
 template<typename A>
 bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(const void* bytes, size_t length_bytes, const A& allocator) {

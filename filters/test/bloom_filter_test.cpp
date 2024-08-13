@@ -368,7 +368,8 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
       ++fp_count_wrap;
   }
   REQUIRE(fp_count_wrap == fp_count);
-  REQUIRE_THROWS_AS(bf_wrap.update(0.5), std::logic_error);
+  REQUIRE_THROWS_AS(bf_wrap.update(-1.0), std::logic_error);
+  REQUIRE_THROWS_AS(bf_wrap.query_and_update(-2.0), std::logic_error);
   REQUIRE_THROWS_AS(bf_wrap.reset(), std::logic_error);
 
   // writable wrap

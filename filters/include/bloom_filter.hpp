@@ -42,27 +42,94 @@ class bloom_filter_builder_alloc {
   using A = Allocator;
 
 public:
-  static uint16_t suggest_num_hashes(const uint64_t num_distinct_items, const uint64_t num_filter_bits);
-  static uint16_t suggest_num_hashes(const double target_false_positive_prob);
-  static uint64_t suggest_num_filter_bits(const uint64_t num_distinct_items, const double target_false_positive_prob);
+  /**
+   * Returns the optimal number of hash functions to given target numbers of distinct items
+   * and the Bloom filter size in bits. This function will provide a result even if the input
+   * values exceed the capacity of a single Bloom filter.
+   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
+   * @param num_filter_bits The intended size of the Bloom Filter in bits
+   * @return The suggested number of hash functions to use with the filter
+   */
+  static uint16_t suggest_num_hashes(const uint64_t max_distinct_items, const uint64_t num_filter_bits);
 
-  static bloom_filter_alloc<A> create_by_accuracy(const uint64_t num_distinct_items,
+  /**
+   * Returns the optimal number of hash functions to achieve a target false positive probability.
+   * @param target_false_positive_prob A desired false positive probability per item
+   * @return The suggested number of hash functions to use with the filter.
+   */
+  static uint16_t suggest_num_hashes(const double target_false_positive_prob);
+
+  /**
+   * Returns the optimal number of bits to use in a Bloom filter given a target number of distinct
+   * items and a target false positive probability.
+   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
+   * @param target_false_positive_prob A desired false positive probability per item
+   * @return The suggested number of bits to use with the filter
+   */
+  static uint64_t suggest_num_filter_bits(const uint64_t max_distinct_items, const double target_false_positive_prob);
+
+  /**
+   * Creates a new Bloom filter with an optimal number of bits and hash functions for the given inputs,
+   * using a random base seed for the hash function.
+   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
+   * @param target_false_positive_prob A desired false positive probability per item
+   * @param seed A bash hash seed (default: random)
+   * @param allocator The allocator to use for the filter (default: standard allocator)
+   * @return A new Bloom filter configured for the given input parameters
+   */
+  static bloom_filter_alloc<A> create_by_accuracy(const uint64_t max_distinct_items,
                                                   const double target_false_positive_prob,
                                                   const uint64_t seed = generate_random_seed(),
                                                   const Allocator& allocator = Allocator());
 
+  /**
+   * Creates a Bloom filter with given number of bits and number of hash functions,
+   * using the provided base seed for the hash function.
+   *
+   * @param num_bits The size of the BloomFilter, in bits
+   * @param num_hashes The number of hash functions to apply to items
+   * @param seed A base hash seed (default: random)
+   * @param allocator The allocator to use for the filter (default: standard allocator)
+   * @return A new Bloom filter configured for the given input parameters
+   */
   static bloom_filter_alloc<A> create_by_size(const uint64_t num_bits,
                                               const uint16_t num_hashes,
                                               const uint64_t seed = generate_random_seed(),
                                               const Allocator& allocator = Allocator());
 
+  /**
+   * Creates a new Bloom filter with an optimal number of bits and hash functions for the given inputs,
+   * using a random base seed for the hash function and writing into the provided memory. The filter does
+   * not take ownership of the memory but does overwrite the full contents.
+   *
+   * @param memory A pointer to the memory to use for the filter
+   * @param length_bytes The length of the memory in bytes
+   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
+   * @param target_false_positive_prob A desired false positive probability per item
+   * @param dstMem A WritableMemory to hold the initialized filter
+   * @param allocator The allocator to use for the filter (default: standard allocator)
+   * @return A new Bloom filter configured for the given input parameters in the provided memory
+   */
   static bloom_filter_alloc<A> initialize_by_accuracy(void* memory,
                                                       const size_t length_bytes,
-                                                      const uint64_t num_distinct_items,
+                                                      const uint64_t max_distinct_items,
                                                       const double target_false_positive_prob,
                                                       const uint64_t seed = generate_random_seed(),
                                                       const Allocator& allocator = Allocator());
 
+  /**
+   * Initializes a Bloom filter with given number of bits and number of hash functions,
+   * using the provided base seed for the hash function and writing into the provided memory. The filter does
+   * not take ownership of the memory but does overwrite the full contents.
+   *
+   * @param memory A pointer to the memory to use for the filter
+   * @param length_bytes The length of the memory in bytes
+   * @param num_bits The size of the BloomFilter, in bits
+   * @param num_hashes The number of hash functions to apply to items
+   * @param seed A base hash seed (default: random)
+   * @param allocator The allocator to use for the filter (default: standard allocator)
+   * @return A new BloomFilter configured for the given input parameters
+   */
   static bloom_filter_alloc<A> initialize_by_size(void* memory,
                                                   const size_t length_bytes,
                                                   const uint64_t num_bits,
@@ -76,6 +143,10 @@ public:
    * @return uint64_t a random value over the range of unsigned 64-bit integers
    */
   static uint64_t generate_random_seed();
+
+private:
+  static void validate_size_inputs(uint64_t num_bits, uint16_t num_hashes);
+  static void validate_accuracy_inputs(uint64_t max_distinct_items, double target_false_positive_prob);
 };
 
 template<typename Allocator = std::allocator<uint8_t>>
@@ -84,18 +155,94 @@ class bloom_filter_alloc {
 
 public:
 
-  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
-
-  void serialize(std::ostream& os) const;
-
+  /**
+   * This method deserializes a Bloom filter from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param allocator instance of an Allocator
+   * @return an instance of a Bloom filter
+   */
   static bloom_filter_alloc deserialize(const void* bytes, size_t length_bytes, const Allocator& allocator = Allocator());
 
+  /**
+   * This method deserializes a Bloom filter from a given stream.
+   * @param is input stream
+   * @param allocator instance of an Allocator
+   * @return an instance of a Bloom filter
+   */
   static bloom_filter_alloc deserialize(std::istream& is, const A& allocator = Allocator());
 
+  /**
+   * @brief Wraps the provided memory as a read-only Bloom filter. Reads the data in-place and does
+   * not take ownership of the underlying memory. Does not allow modifying the filter.
+   *
+   * @param data The memory to wrap
+   * @param length_bytes The length of the memory in bytes
+   * @param allocator instance of an Allocator
+   * @return a const (read-only) Bloom filter wrapping the provided memory
+   */
   static const bloom_filter_alloc wrap(const void* data, size_t length_bytes, const Allocator& allocator = Allocator());
 
+  /**
+   * @brief Wraps the provided memory as a writable Bloom filter. Reads the data in-place and does
+   * not take ownership of the underlying memory. Allows modifying the filter.
+   *
+   * @param data the memory to wrap
+   * @param length_bytes the length of the memory in bytes
+   * @param allocator instance of an Allocator
+   * @return a Bloom filter wrapping the provided memory
+   */
   static bloom_filter_alloc writable_wrap(void* data, size_t length_bytes, const Allocator& allocator = Allocator());
+
+  /**
+   * Copy constructor
+   * @param other filter to be copied
+   */
+  bloom_filter_alloc(const bloom_filter_alloc&);
+
+  /** Move constructor
+   * @param other filter to be moved
+   */
+  bloom_filter_alloc(bloom_filter_alloc&&) noexcept;
+
+  /**
+   * Copy assignment
+   * @param other filter to be copied
+   * @return reference to this filter
+   */
+  bloom_filter_alloc& operator=(const bloom_filter_alloc& other);
+
+  /**
+   * Move assignment
+   * @param other filter to be moved
+   * @return reference to this filter
+   */
+  bloom_filter_alloc& operator=(bloom_filter_alloc&& other);
+
+  /**
+   * @brief Destroy the bloom filter alloc object
+   */
+  ~bloom_filter_alloc();
+
+  // This is a convenience alias for users
+  // The type returned by the following serialize method
+  using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
+
+  /**
+   * This method serializes the filter as a vector of bytes.
+   * An optional header can be reserved in front of the filter.
+   * It is a blank space of a given size.
+   * This header is used in Datasketches PostgreSQL extension.
+   * @param header_size_bytes space to reserve in front of the filter
+   * @return serialized filter as a vector of bytes
+   */
+  vector_bytes serialize(unsigned header_size_bytes = 0) const;
+
+  /**
+   * This method serializes the filter into a given stream in a binary form
+   * @param os output stream
+   */
+  void serialize(std::ostream& os) const;
 
   /**
    * Checks if the Bloom Filter has processed any items
@@ -509,11 +656,6 @@ public:
    * @return A human-readable string representation of the Bloom Filter.
    */
   string<A> to_string(bool print_filter = false) const;
-
-  /**
-   * @brief Destroy the bloom filter alloc object
-   */
-  ~bloom_filter_alloc();
 
 private:
   static const uint64_t DIRTY_BITS_VALUE = static_cast<uint64_t>(-1LL);
