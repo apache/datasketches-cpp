@@ -125,6 +125,18 @@ TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
   REQUIRE(num_found == num_found2); // should exactly match above
   auto bytes2 = bf2.serialize();
 
+  REQUIRE(bytes.size() == bytes2.size());
+  for (size_t i = 0; i < bytes.size(); ++i) {
+    REQUIRE(bytes[i] == bytes2[i]);
+  }
+
+  // check that raw memory also matches serialized sketch
+  const uint8_t* bf_bytes = bf2.get_backing_memory();
+  REQUIRE(bf_bytes == bf_memory);
+  for (size_t i = 0; i < bytes.size(); ++i) {
+    REQUIRE(bf_bytes[i] == bytes[i]);
+  }
+
   // ensure the filters reset properly
   bf.reset();
   REQUIRE(bf.is_empty());
@@ -133,11 +145,6 @@ TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
   bf2.reset();
   REQUIRE(bf2.is_empty());
   REQUIRE(bf2.get_bits_used() == 0);
-
-  REQUIRE(bytes.size() == bytes2.size());
-  for (size_t i = 0; i < bytes.size(); ++i) {
-    REQUIRE(bytes[i] == bytes2[i]);
-  }
 
   delete [] bf_memory;
 }
