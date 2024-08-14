@@ -43,6 +43,7 @@ TEST_CASE("bloom_filter", "[serde_compat]") {
       for (uint64_t i = 0; i < n / 10; ++i) {
         REQUIRE(bf.query(i));
       }
+      if (n > 0) REQUIRE(bf.query(std::nan("1")));
     }
   }
 }

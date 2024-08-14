@@ -33,6 +33,7 @@ TEST_CASE("bloom filter generate", "[serialize_for_java]") {
       const uint64_t config_bits = std::max(n, static_cast<uint64_t>(1000)); // so empty still has valid bit size
       bloom_filter bf = bloom_filter_builder::create_by_size(config_bits, num_hashes);
       for (uint64_t i = 0; i < n / 10; ++i) bf.update(i); // note: n / 10 items into n bits
+      if (n > 0) bf.update(std::nan("1")); // include a NaN if non-empty
       REQUIRE(bf.is_empty() == (n == 0));
       REQUIRE((bf.is_empty() || (bf.get_bits_used() > n / 10)));
       std::ofstream os("bf_n" + std::to_string(n) + "_h" + std::to_string(num_hashes) + "_cpp.filter", std::ios::binary);
