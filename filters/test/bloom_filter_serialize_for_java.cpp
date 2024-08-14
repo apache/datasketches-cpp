@@ -36,7 +36,7 @@ TEST_CASE("bloom filter generate", "[serialize_for_java]") {
       if (n > 0) bf.update(std::nan("1")); // include a NaN if non-empty
       REQUIRE(bf.is_empty() == (n == 0));
       REQUIRE((bf.is_empty() || (bf.get_bits_used() > n / 10)));
-      std::ofstream os("bf_n" + std::to_string(n) + "_h" + std::to_string(num_hashes) + "_cpp.filter", std::ios::binary);
+      std::ofstream os("bf_n" + std::to_string(n) + "_h" + std::to_string(num_hashes) + "_cpp.sk", std::ios::binary);
       bf.serialize(os);
     }
   }

@@ -35,7 +35,7 @@ TEST_CASE("bloom_filter", "[serde_compat]") {
     for (const uint16_t num_hashes: h_arr) {
       std::ifstream is;
       is.exceptions(std::ios::failbit | std::ios::badbit);
-      is.open(testBinaryInputPath + "bf_n" + std::to_string(n) + "_h" + std::to_string(num_hashes) + "_cpp.filter", std::ios::binary);
+      is.open(testBinaryInputPath + "bf_n" + std::to_string(n) + "_h" + std::to_string(num_hashes) + "_cpp.sk", std::ios::binary);
       auto bf = bloom_filter::deserialize(is);
       REQUIRE(bf.is_empty() == (n == 0));
       REQUIRE((bf.is_empty() || (bf.get_bits_used() > n / 10)));
