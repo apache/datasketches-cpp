@@ -37,6 +37,14 @@ template<typename A> class bloom_filter_builder_alloc;
 using bloom_filter = bloom_filter_alloc<std::allocator<uint8_t>>;
 using bloom_filter_builder = bloom_filter_builder_alloc<std::allocator<uint8_t>>;
 
+/**
+ * <p>This class provides methods to help estimate the correct parameters when
+ * creating a Bloom filter, and methods to create the filter using those values.</p>
+ *
+ * <p>The underlying math is described in the
+ * <a href='https://en.wikipedia.org/wiki/Bloom_filter#Optimal_number_of_hash_functions'>
+ * Wikipedia article on Bloom filters</a>.</p>
+ */
 template<typename Allocator = std::allocator<uint8_t>>
 class bloom_filter_builder_alloc {
   using A = Allocator;
@@ -148,6 +156,31 @@ private:
   static void validate_size_inputs(uint64_t num_bits, uint16_t num_hashes);
   static void validate_accuracy_inputs(uint64_t max_distinct_items, double target_false_positive_prob);
 };
+
+/**
+ * <p>A Bloom filter is a data structure that can be used for probabilistic
+ * set membership.</p>
+ *
+ * <p>When querying a Bloom filter, there are no false positives. Specifically:
+ * When querying an item that has already been inserted to the filter, the filter will
+ * always indicate that the item is present. There is a chance of false positives, where
+ * querying an item that has never been presented to the filter will indicate that the
+ * item has already been seen. Consequently, any query should be interpreted as
+ * "might have seen."</p>
+ *
+ * <p>A standard Bloom filter is unlike typical sketches in that it is not sub-linear
+ * in size and does not resize itself. A Bloom filter will work up to a target number of
+ * distinct items, beyond which it will saturate and the false positive rate will start to
+ * increase. The size of a Bloom filter will be linear in the expected number of
+ * distinct items.</p>
+ *
+ * <p>See the bloom_filter_builder_alloc class for methods to create a filter, especially
+ * one sized correctly for a target number of distinct elements and a target
+ * false positive probability.</p>
+ *
+ * <p>This implementation uses xxHash64 and follows the approach in Kirsch and Mitzenmacher,
+ * "Less Hashing, Same Performance: Building a Better Bloom Filter," Wiley Interscience, 2008, pp. 187-218.</p>
+ */
 
 template<typename Allocator = std::allocator<uint8_t>>
 class bloom_filter_alloc {

@@ -244,6 +244,29 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(const void* bytes, size
   return internal_deserialize_or_wrap(const_cast<void*>(bytes), length_bytes, false, false, allocator);
 }
 
+/*
+ * A Bloom Filter's serialized image always uses 3 longs of preamble when empty,
+ * otherwise 4 longs:
+ *
+ * <pre>
+ * Long || Start Byte Adr:
+ * Adr:
+ *      ||       0        |    1   |    2   |    3   |    4   |    5   |    6   |    7   |
+ *  0   || Preamble_Longs | SerVer | FamID  |  Flags |----Num Hashes---|-----Unused------|
+ *
+ *      ||       8        |    9   |   10   |   11   |   12   |   13   |   14   |   15   |
+ *  1   ||---------------------------------Hash Seed-------------------------------------|
+ *
+ *      ||      16        |   17   |   18   |   19   |   20   |   21   |   22   |   23   |
+ *  2   ||-------BitArray Length (in longs)----------|-----------Unused------------------|
+ *
+ *      ||      24        |   25   |   26   |   27   |   28   |   29   |   30   |   31   |
+ *  3   ||---------------------------------NumBitsSet------------------------------------|
+ *  </pre>
+ *
+ * The raw BitArray bits, if non-empty start at byte 32.
+ */
+
 template<typename A>
 bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const A& allocator) {
   const uint8_t prelongs = read<uint8_t>(is);
