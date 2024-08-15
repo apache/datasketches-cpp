@@ -69,7 +69,7 @@ namespace bit_array_ops {
    * @param array the array of bits
    * @param index the index of the bit to set.
    */
-  static inline void assign_bit(uint8_t* array, const uint64_t index, const bool value) {
+  static inline void assign_bit(uint8_t* array, uint64_t index, bool value) {
     // read-only checks handled by set_bit() and clear_bit()
     if (value) {
       set_bit(array, index);
@@ -79,12 +79,12 @@ namespace bit_array_ops {
   }
 
   /**
-   * Gets teh value of a bit at the specified index and sets it to true
+   * Gets the value of a bit at the specified index and sets it to true
    * @param array the array of bits
    * @param index the index of the bit to get and set
    * @return the value of the bit at the specified index
    */
-  static inline bool get_and_set_bit(uint8_t* array, const uint64_t index) {
+  static inline bool get_and_set_bit(uint8_t* array, uint64_t index) {
     const uint64_t offset = index >> 3;
     const uint8_t mask = 1 << (index & 7);
     if ((array[offset] & mask) != 0) {

@@ -42,6 +42,7 @@ namespace random_utils {
   static std::random_device rd; // possibly unsafe in MinGW with GCC < 9.2
   static thread_local std::mt19937_64 rand(rd());
   static thread_local std::uniform_real_distribution<> next_double(0.0, 1.0);
+  static thread_local std::uniform_int_distribution<uint64_t> next_uint64(0, UINT64_MAX);
 
   // thread-safe random bit
   static thread_local std::independent_bits_engine<std::mt19937, 1, uint32_t>

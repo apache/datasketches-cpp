@@ -31,12 +31,7 @@ namespace datasketches {
 
 template<typename A>
 uint64_t bloom_filter_builder_alloc<A>::generate_random_seed() {
-  union {
-    uint64_t long_value;
-    double double_value;
-  } ldu;
-  ldu.double_value = random_utils::next_double(random_utils::rand);
-  return ldu.long_value;
+  return random_utils::next_uint64(random_utils::rand);
 }
 
 template<typename A>
