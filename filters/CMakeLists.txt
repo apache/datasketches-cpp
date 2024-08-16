@@ -17,7 +17,7 @@
 
 add_library(filters INTERFACE)
 
-add_library(${PROJECT_NAME}::FILTER ALIAS filters)
+add_library(${PROJECT_NAME}::FILTERS ALIAS filters)
 
 if (BUILD_TESTS)
   add_subdirectory(test)
