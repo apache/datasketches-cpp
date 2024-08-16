@@ -539,7 +539,7 @@ void bloom_filter_alloc<A>::update_num_bits_set(uint64_t num_bits_set) {
 // UPDATE METHODS
 
 template<typename A>
-void bloom_filter_alloc<A>::update(std::string& item) {
+void bloom_filter_alloc<A>::update(const std::string& item) {
   if (item.empty()) return;
   const uint64_t h0 = XXHash64::hash(item.data(), item.size(), seed_);
   const uint64_t h1 = XXHash64::hash(item.data(), item.size(), h0);
