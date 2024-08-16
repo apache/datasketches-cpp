@@ -30,20 +30,20 @@ static std::string testBinaryInputPath = "test/";
 namespace datasketches {
 
 TEST_CASE("bloom_filter: invalid constructor args", "[bloom_filter]") {
-  REQUIRE_THROWS_AS(bloom_filter_builder::create_by_size(0, 4), std::invalid_argument);
-  REQUIRE_THROWS_AS(bloom_filter_builder::create_by_size(1L << 60, 4), std::invalid_argument);
-  REQUIRE_THROWS_AS(bloom_filter_builder::create_by_size(65535, 0), std::invalid_argument);
+  REQUIRE_THROWS_AS(bloom_filter::builder::create_by_size(0, 4), std::invalid_argument);
+  REQUIRE_THROWS_AS(bloom_filter::builder::create_by_size(1L << 60, 4), std::invalid_argument);
+  REQUIRE_THROWS_AS(bloom_filter::builder::create_by_size(65535, 0), std::invalid_argument);
 }
 
 TEST_CASE("bloom_filter: standard constructors", "[bloom_filter]") {
   uint64_t num_items = 4000;
   double fpp = 0.01;
 
-  uint64_t num_bits = bloom_filter_builder::suggest_num_filter_bits(num_items, fpp);
-  uint16_t num_hashes = bloom_filter_builder::suggest_num_hashes(num_items, num_bits);
+  uint64_t num_bits = bloom_filter::builder::suggest_num_filter_bits(num_items, fpp);
+  uint16_t num_hashes = bloom_filter::builder::suggest_num_hashes(num_items, num_bits);
   uint64_t seed = 89023;
 
-  auto bf = bloom_filter_builder::create_by_size(num_bits, num_hashes, seed);
+  auto bf = bloom_filter::builder::create_by_size(num_bits, num_hashes, seed);
   uint64_t adjusted_num_bits = (num_bits + 63) & ~0x3F; // round up to the nearest multiple of 64
   REQUIRE(bf.get_capacity() == adjusted_num_bits);
   REQUIRE(bf.get_num_hashes() == num_hashes);
@@ -51,7 +51,7 @@ TEST_CASE("bloom_filter: standard constructors", "[bloom_filter]") {
   REQUIRE(bf.is_empty());
 
   // should match above
-  bf = bloom_filter_builder::create_by_accuracy(num_items, fpp, seed);
+  bf = bloom_filter::builder::create_by_accuracy(num_items, fpp, seed);
   REQUIRE(bf.get_capacity() == adjusted_num_bits);
   REQUIRE(bf.get_num_hashes() == num_hashes);
   REQUIRE(bf.get_seed() == seed);
@@ -61,13 +61,13 @@ TEST_CASE("bloom_filter: standard constructors", "[bloom_filter]") {
   size_t serialized_size_bytes = bloom_filter::get_serialized_size_bytes(num_bits);
   uint8_t* bytes = new uint8_t[serialized_size_bytes];
 
-  bf = bloom_filter_builder::initialize_by_size(bytes, serialized_size_bytes, num_bits, num_hashes, seed);
+  bf = bloom_filter::builder::initialize_by_size(bytes, serialized_size_bytes, num_bits, num_hashes, seed);
   REQUIRE(bf.get_capacity() == adjusted_num_bits);
   REQUIRE(bf.get_num_hashes() == num_hashes);
   REQUIRE(bf.get_seed() == seed);
   REQUIRE(bf.is_empty());
 
-  bf = bloom_filter_builder::initialize_by_accuracy(bytes, serialized_size_bytes, num_items, fpp, seed);
+  bf = bloom_filter::builder::initialize_by_accuracy(bytes, serialized_size_bytes, num_items, fpp, seed);
   REQUIRE(bf.get_capacity() == adjusted_num_bits);
   REQUIRE(bf.get_num_hashes() == num_hashes);
   REQUIRE(bf.get_seed() == seed);
@@ -80,7 +80,7 @@ TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
   uint64_t num_items = 5000;
   double fpp = 0.01;
 
-  auto bf = bloom_filter_builder::create_by_accuracy(num_items, fpp);
+  auto bf = bloom_filter::builder::create_by_accuracy(num_items, fpp);
   REQUIRE(bf.is_empty());
   REQUIRE(bf.get_bits_used() == 0);
 
@@ -105,7 +105,7 @@ TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
   // initialize in memory and run the same tests
   // also checking against the results from the first part
   uint8_t* bf_memory = new uint8_t[bytes.size()];
-  auto bf2 = bloom_filter_builder::initialize_by_accuracy(bf_memory, bytes.size(), num_items, fpp, bf.get_seed());
+  auto bf2 = bloom_filter::builder::initialize_by_accuracy(bf_memory, bytes.size(), num_items, fpp, bf.get_seed());
   REQUIRE(bf2.is_empty());
   REQUIRE(bf2.get_bits_used() == 0);
 
@@ -153,7 +153,7 @@ TEST_CASE("bloom_filter: inversion", "[bloom_filter]") {
   uint64_t num_bits = 8192;
   uint16_t num_hashes = 3;
 
-  auto bf = bloom_filter_builder::create_by_size(num_bits, num_hashes);
+  auto bf = bloom_filter::builder::create_by_size(num_bits, num_hashes);
 
   uint64_t n = 500;
   for (uint64_t i = 0; i < n; ++i) {
@@ -186,18 +186,18 @@ TEST_CASE("bloom_filter: incompatible set operations", "[bloom_filter]") {
   uint64_t num_bits = 32768;
   uint16_t num_hashes = 4;
 
-  auto bf1 = bloom_filter_builder::create_by_size(num_bits, num_hashes);
+  auto bf1 = bloom_filter::builder::create_by_size(num_bits, num_hashes);
 
   // mismatched num bits
-  auto bf2 = bloom_filter_builder::create_by_size(2 * num_bits, num_hashes);
+  auto bf2 = bloom_filter::builder::create_by_size(2 * num_bits, num_hashes);
   REQUIRE_THROWS_AS(bf1.union_with(bf2), std::invalid_argument);
 
   // mismatched num hashes
-  auto bf3 = bloom_filter_builder::create_by_size(num_bits, 2 * num_hashes);
+  auto bf3 = bloom_filter::builder::create_by_size(num_bits, 2 * num_hashes);
   REQUIRE_THROWS_AS(bf1.intersect(bf2), std::invalid_argument);
 
   // mismatched seed
-  auto bf4 = bloom_filter_builder::create_by_size(num_bits, num_hashes, bf1.get_seed() + 1);
+  auto bf4 = bloom_filter::builder::create_by_size(num_bits, num_hashes, bf1.get_seed() + 1);
   REQUIRE_THROWS_AS(bf1.union_with(bf4), std::invalid_argument);
 }
 
@@ -205,8 +205,8 @@ TEST_CASE("bloom_filter: basic union", "[bloom_filter]") {
   const uint64_t num_bits = 12288;
   const uint16_t num_hashes = 4;
 
-  auto bf1 = bloom_filter_builder::create_by_size(num_bits, num_hashes);
-  auto bf2 = bloom_filter_builder::create_by_size(num_bits, num_hashes, bf1.get_seed());
+  auto bf1 = bloom_filter::builder::create_by_size(num_bits, num_hashes);
+  auto bf2 = bloom_filter::builder::create_by_size(num_bits, num_hashes, bf1.get_seed());
 
   const uint64_t n = 1000;
   const uint32_t max_item = 3 * n / 2 - 1;
@@ -233,8 +233,8 @@ TEST_CASE("bloom_filter: basic intersection", "[bloom_filter]") {
   const uint64_t num_bits = 8192;
   const uint16_t num_hahes = 5;
 
-  auto bf1 = bloom_filter_builder::create_by_size(num_bits, num_hahes);
-  auto bf2 = bloom_filter_builder::create_by_size(num_bits, num_hahes, bf1.get_seed());
+  auto bf1 = bloom_filter::builder::create_by_size(num_bits, num_hahes);
+  auto bf2 = bloom_filter::builder::create_by_size(num_bits, num_hahes, bf1.get_seed());
 
   const uint64_t n = 1024;
   const uint32_t max_item = 3 * n / 2 - 1;
@@ -268,7 +268,7 @@ TEST_CASE("bloom_filter: empty serialization", "[bloom_filter]") {
   const uint64_t num_bits = 32769;
   const uint16_t num_hashes = 7;
 
-  auto bf = bloom_filter_builder::create_by_size(num_bits, num_hashes);
+  auto bf = bloom_filter::builder::create_by_size(num_bits, num_hashes);
   auto bytes = bf.serialize();
   REQUIRE(bytes.size() == bf.get_serialized_size_bytes());
 
@@ -301,7 +301,7 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   const uint64_t num_bits = 32768;
   const uint16_t num_hashes = 5;
 
-  auto bf = bloom_filter_builder::create_by_size(num_bits, num_hashes);
+  auto bf = bloom_filter::builder::create_by_size(num_bits, num_hashes);
   const uint64_t n = 1000;
   for (uint64_t i = 0; i < n; ++i) {
     bf.update(0.5 + i); // testing floats

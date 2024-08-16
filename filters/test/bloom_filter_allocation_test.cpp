@@ -27,7 +27,6 @@
 
 namespace datasketches {
 
-using bloom_filter_builder_test_alloc = bloom_filter_builder_alloc<test_allocator<test_type>>;
 using bloom_filter_test_alloc = bloom_filter_alloc<test_allocator<test_type>>;
 using alloc = test_allocator<test_type>;
 
@@ -37,8 +36,8 @@ TEST_CASE("bloom filter allocation test", "[bloom_filter][test_type]") {
   {
     int64_t num_items = 10000;
     double fpp = 0.01;
-    uint64_t seed = bloom_filter_builder_test_alloc::generate_random_seed();
-    auto bf1 = bloom_filter_builder_test_alloc::create_by_accuracy(num_items,
+    uint64_t seed = bloom_filter_test_alloc::builder::generate_random_seed();
+    auto bf1 = bloom_filter_test_alloc::builder::create_by_accuracy(num_items,
                                                                    fpp,
                                                                    seed,
                                                                    alloc(0));

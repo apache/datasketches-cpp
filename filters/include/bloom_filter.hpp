@@ -35,125 +35,6 @@ template<typename A> class bloom_filter_builder_alloc;
 
 // aliases with default allocator
 using bloom_filter = bloom_filter_alloc<std::allocator<uint8_t>>;
-using bloom_filter_builder = bloom_filter_builder_alloc<std::allocator<uint8_t>>;
-
-/**
- * <p>This class provides methods to help estimate the correct parameters when
- * creating a Bloom filter, and methods to create the filter using those values.</p>
- *
- * <p>The underlying math is described in the
- * <a href='https://en.wikipedia.org/wiki/Bloom_filter#Optimal_number_of_hash_functions'>
- * Wikipedia article on Bloom filters</a>.</p>
- */
-template<typename Allocator = std::allocator<uint8_t>>
-class bloom_filter_builder_alloc {
-public:
-  /**
-   * Returns the optimal number of hash functions to given target numbers of distinct items
-   * and the Bloom filter size in bits. This function will provide a result even if the input
-   * values exceed the capacity of a single Bloom filter.
-   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
-   * @param num_filter_bits The intended size of the Bloom Filter in bits
-   * @return The suggested number of hash functions to use with the filter
-   */
-  static uint16_t suggest_num_hashes(uint64_t max_distinct_items, uint64_t num_filter_bits);
-
-  /**
-   * Returns the optimal number of hash functions to achieve a target false positive probability.
-   * @param target_false_positive_prob A desired false positive probability per item
-   * @return The suggested number of hash functions to use with the filter.
-   */
-  static uint16_t suggest_num_hashes(double target_false_positive_prob);
-
-  /**
-   * Returns the optimal number of bits to use in a Bloom filter given a target number of distinct
-   * items and a target false positive probability.
-   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
-   * @param target_false_positive_prob A desired false positive probability per item
-   * @return The suggested number of bits to use with the filter
-   */
-  static uint64_t suggest_num_filter_bits(uint64_t max_distinct_items, double target_false_positive_prob);
-
-  /**
-   * Creates a new Bloom filter with an optimal number of bits and hash functions for the given inputs,
-   * using a random base seed for the hash function.
-   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
-   * @param target_false_positive_prob A desired false positive probability per item
-   * @param seed A bash hash seed (default: random)
-   * @param allocator The allocator to use for the filter (default: standard allocator)
-   * @return A new Bloom filter configured for the given input parameters
-   */
-  static bloom_filter_alloc<Allocator> create_by_accuracy(uint64_t max_distinct_items,
-                                                          double target_false_positive_prob,
-                                                          uint64_t seed = generate_random_seed(),
-                                                          const Allocator& allocator = Allocator());
-
-  /**
-   * Creates a Bloom filter with given number of bits and number of hash functions,
-   * using the provided base seed for the hash function.
-   *
-   * @param num_bits The size of the BloomFilter, in bits
-   * @param num_hashes The number of hash functions to apply to items
-   * @param seed A base hash seed (default: random)
-   * @param allocator The allocator to use for the filter (default: standard allocator)
-   * @return A new Bloom filter configured for the given input parameters
-   */
-  static bloom_filter_alloc<Allocator> create_by_size(uint64_t num_bits,
-                                                      uint16_t num_hashes,
-                                                      uint64_t seed = generate_random_seed(),
-                                                      const Allocator& allocator = Allocator());
-
-  /**
-   * Creates a new Bloom filter with an optimal number of bits and hash functions for the given inputs,
-   * using a random base seed for the hash function and writing into the provided memory. The filter does
-   * not take ownership of the memory but does overwrite the full contents.
-   *
-   * @param memory A pointer to the memory to use for the filter
-   * @param length_bytes The length of the memory in bytes
-   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
-   * @param target_false_positive_prob A desired false positive probability per item
-   * @param dstMem A WritableMemory to hold the initialized filter
-   * @param allocator The allocator to use for the filter (default: standard allocator)
-   * @return A new Bloom filter configured for the given input parameters in the provided memory
-   */
-  static bloom_filter_alloc<Allocator> initialize_by_accuracy(void* memory,
-                                                              size_t length_bytes,
-                                                              uint64_t max_distinct_items,
-                                                              double target_false_positive_prob,
-                                                              uint64_t seed = generate_random_seed(),
-                                                              const Allocator& allocator = Allocator());
-
-  /**
-   * Initializes a Bloom filter with given number of bits and number of hash functions,
-   * using the provided base seed for the hash function and writing into the provided memory. The filter does
-   * not take ownership of the memory but does overwrite the full contents.
-   *
-   * @param memory A pointer to the memory to use for the filter
-   * @param length_bytes The length of the memory in bytes
-   * @param num_bits The size of the BloomFilter, in bits
-   * @param num_hashes The number of hash functions to apply to items
-   * @param seed A base hash seed (default: random)
-   * @param allocator The allocator to use for the filter (default: standard allocator)
-   * @return A new BloomFilter configured for the given input parameters
-   */
-  static bloom_filter_alloc<Allocator> initialize_by_size(void* memory,
-                                                          size_t length_bytes,
-                                                          uint64_t num_bits,
-                                                          uint16_t num_hashes,
-                                                          uint64_t seed = generate_random_seed(),
-                                                          const Allocator& allocator = Allocator());
-
-  /**
-   * @brief Generates a random 64-bit seed value
-   *
-   * @return uint64_t a random value over the range of unsigned 64-bit integers
-   */
-  static uint64_t generate_random_seed();
-
-private:
-  static void validate_size_inputs(uint64_t num_bits, uint16_t num_hashes);
-  static void validate_accuracy_inputs(uint64_t max_distinct_items, double target_false_positive_prob);
-};
 
 /**
  * <p>A Bloom filter is a data structure that can be used for probabilistic
@@ -183,6 +64,9 @@ private:
 template<typename Allocator = std::allocator<uint8_t>>
 class bloom_filter_alloc {
 public:
+
+  // no public constructor; use builder or deserialize/wrap methods
+  class builder;
 
   /**
    * This method deserializes a Bloom filter from a given array of bytes.
@@ -744,6 +628,124 @@ private:
   uint8_t* memory_; // if wrapped, pointer to the start of the filter, otheriwse nullptr
 
   friend class bloom_filter_builder_alloc<A>;
+};
+
+/**
+ * <p>This class provides methods to help estimate the correct parameters when
+ * creating a Bloom filter, and methods to create the filter using those values.</p>
+ *
+ * <p>The underlying math is described in the
+ * <a href='https://en.wikipedia.org/wiki/Bloom_filter#Optimal_number_of_hash_functions'>
+ * Wikipedia article on Bloom filters</a>.</p>
+ */
+template<typename Allocator>
+class bloom_filter_alloc<Allocator>::builder {
+public:
+  /**
+   * Returns the optimal number of hash functions to given target numbers of distinct items
+   * and the Bloom filter size in bits. This function will provide a result even if the input
+   * values exceed the capacity of a single Bloom filter.
+   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
+   * @param num_filter_bits The intended size of the Bloom Filter in bits
+   * @return The suggested number of hash functions to use with the filter
+   */
+  static uint16_t suggest_num_hashes(uint64_t max_distinct_items, uint64_t num_filter_bits);
+
+  /**
+   * Returns the optimal number of hash functions to achieve a target false positive probability.
+   * @param target_false_positive_prob A desired false positive probability per item
+   * @return The suggested number of hash functions to use with the filter.
+   */
+  static uint16_t suggest_num_hashes(double target_false_positive_prob);
+
+  /**
+   * Returns the optimal number of bits to use in a Bloom filter given a target number of distinct
+   * items and a target false positive probability.
+   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
+   * @param target_false_positive_prob A desired false positive probability per item
+   * @return The suggested number of bits to use with the filter
+   */
+  static uint64_t suggest_num_filter_bits(uint64_t max_distinct_items, double target_false_positive_prob);
+
+  /**
+   * Creates a new Bloom filter with an optimal number of bits and hash functions for the given inputs,
+   * using a random base seed for the hash function.
+   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
+   * @param target_false_positive_prob A desired false positive probability per item
+   * @param seed A bash hash seed (default: random)
+   * @param allocator The allocator to use for the filter (default: standard allocator)
+   * @return A new Bloom filter configured for the given input parameters
+   */
+  static bloom_filter_alloc<Allocator> create_by_accuracy(uint64_t max_distinct_items,
+                                                          double target_false_positive_prob,
+                                                          uint64_t seed = generate_random_seed(),
+                                                          const Allocator& allocator = Allocator());
+
+  /**
+   * Creates a Bloom filter with given number of bits and number of hash functions,
+   * using the provided base seed for the hash function.
+   *
+   * @param num_bits The size of the BloomFilter, in bits
+   * @param num_hashes The number of hash functions to apply to items
+   * @param seed A base hash seed (default: random)
+   * @param allocator The allocator to use for the filter (default: standard allocator)
+   * @return A new Bloom filter configured for the given input parameters
+   */
+  static bloom_filter_alloc<Allocator> create_by_size(uint64_t num_bits,
+                                                      uint16_t num_hashes,
+                                                      uint64_t seed = generate_random_seed(),
+                                                      const Allocator& allocator = Allocator());
+
+  /**
+   * Creates a new Bloom filter with an optimal number of bits and hash functions for the given inputs,
+   * using a random base seed for the hash function and writing into the provided memory. The filter does
+   * not take ownership of the memory but does overwrite the full contents.
+   *
+   * @param memory A pointer to the memory to use for the filter
+   * @param length_bytes The length of the memory in bytes
+   * @param max_distinct_items The maximum expected number of distinct items to add to the filter
+   * @param target_false_positive_prob A desired false positive probability per item
+   * @param dstMem A WritableMemory to hold the initialized filter
+   * @param allocator The allocator to use for the filter (default: standard allocator)
+   * @return A new Bloom filter configured for the given input parameters in the provided memory
+   */
+  static bloom_filter_alloc<Allocator> initialize_by_accuracy(void* memory,
+                                                              size_t length_bytes,
+                                                              uint64_t max_distinct_items,
+                                                              double target_false_positive_prob,
+                                                              uint64_t seed = generate_random_seed(),
+                                                              const Allocator& allocator = Allocator());
+
+  /**
+   * Initializes a Bloom filter with given number of bits and number of hash functions,
+   * using the provided base seed for the hash function and writing into the provided memory. The filter does
+   * not take ownership of the memory but does overwrite the full contents.
+   *
+   * @param memory A pointer to the memory to use for the filter
+   * @param length_bytes The length of the memory in bytes
+   * @param num_bits The size of the BloomFilter, in bits
+   * @param num_hashes The number of hash functions to apply to items
+   * @param seed A base hash seed (default: random)
+   * @param allocator The allocator to use for the filter (default: standard allocator)
+   * @return A new BloomFilter configured for the given input parameters
+   */
+  static bloom_filter_alloc<Allocator> initialize_by_size(void* memory,
+                                                          size_t length_bytes,
+                                                          uint64_t num_bits,
+                                                          uint16_t num_hashes,
+                                                          uint64_t seed = generate_random_seed(),
+                                                          const Allocator& allocator = Allocator());
+
+  /**
+   * @brief Generates a random 64-bit seed value
+   *
+   * @return uint64_t a random value over the range of unsigned 64-bit integers
+   */
+  static uint64_t generate_random_seed();
+
+private:
+  static void validate_size_inputs(uint64_t num_bits, uint16_t num_hashes);
+  static void validate_accuracy_inputs(uint64_t max_distinct_items, double target_false_positive_prob);
 };
 
 } // namespace datasketches
