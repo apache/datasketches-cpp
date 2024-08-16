@@ -681,7 +681,7 @@ public:
    * @param num_bits The number of bits in the Bloom Filter for the size calculation
    * @return The serialized size of a Bloom Filter with a capacity of num_bits, in bytes
    */
-  static size_t get_serialized_size_bytes(const uint64_t num_bits);
+  static size_t get_serialized_size_bytes(uint64_t num_bits);
 
   /**
    * @brief Returns a human-readable string representation of the Bloom Filter.
@@ -707,17 +707,17 @@ private:
   static const uint8_t EMPTY_FLAG_MASK = 4;
 
   // used by builder methods
-  bloom_filter_alloc(const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const A& allocator);
-  bloom_filter_alloc(uint8_t* memory, size_t length_bytes, const uint64_t num_bits, const uint16_t num_hashes, const uint64_t seed, const A& allocator);
+  bloom_filter_alloc(uint64_t num_bits, uint16_t num_hashes, uint64_t seed, const A& allocator);
+  bloom_filter_alloc(uint8_t* memory, size_t length_bytes, uint64_t num_bits, uint16_t num_hashes, uint64_t seed, const A& allocator);
 
   // used by deserialize and wrap
-  bloom_filter_alloc(const uint64_t seed,
-                     const uint16_t num_hashes,
-                     const bool is_dirty,
-                     const bool is_owned,
-                     const bool is_read_only,
-                     const uint64_t capacity_bits,
-                     const uint64_t num_bits_set,
+  bloom_filter_alloc(uint64_t seed,
+                     uint16_t num_hashes,
+                     bool is_dirty,
+                     bool is_owned,
+                     bool is_read_only,
+                     uint64_t capacity_bits,
+                     uint64_t num_bits_set,
                      uint8_t* bit_array,
                      uint8_t* memory,
                      const A& allocator);
@@ -729,11 +729,11 @@ private:
                                                          const A& allocator);
 
   // internal query/update methods
-  void internal_update(const uint64_t h0, const uint64_t h1);
-  bool internal_query_and_update(const uint64_t h0, const uint64_t h1);
-  bool internal_query(const uint64_t h0, const uint64_t h1) const;
+  void internal_update(uint64_t h0, uint64_t h1);
+  bool internal_query_and_update(uint64_t h0, uint64_t h1);
+  bool internal_query(uint64_t h0, uint64_t h1) const;
 
-  void update_num_bits_set(const uint64_t num_bits_set);
+  void update_num_bits_set(uint64_t num_bits_set);
 
   A allocator_;
   uint64_t seed_;

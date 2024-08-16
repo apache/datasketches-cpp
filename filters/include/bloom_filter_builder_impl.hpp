@@ -40,8 +40,8 @@ uint64_t bloom_filter_builder_alloc<A>::generate_random_seed() {
 }
 
 template<typename A>
-uint16_t bloom_filter_builder_alloc<A>::suggest_num_hashes(const uint64_t max_distinct_items,
-                                                           const uint64_t num_filter_bits) {
+uint16_t bloom_filter_builder_alloc<A>::suggest_num_hashes(uint64_t max_distinct_items,
+                                                           uint64_t num_filter_bits) {
   if (max_distinct_items == 0) {
     throw std::invalid_argument("maximum number of distinct items must be strictly positive");
   }
@@ -54,22 +54,22 @@ uint16_t bloom_filter_builder_alloc<A>::suggest_num_hashes(const uint64_t max_di
 }
 
 template<typename A>
-uint16_t bloom_filter_builder_alloc<A>::suggest_num_hashes(const double target_false_positive_prob) {
+uint16_t bloom_filter_builder_alloc<A>::suggest_num_hashes(double target_false_positive_prob) {
   validate_accuracy_inputs(100, target_false_positive_prob); // max_distinct_items is an arbitrary valid value
   return static_cast<uint16_t>(std::ceil(-log(target_false_positive_prob) / log(2.0)));
 }
 
 template<typename A>
-uint64_t bloom_filter_builder_alloc<A>::suggest_num_filter_bits(const uint64_t max_distinct_items,
-                                                                const double target_false_positive_prob) {
+uint64_t bloom_filter_builder_alloc<A>::suggest_num_filter_bits(uint64_t max_distinct_items,
+                                                                double target_false_positive_prob) {
   validate_accuracy_inputs(max_distinct_items, target_false_positive_prob);
   return static_cast<uint64_t>(std::ceil(-static_cast<double>(max_distinct_items) * log(target_false_positive_prob) / (log(2.0) * log(2.0))));
 }
 
 template<typename A>
-bloom_filter_alloc<A> bloom_filter_builder_alloc<A>::create_by_accuracy(const uint64_t max_distinct_items,
-                                                                        const double target_false_positive_prob,
-                                                                        const uint64_t seed,
+bloom_filter_alloc<A> bloom_filter_builder_alloc<A>::create_by_accuracy(uint64_t max_distinct_items,
+                                                                        double target_false_positive_prob,
+                                                                        uint64_t seed,
                                                                         const A& allocator) {
   validate_accuracy_inputs(max_distinct_items, target_false_positive_prob);
   const uint64_t num_filter_bits = bloom_filter_builder_alloc<A>::suggest_num_filter_bits(max_distinct_items, target_false_positive_prob);
@@ -78,9 +78,9 @@ bloom_filter_alloc<A> bloom_filter_builder_alloc<A>::create_by_accuracy(const ui
 }
 
 template<typename A>
-bloom_filter_alloc<A> bloom_filter_builder_alloc<A>::create_by_size(const uint64_t num_bits,
-                                                                    const uint16_t num_hashes,
-                                                                    const uint64_t seed,
+bloom_filter_alloc<A> bloom_filter_builder_alloc<A>::create_by_size(uint64_t num_bits,
+                                                                    uint16_t num_hashes,
+                                                                    uint64_t seed,
                                                                     const A& allocator) {
   validate_size_inputs(num_bits, num_hashes);
   return bloom_filter_alloc<A>(num_bits, num_hashes, seed, allocator);
@@ -88,10 +88,10 @@ bloom_filter_alloc<A> bloom_filter_builder_alloc<A>::create_by_size(const uint64
 
 template<typename A>
 bloom_filter_alloc<A> bloom_filter_builder_alloc<A>::initialize_by_accuracy(void* memory,
-                                                                            const size_t length_bytes,
-                                                                            const uint64_t max_distinct_items,
-                                                                            const double target_false_positive_prob,
-                                                                            const uint64_t seed,
+                                                                            size_t length_bytes,
+                                                                            uint64_t max_distinct_items,
+                                                                            double target_false_positive_prob,
+                                                                            uint64_t seed,
                                                                             const A& allocator) {
   validate_accuracy_inputs(max_distinct_items, target_false_positive_prob);
   const uint64_t num_filter_bits = bloom_filter_builder_alloc<A>::suggest_num_filter_bits(max_distinct_items, target_false_positive_prob);
@@ -101,10 +101,10 @@ bloom_filter_alloc<A> bloom_filter_builder_alloc<A>::initialize_by_accuracy(void
 
 template<typename A>
 bloom_filter_alloc<A> bloom_filter_builder_alloc<A>::initialize_by_size(void* memory,
-                                                                        const size_t length_bytes,
-                                                                        const uint64_t num_bits,
-                                                                        const uint16_t num_hashes,
-                                                                        const uint64_t seed,
+                                                                        size_t length_bytes,
+                                                                        uint64_t num_bits,
+                                                                        uint16_t num_hashes,
+                                                                        uint64_t seed,
                                                                         const A& allocator) {
   validate_size_inputs(num_bits, num_hashes);
   return bloom_filter_alloc<A>(static_cast<uint8_t*>(memory), length_bytes, num_bits, num_hashes, seed, allocator);
