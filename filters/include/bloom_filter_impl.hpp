@@ -182,8 +182,8 @@ bloom_filter_alloc<A>::bloom_filter_alloc(bloom_filter_alloc&& other) noexcept :
   is_read_only_(other.is_read_only_),
   capacity_bits_(other.capacity_bits_),
   num_bits_set_(other.num_bits_set_),
-  bit_array_(std::move(other.bit_array_)),
-  memory_(std::move(other.memory_))
+  bit_array_(other.bit_array_),
+  memory_(other.memory_)
 {
   // ensure destructor on other will behave nicely
   other.is_owned_ = false;
@@ -504,7 +504,7 @@ bool bloom_filter_alloc<A>::is_read_only() const {
 }
 
 template<typename A>
-bool bloom_filter_alloc<A>::has_backing_memory() const {
+bool bloom_filter_alloc<A>::is_wrapped() const {
   return memory_ != nullptr;
 }
 
@@ -514,7 +514,7 @@ bool bloom_filter_alloc<A>::is_memory_owned() const {
 }
 
 template<typename A>
-const uint8_t* bloom_filter_alloc<A>::get_backing_memory() const {
+const uint8_t* bloom_filter_alloc<A>::get_wrapped_memory() const {
   return memory_;
 }
 

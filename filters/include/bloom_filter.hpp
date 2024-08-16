@@ -203,7 +203,7 @@ public:
    * @param allocator instance of an Allocator
    * @return an instance of a Bloom filter
    */
-  static bloom_filter_alloc deserialize(std::istream& is, const A& allocator = Allocator());
+  static bloom_filter_alloc deserialize(std::istream& is, const Allocator& allocator = Allocator());
 
   /**
    * @brief Wraps the provided memory as a read-only Bloom filter. Reads the data in-place and does
@@ -231,12 +231,12 @@ public:
    * Copy constructor
    * @param other filter to be copied
    */
-  bloom_filter_alloc(const bloom_filter_alloc&);
+  bloom_filter_alloc(const bloom_filter_alloc& other);
 
   /** Move constructor
    * @param other filter to be moved
    */
-  bloom_filter_alloc(bloom_filter_alloc&&) noexcept;
+  bloom_filter_alloc(bloom_filter_alloc&& other) noexcept;
 
   /**
    * Copy assignment
@@ -253,7 +253,7 @@ public:
   bloom_filter_alloc& operator=(bloom_filter_alloc&& other);
 
   /**
-   * @brief Destroy the bloom filter alloc object
+   * @brief Destroy the bloom filter object
    */
   ~bloom_filter_alloc();
 
@@ -265,7 +265,7 @@ public:
    * This method serializes the filter as a vector of bytes.
    * An optional header can be reserved in front of the filter.
    * It is a blank space of a given size.
-   * This header is used in Datasketches PostgreSQL extension.
+   * Some integrations such as PostgreSQL may need this header space.
    * @param header_size_bytes space to reserve in front of the filter
    * @return serialized filter as a vector of bytes
    */
@@ -658,17 +658,17 @@ public:
   bool is_memory_owned() const;
 
   /**
-   * @brief Checks if the Bloom Filter has backing memory.
+   * @brief Checks if the Bloom Filter was created by a call to wrap().
    *
-   * @return True if the filter has backing memory, otherwise false.
+   * @return True if the filter was created by wrapping memory, otherwise false.
    */
-  bool has_backing_memory() const;
+  bool is_wrapped() const;
 
   /**
-   * @brief Returns a pointer to the backing memory, if it exists.
-   * @return A pointer to the backing memory, or nullptr if it does not exist.
+   * @brief Returns a pointer to the memory this filter wraps, if it exists.
+   * @return A pointer to the wrapped memory, or nullptr if is_wrapped() is false.
    */
-  const uint8_t* get_backing_memory() const;
+  const uint8_t* get_wrapped_memory() const;
 
   /**
    * @brief Gets the serialized size of the Bloom Filter in bytes
@@ -739,7 +739,7 @@ private:
   uint64_t seed_;
   uint16_t num_hashes_;
   bool is_dirty_;
-  bool is_owned_; // if true, data is not owned by filter AND data_ holdes the entire filter not just the bit array
+  bool is_owned_; // if true, data is not owned by filter AND memory_ holds the entire filter not just the bit array
   bool is_read_only_; // if true, filter is read-only
   uint64_t capacity_bits_;
   uint64_t num_bits_set_;

@@ -79,7 +79,7 @@ namespace bit_array_ops {
   }
 
   /**
-   * Gets teh value of a bit at the specified index and sets it to true
+   * Gets the value of a bit at the specified index and sets it to true
    * @param array the array of bits
    * @param index the index of the bit to get and set
    * @return the value of the bit at the specified index

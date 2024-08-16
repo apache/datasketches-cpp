@@ -131,7 +131,7 @@ TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
   }
 
   // check that raw memory also matches serialized sketch
-  const uint8_t* bf_bytes = bf2.get_backing_memory();
+  const uint8_t* bf_bytes = bf2.get_wrapped_memory();
   REQUIRE(bf_bytes == bf_memory);
   for (size_t i = 0; i < bytes.size(); ++i) {
     REQUIRE(bf_bytes[i] == bytes[i]);
