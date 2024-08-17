@@ -15,39 +15,29 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(common INTERFACE)
+add_library(filters INTERFACE)
 
-configure_file(include/version.hpp.in include/version.hpp @ONLY)
+add_library(${PROJECT_NAME}::FILTERS ALIAS filters)
 
 if (BUILD_TESTS)
   add_subdirectory(test)
 endif()
 
-target_include_directories(common
+target_include_directories(filters
   INTERFACE
-    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
 )
 
-install(TARGETS common EXPORT ${PROJECT_NAME})
+target_link_libraries(filters INTERFACE common)
+
+install(TARGETS filters
+  EXPORT ${PROJECT_NAME}
+)
 
 install(FILES
-			${CMAKE_CURRENT_BINARY_DIR}/include/version.hpp
-      include/binomial_bounds.hpp
-      include/bounds_binomial_proportions.hpp
-      include/ceiling_power_of_2.hpp
-			include/common_defs.hpp
-      include/conditional_back_inserter.hpp
-      include/conditional_forward.hpp
-      include/count_zeros.hpp
-      include/inv_pow2_table.hpp
-      include/kolmogorov_smirnov_impl.hpp
-      include/kolmogorov_smirnov.hpp
-			include/memory_operations.hpp
-			include/MurmurHash3.h
-      include/optional.hpp
-      include/quantiles_sorted_view_impl.hpp
-			include/quantiles_sorted_view.hpp
-      include/serde.hpp
-      include/xxhash64.h
+		include/bloom_filter.hpp
+		include/bloom_filter_impl.hpp
+    include/bloom_filter_builder_impl.hpp
+		include/bit_array_ops.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
