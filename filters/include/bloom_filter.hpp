@@ -31,7 +31,6 @@ namespace datasketches {
 
 // forward declarations
 template<typename A> class bloom_filter_alloc;
-template<typename A> class bloom_filter_builder_alloc;
 
 // aliases with default allocator
 using bloom_filter = bloom_filter_alloc<std::allocator<uint8_t>>;
