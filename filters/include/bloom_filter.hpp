@@ -625,8 +625,6 @@ private:
   uint64_t num_bits_set_;
   uint8_t* bit_array_;  // data backing bit_array_, regardless of ownership
   uint8_t* memory_; // if wrapped, pointer to the start of the filter, otheriwse nullptr
-
-  friend class bloom_filter_builder_alloc<A>;
 };
 
 /**
