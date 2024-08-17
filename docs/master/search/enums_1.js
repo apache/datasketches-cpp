@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['target_5fhll_5ftype_438',['target_hll_type',['../namespacedatasketches.html#a76c1ad9235877691984d49415bb263e4',1,'datasketches']]]
+  ['target_5fhll_5ftype_445',['target_hll_type',['../namespacedatasketches.html#a76c1ad9235877691984d49415bb263e4',1,'datasketches']]]
 ];
