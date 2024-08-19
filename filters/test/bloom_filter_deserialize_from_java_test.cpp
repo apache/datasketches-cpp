@@ -30,7 +30,7 @@ static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "
 
 TEST_CASE("bloom_filter", "[serde_compat]") {
   const uint64_t n_arr[] = {0, 10000, 2000000, 30000000};
-  const double h_arr[] = {3, 5};
+  const uint16_t h_arr[] = {3, 5};
   for (const uint64_t n: n_arr) {
     for (const uint16_t num_hashes: h_arr) {
       std::ifstream is;
