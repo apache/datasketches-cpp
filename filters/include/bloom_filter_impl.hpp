@@ -20,6 +20,7 @@
 #ifndef _BLOOM_FILTER_IMPL_HPP_
 #define _BLOOM_FILTER_IMPL_HPP_
 
+#include <algorithm>
 #include <memory>
 #include <sstream>
 #include <vector>

@@ -20,6 +20,7 @@
 #ifndef _TDIGEST_IMPL_HPP_
 #define _TDIGEST_IMPL_HPP_
 
+#include <algorithm>
 #include <cmath>
 #include <sstream>
 
