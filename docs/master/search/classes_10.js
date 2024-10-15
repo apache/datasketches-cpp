@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['xxhash64_280',['XXHash64',['../classXXHash64.html',1,'']]]
+  ['xxhash64_0',['XXHash64',['../classXXHash64.html',1,'']]]
 ];

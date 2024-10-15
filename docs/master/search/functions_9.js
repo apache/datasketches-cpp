@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['jaccard_378',['jaccard',['../classdatasketches_1_1jaccard__similarity__base.html#a733368dc893af01141bb6dff468bf008',1,'datasketches::jaccard_similarity_base']]]
+  ['jaccard_0',['jaccard',['../classdatasketches_1_1jaccard__similarity__base.html#a8a2af62ca89e1120a6019ee10cd90e04',1,'datasketches::jaccard_similarity_base']]]
 ];
