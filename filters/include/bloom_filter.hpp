@@ -521,7 +521,7 @@ public:
    * @param other A Bloom Filter to check for compatibility with this one
    * @return True if the filters are compatible, otherwise false
    */
-   bool is_compatible(const bloom_filter_alloc& other) const;
+  bool is_compatible(const bloom_filter_alloc& other) const;
 
   /**
    * @brief Checks if the Bloom Filter is read-only.
