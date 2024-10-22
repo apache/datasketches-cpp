@@ -115,7 +115,7 @@ public:
    * Merge the given t-Digest into this one
    * @param other t-Digest to merge
    */
-  void merge(tdigest& other);
+  void merge(const tdigest& other);
 
   /**
    * Process buffered values and merge centroids if needed

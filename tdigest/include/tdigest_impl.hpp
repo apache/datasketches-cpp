@@ -44,7 +44,7 @@ void tdigest<T, A>::update(T value) {
 }
 
 template<typename T, typename A>
-void tdigest<T, A>::merge(tdigest& other) {
+void tdigest<T, A>::merge(const tdigest& other) {
   if (other.is_empty()) return;
   vector_centroid tmp(buffer_.get_allocator());
   tmp.reserve(buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size());
