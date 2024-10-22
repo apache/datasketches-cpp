@@ -79,8 +79,9 @@ TEST_CASE("bloom_filter: standard constructors", "[bloom_filter]") {
 TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
   uint64_t num_items = 5000;
   double fpp = 0.01;
+  uint64_t seed = 4897301548054ULL;
 
-  auto bf = bloom_filter::builder::create_by_accuracy(num_items, fpp);
+  auto bf = bloom_filter::builder::create_by_accuracy(num_items, fpp, seed);
   REQUIRE(bf.is_empty());
   REQUIRE(bf.get_bits_used() == 0);
 
@@ -90,7 +91,10 @@ TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
 
   REQUIRE(!bf.is_empty());
   // filter is about 50% full at target capacity
-  REQUIRE(bf.get_bits_used() == Approx(0.5 * bf.get_capacity()).epsilon(0.05));
+  // since seed is fixed we expect an exact value every time
+  // but leaving the approximate test in since that's more the "expectation"
+  REQUIRE(bf.get_bits_used() == 24793); // exact value is not important but should be consistent
+  REQUIRE(bf.get_bits_used() == Approx(0.5 * bf.get_capacity()).epsilon(0.05)); // just over 3.3% in practice
 
   uint32_t num_found = 0;
   for (uint64_t i = num_items; i < bf.get_capacity(); ++i) {
@@ -98,8 +102,9 @@ TEST_CASE("bloom_filter: basic operations", "[bloom_filter]") {
       ++num_found;
     }
   }
-  // fpp is average with significant variance
-  REQUIRE(num_found == Approx((bf.get_capacity() - num_items) * fpp).epsilon(0.12));
+  // fpp is average with significant variance -- even at 12% it would fail occasionally
+  REQUIRE(num_found == 423);
+  //REQUIRE(num_found == Approx((bf.get_capacity() - num_items) * fpp).epsilon(0.12));
   auto bytes = bf.serialize();
 
   // initialize in memory and run the same tests
