@@ -89,6 +89,7 @@ public:
   using vector_t = std::vector<T, Allocator>;
   using vector_centroid = std::vector<centroid, typename std::allocator_traits<Allocator>::template rebind_alloc<centroid>>;
   using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;
+  using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
 
   struct centroid_cmp {
     centroid_cmp() {}
@@ -143,7 +144,16 @@ public:
   uint64_t get_total_weight() const;
 
   /**
+   * Returns an instance of the allocator for this t-Digest.
+   * @return allocator
+   */
+  Allocator get_allocator() const;
+
+  /**
    * Compute approximate normalized rank of the given value.
+   *
+   * <p>If the sketch is empty this throws std::runtime_error.
+   *
    * @param value to be ranked
    * @return normalized rank (from 0 to 1 inclusive)
    */
@@ -151,10 +161,48 @@ public:
 
   /**
    * Compute approximate quantile value corresponding to the given normalized rank
+   *
+   * <p>If the sketch is empty this throws std::runtime_error.
+   *
    * @param rank normalized rank (from 0 to 1 inclusive)
    * @return quantile value corresponding to the given rank
    */
   T get_quantile(double rank) const;
+
+  /**
+   * Returns an approximation to the Probability Mass Function (PMF) of the input stream
+   * given a set of split points.
+   *
+   * <p>If the sketch is empty this throws std::runtime_error.
+   *
+   * @param split_points an array of <i>m</i> unique, monotonically increasing values
+   * that divide the input domain into <i>m+1</i> consecutive disjoint intervals (bins).
+   *
+   * @param size the number of split points in the array
+   *
+   * @return an array of m+1 doubles each of which is an approximation
+   * to the fraction of the input stream values (the mass) that fall into one of those intervals.
+   */
+  vector_double get_PMF(const T* split_points, uint32_t size) const;
+
+  /**
+   * Returns an approximation to the Cumulative Distribution Function (CDF), which is the
+   * cumulative analog of the PMF, of the input stream given a set of split points.
+   *
+   * <p>If the sketch is empty this throws std::runtime_error.
+   *
+   * @param split_points an array of <i>m</i> unique, monotonically increasing values
+   * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
+   *
+   * @param size the number of split points in the array
+   *
+   * @return an array of m+1 doubles, which are a consecutive approximation to the CDF
+   * of the input stream given the split_points. The value at array position j of the returned
+   * CDF array is the sum of the returned values in positions 0 through j of the returned PMF
+   * array. This can be viewed as array of ranks of the given split points plus one more value
+   * that is always 1.
+   */
+  vector_double get_CDF(const T* split_points, uint32_t size) const;
 
   /**
    * @return parameter k (compression) that was used to configure this t-Digest
@@ -245,6 +293,8 @@ private:
   // for compatibility with format of the reference implementation
   static tdigest deserialize_compat(std::istream& is, const Allocator& allocator = Allocator());
   static tdigest deserialize_compat(const void* bytes, size_t size, const Allocator& allocator = Allocator());
+
+  static inline void check_split_points(const T* values, uint32_t size);
 };
 
 } /* namespace datasketches */

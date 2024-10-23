@@ -35,6 +35,9 @@ TEST_CASE("empty", "[tdigest]") {
   REQUIRE_THROWS_AS(td.get_max_value(), std::runtime_error);
   REQUIRE_THROWS_AS(td.get_rank(0), std::runtime_error);
   REQUIRE_THROWS_AS(td.get_quantile(0.5), std::runtime_error);
+  const double split_points[1] {0};
+  REQUIRE_THROWS_AS(td.get_PMF(split_points, 1), std::runtime_error);
+  REQUIRE_THROWS_AS(td.get_CDF(split_points, 1), std::runtime_error);
 }
 
 TEST_CASE("one value", "[tdigest]") {
@@ -56,9 +59,6 @@ TEST_CASE("many values", "[tdigest]") {
   const size_t n = 10000;
   tdigest_double td;
   for (size_t i = 0; i < n; ++i) td.update(i);
-//  std::cout << td.to_string(true);
-//  td.compress();
-//  std::cout << td.to_string(true);
   REQUIRE_FALSE(td.is_empty());
   REQUIRE(td.get_total_weight() == n);
   REQUIRE(td.get_min_value() == 0);
@@ -73,6 +73,15 @@ TEST_CASE("many values", "[tdigest]") {
   REQUIRE(td.get_quantile(0.9) == Approx(n * 0.9).epsilon(0.01));
   REQUIRE(td.get_quantile(0.95) == Approx(n * 0.95).epsilon(0.01));
   REQUIRE(td.get_quantile(1) == n - 1);
+  const double split_points[1] {n / 2};
+  const auto pmf = td.get_PMF(split_points, 1);
+  REQUIRE(pmf.size() == 2);
+  REQUIRE(pmf[0] == Approx(0.5).margin(0.0001));
+  REQUIRE(pmf[1] == Approx(0.5).margin(0.0001));
+  const auto cdf = td.get_CDF(split_points, 1);
+  REQUIRE(cdf.size() == 2);
+  REQUIRE(cdf[0] == Approx(0.5).margin(0.0001));
+  REQUIRE(cdf[1] == 1);
 }
 
 TEST_CASE("rank - two values", "[tdigest]") {

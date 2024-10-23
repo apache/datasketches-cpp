@@ -86,6 +86,11 @@ uint64_t tdigest<T, A>::get_total_weight() const {
 }
 
 template<typename T, typename A>
+A tdigest<T, A>::get_allocator() const {
+  return buffer_.get_allocator();
+}
+
+template<typename T, typename A>
 double tdigest<T, A>::get_rank(T value) const {
   if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   if (std::isnan(value)) throw std::invalid_argument("operation is undefined for NaN");
@@ -189,6 +194,25 @@ T tdigest<T, A>::get_quantile(double rank) const {
   const double w1 = weight - centroids_weight_ - centroids_.back().get_weight() / 2.0;
   const double w2 = centroids_.back().get_weight() / 2.0 - w1;
   return weighted_average(centroids_.back().get_weight(), w1, max_, w2);
+}
+
+template<typename T, typename A>
+auto tdigest<T, A>::get_PMF(const T* split_points, uint32_t size) const -> vector_double {
+  auto buckets = get_CDF(split_points, size);
+  for (uint32_t i = size; i > 0; --i) {
+    buckets[i] -= buckets[i - 1];
+  }
+  return buckets;
+}
+
+template<typename T, typename A>
+auto tdigest<T, A>::get_CDF(const T* split_points, uint32_t size) const -> vector_double {
+  check_split_points(split_points, size);
+  vector_double ranks(get_allocator());
+  ranks.reserve(size + 1);
+  for (uint32_t i = 0; i < size; ++i) ranks.push_back(get_rank(split_points[i]));
+  ranks.push_back(1);
+  return ranks;
 }
 
 template<typename T, typename A>
@@ -589,6 +613,18 @@ buffer_(std::move(buffer))
   centroids_capacity_ = 2 * k_ + fudge;
   centroids_.reserve(centroids_capacity_);
   buffer_.reserve(centroids_capacity_ * BUFFER_MULTIPLIER);
+}
+
+template<typename T, typename A>
+void tdigest<T, A>::check_split_points(const T* values, uint32_t size) {
+  for (uint32_t i = 0; i < size ; i++) {
+    if (std::isnan(values[i])) {
+      throw std::invalid_argument("Values must not be NaN");
+    }
+    if ((i < (size - 1)) && !(values[i] < values[i + 1])) {
+      throw std::invalid_argument("Values must be unique and monotonically increasing");
+    }
+  }
 }
 
 } /* namespace datasketches */
