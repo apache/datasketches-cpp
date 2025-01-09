@@ -17,8 +17,6 @@
  * under the License.
  */
 
-#include <iostream>
-
 #include <catch2/catch.hpp>
 #include <bit_packing.hpp>
 
