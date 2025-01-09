@@ -30,7 +30,7 @@ static const uint64_t IGOLDEN64 = 0x9e3779b97f4a7c13ULL;
 
 TEST_CASE("pack unpack bits") {
   uint64_t value = 0xaa55aa55aa55aa55ULL; // arbitrary starting value
-  for (int n = 0; n < 100; ++n) {
+  for (int m = 0; m < 100; ++m) {
     for (uint8_t bits = 1; bits <= 63; ++bits) {
       int n = 8;
       const uint64_t mask = (1ULL << bits) - 1;
