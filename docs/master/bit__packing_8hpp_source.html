@@ -6284,7 +6284,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l06201" name="l06201"></a><span class="lineno"> 6201</span>    <span class="keywordflow">case</span> 61: pack_bits_61(values, ptr); <span class="keywordflow">break</span>;</div>
 <div class="line"><a id="l06202" name="l06202"></a><span class="lineno"> 6202</span>    <span class="keywordflow">case</span> 62: pack_bits_62(values, ptr); <span class="keywordflow">break</span>;</div>
 <div class="line"><a id="l06203" name="l06203"></a><span class="lineno"> 6203</span>    <span class="keywordflow">case</span> 63: pack_bits_63(values, ptr); <span class="keywordflow">break</span>;</div>
-<div class="line"><a id="l06204" name="l06204"></a><span class="lineno"> 6204</span>    <span class="keywordflow">default</span>: <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;wrong number of bits &quot;</span> + std::to_string(bits));</div>
+<div class="line"><a id="l06204" name="l06204"></a><span class="lineno"> 6204</span>    <span class="keywordflow">default</span>: <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;wrong number of bits in pack_bits_block8: &quot;</span> + std::to_string(bits));</div>
 <div class="line"><a id="l06205" name="l06205"></a><span class="lineno"> 6205</span>  }</div>
 <div class="line"><a id="l06206" name="l06206"></a><span class="lineno"> 6206</span>}</div>
 <div class="line"><a id="l06207" name="l06207"></a><span class="lineno"> 6207</span> </div>
@@ -6353,7 +6353,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l06270" name="l06270"></a><span class="lineno"> 6270</span>    <span class="keywordflow">case</span> 61: unpack_bits_61(values, ptr); <span class="keywordflow">break</span>;</div>
 <div class="line"><a id="l06271" name="l06271"></a><span class="lineno"> 6271</span>    <span class="keywordflow">case</span> 62: unpack_bits_62(values, ptr); <span class="keywordflow">break</span>;</div>
 <div class="line"><a id="l06272" name="l06272"></a><span class="lineno"> 6272</span>    <span class="keywordflow">case</span> 63: unpack_bits_63(values, ptr); <span class="keywordflow">break</span>;</div>
-<div class="line"><a id="l06273" name="l06273"></a><span class="lineno"> 6273</span>    <span class="keywordflow">default</span>: <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;wrong number of bits &quot;</span> + std::to_string(bits));</div>
+<div class="line"><a id="l06273" name="l06273"></a><span class="lineno"> 6273</span>    <span class="keywordflow">default</span>: <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;wrong number of bits in unpack_bits_block8: &quot;</span> + std::to_string(bits));</div>
 <div class="line"><a id="l06274" name="l06274"></a><span class="lineno"> 6274</span>  }</div>
 <div class="line"><a id="l06275" name="l06275"></a><span class="lineno"> 6275</span>}</div>
 <div class="line"><a id="l06276" name="l06276"></a><span class="lineno"> 6276</span> </div>
