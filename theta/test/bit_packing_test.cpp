@@ -80,4 +80,54 @@ TEST_CASE("pack unpack blocks") {
   }
 }
 
+TEST_CASE("pack bits unpack blocks") {
+  uint64_t value = 0xaa55aa55aa55aa55ULL; // arbitrary starting value
+  for (int m = 0; m < 10000; ++m) {
+    for (uint8_t bits = 1; bits <= 63; ++bits) {
+      const uint64_t mask = (1ULL << bits) - 1;
+      std::vector<uint64_t> input(8, 0);
+      for (int i = 0; i < 8; ++i) {
+        input[i] = value & mask;
+        value += IGOLDEN64;
+      }
+      std::vector<uint8_t> bytes(bits, 0);
+      uint8_t offset = 0;
+      uint8_t* ptr = bytes.data();
+      for (int i = 0; i < 8; ++i) {
+        offset = pack_bits(input[i], bits, ptr, offset);
+      }
+      std::vector<uint64_t> output(8, 0);
+      unpack_bits_block8(output.data(), bytes.data(), bits);
+      for (int i = 0; i < 8; ++i) {
+        REQUIRE(input[i] == output[i]);
+      }
+    }
+  }
+}
+
+TEST_CASE("pack blocks unpack bits") {
+  uint64_t value = 0xaa55aa55aa55aa55ULL; // arbitrary starting value
+  for (int m = 0; m < 10000; ++m) {
+    for (uint8_t bits = 1; bits <= 63; ++bits) {
+      const uint64_t mask = (1ULL << bits) - 1;
+      std::vector<uint64_t> input(8, 0);
+      for (int i = 0; i < 8; ++i) {
+        input[i] = value & mask;
+        value += IGOLDEN64;
+      }
+      std::vector<uint8_t> bytes(bits, 0);
+      pack_bits_block8(input.data(), bytes.data(), bits);
+      std::vector<uint64_t> output(8, 0);
+      uint8_t offset = 0;
+      const uint8_t* cptr = bytes.data();
+      for (int i = 0; i < 8; ++i) {
+        offset = unpack_bits(output[i], bits, cptr, offset);
+      }
+      for (int i = 0; i < 8; ++i) {
+        REQUIRE(input[i] == output[i]);
+      }
+    }
+  }
+}
+
 } /* namespace datasketches */
