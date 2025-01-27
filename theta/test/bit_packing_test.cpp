@@ -81,7 +81,7 @@ TEST_CASE("pack unpack blocks") {
 }
 
 TEST_CASE("pack bits unpack blocks") {
-  uint64_t value = 0xaa55aa55aa55aa55ULL; // arbitrary starting value
+  uint64_t value = 0; // arbitrary starting value
   for (int m = 0; m < 10000; ++m) {
     for (uint8_t bits = 1; bits <= 63; ++bits) {
       const uint64_t mask = (1ULL << bits) - 1;
@@ -106,7 +106,7 @@ TEST_CASE("pack bits unpack blocks") {
 }
 
 TEST_CASE("pack blocks unpack bits") {
-  uint64_t value = 0xaa55aa55aa55aa55ULL; // arbitrary starting value
+  uint64_t value = 111; // arbitrary starting value
   for (int m = 0; m < 10000; ++m) {
     for (uint8_t bits = 1; bits <= 63; ++bits) {
       const uint64_t mask = (1ULL << bits) - 1;
