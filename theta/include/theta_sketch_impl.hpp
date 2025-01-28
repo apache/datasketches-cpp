@@ -817,23 +817,15 @@ num_entries_(num_entries),
 index_(index),
 previous_(0),
 is_block_mode_(num_entries_ >= 8),
-buf_i_(0),
 offset_(0)
 {
   if (entry_bits == 64) { // no compression
     ptr_ = reinterpret_cast<const uint64_t*>(ptr) + index;
   } else if (index < num_entries) {
     if (is_block_mode_) {
-      unpack_bits_block8(buffer_, reinterpret_cast<const uint8_t*>(ptr_), entry_bits_);
-      ptr_ = reinterpret_cast<const uint8_t*>(ptr_) + entry_bits_;
-      for (int i = 0; i < 8; ++i) {
-        buffer_[i] += previous_;
-        previous_ = buffer_[i];
-      }
+      unpack8();
     } else {
-      offset_ = unpack_bits(buffer_[0], entry_bits_, reinterpret_cast<const uint8_t*&>(ptr_), offset_);
-      buffer_[0] += previous_;
-      previous_ = buffer_[0];
+      unpack1();
     }
   }
 }
@@ -844,33 +836,39 @@ auto wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::operator++()
     ptr_ = reinterpret_cast<const uint64_t*>(ptr_) + 1;
     return *this;
   }
-  ++index_;
-  if (index_ < num_entries_) {
+  if (++index_ < num_entries_) {
     if (is_block_mode_) {
-      ++buf_i_;
-      if (buf_i_ == 8) {
-        buf_i_ = 0;
-        if (index_ + 8 < num_entries_) {
-          unpack_bits_block8(buffer_, reinterpret_cast<const uint8_t*>(ptr_), entry_bits_);
-          ptr_ = reinterpret_cast<const uint8_t*>(ptr_) + entry_bits_;
-          for (int i = 0; i < 8; ++i) {
-            buffer_[i] += previous_;
-            previous_ = buffer_[i];
-          }
+      if ((index_ & 7) == 0) {
+        if (num_entries_ - index_ >= 8) {
+          unpack8();
         } else {
           is_block_mode_ = false;
-          offset_ = unpack_bits(buffer_[0], entry_bits_, reinterpret_cast<const uint8_t*&>(ptr_), offset_);
-          buffer_[0] += previous_;
-          previous_ = buffer_[0];
+          unpack1();
         }
       }
     } else {
-      offset_ = unpack_bits(buffer_[0], entry_bits_, reinterpret_cast<const uint8_t*&>(ptr_), offset_);
-      buffer_[0] += previous_;
-      previous_ = buffer_[0];
+      unpack1();
     }
   }
   return *this;
+}
+
+template<typename Allocator>
+void wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::unpack1() {
+  const uint32_t i = index_ & 7;
+  offset_ = unpack_bits(buffer_[i], entry_bits_, reinterpret_cast<const uint8_t*&>(ptr_), offset_);
+  buffer_[i] += previous_;
+  previous_ = buffer_[i];
+}
+
+template<typename Allocator>
+void wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::unpack8() {
+  unpack_bits_block8(buffer_, reinterpret_cast<const uint8_t*>(ptr_), entry_bits_);
+  ptr_ = reinterpret_cast<const uint8_t*>(ptr_) + entry_bits_;
+  for (int i = 0; i < 8; ++i) {
+    buffer_[i] += previous_;
+    previous_ = buffer_[i];
+  }
 }
 
 template<typename Allocator>
@@ -895,13 +893,13 @@ bool wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::operator==(c
 template<typename Allocator>
 auto wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::operator*() const -> reference {
   if (entry_bits_ == 64) return *reinterpret_cast<const uint64_t*>(ptr_);
-  return buffer_[buf_i_];
+  return buffer_[index_ & 7];
 }
 
 template<typename Allocator>
 auto wrapped_compact_theta_sketch_alloc<Allocator>::const_iterator::operator->() const -> pointer {
   if (entry_bits_ == 64) return reinterpret_cast<const uint64_t*>(ptr_);
-  return buffer_ + buf_i_;
+  return buffer_ + (index_ & 7);
 }
 
 } /* namespace datasketches */
