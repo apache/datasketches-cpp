@@ -422,16 +422,18 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span>  uint32_t index_;</div>
 <div class="line"><a id="l00610" name="l00610"></a><span class="lineno">  610</span>  uint64_t previous_;</div>
 <div class="line"><a id="l00611" name="l00611"></a><span class="lineno">  611</span>  <span class="keywordtype">bool</span> is_block_mode_;</div>
-<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span>  uint8_t buf_i_;</div>
-<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span>  uint8_t offset_;</div>
-<div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span>  uint64_t buffer_[8];</div>
-<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>};</div>
-<div class="line"><a id="l00616" name="l00616"></a><span class="lineno">  616</span> </div>
-<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span>} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span>  uint8_t offset_;</div>
+<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span>  uint64_t buffer_[8];</div>
+<div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span> </div>
+<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>  <span class="keyword">inline</span> <span class="keywordtype">void</span> unpack1();</div>
+<div class="line"><a id="l00616" name="l00616"></a><span class="lineno">  616</span>  <span class="keyword">inline</span> <span class="keywordtype">void</span> unpack8();</div>
+<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span>};</div>
 <div class="line"><a id="l00618" name="l00618"></a><span class="lineno">  618</span> </div>
-<div class="line"><a id="l00619" name="l00619"></a><span class="lineno">  619</span><span class="preprocessor">#include &quot;theta_sketch_impl.hpp&quot;</span></div>
+<div class="line"><a id="l00619" name="l00619"></a><span class="lineno">  619</span>} <span class="comment">/* namespace datasketches */</span></div>
 <div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span> </div>
-<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span><span class="preprocessor">#include &quot;theta_sketch_impl.hpp&quot;</span></div>
+<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span> </div>
+<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aclassdatasketches_1_1base__theta__sketch__alloc_html"><div class="ttname"><a href="classdatasketches_1_1base__theta__sketch__alloc.html">datasketches::base_theta_sketch_alloc</a></div><div class="ttdoc">Abstract base class for Theta sketch.</div><div class="ttdef"><b>Definition</b> theta_sketch.hpp:45</div></div>
 <div class="ttc" id="aclassdatasketches_1_1base__theta__sketch__alloc_html_a2afb71f2ef2d82290be4c8eafc08f2a2"><div class="ttname"><a href="classdatasketches_1_1base__theta__sketch__alloc.html#a2afb71f2ef2d82290be4c8eafc08f2a2">datasketches::base_theta_sketch_alloc::get_estimate</a></div><div class="ttdeci">double get_estimate() const</div><div class="ttdef"><b>Definition</b> theta_sketch_impl.hpp:47</div></div>
 <div class="ttc" id="aclassdatasketches_1_1base__theta__sketch__alloc_html_a2e5c990494331d901c3b38cd4eb316e6"><div class="ttname"><a href="classdatasketches_1_1base__theta__sketch__alloc.html#a2e5c990494331d901c3b38cd4eb316e6">datasketches::base_theta_sketch_alloc::get_lower_bound</a></div><div class="ttdeci">double get_lower_bound(uint8_t num_std_devs) const</div><div class="ttdoc">Returns the approximate lower error bound given a number of standard deviations.</div><div class="ttdef"><b>Definition</b> theta_sketch_impl.hpp:52</div></div>
