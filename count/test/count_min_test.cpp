@@ -55,7 +55,7 @@ TEST_CASE("CM init") {
 TEST_CASE("CM parameter suggestions", "[error parameters]") {
 
     // Bucket suggestions
-    REQUIRE_THROWS(count_min_sketch<uint64_t>::suggest_num_buckets(-1.0), "Confidence must be between 0 and 1.0 (inclusive)." );
+    REQUIRE_THROWS_WITH(count_min_sketch<uint64_t>::suggest_num_buckets(-1.0), "Relative error must be at least 0.");
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.2) == 14);
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.1) == 28);
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_buckets(0.05) == 55);
@@ -69,8 +69,8 @@ TEST_CASE("CM parameter suggestions", "[error parameters]") {
     REQUIRE(count_min_sketch<uint64_t>(n_hashes, 272).get_relative_error() <= 0.01);
 
     // Hash suggestions
-    REQUIRE_THROWS(count_min_sketch<uint64_t>::suggest_num_hashes(10.0), "Confidence must be between 0 and 1.0 (inclusive)." );
-    REQUIRE_THROWS(count_min_sketch<uint64_t>::suggest_num_hashes(-1.0), "Confidence must be between 0 and 1.0 (inclusive)." );
+    REQUIRE_THROWS_WITH(count_min_sketch<uint64_t>::suggest_num_hashes(10.0), "Confidence must be between 0 and 1.0 (inclusive)." );
+    REQUIRE_THROWS_WITH(count_min_sketch<uint64_t>::suggest_num_hashes(-1.0), "Confidence must be between 0 and 1.0 (inclusive)." );
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_hashes(0.682689492) == 2); // 1 STDDEV
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_hashes(0.954499736) == 4); // 2 STDDEV
     REQUIRE(count_min_sketch<uint64_t>::suggest_num_hashes(0.997300204) == 6); // 3 STDDEV
@@ -161,9 +161,9 @@ TEST_CASE("CM merge - reject", "[reject cases]") {
     std::vector<count_min_sketch<uint64_t>> sketches = {s1, s2, s3};
 
     // Fail cases
-    REQUIRE_THROWS(s.merge(s), "Cannot merge a sketch with itself." );
+    REQUIRE_THROWS_WITH(s.merge(s), "Cannot merge a sketch with itself." );
     for (count_min_sketch<uint64_t> sk : sketches) {
-      REQUIRE_THROWS(s.merge(sk), "Incompatible sketch config." );
+      REQUIRE_THROWS_WITH(s.merge(sk), "Incompatible sketch configuration." );
     }
 }
 
