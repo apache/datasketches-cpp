@@ -86,6 +86,11 @@ uint64_t tdigest<T, A>::get_total_weight() const {
 }
 
 template<typename T, typename A>
+auto tdigest<T, A>::get_centroids() const -> vector_centroid{
+  return centroids_;
+}
+
+template<typename T, typename A>
 A tdigest<T, A>::get_allocator() const {
   return buffer_.get_allocator();
 }

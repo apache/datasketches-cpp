@@ -144,6 +144,11 @@ public:
   uint64_t get_total_weight() const;
 
   /**
+   * @return centroids
+   */
+  vector_centroid get_centroids() const;
+
+  /**
    * Returns an instance of the allocator for this t-Digest.
    * @return allocator
    */
