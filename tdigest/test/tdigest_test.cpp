@@ -453,4 +453,18 @@ TEST_CASE("deserialize from reference implementation bytes float", "[tdigest]") 
   REQUIRE(td.get_rank(n) == 1);
 }
 
+TEST_CASE("iterate centroids", "[tdigest]") {
+  tdigest_double td(100);
+  for (int i = 0; i < 10; i++) {
+    td.update(i);
+  }
+
+  auto centroid_count = 0;
+  for (const auto &centroid: td) {
+    centroid_count++;
+  }
+  // Ensure that centroids are retrieved for a case where there is buffered values
+  REQUIRE(centroid_count == 10);
+}
+
 } /* namespace datasketches */

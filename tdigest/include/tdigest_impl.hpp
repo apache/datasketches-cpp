@@ -86,11 +86,6 @@ uint64_t tdigest<T, A>::get_total_weight() const {
 }
 
 template<typename T, typename A>
-auto tdigest<T, A>::get_centroids() const -> vector_centroid{
-  return centroids_;
-}
-
-template<typename T, typename A>
 A tdigest<T, A>::get_allocator() const {
   return buffer_.get_allocator();
 }
@@ -630,6 +625,65 @@ void tdigest<T, A>::check_split_points(const T* values, uint32_t size) {
       throw std::invalid_argument("Values must be unique and monotonically increasing");
     }
   }
+}
+
+template <typename T, typename A>
+typename tdigest<T, A>::const_iterator tdigest<T, A>::begin() const {
+  return tdigest<T, A>::const_iterator(*this, false);
+}
+
+template <typename T, typename A>
+  typename tdigest<T, A>::const_iterator tdigest<T, A>::end() const {
+  return tdigest::const_iterator(*this, true);
+}
+
+template<typename T, typename A>
+tdigest<T, A>::const_iterator::const_iterator(const tdigest& tdigest_, const bool is_end):
+  centroids_()
+{
+  // Create a copy of the tdigest to generate the centroids after processing the buffered values
+  tdigest tmp(tdigest_);
+  tmp.compress();
+  centroids_.insert(centroids_.end(), tmp.centroids_.begin(), tmp.centroids_.end());
+
+  if (is_end) {
+    index_ = centroids_.size();
+  } else {
+    index_ = 0;
+  }
+}
+
+template<typename T, typename A>
+typename tdigest<T, A>::const_iterator& tdigest<T, A>::const_iterator::operator++() {
+  ++index_;
+  return *this;
+}
+
+template<typename T, typename A>
+typename tdigest<T, A>::const_iterator& tdigest<T, A>::const_iterator::operator++(int) {
+  const_iterator tmp(*this);
+  operator++();
+  return tmp;
+}
+
+template<typename T, typename A>
+bool tdigest<T, A>::const_iterator::operator==(const const_iterator& other) const {
+  return index_ == other.index_;
+}
+
+template<typename T, typename A>
+bool tdigest<T, A>::const_iterator::operator!=(const const_iterator& other) const {
+  return !operator==(other);
+}
+
+template<typename T, typename A>
+auto tdigest<T, A>::const_iterator::operator*() const -> reference {
+  return value_type(centroids_[index_].get_mean(), centroids_[index_].get_weight());
+}
+
+template<typename T, typename A>
+auto tdigest<T, A>::const_iterator::operator->() const -> pointer {
+  return **this;
 }
 
 } /* namespace datasketches */
