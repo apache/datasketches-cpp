@@ -107,6 +107,12 @@ public:
   explicit tdigest(uint16_t k = DEFAULT_K, const Allocator& allocator = Allocator());
 
   /**
+ * Copy constructor
+ * @param other sketch to be copied
+ */
+  tdigest(const tdigest& other);
+
+  /**
    * Update this t-Digest with the given value
    * @param value to update the t-Digest with
    */
@@ -275,13 +281,11 @@ public:
 private:
   bool reverse_merge_;
   uint16_t k_;
-  uint16_t internal_k_;
   T min_;
   T max_;
   size_t centroids_capacity_;
   vector_centroid centroids_;
   uint64_t centroids_weight_;
-  size_t buffer_capacity_;
   vector_t buffer_;
 
   static const size_t BUFFER_MULTIPLIER = 4;

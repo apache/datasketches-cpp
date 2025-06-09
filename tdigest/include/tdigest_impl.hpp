@@ -598,6 +598,24 @@ bool tdigest<T, A>::is_single_value() const {
 }
 
 template<typename T, typename A>
+tdigest<T, A>::tdigest(const tdigest<T, A>& other):
+  reverse_merge_(other.reverse_merge_),
+  k_(other.k_),
+  min_(other.min_),
+  max_(other.max_),
+  centroids_capacity_(other.centroids_capacity_),
+  centroids_(other.centroids_, other.get_allocator()),
+  centroids_weight_(other.centroids_weight_),
+  buffer_(other.buffer_, other.get_allocator())
+{
+  if (other.k_ < 10) throw std::invalid_argument("k must be at least 10");
+  const size_t fudge = other.k_ < 30 ? 30 : 10;
+  centroids_capacity_ = 2 * k_ + fudge;
+  centroids_.reserve(centroids_capacity_);
+  buffer_.reserve(centroids_capacity_ * BUFFER_MULTIPLIER);
+}
+
+template<typename T, typename A>
 tdigest<T, A>::tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t weight, vector_t&& buffer):
 reverse_merge_(reverse_merge),
 k_(k),
@@ -638,11 +656,11 @@ template <typename T, typename A>
 }
 
 template<typename T, typename A>
-tdigest<T, A>::const_iterator::const_iterator(const tdigest& tdigest_, const bool is_end):
-  centroids_()
+tdigest<T, A>::const_iterator::const_iterator(const tdigest<T, A>& tdigest_, const bool is_end):
+  centroids_(tdigest_.get_allocator())
 {
   // Create a copy of the tdigest to generate the centroids after processing the buffered values
-  tdigest tmp(tdigest_);
+  tdigest<T, A> tmp(tdigest_);
   tmp.compress();
   centroids_.insert(centroids_.end(), tmp.centroids_.begin(), tmp.centroids_.end());
 

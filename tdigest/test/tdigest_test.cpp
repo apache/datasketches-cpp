@@ -460,11 +460,14 @@ TEST_CASE("iterate centroids", "[tdigest]") {
   }
 
   auto centroid_count = 0;
+  uint64_t total_weight = 0;
   for (const auto &centroid: td) {
     centroid_count++;
+    total_weight += centroid.second;
   }
   // Ensure that centroids are retrieved for a case where there is buffered values
   REQUIRE(centroid_count == 10);
+  REQUIRE(td.get_total_weight() == total_weight);
 }
 
 } /* namespace datasketches */
