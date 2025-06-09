@@ -63,7 +63,7 @@ TEST_CASE( "ebpps merge", "[ebpps_sketch][test_type]") {
     ebpps_test_sketch sk1(k, 0);
     ebpps_test_sketch sk2(k, 0);
 
-    // move udpates
+    // move updates
     for (int i = 0; i < (int) n; ++i) {
       sk1.update(i);
       sk2.update(-i);
