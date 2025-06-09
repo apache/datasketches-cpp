@@ -581,7 +581,7 @@ auto quantiles_sketch<T, C, A>::deserialize_array(const void* bytes, size_t size
   // serde did not throw, enable destructors
   items.get_deleter().set_destroy(true);
   
-  // succesfully read, now put into a Level
+  // successfully read, now put into a Level
   Level level(allocator);
   level.reserve(capacity);
   level.insert(level.begin(),

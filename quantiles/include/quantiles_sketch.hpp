@@ -537,10 +537,10 @@ private:
   static void merge_two_size_k_buffers(Level& arr_in_1, Level& arr_in_2, Level& arr_out, const Comparator& comparator);
 
   template<typename SerDe>
-  static Level deserialize_array(std::istream& is, uint32_t num_items, uint32_t capcacity, const SerDe& serde, const Allocator& allocator);
+  static Level deserialize_array(std::istream& is, uint32_t num_items, uint32_t capacity, const SerDe& serde, const Allocator& allocator);
   
   template<typename SerDe>
-  static std::pair<Level, size_t> deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capcacity, const SerDe& serde, const Allocator& allocator);
+  static std::pair<Level, size_t> deserialize_array(const void* bytes, size_t size, uint32_t num_items, uint32_t capacity, const SerDe& serde, const Allocator& allocator);
 
   static void check_k(uint16_t k);
   static void check_serial_version(uint8_t serial_version);

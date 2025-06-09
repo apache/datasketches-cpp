@@ -399,7 +399,7 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   REQUIRE(bf_writable.query(-1.0));
 
   // not good memory management to do this, but because we wrapped the same bytes as both
-  // read-only adn writable, that update should ahve changed the read-only version, too
+  // read-only and writable, that update should have changed the read-only version, too
   REQUIRE(bf_wrap.query(-1.0));
 }
 

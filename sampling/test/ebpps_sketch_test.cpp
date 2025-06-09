@@ -222,7 +222,7 @@ TEST_CASE("ebpps sketch: merge large into small", "[ebpps_sketch]") {
   sk1 = create_unweighted_sketch(k / 2, 0);
   sk1.update(-1, k / 4.0);
   sk1.update(-2, k / 8.0);
-  // sk2 should have been unchaged
+  // sk2 should have been unchanged
   REQUIRE(sk2.get_n() == k);
   REQUIRE(sk2.get_c() == Approx(k).margin(EPS));
 
@@ -250,7 +250,7 @@ TEST_CASE("ebpps sketch: merge small into large", "[ebpps_sketch]") {
   
   // rvalue merge
   sk1 = create_unweighted_sketch(k, 3 * k / 2);
-  // sk2 should have been unchaged
+  // sk2 should have been unchanged
   REQUIRE(sk2.get_n() == 1);
   REQUIRE(sk2.get_c() == 1.0);
   sk2.update(-2, k / 10.0);
