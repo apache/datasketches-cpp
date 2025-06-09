@@ -1159,7 +1159,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l01029" name="l01029"></a><span class="lineno"> 1029</span>  total_wt_r_ = weights_[k_]; <span class="comment">// only one item, known location</span></div>
 <div class="line"><a id="l01030" name="l01030"></a><span class="lineno"> 1030</span>  weights_[k_] = -1.0;</div>
 <div class="line"><a id="l01031" name="l01031"></a><span class="lineno"> 1031</span> </div>
-<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span>  <span class="comment">// The two lightest items are ncessarily downsample-able to one item,</span></div>
+<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span>  <span class="comment">// The two lightest items are necessarily downsample-able to one item,</span></div>
 <div class="line"><a id="l01033" name="l01033"></a><span class="lineno"> 1033</span>  <span class="comment">// and are therefore a valid initial candidate set</span></div>
 <div class="line"><a id="l01034" name="l01034"></a><span class="lineno"> 1034</span>  grow_candidate_set(weights_[k_ - 1] + total_wt_r_, 2);</div>
 <div class="line"><a id="l01035" name="l01035"></a><span class="lineno"> 1035</span>}</div>
@@ -1195,7 +1195,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l01065" name="l01065"></a><span class="lineno"> 1065</span>  <span class="keywordflow">while</span> (child &lt;= last_slot) {</div>
 <div class="line"><a id="l01066" name="l01066"></a><span class="lineno"> 1066</span>    uint32_t child2 = child + 1; <span class="comment">// might also be invalid</span></div>
 <div class="line"><a id="l01067" name="l01067"></a><span class="lineno"> 1067</span>    <span class="keywordflow">if</span> ((child2 &lt;= last_slot) &amp;&amp; (weights_[child2] &lt; weights_[child])) {</div>
-<div class="line"><a id="l01068" name="l01068"></a><span class="lineno"> 1068</span>      <span class="comment">// siwtch to other child if it&#39;s both valid and smaller</span></div>
+<div class="line"><a id="l01068" name="l01068"></a><span class="lineno"> 1068</span>      <span class="comment">// switch to other child if it&#39;s both valid and smaller</span></div>
 <div class="line"><a id="l01069" name="l01069"></a><span class="lineno"> 1069</span>      child = child2;</div>
 <div class="line"><a id="l01070" name="l01070"></a><span class="lineno"> 1070</span>    }</div>
 <div class="line"><a id="l01071" name="l01071"></a><span class="lineno"> 1071</span> </div>
@@ -1351,7 +1351,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l01221" name="l01221"></a><span class="lineno"> 1221</span>    <span class="keywordflow">if</span> ((wt_cands * next_double_exclude_zero()) &lt; ((num_cands - 1) * wt_m_cand)) {</div>
 <div class="line"><a id="l01222" name="l01222"></a><span class="lineno"> 1222</span>      <span class="keywordflow">return</span> pick_random_slot_in_r(); <span class="comment">// keep item in M</span></div>
 <div class="line"><a id="l01223" name="l01223"></a><span class="lineno"> 1223</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l01224" name="l01224"></a><span class="lineno"> 1224</span>      <span class="keywordflow">return</span> h_; <span class="comment">// indext of item in M</span></div>
+<div class="line"><a id="l01224" name="l01224"></a><span class="lineno"> 1224</span>      <span class="keywordflow">return</span> h_; <span class="comment">// index of item in M</span></div>
 <div class="line"><a id="l01225" name="l01225"></a><span class="lineno"> 1225</span>    }</div>
 <div class="line"><a id="l01226" name="l01226"></a><span class="lineno"> 1226</span>  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l01227" name="l01227"></a><span class="lineno"> 1227</span>    <span class="comment">// general case</span></div>
