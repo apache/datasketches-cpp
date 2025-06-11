@@ -107,12 +107,6 @@ public:
   explicit tdigest(uint16_t k = DEFAULT_K, const Allocator& allocator = Allocator());
 
   /**
- * Copy constructor
- * @param other sketch to be copied
- */
-  tdigest(const tdigest& other);
-
-  /**
    * Update this t-Digest with the given value
    * @param value to update the t-Digest with
    */
