@@ -638,11 +638,11 @@ template <typename T, typename A>
 }
 
 template<typename T, typename A>
-tdigest<T, A>::const_iterator::const_iterator(const tdigest<T, A>& tdigest_, const bool is_end):
+tdigest<T, A>::const_iterator::const_iterator(const tdigest& tdigest_, const bool is_end):
   centroids_(tdigest_.get_allocator())
 {
   // Create a copy of the tdigest to generate the centroids after processing the buffered values
-  tdigest<T, A> tmp(tdigest_);
+  tdigest tmp(tdigest_);
   tmp.compress();
   centroids_.insert(centroids_.end(), tmp.centroids_.begin(), tmp.centroids_.end());
 
