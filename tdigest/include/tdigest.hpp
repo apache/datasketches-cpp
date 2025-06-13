@@ -319,8 +319,6 @@ public:
   using pointer = const return_value_holder<value_type>;
   using reference = const value_type;
 
-  const_iterator(const tdigest<T, A> &tdigest_, bool is_end);
-
   const_iterator& operator++();
   const_iterator& operator++(int);
   bool operator==(const const_iterator& other) const;
@@ -328,9 +326,10 @@ public:
   reference operator*() const;
   pointer operator->() const;
 private:
-  friend class tdigest<T, A>;
+  friend class tdigest;
   uint32_t index_;
   vector_centroid centroids_;
+  const_iterator(const tdigest& tdigest_, bool is_end);
 };
 } /* namespace datasketches */
 
