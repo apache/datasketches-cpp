@@ -22,6 +22,18 @@
 
 namespace datasketches {
 
+template<typename T, typename Allocator>
+class ddsketch {
+public:
+  using value_type = T;
+  using allocator_type = Allocator;
+
+private:
+
+
+
+
+};
 
 } /* namespace datasketches */
 
