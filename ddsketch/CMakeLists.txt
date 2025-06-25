@@ -23,19 +23,24 @@ if (BUILD_TESTS)
     add_subdirectory(test)
 endif()
 
-target_include_directories(tdigest
+target_include_directories(ddsketch
         INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
 )
 
-target_link_libraries(tdigest INTERFACE common)
+target_link_libraries(ddsketch INTERFACE common)
 
 install(TARGETS ddsketch
         EXPORT ${PROJECT_NAME}
 )
 
 install(FILES
-        include/ddsketch.hpp.hpp
-        include/ddsketch_impl.hpp.hpp
+        include/bin.hpp
+        include/bin_impl.hpp
+        include/ddsketch.hpp
+        include/ddsketch_impl.hpp
+        include/dense_store.hpp
+        include/dense_store_impl.hpp
+        include/store.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
