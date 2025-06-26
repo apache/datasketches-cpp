@@ -21,7 +21,6 @@
 #define BIN_IMPL_H
 
 #include "bin.hpp"
-#include "common_defs.hpp"
 
 namespace datasketches {
 bool Bin::operator==(const Bin& other) const {
