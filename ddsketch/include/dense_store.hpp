@@ -52,8 +52,10 @@ public:
   virtual size_type normalize(size_type index) = 0;
   virtual size_type adjust(size_type newMinIndex, size_type newMaxIndex) = 0;
   virtual void extend_range(size_type new_min_ndex, size_type new_max_index);
-  virtual size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
   virtual void shift_bins(size_type shift);
+  virtual void center_bins(size_type new_min_index, size_type new_max_index);
+  virtual size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
+
 
   ~DenseStore() override = default;
 

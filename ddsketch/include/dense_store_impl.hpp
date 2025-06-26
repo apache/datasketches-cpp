@@ -154,6 +154,15 @@ void DenseStore<Allocator>::shift_bins(size_type shift) {
 }
 
 template<typename Allocator>
+void DenseStore<Allocator>::center_bins(size_type new_min_index, size_type new_max_index) {
+  const size_type middle_index = new_min_index + (new_max_index - new_min_index) / 2;
+  shift_bins(offset + bins.length() / 2 - middle_index);
+
+  min_index = new_min_index;
+  max_index = new_max_index;
+}
+
+template<typename Allocator>
 typename DenseStore<Allocator>::size_type DenseStore<Allocator>::get_new_length(size_type new_min_index, size_type new_max_index) const {
   const size_type desired_length = new_max_index - new_min_index + 1;
   return ((desired_length + array_length_overhead - 1) / array_length_growth_increment + 1) * array_length_growth_increment;
