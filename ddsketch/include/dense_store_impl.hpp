@@ -39,7 +39,6 @@ DenseStore<Allocator>::DenseStore(const int& array_length_growth_increment) :
 template<typename Allocator>
 DenseStore<Allocator>::DenseStore(const int& array_length_growth_increment, const int& array_length_overhead) :
   Store<Allocator>(),
-  total_count(0),
   min_index(std::numeric_limits<size_type>::max()),
   max_index(std::numeric_limits<size_type>::min()),
   array_length_growth_increment(array_length_growth_increment),
@@ -55,7 +54,6 @@ template<typename Allocator>
 void DenseStore<Allocator>::add(int index, uint64_t count) {
   const size_type array_index = normalize(index);
   bins[array_index] += count;
-  total_count += count;
 }
 
 template<typename Allocator>
@@ -69,7 +67,6 @@ void DenseStore<Allocator>::add(const Bin&  bin) {
 template<typename Allocator>
 void DenseStore<Allocator>::clear() {
   bins.clear();
-  total_count = 0;
   min_index = std::numeric_limits<size_type>::max();
   max_index = std::numeric_limits<size_type>::min();
 }
@@ -92,8 +89,25 @@ int DenseStore<Allocator>::get_min_index() const {
 
 template<typename Allocator>
 uint64_t DenseStore<Allocator>::get_total_count() const {
+  return get_total_count(min_index, max_index);
+}
+
+template<typename Allocator>
+uint64_t DenseStore<Allocator>::get_total_count(size_type from_index, size_type to_index) const {
+  if (is_empty()) {
+    return 0;
+  }
+
+  uint64_t total_count = 0;
+  size_type from_array_index = std::max(from_index - offset, 0);
+  size_type to_array_index = std::min(to_index - offset, bins.length());
+  for (size_type index = from_array_index; index < to_array_index; index++) {
+    total_count += bins[index];
+  }
+
   return total_count;
 }
+
 
 template<typename Allocator>
 void DenseStore<Allocator>::merge(const Store<Allocator>& other) {

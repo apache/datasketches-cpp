@@ -48,6 +48,7 @@ public:
   int get_max_index() const override;
   int get_min_index() const override;
   uint64_t get_total_count() const override;
+  uint64_t get_total_count(size_type from_index, size_type to_index) const;
   void merge(const Store<Allocator>& other) override = 0;
   virtual size_type normalize(size_type index) = 0;
   virtual size_type adjust(size_type newMinIndex, size_type newMaxIndex) = 0;
@@ -58,11 +59,11 @@ public:
   void reset_counts();
   void reset_counts(size_type from_index, size_type to_index);
 
+
   ~DenseStore() override = default;
 
 private:
   bins_type bins;
-  uint64_t total_count;
   size_type offset;
   size_type min_index;
   size_type max_index;
