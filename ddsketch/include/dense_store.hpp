@@ -55,6 +55,8 @@ public:
   void shift_bins(size_type shift);
   void center_bins(size_type new_min_index, size_type new_max_index);
   virtual size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
+  void reset_counts();
+  void reset_counts(size_type from_index, size_type to_index);
 
   ~DenseStore() override = default;
 

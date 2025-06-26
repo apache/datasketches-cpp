@@ -168,6 +168,15 @@ typename DenseStore<Allocator>::size_type DenseStore<Allocator>::get_new_length(
   return ((desired_length + array_length_overhead - 1) / array_length_growth_increment + 1) * array_length_growth_increment;
 }
 
+template<typename Allocator>
+void DenseStore<Allocator>::reset_counts() {
+  reset_counts(min_index, max_index);
+}
+
+template<typename Allocator>
+void DenseStore<Allocator>::reset_counts(size_type from_index, size_type to_index) {
+  std::fill(bins.begin() + from_index, bins.begin() + to_index + 1, 0);
+}
 }
 
 #endif //DENSE_STORE_IMPL_HPP
