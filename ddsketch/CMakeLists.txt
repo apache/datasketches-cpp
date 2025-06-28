@@ -43,4 +43,6 @@ install(FILES
         include/dense_store.hpp
         include/dense_store_impl.hpp
         include/store.hpp
+        include/collapsing_dense_store.hpp
+        include/collapsing_dense_store_impl.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

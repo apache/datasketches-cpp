@@ -36,7 +36,7 @@ public:
   DenseStore();
   explicit DenseStore(const int& array_length_growth_increment);
   explicit DenseStore(const int& array_length_growth_increment, const int& array_length_overhead);
-  explicit DenseStore(const DenseStore& other);
+  explicit DenseStore(const DenseStore& other) = default;
 
 
   void add(int index) override;
