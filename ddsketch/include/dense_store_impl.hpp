@@ -123,6 +123,11 @@ typename DenseStore<Allocator>::size_type DenseStore<Allocator>::normalize(size_
 }
 
 template<typename Allocator>
+void DenseStore<Allocator>::extend_range(size_type index) {
+  extend_range(index, index);
+}
+
+template<typename Allocator>
 void DenseStore<Allocator>::extend_range(size_type new_min_index, size_type new_max_index) {
   new_min_index = std::min(new_min_index, get_min_index());
   new_max_index = std::max(new_max_index, get_max_index());
@@ -183,12 +188,12 @@ typename DenseStore<Allocator>::size_type DenseStore<Allocator>::get_new_length(
 }
 
 template<typename Allocator>
-void DenseStore<Allocator>::reset_counts() {
+void DenseStore<Allocator>::reset_bins() {
   reset_counts(min_index, max_index);
 }
 
 template<typename Allocator>
-void DenseStore<Allocator>::reset_counts(size_type from_index, size_type to_index) {
+void DenseStore<Allocator>::reset_bins(size_type from_index, size_type to_index) {
   std::fill(bins.begin() + from_index, bins.begin() + to_index + 1, 0);
 }
 }
