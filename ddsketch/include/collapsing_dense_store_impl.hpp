@@ -24,7 +24,7 @@
 
 namespace datasketches {
 template<typename Allocator>
-CollapsingDenseStore<Allocator>::CollapsingDenseStore(size_type max_num_bins) : max_num_bins(max_num_bins), is_collapsed(false) {}
+CollapsingDenseStore<Allocator>::CollapsingDenseStore(size_type max_num_bins): DenseStore<Allocator>(), max_num_bins(max_num_bins), is_collapsed(false) {}
 
 // TODO implement copy constructor
 

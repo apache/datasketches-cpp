@@ -36,6 +36,7 @@ DenseStore<Allocator>::DenseStore(const int& array_length_growth_increment) :
 
 template<typename Allocator>
 DenseStore<Allocator>::DenseStore(const int& array_length_growth_increment, const int& array_length_overhead):
+  offset(0),
   min_index(std::numeric_limits<size_type>::max()),
   max_index(std::numeric_limits<size_type>::min()),
   array_length_growth_increment(array_length_growth_increment),
