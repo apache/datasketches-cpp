@@ -16,15 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 #include <iostream>
-#include <stdexcept>
 
 #include <catch2/catch.hpp>
 
-#include "ddsketch.hpp"
-#include "bin.hpp"
 #include "collapsing_highest_dense_store.hpp"
+#include "collapsing_lowest_dense_store.hpp"
 #include "dense_store.hpp"
 
 namespace datasketches {
@@ -32,10 +29,13 @@ namespace datasketches {
 TEST_CASE("ddsketch", "[ddsketch]") {
   std::cout << "ddsketch test" << std::endl;
 
-  CollapsingHighestDenseStore<std::allocator<uint64_t>> store(1024);
-  const CollapsingHighestDenseStore<std::allocator<uint64_t>> other_store(store);
+  CollapsingHighestDenseStore<std::allocator<uint64_t>> store_hi(1024);
+  const CollapsingHighestDenseStore<std::allocator<uint64_t>> other_store_hi(store_hi);
+  store_hi.merge(other_store_hi);
 
-  store.merge(other_store);
+  CollapsingLowestDenseStore<std::allocator<uint64_t>> store_lo(1024);
+  const CollapsingLowestDenseStore<std::allocator<uint64_t>> other_store_lo(store_lo);
+  store_lo.merge(other_store_lo);
 }
 
 

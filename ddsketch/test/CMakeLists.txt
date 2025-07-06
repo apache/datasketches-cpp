@@ -37,6 +37,7 @@ add_test(
 
 target_sources(ddsketch_test
         PRIVATE
+        BinTest.cpp
         DDSketchTest.cpp
 )
 
