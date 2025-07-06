@@ -21,9 +21,9 @@
 #define DENSE_STORE_HPP
 
 #include <cstdint>
-#include <limits>
-
 #include <vector>
+
+#include "bin.hpp"
 
 namespace datasketches {
 template<typename Allocator>
