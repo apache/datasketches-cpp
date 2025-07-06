@@ -18,13 +18,16 @@ public:
 
   ~CollapsingDenseStore() override = default;
 
-private:
+  void clear() override;
+
+protected:
   const size_type max_num_bins;
   bool is_collapsed;
 
   size_type get_new_length(size_type new_min_index, size_type new_max_index) const override;
-  void clear() override;
 };
 }
+
+#include "collapsing_dense_store_impl.hpp"
 
 #endif //COLLAPSING_DENSE_STORE_HPP

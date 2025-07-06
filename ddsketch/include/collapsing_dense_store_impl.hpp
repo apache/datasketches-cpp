@@ -11,6 +11,8 @@ namespace datasketches {
 template<typename Allocator>
 CollapsingDenseStore<Allocator>::CollapsingDenseStore(size_type max_num_bins) : max_num_bins(max_num_bins), is_collapsed(false) {}
 
+// TODO implement copy constructor
+
 template<typename Allocator>
 typename CollapsingDenseStore<Allocator>::size_type CollapsingDenseStore<Allocator>::get_new_length(size_type new_min_index, size_type new_max_index) const {
   return std::min(DenseStore<Allocator>::get_new_length(new_min_index, new_max_index), max_num_bins);

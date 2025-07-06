@@ -39,4 +39,6 @@ private:
 };
 }
 
+#include "bin_impl.hpp"
+
 #endif //BIN_H

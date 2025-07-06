@@ -23,36 +23,58 @@
 #include <cstdint>
 #include <limits>
 
-#include "store.hpp"
 #include <vector>
 
 namespace datasketches {
 template<typename Allocator>
-class DenseStore : public Store<Allocator> {
+class DenseStore {
 public:
   using bins_type = std::vector<uint64_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>>;
   using size_type = typename bins_type::size_type;
+  class iterator;
 
   DenseStore();
   explicit DenseStore(const int& array_length_growth_increment);
   explicit DenseStore(const int& array_length_growth_increment, const int& array_length_overhead);
   explicit DenseStore(const DenseStore& other) = default;
 
+  void add(int index);
+  void add(int index, uint64_t count);
+  void add(const Bin& bin);
+  virtual DenseStore<Allocator>* copy() const = 0;
+  virtual void clear();
+  bool is_empty() const;
+  size_type get_max_index() const;
+  size_type get_min_index() const;
+  uint64_t get_total_count() const;
+  virtual void merge(const DenseStore<Allocator>& other) = 0;
 
-  void add(int index) override;
-  void add(int index, uint64_t count) override;
-  void add(const Bin& bin) override;
-  DenseStore<Allocator>* copy() const override = 0;
-  void clear() override;
-  bool is_empty() const override;
-  int get_max_index() const override;
-  int get_min_index() const override;
-  uint64_t get_total_count() const override;
-  void merge(const Store<Allocator>& other) override = 0;
+  iterator begin() const;
+  iterator end() const;
 
-  ~DenseStore() override = default;
+  virtual ~DenseStore() = default;
 
-private:
+  class iterator {
+  public:
+    using iterator_category = std::input_iterator_tag;
+    using value_type = Bin;
+    using difference_type = void;
+    using pointer = Bin*;
+    using reference = Bin;
+
+    iterator(const bins_type& bins, size_type index, const size_type& max_index, const size_type& offset);
+    iterator& operator++();
+    bool operator!=(const iterator& other) const;
+    reference operator*() const;
+
+  private:
+    const bins_type& bins;
+    size_type index;
+    const size_type& max_index;
+    const size_type& offset;
+  };
+
+protected:
   bins_type bins;
   size_type offset;
   size_type min_index;
@@ -66,15 +88,17 @@ private:
 
   uint64_t get_total_count(size_type from_index, size_type to_index) const;
   virtual size_type normalize(size_type index) = 0;
-  virtual size_type adjust(size_type newMinIndex, size_type newMaxIndex) = 0;
+  virtual void adjust(size_type newMinIndex, size_type newMaxIndex) = 0;
   void extend_range(size_type index);
   void extend_range(size_type new_min_ndex, size_type new_max_index);
-  void shift_bins(size_type shift); // private
-  void center_bins(size_type new_min_index, size_type new_max_index); // private
-  virtual size_type get_new_length(size_type new_min_index, size_type new_max_index) const; // private
-  void reset_bins(); // private
-  void reset_bins(size_type from_index, size_type to_index); // private
+  void shift_bins(size_type shift);
+  void center_bins(size_type new_min_index, size_type new_max_index);
+  virtual size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
+  void reset_bins();
+  void reset_bins(size_type from_index, size_type to_index);
 };
 }
+
+#include "dense_store_impl.hpp"
 
 #endif //DENSE_STORE_HPP

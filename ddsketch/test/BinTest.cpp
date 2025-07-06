@@ -1,5 +1,5 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
+* Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
@@ -17,28 +17,23 @@
  * under the License.
  */
 
-#ifndef STORE_HPP
-#define STORE_HPP
-
+#include <catch2/catch.hpp>
 #include "bin.hpp"
-
+#include <iostream>
 namespace datasketches {
-template<typename Allocator>
-class Store {
-public:
-  using allocator_type = Allocator;
 
-  virtual ~Store() = default;
-  virtual void add(int index) = 0;
-  virtual void add(int index, uint64_t count) = 0;
-  virtual void add(const Bin& bin) = 0;
-  virtual Store* copy() const= 0;
-  virtual void clear() = 0;
-  virtual bool is_empty() const = 0;
-  virtual int get_max_index() const = 0 ;
-  virtual int get_min_index() const = 0;
-  virtual uint64_t get_total_count() const = 0;
-  virtual void merge(const Store& other) = 0;
-};
+TEST_CASE("bintest", "[bintest]") {
+  std::cout << "bin test" << std::endl;
+  Bin bin(0);
+  REQUIRE(bin.getCount() == 0);
+
+  Bin bin1(bin);
+  REQUIRE(bin == bin1);
+
+  Bin bin2(10, 20);
+  REQUIRE(bin2.getCount() == 20);
+  REQUIRE(!(bin2 ==  bin));
 }
-#endif //STORE_HPP
+
+
+} /* namespace datasketches */

@@ -24,11 +24,18 @@
 
 #include "ddsketch.hpp"
 #include "bin.hpp"
+#include "collapsing_highest_dense_store.hpp"
+#include "dense_store.hpp"
+
 namespace datasketches {
 
 TEST_CASE("ddsketch", "[ddsketch]") {
   std::cout << "ddsketch test" << std::endl;
 
+  CollapsingHighestDenseStore<std::allocator<uint64_t>> store(1024);
+  const CollapsingHighestDenseStore<std::allocator<uint64_t>> other_store(store);
+
+  store.merge(other_store);
 }
 
 
