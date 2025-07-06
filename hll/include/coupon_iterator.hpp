@@ -31,7 +31,7 @@ public:
   using pointer = uint32_t*;
   using reference = uint32_t;
 
-  coupon_iterator(const uint32_t* array, size_t array_slze, size_t index, bool all);
+  coupon_iterator(const uint32_t* array, size_t array_size, size_t index, bool all);
   coupon_iterator& operator++();
   bool operator!=(const coupon_iterator& other) const;
   reference operator*() const;
