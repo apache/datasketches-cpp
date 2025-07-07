@@ -22,6 +22,8 @@
 
 #include "collapsing_lowest_dense_store.hpp"
 
+#include <ranges>
+
 namespace datasketches {
 template<typename Allocator>
 CollapsingLowestDenseStore<Allocator>::CollapsingLowestDenseStore(size_type max_num_bins): CollapsingDenseStore<Allocator>(max_num_bins){}
@@ -38,8 +40,8 @@ void CollapsingLowestDenseStore<Allocator>::merge(const DenseStore<Allocator>& o
   if (store != nullptr) {
     this->merge(*store);
   } else {
-    for (const Bin& bin : other) {
-      this->add(bin);
+    for (auto it = other.rbegin(); it != other.rend(); ++it) {
+      this->add(*it);
     }
   }
 }

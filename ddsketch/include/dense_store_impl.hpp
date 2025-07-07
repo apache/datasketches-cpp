@@ -25,13 +25,19 @@
 
 namespace datasketches {
 template<typename Allocator>
+constexpr int DenseStore<Allocator>::DEFAULT_ARRAY_LENGTH_GROWTH_INCREMENT;
+
+template<typename Allocator>
+constexpr double DenseStore<Allocator>::DEFAULT_ARRAY_LENGTH_OVERHEAD_RATIO;
+
+template<typename Allocator>
 DenseStore<Allocator>::DenseStore() :
   DenseStore(DEFAULT_ARRAY_LENGTH_GROWTH_INCREMENT)
 {}
 
 template<typename Allocator>
 DenseStore<Allocator>::DenseStore(const int& array_length_growth_increment) :
-  DenseStore(array_length_growth_increment, DEFAULT_ARRAY_LENGTH_OVERHEAD_RATIO)
+  DenseStore(array_length_growth_increment, array_length_growth_increment * DEFAULT_ARRAY_LENGTH_OVERHEAD_RATIO)
 {}
 
 template<typename Allocator>
@@ -40,7 +46,7 @@ DenseStore<Allocator>::DenseStore(const int& array_length_growth_increment, cons
   min_index(std::numeric_limits<size_type>::max()),
   max_index(std::numeric_limits<size_type>::min()),
   array_length_growth_increment(array_length_growth_increment),
-  array_length_overhead(array_length_growth_increment * array_length_overhead)
+  array_length_overhead(array_length_overhead)
 {}
 
 template<typename Allocator>
@@ -50,6 +56,10 @@ void DenseStore<Allocator>::add(int index) {
 
 template<typename Allocator>
 void DenseStore<Allocator>::add(int index, uint64_t count) {
+  std::cout << "add" << std::endl;
+  if (count == 0) {
+    return;
+  }
   const size_type array_index = normalize(index);
   bins[array_index] += count;
 }
@@ -64,9 +74,10 @@ void DenseStore<Allocator>::add(const Bin&  bin) {
 
 template<typename Allocator>
 void DenseStore<Allocator>::clear() {
-  bins.clear();
+  bins.resize(bins.size(), 0);
   min_index = std::numeric_limits<size_type>::max();
   max_index = std::numeric_limits<size_type>::min();
+  offset = 0;
 }
 
 template<typename Allocator>
@@ -98,7 +109,7 @@ uint64_t DenseStore<Allocator>::get_total_count(size_type from_index, size_type 
 
   uint64_t total_count = 0;
   size_type from_array_index = std::max(from_index - offset, static_cast<size_type>(0));
-  size_type to_array_index = std::min(to_index - offset, static_cast<size_type>(bins.size()));
+  size_type to_array_index = std::min(to_index - offset, static_cast<size_type>(bins.size() - 1));
   for (size_type index = from_array_index; index < to_array_index; index++) {
     total_count += bins[index];
   }
@@ -108,7 +119,7 @@ uint64_t DenseStore<Allocator>::get_total_count(size_type from_index, size_type 
 
 template<typename Allocator>
 typename DenseStore<Allocator>::iterator DenseStore<Allocator>::begin() const {
-  return DenseStore<Allocator>::iterator(this->bins, 0, this->max_index, this->offset);
+  return DenseStore<Allocator>::iterator(this->bins, this->min_index, this->max_index, this->offset);
 }
 
 template<typename Allocator>
@@ -117,7 +128,19 @@ typename DenseStore<Allocator>::iterator DenseStore<Allocator>::end() const {
 }
 
 template<typename Allocator>
+typename DenseStore<Allocator>::reverse_iterator DenseStore<Allocator>::rbegin() const {
+  return DenseStore<Allocator>::reverse_iterator(this->bins, this->max_index, this->min_index, this->offset);
+}
+
+template<typename Allocator>
+typename DenseStore<Allocator>::reverse_iterator DenseStore<Allocator>::rend() const {
+  return DenseStore<Allocator>::reverse_iterator(this->bins, this->max_index, this->min_index, this->offset);
+}
+
+
+template<typename Allocator>
 typename DenseStore<Allocator>::size_type DenseStore<Allocator>::normalize(size_type index) {
+  std::cout << "normalize" << std::endl;
   if (index < get_min_index() || index > get_max_index()) {
     extend_range(index, index);
   }
@@ -131,8 +154,8 @@ void DenseStore<Allocator>::extend_range(size_type index) {
 
 template<typename Allocator>
 void DenseStore<Allocator>::extend_range(size_type new_min_index, size_type new_max_index) {
-  new_min_index = std::min(new_min_index, get_min_index());
-  new_max_index = std::max(new_max_index, get_max_index());
+  new_min_index = std::min(new_min_index, min_index);
+  new_max_index = std::max(new_max_index, max_index);
 
   if (is_empty()) {
     const size_type initial_length = get_new_length(new_min_index, new_max_index);
@@ -167,7 +190,10 @@ void DenseStore<Allocator>::shift_bins(size_type shift) {
     std::move(bins.begin() + min_arr_index, bins.begin() + max_arr_index + 1, bins.begin() + min_arr_index + shift);
     std::fill(bins.begin() + min_arr_index, bins.begin() + shift + 1, 0);
   } else {
-    std::move_backward(bins.begin() + min_arr_index, bins.begin() + max_arr_index + 1, bins.begin() + min_arr_index + shift);
+    // std::move_backward(bins.begin() + min_arr_index, bins.begin() + max_arr_index + 1, bins.begin() + min_arr_index + shift);
+    // std::fill(bins.begin() + max_arr_index + 1 + shift, bins.begin() + max_arr_index + 1, 0);
+
+    std::move_backward(bins.begin() + min_arr_index, bins.begin() + max_arr_index + 1, bins.begin() + max_arr_index + shift + 1);
     std::fill(bins.begin() + max_arr_index + 1 + shift, bins.begin() + max_arr_index + 1, 0);
   }
 
@@ -176,7 +202,7 @@ void DenseStore<Allocator>::shift_bins(size_type shift) {
 
 template<typename Allocator>
 void DenseStore<Allocator>::center_bins(size_type new_min_index, size_type new_max_index) {
-  const size_type middle_index = new_min_index + (new_max_index - new_min_index) / 2;
+  const size_type middle_index = new_min_index + (new_max_index - new_min_index + 1) / 2;
   shift_bins(offset + bins.size() / 2 - middle_index);
 
   min_index = new_min_index;
@@ -196,7 +222,7 @@ void DenseStore<Allocator>::reset_bins() {
 
 template<typename Allocator>
 void DenseStore<Allocator>::reset_bins(size_type from_index, size_type to_index) {
-  std::fill(bins.begin() + from_index, bins.begin() + to_index + 1, 0);
+  std::fill(bins.begin() + from_index - offset, bins.begin() + to_index - offset + 1, 0);
 }
 
 template<typename Allocator>
@@ -225,6 +251,31 @@ typename DenseStore<Allocator>::iterator::reference DenseStore<Allocator>::itera
   return Bin(this->index, this->bins[this->index - this->offset]);
 }
 
+template<typename Allocator>
+DenseStore<Allocator>::reverse_iterator::reverse_iterator(const bins_type& bins, size_type index, const size_type& min_index, const size_type& offset):
+bins(bins),
+index(index),
+min_index(min_index),
+offset(offset)
+{}
+
+template<typename Allocator>
+typename DenseStore<Allocator>::reverse_iterator& DenseStore<Allocator>::reverse_iterator::operator++() {
+  do {
+    --this->index;
+  } while (this->index >= this->min_index && this->bins[this->index - this->offset] == 0);
+  return *this;
+}
+
+template<typename Allocator>
+bool DenseStore<Allocator>::reverse_iterator::operator!=(const reverse_iterator& other) const {
+  return this->index != other.index;
+}
+
+template<typename Allocator>
+typename DenseStore<Allocator>::reverse_iterator::reference DenseStore<Allocator>::reverse_iterator::operator*() const {
+  return Bin(this->index, this->bins[this->index - this->offset]);
+}
 }
 
 #endif //DENSE_STORE_IMPL_HPP

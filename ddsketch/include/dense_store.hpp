@@ -30,8 +30,9 @@ template<typename Allocator>
 class DenseStore {
 public:
   using bins_type = std::vector<uint64_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>>;
-  using size_type = typename bins_type::size_type;
+  using size_type = int;
   class iterator;
+  class reverse_iterator;
 
   DenseStore();
   explicit DenseStore(const int& array_length_growth_increment);
@@ -51,6 +52,9 @@ public:
 
   iterator begin() const;
   iterator end() const;
+
+  reverse_iterator rbegin() const;
+  reverse_iterator rend() const;
 
   virtual ~DenseStore() = default;
 
@@ -74,6 +78,26 @@ public:
     const size_type& offset;
   };
 
+  class reverse_iterator {
+  public:
+    using iterator_category = std::input_iterator_tag;
+    using value_type = Bin;
+    using difference_type = void;
+    using pointer = Bin*;
+    using reference = Bin;
+
+    reverse_iterator(const bins_type& bins, size_type index, const size_type& min_index, const size_type& offset);
+    reverse_iterator& operator++();
+    bool operator!=(const reverse_iterator& other) const;
+    reference operator*() const;
+
+  private:
+    const bins_type& bins;
+    size_type index;
+    const size_type& min_index;
+    const size_type& offset;
+  };
+
 protected:
   bins_type bins;
   size_type offset;
@@ -90,7 +114,7 @@ protected:
   virtual size_type normalize(size_type index) = 0;
   virtual void adjust(size_type newMinIndex, size_type newMaxIndex) = 0;
   void extend_range(size_type index);
-  void extend_range(size_type new_min_ndex, size_type new_max_index);
+  void extend_range(size_type new_min_index, size_type new_max_index);
   void shift_bins(size_type shift);
   void center_bins(size_type new_min_index, size_type new_max_index);
   virtual size_type get_new_length(size_type new_min_index, size_type new_max_index) const;

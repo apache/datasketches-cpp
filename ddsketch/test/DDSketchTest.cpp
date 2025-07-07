@@ -29,13 +29,28 @@ namespace datasketches {
 TEST_CASE("ddsketch", "[ddsketch]") {
   std::cout << "ddsketch test" << std::endl;
 
-  CollapsingHighestDenseStore<std::allocator<uint64_t>> store_hi(1024);
-  const CollapsingHighestDenseStore<std::allocator<uint64_t>> other_store_hi(store_hi);
-  store_hi.merge(other_store_hi);
+  CollapsingHighestDenseStore<std::allocator<uint64_t>> s(1024);
+  // const CollapsingHighestDenseStore<std::allocator<uint64_t>> other_store_hi(store_hi);
+  // store_hi.merge(other_store_hi);
+  //
+  // CollapsingLowestDenseStore<std::allocator<uint64_t>> store_lo(1024);
+  // const CollapsingLowestDenseStore<std::allocator<uint64_t>> other_store_lo(store_lo);
+  // store_lo.merge(other_store_lo);
 
-  CollapsingLowestDenseStore<std::allocator<uint64_t>> store_lo(1024);
-  const CollapsingLowestDenseStore<std::allocator<uint64_t>> other_store_lo(store_lo);
-  store_lo.merge(other_store_lo);
+  for (int i = 0; i < 1024; ++i) {
+    s.add(i, i * 10);
+  }
+  // CollapsingLowestDenseStore<std::allocator<uint64_t>> store_lo(1024);
+  // const CollapsingLowestDenseStore<std::allocator<uint64_t>> other_store_lo(store_lo);
+  // store_lo.merge(other_store_lo);
+  // store_lo.add(1, 1);
+  // store_lo.add(12, 2);
+  // store_lo.add(23, 3);
+  //
+  // //store_hi.merge(store_lo);
+  // for (const Bin& bin : store_hi) {
+  //   std::cout << bin.toString() << std::endl;
+  // }
 }
 
 

@@ -39,8 +39,8 @@ void CollapsingHighestDenseStore<Allocator>::merge(const DenseStore<Allocator>& 
   if (store != nullptr) {
     this->merge(*store);
   } else {
-    for (const Bin& bin : other) {
-      this->add(bin);
+    for (auto it = other.begin(); it != other.end(); ++it) {
+      this->add(*it);
     }
   }
 }
@@ -71,6 +71,7 @@ void CollapsingHighestDenseStore<Allocator>::merge(const CollapsingHighestDenseS
 
 template <typename Allocator>
 typename CollapsingHighestDenseStore<Allocator>::size_type CollapsingHighestDenseStore<Allocator>::normalize(size_type index) {
+  std::cout << "CollapsingHighestDenseStore<Allocator>::normalize" << std::endl;
   if (index > this->max_index) {
     if (this->is_collapsed) {
       return this->bins.size() - 1;
