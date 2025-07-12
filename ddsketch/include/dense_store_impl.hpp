@@ -118,6 +118,9 @@ uint64_t DenseStore<Allocator>::get_total_count(size_type from_index, size_type 
 
 template<typename Allocator>
 typename DenseStore<Allocator>::iterator DenseStore<Allocator>::begin() const {
+  if (is_empty()) {
+    return end();
+  }
   return DenseStore<Allocator>::iterator(this->bins, this->min_index, this->max_index, this->offset);
 }
 
@@ -128,6 +131,9 @@ typename DenseStore<Allocator>::iterator DenseStore<Allocator>::end() const {
 
 template<typename Allocator>
 typename DenseStore<Allocator>::reverse_iterator DenseStore<Allocator>::rbegin() const {
+  if (is_empty()) {
+    return rend();
+  }
   return DenseStore<Allocator>::reverse_iterator(this->bins, this->max_index, this->min_index, this->offset);
 }
 
@@ -139,7 +145,6 @@ typename DenseStore<Allocator>::reverse_iterator DenseStore<Allocator>::rend() c
 
 template<typename Allocator>
 typename DenseStore<Allocator>::size_type DenseStore<Allocator>::normalize(size_type index) {
-  std::cout << "normalize" << std::endl;
   if (index < get_min_index() || index > get_max_index()) {
     extend_range(index, index);
   }

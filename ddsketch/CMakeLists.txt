@@ -48,4 +48,6 @@ install(FILES
         include/collapsing_highest_dense_store_impl.hpp
         include/collapsing_lowest_dense_store.hpp
         include/collapsing_lowest_dense_store_impl.hpp
+        include/unbounded_size_dense_store.hpp
+        include/unbounded_size_dense_store_impl.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

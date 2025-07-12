@@ -71,7 +71,6 @@ void CollapsingHighestDenseStore<Allocator>::merge(const CollapsingHighestDenseS
 
 template <typename Allocator>
 typename CollapsingHighestDenseStore<Allocator>::size_type CollapsingHighestDenseStore<Allocator>::normalize(size_type index) {
-  std::cout << "CollapsingHighestDenseStore<Allocator>::normalize" << std::endl;
   if (index > this->max_index) {
     if (this->is_collapsed) {
       return this->bins.size() - 1;
