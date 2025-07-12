@@ -8,6 +8,7 @@
 #include <map>
 
 #include "bin.hpp"
+#include "dense_store.hpp"
 
 namespace datasketches {
 template<typename Allocator>
@@ -30,10 +31,14 @@ public:
   void clear();
   int get_min_index() const;
   int get_max_index() const;
+  void merge(const SparseStore<Allocator>& other);
+  void merge(const DenseStore<Allocator>& other);
 
 private:
   bins_type bins;
 };
 }
+
+#include "sparse_store_impl.hpp"
 
 #endif //SPARSE_STORE_HPP
