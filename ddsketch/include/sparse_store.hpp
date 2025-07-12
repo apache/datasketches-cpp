@@ -34,6 +34,26 @@ public:
   void merge(const SparseStore<Allocator>& other);
   void merge(const DenseStore<Allocator>& other);
 
+  iterator begin() const;
+  iterator end() const;
+
+  class iterator {
+  public:
+    using internal_iterator = typename bins_type::iterator;
+    using value_type = Bin;
+    using difference_type = void;
+    using pointer = const Bin*;
+    using reference = const Bin;
+
+    explicit iterator(internal_iterator it);
+    iterator& operator++();
+    bool operator!=(const iterator& other) const;
+    reference operator*() const;
+
+  private:
+    internal_iterator it;
+  };
+
 private:
   bins_type bins;
 };

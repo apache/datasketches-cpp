@@ -23,6 +23,7 @@
 #include "collapsing_highest_dense_store.hpp"
 #include "collapsing_lowest_dense_store.hpp"
 #include "dense_store.hpp"
+#include "sparse_store.hpp"
 #include "unbounded_size_dense_store.hpp"
 
 namespace datasketches {
@@ -52,6 +53,8 @@ TEST_CASE("ddsketch", "[ddsketch]") {
   UnboundedSizeDenseStore<std::allocator<uint64_t>> unbounded_store;
   const DenseStore<std::allocator<uint64_t>>& other_unbounded_store(unbounded_store);
   unbounded_store.merge(other_unbounded_store);
+
+  SparseStore<std::allocator<uint64_t>> ss;
 }
 
 
