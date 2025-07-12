@@ -56,7 +56,6 @@ void DenseStore<Allocator>::add(int index) {
 
 template<typename Allocator>
 void DenseStore<Allocator>::add(int index, uint64_t count) {
-  std::cout << "add" << std::endl;
   if (count == 0) {
     return;
   }
@@ -188,7 +187,7 @@ void DenseStore<Allocator>::shift_bins(size_type shift) {
 
   if (shift > 0) {
     std::move(bins.begin() + min_arr_index, bins.begin() + max_arr_index + 1, bins.begin() + min_arr_index + shift);
-    std::fill(bins.begin() + min_arr_index, bins.begin() + shift + 1, 0);
+    std::fill(bins.begin() + min_arr_index, bins.begin() + shift, 0);
   } else {
     // std::move_backward(bins.begin() + min_arr_index, bins.begin() + max_arr_index + 1, bins.begin() + min_arr_index + shift);
     // std::fill(bins.begin() + max_arr_index + 1 + shift, bins.begin() + max_arr_index + 1, 0);
