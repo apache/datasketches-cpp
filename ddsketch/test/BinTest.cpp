@@ -22,17 +22,20 @@
 #include <iostream>
 namespace datasketches {
 
+void TestBinInitialization(const int index, const uint64_t count) {
+  Bin bin(index, count);
+  REQUIRE(bin.getCount() == count);
+  REQUIRE(bin.getIndex() == index);
+}
+
 TEST_CASE("bintest", "[bintest]") {
-  std::cout << "bin test" << std::endl;
-  Bin bin(0);
-  REQUIRE(bin.getCount() == 0);
-
-  Bin bin1(bin);
-  REQUIRE(bin == bin1);
-
-  Bin bin2(10, 20);
-  REQUIRE(bin2.getCount() == 20);
-  REQUIRE(!(bin2 ==  bin));
+  TestBinInitialization(0, 1);
+  TestBinInitialization(3, 1);
+  TestBinInitialization(INT_MAX >> 1, 1);
+  TestBinInitialization(INT_MAX, 1);
+  TestBinInitialization(-3, 1);
+  TestBinInitialization(INT_MIN >> 1, 1);
+  TestBinInitialization(INT_MIN, 1);
 }
 
 

@@ -25,7 +25,7 @@
 namespace datasketches {
 class Bin {
 public:
-  explicit Bin(const int index, const uint64_t count = 0) : index_(index), count_(count) {};
+  Bin(int index, uint64_t count);
   ~Bin() = default;
   bool operator==(const Bin& other) const;
   int hashCode() const;
@@ -34,8 +34,8 @@ public:
   int getIndex() const;
 
 private:
-  int index_;
-  uint64_t count_;
+  int index;
+  uint64_t count;
 };
 }
 

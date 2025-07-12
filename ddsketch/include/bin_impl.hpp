@@ -23,23 +23,25 @@
 #include "bin.hpp"
 
 namespace datasketches {
+inline Bin::Bin(int index, uint64_t count): index(index), count(count) {};
+
 inline bool Bin::operator==(const Bin& other) const {
   if (this == &other) {
     return true;
   }
-  return index_ == other.index_ && count_ == other.count_;
+  return index == other.index && count == other.count;
 };
 
 inline uint64_t Bin::getCount() const {
-  return count_;
+  return count;
 }
 
 inline int Bin::getIndex() const {
-  return index_;
+  return index;
 }
 
 inline std::string Bin::toString() const {
-  return "Bin{index= " + std::to_string(index_) + ", count= " + std::to_string(count_) + "}";
+  return "Bin{index= " + std::to_string(index) + ", count= " + std::to_string(count) + "}";
 }
 
 }
