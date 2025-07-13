@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include "Bin.hpp"
+#include "bin.hpp"
 
 namespace datasketches {
 template<typename Allocator>

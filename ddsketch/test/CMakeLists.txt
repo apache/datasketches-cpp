@@ -38,6 +38,7 @@ add_test(
 target_sources(ddsketch_test
         PRIVATE
         BinTest.cpp
+        collapsing_highest_dense_store_test.cpp
         DDSketchTest.cpp
 )
 

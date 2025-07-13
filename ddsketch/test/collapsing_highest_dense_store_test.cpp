@@ -17,24 +17,30 @@
  * under the License.
  */
 
-#include <catch2/catch.hpp>
-#include "bin.hpp"
+#include <string>
+#include <functional>
 #include <iostream>
+#include <catch2/catch.hpp>
+
+#include "collapsing_lowest_dense_store.hpp"
+#include "dense_store.hpp"
+#include "sparse_store.hpp"
+
 namespace datasketches {
+using alloc = std::allocator<uint64_t>;
 
-void TestBinInitialization(const int index, const uint64_t count) {
-  Bin bin(index, count);
-  REQUIRE(bin.getCount() == count);
-  REQUIRE(bin.getIndex() == index);
+
+template<typename Allocator, class Store>
+class StoreTest {
+public:
+  Store new_store();
+};
+
+TEST_CASE("DenseStore", "[DenseStore]") {
+
+  StoreTest<std::allocator<uint64_t>> store_test;
+  auto store = store_test.new_store();
+  std::cout << "DenseStore test" << std::endl;
 }
 
-TEST_CASE("bintest", "[bintest]") {
-  TestBinInitialization(0, 1);
-  TestBinInitialization(3, 1);
-  TestBinInitialization(INT_MAX >> 1, 1);
-  TestBinInitialization(INT_MAX, 1);
-  TestBinInitialization(-3, 1);
-  TestBinInitialization(INT_MIN >> 1, 1);
-  TestBinInitialization(INT_MIN, 1);
 }
-} /* namespace datasketches */

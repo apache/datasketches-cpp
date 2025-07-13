@@ -43,6 +43,7 @@ TEST_CASE("ddsketch", "[ddsketch]") {
   store_lo.add(12, 2);
   store_lo.add(23, 3);
 
+  std::cout << "ciaso" << std::endl;
   store_hi.merge(store_lo);
   for (const Bin& bin : store_hi) {
     std::cout << bin.toString() << std::endl;
