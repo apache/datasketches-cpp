@@ -91,9 +91,9 @@ template <typename Allocator>
 void CollapsingLowestDenseStore<Allocator>::adjust(size_type new_min_index, size_type new_max_index) {
   if (new_max_index - new_min_index + 1 > this->bins.size()) {
     // The range of indices is too wide, buckets of lowest indices need to be collapsed.
-    new_max_index = new_max_index - this->bins.size() + 1;
+    new_min_index = new_max_index - this->bins.size() + 1;
 
-    if (new_max_index >= this->max_index) {
+    if (new_min_index >= this->max_index) {
       // There will be only one non-empty bucket.
       const double total_count = this->get_total_count();
       this->reset_bins();
@@ -104,7 +104,7 @@ void CollapsingLowestDenseStore<Allocator>::adjust(size_type new_min_index, size
       const size_type shift = this->offset - new_min_index;
       if (shift < 0) {
         // Collapse the buckets.
-        const double collapsed_count = this->get_total_count(this->min_index, new_max_index - 1);
+        const double collapsed_count = this->get_total_count(this->min_index, new_min_index - 1);
         this->reset_bins(this->min_index, new_min_index - 1);
         this->bins[new_min_index - this->offset] += collapsed_count;
         this->min_index = new_min_index;

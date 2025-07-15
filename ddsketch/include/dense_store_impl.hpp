@@ -87,11 +87,17 @@ bool DenseStore<Allocator>::is_empty() const {
 
 template<typename Allocator>
 typename DenseStore<Allocator>::size_type DenseStore<Allocator>::get_max_index() const {
+  if (is_empty()) {
+    throw std::runtime_error("store is empty");
+  }
   return max_index;
 }
 
 template<typename Allocator>
 typename DenseStore<Allocator>::size_type DenseStore<Allocator>::get_min_index() const {
+  if (is_empty()) {
+    throw std::runtime_error("store is empty");
+  }
   return min_index;
 }
 
@@ -109,7 +115,7 @@ uint64_t DenseStore<Allocator>::get_total_count(size_type from_index, size_type 
   uint64_t total_count = 0;
   size_type from_array_index = std::max(from_index - offset, static_cast<size_type>(0));
   size_type to_array_index = std::min(to_index - offset, static_cast<size_type>(bins.size() - 1));
-  for (size_type index = from_array_index; index < to_array_index; index++) {
+  for (size_type index = from_array_index; index <= to_array_index; index++) {
     total_count += bins[index];
   }
 
@@ -126,7 +132,7 @@ typename DenseStore<Allocator>::iterator DenseStore<Allocator>::begin() const {
 
 template<typename Allocator>
 typename DenseStore<Allocator>::iterator DenseStore<Allocator>::end() const {
-  return DenseStore<Allocator>::iterator(this->bins, this->max_index, this->max_index, this->offset);
+  return DenseStore<Allocator>::iterator(this->bins, this->max_index + 1, this->max_index, this->offset);
 }
 
 template<typename Allocator>
@@ -139,7 +145,7 @@ typename DenseStore<Allocator>::reverse_iterator DenseStore<Allocator>::rbegin()
 
 template<typename Allocator>
 typename DenseStore<Allocator>::reverse_iterator DenseStore<Allocator>::rend() const {
-  return DenseStore<Allocator>::reverse_iterator(this->bins, this->max_index, this->min_index, this->offset);
+  return DenseStore<Allocator>::reverse_iterator(this->bins, this->min_index - 1, this->min_index, this->offset);
 }
 
 

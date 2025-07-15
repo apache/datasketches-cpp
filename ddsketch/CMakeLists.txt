@@ -50,4 +50,6 @@ install(FILES
         include/collapsing_lowest_dense_store_impl.hpp
         include/unbounded_size_dense_store.hpp
         include/unbounded_size_dense_store_impl.hpp
+        include/sparse_store.hpp
+        include/sparse_store_impl.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

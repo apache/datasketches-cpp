@@ -120,6 +120,13 @@ protected:
   virtual size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
   void reset_bins();
   void reset_bins(size_type from_index, size_type to_index);
+
+  void print() {
+    for (auto& bin : bins) {
+      std::cout << bin << " ";
+    }
+    std::cout << std::endl;
+  }
 };
 }
 

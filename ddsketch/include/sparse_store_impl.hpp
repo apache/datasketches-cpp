@@ -10,7 +10,7 @@
 namespace datasketches {
 template<typename Allocator>
 void SparseStore<Allocator>::add(int index) {
-  bins.add(index, 1);
+  add(index, 1);
 }
 
 template<typename Allocator>
@@ -70,6 +70,11 @@ void SparseStore<Allocator>::merge(const DenseStore<Allocator> &other) {
 }
 
 template<typename Allocator>
+bool SparseStore<Allocator>::is_empty() const {
+  return bins.empty();
+}
+
+template<typename Allocator>
 typename SparseStore<Allocator>::iterator SparseStore<Allocator>::begin() const {
   return iterator(bins.begin());
 }
@@ -84,7 +89,8 @@ SparseStore<Allocator>::iterator::iterator(internal_iterator it): it(it) {}
 
 template<typename Allocator>
 typename SparseStore<Allocator>::iterator& SparseStore<Allocator>::iterator::operator++() {
-  return ++it;
+  ++it;
+  return *this;
 }
 
 template<typename Allocator>
@@ -95,6 +101,15 @@ bool SparseStore<Allocator>::iterator::operator!=(const iterator& other) const {
 template<typename Allocator>
 typename SparseStore<Allocator>::iterator::reference SparseStore<Allocator>::iterator::operator*() const {
   return Bin(it->first, it->second);
+}
+
+template<typename Allocator>
+uint64_t SparseStore<Allocator>::get_total_count() const {
+  uint64_t total_count = 0;
+  for (typename bins_type::const_iterator it = bins.begin(); it != bins.end(); ++it) {
+    total_count += it->second;
+  }
+  return total_count;
 }
 }
 

@@ -33,13 +33,15 @@ public:
   int get_max_index() const;
   void merge(const SparseStore<Allocator>& other);
   void merge(const DenseStore<Allocator>& other);
+  bool is_empty() const;
+  uint64_t get_total_count() const;
 
   iterator begin() const;
   iterator end() const;
 
   class iterator {
   public:
-    using internal_iterator = typename bins_type::iterator;
+    using internal_iterator = typename bins_type::const_iterator;
     using value_type = Bin;
     using difference_type = void;
     using pointer = const Bin*;
@@ -56,6 +58,12 @@ public:
 
 private:
   bins_type bins;
+  void print() {
+    for (auto it = bins.begin(); it != bins.end(); ++it) {
+      std::cout << "(" << it->first << ";" << it->second << ") ";
+    }
+    std::cout << std::endl;
+  }
 };
 }
 
