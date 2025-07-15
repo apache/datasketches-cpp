@@ -193,7 +193,7 @@ T tdigest<T, A>::get_quantile(double rank) const {
   }
   const double w1 = weight - centroids_weight_ - centroids_.back().get_weight() / 2.0;
   const double w2 = centroids_.back().get_weight() / 2.0 - w1;
-  return weighted_average(centroids_.back().get_weight(), w1, max_, w2);
+  return weighted_average(centroids_.back().get_mean(), w1, max_, w2);
 }
 
 template<typename T, typename A>
