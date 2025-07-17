@@ -23,7 +23,7 @@ void SparseStore<Allocator>::add(int index, uint64_t count) {
 
 template<typename Allocator>
 void SparseStore<Allocator>::add(const Bin &bin) {
-  if (bin.getCount()) {
+  if (bin.getCount() == 0) {
      return;
   }
   add(bin.getIndex(), bin.getCount());

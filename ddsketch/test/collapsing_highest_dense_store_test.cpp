@@ -234,22 +234,34 @@ TEST_CASE("store test empty", "[storetest]") {
   }
 }
 
-TEST_CASE("store test constant", "[storetest]") {
+TEST_CASE("store test add constant", "[storetest]") {
   std::vector<int> indexes{-1000, -1, 0, 1, 1000};
   std::vector<uint64_t> counts{0, 1, 2, 4, 5, 10, 20, 100, 1000, 10000};
 
   for (auto&[name, new_store, transform_bins] : store_tests) {
+    std::cout << name << std::endl;
     for (int idx: indexes) {
       for (uint64_t count: counts) {
-        auto store = new_store();
+        auto storeAdd = new_store();
+        auto storeAddBin = new_store();
+        auto storeAddWithCount = new_store();
         for (int i = 0; i < count; ++i) {
           std::visit([&](auto& store_ptr) {
             store_ptr->add(idx);
-          }, store);
+          }, storeAdd);
+          std::visit([&](auto& store_ptr) {
+            store_ptr->add(Bin(idx, 1));
+          }, storeAddBin);
+          std::visit([&](auto& store_ptr) {
+            store_ptr->add(idx, 1);
+          }, storeAddWithCount);
         }
         std::vector<Bin> bins{Bin(idx, count)};
         std::vector<Bin> normalized_bins = normalize_bins(transform_bins(bins));
-        test(store, normalized_bins);
+        //test(storeAdd, normalized_bins);
+        std::cout << idx << " " << count << std::endl;
+        test(storeAddBin, normalized_bins);
+        //test(storeAddWithCount, normalized_bins);
       }
     }
   }
