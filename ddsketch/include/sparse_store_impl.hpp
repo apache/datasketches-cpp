@@ -57,7 +57,7 @@ int SparseStore<Allocator>::get_max_index() const {
 
 template<typename Allocator>
 void SparseStore<Allocator>::merge(const SparseStore<Allocator>& other) {
-  for (typename bins_type::iterator it = other.bins.begin(); it != other.bins.end(); ++it) {
+  for (typename bins_type::const_iterator it = other.bins.begin(); it != other.bins.end(); ++it) {
      add(it->first, it->second);
   }
 }
