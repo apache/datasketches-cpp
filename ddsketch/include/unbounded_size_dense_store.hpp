@@ -21,11 +21,11 @@ public:
   ~UnboundedSizeDenseStore() override = default;
 
   void merge(const DenseStore<Allocator>& other) override;
+  void merge(const UnboundedSizeDenseStore<Allocator>& other);
 
 protected:
   size_type normalize(size_type index) override;
   void adjust(size_type new_min_index, size_type new_max_index) override;
-  void merge(const UnboundedSizeDenseStore<Allocator>& other);
 };
 }
 
