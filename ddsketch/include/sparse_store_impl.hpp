@@ -31,7 +31,9 @@ void SparseStore<Allocator>::add(const Bin &bin) {
 
 template<typename Allocator>
 SparseStore<Allocator>* SparseStore<Allocator>::copy() const {
-  return new SparseStore<Allocator>(*this);
+  using SparseStoreAlloc = typename std::allocator_traits<Allocator>::template rebind_alloc<SparseStore<Allocator>>;
+  SparseStoreAlloc alloc(this->bins.get_allocator());
+  return new (alloc.allocate(1)) SparseStore<Allocator>(*this);
 }
 
 template<typename Allocator>

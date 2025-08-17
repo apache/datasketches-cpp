@@ -22,16 +22,15 @@
 
 #include "collapsing_lowest_dense_store.hpp"
 
-#include <ranges>
-
 namespace datasketches {
 template<typename Allocator>
 CollapsingLowestDenseStore<Allocator>::CollapsingLowestDenseStore(size_type max_num_bins): CollapsingDenseStore<Allocator>(max_num_bins){}
 
 template<typename Allocator>
 CollapsingLowestDenseStore<Allocator>* CollapsingLowestDenseStore<Allocator>::copy() const {
-  // TODO to implement
-  return nullptr;
+  using StoreAlloc = typename std::allocator_traits<Allocator>::template rebind_alloc<CollapsingLowestDenseStore<Allocator>>;
+  StoreAlloc alloc(this->bins.get_allocator());
+  return new (alloc.allocate(1)) CollapsingLowestDenseStore<Allocator>(*this);
 }
 
 template<typename Allocator>

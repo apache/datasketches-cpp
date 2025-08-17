@@ -28,8 +28,9 @@ typename UnboundedSizeDenseStore<Allocator>::size_type UnboundedSizeDenseStore<A
 
 template<typename Allocator>
 UnboundedSizeDenseStore<Allocator> *UnboundedSizeDenseStore<Allocator>::copy() const {
-  // TODO implement
-  return nullptr;
+  using StoreAlloc = typename std::allocator_traits<Allocator>::template rebind_alloc<UnboundedSizeDenseStore<Allocator>>;
+  StoreAlloc alloc(this->bins.get_allocator());
+  return new (alloc.allocate(1)) UnboundedSizeDenseStore<Allocator>(*this);
 }
 
 
