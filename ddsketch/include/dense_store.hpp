@@ -20,9 +20,7 @@
 #ifndef DENSE_STORE_HPP
 #define DENSE_STORE_HPP
 
-#include <cstdint>
 #include <vector>
-
 #include "bin.hpp"
 
 namespace datasketches {
@@ -37,7 +35,7 @@ public:
   DenseStore();
   explicit DenseStore(const int& array_length_growth_increment);
   explicit DenseStore(const int& array_length_growth_increment, const int& array_length_overhead);
-  explicit DenseStore(const DenseStore& other) = default;
+  DenseStore(const DenseStore& other) = default;
 
   void add(int index);
   void add(int index, uint64_t count);
@@ -120,13 +118,6 @@ protected:
   virtual size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
   void reset_bins();
   void reset_bins(size_type from_index, size_type to_index);
-
-  void print() {
-    for (auto& bin : bins) {
-      std::cout << bin << " ";
-    }
-    std::cout << std::endl;
-  }
 };
 }
 

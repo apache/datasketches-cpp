@@ -58,12 +58,6 @@ public:
 
 private:
   bins_type bins;
-  void print() {
-    for (auto it = bins.begin(); it != bins.end(); ++it) {
-      std::cout << "(" << it->first << ";" << it->second << ") ";
-    }
-    std::cout << std::endl;
-  }
 };
 }
 
