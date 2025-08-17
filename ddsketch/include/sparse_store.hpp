@@ -16,16 +16,16 @@ class SparseStore {
 public:
   using bins_type = std::map<
       int,
-      uint64_t,
+      double,
       std::less<int>,
-      typename std::allocator_traits<Allocator>::template rebind_alloc<std::pair<const int, uint64_t>>
+      typename std::allocator_traits<Allocator>::template rebind_alloc<std::pair<const int, double>>
   >;
   class iterator;
 
   SparseStore() = default;
 
   void add(int index);
-  void add(int index, uint64_t count);
+  void add(int index, double count);
   void add(const Bin& bin);
   SparseStore<Allocator>* copy() const;
   void clear();

@@ -54,7 +54,7 @@ TEST_CASE("ddsketch", "[ddsketch]") {
   const DenseStore<std::allocator<uint64_t>>& other_unbounded_store(unbounded_store);
   unbounded_store.merge(other_unbounded_store);
 
-  SparseStore<std::allocator<uint64_t>> ss;
+  SparseStore<std::allocator<double>> ss;
 }
 
 

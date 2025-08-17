@@ -32,7 +32,7 @@ inline bool Bin::operator==(const Bin& other) const {
   return index == other.index && count == other.count;
 };
 
-inline uint64_t Bin::getCount() const {
+inline double Bin::getCount() const {
   return count;
 }
 

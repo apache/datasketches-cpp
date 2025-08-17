@@ -38,7 +38,7 @@ public:
   DenseStore(const DenseStore& other) = default;
 
   void add(int index);
-  void add(int index, uint64_t count);
+  void add(int index, double count);
   void add(const Bin& bin);
   virtual DenseStore<Allocator>* copy() const = 0;
   virtual void clear();

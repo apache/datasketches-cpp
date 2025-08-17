@@ -55,7 +55,7 @@ void DenseStore<Allocator>::add(int index) {
 }
 
 template<typename Allocator>
-void DenseStore<Allocator>::add(int index, uint64_t count) {
+void DenseStore<Allocator>::add(int index, double count) {
   if (count == 0) {
     return;
   }

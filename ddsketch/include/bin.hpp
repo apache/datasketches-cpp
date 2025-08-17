@@ -30,12 +30,12 @@ public:
   bool operator==(const Bin& other) const;
   int hashCode() const;
   std::string toString() const;
-  uint64_t getCount() const;
+  double getCount() const;
   int getIndex() const;
 
 private:
   int index;
-  uint64_t count;
+  double count;
 };
 }
 

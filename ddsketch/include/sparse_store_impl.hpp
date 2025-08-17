@@ -14,7 +14,7 @@ void SparseStore<Allocator>::add(int index) {
 }
 
 template<typename Allocator>
-void SparseStore<Allocator>::add(int index, uint64_t count) {
+void SparseStore<Allocator>::add(int index, double count) {
   if (count == 0) {
      return;
   }
