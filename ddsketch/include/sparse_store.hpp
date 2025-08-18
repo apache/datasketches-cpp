@@ -34,7 +34,7 @@ public:
   void merge(const SparseStore<Allocator>& other);
   void merge(const DenseStore<Allocator>& other);
   bool is_empty() const;
-  uint64_t get_total_count() const;
+  double get_total_count() const;
 
   iterator begin() const;
   iterator end() const;

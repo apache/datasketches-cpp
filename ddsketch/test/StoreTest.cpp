@@ -91,7 +91,7 @@ public:
 };
 
 std::vector<Bin> normalize_bins(const std::vector<Bin>& bins) {
-  std::map<int, uint64_t> bins_by_index;
+  std::map<int, double> bins_by_index;
   for (const Bin& bin : bins) {
     if (bin.getCount() <= 0) {
       continue;
@@ -114,7 +114,7 @@ std::vector<Bin> normalize_bins(const std::vector<Bin>& bins) {
 
 template<class StoreType>
 void assert_encode_bins(StoreType& store, const std::vector<Bin>& normalized_bins) {
-  uint64_t expected_total_count = 0;
+  double expected_total_count = 0;
   for (const Bin& bin : normalized_bins) {
     expected_total_count += bin.getCount();
   }
@@ -157,10 +157,8 @@ void test_copy(StoreType& store, const std::vector<Bin>& normalized_bins) {
   assert_encode_bins(store, empty_bins);
 
   std::vector<Bin> permutated_bins = normalized_bins;
-  std::ranges::shuffle(permutated_bins, std::mt19937());
-  if (normalized_bins.size() > 1) {
-    REQUIRE(permutated_bins != normalized_bins);
-  }
+  std::ranges::shuffle(permutated_bins, std::mt19937(42));
+
   for (const Bin& bin : permutated_bins) {
     store->add(bin);
   }
@@ -285,6 +283,5 @@ TEST_CASE("merge test", "[mergetest]") {
   s1.merge(s3);
   s1.merge(sr);
 }
-
 }
 

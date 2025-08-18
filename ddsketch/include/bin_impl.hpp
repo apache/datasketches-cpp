@@ -23,7 +23,7 @@
 #include "bin.hpp"
 
 namespace datasketches {
-inline Bin::Bin(int index, uint64_t count): index(index), count(count) {};
+inline Bin::Bin(int index, double count): index(index), count(count) {};
 
 inline bool Bin::operator==(const Bin& other) const {
   if (this == &other) {

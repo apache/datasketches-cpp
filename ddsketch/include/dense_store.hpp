@@ -27,7 +27,7 @@ namespace datasketches {
 template<typename Allocator>
 class DenseStore {
 public:
-  using bins_type = std::vector<uint64_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>>;
+  using bins_type = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
   using size_type = int;
   class iterator;
   class reverse_iterator;
@@ -45,7 +45,7 @@ public:
   bool is_empty() const;
   size_type get_max_index() const;
   size_type get_min_index() const;
-  uint64_t get_total_count() const;
+  double get_total_count() const;
   virtual void merge(const DenseStore<Allocator>& other) = 0;
 
   iterator begin() const;
@@ -108,7 +108,7 @@ protected:
   static constexpr int DEFAULT_ARRAY_LENGTH_GROWTH_INCREMENT = 64;
   static constexpr double DEFAULT_ARRAY_LENGTH_OVERHEAD_RATIO = 0.1;
 
-  uint64_t get_total_count(size_type from_index, size_type to_index) const;
+  double get_total_count(size_type from_index, size_type to_index) const;
   virtual size_type normalize(size_type index) = 0;
   virtual void adjust(size_type newMinIndex, size_type newMaxIndex) = 0;
   void extend_range(size_type index);

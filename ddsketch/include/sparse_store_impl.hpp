@@ -106,8 +106,8 @@ typename SparseStore<Allocator>::iterator::reference SparseStore<Allocator>::ite
 }
 
 template<typename Allocator>
-uint64_t SparseStore<Allocator>::get_total_count() const {
-  uint64_t total_count = 0;
+double SparseStore<Allocator>::get_total_count() const {
+  double total_count = 0;
   for (typename bins_type::const_iterator it = bins.begin(); it != bins.end(); ++it) {
     total_count += it->second;
   }

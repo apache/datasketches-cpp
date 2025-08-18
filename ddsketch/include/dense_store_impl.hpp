@@ -103,17 +103,17 @@ typename DenseStore<Allocator>::size_type DenseStore<Allocator>::get_min_index()
 }
 
 template<typename Allocator>
-uint64_t DenseStore<Allocator>::get_total_count() const {
+double DenseStore<Allocator>::get_total_count() const {
   return get_total_count(min_index, max_index);
 }
 
 template<typename Allocator>
-uint64_t DenseStore<Allocator>::get_total_count(size_type from_index, size_type to_index) const {
+double DenseStore<Allocator>::get_total_count(size_type from_index, size_type to_index) const {
   if (is_empty()) {
     return 0;
   }
 
-  uint64_t total_count = 0;
+  double total_count = 0;
   size_type from_array_index = std::max(from_index - offset, static_cast<size_type>(0));
   size_type to_array_index = std::min(to_index - offset, static_cast<size_type>(bins.size() - 1));
   for (size_type index = from_array_index; index <= to_array_index; index++) {
