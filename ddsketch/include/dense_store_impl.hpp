@@ -73,7 +73,8 @@ void DenseStore<Allocator>::add(const Bin&  bin) {
 
 template<typename Allocator>
 void DenseStore<Allocator>::clear() {
-  bins.resize(bins.size(), 0);
+  // bins.resize(bins.size(), 0); // TODO: remove this comment, now I need it for debugging
+  bins.clear();
   min_index = std::numeric_limits<size_type>::max();
   max_index = std::numeric_limits<size_type>::min();
   offset = 0;
