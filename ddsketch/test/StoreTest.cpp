@@ -67,7 +67,7 @@ public:
   static std::vector<Bin> collapse(std::vector<Bin>& bins) {
     int min_index = INT_MAX;
     for (const Bin& bin : bins) {
-      min_index = std::max(min_index, bin.getIndex());
+      min_index = std::min(min_index, bin.getIndex());
     }
     if (min_index > INT_MAX - max_num_bins) {
       return bins;
