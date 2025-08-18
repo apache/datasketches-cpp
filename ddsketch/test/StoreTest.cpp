@@ -211,7 +211,35 @@ TEMPLATE_TEST_CASE("store test add datasets", "[storetest]",
     {-1000, -1000},
     {0, 0, 0, 0}
   };
-  std::vector<uint64_t> counts{0, 1, 100};
+  std::vector<double> counts{0.1, 1, 100};
+
+  for (const std::vector<int>& dataset : datasets) {
+    std::vector<Bin> bins;
+    bins.reserve(dataset.size());
+    auto storeAdd = TestType::first_type::new_store();
+    for (const int& index : dataset) {
+      Bin bin(index, 1);
+      bins.push_back(bin);
+      storeAdd->add(index);
+    }
+    std::vector<Bin> normalized_bins = normalize_bins(TestType::second_type::collapse(bins));
+    test_store(storeAdd, normalized_bins);
+    for (const double& count : counts) {
+      bins.clear();
+      auto storeAddBin = TestType::first_type::new_store();
+      auto storeAddWithCount = TestType::first_type::new_store();
+      for (const int& index : dataset) {
+        Bin bin(index, count);
+        bins.push_back(bin);
+        storeAddBin->add(bin);
+        storeAddWithCount->add(index, count);
+      }
+      normalized_bins = normalize_bins(TestType::second_type::collapse(bins));
+      test_store(storeAddBin, normalized_bins);
+      test_store(storeAddWithCount, normalized_bins);
+    }
+  }
+
 }
 
 TEMPLATE_TEST_CASE("store test add constant", "[storetest]",
