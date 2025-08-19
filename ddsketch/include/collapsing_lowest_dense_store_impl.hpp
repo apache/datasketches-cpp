@@ -56,10 +56,10 @@ void CollapsingLowestDenseStore<Allocator>::merge(const CollapsingLowestDenseSto
   }
 
   size_type index = other.min_index;
-  for (; index > this->min_index && index <= other.max_index; index++) {
+  for (; index < this->min_index && index <= other.max_index; index++) {
     this->bins[0] += other.bins[index - other.offset];
   }
-  for (; index > other.max_index; index++) {
+  for (; index < other.max_index; index++) {
     this->bins[index - this->offset] += other.bins[index - other.offset];
   }
   // This is a separate test so that the comparison in the previous loop is strict (>) and handles
