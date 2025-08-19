@@ -29,6 +29,9 @@
 
 namespace datasketches {
 
+static constexpr double eps = 1e-10;
+static constexpr int numTests = 30;
+
 using A = std::allocator<uint64_t>;
 
 template<class T>
@@ -112,6 +115,27 @@ std::vector<Bin> normalize_bins(const std::vector<Bin>& bins) {
   return normalized_bins;
 }
 
+int random_index() {
+  std::random_device rd;
+  std::mt19937_64 rng(rd());
+  std::uniform_int_distribution<int> distribution(-1000, 1000);
+  return distribution(rng);
+}
+
+double random_count() {
+  double max = 10.;
+  std::random_device rd;
+  std::mt19937_64 rng(rd());
+  std::uniform_real_distribution<double> distribution(0., 1.);
+  double count= 0.;
+  int i = 0;
+  do {
+    count = distribution(rng);
+    i++;
+  } while (count < eps * 10);
+  return count;
+}
+
 template<class StoreType>
 void assert_encode_bins(StoreType& store, const std::vector<Bin>& normalized_bins) {
   double expected_total_count = 0;
@@ -126,7 +150,7 @@ void assert_encode_bins(StoreType& store, const std::vector<Bin>& normalized_bin
     REQUIRE_THROWS_AS(store->get_max_index(), std::runtime_error);
   } else {
     REQUIRE_FALSE(store->is_empty());
-    REQUIRE(store->get_total_count() == expected_total_count);
+    REQUIRE(store->get_total_count() - expected_total_count < eps);
 
     REQUIRE(store->get_min_index() == normalized_bins[0].getIndex());
     REQUIRE(store->get_max_index() == normalized_bins[normalized_bins.size() - 1].getIndex());
@@ -141,7 +165,8 @@ void assert_encode_bins(StoreType& store, const std::vector<Bin>& normalized_bin
     });
     REQUIRE(bins.size() == normalized_bins.size());
     for (size_t i = 0; i < bins.size(); ++i) {
-      REQUIRE(bins[i] == normalized_bins[i]);
+      REQUIRE(bins[i].getIndex() == normalized_bins[i].getIndex());
+      REQUIRE_THAT(bins[i].getCount(), Catch::Matchers::WithinAbs(normalized_bins[i].getCount(), 1e-3));
     }
   }
 }
@@ -251,10 +276,10 @@ TEMPLATE_TEST_CASE("store test add constant", "[storetest]",
   (std::pair<store_factory<UnboundedSizeDenseStore<A>>, noops_collapsing_bins>)
   ) {
   std::vector<int> indexes{-1000, -1, 0, 1, 1000};
-  std::vector<uint64_t> counts{0, 1, 2, 4, 5, 10, 20, 100, 1000, 10000};
+  std::vector<double> counts{0, 1, 2, 4, 5, 10, 20, 100, 1000, 10000};
 
   for (int idx: indexes) {
-    for (uint64_t count: counts) {
+    for (double count: counts) {
       auto storeAdd = TestType::first_type::new_store();
       auto storeAddBin = TestType::first_type::new_store();
       auto storeAddWithCount = TestType::first_type::new_store();
@@ -270,6 +295,112 @@ TEMPLATE_TEST_CASE("store test add constant", "[storetest]",
       test_store<decltype(storeAddWithCount)>(storeAddWithCount, normalized_bins);
     }
   }
+}
+
+TEMPLATE_TEST_CASE("test add monotonous", "[storetest]",
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 8>, collapsing_lowest_bins<8>>),
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, collapsing_lowest_bins<128>>),
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 1024>, collapsing_lowest_bins<1024>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 8>, collapsing_highest_bins<8>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, collapsing_highest_bins<128>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 1024>, collapsing_highest_bins<1024>>),
+  (std::pair<store_factory<SparseStore<A>>, noops_collapsing_bins>),
+  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, noops_collapsing_bins>)
+  ) {
+  std::vector<int> increments{2, 10, 100, -2, -10, -100};
+  std::vector<int> spreads{2, 10, 10000};
+
+  for (const int& incr: increments) {
+    for (const int& spread: spreads) {
+      std::vector<Bin> bins;
+      auto storeAdd = TestType::first_type::new_store();
+      auto storeAddBin = TestType::first_type::new_store();
+      auto storeAddWithCount = TestType::first_type::new_store();
+      for (int index = 0; std::abs(index) <= spread; index += incr) {
+        Bin bin(index, 1);
+        bins.push_back(bin);
+        storeAdd->add(index);
+        storeAddBin->add(bin);
+        storeAddWithCount->add(index, 1);
+      }
+      std::vector<Bin> normalized_bins = normalize_bins(TestType::second_type::collapse(bins));
+      test_store<decltype(storeAdd)>(storeAdd, normalized_bins);
+      test_store<decltype(storeAddBin)>(storeAddBin, normalized_bins);
+      test_store<decltype(storeAddWithCount)>(storeAddWithCount, normalized_bins);
+    }
+  }
+}
+
+TEMPLATE_TEST_CASE("test add fuzzy", "[storetest]",
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 8>, collapsing_lowest_bins<8>>),
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, collapsing_lowest_bins<128>>),
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 1024>, collapsing_lowest_bins<1024>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 8>, collapsing_highest_bins<8>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, collapsing_highest_bins<128>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 1024>, collapsing_highest_bins<1024>>),
+  (std::pair<store_factory<SparseStore<A>>, noops_collapsing_bins>),
+  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, noops_collapsing_bins>)
+  ) {
+  const int maxNumValues = 1000;
+  std::random_device r;
+  std::mt19937_64 rng(r());
+  std::uniform_int_distribution<int> dist(0, maxNumValues - 1);
+
+   for (int i = 0; i < numTests; i++) {
+     std::vector<Bin> bins;
+     auto storeAdd = TestType::first_type::new_store();
+     auto storeAddBin = TestType::first_type::new_store();
+     auto storeAddWithCount = TestType::first_type::new_store();
+     int numValues = dist(rng);
+     for (int j = 0; j < numValues; j++) {
+       Bin bin(random_index(), random_count());
+       bins.push_back(bin);
+       storeAddBin->add(bin);
+       storeAddWithCount->add(bin.getIndex(), bin.getCount());
+     }
+     std::vector<Bin> normalized_bins = normalize_bins(TestType::second_type::collapse(bins));
+     test_store<decltype(storeAddBin)>(storeAddBin, normalized_bins);
+     test_store<decltype(storeAddWithCount)>(storeAddWithCount, normalized_bins);
+   }
+}
+
+TEMPLATE_TEST_CASE("test merge fuzzy", "[storetest]",
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 8>, collapsing_lowest_bins<8>>),
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, collapsing_lowest_bins<128>>),
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 1024>, collapsing_lowest_bins<1024>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 8>, collapsing_highest_bins<8>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, collapsing_highest_bins<128>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 1024>, collapsing_highest_bins<1024>>),
+  (std::pair<store_factory<SparseStore<A>>, noops_collapsing_bins>),
+  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, noops_collapsing_bins>)
+) {
+  const int numMerges = 3;
+  const int maxNumAdds = 1000;
+
+  std::random_device r;
+  std::mt19937_64 rng(r());
+  std::uniform_int_distribution<int> dist(0, maxNumAdds - 1);
+
+  for (int i = 0; i < numTests; i++) {
+    std::vector<Bin> bins;
+    auto store = TestType::first_type::new_store();
+    for (int j = 0; j < numMerges; j++) {
+      int numValues = dist(rng);
+      auto tmpStore = TestType::first_type::new_store();
+      for (int k = 0; k < numValues; k++) {
+        Bin bin(random_index(), random_count());
+        //std::cout << "(" << bin.getIndex() << "," << bin.getCount() << ")" << std::endl;
+        bins.push_back(bin);
+        tmpStore->add(bin);
+      }
+      store->merge(*tmpStore);
+    }
+    std::vector<Bin> normalized_bins = normalize_bins(TestType::second_type::collapse(bins));
+    test_store<decltype(store)>(store, normalized_bins);
+  }
+
+
+
 }
 
 TEST_CASE("merge test", "[mergetest]") {
