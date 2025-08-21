@@ -128,10 +128,8 @@ double random_count() {
   std::mt19937_64 rng(rd());
   std::uniform_real_distribution<double> distribution(0., 1.);
   double count= 0.;
-  int i = 0;
   do {
     count = distribution(rng);
-    i++;
   } while (count < eps * 10);
   return count;
 }

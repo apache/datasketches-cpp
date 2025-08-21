@@ -24,6 +24,9 @@
 #include "bin.hpp"
 
 namespace datasketches {
+// Forward declaration
+template<typename Allocator> class SparseStore;
+
 template<typename Allocator>
 class DenseStore {
 public:
@@ -47,6 +50,7 @@ public:
   size_type get_min_index() const;
   double get_total_count() const;
   virtual void merge(const DenseStore<Allocator>& other) = 0;
+  void merge(const SparseStore<Allocator>& other);
 
   iterator begin() const;
   iterator end() const;

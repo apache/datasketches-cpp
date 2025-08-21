@@ -8,9 +8,12 @@
 #include <map>
 
 #include "bin.hpp"
-#include "dense_store.hpp"
+
 
 namespace datasketches {
+// Forward declaration
+template<typename Allocator> class DenseStore;
+
 template<typename Allocator>
 class SparseStore {
 public:

@@ -21,14 +21,8 @@
 #define DENSE_STORE_IMPL_HPP
 
 #include <algorithm>
-#include "dense_store.hpp"
 
 namespace datasketches {
-template<typename Allocator>
-constexpr int DenseStore<Allocator>::DEFAULT_ARRAY_LENGTH_GROWTH_INCREMENT;
-
-template<typename Allocator>
-constexpr double DenseStore<Allocator>::DEFAULT_ARRAY_LENGTH_OVERHEAD_RATIO;
 
 template<typename Allocator>
 DenseStore<Allocator>::DenseStore() :
@@ -121,6 +115,13 @@ double DenseStore<Allocator>::get_total_count(size_type from_index, size_type to
   }
 
   return total_count;
+}
+
+template<typename Allocator>
+void DenseStore<Allocator>::merge(const SparseStore<Allocator>& other) {
+  for (const Bin &bin : other) {
+    add(bin);
+  }
 }
 
 template<typename Allocator>
