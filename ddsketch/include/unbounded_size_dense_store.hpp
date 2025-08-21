@@ -15,13 +15,14 @@ public:
   UnboundedSizeDenseStore();
   explicit UnboundedSizeDenseStore(const int& array_length_growth_increment);
   explicit UnboundedSizeDenseStore(const int& array_length_growth_increment, const int& array_length_overhead);
-  explicit UnboundedSizeDenseStore(const UnboundedSizeDenseStore& other) = default;
+  UnboundedSizeDenseStore(const UnboundedSizeDenseStore& other) = default;
 
   UnboundedSizeDenseStore* copy() const override;
   ~UnboundedSizeDenseStore() override = default;
 
   void merge(const DenseStore<Allocator>& other) override;
   void merge(const UnboundedSizeDenseStore<Allocator>& other);
+  using DenseStore<Allocator>::merge;
 
 protected:
   size_type normalize(size_type index) override;

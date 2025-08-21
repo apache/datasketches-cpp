@@ -33,6 +33,7 @@ public:
   CollapsingHighestDenseStore* copy() const override;
   void merge(const DenseStore<Allocator>& other) override;
   void merge(const CollapsingHighestDenseStore& other);
+  using DenseStore<Allocator>::merge;
 
 protected:
   size_type normalize(size_type index) override;

@@ -387,7 +387,6 @@ TEMPLATE_TEST_CASE("test merge fuzzy", "[storetest]",
       auto tmpStore = TestType::first_type::new_store();
       for (int k = 0; k < numValues; k++) {
         Bin bin(random_index(), random_count());
-        //std::cout << "(" << bin.getIndex() << "," << bin.getCount() << ")" << std::endl;
         bins.push_back(bin);
         tmpStore->add(bin);
       }
@@ -396,9 +395,40 @@ TEMPLATE_TEST_CASE("test merge fuzzy", "[storetest]",
     std::vector<Bin> normalized_bins = normalize_bins(TestType::second_type::collapse(bins));
     test_store<decltype(store)>(store, normalized_bins);
   }
+}
 
+TEMPLATE_TEST_CASE("test merge sparse into dense", "[storetest]",
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 8>, collapsing_lowest_bins<8>>),
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, collapsing_lowest_bins<128>>),
+  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 1024>, collapsing_lowest_bins<1024>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 8>, collapsing_highest_bins<8>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, collapsing_highest_bins<128>>),
+  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 1024>, collapsing_highest_bins<1024>>),
+  (std::pair<store_factory<SparseStore<A>>, noops_collapsing_bins>),
+  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, noops_collapsing_bins>)
+  ) {
+  std::vector<int> indexes{-1000, -1, 0, 1, 1000};
+  std::vector<double> counts{0, 1, 2, 4, 5, 10, 20, 100, 1000, 10000};
 
+  auto denseStore = TestType::first_type::new_store();
+  auto sparseStore = store_factory<SparseStore<A>>::new_store();
+  std::vector<Bin> bins;
+  std::vector<Bin> bins_times_2;
+  for (const int& index : indexes) {
+    for (const double& count : counts) {
+      denseStore->add(index, count);
+      sparseStore->add(index, count);
+      bins.emplace_back(index, count);
+      bins_times_2.emplace_back(index, count * 2);
+    }
+  }
+  std::vector<Bin> normalized_bins = normalize_bins(TestType::second_type::collapse(bins));
+  test_store<decltype(denseStore)>(denseStore, normalized_bins);
+  test_store<decltype(sparseStore)>(sparseStore, normalize_bins(noops_collapsing_bins::collapse(bins)));
 
+  std::vector<Bin> normalized_bins_times_2 = normalize_bins(TestType::second_type::collapse(bins_times_2));
+  denseStore->merge(*sparseStore);
+  test_store<decltype(denseStore)>(denseStore, normalized_bins_times_2);
 }
 
 TEST_CASE("merge test", "[mergetest]") {
@@ -408,9 +438,13 @@ TEST_CASE("merge test", "[mergetest]") {
 
   DenseStore<std::allocator<uint8_t>>& sr = s2;
 
+  SparseStore<std::allocator<uint8_t>> ss;
   s1.merge(s2);
   s1.merge(s3);
   s1.merge(sr);
+
+  ss.merge(s1);
+  s1.merge(ss);
 }
 }
 
