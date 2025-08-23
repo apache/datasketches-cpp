@@ -397,7 +397,7 @@ TEMPLATE_TEST_CASE("test merge fuzzy", "[storetest]",
   }
 }
 
-TEMPLATE_TEST_CASE("test merge sparse into dense", "[storetest]",
+TEMPLATE_TEST_CASE("test merge sparse into dense and vice-versa", "[storetest]",
   (std::pair<store_factory<CollapsingLowestDenseStore<A>, 8>, collapsing_lowest_bins<8>>),
   (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, collapsing_lowest_bins<128>>),
   (std::pair<store_factory<CollapsingLowestDenseStore<A>, 1024>, collapsing_lowest_bins<1024>>),
@@ -413,22 +413,37 @@ TEMPLATE_TEST_CASE("test merge sparse into dense", "[storetest]",
   auto denseStore = TestType::first_type::new_store();
   auto sparseStore = store_factory<SparseStore<A>>::new_store();
   std::vector<Bin> bins;
-  std::vector<Bin> bins_times_2;
+  std::map<int, double> sparse_bins_map;
   for (const int& index : indexes) {
+    double total_count = 0.;
     for (const double& count : counts) {
       denseStore->add(index, count);
       sparseStore->add(index, count);
-      bins.emplace_back(index, count);
-      bins_times_2.emplace_back(index, count * 2);
+      total_count += count;
     }
+    bins.emplace_back(index, total_count);
+    sparse_bins_map.emplace(index, total_count);
   }
   std::vector<Bin> normalized_bins = normalize_bins(TestType::second_type::collapse(bins));
   test_store<decltype(denseStore)>(denseStore, normalized_bins);
-  test_store<decltype(sparseStore)>(sparseStore, normalize_bins(noops_collapsing_bins::collapse(bins)));
+  test_store<decltype(sparseStore)>(sparseStore, bins);
 
-  std::vector<Bin> normalized_bins_times_2 = normalize_bins(TestType::second_type::collapse(bins_times_2));
+  std::vector<Bin> bins_in_dense(bins);
+  bins_in_dense.insert(bins_in_dense.end(), bins.begin(), bins.end());
+  normalized_bins = normalize_bins(TestType::second_type::collapse(bins_in_dense));
   denseStore->merge(*sparseStore);
-  test_store<decltype(denseStore)>(denseStore, normalized_bins_times_2);
+  test_store<decltype(denseStore)>(denseStore, normalized_bins);
+
+  for (const Bin& dense_bin : normalized_bins) {
+    sparse_bins_map[dense_bin.getIndex()] += dense_bin.getCount();
+  }
+  std::vector<Bin> bins_in_sparse;
+  bins_in_sparse.reserve(bins_in_sparse.size());
+  for (const auto& [index, count] : sparse_bins_map) {
+    bins_in_sparse.emplace_back(index, count);
+  }
+  sparseStore->merge(*denseStore);
+  test_store<decltype(sparseStore)>(sparseStore, bins_in_sparse);
 }
 
 TEST_CASE("merge test", "[mergetest]") {
