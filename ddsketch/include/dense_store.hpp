@@ -68,7 +68,7 @@ public:
     using pointer = Bin*;
     using reference = Bin;
 
-    iterator(const bins_type& bins, size_type index, const size_type& max_index, const size_type& offset);
+    iterator(const bins_type& bins, const size_type& index, const size_type& max_index, const size_type& offset);
     iterator& operator++();
     bool operator!=(const iterator& other) const;
     reference operator*() const;

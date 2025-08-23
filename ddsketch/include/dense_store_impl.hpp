@@ -235,7 +235,7 @@ void DenseStore<Allocator>::reset_bins(size_type from_index, size_type to_index)
 }
 
 template<typename Allocator>
-DenseStore<Allocator>::iterator::iterator(const bins_type& bins, size_type index, const size_type& max_index, const size_type& offset):
+DenseStore<Allocator>::iterator::iterator(const bins_type& bins, const size_type& index, const size_type& max_index, const size_type& offset):
 bins(bins),
 index(index),
 max_index(max_index),
