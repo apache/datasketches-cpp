@@ -17,7 +17,6 @@ enum class IndexMappingLayout : uint8_t {
   LOG_QUARTIC,
 };
 
-template<class Derived, typename Layout>
 class IndexMapping {
 public:
   virtual int index(double value) = 0;
@@ -36,9 +35,10 @@ public:
 
   virtual void encode(std::ostream& os) = 0;
 
-  static IndexMapping<Derived, Layout>* decode();
+  template<IndexMappingLayout layout>
+  static IndexMapping* decode(std::istream& is);
 
-  virtual ~IndexMapping() {}
+  virtual ~IndexMapping() = default;
 };
 
 }
