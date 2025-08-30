@@ -23,6 +23,7 @@
 #include "collapsing_highest_dense_store.hpp"
 #include "collapsing_lowest_dense_store.hpp"
 #include "dense_store.hpp"
+#include "index_mapping.hpp"
 #include "sparse_store.hpp"
 #include "unbounded_size_dense_store.hpp"
 

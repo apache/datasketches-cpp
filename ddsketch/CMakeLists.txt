@@ -52,4 +52,6 @@ install(FILES
         include/unbounded_size_dense_store_impl.hpp
         include/sparse_store.hpp
         include/sparse_store_impl.hpp
+        include/index_mapping.hpp
+        include/index_mapping_impl.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
