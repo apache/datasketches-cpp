@@ -58,4 +58,6 @@ install(FILES
         include/log_like_index_mapping_impl.hpp
         include/linearly_interpolated_mapping.hpp
         include/linearly_interpolated_mapping_impl.hpp
+        include/logarithmic_mapping.hpp
+        include/logarithmic_mapping_impl.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

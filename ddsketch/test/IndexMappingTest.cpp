@@ -21,6 +21,7 @@
 
 #include "index_mapping_factory.hpp"
 #include "linearly_interpolated_mapping.hpp"
+#include "logarithmic_mapping.hpp"
 
 namespace datasketches {
 
@@ -61,7 +62,8 @@ TEMPLATE_TEST_CASE("test index mapping accuracy", "[indexmappingtest]",
 }
 
 TEMPLATE_TEST_CASE("test index mapping validity", "[indexmappingtest}",
-  LinearlyInterpolatedMapping
+  LinearlyInterpolatedMapping,
+  LogarithmicMapping
   ) {
   constexpr double relative_accuracy = 1e-2;
   constexpr int min_index = -50;
