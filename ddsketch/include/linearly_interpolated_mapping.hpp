@@ -26,9 +26,7 @@ public:
   static constexpr double CORRECTING_FACTOR = std::numbers::log2e;
 
 private:
-
-
-  double index_offset_shift(const double& relative_accuracy) const;
+  static double index_offset_shift(const double& relative_accuracy);
 };
 }
 

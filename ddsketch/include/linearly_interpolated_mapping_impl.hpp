@@ -28,7 +28,7 @@ inline IndexMappingLayout LinearlyInterpolatedMapping::layout() const {
   return IndexMappingLayout::LOG_LINEAR;
 }
 
-inline double LinearlyInterpolatedMapping::index_offset_shift(const double& relative_accuracy) const {
+inline double LinearlyInterpolatedMapping::index_offset_shift(const double& relative_accuracy) {
   return 1 / (std::log1p(2 * relative_accuracy / (1 - relative_accuracy)));
 }
 }
