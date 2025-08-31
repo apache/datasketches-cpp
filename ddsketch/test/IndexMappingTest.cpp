@@ -26,7 +26,8 @@ namespace datasketches {
 
 constexpr double min_tested_relative_accuracy = 1e-8;
 constexpr double max_tested_relative_accuracy = 1 - 1e-3;
-constexpr double multiplier = 1 + std::numbers::sqrt2 * 1e2;
+constexpr double multiplier = 1 + std::numbers::sqrt2 * 1e-1;
+constexpr double floating_point_acceptable_error = 1e-10;
 
 void assert_relative_accuracy(const double& expected, const double& actual, const double& relative_accuracy) {
   REQUIRE(expected >= 0);
@@ -39,6 +40,7 @@ void assert_relative_accuracy(const double& expected, const double& actual, cons
 }
 
 void test_accuracy(const IndexMapping& mapping, const double& relative_accuracy) {
+  REQUIRE( mapping.get_relative_accuracy() <= relative_accuracy + floating_point_acceptable_error);
   for (double value = mapping.min_indexable_value(); value < mapping.max_indexable_value(); value *= multiplier) {
     const double mapped_value = mapping.value(mapping.index(value));
     assert_relative_accuracy(value, mapped_value, relative_accuracy);
@@ -55,6 +57,28 @@ TEMPLATE_TEST_CASE("test index mapping accuracy", "[indexmappingtest]",
   for (double relative_accuracy = max_tested_relative_accuracy; relative_accuracy >= min_tested_relative_accuracy; relative_accuracy *= max_tested_relative_accuracy) {
     auto mapping = index_mapping_factory<TestType>::new_mapping(relative_accuracy);
     test_accuracy(*mapping, relative_accuracy);
+  }
+}
+
+TEMPLATE_TEST_CASE("test index mapping validity", "[indexmappingtest}",
+  LinearlyInterpolatedMapping
+  ) {
+  constexpr double relative_accuracy = 1e-2;
+  constexpr int min_index = -50;
+  constexpr int max_index = 50;
+
+  auto mapping = index_mapping_factory<TestType>::new_mapping(relative_accuracy);
+  int index = min_index;
+  double bound = mapping->upper_bound(index - 1);
+  for (; index <= max_index; index++) {
+    REQUIRE(mapping->lower_bound(index) == Approx(bound).margin(floating_point_acceptable_error));
+    REQUIRE(mapping->lower_bound(index) <= mapping->value(index));
+    REQUIRE(mapping->upper_bound(index) >= mapping->value(index));
+    REQUIRE(mapping->index(mapping->lower_bound(index) - floating_point_acceptable_error) <= index);
+    REQUIRE(mapping->index(mapping->lower_bound(index) + floating_point_acceptable_error) >= index);
+    REQUIRE(mapping->index(mapping->upper_bound(index) - floating_point_acceptable_error) <= index);
+    REQUIRE(mapping->index(mapping->upper_bound(index) + floating_point_acceptable_error) >= index);
+    bound = mapping->upper_bound(index);
   }
 }
 }

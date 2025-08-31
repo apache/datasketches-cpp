@@ -47,8 +47,9 @@ double LogLikeIndexMapping<Derived>::require_valid_gamma(const double& gamma) {
 
 template<class Derived>
 int LogLikeIndexMapping<Derived>::index(const double& value) const{
+  assert(std::isfinite(value) && value > 0.0);
   const double index = log(value) * multiplier + index_offset;
-  return index >= 0 ? static_cast<int>(index) : static_cast<int>(index) - 1;
+  return static_cast<int>(std::floor(index));
 }
 
 template<class Derived>
