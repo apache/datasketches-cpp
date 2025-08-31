@@ -34,6 +34,8 @@ public:
 
   static constexpr double BASE = 2.0;
   static constexpr double CORRECTING_FACTOR = 3.0 / (4.0 * std::numbers::ln2);
+
+private:
   static constexpr double ONE_THIRD = 1.0 / 3.0;
 };
 }
