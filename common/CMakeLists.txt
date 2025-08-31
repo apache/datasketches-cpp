@@ -40,6 +40,7 @@ install(FILES
       include/conditional_back_inserter.hpp
       include/conditional_forward.hpp
       include/count_zeros.hpp
+		include/fast_log2.hpp
       include/inv_pow2_table.hpp
       include/kolmogorov_smirnov_impl.hpp
       include/kolmogorov_smirnov.hpp

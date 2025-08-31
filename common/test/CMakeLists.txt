@@ -69,6 +69,7 @@ target_sources(common_test
   PRIVATE
     quantiles_sorted_view_test.cpp
     optional_test.cpp
+    test_fast_log2.cpp
 )
 
 # now the integration test part
