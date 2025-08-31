@@ -54,4 +54,8 @@ install(FILES
         include/sparse_store_impl.hpp
         include/index_mapping.hpp
         include/index_mapping_impl.hpp
+        include/log_like_index_mapping.hpp
+        include/log_like_index_mapping_impl.hpp
+        include/linearly_interpolated_mapping.hpp
+        include/linearly_interpolated_mapping_impl.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
