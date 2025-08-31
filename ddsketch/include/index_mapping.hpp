@@ -17,6 +17,8 @@ enum class IndexMappingLayout : uint8_t {
   LOG_QUARTIC,
 };
 
+std::ostream& operator<<(std::ostream& os, const IndexMappingLayout& obj);
+
 class IndexMapping {
 public:
   virtual int index(const double& value) const = 0;

@@ -12,6 +12,23 @@
 
 namespace datasketches {
 
+inline std::ostream& operator<<(std::ostream& os, const IndexMappingLayout& obj) {
+  switch (obj) {
+    case IndexMappingLayout::LOG:
+      return os << "LOG";
+    case IndexMappingLayout::LOG_LINEAR:
+      return os << "LOG_LINEAR";
+    case IndexMappingLayout::LOG_QUADRATIC:
+      return os << "LOG_QUADRATIC";
+    case IndexMappingLayout::LOG_CUBIC:
+      return os << "LOG_CUBIC";
+    case IndexMappingLayout::LOG_QUARTIC:
+      return os << "LOG_QUARTIC";
+    default:
+      return os << "INVALID";
+  }
+}
+
 template<IndexMappingLayout layout>
 IndexMapping* IndexMapping::decode(std::istream& is) {
   switch (layout) {
