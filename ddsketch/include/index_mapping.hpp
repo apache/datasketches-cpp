@@ -19,20 +19,13 @@ enum class IndexMappingLayout : uint8_t {
 
 class IndexMapping {
 public:
-  virtual int index(double value) = 0;
-
-  virtual double value(int index) = 0;
-
-  virtual double lowerBound(int index) = 0;
-
-  virtual double upperBound(int index) = 0;
-
-  virtual double relativeAccuracy() = 0;
-
-  virtual double minIndexableValue() = 0;
-
-  virtual double maxIndexableValue() = 0;
-
+  virtual int index(const double& value) const = 0;
+  virtual double value(int index) const = 0;
+  virtual double lower_bound(int index) const = 0;
+  virtual double upper_bound(int index) const = 0;
+  virtual double get_relative_accuracy() const = 0;
+  virtual double min_indexable_value() const = 0;
+  virtual double max_indexable_value() const = 0;
   virtual void encode(std::ostream& os) = 0;
 
   template<IndexMappingLayout layout>
@@ -43,4 +36,5 @@ public:
 
 }
 
+#include "index_mapping_impl.hpp"
 #endif //INDEX_MAPPING_HPP
