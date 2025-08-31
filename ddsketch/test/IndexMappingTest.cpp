@@ -22,6 +22,7 @@
 #include "index_mapping_factory.hpp"
 #include "linearly_interpolated_mapping.hpp"
 #include "logarithmic_mapping.hpp"
+#include "quadratically_interpolated_mapping.hpp"
 
 namespace datasketches {
 
@@ -53,7 +54,9 @@ void test_accuracy(const IndexMapping& mapping, const double& relative_accuracy)
 }
 
 TEMPLATE_TEST_CASE("test index mapping accuracy", "[indexmappingtest]",
-  LinearlyInterpolatedMapping
+  LinearlyInterpolatedMapping,
+  LogarithmicMapping,
+  QuadraticallyInterpolatedMapping
   ) {
   for (double relative_accuracy = max_tested_relative_accuracy; relative_accuracy >= min_tested_relative_accuracy; relative_accuracy *= max_tested_relative_accuracy) {
     auto mapping = index_mapping_factory<TestType>::new_mapping(relative_accuracy);
@@ -63,7 +66,8 @@ TEMPLATE_TEST_CASE("test index mapping accuracy", "[indexmappingtest]",
 
 TEMPLATE_TEST_CASE("test index mapping validity", "[indexmappingtest}",
   LinearlyInterpolatedMapping,
-  LogarithmicMapping
+  LogarithmicMapping,
+  QuadraticallyInterpolatedMapping
   ) {
   constexpr double relative_accuracy = 1e-2;
   constexpr int min_index = -50;
