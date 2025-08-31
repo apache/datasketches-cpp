@@ -18,7 +18,6 @@
 */
 
 #include <catch2/catch.hpp>
-#include <iostream>
 
 #include "index_mapping_factory.hpp"
 #include "linearly_interpolated_mapping.hpp"
@@ -35,18 +34,19 @@ void assert_relative_accuracy(const double& expected, const double& actual, cons
   if (expected == 0) {
     REQUIRE(actual == Approx(0.).margin(1e-12));
   } else {
-    REQUIRE(std::abs(expected - actual) / expected <= relative_accuracy + 1e-7);
+    REQUIRE(std::abs(expected - actual) / expected <= relative_accuracy + 1e-12);
   }
 }
 
 void test_accuracy(const IndexMapping& mapping, const double& relative_accuracy) {
-  for (double value = mapping.min_indexable_value(); value < mapping.max_indexable_value(); value += multiplier) {
+  for (double value = mapping.min_indexable_value(); value < mapping.max_indexable_value(); value *= multiplier) {
     const double mapped_value = mapping.value(mapping.index(value));
     assert_relative_accuracy(value, mapped_value, relative_accuracy);
   }
   const double value = mapping.max_indexable_value();
   const double mapped_value = mapping.value(mapping.index(value));
   assert_relative_accuracy(value, mapped_value, relative_accuracy);
+  REQUIRE(relative_accuracy <= mapping.get_relative_accuracy() + 1e-10);
 }
 
 TEMPLATE_TEST_CASE("test index mapping accuracy", "[indexmappingtest]",
@@ -54,7 +54,6 @@ TEMPLATE_TEST_CASE("test index mapping accuracy", "[indexmappingtest]",
   ) {
   for (double relative_accuracy = max_tested_relative_accuracy; relative_accuracy >= min_tested_relative_accuracy; relative_accuracy *= max_tested_relative_accuracy) {
     auto mapping = index_mapping_factory<TestType>::new_mapping(relative_accuracy);
-
     test_accuracy(*mapping, relative_accuracy);
   }
 }

@@ -6,30 +6,31 @@
 #define LOG_LIKE_INDEX_MAPPING_IMPL_HPP
 #include "log_like_index_mapping.hpp"
 #include <cmath>
+#include <iomanip>
 
 namespace datasketches {
 
 template<class Derived>
 LogLikeIndexMapping<Derived>::LogLikeIndexMapping(const double& gamma, const double& index_offset):
-  gamma(gamma),
+  gamma(require_valid_gamma(gamma)),
   index_offset(index_offset),
   relative_accuracy(compute_relative_accuracy(gamma, Derived::correcting_factor())),
   multiplier(std::log(Derived::base()) / std::log1p(gamma - 1)) {}
 
 template<class Derived>
-double LogLikeIndexMapping<Derived>::compute_relative_accuracy(const double& gamma, const double& correcting_factor) const {
+double LogLikeIndexMapping<Derived>::compute_relative_accuracy(const double& gamma, const double& correcting_factor) {
   const double exact_log_gamma = std::pow(gamma, correcting_factor);
   return (exact_log_gamma - 1) / (exact_log_gamma + 1);
 }
 
 template<class Derived>
-double LogLikeIndexMapping<Derived>::compute_gamma(const double& relative_accuracy, const double& correcting_factor) const {
+double LogLikeIndexMapping<Derived>::compute_gamma(const double& relative_accuracy, const double& correcting_factor) {
   const double exact_log_gamma = (1.0 + relative_accuracy) / (1.0 - relative_accuracy);
-  return std::pow(exact_log_gamma, correcting_factor);
+  return std::pow(exact_log_gamma, 1.0 / correcting_factor);
 }
 
 template<class Derived>
-double LogLikeIndexMapping<Derived>::require_valid_relative_accuracy(const double& relative_accuracy) const {
+double LogLikeIndexMapping<Derived>::require_valid_relative_accuracy(const double& relative_accuracy) {
   if (relative_accuracy <= 0 || relative_accuracy >= 1) {
     throw std::invalid_argument("relative_accuracy must be between 0 and 1");
   }
@@ -37,7 +38,7 @@ double LogLikeIndexMapping<Derived>::require_valid_relative_accuracy(const doubl
 }
 
 template<class Derived>
-double LogLikeIndexMapping<Derived>::require_valid_gamma(const double& gamma) const {
+double LogLikeIndexMapping<Derived>::require_valid_gamma(const double& gamma) {
   if (gamma <= 1) {
     throw std::invalid_argument("gamma must be greater than 1");
   }
@@ -47,7 +48,7 @@ double LogLikeIndexMapping<Derived>::require_valid_gamma(const double& gamma) co
 template<class Derived>
 int LogLikeIndexMapping<Derived>::index(const double& value) const{
   const double index = log(value) * multiplier + index_offset;
-  return index >= 0 ? index : index - 1;
+  return index >= 0 ? static_cast<int>(index) : static_cast<int>(index) - 1;
 }
 
 template<class Derived>
@@ -72,14 +73,14 @@ double LogLikeIndexMapping<Derived>::get_relative_accuracy() const {
 
 template<class Derived>
 double LogLikeIndexMapping<Derived>::min_indexable_value() const {
-  const double& a = std::pow(Derived::base(), (static_cast<double>(std::numeric_limits<int>::max()) - index_offset) / multiplier - 1);
+  const double& a = std::pow(Derived::base(), (static_cast<double>(std::numeric_limits<int>::min()) - index_offset) / multiplier + 1);
   const double& b = std::numeric_limits<double>::min() * (1 + relative_accuracy) / (1 - relative_accuracy);
   return std::max(a, b);
 }
 
 template<class Derived>
 double LogLikeIndexMapping<Derived>::max_indexable_value() const {
-  const double& a = std::pow(Derived::base(), (std::numeric_limits<int>::max() - index_offset) / multiplier - 1);
+  const double& a = std::pow(Derived::base(), (static_cast<double>(std::numeric_limits<int>::max()) - index_offset) / multiplier - 1);
   const double& b = std::numeric_limits<double>::max() / (1 + relative_accuracy);
   return std::min(a, b);
 }

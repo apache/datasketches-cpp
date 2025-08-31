@@ -17,7 +17,6 @@ class LogLikeIndexMapping : public IndexMapping {
 public:
   LogLikeIndexMapping(const double& gamma, const double& index_offset);
 
-
   int index(const double& value) const override;
   double value(int index) const override;
   double lower_bound(int index) const override;
@@ -29,15 +28,14 @@ public:
 
   bool operator==(const LogLikeIndexMapping<Derived>& other) const;
 
-
 private:
-  double compute_relative_accuracy(const double& gamma, const double& correcting_factor) const;
-  double require_valid_gamma(const double& gamma) const;
+  static double compute_relative_accuracy(const double& gamma, const double& correcting_factor);
+  static double require_valid_gamma(const double& gamma);
   virtual IndexMappingLayout layout() const = 0;
 
 protected:
-  double require_valid_relative_accuracy(const double& relative_accuracy) const;
-  double compute_gamma(const double& relative_accuracy, const double& correcting_factor) const;
+  static double require_valid_relative_accuracy(const double& relative_accuracy);
+  static double compute_gamma(const double& relative_accuracy, const double& correcting_factor);
   virtual double log(const double& value) const = 0;
   virtual double log_inverse(const double& value) const = 0;
 

@@ -54,15 +54,6 @@ static inline double fast_log2_inverse(const double num) {
   std::memcpy(&result, &result_bits, sizeof(result_bits));
   return result;
 }
-
-// Precise versions for when accuracy is more important than speed
-static inline double precise_log2(const double num) {
-  return std::log2(num);
-}
-
-static inline double precise_log2_inverse(const double num) {
-  return std::pow(2.0, num);
-}
 }
 
 #endif //FAST_LOG2_HPP

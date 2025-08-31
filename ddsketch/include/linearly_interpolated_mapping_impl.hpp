@@ -25,11 +25,11 @@ constexpr double LinearlyInterpolatedMapping::base() {
 }
 
 inline double LinearlyInterpolatedMapping::log(const double& value) const {
-  return precise_log2(value);
+  return fast_log2(value);
 }
 
 inline double LinearlyInterpolatedMapping::log_inverse(const double& index) const {
-  return precise_log2_inverse(index);
+  return fast_log2_inverse(index);
 }
 
 inline IndexMappingLayout LinearlyInterpolatedMapping::layout() const {

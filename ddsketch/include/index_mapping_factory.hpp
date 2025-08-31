@@ -12,9 +12,10 @@ namespace datasketches {
 template<typename IndexMapping>
 class index_mapping_factory {
 public:
-  static std::unique_ptr<IndexMapping> new_mapping(auto... Args)
+  template<typename... Args>
+  static std::unique_ptr<IndexMapping> new_mapping(Args&&... args)
   {
-    return std::make_unique<IndexMapping>(Args...);
+    return std::make_unique<IndexMapping>(std::forward<Args>(args)...);
   }
 };
 }

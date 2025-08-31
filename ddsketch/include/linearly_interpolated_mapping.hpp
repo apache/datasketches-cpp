@@ -12,7 +12,7 @@
 
 namespace datasketches {
 
-class LinearlyInterpolatedMapping : public LogLikeIndexMapping<LinearlyInterpolatedMapping>{
+class LinearlyInterpolatedMapping : public LogLikeIndexMapping<LinearlyInterpolatedMapping> {
 public:
   explicit LinearlyInterpolatedMapping(const double& relative_accuracy);
 
@@ -28,7 +28,7 @@ public:
 
 private:
   static constexpr double BASE = 2.0;
-  static constexpr double CORRECTING_FACTOR = 1 / std::numbers::log2e;
+  static constexpr double CORRECTING_FACTOR = std::numbers::log2e;
 
   double index_offset_shift(const double& relative_accuracy) const;
 };
