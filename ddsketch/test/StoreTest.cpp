@@ -22,7 +22,6 @@
 #include "collapsing_highest_dense_store.hpp"
 #include "sparse_store.hpp"
 #include "store_factory.hpp"
-#include <iostream>
 
 #include "collapsing_lowest_dense_store.hpp"
 #include "unbounded_size_dense_store.hpp"
@@ -42,7 +41,6 @@ public:
   }
 };
 
-// This
 template<const int max_num_bins>
 class collapsing_lowest_bins {
 public:

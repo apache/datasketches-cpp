@@ -40,6 +40,7 @@ target_sources(ddsketch_test
         BinTest.cpp
         DDSketchTest.cpp
         StoreTest.cpp
+        IndexMappingTest.cpp
 )
 
 if (SERDE_COMPAT)
