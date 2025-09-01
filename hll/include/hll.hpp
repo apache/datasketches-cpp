@@ -160,7 +160,7 @@ class hll_sketch_alloc final {
     static hll_sketch_alloc deserialize(const void* bytes, size_t len, const A& allocator = A());
 
     //! Class destructor
-    virtual ~hll_sketch_alloc();
+    ~hll_sketch_alloc();
 
     /**
      *  Copy assignment operator
