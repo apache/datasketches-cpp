@@ -111,6 +111,21 @@ typename SparseStore<Allocator>::iterator& SparseStore<Allocator>::iterator::ope
 }
 
 template<typename Allocator>
+typename SparseStore<Allocator>::iterator SparseStore<Allocator>::iterator::operator++(int) {
+  iterator temp = *this;
+  ++(*this);
+  return temp;
+}
+
+template<typename Allocator>
+typename SparseStore<Allocator>::iterator& SparseStore<Allocator>::iterator::operator=(const iterator& other) {
+  if (this != &other) {
+    this->it = other.it;
+  }
+  return *this;
+}
+
+template<typename Allocator>
 bool SparseStore<Allocator>::iterator::operator!=(const iterator& other) const {
   return it != other.it;
 }

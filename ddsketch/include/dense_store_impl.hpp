@@ -243,11 +243,28 @@ offset(offset)
 {}
 
 template<typename Allocator>
+typename DenseStore<Allocator>::iterator& DenseStore<Allocator>::iterator::operator=(const iterator& other) {
+  if (this != &other) {
+    // Note: we can't assign to reference members, so we only copy the index
+    // The reference members (bins, max_index, offset) should already point to the same objects
+    this->index = other.index;
+  }
+  return *this;
+}
+
+template<typename Allocator>
 typename DenseStore<Allocator>::iterator& DenseStore<Allocator>::iterator::operator++() {
   do {
     ++this->index;
   } while (this->index <= this->max_index && this->bins[this->index - this->offset] == 0);
   return *this;
+}
+
+template<typename Allocator>
+typename DenseStore<Allocator>::iterator DenseStore<Allocator>::iterator::operator++(int) {
+  iterator temp = *this;
+  ++(*this);
+  return temp;
 }
 
 template<typename Allocator>
@@ -267,6 +284,16 @@ index(index),
 min_index(min_index),
 offset(offset)
 {}
+
+template<typename Allocator>
+typename DenseStore<Allocator>::reverse_iterator& DenseStore<Allocator>::reverse_iterator::operator=(const reverse_iterator& other) {
+  if (this != &other) {
+    // Note: we can't assign to reference members, so we only copy the index
+    // The reference members (bins, min_index, offset) should already point to the same objects
+    this->index = other.index;
+  }
+  return *this;
+}
 
 template<typename Allocator>
 typename DenseStore<Allocator>::reverse_iterator& DenseStore<Allocator>::reverse_iterator::operator++() {

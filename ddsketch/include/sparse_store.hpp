@@ -60,13 +60,16 @@ public:
   class iterator {
   public:
     using internal_iterator = typename bins_type::const_iterator;
+    using iterator_category = std::input_iterator_tag;
     using value_type = Bin;
-    using difference_type = void;
-    using pointer = const Bin*;
-    using reference = const Bin;
+    using difference_type = std::ptrdiff_t;
+    using pointer = Bin*;
+    using reference = Bin;
 
     explicit iterator(internal_iterator it);
     iterator& operator++();
+    iterator operator++(int);
+    iterator& operator=(const iterator& other);
     bool operator!=(const iterator& other) const;
     reference operator*() const;
 

@@ -64,12 +64,14 @@ public:
   public:
     using iterator_category = std::input_iterator_tag;
     using value_type = Bin;
-    using difference_type = void;
+    using difference_type = std::ptrdiff_t;
     using pointer = Bin*;
     using reference = Bin;
 
     iterator(const bins_type& bins, const size_type& index, const size_type& max_index, const size_type& offset);
+    iterator& operator=(const iterator& other);
     iterator& operator++();
+    iterator operator++(int);
     bool operator!=(const iterator& other) const;
     reference operator*() const;
 
@@ -84,11 +86,12 @@ public:
   public:
     using iterator_category = std::input_iterator_tag;
     using value_type = Bin;
-    using difference_type = void;
+    using difference_type = std::ptrdiff_t;
     using pointer = Bin*;
     using reference = Bin;
 
     reverse_iterator(const bins_type& bins, size_type index, const size_type& min_index, const size_type& offset);
+    reverse_iterator& operator=(const reverse_iterator& other);
     reverse_iterator& operator++();
     bool operator!=(const reverse_iterator& other) const;
     reference operator*() const;

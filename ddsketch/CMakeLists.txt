@@ -62,4 +62,5 @@ install(FILES
         include/logarithmic_mapping_impl.hpp
         include/quadratically_interpolated_mapping.hpp
         include/quadratically_interpolated_mapping_impl.hpp
+        include/store.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
