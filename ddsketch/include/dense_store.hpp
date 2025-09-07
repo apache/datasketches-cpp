@@ -27,7 +27,7 @@ namespace datasketches {
 // Forward declaration
 template<typename Allocator> class SparseStore;
 
-template<typename Allocator>
+template<class Derived, typename Allocator>
 class DenseStore {
 public:
   using bins_type = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
@@ -43,13 +43,18 @@ public:
   void add(int index);
   void add(int index, double count);
   void add(const Bin& bin);
-  virtual DenseStore<Allocator>* copy() const = 0;
-  virtual void clear();
+
+  DenseStore<Derived, Allocator>* copy();
+
+  void clear();
   bool is_empty() const;
   size_type get_max_index() const;
   size_type get_min_index() const;
   double get_total_count() const;
-  virtual void merge(const DenseStore<Allocator>& other) = 0;
+
+  template<class Store>
+  void merge(const DenseStore<Store, Allocator>& other);
+
   void merge(const SparseStore<Allocator>& other);
 
   iterator begin() const;
@@ -58,7 +63,7 @@ public:
   reverse_iterator rbegin() const;
   reverse_iterator rend() const;
 
-  virtual ~DenseStore() = default;
+  ~DenseStore() = default;
 
   class iterator {
   public:
@@ -116,15 +121,18 @@ protected:
   static constexpr double DEFAULT_ARRAY_LENGTH_OVERHEAD_RATIO = 0.1;
 
   double get_total_count(size_type from_index, size_type to_index) const;
-  virtual size_type normalize(size_type index) = 0;
-  virtual void adjust(size_type newMinIndex, size_type newMaxIndex) = 0;
+  size_type normalize(size_type index);
+  void adjust(size_type newMinIndex, size_type newMaxIndex);
   void extend_range(size_type index);
   void extend_range(size_type new_min_index, size_type new_max_index);
   void shift_bins(size_type shift);
   void center_bins(size_type new_min_index, size_type new_max_index);
-  virtual size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
+  size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
   void reset_bins();
   void reset_bins(size_type from_index, size_type to_index);
+
+  Derived& derived();
+  const Derived& derived() const;
 };
 }
 

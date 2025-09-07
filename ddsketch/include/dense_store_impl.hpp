@@ -24,18 +24,18 @@
 
 namespace datasketches {
 
-template<typename Allocator>
-DenseStore<Allocator>::DenseStore() :
+template<class Derived, typename Allocator>
+DenseStore<Derived, Allocator>::DenseStore() :
   DenseStore(DEFAULT_ARRAY_LENGTH_GROWTH_INCREMENT)
 {}
 
-template<typename Allocator>
-DenseStore<Allocator>::DenseStore(const int& array_length_growth_increment) :
+template<class Derived, typename Allocator>
+DenseStore<Derived, Allocator>::DenseStore(const int& array_length_growth_increment) :
   DenseStore(array_length_growth_increment, array_length_growth_increment * DEFAULT_ARRAY_LENGTH_OVERHEAD_RATIO)
 {}
 
-template<typename Allocator>
-DenseStore<Allocator>::DenseStore(const int& array_length_growth_increment, const int& array_length_overhead):
+template<class Derived, typename Allocator>
+DenseStore<Derived, Allocator>::DenseStore(const int& array_length_growth_increment, const int& array_length_overhead):
   offset(0),
   min_index(std::numeric_limits<size_type>::max()),
   max_index(std::numeric_limits<size_type>::min()),
@@ -43,66 +43,65 @@ DenseStore<Allocator>::DenseStore(const int& array_length_growth_increment, cons
   array_length_overhead(array_length_overhead)
 {}
 
-template<typename Allocator>
-void DenseStore<Allocator>::add(int index) {
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::add(int index) {
   add(index, 1);
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::add(int index, double count) {
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::add(int index, double count) {
   if (count == 0) {
     return;
   }
-  const size_type array_index = normalize(index);
+  const size_type array_index = derived().normalize(index);
   bins[array_index] += count;
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::add(const Bin&  bin) {
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::add(const Bin&  bin) {
   if (bin.getCount() == 0) {
     return;
   }
   add(bin.getIndex(), bin.getCount());
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::clear() {
-  // bins.resize(bins.size(), 0); // TODO: remove this comment, now I need it for debugging
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::clear() {
   bins.clear();
   min_index = std::numeric_limits<size_type>::max();
   max_index = std::numeric_limits<size_type>::min();
   offset = 0;
 }
 
-template<typename Allocator>
-bool DenseStore<Allocator>::is_empty() const {
+template<class Derived, typename Allocator>
+bool DenseStore<Derived, Allocator>::is_empty() const {
   // return get_total_count() == 0;
   return max_index < min_index;
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::size_type DenseStore<Allocator>::get_max_index() const {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::size_type DenseStore<Derived, Allocator>::get_max_index() const {
   if (is_empty()) {
     throw std::runtime_error("store is empty");
   }
   return max_index;
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::size_type DenseStore<Allocator>::get_min_index() const {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::size_type DenseStore<Derived, Allocator>::get_min_index() const {
   if (is_empty()) {
     throw std::runtime_error("store is empty");
   }
   return min_index;
 }
 
-template<typename Allocator>
-double DenseStore<Allocator>::get_total_count() const {
+template<class Derived, typename Allocator>
+double DenseStore<Derived, Allocator>::get_total_count() const {
   return get_total_count(min_index, max_index);
 }
 
-template<typename Allocator>
-double DenseStore<Allocator>::get_total_count(size_type from_index, size_type to_index) const {
+template<class Derived, typename Allocator>
+double DenseStore<Derived, Allocator>::get_total_count(size_type from_index, size_type to_index) const {
   if (is_empty()) {
     return 0;
   }
@@ -117,60 +116,72 @@ double DenseStore<Allocator>::get_total_count(size_type from_index, size_type to
   return total_count;
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::merge(const SparseStore<Allocator>& other) {
+
+template<class Derived, typename Allocator>
+template<class Store>
+void DenseStore<Derived, Allocator>::merge(const DenseStore<Store, Allocator>& other) {
+
+}
+
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::merge(const SparseStore<Allocator>& other) {
   for (const Bin &bin : other) {
     add(bin);
   }
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::iterator DenseStore<Allocator>::begin() const {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::iterator DenseStore<Derived, Allocator>::begin() const {
   if (is_empty()) {
     return end();
   }
-  return DenseStore<Allocator>::iterator(this->bins, this->min_index, this->max_index, this->offset);
+  return DenseStore<Derived, Allocator>::iterator(this->bins, this->min_index, this->max_index, this->offset);
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::iterator DenseStore<Allocator>::end() const {
-  return DenseStore<Allocator>::iterator(this->bins, this->max_index + 1, this->max_index, this->offset);
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::iterator DenseStore<Derived, Allocator>::end() const {
+  return DenseStore<Derived, Allocator>::iterator(this->bins, this->max_index + 1, this->max_index, this->offset);
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::reverse_iterator DenseStore<Allocator>::rbegin() const {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::reverse_iterator DenseStore<Derived, Allocator>::rbegin() const {
   if (is_empty()) {
     return rend();
   }
-  return DenseStore<Allocator>::reverse_iterator(this->bins, this->max_index, this->min_index, this->offset);
+  return DenseStore<Derived, Allocator>::reverse_iterator(this->bins, this->max_index, this->min_index, this->offset);
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::reverse_iterator DenseStore<Allocator>::rend() const {
-  return DenseStore<Allocator>::reverse_iterator(this->bins, this->min_index - 1, this->min_index, this->offset);
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::reverse_iterator DenseStore<Derived, Allocator>::rend() const {
+  return DenseStore<Derived, Allocator>::reverse_iterator(this->bins, this->min_index - 1, this->min_index, this->offset);
 }
 
 
-template<typename Allocator>
-typename DenseStore<Allocator>::size_type DenseStore<Allocator>::normalize(size_type index) {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::size_type DenseStore<Derived, Allocator>::normalize(size_type index) {
   if (index < get_min_index() || index > get_max_index()) {
     extend_range(index, index);
   }
   return index - offset;
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::extend_range(size_type index) {
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::adjust(size_type newMinIndex, size_type newMaxIndex) {
+  derived().adjust(newMinIndex, newMaxIndex);
+}
+
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::extend_range(size_type index) {
   extend_range(index, index);
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::extend_range(size_type new_min_index, size_type new_max_index) {
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::extend_range(size_type new_min_index, size_type new_max_index) {
   new_min_index = std::min(new_min_index, min_index);
   new_max_index = std::max(new_max_index, max_index);
 
   if (is_empty()) {
-    const size_type initial_length = get_new_length(new_min_index, new_max_index);
+    const size_type initial_length = derived().get_new_length(new_min_index, new_max_index);
     if (bins.empty() || initial_length >= static_cast<size_type>(bins.size())) {
       bins.resize(initial_length);
     }
@@ -184,7 +195,7 @@ void DenseStore<Allocator>::extend_range(size_type new_min_index, size_type new_
   } else {
     // To avoid shifting too often when nearing the capacity of the array, we may grow it before
     // we actually reach the capacity.
-    const size_type new_length = get_new_length(new_min_index, new_max_index);
+    const size_type new_length = derived().get_new_length(new_min_index, new_max_index);
     if (new_length > static_cast<size_type>(bins.size())) {
       bins.resize(new_length);
     }
@@ -193,8 +204,8 @@ void DenseStore<Allocator>::extend_range(size_type new_min_index, size_type new_
   }
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::shift_bins(size_type shift) {
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::shift_bins(size_type shift) {
   const size_type min_arr_index = min_index - offset;
   const size_type max_arr_index = max_index - offset;
 
@@ -209,8 +220,8 @@ void DenseStore<Allocator>::shift_bins(size_type shift) {
   offset -= shift;
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::center_bins(size_type new_min_index, size_type new_max_index) {
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::center_bins(size_type new_min_index, size_type new_max_index) {
   const size_type middle_index = new_min_index + (new_max_index - new_min_index + 1) / 2;
   shift_bins(offset + bins.size() / 2 - middle_index);
 
@@ -218,32 +229,42 @@ void DenseStore<Allocator>::center_bins(size_type new_min_index, size_type new_m
   max_index = new_max_index;
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::size_type DenseStore<Allocator>::get_new_length(size_type new_min_index, size_type new_max_index) const {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::size_type DenseStore<Derived, Allocator>::get_new_length(size_type new_min_index, size_type new_max_index) const {
   const size_type desired_length = new_max_index - new_min_index + 1;
   return ((desired_length + array_length_overhead - 1) / array_length_growth_increment + 1) * array_length_growth_increment;
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::reset_bins() {
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::reset_bins() {
   reset_bins(min_index, max_index);
 }
 
-template<typename Allocator>
-void DenseStore<Allocator>::reset_bins(size_type from_index, size_type to_index) {
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::reset_bins(size_type from_index, size_type to_index) {
   std::fill(bins.begin() + from_index - offset, bins.begin() + to_index - offset + 1, 0);
 }
 
-template<typename Allocator>
-DenseStore<Allocator>::iterator::iterator(const bins_type& bins, const size_type& index, const size_type& max_index, const size_type& offset):
+template<class Derived, typename Allocator>
+Derived& DenseStore<Derived, Allocator>::derived() {
+  return static_cast<Derived&>(*this);
+}
+
+template<class Derived, typename Allocator>
+const Derived& DenseStore<Derived, Allocator>::derived() const {
+  return static_cast<const Derived&>(*this);
+}
+
+template<class Derived, typename Allocator>
+DenseStore<Derived, Allocator>::iterator::iterator(const bins_type& bins, const size_type& index, const size_type& max_index, const size_type& offset):
 bins(bins),
 index(index),
 max_index(max_index),
 offset(offset)
 {}
 
-template<typename Allocator>
-typename DenseStore<Allocator>::iterator& DenseStore<Allocator>::iterator::operator=(const iterator& other) {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::iterator& DenseStore<Derived, Allocator>::iterator::operator=(const iterator& other) {
   if (this != &other) {
     // Note: we can't assign to reference members, so we only copy the index
     // The reference members (bins, max_index, offset) should already point to the same objects
@@ -252,41 +273,41 @@ typename DenseStore<Allocator>::iterator& DenseStore<Allocator>::iterator::opera
   return *this;
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::iterator& DenseStore<Allocator>::iterator::operator++() {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::iterator& DenseStore<Derived, Allocator>::iterator::operator++() {
   do {
     ++this->index;
   } while (this->index <= this->max_index && this->bins[this->index - this->offset] == 0);
   return *this;
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::iterator DenseStore<Allocator>::iterator::operator++(int) {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::iterator DenseStore<Derived, Allocator>::iterator::operator++(int) {
   iterator temp = *this;
   ++(*this);
   return temp;
 }
 
-template<typename Allocator>
-bool DenseStore<Allocator>::iterator::operator!=(const iterator& other) const {
+template<class Derived, typename Allocator>
+bool DenseStore<Derived, Allocator>::iterator::operator!=(const iterator& other) const {
   return this->index != other.index;
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::iterator::reference DenseStore<Allocator>::iterator::operator*() const {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::iterator::reference DenseStore<Derived, Allocator>::iterator::operator*() const {
   return Bin(this->index, this->bins[this->index - this->offset]);
 }
 
-template<typename Allocator>
-DenseStore<Allocator>::reverse_iterator::reverse_iterator(const bins_type& bins, size_type index, const size_type& min_index, const size_type& offset):
+template<class Derived, typename Allocator>
+DenseStore<Derived, Allocator>::reverse_iterator::reverse_iterator(const bins_type& bins, size_type index, const size_type& min_index, const size_type& offset):
 bins(bins),
 index(index),
 min_index(min_index),
 offset(offset)
 {}
 
-template<typename Allocator>
-typename DenseStore<Allocator>::reverse_iterator& DenseStore<Allocator>::reverse_iterator::operator=(const reverse_iterator& other) {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::reverse_iterator& DenseStore<Derived, Allocator>::reverse_iterator::operator=(const reverse_iterator& other) {
   if (this != &other) {
     // Note: we can't assign to reference members, so we only copy the index
     // The reference members (bins, min_index, offset) should already point to the same objects
@@ -295,21 +316,21 @@ typename DenseStore<Allocator>::reverse_iterator& DenseStore<Allocator>::reverse
   return *this;
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::reverse_iterator& DenseStore<Allocator>::reverse_iterator::operator++() {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::reverse_iterator& DenseStore<Derived, Allocator>::reverse_iterator::operator++() {
   do {
     --this->index;
   } while (this->index >= this->min_index && this->bins[this->index - this->offset] == 0);
   return *this;
 }
 
-template<typename Allocator>
-bool DenseStore<Allocator>::reverse_iterator::operator!=(const reverse_iterator& other) const {
+template<class Derived, typename Allocator>
+bool DenseStore<Derived, Allocator>::reverse_iterator::operator!=(const reverse_iterator& other) const {
   return this->index != other.index;
 }
 
-template<typename Allocator>
-typename DenseStore<Allocator>::reverse_iterator::reference DenseStore<Allocator>::reverse_iterator::operator*() const {
+template<class Derived, typename Allocator>
+typename DenseStore<Derived, Allocator>::reverse_iterator::reference DenseStore<Derived, Allocator>::reverse_iterator::operator*() const {
   return Bin(this->index, this->bins[this->index - this->offset]);
 }
 }

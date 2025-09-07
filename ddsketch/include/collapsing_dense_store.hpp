@@ -23,23 +23,23 @@
 #include "dense_store.hpp"
 
 namespace datasketches {
-template<typename Allocator>
-class CollapsingDenseStore : public DenseStore<Allocator> {
+template<class Derived, typename Allocator>
+class CollapsingDenseStore : public DenseStore<Derived, Allocator> {
 public:
 
-  using size_type = typename DenseStore<Allocator>::size_type;
+  using size_type = typename DenseStore<Derived, Allocator>::size_type;
   explicit CollapsingDenseStore(size_type max_num_bins);
-  CollapsingDenseStore(const CollapsingDenseStore<Allocator>& other) = default;
+  CollapsingDenseStore(const CollapsingDenseStore<Derived, Allocator>& other) = default;
 
-  ~CollapsingDenseStore() override = default;
+  ~CollapsingDenseStore() = default;
 
-  void clear() override;
+  void clear();
 
 protected:
   const size_type max_num_bins;
   bool is_collapsed;
 
-  size_type get_new_length(size_type new_min_index, size_type new_max_index) const override;
+  size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
 };
 }
 

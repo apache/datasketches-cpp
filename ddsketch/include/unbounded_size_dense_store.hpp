@@ -23,25 +23,27 @@
 
 namespace datasketches {
 template<typename Allocator>
-class UnboundedSizeDenseStore: public DenseStore<Allocator> {
+class UnboundedSizeDenseStore: public DenseStore<UnboundedSizeDenseStore<Allocator>, Allocator> {
 public:
-  using size_type = typename DenseStore<Allocator>::size_type;
+  using size_type = typename DenseStore<UnboundedSizeDenseStore, Allocator>::size_type;
 
   UnboundedSizeDenseStore();
   explicit UnboundedSizeDenseStore(const int& array_length_growth_increment);
   explicit UnboundedSizeDenseStore(const int& array_length_growth_increment, const int& array_length_overhead);
   UnboundedSizeDenseStore(const UnboundedSizeDenseStore& other) = default;
 
-  UnboundedSizeDenseStore* copy() const override;
-  ~UnboundedSizeDenseStore() override = default;
+  UnboundedSizeDenseStore* copy() const;
+  ~UnboundedSizeDenseStore() = default;
 
-  void merge(const DenseStore<Allocator>& other) override;
+  template<class OtherDerived>
+  void merge(const DenseStore<OtherDerived, Allocator>& other);
   void merge(const UnboundedSizeDenseStore<Allocator>& other);
-  using DenseStore<Allocator>::merge;
+  using DenseStore<UnboundedSizeDenseStore, Allocator>::merge;
 
 protected:
-  size_type normalize(size_type index) override;
-  void adjust(size_type new_min_index, size_type new_max_index) override;
+  size_type normalize(size_type index);
+  void adjust(size_type new_min_index, size_type new_max_index);
+  friend class DenseStore<UnboundedSizeDenseStore, Allocator>;
 };
 }
 

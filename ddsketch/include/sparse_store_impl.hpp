@@ -80,7 +80,8 @@ void SparseStore<Allocator>::merge(const SparseStore<Allocator>& other) {
 }
 
 template<typename Allocator>
-void SparseStore<Allocator>::merge(const DenseStore<Allocator> &other) {
+template<class OtherDerived>
+void SparseStore<Allocator>::merge(const DenseStore<OtherDerived, Allocator> &other) {
   for (const Bin& bin : other) {
     add(bin);
   }

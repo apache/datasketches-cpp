@@ -23,19 +23,19 @@
 #include "collapsing_dense_store.hpp"
 
 namespace datasketches {
-template<typename Allocator>
-CollapsingDenseStore<Allocator>::CollapsingDenseStore(size_type max_num_bins): DenseStore<Allocator>(), max_num_bins(max_num_bins), is_collapsed(false) {}
+template<class Derived, typename Allocator>
+CollapsingDenseStore<Derived, Allocator>::CollapsingDenseStore(size_type max_num_bins): DenseStore<Derived, Allocator>(), max_num_bins(max_num_bins), is_collapsed(false) {}
 
 // TODO implement copy constructor
 
-template<typename Allocator>
-typename CollapsingDenseStore<Allocator>::size_type CollapsingDenseStore<Allocator>::get_new_length(size_type new_min_index, size_type new_max_index) const {
-  return std::min(DenseStore<Allocator>::get_new_length(new_min_index, new_max_index), max_num_bins);
+template<class Derived, typename Allocator>
+typename CollapsingDenseStore<Derived, Allocator>::size_type CollapsingDenseStore<Derived, Allocator>::get_new_length(size_type new_min_index, size_type new_max_index) const {
+  return std::min(DenseStore<Derived, Allocator>::get_new_length(new_min_index, new_max_index), max_num_bins);
 }
 
-template<typename Allocator>
-void CollapsingDenseStore<Allocator>::clear() {
-  DenseStore<Allocator>::clear();
+template<class Derived, typename Allocator>
+void CollapsingDenseStore<Derived, Allocator>::clear() {
+  DenseStore<Derived, Allocator>::clear();
   is_collapsed = false;
 }
 

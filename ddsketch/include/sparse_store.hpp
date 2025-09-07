@@ -27,7 +27,7 @@
 
 namespace datasketches {
 // Forward declaration
-template<typename Allocator> class DenseStore;
+template<class Derived, typename Allocator> class DenseStore;
 
 template<typename Allocator>
 class SparseStore {
@@ -50,7 +50,9 @@ public:
   int get_min_index() const;
   int get_max_index() const;
   void merge(const SparseStore<Allocator>& other);
-  void merge(const DenseStore<Allocator>& other);
+
+  template<class Derived>
+  void merge(const DenseStore<Derived, Allocator>& other);
   bool is_empty() const;
   double get_total_count() const;
 

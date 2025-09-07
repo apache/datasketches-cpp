@@ -24,20 +24,24 @@
 
 namespace datasketches {
 template<typename Allocator>
-class CollapsingHighestDenseStore : public CollapsingDenseStore<Allocator> {
+class CollapsingHighestDenseStore : public CollapsingDenseStore<CollapsingHighestDenseStore<Allocator>, Allocator> {
 public:
-  using size_type = typename CollapsingDenseStore<Allocator>::size_type;
+  using size_type = typename CollapsingDenseStore<CollapsingHighestDenseStore, Allocator>::size_type;
 
   explicit CollapsingHighestDenseStore(size_type max_num_bins);
 
-  CollapsingHighestDenseStore* copy() const override;
-  void merge(const DenseStore<Allocator>& other) override;
+  CollapsingHighestDenseStore* copy() const;
+
+  template<class OtherDerived>
+  void merge(const DenseStore<OtherDerived, Allocator>& other);
   void merge(const CollapsingHighestDenseStore& other);
-  using DenseStore<Allocator>::merge;
+  using DenseStore<CollapsingHighestDenseStore, Allocator>::merge;
 
 protected:
-  size_type normalize(size_type index) override;
-  void adjust(size_type new_min_index, size_type new_max_index) override;
+  size_type normalize(size_type index);
+  void adjust(size_type new_min_index, size_type new_max_index);
+
+  friend class DenseStore<CollapsingHighestDenseStore, Allocator>;
 };
 }
 

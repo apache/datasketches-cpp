@@ -24,13 +24,13 @@
 
 namespace datasketches {
 template<typename Allocator>
-UnboundedSizeDenseStore<Allocator>::UnboundedSizeDenseStore(): DenseStore<Allocator>() {}
+UnboundedSizeDenseStore<Allocator>::UnboundedSizeDenseStore(): DenseStore<UnboundedSizeDenseStore<Allocator>, Allocator>() {}
 
 template<typename Allocator>
-UnboundedSizeDenseStore<Allocator>::UnboundedSizeDenseStore(const int &array_length_growth_increment): DenseStore<Allocator>(array_length_growth_increment) {}
+UnboundedSizeDenseStore<Allocator>::UnboundedSizeDenseStore(const int &array_length_growth_increment): DenseStore<UnboundedSizeDenseStore<Allocator>, Allocator>(array_length_growth_increment) {}
 
 template<typename Allocator>
-UnboundedSizeDenseStore<Allocator>::UnboundedSizeDenseStore(const int &array_length_growth_increment, const int &array_length_overhead): DenseStore<Allocator>(array_length_growth_increment, array_length_overhead) {}
+UnboundedSizeDenseStore<Allocator>::UnboundedSizeDenseStore(const int &array_length_growth_increment, const int &array_length_overhead): DenseStore<UnboundedSizeDenseStore<Allocator>, Allocator>(array_length_growth_increment, array_length_overhead) {}
 
 template<typename Allocator>
 typename UnboundedSizeDenseStore<Allocator>::size_type UnboundedSizeDenseStore<Allocator>::normalize(size_type index) {
@@ -55,16 +55,11 @@ void UnboundedSizeDenseStore<Allocator>::adjust(size_type new_min_index, size_ty
 }
 
 template<typename Allocator>
-void UnboundedSizeDenseStore<Allocator>::merge(const DenseStore<Allocator> &other) {
-  const auto* store = dynamic_cast<const UnboundedSizeDenseStore<Allocator>*>(&other);
-  if (store != nullptr) {
-    this->merge(*store);
-  } else {
-    // TODO check this
+template<class OtherDerived>
+void UnboundedSizeDenseStore<Allocator>::merge(const DenseStore<OtherDerived, Allocator> &other) {
     for (auto it = other.begin(); it != other.end(); ++it) {
       this->add(*it);
     }
-  }
 }
 
 template<typename Allocator>

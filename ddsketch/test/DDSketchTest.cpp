@@ -33,29 +33,34 @@ TEST_CASE("ddsketch", "[ddsketch]") {
   std::cout << "ddsketch test" << std::endl;
 
   CollapsingHighestDenseStore<std::allocator<uint64_t>> store_hi(1024);
-  const DenseStore<std::allocator<uint64_t>>& other_store_hi(store_hi);
-  store_hi.merge(other_store_hi);
+  store_hi.merge(store_hi);
 
   CollapsingLowestDenseStore<std::allocator<uint64_t>> store_lo(1024);
-  const DenseStore<std::allocator<uint64_t>>& other_store_lo(store_lo);
-  store_lo.merge(other_store_lo);
+  store_lo.merge(store_lo);
 
-  store_lo.merge(other_store_lo);
+  store_hi.merge(store_lo);
+  store_lo.merge(store_hi);
+
   store_lo.add(1, 1);
   store_lo.add(12, 2);
   store_lo.add(23, 3);
 
-  std::cout << "ciao" << std::endl;
-  store_hi.merge(store_lo);
-  for (const Bin& bin : store_hi) {
-    std::cout << bin.toString() << std::endl;
-  }
+  // std::cout << "ciao" << std::endl;
+  // store_hi.merge(store_lo);
+  // for (const Bin& bin : store_hi) {
+  //   std::cout << bin.toString() << std::endl;
+  // }
 
-  UnboundedSizeDenseStore<std::allocator<uint64_t>> unbounded_store;
-  const DenseStore<std::allocator<uint64_t>>& other_unbounded_store(unbounded_store);
-  unbounded_store.merge(other_unbounded_store);
-
-  SparseStore<std::allocator<double>> ss;
+  // UnboundedSizeDenseStore<std::allocator<uint64_t>> unbounded_store;
+  // unbounded_store.add(34, 4);
+  // unbounded_store.merge(unbounded_store);
+  //
+  // store_lo.merge(unbounded_store);
+  // unbounded_store.merge(store_lo);
+  //
+  // store_hi.merge(unbounded_store);
+  // unbounded_store.merge(store_hi);
+  // SparseStore<std::allocator<double>> ss;
 }
 
 

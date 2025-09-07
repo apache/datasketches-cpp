@@ -24,7 +24,7 @@
 
 namespace datasketches {
 template<typename Allocator>
-CollapsingLowestDenseStore<Allocator>::CollapsingLowestDenseStore(size_type max_num_bins): CollapsingDenseStore<Allocator>(max_num_bins){}
+CollapsingLowestDenseStore<Allocator>::CollapsingLowestDenseStore(size_type max_num_bins): CollapsingDenseStore<CollapsingLowestDenseStore<Allocator>, Allocator>(max_num_bins){}
 
 template<typename Allocator>
 CollapsingLowestDenseStore<Allocator>* CollapsingLowestDenseStore<Allocator>::copy() const {
@@ -34,15 +34,11 @@ CollapsingLowestDenseStore<Allocator>* CollapsingLowestDenseStore<Allocator>::co
 }
 
 template<typename Allocator>
-void CollapsingLowestDenseStore<Allocator>::merge(const DenseStore<Allocator>& other) {
-  const auto* store = dynamic_cast<const CollapsingLowestDenseStore<Allocator>*>(&other);
-  if (store != nullptr) {
-    this->merge(*store);
-  } else {
+template<class OtherDerived>
+void CollapsingLowestDenseStore<Allocator>::merge(const DenseStore<OtherDerived, Allocator>& other) {
     for (auto it = other.rbegin(); it != other.rend(); ++it) {
       this->add(*it);
     }
-  }
 }
 
 template<typename Allocator>
