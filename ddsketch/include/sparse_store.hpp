@@ -39,6 +39,7 @@ public:
       typename std::allocator_traits<Allocator>::template rebind_alloc<std::pair<const int, double>>
   >;
   class iterator;
+  class reverse_iterator;
 
   SparseStore() = default;
 
@@ -58,6 +59,8 @@ public:
 
   iterator begin() const;
   iterator end() const;
+  reverse_iterator rbegin() const;
+  reverse_iterator rend() const;
 
   class iterator {
   public:
@@ -78,6 +81,27 @@ public:
   private:
     internal_iterator it;
   };
+
+  class reverse_iterator {
+    public:
+    using internal_iterator = typename bins_type::const_reverse_iterator;
+    using iterator_category = std::input_iterator_tag;
+    using value_type = Bin;
+    using difference_type = std::ptrdiff_t;
+    using pointer = Bin*;
+    using reference = Bin;
+
+    explicit reverse_iterator(internal_iterator it);
+    reverse_iterator& operator++();
+    reverse_iterator operator++(int);
+    reverse_iterator& operator=(const reverse_iterator& other);
+    bool operator!=(const reverse_iterator& other) const;
+    reference operator*() const;
+
+  private:
+    internal_iterator it;
+  };
+
 
 private:
   bins_type bins;

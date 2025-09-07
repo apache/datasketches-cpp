@@ -136,6 +136,52 @@ typename SparseStore<Allocator>::iterator::reference SparseStore<Allocator>::ite
   return Bin(it->first, it->second);
 }
 
+//-----------------
+
+template<typename Allocator>
+typename SparseStore<Allocator>::reverse_iterator SparseStore<Allocator>::rbegin() const {
+  return reverse_iterator(bins.rbegin());
+}
+
+template<typename Allocator>
+typename SparseStore<Allocator>::reverse_iterator SparseStore<Allocator>::rend() const {
+  return reverse_iterator(bins.rend());
+}
+
+template<typename Allocator>
+SparseStore<Allocator>::reverse_iterator::reverse_iterator(internal_iterator it): it(it) {}
+
+template<typename Allocator>
+typename SparseStore<Allocator>::reverse_iterator& SparseStore<Allocator>::reverse_iterator::operator++() {
+  ++it;
+  return *this;
+}
+
+template<typename Allocator>
+typename SparseStore<Allocator>::reverse_iterator SparseStore<Allocator>::reverse_iterator::operator++(int) {
+  iterator temp = *this;
+  ++(*this);
+  return temp;
+}
+
+template<typename Allocator>
+typename SparseStore<Allocator>::reverse_iterator& SparseStore<Allocator>::reverse_iterator::operator=(const reverse_iterator& other) {
+  if (this != &other) {
+    this->it = other.it;
+  }
+  return *this;
+}
+
+template<typename Allocator>
+bool SparseStore<Allocator>::reverse_iterator::operator!=(const reverse_iterator& other) const {
+  return it != other.it;
+}
+
+template<typename Allocator>
+typename SparseStore<Allocator>::reverse_iterator::reference SparseStore<Allocator>::reverse_iterator::operator*() const {
+  return Bin(it->first, it->second);
+}
+
 template<typename Allocator>
 double SparseStore<Allocator>::get_total_count() const {
   double total_count = 0;
