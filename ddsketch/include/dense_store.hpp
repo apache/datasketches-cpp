@@ -35,16 +35,9 @@ public:
   class iterator;
   class reverse_iterator;
 
-  DenseStore();
-  explicit DenseStore(const int& array_length_growth_increment);
-  explicit DenseStore(const int& array_length_growth_increment, const int& array_length_overhead);
-  DenseStore(const DenseStore& other) = default;
-
   void add(int index);
   void add(int index, double count);
   void add(const Bin& bin);
-
-  DenseStore<Derived, Allocator>* copy();
 
   void clear();
   bool is_empty() const;
@@ -119,6 +112,11 @@ protected:
 
   static constexpr int DEFAULT_ARRAY_LENGTH_GROWTH_INCREMENT = 64;
   static constexpr double DEFAULT_ARRAY_LENGTH_OVERHEAD_RATIO = 0.1;
+
+  DenseStore();
+  explicit DenseStore(const int& array_length_growth_increment);
+  explicit DenseStore(const int& array_length_growth_increment, const int& array_length_overhead);
+  DenseStore(const DenseStore& other) = default;
 
   double get_total_count(size_type from_index, size_type to_index) const;
   size_type normalize(size_type index);

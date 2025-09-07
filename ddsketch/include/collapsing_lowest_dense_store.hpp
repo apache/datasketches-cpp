@@ -32,8 +32,6 @@ public:
 
   CollapsingLowestDenseStore* copy() const;
 
-  template<class OtherDerived>
-  void merge(const DenseStore<OtherDerived, Allocator>& other);
   void merge(const CollapsingLowestDenseStore& other);
   using DenseStore<CollapsingLowestDenseStore, Allocator>::merge;
 

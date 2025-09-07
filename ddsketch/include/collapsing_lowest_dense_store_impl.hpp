@@ -34,14 +34,6 @@ CollapsingLowestDenseStore<Allocator>* CollapsingLowestDenseStore<Allocator>::co
 }
 
 template<typename Allocator>
-template<class OtherDerived>
-void CollapsingLowestDenseStore<Allocator>::merge(const DenseStore<OtherDerived, Allocator>& other) {
-    for (auto it = other.rbegin(); it != other.rend(); ++it) {
-      this->add(*it);
-    }
-}
-
-template<typename Allocator>
 void CollapsingLowestDenseStore<Allocator>::merge(const CollapsingLowestDenseStore<Allocator>& other) {
   if (other.is_empty()) {
     return;

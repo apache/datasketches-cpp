@@ -118,9 +118,11 @@ double DenseStore<Derived, Allocator>::get_total_count(size_type from_index, siz
 
 
 template<class Derived, typename Allocator>
-template<class Store>
-void DenseStore<Derived, Allocator>::merge(const DenseStore<Store, Allocator>& other) {
-
+template<class OtherDerived>
+void DenseStore<Derived, Allocator>::merge(const DenseStore<OtherDerived, Allocator>& other) {
+  for (const Bin& bin : other) {
+    add(bin);
+  }
 }
 
 template<class Derived, typename Allocator>

@@ -55,14 +55,6 @@ void UnboundedSizeDenseStore<Allocator>::adjust(size_type new_min_index, size_ty
 }
 
 template<typename Allocator>
-template<class OtherDerived>
-void UnboundedSizeDenseStore<Allocator>::merge(const DenseStore<OtherDerived, Allocator> &other) {
-    for (auto it = other.begin(); it != other.end(); ++it) {
-      this->add(*it);
-    }
-}
-
-template<typename Allocator>
 void UnboundedSizeDenseStore<Allocator>::merge(const UnboundedSizeDenseStore<Allocator> &other) {
   if (other.is_empty()) {
     return;

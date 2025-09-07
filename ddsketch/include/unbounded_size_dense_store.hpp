@@ -35,8 +35,6 @@ public:
   UnboundedSizeDenseStore* copy() const;
   ~UnboundedSizeDenseStore() = default;
 
-  template<class OtherDerived>
-  void merge(const DenseStore<OtherDerived, Allocator>& other);
   void merge(const UnboundedSizeDenseStore<Allocator>& other);
   using DenseStore<UnboundedSizeDenseStore, Allocator>::merge;
 
