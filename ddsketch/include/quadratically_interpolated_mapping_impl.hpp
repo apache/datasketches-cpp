@@ -20,8 +20,6 @@
 #ifndef QUADRATICALLY_INTERPOLATED_MAPPING_IMPL_HPP
 #define QUADRATICALLY_INTERPOLATED_MAPPING_IMPL_HPP
 
-#include <set>
-
 #include "quadratically_interpolated_mapping.hpp"
 
 namespace datasketches {

@@ -19,7 +19,7 @@
 
 #ifndef QUADRATICALLY_INTERPOLATED_MAPPING_HPP
 #define QUADRATICALLY_INTERPOLATED_MAPPING_HPP
-#include "logarithmic_mapping.hpp"
+#include "log_like_index_mapping.hpp"
 
 namespace datasketches {
 

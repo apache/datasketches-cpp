@@ -20,7 +20,6 @@
 #ifndef LINEARLY_INTERPOLATED_MAPPING_HPP
 #define LINEARLY_INTERPOLATED_MAPPING_HPP
 
-#include "index_mapping.hpp"
 #include "log_like_index_mapping.hpp"
 #include <numbers>
 

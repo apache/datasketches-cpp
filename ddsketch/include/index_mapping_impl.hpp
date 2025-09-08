@@ -23,7 +23,6 @@
 #include <istream>
 
 #include "index_mapping.hpp"
-#include "linearly_interpolated_mapping.hpp"
 
 namespace datasketches {
 

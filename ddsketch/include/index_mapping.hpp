@@ -20,7 +20,6 @@
 #ifndef INDEX_MAPPING_HPP
 #define INDEX_MAPPING_HPP
 #include <cstdint>
-#include <iosfwd>
 
 namespace datasketches {
 
