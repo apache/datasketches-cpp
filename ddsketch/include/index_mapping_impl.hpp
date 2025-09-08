@@ -44,8 +44,9 @@ inline std::ostream& operator<<(std::ostream& os, const IndexMappingLayout& obj)
   }
 }
 
+template<class Derived>
 template<IndexMappingLayout layout>
-IndexMapping* IndexMapping::decode(std::istream& is) {
+IndexMapping<Derived>* IndexMapping<Derived>::decode(std::istream& is) {
   switch (layout) {
     case IndexMappingLayout::LOG_LINEAR:
       return nullptr;

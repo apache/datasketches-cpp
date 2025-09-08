@@ -34,21 +34,22 @@ enum class IndexMappingLayout : uint8_t {
 
 std::ostream& operator<<(std::ostream& os, const IndexMappingLayout& obj);
 
+template<class Derived>
 class IndexMapping {
 public:
-  virtual int index(const double& value) const = 0;
-  virtual double value(int index) const = 0;
-  virtual double lower_bound(int index) const = 0;
-  virtual double upper_bound(int index) const = 0;
-  virtual double get_relative_accuracy() const = 0;
-  virtual double min_indexable_value() const = 0;
-  virtual double max_indexable_value() const = 0;
-  virtual void encode(std::ostream& os) = 0;
+  int index(const double& value) const;
+  double value(int index) const;
+  double lower_bound(int index) const;
+  double upper_bound(int index) const;
+  double get_relative_accuracy() const;
+  double min_indexable_value() const;
+  double max_indexable_value() const;
+  void encode(std::ostream& os);
 
   template<IndexMappingLayout layout>
   static IndexMapping* decode(std::istream& is);
 
-  virtual ~IndexMapping() = default;
+  ~IndexMapping() = default;
 };
 
 }

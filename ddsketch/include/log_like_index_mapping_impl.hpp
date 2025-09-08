@@ -63,7 +63,7 @@ double LogLikeIndexMapping<Derived>::require_valid_gamma(const double& gamma) {
 template<class Derived>
 int LogLikeIndexMapping<Derived>::index(const double& value) const{
   assert(std::isfinite(value) && value > 0.0);
-  const double index = log(value) * multiplier + index_offset;
+  const double index = derived().log(value) * multiplier + index_offset;
   return static_cast<int>(std::floor(index));
 }
 
@@ -74,7 +74,7 @@ double LogLikeIndexMapping<Derived>::value(int index) const {
 
 template<class Derived>
 double LogLikeIndexMapping<Derived>::lower_bound(int index) const {
-  return log_inverse((index - index_offset) / multiplier);
+  return derived().log_inverse((index - index_offset) / multiplier);
 }
 
 template<class Derived>
@@ -104,6 +104,17 @@ double LogLikeIndexMapping<Derived>::max_indexable_value() const {
 template<class Derived>
 void LogLikeIndexMapping<Derived>::encode(std::ostream &os) {
   // TODO implement
+}
+
+
+template<class Derived>
+Derived& LogLikeIndexMapping<Derived>::derived() {
+  return static_cast<Derived&>(*this);
+}
+
+template<class Derived>
+const Derived& LogLikeIndexMapping<Derived>::derived() const {
+  return static_cast<const Derived&>(*this);
 }
 
 }

@@ -34,10 +34,10 @@ public:
   explicit QuarticallyInterpolatedMapping(const double& relative_accuracy);
   QuarticallyInterpolatedMapping(const double& gamma, const double& index_offset);
 
-  double log(const double& value) const override;
-  double log_inverse(const double& index) const override;
+  double log(const double& value) const;
+  double log_inverse(const double& index) const;
 
-  IndexMappingLayout layout() const override;
+  IndexMappingLayout layout() const;
 
   static constexpr double BASE = 2.0;
   static constexpr double CORRECTING_FACTOR = 1 / (D * std::numbers::ln2);

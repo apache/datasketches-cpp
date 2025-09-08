@@ -45,7 +45,8 @@ void assert_relative_accuracy(const double& expected, const double& actual, cons
   }
 }
 
-void test_accuracy(const IndexMapping& mapping, const double& relative_accuracy) {
+template<class M>
+void test_accuracy(const M& mapping, const double& relative_accuracy) {
   REQUIRE( mapping.get_relative_accuracy() <= relative_accuracy + floating_point_acceptable_error);
   for (double value = mapping.min_indexable_value(); value < mapping.max_indexable_value(); value *= multiplier) {
     const double mapped_value = mapping.value(mapping.index(value));

@@ -27,37 +27,40 @@ namespace datasketches {
 
 
 template<class Derived>
-class LogLikeIndexMapping : public IndexMapping {
+class LogLikeIndexMapping : public IndexMapping<Derived> {
 public:
   LogLikeIndexMapping(const double& gamma, const double& index_offset);
 
-  int index(const double& value) const override;
-  double value(int index) const override;
-  double lower_bound(int index) const override;
-  double upper_bound(int index) const override;
-  double get_relative_accuracy() const override;
-  double min_indexable_value() const override;
-  double max_indexable_value() const override;
-  void encode(std::ostream& os) override;
+  int index(const double& value) const;
+  double value(int index) const;
+  double lower_bound(int index) const;
+  double upper_bound(int index) const;
+  double get_relative_accuracy() const;
+  double min_indexable_value() const;
+  double max_indexable_value() const;
+  void encode(std::ostream& os);
 
   bool operator==(const LogLikeIndexMapping<Derived>& other) const;
 
 private:
   static double compute_relative_accuracy(const double& gamma, const double& correcting_factor);
   static double require_valid_gamma(const double& gamma);
-  virtual IndexMappingLayout layout() const = 0;
+  IndexMappingLayout layout() const;
 
 protected:
   static double require_valid_relative_accuracy(const double& relative_accuracy);
   static double compute_gamma(const double& relative_accuracy, const double& correcting_factor);
-  virtual double log(const double& value) const = 0;
-  virtual double log_inverse(const double& value) const = 0;
+  double log(const double& value) const;
+  double log_inverse(const double& value) const;
 
   const double gamma;
   const double index_offset;
 
   const double relative_accuracy;
   const double multiplier;
+
+  Derived& derived();
+  const Derived& derived() const;
 };
 }
 
