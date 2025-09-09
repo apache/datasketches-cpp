@@ -25,6 +25,8 @@
 #include "store_factory.hpp"
 
 #include "collapsing_lowest_dense_store.hpp"
+#include "ddsketch.hpp"
+#include "linearly_interpolated_mapping.hpp"
 #include "unbounded_size_dense_store.hpp"
 
 namespace datasketches {
@@ -524,6 +526,14 @@ TEST_CASE("merge test", "[mergetest]") {
 
   ss.merge(s1);
   s1.merge(ss);
+
+  LinearlyInterpolatedMapping mapping(0.01);
+  DDSketch sketch(s1, s2, mapping, 1., 1.);
+
+  sketch.update(10.);
+  // DDSketch<SparseStore<std::allocator<uint8_t>>, LinearlyInterpolatedMapping> sketch2(ss, ss, mapping);
+
+  //DDSketch<CollapsingHighestDenseStore<A>, LinearlyInterpolatedMapping> sketch4<1024>(0.99);
 }
 }
 

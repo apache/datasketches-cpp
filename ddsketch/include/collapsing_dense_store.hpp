@@ -23,6 +23,7 @@
 #include "dense_store.hpp"
 
 namespace datasketches {
+
 template<class Derived, typename Allocator>
 class CollapsingDenseStore : public DenseStore<Derived, Allocator> {
 public:

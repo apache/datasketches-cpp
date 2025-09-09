@@ -106,6 +106,12 @@ void LogLikeIndexMapping<Derived>::encode(std::ostream &os) {
   // TODO implement
 }
 
+template<class Derived>
+bool LogLikeIndexMapping<Derived>::operator==(const LogLikeIndexMapping<Derived> &other) const {
+  return gamma == other.gamma && index_offset == other.index_offset;
+}
+
+
 
 template<class Derived>
 Derived& LogLikeIndexMapping<Derived>::derived() {
