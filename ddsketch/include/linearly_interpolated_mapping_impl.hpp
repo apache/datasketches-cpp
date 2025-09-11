@@ -32,11 +32,17 @@ inline LinearlyInterpolatedMapping::LinearlyInterpolatedMapping(const double& ga
   LogLikeIndexMapping<LinearlyInterpolatedMapping>(gamma, index_offset) {}
 
 inline double LinearlyInterpolatedMapping::log(const double& value) const {
-  return fast_log2(value);
+  int exponent = 0;
+  const double mantissa = std::frexp(value, &exponent);
+  const double significand = 2 * mantissa - 1;
+  return significand + (exponent - 1);
+
 }
 
 inline double LinearlyInterpolatedMapping::log_inverse(const double& index) const {
-  return fast_log2_inverse(index);
+  int exponent = static_cast<int>(std::floor(index)) + 1;
+  double mantissa = (index - exponent + 2) / 2.0;
+  return std::ldexp(mantissa, exponent);
 }
 
 inline IndexMappingLayout LinearlyInterpolatedMapping::layout() const {

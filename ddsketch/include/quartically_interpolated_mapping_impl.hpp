@@ -29,21 +29,15 @@ inline QuarticallyInterpolatedMapping::QuarticallyInterpolatedMapping(const doub
   LogLikeIndexMapping<QuarticallyInterpolatedMapping>(gamma, index_offset) {}
 
 inline double QuarticallyInterpolatedMapping::log(const double &value) const {
-  int64_t value_bits;
-  std::memcpy(&value_bits, &value, sizeof(value_bits));
+  int exponent = 0;
+  const double mantissa = 2 * std::frexp(value, &exponent) - 1;
 
-  const int64_t mantissa_plus_one_bits = (value_bits & 0x000FFFFFFFFFFFFFL) | 0x3FF0000000000000L;
-  double mantissa_plus_one;
-  std::memcpy(&mantissa_plus_one, &mantissa_plus_one_bits, sizeof(mantissa_plus_one_bits));
-  double mantissa = mantissa_plus_one - 1.0;
-
-  const double exponent = static_cast<double>(((value_bits & 0x7FF0000000000000L) >> 52) - 1023);
-  return (((A * mantissa + B) * mantissa + C) * mantissa + D) * mantissa + exponent;
+  return (((A * mantissa + B) * mantissa + C) * mantissa + D) * mantissa + exponent - 1;
 }
 
 inline double QuarticallyInterpolatedMapping::log_inverse(const double &index) const {
-  const int64_t exponent = static_cast<int64_t>(std::floor(index));
-  const double e = exponent - index;
+  const auto exponent = static_cast<int>(std::floor(index));
+  const double e = static_cast<double>(exponent) - index;
 
   // Derived from Ferrari's method
   const double alpha = -(3 * B * B) / (8 * A * A) + C / A; // 2.5
@@ -57,16 +51,10 @@ inline double QuarticallyInterpolatedMapping::log_inverse(const double &index) c
   const double w = std::sqrt(alpha + 2 * y);
   const double x = (-B / (4 * A) + (w - std::sqrt(-(3 * alpha + 2 * y + (2 * beta) / w))) / 2) + 1;
 
-  int64_t result_bits = (static_cast<uint64_t>(exponent + 1023) << 52) & 0x7FF0000000000000L;
-
-  uint64_t x_plus_one_bits;
-  std::memcpy(&x_plus_one_bits, &x, sizeof(x));
-
-  result_bits |= (x_plus_one_bits & 0x000FFFFFFFFFFFFFL);
-
-  double result;
-  std::memcpy(&result, &result_bits, sizeof(result_bits));
-  return result;
+  int tmp = 0;
+  double m = std::frexp(x, &tmp);
+  double sig = 2.0 * m;
+  return std::ldexp(sig, exponent);
 }
 
 inline IndexMappingLayout QuarticallyInterpolatedMapping::layout() const {
