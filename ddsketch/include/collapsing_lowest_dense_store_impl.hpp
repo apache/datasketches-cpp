@@ -76,7 +76,7 @@ typename CollapsingLowestDenseStore<Allocator>::size_type CollapsingLowestDenseS
 
 template <typename Allocator>
 void CollapsingLowestDenseStore<Allocator>::adjust(size_type new_min_index, size_type new_max_index) {
-  if (new_max_index - new_min_index + 1 > this->bins.size()) {
+  if (new_max_index - new_min_index + 1 > static_cast<int>(this->bins.size())) {
     // The range of indices is too wide, buckets of lowest indices need to be collapsed.
     new_min_index = new_max_index - this->bins.size() + 1;
 

@@ -16,110 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-// #include <iostream>
-//
-// #include <catch2/catch.hpp>
-//
-// #include "collapsing_highest_dense_store.hpp"
-// #include "collapsing_lowest_dense_store.hpp"
-// #include "dense_store.hpp"
-// #include "index_mapping.hpp"
-// #include "sparse_store.hpp"
-// #include "unbounded_size_dense_store.hpp"
-// #include"ddsketch.hpp"
-// #include "logarithmic_mapping.hpp"
-// #include "linearly_interpolated_mapping.hpp"
-
-// #include <catch2/catch.hpp>
-// #include <vector>
-// #include <random>
-// #include <algorithm>
-// #include <cmath>
-// #include <stdexcept>
-//
-// #include "ddsketch.hpp"
-// #include "index_mapping.hpp"
-// #include "logarithmic_mapping.hpp"
-// #include "linearly_interpolated_mapping.hpp"
-// #include "quadratically_interpolated_mapping.hpp"
-// #include "quartically_interpolated_mapping.hpp"
-// #include "unbounded_size_dense_store.hpp"
-// #include "collapsing_highest_dense_store.hpp"
-// #include "collapsing_lowest_dense_store.hpp"
-// #include "sparse_store.hpp"
-// namespace datasketches {
-// using A = std::allocator<double>;
-// TEST_CASE("ddsketch", "[ddsketch]") {
-//   std::cout << "ddsketch test" << std::endl;
-//
-//   CollapsingHighestDenseStore<std::allocator<uint64_t>> store_hi(1024);
-//   store_hi.merge(store_hi);
-//
-//   CollapsingLowestDenseStore<std::allocator<uint64_t>> store_lo(1024);
-//   store_lo.merge(store_lo);
-//
-//   store_hi.merge(store_lo);
-//   store_lo.merge(store_hi);
-//
-//   store_lo.add(1, 1);
-//   store_lo.add(12, 2);
-//   store_lo.add(23, 3);
-//
-//   // std::cout << "ciao" << std::endl;
-//   // store_hi.merge(store_lo);
-//   // for (const Bin& bin : store_hi) {
-//   //   std::cout << bin.toString() << std::endl;
-//   // }
-//
-//   // UnboundedSizeDenseStore<std::allocator<uint64_t>> unbounded_store;
-//   // unbounded_store.add(34, 4);
-//   // unbounded_store.merge(unbounded_store);
-//   //
-//   // store_lo.merge(unbounded_store);
-//   // unbounded_store.merge(store_lo);
-//   //
-//   // store_hi.merge(unbounded_store);
-//   // unbounded_store.merge(store_hi);
-//   // SparseStore<std::allocator<double>> ss;
-// }
-//
-// template<store_concept Store, class Mapping>
-// void test_adding(DDSketch<Store, Mapping>& sketch, const double& values...) {
-//
-// }
-//
-// TEST_CASE("test empty", "[ddsketch]") {
-//   LogarithmicMapping mapping(0.01);
-//   DDSketch<UnboundedSizeDenseStore<A>, decltype(mapping)> sketch(mapping);
-//
-//   sketch.update(20.0, 2);
-//   sketch.update(10.0);
-//   LinearlyInterpolatedMapping linear(0.01);
-//   DDSketch<UnboundedSizeDenseStore<A>, decltype(mapping)> sketch2(mapping);
-//   sketch2.update(10.0);
-//
-//   sketch2.update(20.0, 2);
-//
-// }
-
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
 
 #include <catch2/catch.hpp>
 #include <vector>
@@ -239,13 +135,20 @@ void test_merging(SketchType& sketch, const std::vector<std::vector<double>>& va
   assert_encodes(sketch, all_values, relative_accuracy);
 }
 
-// Test Cases
+using DDSketchUnboundedStoreTestCase = std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>;
 
+template<int N>
+using DDSketchCollapsingHighestStoreTestCase = std::pair<store_factory<CollapsingHighestDenseStore<A>, N>, LogarithmicMapping>;
+
+template<int N>
+using DDSketchCollapsingLowestStoreTestCase = std::pair<store_factory<CollapsingLowestDenseStore<A>, N>, LogarithmicMapping>;
+
+using DDSketchSparseStoreTestCase = std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>;
 TEMPLATE_TEST_CASE("DDSketch empty test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<128>,
+  DDSketchCollapsingLowestStoreTestCase<128>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -263,10 +166,10 @@ TEMPLATE_TEST_CASE("DDSketch empty test", "[ddsketch]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch exception test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<128>,
+  DDSketchCollapsingLowestStoreTestCase<128>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -285,10 +188,10 @@ TEMPLATE_TEST_CASE("DDSketch exception test", "[ddsketch]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch clear test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<128>,
+  DDSketchCollapsingLowestStoreTestCase<128>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -306,10 +209,10 @@ TEMPLATE_TEST_CASE("DDSketch clear test", "[ddsketch]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch constant test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<128>,
+  DDSketchCollapsingLowestStoreTestCase<128>,
+  DDSketchSparseStoreTestCase
 ){
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -329,10 +232,10 @@ TEMPLATE_TEST_CASE("DDSketch constant test", "[ddsketch]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch negative constants test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<128>,
+  DDSketchCollapsingLowestStoreTestCase<128>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -352,10 +255,10 @@ TEMPLATE_TEST_CASE("DDSketch negative constants test", "[ddsketch]",
   }
 }
 TEMPLATE_TEST_CASE("DDSketch mixed positive negative test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 128>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<128>,
+  DDSketchCollapsingLowestStoreTestCase<128>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -380,10 +283,10 @@ TEMPLATE_TEST_CASE("DDSketch mixed positive negative test", "[ddsketch]",
   }
 }
 TEMPLATE_TEST_CASE("DDSketch with zeros test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 4096>, LogarithmicMapping>),
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<4096>,
   (std::pair<store_factory<CollapsingLowestDenseStore<A>, 4096>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -414,8 +317,8 @@ TEMPLATE_TEST_CASE("DDSketch with zeros test", "[ddsketch]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch linear sequences test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -458,8 +361,8 @@ TEMPLATE_TEST_CASE("DDSketch linear sequences test", "[ddsketch]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch exponential sequence test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -495,10 +398,10 @@ TEMPLATE_TEST_CASE("DDSketch exponential sequence test", "[ddsketch]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch merging test", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 4096>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 4096>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<4096>,
+  DDSketchCollapsingLowestStoreTestCase<4096>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -523,10 +426,10 @@ TEMPLATE_TEST_CASE("DDSketch merging test", "[ddsketch]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch different mappings", "[ddsketch]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 4096>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 4096>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<4096>,
+  DDSketchCollapsingLowestStoreTestCase<4096>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -539,10 +442,10 @@ TEMPLATE_TEST_CASE("DDSketch different mappings", "[ddsketch]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch add random test", "[ddsketch][random]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 4096>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 4096>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<4096>,
+  DDSketchCollapsingLowestStoreTestCase<4096>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
@@ -572,10 +475,10 @@ TEMPLATE_TEST_CASE("DDSketch add random test", "[ddsketch][random]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch merging random test", "[ddsketch][random]",
-  (std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingHighestDenseStore<A>, 4096>, LogarithmicMapping>),
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 4096>, LogarithmicMapping>),
-  (std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>)
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<4096>,
+  DDSketchCollapsingLowestStoreTestCase<4096>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();

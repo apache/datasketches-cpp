@@ -124,7 +124,6 @@ int random_index() {
 }
 
 double random_count() {
-  double max = 10.;
   std::random_device rd;
   std::mt19937_64 rng(rd());
   std::uniform_real_distribution<double> distribution(0., 1.);
@@ -196,15 +195,24 @@ void test_store(StoreType& store, const std::vector<Bin>& normalized_bins) {
   test_copy<StoreType>(store, normalized_bins);
 }
 
+template<int N>
+using CollapsingLowestStoreTestCase = store_factory<CollapsingLowestDenseStore<A>, N>;
+
+template<int N>
+using CollapsingHighestStoreTestCase = store_factory<CollapsingHighestDenseStore<A>, N>;
+
+using SparseStoreTestCase = store_factory<SparseStore<A>>;
+using UnboundedStoreSizeTestCase = store_factory<UnboundedSizeDenseStore<A>>;
+
 TEMPLATE_TEST_CASE("store test empty", "[storetest]",
-  (store_factory<CollapsingLowestDenseStore<A>, 8>),
-  (store_factory<CollapsingLowestDenseStore<A>, 128>),
-  (store_factory<CollapsingLowestDenseStore<A>, 1024>),
-  (store_factory<CollapsingHighestDenseStore<A>, 8>),
-  (store_factory<CollapsingHighestDenseStore<A>, 128>),
-  (store_factory<CollapsingHighestDenseStore<A>, 1024>),
-  (store_factory<SparseStore<A>>),
-  (store_factory<UnboundedSizeDenseStore<A>>)
+  CollapsingLowestStoreTestCase<8>,
+  CollapsingLowestStoreTestCase<128>,
+  CollapsingLowestStoreTestCase<1024>,
+  CollapsingHighestStoreTestCase<8>,
+  CollapsingHighestStoreTestCase<128>,
+  CollapsingHighestStoreTestCase<1024>,
+  SparseStoreTestCase,
+  UnboundedStoreSizeTestCase
   ) {
   auto store = TestType::new_store();
   std::vector<Bin> empty_bins{};
@@ -464,13 +472,13 @@ TEMPLATE_TEST_CASE("test cross merge", "[storetest]",
   >;
 
   std::vector<std::pair<StoreVariant, std::function<std::vector<Bin>(std::vector<Bin>&)>>> dense_stores;
-  dense_stores.push_back({store_factory<CollapsingLowestDenseStore<A>, 8>::new_store(), collapsing_lowest_bins<8>::collapse});
-  dense_stores.push_back({store_factory<CollapsingLowestDenseStore<A>, 128>::new_store(), collapsing_lowest_bins<128>::collapse});
-  dense_stores.push_back({store_factory<CollapsingLowestDenseStore<A>, 1024>::new_store(), collapsing_lowest_bins<1024>::collapse});
-  dense_stores.push_back({store_factory<CollapsingHighestDenseStore<A>, 8>::new_store(), collapsing_highest_bins<8>::collapse});
-  dense_stores.push_back({store_factory<CollapsingHighestDenseStore<A>, 128>::new_store(), collapsing_highest_bins<128>::collapse});
-  dense_stores.push_back({store_factory<CollapsingHighestDenseStore<A>, 1024>::new_store(), collapsing_highest_bins<1024>::collapse});
-  dense_stores.push_back({store_factory<UnboundedSizeDenseStore<A>>::new_store(), noops_collapsing_bins::collapse});
+  dense_stores.emplace_back(store_factory<CollapsingLowestDenseStore<A>, 8>::new_store(), collapsing_lowest_bins<8>::collapse);
+  dense_stores.emplace_back(store_factory<CollapsingLowestDenseStore<A>, 128>::new_store(), collapsing_lowest_bins<128>::collapse);
+  dense_stores.emplace_back(store_factory<CollapsingLowestDenseStore<A>, 1024>::new_store(), collapsing_lowest_bins<1024>::collapse);
+  dense_stores.emplace_back(store_factory<CollapsingHighestDenseStore<A>, 8>::new_store(), collapsing_highest_bins<8>::collapse);
+  dense_stores.emplace_back(store_factory<CollapsingHighestDenseStore<A>, 128>::new_store(), collapsing_highest_bins<128>::collapse);
+  dense_stores.emplace_back(store_factory<CollapsingHighestDenseStore<A>, 1024>::new_store(), collapsing_highest_bins<1024>::collapse);
+  dense_stores.emplace_back(store_factory<UnboundedSizeDenseStore<A>>::new_store(), noops_collapsing_bins::collapse);
 
   std::vector<int> indexes{-1000, -1, 0, 1, 1000};
   std::vector<double> counts{0, 1, 2, 4, 5, 10, 20, 100, 1000, 10000};
