@@ -515,4 +515,19 @@ TEMPLATE_TEST_CASE("DDSketch merging random test", "[ddsketch][random]",
     test_merging<decltype(sketch)>(sketch, value_arrays, relative_accuracy);
   }
 }
+
+TEST_CASE("quantile", "[ddsketch]") {
+  std::random_device rd{};
+  std::mt19937_64 gen{rd()};
+  std::normal_distribution<double> d(0.0, 1.0);
+
+  DDSketch<SparseStore<A>, LogarithmicMapping> ddsketch(0.01);
+  for (size_t i = 0; i < 1000000; ++i) {
+    double val = d(gen);
+    ddsketch.update(val);
+  }
+
+  std::cout << ddsketch.get_quantile(0.5) << std::endl;
+  std::cout << ddsketch.get_rank(4) << std::endl;
+}
 } /* namespace datasketches */

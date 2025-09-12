@@ -20,6 +20,8 @@
 #ifndef DDSKETCH_IMPL_H
 #define DDSKETCH_IMPL_H
 
+#include <iomanip>
+#include <iostream>
 #include "ddsketch.hpp"
 #include "store_factory.hpp"
 namespace datasketches {
@@ -133,6 +135,27 @@ double DDSketch<Store, Mapping>::get_max() const {
   }
   return -index_mapping.value(negative_store.get_min_index());
 }
+
+template<store_concept Store, class Mapping>
+double DDSketch<Store, Mapping>::get_rank(const double &item) const {
+  double rank = 0.0;
+
+  if (!negative_store.is_empty()) {
+    for (auto it = negative_store.rbegin(); it != negative_store.rend() && index_mapping.value((*it).getIndex()) <= item; ++it) {
+      rank += (*it).getCount();
+    }
+  }
+  if (item >= 0) {
+    rank += zero_count;
+  }
+  if (!positive_store.is_empty()) {
+    for (auto it = positive_store.begin(); it != positive_store.end() && index_mapping.value((*it).getIndex()) <= item; ++it) {
+      rank += (*it).getCount();
+    }
+  }
+  return rank / get_count();
+}
+
 
 template<store_concept Store, class Mapping>
 double DDSketch<Store, Mapping>::get_quantile(const double& rank) const {

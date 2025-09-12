@@ -84,6 +84,20 @@ TEST_CASE("many values", "[tdigest]") {
   REQUIRE(cdf[1] == 1);
 }
 
+TEST_CASE("rank - quantile", "[tdigest]") {
+  std::random_device rd{};
+  std::mt19937_64 gen{rd()};
+  std::normal_distribution<double> d(0.0, 1.0);
+  tdigest_double td;
+  for (size_t i = 0; i < 10000; ++i) {
+    double val = d(gen);
+    td.update(val);
+  }
+
+  std::cout << td.get_quantile(0.5) << std::endl;
+  std::cout << td.get_rank(0) << std::endl;
+}
+
 TEST_CASE("rank - two values", "[tdigest]") {
   tdigest_double td(100);
   td.update(1);
