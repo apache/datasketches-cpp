@@ -335,6 +335,15 @@ template<class Derived, typename Allocator>
 typename DenseStore<Derived, Allocator>::reverse_iterator::reference DenseStore<Derived, Allocator>::reverse_iterator::operator*() const {
   return Bin(this->index, this->bins[this->index - this->offset]);
 }
+
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::serialize(std::ostream& os) const {
+  if (is_empty()) {
+    return;
+  }
+
+
+}
 }
 
 #endif //DENSE_STORE_IMPL_HPP

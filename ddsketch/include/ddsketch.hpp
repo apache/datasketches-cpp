@@ -25,6 +25,8 @@
 #include <variant>
 #include "store.hpp"
 #include "store_factory.hpp"
+#include "common_defs.hpp"
+#include "memory_operations.hpp"
 
 namespace datasketches {
 
@@ -61,6 +63,9 @@ public:
   double get_min() const;
   double get_max() const;
 
+  void serialize(std::ostream& os) const;
+  static DDSketch deserialize(std::istream& is);
+
 protected:
   Store positive_store;
   Store negative_store;
@@ -69,6 +74,11 @@ protected:
   double zero_count;
   const double min_indexed_value;
   const double max_indexed_value;
+
+  // Serialization constants
+  static const uint8_t SERIAL_VERSION = 1;
+  static const uint8_t FAMILY = 18; // DDSketch family ID
+  static const size_t PREAMBLE_SIZE_BYTES = 8;
 
   void check_value_trackable(const double& value) const;
   template<store_concept OtherStore>

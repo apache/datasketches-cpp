@@ -44,7 +44,6 @@ public:
   double min_indexable_value() const;
   double max_indexable_value() const;
   void serialize(std::ostream& os) const;
-
   static Derived deserialize(std::istream& is);
 
   ~IndexMapping() = default;

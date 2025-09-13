@@ -194,6 +194,23 @@ double DDSketch<Store, Mapping>::get_quantile(const double& rank, const double& 
   }
   throw std::invalid_argument("no such element");
 }
+
+template<store_concept Store, class Mapping>
+void DDSketch<Store, Mapping>::serialize(std::ostream& os) const {
+  index_mapping.serialize(os);
+  if (zero_count > 0.0) {
+    write(os, zero_count);
+  }
+
+  positive_store.serialize(os);
+  negative_store.serialize(os);
+}
+
+template<store_concept Store, class Mapping>
+DDSketch<Store, Mapping> DDSketch<Store, Mapping>::deserialize(std::istream &is) {
+
+}
+
 }
 
 #endif

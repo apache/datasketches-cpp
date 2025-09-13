@@ -527,7 +527,7 @@ TEST_CASE("quantile", "[ddsketch]") {
     ddsketch.update(val);
   }
 
-  std::cout << ddsketch.get_quantile(0.5) << std::endl;
-  std::cout << ddsketch.get_rank(4) << std::endl;
+  // std::cout << ddsketch.get_quantile(0.5) << std::endl;
+  // std::cout << ddsketch.get_rank(4) << std::endl;
 }
 } /* namespace datasketches */

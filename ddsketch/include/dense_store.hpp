@@ -50,6 +50,9 @@ public:
 
   void merge(const SparseStore<Allocator>& other);
 
+  void serialize(std::ostream& is) const;
+  DenseStore<Derived, Allocator> deserialize(std::ostream& is);
+
   iterator begin() const;
   iterator end() const;
 
