@@ -24,7 +24,10 @@
 
 namespace datasketches {
 template<class Derived, typename Allocator>
-CollapsingDenseStore<Derived, Allocator>::CollapsingDenseStore(size_type max_num_bins): DenseStore<Derived, Allocator>(), max_num_bins(max_num_bins), is_collapsed(false) {}
+CollapsingDenseStore<Derived, Allocator>::CollapsingDenseStore(size_type max_num_bins):
+  DenseStore<Derived, Allocator>(),
+  max_num_bins(max_num_bins),
+  is_collapsed(false) {}
 
 template<class Derived, typename Allocator>
 CollapsingDenseStore<Derived, Allocator>& CollapsingDenseStore<Derived, Allocator>::operator=(const CollapsingDenseStore<Derived, Allocator>& other) {
@@ -74,6 +77,27 @@ Derived CollapsingDenseStore<Derived, Allocator>::deserialize(std::istream& is) 
   Derived::deserialize_common(store, is);
 
   return store;
+}
+
+template<class Derived, typename Allocator>
+int CollapsingDenseStore<Derived, Allocator>::get_serialized_size_bytes() const {
+  int size_bytes = 0;
+  size_bytes += sizeof(max_num_bins);
+  size_bytes += sizeof(is_collapsed);
+  size_bytes += sizeof(this->min_index);
+  size_bytes += sizeof(this->max_index);
+  size_bytes += sizeof(size_type);
+
+  size_type non_empty_bins = 0;
+  for (const double& count : this->bins) {
+    non_empty_bins += (count > 0.0);
+  }
+
+  size_bytes += sizeof(non_empty_bins);
+  size_bytes += non_empty_bins * sizeof(size_type);
+  size_bytes += non_empty_bins * sizeof(double);
+
+  return size_bytes;
 }
 
 }

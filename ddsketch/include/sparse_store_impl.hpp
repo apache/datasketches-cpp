@@ -219,6 +219,17 @@ SparseStore<Allocator> SparseStore<Allocator>::deserialize(std::istream& is) {
   return store;
 }
 
+template<typename Allocator>
+int SparseStore<Allocator>::get_serialized_size_bytes() const {
+  int size_bytes = 0;
+  size_bytes += sizeof(typename SparseStore<Allocator>::bins_type::size_type);
+  size_bytes += bins.size() * sizeof(typename SparseStore<Allocator>::bins_type::key_type);
+  size_bytes += bins.size() * sizeof(typename SparseStore<Allocator>::bins_type::mapped_type);
+
+  return size_bytes;
+}
+
+
 }
 
 #endif //SPARSE_STORE_IMPL_HPP

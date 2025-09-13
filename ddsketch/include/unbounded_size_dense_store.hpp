@@ -43,7 +43,7 @@ public:
 
   void serialize(std::ostream& os) const;
   static UnboundedSizeDenseStore deserialize(std::istream& is);
-
+  int get_serialized_size_bytes() const;
 protected:
   size_type normalize(size_type index);
   void adjust(size_type new_min_index, size_type new_max_index);

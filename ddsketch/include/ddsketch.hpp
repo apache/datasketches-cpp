@@ -65,7 +65,7 @@ public:
 
   void serialize(std::ostream& os) const;
   static DDSketch deserialize(std::istream& is);
-
+  int get_serialized_size_bytes() const;
 protected:
   Store positive_store;
   Store negative_store;

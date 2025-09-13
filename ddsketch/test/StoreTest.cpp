@@ -524,27 +524,6 @@ TEMPLATE_TEST_CASE("test cross merge", "[storetest]",
   }
 }
 
-TEST_CASE("merge test", "[mergetest]") {
-  CollapsingHighestDenseStore<std::allocator<uint8_t>> s1(1024);
-  CollapsingHighestDenseStore<std::allocator<uint8_t>> s2(1024);
-  CollapsingLowestDenseStore<std::allocator<uint8_t>> s3(1024);
-
-  SparseStore<std::allocator<uint8_t>> ss;
-  s1.merge(s2);
-  s1.merge(s3);
-
-  ss.merge(s1);
-  s1.merge(ss);
-
-  LinearlyInterpolatedMapping mapping(0.01);
-  DDSketch sketch(s1, s2, mapping, 1., 1.);
-
-  sketch.update(10.);
-  // DDSketch<SparseStore<std::allocator<uint8_t>>, LinearlyInterpolatedMapping> sketch2(ss, ss, mapping);
-
-  //DDSketch<CollapsingHighestDenseStore<A>, LinearlyInterpolatedMapping> sketch4<1024>(0.99);
-}
-
 TEMPLATE_TEST_CASE("dense store serialization test", "[serialization]",
   CollapsingLowestStoreTestCase<8>,
   CollapsingLowestStoreTestCase<128>,
@@ -582,6 +561,7 @@ TEMPLATE_TEST_CASE("dense store serialization test", "[serialization]",
   REQUIRE_FALSE(deserialized_store.is_empty());
   REQUIRE(stream.peek() == std::istream::traits_type::eof());
   REQUIRE(store == deserialized_store);
+
 }
 }
 

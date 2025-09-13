@@ -36,6 +36,7 @@ public:
 
   void serialize(std::ostream& os) const;
   static Derived deserialize(std::istream& is);
+  int get_serialized_size_bytes() const;
 
   ~CollapsingDenseStore() = default;
 

@@ -95,6 +95,25 @@ UnboundedSizeDenseStore<Allocator> UnboundedSizeDenseStore<Allocator>::deseriali
   return store;
 }
 
+template<typename Allocator>
+int UnboundedSizeDenseStore<Allocator>::get_serialized_size_bytes() const {
+  int size_bytes = 0;
+  size_bytes += sizeof(this->min_index);
+  size_bytes += sizeof(this->max_index);
+  size_bytes += sizeof(size_type);
+
+  size_type non_empty_bins = 0;
+  for (const double& count : this->bins) {
+    non_empty_bins += (count > 0.0);
+  }
+
+  size_bytes += sizeof(non_empty_bins);
+  size_bytes += non_empty_bins * sizeof(size_type);
+  size_bytes += non_empty_bins * sizeof(double);
+
+  return size_bytes;
+}
+
 
 
 
