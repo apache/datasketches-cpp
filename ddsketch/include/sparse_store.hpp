@@ -43,6 +43,8 @@ public:
 
   SparseStore() = default;
 
+  bool operator==(const SparseStore &other) const;
+
   void add(int index);
   void add(int index, double count);
   void add(const Bin& bin);
@@ -56,6 +58,9 @@ public:
   void merge(const DenseStore<Derived, Allocator>& other);
   bool is_empty() const;
   double get_total_count() const;
+
+  void serialize(std::ostream& os) const;
+  static SparseStore deserialize(std::istream& is);
 
   iterator begin() const;
   iterator end() const;

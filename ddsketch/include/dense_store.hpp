@@ -50,8 +50,10 @@ public:
 
   void merge(const SparseStore<Allocator>& other);
 
-  void serialize(std::ostream& is) const;
-  DenseStore<Derived, Allocator> deserialize(std::ostream& is);
+  void serialize(std::ostream& os) const;
+  static Derived deserialize(std::istream& is);
+
+  bool operator==(const DenseStore<Derived, Allocator>& other) const;
 
   iterator begin() const;
   iterator end() const;
@@ -131,6 +133,9 @@ protected:
   size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
   void reset_bins();
   void reset_bins(size_type from_index, size_type to_index);
+
+  void serialize_common(std::ostream& os) const;
+  static void deserialize_common(Derived& store, std::istream& is);
 
   Derived& derived();
   const Derived& derived() const;

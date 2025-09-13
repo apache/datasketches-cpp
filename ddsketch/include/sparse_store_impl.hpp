@@ -23,6 +23,12 @@
 #include "sparse_store.hpp"
 
 namespace datasketches {
+
+template<typename Allocator>
+bool SparseStore<Allocator>::operator==(const SparseStore &other) const {
+  return bins == other.bins;
+}
+
 template<typename Allocator>
 void SparseStore<Allocator>::add(int index) {
   add(index, 1);
@@ -190,6 +196,29 @@ double SparseStore<Allocator>::get_total_count() const {
   }
   return total_count;
 }
+
+template<typename Allocator>
+void SparseStore<Allocator>::serialize(std::ostream &os) const {
+  write(os, bins.size());
+  for (const auto& [index, count] : bins) {
+    write(os, index);
+    write(os, count);
+  }
+}
+
+template<typename Allocator>
+SparseStore<Allocator> SparseStore<Allocator>::deserialize(std::istream& is) {
+  SparseStore<Allocator> store;
+  const auto num_bins = read<typename bins_type::size_type>(is);
+  for (typename bins_type::size_type i = 0; i < num_bins; ++i) {
+    const auto index = read<typename bins_type::key_type>(is);
+    const auto count = read<typename bins_type::mapped_type>(is);
+    store.bins[index] = count;
+  }
+
+  return store;
+}
+
 }
 
 #endif //SPARSE_STORE_IMPL_HPP

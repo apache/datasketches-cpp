@@ -32,6 +32,11 @@ public:
   explicit CollapsingDenseStore(size_type max_num_bins);
   CollapsingDenseStore(const CollapsingDenseStore<Derived, Allocator>& other) = default;
 
+  CollapsingDenseStore<Derived,Allocator>& operator=(const CollapsingDenseStore<Derived, Allocator>& other);
+
+  void serialize(std::ostream& os) const;
+  static Derived deserialize(std::istream& is);
+
   ~CollapsingDenseStore() = default;
 
   void clear();

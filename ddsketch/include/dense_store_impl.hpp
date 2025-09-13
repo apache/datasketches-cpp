@@ -21,6 +21,9 @@
 #define DENSE_STORE_IMPL_HPP
 
 #include <algorithm>
+#include <filesystem>
+
+#include "common_defs.hpp"
 
 namespace datasketches {
 
@@ -248,6 +251,14 @@ void DenseStore<Derived, Allocator>::reset_bins(size_type from_index, size_type 
 }
 
 template<class Derived, typename Allocator>
+bool DenseStore<Derived, Allocator>::operator==(const DenseStore<Derived, Allocator>& other) const {
+  return offset == other.offset &&
+    min_index == other.min_index &&
+    max_index == other.max_index &&
+    bins == other.bins;
+}
+
+template<class Derived, typename Allocator>
 Derived& DenseStore<Derived, Allocator>::derived() {
   return static_cast<Derived&>(*this);
 }
@@ -338,11 +349,62 @@ typename DenseStore<Derived, Allocator>::reverse_iterator::reference DenseStore<
 
 template<class Derived, typename Allocator>
 void DenseStore<Derived, Allocator>::serialize(std::ostream& os) const {
+  derived().serialize(os);
+}
+
+template<class Derived, typename Allocator>
+Derived DenseStore<Derived, Allocator>::deserialize(std::istream& is) {
+  return Derived::deserialize(is);
+}
+
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::serialize_common(std::ostream& os) const {
   if (is_empty()) {
     return;
   }
 
+  // Serialize the range information
+  write(os, min_index);
+  write(os, max_index);
+  write(os, offset);
 
+  // Serialize the bins array (only the used portion)
+  const size_type num_bins = bins.size();
+  write(os, num_bins);
+
+  size_type non_empty_bins = 0;
+  for (const double& count : bins) {
+    non_empty_bins += (count > 0.0);
+  }
+  write(os, non_empty_bins);
+
+  for (const Bin& bin : *this) {
+    write(os, bin.getIndex());
+    write(os, bin.getCount());
+  }
+}
+
+template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::deserialize_common(Derived& store, std::istream& is) {
+  if (is.peek() == std::istream::traits_type::eof()) {
+    return;
+  }
+  // Deserialize the range information
+  store.min_index = read<size_type>(is);
+  store.max_index = read<size_type>(is);
+  store.offset = read<size_type>(is);
+
+  // Deserialize the bins array
+  const auto num_bins = read<size_type>(is);
+  store.bins.resize(num_bins, 0.0);
+
+  const auto non_empty_bins = read<size_type>(is);
+  // Read the actual bin counts
+  for (size_type i = 0; i < non_empty_bins; ++i) {
+    const auto index =  read<int>(is);
+    const auto count = read<double>(is);
+    store.add(index, count);
+  }
 }
 }
 

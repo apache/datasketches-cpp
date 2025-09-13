@@ -48,6 +48,19 @@ UnboundedSizeDenseStore<Allocator> *UnboundedSizeDenseStore<Allocator>::copy() c
   return new (alloc.allocate(1)) UnboundedSizeDenseStore<Allocator>(*this);
 }
 
+template<typename Allocator>
+UnboundedSizeDenseStore<Allocator> &UnboundedSizeDenseStore<Allocator>::operator=(const UnboundedSizeDenseStore &other) {
+
+  this->bins = other.bins;
+  this->offset = other.offset;
+  this->min_index = other.min_index;
+  this->max_index = other.max_index;
+
+
+  return *this;
+}
+
+
 
 template<typename Allocator>
 void UnboundedSizeDenseStore<Allocator>::adjust(size_type new_min_index, size_type new_max_index) {
@@ -68,6 +81,21 @@ void UnboundedSizeDenseStore<Allocator>::merge(const UnboundedSizeDenseStore<All
     this->bins[index - this->offset] += other.bins[index - other.offset];
   }
 }
+
+template<typename Allocator>
+void UnboundedSizeDenseStore<Allocator>::serialize(std::ostream &os) const {
+  this->serialize_common(os);
+}
+
+template<typename Allocator>
+UnboundedSizeDenseStore<Allocator> UnboundedSizeDenseStore<Allocator>::deserialize(std::istream &is) {
+  UnboundedSizeDenseStore<Allocator> store;
+  UnboundedSizeDenseStore::deserialize_common(store, is);
+
+  return store;
+}
+
+
 
 
 

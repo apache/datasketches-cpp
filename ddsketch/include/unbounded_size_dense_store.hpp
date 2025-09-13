@@ -35,8 +35,14 @@ public:
   UnboundedSizeDenseStore* copy() const;
   ~UnboundedSizeDenseStore() = default;
 
+  UnboundedSizeDenseStore& operator=(const UnboundedSizeDenseStore& other);
+
   void merge(const UnboundedSizeDenseStore<Allocator>& other);
   using DenseStore<UnboundedSizeDenseStore, Allocator>::merge;
+
+
+  void serialize(std::ostream& os) const;
+  static UnboundedSizeDenseStore deserialize(std::istream& is);
 
 protected:
   size_type normalize(size_type index);

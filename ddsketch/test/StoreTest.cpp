@@ -18,6 +18,7 @@
  */
 
 #include <iostream>
+#include <sstream>
 #include <catch2/catch.hpp>
 
 #include "collapsing_highest_dense_store.hpp"
@@ -542,6 +543,45 @@ TEST_CASE("merge test", "[mergetest]") {
   // DDSketch<SparseStore<std::allocator<uint8_t>>, LinearlyInterpolatedMapping> sketch2(ss, ss, mapping);
 
   //DDSketch<CollapsingHighestDenseStore<A>, LinearlyInterpolatedMapping> sketch4<1024>(0.99);
+}
+
+TEMPLATE_TEST_CASE("dense store serialization test", "[serialization]",
+  CollapsingLowestStoreTestCase<8>,
+  CollapsingLowestStoreTestCase<128>,
+  CollapsingLowestStoreTestCase<1024>,
+  CollapsingHighestStoreTestCase<8>,
+  CollapsingHighestStoreTestCase<128>,
+  CollapsingHighestStoreTestCase<1024>,
+  UnboundedStoreSizeTestCase,
+  SparseStoreTestCase
+) {
+  // Test empty store serialization
+  auto store = *TestType::new_store();
+  using StoreType = decltype(store);
+  std::stringstream stream;
+
+  store.serialize(stream);
+  StoreType deserialized_empty_store = StoreType::deserialize(stream);
+  REQUIRE(store.is_empty());
+  REQUIRE(deserialized_empty_store.is_empty());
+  REQUIRE(stream.peek() == std::istream::traits_type::eof());
+  REQUIRE(store == deserialized_empty_store);
+  stream.clear();
+
+  std::vector<int> indexes{-1000, -1, 0, 1, 1000};
+  std::vector<double> counts{0, 1, 2, 4, 5, 10, 20, 100, 1000, 10000};
+  for (int idx: indexes) {
+    for (double count: counts) {
+      store.add(idx, count);
+    }
+  }
+
+  store.serialize(stream);
+  auto deserialized_store = StoreType::deserialize(stream);
+  REQUIRE_FALSE(store.is_empty());
+  REQUIRE_FALSE(deserialized_store.is_empty());
+  REQUIRE(stream.peek() == std::istream::traits_type::eof());
+  REQUIRE(store == deserialized_store);
 }
 }
 
