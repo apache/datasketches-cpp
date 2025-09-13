@@ -38,7 +38,7 @@ public:
   double get_relative_accuracy() const;
   double min_indexable_value() const;
   double max_indexable_value() const;
-  void encode(std::ostream& os);
+  void serialize(std::ostream& os) const;
 
   bool operator==(const LogLikeIndexMapping<Derived>& other) const;
 

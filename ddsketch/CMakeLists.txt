@@ -63,4 +63,5 @@ install(FILES
         include/quadratically_interpolated_mapping.hpp
         include/quadratically_interpolated_mapping_impl.hpp
         include/store.hpp
+        include/index_mapping_decode.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

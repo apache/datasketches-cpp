@@ -21,7 +21,7 @@
 #define LOG_LIKE_INDEX_MAPPING_IMPL_HPP
 #include "log_like_index_mapping.hpp"
 #include <cmath>
-#include <iomanip>
+#include "common_defs.hpp"
 
 namespace datasketches {
 
@@ -102,8 +102,10 @@ double LogLikeIndexMapping<Derived>::max_indexable_value() const {
 }
 
 template<class Derived>
-void LogLikeIndexMapping<Derived>::encode(std::ostream &os) {
-  // TODO implement
+void LogLikeIndexMapping<Derived>::serialize(std::ostream &os) const {
+  // write(os, layout());
+  write(os, gamma);
+  write(os, index_offset);
 }
 
 template<class Derived>

@@ -22,7 +22,9 @@
 
 #include <istream>
 
+#include "common_defs.hpp"
 #include "index_mapping.hpp"
+#include "linearly_interpolated_mapping.hpp"
 
 namespace datasketches {
 
@@ -42,18 +44,6 @@ inline std::ostream& operator<<(std::ostream& os, const IndexMappingLayout& obj)
       return os << "INVALID";
   }
 }
-
-template<class Derived>
-template<IndexMappingLayout layout>
-IndexMapping<Derived>* IndexMapping<Derived>::decode(std::istream& is) {
-  switch (layout) {
-    case IndexMappingLayout::LOG_LINEAR:
-      return nullptr;
-    default:
-      return nullptr;
-  }
-}
-
 }
 
 
