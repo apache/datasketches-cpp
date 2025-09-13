@@ -102,8 +102,7 @@ double LogLikeIndexMapping<Derived>::max_indexable_value() const {
 }
 
 template<class Derived>
-void LogLikeIndexMapping<Derived>::serialize(std::ostream &os) const {
-  // write(os, layout());
+void LogLikeIndexMapping<Derived>::serialize(std::ostream& os) const {
   write(os, gamma);
   write(os, index_offset);
 }

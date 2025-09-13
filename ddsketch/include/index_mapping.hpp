@@ -43,12 +43,15 @@ public:
   double get_relative_accuracy() const;
   double min_indexable_value() const;
   double max_indexable_value() const;
-  void encode(std::ostream& os);
+  void serialize(std::ostream& os) const;
 
-  template<IndexMappingLayout layout>
-  static IndexMapping* decode(std::istream& is);
+  static Derived deserialize(std::istream& is);
 
   ~IndexMapping() = default;
+
+protected:
+  Derived& derived();
+  const Derived& derived() const;
 };
 
 }

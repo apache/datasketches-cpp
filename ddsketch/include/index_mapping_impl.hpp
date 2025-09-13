@@ -24,7 +24,6 @@
 
 #include "common_defs.hpp"
 #include "index_mapping.hpp"
-#include "linearly_interpolated_mapping.hpp"
 
 namespace datasketches {
 
@@ -43,6 +42,35 @@ inline std::ostream& operator<<(std::ostream& os, const IndexMappingLayout& obj)
     default:
       return os << "INVALID";
   }
+}
+
+template<class Derived>
+Derived IndexMapping<Derived>::deserialize(std::istream &is) {
+  const auto gamma = read<double>(is);
+  const auto index_offset = read<double>(is);
+
+
+  return Derived(gamma, index_offset);
+}
+
+template<class Derived>
+Derived& IndexMapping<Derived>::derived() {
+  return *static_cast<Derived*>(this);
+}
+
+template<class Derived>
+const Derived& IndexMapping<Derived>::derived() const {
+  return *static_cast<const Derived*>(this);
+}
+
+template<class Derived>
+void IndexMapping<Derived>::serialize(std::ostream &os) const {
+  derived().serialize(os);
+}
+
+template<class Derived>
+double IndexMapping<Derived>::get_relative_accuracy() const {
+  return derived().get_relative_accuracy();
 }
 }
 

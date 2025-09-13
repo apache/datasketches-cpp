@@ -94,4 +94,22 @@ TEMPLATE_TEST_CASE("test index mapping validity", "[indexmappingtest}",
     bound = mapping->upper_bound(index);
   }
 }
+
+TEMPLATE_TEST_CASE("encode - decode", "[indexmappingtest",
+  LinearlyInterpolatedMapping,
+  LogarithmicMapping,
+  QuadraticallyInterpolatedMapping,
+  QuarticallyInterpolatedMapping
+) {
+  const double gamma = 42;
+  const double index_offset = 4321;
+  TestType mapping(gamma, index_offset);
+
+  std::stringstream ss;
+  mapping.serialize(ss);
+
+  const TestType decoded_mapping = IndexMapping<TestType>::deserialize(ss);
+
+  REQUIRE(mapping.get_relative_accuracy() == decoded_mapping.get_relative_accuracy());
+}
 }
