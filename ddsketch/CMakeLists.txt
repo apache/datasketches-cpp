@@ -38,30 +38,33 @@ install(TARGETS ddsketch
 install(FILES
         include/bin.hpp
         include/bin_impl.hpp
-        include/ddsketch.hpp
-        include/ddsketch_impl.hpp
-        include/dense_store.hpp
-        include/dense_store_impl.hpp
         include/collapsing_dense_store.hpp
         include/collapsing_dense_store_impl.hpp
         include/collapsing_highest_dense_store.hpp
         include/collapsing_highest_dense_store_impl.hpp
         include/collapsing_lowest_dense_store.hpp
         include/collapsing_lowest_dense_store_impl.hpp
-        include/unbounded_size_dense_store.hpp
-        include/unbounded_size_dense_store_impl.hpp
-        include/sparse_store.hpp
-        include/sparse_store_impl.hpp
+        include/ddsketch.hpp
+        include/ddsketch_impl.hpp
+        include/dense_store.hpp
+        include/dense_store_impl.hpp
         include/index_mapping.hpp
+        include/index_mapping_factory.hpp
         include/index_mapping_impl.hpp
-        include/log_like_index_mapping.hpp
-        include/log_like_index_mapping_impl.hpp
         include/linearly_interpolated_mapping.hpp
         include/linearly_interpolated_mapping_impl.hpp
+        include/log_like_index_mapping.hpp
+        include/log_like_index_mapping_impl.hpp
         include/logarithmic_mapping.hpp
         include/logarithmic_mapping_impl.hpp
         include/quadratically_interpolated_mapping.hpp
         include/quadratically_interpolated_mapping_impl.hpp
+        include/quartically_interpolated_mapping.hpp
+        include/quartically_interpolated_mapping_impl.hpp
+        include/sparse_store.hpp
+        include/sparse_store_impl.hpp
         include/store.hpp
-        include/index_mapping_decode.hpp
+        include/store_factory.hpp
+        include/unbounded_size_dense_store.hpp
+        include/unbounded_size_dense_store_impl.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
