@@ -27,7 +27,7 @@
 namespace datasketches {
 
 template<store_concept Store, class Mapping>
-DDSketch<Store, Mapping>::DDSketch(double relative_accuracy): DDSketch(Mapping(relative_accuracy)) {}
+DDSketch<Store, Mapping>::DDSketch(const double& relative_accuracy): DDSketch(Mapping(relative_accuracy)) {}
 
 template<store_concept Store, class Mapping>
 DDSketch<Store, Mapping>::DDSketch(const Mapping& index_mapping):

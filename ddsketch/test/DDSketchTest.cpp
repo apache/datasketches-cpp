@@ -577,6 +577,8 @@ TEST_CASE("quantile", "[ddsketch]") {
     ddsketch.update(val);
   }
 
+  DDSketch<CollapsingLowestDenseStore<8, A>, LinearlyInterpolatedMapping> sk(0.01);
+
   // std::cout << ddsketch.get_quantile(0.5) << std::endl;
   // std::cout << ddsketch.get_rank(4) << std::endl;
 }

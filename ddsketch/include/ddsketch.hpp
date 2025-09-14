@@ -34,19 +34,11 @@ namespace datasketches {
 template<store_concept Store, class Mapping>
 class  DDSketch {
 public:
-  // TODO
-  // DDSketch() = default;
-  // template<auto... Args>
-  // explicit DDSketch(const double& relative_accuracy):
-  // positive_store(store_factory<Store>::new_store(Args...)),
-  // negative_store(store_factory<Store>::new_store(Args...)),
-  // index_mapping(Mapping(relative_accuracy)) {}
+  explicit DDSketch(const double& relative_accuracy);
 
   DDSketch(const Store& positive_store, const Store& negative_store, const Mapping& mapping, const double& zero_count = 0.0, const double& min_indexed_value = 0.0);
 
   explicit DDSketch(const Mapping& index_mapping);
-
-  explicit DDSketch(double relative_accuracy);
 
   void update(const double&value, const double& count = 1.0);
 
