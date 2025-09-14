@@ -1,0 +1,18 @@
+common_test 2 0.0190318
+integration_test 2 0.0176151
+hll_test 2 13.5472
+cpc_test 2 1.2708
+kll_test 2 0.0729488
+fi_test 2 0.0187827
+theta_test 2 0.444705
+var_opt_sampling_test 2 0.0273162
+ebpps_sampling_test 2 0.0189165
+tuple_test 2 0.0928846
+req_test 2 0.026392
+quantiles_test 2 0.0566809
+count_min_test 2 0.0174204
+density_test 2 0.016172
+tdigest_test 2 0.0178206
+bloom_filter_test 2 0.0200704
+ddsketch_test 1 2.72906
+---

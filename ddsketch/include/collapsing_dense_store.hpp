@@ -24,15 +24,15 @@
 
 namespace datasketches {
 
-template<class Derived, typename Allocator>
+template<class Derived, int N, typename Allocator>
 class CollapsingDenseStore : public DenseStore<Derived, Allocator> {
 public:
 
   using size_type = typename DenseStore<Derived, Allocator>::size_type;
-  explicit CollapsingDenseStore(size_type max_num_bins);
-  CollapsingDenseStore(const CollapsingDenseStore<Derived, Allocator>& other) = default;
+  CollapsingDenseStore();
 
-  CollapsingDenseStore<Derived,Allocator>& operator=(const CollapsingDenseStore<Derived, Allocator>& other);
+
+  CollapsingDenseStore<Derived, N, Allocator>& operator=(const CollapsingDenseStore<Derived, N, Allocator>& other);
 
   void serialize(std::ostream& os) const;
   static Derived deserialize(std::istream& is);
@@ -43,7 +43,6 @@ public:
   void clear();
 
 protected:
-  const size_type max_num_bins;
   bool is_collapsed;
 
   size_type get_new_length(size_type new_min_index, size_type new_max_index) const;

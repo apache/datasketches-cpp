@@ -24,18 +24,18 @@
 #include "collapsing_highest_dense_store.hpp"
 
 namespace datasketches {
-template<typename Allocator>
-CollapsingHighestDenseStore<Allocator>::CollapsingHighestDenseStore(size_type max_num_bins): CollapsingDenseStore<CollapsingHighestDenseStore, Allocator>(max_num_bins){}
+template<int N, typename Allocator>
+CollapsingHighestDenseStore<N, Allocator>::CollapsingHighestDenseStore(): CollapsingDenseStore<CollapsingHighestDenseStore, N, Allocator>(){}
 
-template<typename Allocator>
-CollapsingHighestDenseStore<Allocator>* CollapsingHighestDenseStore<Allocator>::copy() const {
-  using StoreAlloc = typename std::allocator_traits<Allocator>::template rebind_alloc<CollapsingHighestDenseStore<Allocator>>;
+template<int N, typename Allocator>
+CollapsingHighestDenseStore<N, Allocator>* CollapsingHighestDenseStore<N, Allocator>::copy() const {
+  using StoreAlloc = typename std::allocator_traits<Allocator>::template rebind_alloc<CollapsingHighestDenseStore<N, Allocator>>;
   StoreAlloc alloc(this->bins.get_allocator());
-  return new (alloc.allocate(1)) CollapsingHighestDenseStore<Allocator>(*this);
+  return new (alloc.allocate(1)) CollapsingHighestDenseStore<N, Allocator>(*this);
 }
 
-template<typename Allocator>
-void CollapsingHighestDenseStore<Allocator>::merge(const CollapsingHighestDenseStore<Allocator>& other) {
+template<int N, typename Allocator>
+void CollapsingHighestDenseStore<N, Allocator>::merge(const CollapsingHighestDenseStore<N, Allocator>& other) {
   if (other.is_empty()) {
     return;
   }
@@ -58,8 +58,8 @@ void CollapsingHighestDenseStore<Allocator>::merge(const CollapsingHighestDenseS
   }
 }
 
-template <typename Allocator>
-typename CollapsingHighestDenseStore<Allocator>::size_type CollapsingHighestDenseStore<Allocator>::normalize(size_type index) {
+template<int N, typename Allocator>
+typename CollapsingHighestDenseStore<N, Allocator>::size_type CollapsingHighestDenseStore<N, Allocator>::normalize(size_type index) {
   if (index > this->max_index) {
     if (this->is_collapsed) {
       return this->bins.size() - 1;
@@ -75,8 +75,8 @@ typename CollapsingHighestDenseStore<Allocator>::size_type CollapsingHighestDens
   return index - this->offset;
 }
 
-template <typename Allocator>
-void CollapsingHighestDenseStore<Allocator>::adjust(size_type new_min_index, size_type new_max_index) {
+template<int N, typename Allocator>
+void CollapsingHighestDenseStore<N, Allocator>::adjust(size_type new_min_index, size_type new_max_index) {
   if (new_max_index - new_min_index + 1 > static_cast<int>(this->bins.size())) {
     // The range of indices is too wide, buckets of lowest indices need to be collapsed.
     new_max_index = new_min_index + this->bins.size() - 1;

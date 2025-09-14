@@ -23,12 +23,12 @@
 
 
 namespace datasketches {
-template<typename StoreType, auto... Args>
+template<typename StoreType>
 class store_factory {
 public:
   static std::unique_ptr<StoreType> new_store()
   {
-    return std::make_unique<StoreType>(Args...);
+    return std::make_unique<StoreType>();
   }
 };
 }

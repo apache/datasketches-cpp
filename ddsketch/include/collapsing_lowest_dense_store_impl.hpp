@@ -21,20 +21,21 @@
 #define COLLAPSING_LOWEST_DENSE_STORE_IMPL_HPP
 
 #include "collapsing_lowest_dense_store.hpp"
+#include "collapsing_lowest_dense_store.hpp"
 
 namespace datasketches {
-template<typename Allocator>
-CollapsingLowestDenseStore<Allocator>::CollapsingLowestDenseStore(size_type max_num_bins): CollapsingDenseStore<CollapsingLowestDenseStore<Allocator>, Allocator>(max_num_bins){}
+template<int N, typename Allocator>
+CollapsingLowestDenseStore<N, Allocator>::CollapsingLowestDenseStore(): CollapsingDenseStore<CollapsingLowestDenseStore<N, Allocator>, N, Allocator>(){}
 
-template<typename Allocator>
-CollapsingLowestDenseStore<Allocator>* CollapsingLowestDenseStore<Allocator>::copy() const {
-  using StoreAlloc = typename std::allocator_traits<Allocator>::template rebind_alloc<CollapsingLowestDenseStore<Allocator>>;
+template<int N, typename Allocator>
+CollapsingLowestDenseStore<N, Allocator>* CollapsingLowestDenseStore<N, Allocator>::copy() const {
+  using StoreAlloc = typename std::allocator_traits<Allocator>::template rebind_alloc<CollapsingLowestDenseStore<N, Allocator>>;
   StoreAlloc alloc(this->bins.get_allocator());
-  return new (alloc.allocate(1)) CollapsingLowestDenseStore<Allocator>(*this);
+  return new (alloc.allocate(1)) CollapsingLowestDenseStore<N, Allocator>(*this);
 }
 
-template<typename Allocator>
-void CollapsingLowestDenseStore<Allocator>::merge(const CollapsingLowestDenseStore<Allocator>& other) {
+template<int N, typename Allocator>
+void CollapsingLowestDenseStore<N, Allocator>::merge(const CollapsingLowestDenseStore<N, Allocator>& other) {
   if (other.is_empty()) {
     return;
   }
@@ -57,8 +58,8 @@ void CollapsingLowestDenseStore<Allocator>::merge(const CollapsingLowestDenseSto
   }
 }
 
-template <typename Allocator>
-typename CollapsingLowestDenseStore<Allocator>::size_type CollapsingLowestDenseStore<Allocator>::normalize(size_type index) {
+template<int N, typename Allocator>
+typename CollapsingLowestDenseStore<N, Allocator>::size_type CollapsingLowestDenseStore<N, Allocator>::normalize(size_type index) {
   if (index < this->min_index) {
     if (this->is_collapsed) {
       return static_cast<size_type>(0);
@@ -74,8 +75,8 @@ typename CollapsingLowestDenseStore<Allocator>::size_type CollapsingLowestDenseS
   return index - this->offset;
 }
 
-template <typename Allocator>
-void CollapsingLowestDenseStore<Allocator>::adjust(size_type new_min_index, size_type new_max_index) {
+template<int N, typename Allocator>
+void CollapsingLowestDenseStore<N, Allocator>::adjust(size_type new_min_index, size_type new_max_index) {
   if (new_max_index - new_min_index + 1 > static_cast<int>(this->bins.size())) {
     // The range of indices is too wide, buckets of lowest indices need to be collapsed.
     new_min_index = new_max_index - this->bins.size() + 1;

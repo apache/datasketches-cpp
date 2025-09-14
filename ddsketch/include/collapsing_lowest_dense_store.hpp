@@ -23,12 +23,12 @@
 #include "collapsing_dense_store.hpp"
 
 namespace datasketches {
-template<typename Allocator>
-class CollapsingLowestDenseStore : public CollapsingDenseStore<CollapsingLowestDenseStore<Allocator>, Allocator> {
+template<int N, typename Allocator>
+class CollapsingLowestDenseStore : public CollapsingDenseStore<CollapsingLowestDenseStore<N, Allocator>, N, Allocator> {
 public:
-  using size_type = typename CollapsingDenseStore<CollapsingLowestDenseStore, Allocator>::size_type;
+  using size_type = typename CollapsingDenseStore<CollapsingLowestDenseStore, N, Allocator>::size_type;
 
-  explicit CollapsingLowestDenseStore(size_type max_num_bins);
+  CollapsingLowestDenseStore();
 
   CollapsingLowestDenseStore* copy() const;
 

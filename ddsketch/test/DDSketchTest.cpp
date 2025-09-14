@@ -138,10 +138,10 @@ void test_merging(SketchType& sketch, const std::vector<std::vector<double>>& va
 using DDSketchUnboundedStoreTestCase = std::pair<store_factory<UnboundedSizeDenseStore<A>>, LogarithmicMapping>;
 
 template<int N>
-using DDSketchCollapsingHighestStoreTestCase = std::pair<store_factory<CollapsingHighestDenseStore<A>, N>, LogarithmicMapping>;
+using DDSketchCollapsingHighestStoreTestCase = std::pair<store_factory<CollapsingHighestDenseStore<N, A>>, LogarithmicMapping>;
 
 template<int N>
-using DDSketchCollapsingLowestStoreTestCase = std::pair<store_factory<CollapsingLowestDenseStore<A>, N>, LogarithmicMapping>;
+using DDSketchCollapsingLowestStoreTestCase = std::pair<store_factory<CollapsingLowestDenseStore<N, A>>, LogarithmicMapping>;
 
 using DDSketchSparseStoreTestCase = std::pair<store_factory<SparseStore<A>>, LogarithmicMapping>;
 TEMPLATE_TEST_CASE("DDSketch empty test", "[ddsketch]",
@@ -285,7 +285,7 @@ TEMPLATE_TEST_CASE("DDSketch mixed positive negative test", "[ddsketch]",
 TEMPLATE_TEST_CASE("DDSketch with zeros test", "[ddsketch]",
   DDSketchUnboundedStoreTestCase,
   DDSketchCollapsingHighestStoreTestCase<4096>,
-  (std::pair<store_factory<CollapsingLowestDenseStore<A>, 4096>, LogarithmicMapping>),
+  DDSketchCollapsingLowestStoreTestCase<4096>,
   DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
@@ -517,10 +517,10 @@ TEMPLATE_TEST_CASE("DDSketch merging random test", "[ddsketch][random]",
 }
 
 TEMPLATE_TEST_CASE("DDSketch serialize - deserialize test", "[ddsketch][random]",
-  // DDSketchUnboundedStoreTestCase,
-  DDSketchCollapsingHighestStoreTestCase<4096>
-  // DDSketchCollapsingLowestStoreTestCase<4096>
-  // DDSketchSparseStoreTestCase
+  DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<4096>,
+  DDSketchCollapsingLowestStoreTestCase<4096>,
+  DDSketchSparseStoreTestCase
 ) {
   auto positive_store = *TestType::first_type::new_store();
   auto negative_store = *TestType::first_type::new_store();
