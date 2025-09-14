@@ -191,7 +191,7 @@ double CubicInterpolation<A>::usingXArrAndYStride(const double xArr[], const int
   const int xArrLenM1 = xArrLen - 1;
 
   if ((xArrLen < 4) || (x < xArr[0]) || (x > xArr[xArrLenM1])) {
-    throw std::logic_error("impossible values during interpolaiton");
+    throw std::logic_error("impossible values during interpolation");
   }
 
   if (x ==  xArr[xArrLenM1]) { /* corner case */

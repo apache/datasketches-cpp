@@ -173,7 +173,7 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is, const A& allocator) {
 
   hll_mode mode = HllSketchImpl<A>::extractCurMode(listHeader[hll_constants::MODE_BYTE]);
   if (mode != HLL) {
-    throw std::invalid_argument("Calling HLL construtor with non-HLL mode data");
+    throw std::invalid_argument("Calling HLL constructor with non-HLL mode data");
   }
 
   const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[hll_constants::MODE_BYTE]);

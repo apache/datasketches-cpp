@@ -257,16 +257,29 @@ public:
    */
   static tdigest deserialize(const void* bytes, size_t size, const Allocator& allocator = Allocator());
 
+  class const_iterator;
+
+  /**
+   * Iterator pointing to the first centroid in the sketch.
+   * If the sketch is empty, the returned iterator must not be dereferenced or incremented.
+   * @return iterator pointing to the first centroid in the sketch
+   */
+  const_iterator begin() const;
+
+  /**
+   * Iterator pointing to the past-the-end centroid in the sketch.
+   * It does not point to any centroid, and must not be dereferenced or incremented.
+   * @return iterator pointing to the past-the-end centroid in the sketch
+   */
+  const_iterator end() const;
 private:
   bool reverse_merge_;
   uint16_t k_;
-  uint16_t internal_k_;
   T min_;
   T max_;
   size_t centroids_capacity_;
   vector_centroid centroids_;
   uint64_t centroids_weight_;
-  size_t buffer_capacity_;
   vector_t buffer_;
 
   static const size_t BUFFER_MULTIPLIER = 4;
@@ -297,6 +310,27 @@ private:
   static inline void check_split_points(const T* values, uint32_t size);
 };
 
+template<typename T, typename A>
+class tdigest<T, A>::const_iterator {
+public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = std::pair<const T&, const W>;
+  using difference_type = void;
+  using pointer = const return_value_holder<value_type>;
+  using reference = const value_type;
+
+  const_iterator& operator++();
+  const_iterator& operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  reference operator*() const;
+  pointer operator->() const;
+private:
+  friend class tdigest;
+  uint32_t index_;
+  vector_centroid centroids_;
+  const_iterator(const tdigest& tdigest_, bool is_end);
+};
 } /* namespace datasketches */
 
 #include "tdigest_impl.hpp"
