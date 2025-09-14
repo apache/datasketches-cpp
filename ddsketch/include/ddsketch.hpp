@@ -30,8 +30,9 @@
 
 namespace datasketches {
 
+
 template<store_concept Store, class Mapping>
-class DDSketch {
+class  DDSketch {
 public:
   // TODO
   // DDSketch() = default;
@@ -66,6 +67,8 @@ public:
   void serialize(std::ostream& os) const;
   static DDSketch deserialize(std::istream& is);
   int get_serialized_size_bytes() const;
+
+  bool operator==(const DDSketch<Store, Mapping>& other) const;
 protected:
   Store positive_store;
   Store negative_store;
@@ -84,11 +87,19 @@ protected:
   template<store_concept OtherStore>
   void check_mergeability(const DDSketch<OtherStore, Mapping>& other) const;
   double get_quantile(const double& rank, const double& count) const;
+
+  enum Flag : uint8_t {
+    POSITIVE_STORE,
+    NEGATIVE_STORE,
+    INDEX_MAPPING,
+    ZERO_COUNT,
+  };
 };
 
 // CTA (class template argument deduction) deduction guides (so you can write `ddsketch sketch(s1);`)
 template<store_concept Store, class Mapping>
-DDSketch(Store, Mapping) -> DDSketch<Store, Mapping>;
+DDSketch(Store, Mapping) -> DDSketch<Store, Mapping>;\
+
 
 } /* namespace datasketches */
 

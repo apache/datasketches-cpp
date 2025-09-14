@@ -516,6 +516,56 @@ TEMPLATE_TEST_CASE("DDSketch merging random test", "[ddsketch][random]",
   }
 }
 
+TEMPLATE_TEST_CASE("DDSketch serialize - deserialize test", "[ddsketch][random]",
+  // DDSketchUnboundedStoreTestCase,
+  DDSketchCollapsingHighestStoreTestCase<4096>
+  // DDSketchCollapsingLowestStoreTestCase<4096>
+  // DDSketchSparseStoreTestCase
+) {
+  auto positive_store = *TestType::first_type::new_store();
+  auto negative_store = *TestType::first_type::new_store();
+  using StoreType = decltype(positive_store);
+  using MappingType = TestType::second_type;
+  constexpr double relative_accuracy = 0.01;
+  constexpr int num_tests = 100;
+  constexpr int max_num_values = 1000;
+
+  DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+  std::random_device rd;
+  std::mt19937_64 rng(rd());
+  std::uniform_int_distribution<int> size_dist(0, max_num_values - 1);
+  std::uniform_real_distribution<double> value_dist(-1000.0, 1000.0);
+
+  std::stringstream ss;
+  sketch.serialize(ss);
+  DDSketch<StoreType, MappingType> deserialized_empty_sketch = DDSketch<StoreType, MappingType>::deserialize(ss);
+  REQUIRE(sketch.is_empty());
+  REQUIRE(deserialized_empty_sketch.is_empty());
+  REQUIRE(ss.peek() == std::istream::traits_type::eof());
+  REQUIRE(sketch == deserialized_empty_sketch);
+  ss.clear();
+
+  for (int i = 0; i < num_tests; ++i) {
+    std::vector<double> values;
+    int num_values = size_dist(rng);
+
+    for (int j = 0; j < num_values; ++j) {
+      sketch.update(value_dist(rng));
+    }
+
+    sketch.serialize(ss);
+    auto deserialized_sketch = DDSketch<StoreType, MappingType>::deserialize(ss);
+    REQUIRE_FALSE(sketch.is_empty());
+    REQUIRE_FALSE(deserialized_sketch.is_empty());
+    REQUIRE(ss.peek() == std::istream::traits_type::eof());
+    REQUIRE(sketch == deserialized_sketch);
+    ss.clear();
+
+  }
+
+
+}
+
 TEST_CASE("quantile", "[ddsketch]") {
   std::random_device rd{};
   std::mt19937_64 gen{rd()};

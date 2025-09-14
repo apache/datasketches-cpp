@@ -374,7 +374,7 @@ void DenseStore<Derived, Allocator>::serialize_common(std::ostream& os) const {
 
   size_type non_empty_bins = 0;
   for (const double& count : bins) {
-    non_empty_bins += (count > 0.0);
+    non_empty_bins += (count > 1e-16);
   }
   write(os, non_empty_bins);
 
@@ -403,8 +403,45 @@ void DenseStore<Derived, Allocator>::deserialize_common(Derived& store, std::ist
   for (size_type i = 0; i < non_empty_bins; ++i) {
     const auto index =  read<int>(is);
     const auto count = read<double>(is);
-    store.add(index, count);
+    store.bins[index-store.offset] = count;
   }
+}
+
+template<class Derived, typename Allocator>
+int DenseStore<Derived, Allocator>::get_serialized_size_bytes_common() const {
+  if (is_empty()) {
+    return 0;
+  }
+
+
+  // Keep the running total in size_t, cast to int at the end (the public API returns int)
+  size_t size_bytes = 0;
+
+  // Range metadata written by serialize_common
+  size_bytes += sizeof(this->min_index); // min_index
+  size_bytes += sizeof(this->max_index); // max_index
+  size_bytes += sizeof(this->offset);    // offset
+
+  // `serialize_common` writes the number of bins (the full allocated length)
+  size_type num_bins = static_cast<size_type>(this->bins.size());
+  (void)num_bins; // silence unused warning in templates
+  size_bytes += sizeof(num_bins);
+
+  // Count non-empty bins exactly as in serialize_common (threshold 1e-16)
+  size_type non_empty_bins = 0;
+  for (const double& count : this->bins) {
+    non_empty_bins += (count > 1e-16);
+  }
+
+  // It writes the non_empty_bins counter itself
+  size_bytes += sizeof(non_empty_bins);
+
+  // For each non-empty bin, serialize_common writes: index (int) + count (double)
+  size_bytes += static_cast<size_t>(non_empty_bins) * sizeof(int);
+  size_bytes += static_cast<size_t>(non_empty_bins) * sizeof(double);
+
+  // Final cast matches the serialized-size field type used elsewhere
+  return static_cast<int>(size_bytes);
 }
 }
 

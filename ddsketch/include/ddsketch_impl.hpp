@@ -198,17 +198,50 @@ double DDSketch<Store, Mapping>::get_quantile(const double& rank, const double& 
 template<store_concept Store, class Mapping>
 void DDSketch<Store, Mapping>::serialize(std::ostream& os) const {
   index_mapping.serialize(os);
-  if (zero_count > 0.0) {
-    write(os, zero_count);
-  }
 
+  write(os, zero_count);
+
+
+  auto val = positive_store.get_serialized_size_bytes();
+  write(os, positive_store.get_serialized_size_bytes());
   positive_store.serialize(os);
+
+  val = negative_store.get_serialized_size_bytes();
+  write(os, negative_store.get_serialized_size_bytes());
   negative_store.serialize(os);
 }
 
 template<store_concept Store, class Mapping>
 DDSketch<Store, Mapping> DDSketch<Store, Mapping>::deserialize(std::istream &is) {
+  Mapping deserialized_index_mapping = Mapping::deserialize(is);
+  const auto deserialized_zero_count = read<double>(is);
 
+  const auto positive_store_serialized_size  = read<int>(is);
+
+  std::string pos_buf(positive_store_serialized_size, '\0');
+  is.read(pos_buf.data(), pos_buf.size());
+  std::stringstream pos_stream(pos_buf);
+  Store deserialized_positive_store = Store::deserialize(pos_stream);
+
+  const auto negative_store_serialized_size  = read<int>(is);
+  std::string neg_buf(negative_store_serialized_size, '\0');
+  is.read(neg_buf.data(), neg_buf.size());
+  std::stringstream neg_stream(neg_buf);
+  Store deserialized_negative_store = Store::deserialize(neg_stream);
+
+  DDSketch<Store, Mapping> ddsketch(deserialized_positive_store, deserialized_negative_store, deserialized_index_mapping);
+  ddsketch.zero_count = deserialized_zero_count;
+  return ddsketch;
+}
+
+template<store_concept Store, class Mapping>
+bool DDSketch<Store, Mapping>::operator==(const DDSketch<Store, Mapping>& other) const {
+  return positive_store == other.positive_store &&
+    negative_store == other.negative_store &&
+      index_mapping == other.index_mapping &&
+        zero_count == other.zero_count &&
+          min_indexed_value == other.min_indexed_value &&
+            max_indexed_value == other.max_indexed_value;
 }
 
 }

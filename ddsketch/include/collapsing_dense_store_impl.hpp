@@ -68,7 +68,7 @@ void CollapsingDenseStore<Derived, Allocator>::serialize(std::ostream& os) const
 
 template<class Derived, typename Allocator>
 Derived CollapsingDenseStore<Derived, Allocator>::deserialize(std::istream& is) {
-  Derived store(read<int>(is));
+  Derived store(read<size_type>(is));
 
   if (is.peek() == std::istream::traits_type::eof()) {
     return store;
@@ -81,22 +81,14 @@ Derived CollapsingDenseStore<Derived, Allocator>::deserialize(std::istream& is) 
 
 template<class Derived, typename Allocator>
 int CollapsingDenseStore<Derived, Allocator>::get_serialized_size_bytes() const {
-  int size_bytes = 0;
-  size_bytes += sizeof(max_num_bins);
-  size_bytes += sizeof(is_collapsed);
-  size_bytes += sizeof(this->min_index);
-  size_bytes += sizeof(this->max_index);
-  size_bytes += sizeof(size_type);
-
-  size_type non_empty_bins = 0;
-  for (const double& count : this->bins) {
-    non_empty_bins += (count > 0.0);
+  // Header written by serialize(): max_num_bins always present
+  int size_bytes = static_cast<int>(sizeof(max_num_bins));
+  if (this->is_empty()) {
+    return size_bytes;
   }
-
-  size_bytes += sizeof(non_empty_bins);
-  size_bytes += non_empty_bins * sizeof(size_type);
-  size_bytes += non_empty_bins * sizeof(double);
-
+  // is_collapsed flag, then the common section (range + bins)
+  size_bytes += static_cast<int>(sizeof(is_collapsed));
+  size_bytes += this->get_serialized_size_bytes_common();
   return size_bytes;
 }
 

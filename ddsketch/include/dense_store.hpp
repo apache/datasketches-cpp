@@ -136,6 +136,7 @@ protected:
 
   void serialize_common(std::ostream& os) const;
   static void deserialize_common(Derived& store, std::istream& is);
+  int get_serialized_size_bytes_common() const;
 
   Derived& derived();
   const Derived& derived() const;

@@ -524,7 +524,7 @@ TEMPLATE_TEST_CASE("test cross merge", "[storetest]",
   }
 }
 
-TEMPLATE_TEST_CASE("dense store serialization test", "[serialization]",
+TEMPLATE_TEST_CASE("test store serialize - deserialize", "[serialization]",
   CollapsingLowestStoreTestCase<8>,
   CollapsingLowestStoreTestCase<128>,
   CollapsingLowestStoreTestCase<1024>,
