@@ -31,7 +31,11 @@ DDSketch<Store, Mapping>::DDSketch(const double& relative_accuracy): DDSketch(Ma
 
 template<store_concept Store, class Mapping>
 DDSketch<Store, Mapping>::DDSketch(const Mapping& index_mapping):
-  DDSketch(*store_factory<Store>::new_store(), *store_factory<Store>::new_store(), index_mapping, 0.0, 0.0) {}
+  index_mapping(index_mapping),
+  zero_count(0),
+  min_indexed_value(index_mapping.min_indexable_value()),
+  max_indexed_value(index_mapping.max_indexable_value())
+{}
 
 
 template<store_concept Store, class Mapping>

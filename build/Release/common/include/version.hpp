@@ -26,9 +26,9 @@ namespace datasketches {
 constexpr int VERSION_MAJOR {5};
 constexpr int VERSION_MINOR {3};
 constexpr int VERSION_PATCH {20250914};
-constexpr int VERSION_TWEAK {1951};
+constexpr int VERSION_TWEAK {2050};
 
-constexpr auto VERSION_STR = "5.3.20250914.1951";
+constexpr auto VERSION_STR = "5.3.20250914.2050";
 constexpr auto SOURCE_URL = "https://github.com/apache/datasketches-cpp";
 
 }

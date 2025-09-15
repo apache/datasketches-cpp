@@ -1,4 +1,4 @@
-set(DATASKETCHES_VERSION "5.3.20250914.1951")
+set(DATASKETCHES_VERSION "5.3.20250914.2050")
 
 
 ####### Expanded from @PACKAGE_INIT@ by configure_package_config_file() #######

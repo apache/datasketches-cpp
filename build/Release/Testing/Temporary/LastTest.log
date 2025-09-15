@@ -1,10 +1,10 @@
-Start testing: Sep 14 22:31 CEST
+Start testing: Sep 14 22:50 CEST
 ----------------------------------------------------------
 1/17 Testing: common_test
 1/17 Test: common_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/common/test/common_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/common/test
-"common_test" start time: Sep 14 22:31 CEST
+"common_test" start time: Sep 14 22:50 CEST
 Output:
 ----------------------------------------------------------
 tt move assignment
@@ -18,10 +18,10 @@ tt move constructor
 All tests passed (406 assertions in 9 test cases)
 
 <end of output>
-Test time =   0.04 sec
+Test time =   0.23 sec
 ----------------------------------------------------------
 Test Passed.
-"common_test" end time: Sep 14 22:31 CEST
+"common_test" end time: Sep 14 22:50 CEST
 "common_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -29,7 +29,7 @@ Test Passed.
 2/17 Test: integration_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/common/test/integration_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/common/test
-"integration_test" start time: Sep 14 22:31 CEST
+"integration_test" start time: Sep 14 22:50 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
@@ -37,10 +37,10 @@ test cases: 1 | 1 passed
 assertions: - none -
 
 <end of output>
-Test time =   0.04 sec
+Test time =   0.19 sec
 ----------------------------------------------------------
 Test Passed.
-"integration_test" end time: Sep 14 22:31 CEST
+"integration_test" end time: Sep 14 22:50 CEST
 "integration_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -48,7 +48,7 @@ Test Passed.
 3/17 Test: hll_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/hll/test/hll_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/hll/test
-"hll_test" start time: Sep 14 22:31 CEST
+"hll_test" start time: Sep 14 22:50 CEST
 Output:
 ----------------------------------------------------------
 ### HLL sketch summary:
@@ -115,18 +115,18 @@ Output:
 All tests passed (7628 assertions in 47 test cases)
 
 <end of output>
-Test time =  27.09 sec
+Test time =  26.56 sec
 ----------------------------------------------------------
 Test Passed.
-"hll_test" end time: Sep 14 22:31 CEST
-"hll_test" time elapsed: 00:00:27
+"hll_test" end time: Sep 14 22:51 CEST
+"hll_test" time elapsed: 00:00:26
 ----------------------------------------------------------
 
 4/17 Testing: cpc_test
 4/17 Test: cpc_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/cpc/test/cpc_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/cpc/test
-"cpc_test" start time: Sep 14 22:31 CEST
+"cpc_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
@@ -136,7 +136,7 @@ All tests passed (2607 assertions in 48 test cases)
 Test time =   2.54 sec
 ----------------------------------------------------------
 Test Passed.
-"cpc_test" end time: Sep 14 22:31 CEST
+"cpc_test" end time: Sep 14 22:51 CEST
 "cpc_test" time elapsed: 00:00:02
 ----------------------------------------------------------
 
@@ -144,17 +144,17 @@ Test Passed.
 5/17 Test: kll_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/kll/test/kll_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/kll/test
-"kll_test" start time: Sep 14 22:31 CEST
+"kll_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
 All tests passed (2004173 assertions in 7 test cases)
 
 <end of output>
-Test time =   0.15 sec
+Test time =   0.31 sec
 ----------------------------------------------------------
 Test Passed.
-"kll_test" end time: Sep 14 22:31 CEST
+"kll_test" end time: Sep 14 22:51 CEST
 "kll_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -162,17 +162,17 @@ Test Passed.
 6/17 Test: fi_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/fi/test/fi_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/fi/test
-"fi_test" start time: Sep 14 22:31 CEST
+"fi_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
 All tests passed (122 assertions in 21 test cases)
 
 <end of output>
-Test time =   0.04 sec
+Test time =   0.21 sec
 ----------------------------------------------------------
 Test Passed.
-"fi_test" end time: Sep 14 22:31 CEST
+"fi_test" end time: Sep 14 22:51 CEST
 "fi_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -180,35 +180,35 @@ Test Passed.
 7/17 Test: theta_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/theta/test/theta_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/theta/test
-"theta_test" start time: Sep 14 22:31 CEST
+"theta_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
 All tests passed (20245896 assertions in 83 test cases)
 
 <end of output>
-Test time =   0.89 sec
+Test time =   1.04 sec
 ----------------------------------------------------------
 Test Passed.
-"theta_test" end time: Sep 14 22:31 CEST
-"theta_test" time elapsed: 00:00:00
+"theta_test" end time: Sep 14 22:51 CEST
+"theta_test" time elapsed: 00:00:01
 ----------------------------------------------------------
 
 8/17 Testing: var_opt_sampling_test
 8/17 Test: var_opt_sampling_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/sampling/test/var_opt_sampling_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/sampling/test
-"var_opt_sampling_test" start time: Sep 14 22:31 CEST
+"var_opt_sampling_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
 All tests passed (13070 assertions in 32 test cases)
 
 <end of output>
-Test time =   0.05 sec
+Test time =   0.23 sec
 ----------------------------------------------------------
 Test Passed.
-"var_opt_sampling_test" end time: Sep 14 22:31 CEST
+"var_opt_sampling_test" end time: Sep 14 22:51 CEST
 "var_opt_sampling_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -216,17 +216,17 @@ Test Passed.
 9/17 Test: ebpps_sampling_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/sampling/test/ebpps_sampling_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/sampling/test
-"ebpps_sampling_test" start time: Sep 14 22:31 CEST
+"ebpps_sampling_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
 All tests passed (254 assertions in 13 test cases)
 
 <end of output>
-Test time =   0.04 sec
+Test time =   0.40 sec
 ----------------------------------------------------------
 Test Passed.
-"ebpps_sampling_test" end time: Sep 14 22:31 CEST
+"ebpps_sampling_test" end time: Sep 14 22:51 CEST
 "ebpps_sampling_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -234,7 +234,7 @@ Test Passed.
 10/17 Test: tuple_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/tuple/test/tuple_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/tuple/test
-"tuple_test" start time: Sep 14 22:31 CEST
+"tuple_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 sizeof(update_tuple_sketch<float>)=56
@@ -273,10 +273,10 @@ Days Visited    Estimate          LB          UB
 All tests passed (61925 assertions in 49 test cases)
 
 <end of output>
-Test time =   0.19 sec
+Test time =   0.40 sec
 ----------------------------------------------------------
 Test Passed.
-"tuple_test" end time: Sep 14 22:31 CEST
+"tuple_test" end time: Sep 14 22:51 CEST
 "tuple_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -284,17 +284,17 @@ Test Passed.
 11/17 Test: req_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/req/test/req_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/req/test
-"req_test" start time: Sep 14 22:31 CEST
+"req_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
 All tests passed (8765 assertions in 23 test cases)
 
 <end of output>
-Test time =   0.05 sec
+Test time =   0.26 sec
 ----------------------------------------------------------
 Test Passed.
-"req_test" end time: Sep 14 22:31 CEST
+"req_test" end time: Sep 14 22:51 CEST
 "req_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -302,17 +302,17 @@ Test Passed.
 12/17 Test: quantiles_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/quantiles/test/quantiles_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/quantiles/test
-"quantiles_test" start time: Sep 14 22:31 CEST
+"quantiles_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
 All tests passed (2002995 assertions in 7 test cases)
 
 <end of output>
-Test time =   0.11 sec
+Test time =   0.31 sec
 ----------------------------------------------------------
 Test Passed.
-"quantiles_test" end time: Sep 14 22:31 CEST
+"quantiles_test" end time: Sep 14 22:51 CEST
 "quantiles_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -320,17 +320,17 @@ Test Passed.
 13/17 Test: count_min_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/count/test/count_min_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/count/test
-"count_min_test" start time: Sep 14 22:31 CEST
+"count_min_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
 All tests passed (7156 assertions in 16 test cases)
 
 <end of output>
-Test time =   0.03 sec
+Test time =   0.21 sec
 ----------------------------------------------------------
 Test Passed.
-"count_min_test" end time: Sep 14 22:31 CEST
+"count_min_test" end time: Sep 14 22:51 CEST
 "count_min_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -338,17 +338,17 @@ Test Passed.
 14/17 Test: density_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/density/test/density_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/density/test
-"density_test" start time: Sep 14 22:31 CEST
+"density_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
-All tests passed (399 assertions in 8 test cases)
+All tests passed (407 assertions in 8 test cases)
 
 <end of output>
-Test time =   0.03 sec
+Test time =   0.18 sec
 ----------------------------------------------------------
 Test Passed.
-"density_test" end time: Sep 14 22:31 CEST
+"density_test" end time: Sep 14 22:51 CEST
 "density_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -356,19 +356,19 @@ Test Passed.
 15/17 Test: tdigest_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/tdigest/test/tdigest_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/tdigest/test
-"tdigest_test" start time: Sep 14 22:31 CEST
+"tdigest_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
--0.0467289
-0.50244
+-0.026578
+0.493461
 ===============================================================================
 All tests passed (9822 assertions in 28 test cases)
 
 <end of output>
-Test time =   0.04 sec
+Test time =   0.20 sec
 ----------------------------------------------------------
 Test Passed.
-"tdigest_test" end time: Sep 14 22:31 CEST
+"tdigest_test" end time: Sep 14 22:51 CEST
 "tdigest_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -376,17 +376,17 @@ Test Passed.
 16/17 Test: bloom_filter_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/filters/test/bloom_filter_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/filters/test
-"bloom_filter_test" start time: Sep 14 22:31 CEST
+"bloom_filter_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
 All tests passed (18175 assertions in 13 test cases)
 
 <end of output>
-Test time =   0.04 sec
+Test time =   0.21 sec
 ----------------------------------------------------------
 Test Passed.
-"bloom_filter_test" end time: Sep 14 22:31 CEST
+"bloom_filter_test" end time: Sep 14 22:51 CEST
 "bloom_filter_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -394,18 +394,18 @@ Test Passed.
 17/17 Test: ddsketch_test
 Command: "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/ddsketch/test/ddsketch_test"
 Directory: /Users/andrea.novellini/Code/datasketches/datasketches-cpp/build/Release/ddsketch/test
-"ddsketch_test" start time: Sep 14 22:31 CEST
+"ddsketch_test" start time: Sep 14 22:51 CEST
 Output:
 ----------------------------------------------------------
 ===============================================================================
-All tests passed (22983685 assertions in 137 test cases)
+All tests passed (22936945 assertions in 137 test cases)
 
 <end of output>
-Test time =   2.73 sec
+Test time =   2.64 sec
 ----------------------------------------------------------
 Test Passed.
-"ddsketch_test" end time: Sep 14 22:31 CEST
+"ddsketch_test" end time: Sep 14 22:51 CEST
 "ddsketch_test" time elapsed: 00:00:02
 ----------------------------------------------------------
 
-End testing: Sep 14 22:31 CEST
+End testing: Sep 14 22:51 CEST
