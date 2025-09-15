@@ -63,6 +63,8 @@ public:
   static SparseStore deserialize(std::istream& is);
   int get_serialized_size_bytes() const;
 
+  string<Allocator> to_string() const;
+
   iterator begin() const;
   iterator end() const;
   reverse_iterator rbegin() const;

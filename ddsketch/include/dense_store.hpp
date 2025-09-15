@@ -22,6 +22,7 @@
 
 #include <vector>
 #include "bin.hpp"
+#include "common_defs.hpp"
 
 namespace datasketches {
 // Forward declaration
@@ -52,6 +53,8 @@ public:
 
   void serialize(std::ostream& os) const;
   static Derived deserialize(std::istream& is);
+
+  string<Allocator> to_string() const;
 
   bool operator==(const DenseStore<Derived, Allocator>& other) const;
 

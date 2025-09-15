@@ -124,6 +124,16 @@ const Derived& LogLikeIndexMapping<Derived>::derived() const {
   return static_cast<const Derived&>(*this);
 }
 
+template<class Derived>
+template<class A>
+string<A> LogLikeIndexMapping<Derived>::to_string() const {
+  std::ostringstream os;
+  os << "      gamma             : " << gamma << std::endl;
+  os << "      index offset      : " << index_offset << std::endl;
+  os << "      relative accuracy : " << relative_accuracy << std::endl;
+  return os.str();
+}
+
 }
 
 #endif //LOG_LIKE_INDEX_MAPPING_IMPL_HPP

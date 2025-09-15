@@ -27,6 +27,7 @@
 #include "store_factory.hpp"
 #include "common_defs.hpp"
 #include "memory_operations.hpp"
+#include "quartically_interpolated_mapping.hpp"
 
 namespace datasketches {
 
@@ -60,6 +61,8 @@ public:
   static DDSketch deserialize(std::istream& is);
   int get_serialized_size_bytes() const;
 
+  template<class A>
+  string<A> to_string() const;
   bool operator==(const DDSketch<Store, Mapping>& other) const;
 protected:
   Store positive_store;
@@ -70,22 +73,10 @@ protected:
   const double min_indexed_value;
   const double max_indexed_value;
 
-  // Serialization constants
-  static const uint8_t SERIAL_VERSION = 1;
-  static const uint8_t FAMILY = 18; // DDSketch family ID
-  static const size_t PREAMBLE_SIZE_BYTES = 8;
-
   void check_value_trackable(const double& value) const;
   template<store_concept OtherStore>
   void check_mergeability(const DDSketch<OtherStore, Mapping>& other) const;
   double get_quantile(const double& rank, const double& count) const;
-
-  enum Flag : uint8_t {
-    POSITIVE_STORE,
-    NEGATIVE_STORE,
-    INDEX_MAPPING,
-    ZERO_COUNT,
-  };
 };
 
 // CTA (class template argument deduction) deduction guides (so you can write `ddsketch sketch(s1);`)

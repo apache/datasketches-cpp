@@ -239,6 +239,32 @@ DDSketch<Store, Mapping> DDSketch<Store, Mapping>::deserialize(std::istream &is)
 }
 
 template<store_concept Store, class Mapping>
+int DDSketch<Store, Mapping>::get_serialized_size_bytes() const {
+  return index_mapping.get_serialized_size_bytes() +
+    positive_store.get_serialized_size_bytes() +
+      negative_store.get_serialized_size_bytes() +
+        sizeof(zero_count) +
+          2 * sizeof(double);
+}
+
+template<store_concept Store, class Mapping>
+template<class A>
+string<A> DDSketch<Store, Mapping>::to_string() const {
+  std::ostringstream os;
+  os << "### ddsketch summary:" << std::endl;
+  os << "   Index mapping  :" << std::endl;
+  os << index_mapping.to_string() << std::endl;
+  os << "   Positive store :" << std::endl;
+  os << positive_store.to_string() << std::endl;
+  os << "   Negative store :" << std::endl;
+  os << negative_store.to_string() << std::endl;
+  os << "   Zero count     :" <<  zero_count << std::endl;
+  return os.str();
+
+}
+
+
+template<store_concept Store, class Mapping>
 bool DDSketch<Store, Mapping>::operator==(const DDSketch<Store, Mapping>& other) const {
   return positive_store == other.positive_store &&
     negative_store == other.negative_store &&
