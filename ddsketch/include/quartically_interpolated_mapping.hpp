@@ -19,6 +19,8 @@
 
 #ifndef QUARTICALLY_INTERPOLATED_MAPPING_HPP
 #define QUARTICALLY_INTERPOLATED_MAPPING_HPP
+
+#include <numbers>
 #include "log_like_index_mapping.hpp"
 
 namespace datasketches {
