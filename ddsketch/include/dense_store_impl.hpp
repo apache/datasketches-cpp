@@ -447,10 +447,10 @@ int DenseStore<Derived, Allocator>::get_serialized_size_bytes_common() const {
 template<class Derived, typename Allocator>
 string<Allocator> DenseStore<Derived, Allocator>::to_string() const {
   std::ostringstream os;
-  os << "      Type        : dense store " << std::endl;
-  os << "      Bins number : " << bins.size() << std::endl;
-  os << "      Min index   : " << min_index << std::endl;
-  os << "      Max index   : " << max_index << std::endl;
+  os << "      Type              : dense store " << std::endl;
+  os << "      Bins number       :" << bins.size() << std::endl;
+  os << "      Min index         :" << min_index << std::endl;
+  os << "      Max index         :" << max_index << std::endl;
   return os.str();
 }
 }

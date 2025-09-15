@@ -252,13 +252,14 @@ template<class A>
 string<A> DDSketch<Store, Mapping>::to_string() const {
   std::ostringstream os;
   os << "### ddsketch summary:" << std::endl;
-  os << "   Index mapping  :" << std::endl;
-  os << index_mapping.to_string() << std::endl;
-  os << "   Positive store :" << std::endl;
-  os << positive_store.to_string() << std::endl;
-  os << "   Negative store :" << std::endl;
-  os << negative_store.to_string() << std::endl;
-  os << "   Zero count     :" <<  zero_count << std::endl;
+  os << "   Index mapping         " << std::endl;
+  os << index_mapping.to_string();
+  os << "   Positive store        " << std::endl;
+  os << positive_store.to_string();
+  os << "   Negative store        " << std::endl;
+  os << negative_store.to_string();
+  os << "   Zero count             " <<  zero_count << std::endl;
+  os << "### End ddsketch summary" << std::endl;
   return os.str();
 
 }

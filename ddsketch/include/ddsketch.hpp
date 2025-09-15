@@ -61,7 +61,7 @@ public:
   static DDSketch deserialize(std::istream& is);
   int get_serialized_size_bytes() const;
 
-  template<class A>
+  template<class A = std::allocator<char>>
   string<A> to_string() const;
   bool operator==(const DDSketch<Store, Mapping>& other) const;
 protected:

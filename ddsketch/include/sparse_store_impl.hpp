@@ -232,8 +232,8 @@ int SparseStore<Allocator>::get_serialized_size_bytes() const {
 template<typename Allocator>
 string<Allocator> SparseStore<Allocator>::to_string() const {
   std::ostringstream os;
-  os << "      Type        : sparse store" << std::endl;
-  os << "      Bins number : " << bins.size() << std::endl;
+  os << "      Type              : sparse store" << std::endl;
+  os << "      Bins number       : " << bins.size() << std::endl;
   return os.str();
 }
 

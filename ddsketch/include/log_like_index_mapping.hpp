@@ -40,7 +40,7 @@ public:
   double max_indexable_value() const;
   void serialize(std::ostream& os) const;
 
-  template<class A>
+  template<class A = std::allocator<char>>
   string<A> to_string() const;
 
   bool operator==(const LogLikeIndexMapping<Derived>& other) const;
