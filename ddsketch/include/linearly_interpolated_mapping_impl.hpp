@@ -19,9 +19,6 @@
 
 #ifndef LINEARLY_INTERPOLATED_MAPPING_IMPL_HPP
 #define LINEARLY_INTERPOLATED_MAPPING_IMPL_HPP
-#include "linearly_interpolated_mapping.hpp"
-#include <cmath>
-#include "fast_log2.hpp"
 
 namespace datasketches {
 
