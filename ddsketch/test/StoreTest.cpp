@@ -51,7 +51,7 @@ public:
   static std::vector<Bin> collapse(std::vector<Bin>& bins) {
     int max_index = INT_MIN;
     for (const Bin& bin : bins) {
-      max_index = std::max(max_index, bin.getIndex());
+      max_index = std::max(max_index, bin.get_index());
     }
     if (max_index < INT_MIN + max_num_bins) {
       return bins;
@@ -60,7 +60,7 @@ public:
     std::vector<Bin> collapsed_bins;
     collapsed_bins.reserve(bins.size());
     for (const Bin& bin : bins) {
-      collapsed_bins.emplace_back(std::max(bin.getIndex(), min_collapsed_index), bin.getCount());
+      collapsed_bins.emplace_back(std::max(bin.get_index(), min_collapsed_index), bin.get_count());
     }
     return collapsed_bins;
   }
@@ -72,7 +72,7 @@ public:
   static std::vector<Bin> collapse(std::vector<Bin>& bins) {
     int min_index = INT_MAX;
     for (const Bin& bin : bins) {
-      min_index = std::min(min_index, bin.getIndex());
+      min_index = std::min(min_index, bin.get_index());
     }
     if (min_index > INT_MAX - max_num_bins) {
       return bins;
@@ -81,7 +81,7 @@ public:
     std::vector<Bin> collapsed_bins;
     collapsed_bins.reserve(bins.size());
     for (const Bin& bin : bins) {
-      collapsed_bins.emplace_back(std::min(bin.getIndex(), max_collapsed_index), bin.getCount());
+      collapsed_bins.emplace_back(std::min(bin.get_index(), max_collapsed_index), bin.get_count());
     }
     return collapsed_bins;
   }
@@ -98,10 +98,10 @@ public:
 std::vector<Bin> normalize_bins(const std::vector<Bin>& bins) {
   std::map<int, double> bins_by_index;
   for (const Bin& bin : bins) {
-    if (bin.getCount() <= 0) {
+    if (bin.get_count() <= 0) {
       continue;
     }
-    bins_by_index[bin.getIndex()] += bin.getCount();
+    bins_by_index[bin.get_index()] += bin.get_count();
   }
 
   std::vector<Bin> normalized_bins;
@@ -111,7 +111,7 @@ std::vector<Bin> normalize_bins(const std::vector<Bin>& bins) {
   }
 
   std::sort(normalized_bins.begin(), normalized_bins.end(), [](const Bin& lhs, const Bin& rhs) {
-    return lhs.getIndex() < rhs.getIndex();
+    return lhs.get_index() < rhs.get_index();
   });
 
   return normalized_bins;
@@ -139,7 +139,7 @@ template<class StoreType>
 void assert_encode_bins(StoreType& store, const std::vector<Bin>& normalized_bins) {
   double expected_total_count = 0;
   for (const Bin& bin : normalized_bins) {
-    expected_total_count += bin.getCount();
+    expected_total_count += bin.get_count();
   }
 
   if (expected_total_count == 0) {
@@ -151,8 +151,8 @@ void assert_encode_bins(StoreType& store, const std::vector<Bin>& normalized_bin
     REQUIRE_FALSE(store->is_empty());
     REQUIRE(store->get_total_count() - expected_total_count < eps);
 
-    REQUIRE(store->get_min_index() == normalized_bins[0].getIndex());
-    REQUIRE(store->get_max_index() == normalized_bins[normalized_bins.size() - 1].getIndex());
+    REQUIRE(store->get_min_index() == normalized_bins[0].get_index());
+    REQUIRE(store->get_max_index() == normalized_bins[normalized_bins.size() - 1].get_index());
 
     std::vector<Bin> bins;
     for (const Bin& bin : *store) {
@@ -160,12 +160,12 @@ void assert_encode_bins(StoreType& store, const std::vector<Bin>& normalized_bin
       }
 
     std::ranges::sort(bins, [](const Bin& lhs, const Bin& rhs) {
-      return lhs.getIndex() < rhs.getIndex();
+      return lhs.get_index() < rhs.get_index();
     });
     REQUIRE(bins.size() == normalized_bins.size());
     for (size_t i = 0; i < bins.size(); ++i) {
-      REQUIRE(bins[i].getIndex() == normalized_bins[i].getIndex());
-      REQUIRE_THAT(bins[i].getCount(), Catch::Matchers::WithinAbs(normalized_bins[i].getCount(), 1e-3));
+      REQUIRE(bins[i].get_index() == normalized_bins[i].get_index());
+      REQUIRE_THAT(bins[i].get_count(), Catch::Matchers::WithinAbs(normalized_bins[i].get_count(), 1e-3));
     }
   }
 }
@@ -364,7 +364,7 @@ TEMPLATE_TEST_CASE("test add fuzzy", "[storetest]",
        Bin bin(random_index(), random_count());
        bins.push_back(bin);
        storeAddBin->add(bin);
-       storeAddWithCount->add(bin.getIndex(), bin.getCount());
+       storeAddWithCount->add(bin.get_index(), bin.get_count());
      }
      std::vector<Bin> normalized_bins = normalize_bins(TestType::second_type::collapse(bins));
      test_store<decltype(storeAddBin)>(storeAddBin, normalized_bins);
@@ -445,7 +445,7 @@ TEMPLATE_TEST_CASE("test merge sparse into dense and vice-versa", "[storetest]",
   test_store<decltype(denseStore)>(denseStore, normalized_bins);
 
   for (const Bin& dense_bin : normalized_bins) {
-    sparse_bins_map[dense_bin.getIndex()] += dense_bin.getCount();
+    sparse_bins_map[dense_bin.get_index()] += dense_bin.get_count();
   }
   std::vector<Bin> bins_in_sparse;
   bins_in_sparse.reserve(bins_in_sparse.size());

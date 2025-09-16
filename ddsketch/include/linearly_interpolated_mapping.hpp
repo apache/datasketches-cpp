@@ -25,13 +25,33 @@
 
 
 namespace datasketches {
-
+/**
+ * @class LinearlyInterpolatedMapping
+ * A fast {@link IndexMapping} that approximates the memory-optimal one (namely {@link
+ * LogarithmicMapping}) by extracting the floor value of the logarithm to the base 2 from the binary
+ * representations of floating-point values and linearly interpolating the logarithm in-between.
+ */
 class LinearlyInterpolatedMapping : public LogLikeIndexMapping<LinearlyInterpolatedMapping> {
 public:
+
+  /**
+   * Constructor.
+   *
+   * @param relative_accuracy
+   */
   explicit LinearlyInterpolatedMapping(const double& relative_accuracy);
+
+  /**
+   * Overloaded constructor.
+   * This is meant to be used when deserializing only
+   *
+   * @param gamma
+   * @param index_offset
+   */
   LinearlyInterpolatedMapping(const double& gamma, const double& index_offset);
 
   double log(const double& value) const;
+
   double log_inverse(const double& index) const;
 
   IndexMappingLayout layout() const;

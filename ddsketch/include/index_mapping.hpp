@@ -33,23 +33,91 @@ enum class IndexMappingLayout : uint8_t {
 
 std::ostream& operator<<(std::ostream& os, const IndexMappingLayout& obj);
 
+/**
+ * @class IndexMapping
+ * @brief CRTP base exposing the value/index transform API.
+ * @tparam Derived concrete mapping type implementing the operations.
+ *
+ * Provides a uniform interface to map doubles to integer bin indices and back,
+ * with bounds and relative-accuracy queries.
+ */
 template<class Derived>
 class IndexMapping {
 public:
+
+  /**
+   * @brief Map a value to its integer bin index.
+   * @param value input value
+   * @return index (may throw if out of range)
+   */
   int index(const double& value) const;
+
+  /**
+   * @brief Representative value for a bin @p index.
+   * @param index bin index
+   * @return representative value (inverse mapping)
+   */
   double value(int index) const;
+
+  /**
+   * @brief Lower bound of values mapped to @p index.
+   * @param index bin index
+   * @return inclusive lower bound
+   */
   double lower_bound(int index) const;
+
+  /**
+   * @brief Upper bound of values mapped to @p index.
+   * @param index bin index
+   * @return exclusive upper bound
+   */
   double upper_bound(int index) const;
+
+  /**
+  * @brief Target relative accuracy (multiplicative error bound).
+  * @return relative accuracy in (0,1)
+  */
   double get_relative_accuracy() const;
+
+  /**
+   * @brief Smallest trackable value.
+   * @return minimum indexable value
+   */
   double min_indexable_value() const;
+
+  /**
+   * @brief Largest trackable value.
+   * @return maximum indexable value
+   */
   double max_indexable_value() const;
+
+  /**
+  * @brief Serialize this mapping to a stream.
+  * @param os output stream
+  */
   void serialize(std::ostream& os) const;
+
+  /**
+   * @brief Deserialize a concrete {@link Derived} mapping from a stream.
+   * @param is input stream
+   * @return reconstructed mapping
+   */
   static Derived deserialize(std::istream& is);
 
   ~IndexMapping() = default;
 
 protected:
+
+  /**
+   * @brief Downcast to {@link Derived}.
+   * @return reference to derived
+   */
   Derived& derived();
+
+  /**
+   * @brief Const downcast to {@link Derived}.
+   * @return const reference to derived
+   */
   const Derived& derived() const;
 };
 

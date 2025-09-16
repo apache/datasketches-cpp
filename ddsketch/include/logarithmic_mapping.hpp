@@ -24,13 +24,34 @@
 #include "log_like_index_mapping.hpp"
 
 namespace datasketches {
-
+/**
+ * @class LogarithmicMapping
+ *
+ * An {@link IndexMapping} that is memory-optimal, that is to say that given a targeted
+ * relative accuracy, it requires the least number of indices to cover a given range of values. This
+ * is done by logarithmically mapping floating-point values to integers.
+ */
 class LogarithmicMapping : public LogLikeIndexMapping<LogarithmicMapping> {
 public:
+
+  /**
+   * Constructor.
+   *
+   * @param relative_accuracy
+   */
   explicit LogarithmicMapping(const double& relative_accuracy);
+
+  /**
+   * Overloaded constructor.
+   * This is meant to be used when deserializing only
+   *
+   * @param gamma
+   * @param index_offset
+   */
   LogarithmicMapping(const double& gamma, const double& index_offset);
 
   double log(const double& value) const;
+
   double log_inverse(const double& index) const;
 
   IndexMappingLayout layout() const;

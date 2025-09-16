@@ -24,6 +24,10 @@
 
 namespace datasketches {
 
+/**
+ * @class CollapsingDenseStore
+ * @brief Common logic for capacity-bounded dense stores with tail-collapsing.
+ */
 template<class Derived, int N, typename Allocator>
 class CollapsingDenseStore : public DenseStore<Derived, Allocator> {
 public:
@@ -31,20 +35,52 @@ public:
   using size_type = typename DenseStore<Derived, Allocator>::size_type;
   CollapsingDenseStore();
 
-
+  /**
+   * Copy assignment
+   * @param other sketch to be copied
+   * @return reference to this sketch
+   */
   CollapsingDenseStore<Derived, N, Allocator>& operator=(const CollapsingDenseStore<Derived, N, Allocator>& other);
 
+  /**
+   * This method serializes the store into a given stream in a binary form
+   * @param os output stream
+   */
   void serialize(std::ostream& os) const;
+
+  /**
+   * @brief Deserialize the store from a stream (replacing current contents).
+   * @param is Input stream.
+   */
   static Derived deserialize(std::istream& is);
+
+  /**
+   * Computes size needed to serialize the current state of the sketch.
+   * @return size in bytes needed to serialize this sketch
+   */
   int get_serialized_size_bytes() const;
 
   ~CollapsingDenseStore() = default;
 
+  /**
+   * @brief Clear all contents of the store.
+   *
+   * Removes all bins and resets counts to zero while preserving configuration
+   * (e.g., capacity limits). After this call, @c total_count() is 0 and the
+   * store contains no non-empty bins.
+   */
   void clear();
 
 protected:
   bool is_collapsed;
 
+  /**
+   * @brief Compute the resized backing-array length for a target index span.
+   *
+   * @param new_min_index Lowest bin index to be retained (inclusive).
+   * @param new_max_index Highest bin index to be retained (inclusive).
+   * @return size_type New backing-array capacity (in bins).
+   */
   size_type get_new_length(size_type new_min_index, size_type new_max_index) const;
 };
 }

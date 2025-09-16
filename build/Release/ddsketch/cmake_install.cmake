@@ -67,8 +67,6 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/ddsketch/include/logarithmic_mapping_impl.hpp"
     "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/ddsketch/include/quadratically_interpolated_mapping.hpp"
     "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/ddsketch/include/quadratically_interpolated_mapping_impl.hpp"
-    "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/ddsketch/include/quartically_interpolated_mapping.hpp"
-    "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/ddsketch/include/quartically_interpolated_mapping_impl.hpp"
     "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/ddsketch/include/sparse_store.hpp"
     "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/ddsketch/include/sparse_store_impl.hpp"
     "/Users/andrea.novellini/Code/datasketches/datasketches-cpp/ddsketch/include/store.hpp"

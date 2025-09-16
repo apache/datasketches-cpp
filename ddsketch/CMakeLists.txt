@@ -59,8 +59,6 @@ install(FILES
         include/logarithmic_mapping_impl.hpp
         include/quadratically_interpolated_mapping.hpp
         include/quadratically_interpolated_mapping_impl.hpp
-        include/quartically_interpolated_mapping.hpp
-        include/quartically_interpolated_mapping_impl.hpp
         include/sparse_store.hpp
         include/sparse_store_impl.hpp
         include/store.hpp

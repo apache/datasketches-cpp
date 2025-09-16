@@ -44,10 +44,10 @@ void SparseStore<Allocator>::add(int index, double count) {
 
 template<typename Allocator>
 void SparseStore<Allocator>::add(const Bin &bin) {
-  if (bin.getCount() == 0) {
+  if (bin.get_count() == 0) {
      return;
   }
-  add(bin.getIndex(), bin.getCount());
+  add(bin.get_index(), bin.get_count());
 }
 
 template<typename Allocator>

@@ -28,7 +28,6 @@
 #include "logarithmic_mapping.hpp"
 #include "linearly_interpolated_mapping.hpp"
 #include "quadratically_interpolated_mapping.hpp"
-#include "quartically_interpolated_mapping.hpp"
 #include "unbounded_size_dense_store.hpp"
 #include "collapsing_highest_dense_store.hpp"
 #include "collapsing_lowest_dense_store.hpp"
@@ -156,7 +155,7 @@ TEMPLATE_TEST_CASE("DDSketch empty test", "[ddsketch]",
   using MappingType = TestType::second_type;
 
   constexpr double relative_accuracy = 0.01;
-  DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+  DDSketch<StoreType, MappingType> sketch(relative_accuracy);;
 
   REQUIRE(sketch.is_empty());
   REQUIRE(sketch.get_count() == Approx(0.0).margin(EPSILON));
@@ -176,7 +175,7 @@ TEMPLATE_TEST_CASE("DDSketch exception test", "[ddsketch]",
   using StoreType = decltype(positive_store);
   using MappingType = TestType::second_type;
   constexpr double relative_accuracy = 0.01;
-  DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+  DDSketch<StoreType, MappingType> sketch(relative_accuracy);
 
   // Test invalid quantile values
   sketch.update(1.0);
@@ -198,7 +197,7 @@ TEMPLATE_TEST_CASE("DDSketch clear test", "[ddsketch]",
   using StoreType = decltype(positive_store);
   using MappingType = TestType::second_type;
   constexpr double relative_accuracy = 0.01;
-  DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+  DDSketch<StoreType, MappingType> sketch(relative_accuracy);
 
   sketch.update(1.0);
   sketch.update(2.0);
@@ -220,7 +219,7 @@ TEMPLATE_TEST_CASE("DDSketch constant test", "[ddsketch]",
   using MappingType = TestType::second_type;
 
   for (double relative_accuracy = 1e-1; relative_accuracy >= 1e-3; relative_accuracy *= 1e-1) {
-    DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+    DDSketch<StoreType, MappingType> sketch(relative_accuracy);
     test_adding<decltype(sketch)>(sketch, {0.0}, relative_accuracy);
     test_adding<decltype(sketch)>(sketch, {1.0}, relative_accuracy);
     test_adding<decltype(sketch)>(sketch, {1.0, 1.0, 1.0}, relative_accuracy);
@@ -243,7 +242,7 @@ TEMPLATE_TEST_CASE("DDSketch negative constants test", "[ddsketch]",
   using MappingType = TestType::second_type;
 
   for (double relative_accuracy = 1e-1; relative_accuracy >= 1e-3; relative_accuracy *= 1e-1) {
-    DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+    DDSketch<StoreType, MappingType> sketch(relative_accuracy);
     test_adding<decltype(sketch)>(sketch, {0.0}, relative_accuracy);
     test_adding<decltype(sketch)>(sketch, {-1.0}, relative_accuracy);
     test_adding<decltype(sketch)>(sketch, {-1.0, -1.0, -1.0}, relative_accuracy);
@@ -266,7 +265,7 @@ TEMPLATE_TEST_CASE("DDSketch mixed positive negative test", "[ddsketch]",
   using MappingType = TestType::second_type;
 
   for (double relative_accuracy = 1e-1; relative_accuracy >= 1e-3; relative_accuracy *= 1e-1) {
-    DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+    DDSketch<StoreType, MappingType> sketch(relative_accuracy);
     test_adding<decltype(sketch)>(sketch, {0.0}, relative_accuracy);
     test_adding<decltype(sketch)>(sketch, {-1.0, 1.0}, relative_accuracy);
     test_adding<decltype(sketch)>(sketch, {-1.0, -1.0, -1.0, 1.0, 1.0, 1.0}, relative_accuracy);
@@ -294,7 +293,7 @@ TEMPLATE_TEST_CASE("DDSketch with zeros test", "[ddsketch]",
   using MappingType = TestType::second_type;
 
   for (double relative_accuracy = 1e-1; relative_accuracy >= 1e-3 ; relative_accuracy *= 1e-1) {
-    DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+    DDSketch<StoreType, MappingType> sketch(relative_accuracy);
 
     // All zeros
     std::vector<double> all_zeros(100, 0.0);
@@ -326,7 +325,7 @@ TEMPLATE_TEST_CASE("DDSketch linear sequences test", "[ddsketch]",
   using MappingType = TestType::second_type;
 
   for (double relative_accuracy = 1e-1; relative_accuracy >= 1e-3 ; relative_accuracy *= 1e-1) {
-    DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+    DDSketch<StoreType, MappingType> sketch(relative_accuracy);
     // Increasing linearly
     std::vector<double> increasing;
     increasing.reserve(10000);
@@ -370,7 +369,7 @@ TEMPLATE_TEST_CASE("DDSketch exponential sequence test", "[ddsketch]",
   using MappingType = TestType::second_type;
 
   for (double relative_accuracy = 1e-1; relative_accuracy >= 1e-3 ; relative_accuracy *= 1e-1) {
-    DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+    DDSketch<StoreType, MappingType> sketch(relative_accuracy);
     // Increasing exponentially
     std::vector<double> increasing_exp;
     increasing_exp.reserve(100);
@@ -409,7 +408,7 @@ TEMPLATE_TEST_CASE("DDSketch merging test", "[ddsketch]",
   using MappingType = TestType::second_type;
 
   for (double relative_accuracy = 1e-1; relative_accuracy >= 1e-1 ; relative_accuracy *= 1e-1) {
-    DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+    DDSketch<StoreType, MappingType> sketch(relative_accuracy);
     // Test merging empty sketches
     test_merging<decltype(sketch)>(sketch, {{}, {}}, relative_accuracy);
     test_merging<decltype(sketch)>(sketch, {{}, {0.0}}, relative_accuracy);
@@ -437,7 +436,7 @@ TEMPLATE_TEST_CASE("DDSketch different mappings", "[ddsketch]",
   using MappingType = TestType::second_type;
   constexpr double relative_accuracy = 0.01;
   std::vector<double> test_values = {0.0, 1.0, -1.0, 10.0, -10.0, 100.0, -100.0};
-  DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+  DDSketch<StoreType, MappingType> sketch(relative_accuracy);
   test_adding<decltype(sketch)>(sketch, test_values, relative_accuracy);
 }
 
@@ -455,7 +454,7 @@ TEMPLATE_TEST_CASE("DDSketch add random test", "[ddsketch][random]",
   constexpr int num_tests = 100;
   constexpr int max_num_values = 1000;
 
-  DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+  DDSketch<StoreType, MappingType> sketch(relative_accuracy);
   std::random_device rd;
   std::mt19937_64 rng(rd());
   std::uniform_int_distribution<int> size_dist(0, max_num_values - 1);
@@ -489,7 +488,7 @@ TEMPLATE_TEST_CASE("DDSketch merging random test", "[ddsketch][random]",
   constexpr int max_num_sketches = 100;
   constexpr int max_num_values_per_sketch = 1000;
 
-  DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+  DDSketch<StoreType, MappingType> sketch(relative_accuracy);
   std::random_device rd;
   std::mt19937_64 rng(rd());
   std::uniform_int_distribution<int> sketch_size_dist(0, max_num_sketches - 1);
@@ -530,7 +529,7 @@ TEMPLATE_TEST_CASE("DDSketch serialize - deserialize test", "[ddsketch][random]"
   constexpr int num_tests = 100;
   constexpr int max_num_values = 1000;
 
-  DDSketch<StoreType, MappingType> sketch(positive_store, negative_store, MappingType(relative_accuracy));
+  DDSketch<StoreType, MappingType> sketch(relative_accuracy);
   std::random_device rd;
   std::mt19937_64 rng(rd());
   std::uniform_int_distribution<int> size_dist(0, max_num_values - 1);

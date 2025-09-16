@@ -32,15 +32,15 @@ inline bool Bin::operator==(const Bin& other) const {
   return index == other.index && count == other.count;
 };
 
-inline double Bin::getCount() const {
+inline double Bin::get_count() const {
   return count;
 }
 
-inline int Bin::getIndex() const {
+inline int Bin::get_index() const {
   return index;
 }
 
-inline std::string Bin::toString() const {
+inline std::string Bin::to_string() const {
   return "Bin{index= " + std::to_string(index) + ", count= " + std::to_string(count) + "}";
 }
 

@@ -62,10 +62,10 @@ void DenseStore<Derived, Allocator>::add(int index, double count) {
 
 template<class Derived, typename Allocator>
 void DenseStore<Derived, Allocator>::add(const Bin&  bin) {
-  if (bin.getCount() == 0) {
+  if (bin.get_count() == 0) {
     return;
   }
-  add(bin.getIndex(), bin.getCount());
+  add(bin.get_index(), bin.get_count());
 }
 
 template<class Derived, typename Allocator>
@@ -379,8 +379,8 @@ void DenseStore<Derived, Allocator>::serialize_common(std::ostream& os) const {
   write(os, non_empty_bins);
 
   for (const Bin& bin : *this) {
-    write(os, bin.getIndex());
-    write(os, bin.getCount());
+    write(os, bin.get_index());
+    write(os, bin.get_count());
   }
 }
 

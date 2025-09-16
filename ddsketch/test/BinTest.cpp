@@ -24,8 +24,8 @@ namespace datasketches {
 
 void TestBinInitialization(const int index, const uint64_t count) {
   Bin bin(index, count);
-  REQUIRE(bin.getCount() == count);
-  REQUIRE(bin.getIndex() == index);
+  REQUIRE(bin.get_count() == count);
+  REQUIRE(bin.get_index() == index);
 }
 
 TEST_CASE("bintest", "[bintest]") {

@@ -11,6 +11,34 @@
 
 
 namespace datasketches {
+
+/**
+ * @concept store_concept
+ * @tparam S Candidate store type.
+ * @brief Minimal interface a bin-count store must satisfy to work with {@link DDSketch}.
+ *
+ * **Iteration (read-only):**
+ * - `s.begin()` / `s.end()` form an input range.
+ * - `*s.begin()` yields `Bin` **by value** (index, count).
+ *
+ * **Core operations:**
+ * - `s.add(int index) -> void`
+ * - `s.add(int index, double count) -> void`
+ * - `s.add(const Bin&) -> void`
+ * - `s.clear() -> void`
+ * - `s.merge(const S&) -> void`
+ *
+ * **Queries (const):**
+ * - `s.is_empty() -> bool`
+ * - `s.get_min_index() -> int`  (lowest non-empty bin)
+ * - `s.get_max_index() -> int`  (highest non-empty bin)
+ * - `s.get_total_count() -> double`
+ *
+ * **Semantics (brief):**
+ * - Indices are integer bin IDs from the index mapping.
+ * - `merge` accumulates counts; total_count is additive.
+ * - Iteration visits non-empty bins in ascending index order.
+ */
 template<class S>
 concept store_concept =
   // range of Bin (by value is fine; you already return Bin by value)

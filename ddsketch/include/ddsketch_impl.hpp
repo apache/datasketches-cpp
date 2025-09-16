@@ -110,10 +110,10 @@ template<store_concept Store, class Mapping>
 double DDSketch<Store, Mapping>::get_sum() const {
   double sum = 0.0;
   for (const Bin& bin : negative_store) {
-    sum -= index_mapping.value(bin.getIndex()) * bin.getCount();
+    sum -= index_mapping.value(bin.get_index()) * bin.get_count();
   }
   for (const Bin& bin : positive_store) {
-    sum += index_mapping.value(bin.getIndex()) * bin.getCount();
+    sum += index_mapping.value(bin.get_index()) * bin.get_count();
   }
   return sum;
 }
@@ -145,16 +145,16 @@ double DDSketch<Store, Mapping>::get_rank(const double &item) const {
   double rank = 0.0;
 
   if (!negative_store.is_empty()) {
-    for (auto it = negative_store.rbegin(); it != negative_store.rend() && index_mapping.value((*it).getIndex()) <= item; ++it) {
-      rank += (*it).getCount();
+    for (auto it = negative_store.rbegin(); it != negative_store.rend() && index_mapping.value((*it).get_index()) <= item; ++it) {
+      rank += (*it).get_count();
     }
   }
   if (item >= 0) {
     rank += zero_count;
   }
   if (!positive_store.is_empty()) {
-    for (auto it = positive_store.begin(); it != positive_store.end() && index_mapping.value((*it).getIndex()) <= item; ++it) {
-      rank += (*it).getCount();
+    for (auto it = positive_store.begin(); it != positive_store.end() && index_mapping.value((*it).get_index()) <= item; ++it) {
+      rank += (*it).get_count();
     }
   }
   return rank / get_count();
@@ -181,8 +181,8 @@ double DDSketch<Store, Mapping>::get_quantile(const double& rank, const double& 
 
   for (auto it = negative_store.rbegin(); it != negative_store.rend(); ++it) {
     const Bin& bin = *it;
-    if ((n += bin.getCount()) > target_rank) {
-      return -index_mapping.value(bin.getIndex());
+    if ((n += bin.get_count()) > target_rank) {
+      return -index_mapping.value(bin.get_index());
     }
   }
 
@@ -192,8 +192,8 @@ double DDSketch<Store, Mapping>::get_quantile(const double& rank, const double& 
 
   for (auto it = positive_store.begin(); it != positive_store.end(); ++it) {
     const Bin& bin = *it;
-    if ((n += bin.getCount()) > target_rank) {
-      return index_mapping.value(bin.getIndex());
+    if ((n += bin.get_count()) > target_rank) {
+      return index_mapping.value(bin.get_index());
     }
   }
   throw std::invalid_argument("no such element");

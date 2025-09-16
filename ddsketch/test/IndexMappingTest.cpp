@@ -23,7 +23,6 @@
 #include "linearly_interpolated_mapping.hpp"
 #include "logarithmic_mapping.hpp"
 #include "quadratically_interpolated_mapping.hpp"
-#include "quartically_interpolated_mapping.hpp"
 
 namespace datasketches {
 
@@ -61,8 +60,7 @@ void test_accuracy(const M& mapping, const double& relative_accuracy) {
 TEMPLATE_TEST_CASE("test index mapping accuracy", "[indexmappingtest]",
   LinearlyInterpolatedMapping,
   LogarithmicMapping,
-  QuadraticallyInterpolatedMapping,
-  QuarticallyInterpolatedMapping
+  QuadraticallyInterpolatedMapping
   ) {
   for (double relative_accuracy = max_tested_relative_accuracy; relative_accuracy >= min_tested_relative_accuracy; relative_accuracy *= max_tested_relative_accuracy) {
     auto mapping = index_mapping_factory<TestType>::new_mapping(relative_accuracy);
@@ -73,8 +71,7 @@ TEMPLATE_TEST_CASE("test index mapping accuracy", "[indexmappingtest]",
 TEMPLATE_TEST_CASE("test index mapping validity", "[indexmappingtest}",
   LinearlyInterpolatedMapping,
   LogarithmicMapping,
-  QuadraticallyInterpolatedMapping,
-  QuarticallyInterpolatedMapping
+  QuadraticallyInterpolatedMapping
   ) {
   constexpr double relative_accuracy = 1e-2;
   constexpr int min_index = -50;
@@ -98,12 +95,9 @@ TEMPLATE_TEST_CASE("test index mapping validity", "[indexmappingtest}",
 TEMPLATE_TEST_CASE("encode - decode", "[indexmappingtest",
   LinearlyInterpolatedMapping,
   LogarithmicMapping,
-  QuadraticallyInterpolatedMapping,
-  QuarticallyInterpolatedMapping
+  QuadraticallyInterpolatedMapping
 ) {
-  const double gamma = 42;
-  const double index_offset = 4321;
-  TestType mapping(gamma, index_offset);
+  TestType mapping(0.01);
 
   std::stringstream ss;
   mapping.serialize(ss);

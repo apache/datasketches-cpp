@@ -23,15 +23,44 @@
 #include <string>
 
 namespace datasketches {
+
+/**
+ * @class Bin
+ * @brief Represents a bucket of counts in a DDSketch store.
+ *
+ * A Bin corresponds to a mapped value index and its associated count.
+ * It is the fundamental unit used in DenseStore, SparseStore, and their variants.
+ */
 class Bin {
 public:
+  /**
+    * @brief Construct a new Bin.
+    * @param index The index representing the mapped value bucket.
+    * @param count The number of samples in this bin.
+    */
   Bin(int index, double count);
+
   ~Bin() = default;
+
+  /**
+   * @brief Equality operator.
+   * @param other The other bin to compare with.
+   * @return True if both bins have the same index and count.
+   */
   bool operator==(const Bin& other) const;
-  int hashCode() const;
-  std::string toString() const;
-  double getCount() const;
-  int getIndex() const;
+  std::string to_string() const;
+
+  /**
+   * @brief Get the count of this bin.
+   * @return The number of samples in the bin.
+   */
+  double get_count() const;
+
+  /**
+   * @brief Get the index of this bin.
+   * @return The integer index.
+   */
+  int get_index() const;
 
 private:
   int index;
