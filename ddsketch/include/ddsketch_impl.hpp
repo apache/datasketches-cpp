@@ -254,6 +254,8 @@ string<A> DDSketch<Store, Mapping>::to_string() const {
   os << "### ddsketch summary:" << std::endl;
   os << "   Index mapping         " << std::endl;
   os << index_mapping.to_string();
+  os << "   Min indexable value   : " << min_indexed_value << std::endl;
+  os << "   Max indexable value   : " << max_indexed_value << std::endl;
   os << "   Positive store        " << std::endl;
   os << positive_store.to_string();
   os << "   Negative store        " << std::endl;

@@ -41,7 +41,7 @@ public:
 
   explicit DDSketch(const Mapping& index_mapping);
 
-  void update(const double&value, const double& count = 1.0);
+  void update(const double& value, const double& count = 1.0);
 
   template<store_concept OtherStore>
   void merge(const DDSketch<OtherStore, Mapping>& other);
