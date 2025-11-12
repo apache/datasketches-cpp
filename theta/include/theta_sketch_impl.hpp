@@ -376,7 +376,7 @@ size_t compact_theta_sketch_alloc<A>::get_compressed_serialized_size_bytes(uint8
 
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
-  const uint8_t preamble_longs = this->is_estimation_mode() ? 3 : this->is_empty() || entries_.size() == 1 ? 1 : 2;
+  const uint8_t preamble_longs = get_preamble_longs(false);
   write(os, preamble_longs);
   write(os, UNCOMPRESSED_SERIAL_VERSION);
   write(os, SKETCH_TYPE);
@@ -459,7 +459,7 @@ uint8_t compact_theta_sketch_alloc<A>::compute_entry_bits() const {
 
 template<typename A>
 void compact_theta_sketch_alloc<A>::serialize_version_4(std::ostream& os) const {
-  const uint8_t preamble_longs = this->is_estimation_mode() ? 2 : 1;
+  const uint8_t preamble_longs = get_preamble_longs(true);
   const uint8_t entry_bits = compute_entry_bits();
   const uint8_t num_entries_bytes = get_num_entries_bytes();
 
