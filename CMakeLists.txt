@@ -43,7 +43,7 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_MACOSX_RPATH ON)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 
 # enable compiler warnings globally
 # derived from https://foonathan.net/blog/2018/10/17/cmake-warnings.html
@@ -120,12 +120,13 @@ add_subdirectory(count)
 add_subdirectory(density)
 add_subdirectory(tdigest)
 add_subdirectory(filters)
+add_subdirectory(ddsketch)
 
 if (WITH_PYTHON)
   add_subdirectory(python)
 endif()
 
-target_link_libraries(datasketches INTERFACE hll cpc kll fi theta sampling req quantiles count)
+target_link_libraries(datasketches INTERFACE hll cpc kll fi theta sampling req quantiles count ddsketch)
 
 if (COVERAGE)
   find_program(LCOV_PATH NAMES "lcov")
