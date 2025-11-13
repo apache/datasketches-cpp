@@ -558,7 +558,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
 <div class="foldopen" id="foldopen00378" data-start="{" data-end="}">
 <div class="line"><a id="l00378" name="l00378"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__theta__sketch__alloc.html#a1bcdd98ee6e6eb9b501b8dc5de5e8924">  378</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="classdatasketches_1_1compact__theta__sketch__alloc.html#a1bcdd98ee6e6eb9b501b8dc5de5e8924">compact_theta_sketch_alloc&lt;A&gt;::serialize</a>(std::ostream&amp; os)<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>  <span class="keyword">const</span> uint8_t preamble_longs = this-&gt;is_estimation_mode() ? 3 : this-&gt;is_empty() || entries_.size() == 1 ? 1 : 2;</div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>  <span class="keyword">const</span> uint8_t preamble_longs = get_preamble_longs(<span class="keyword">false</span>);</div>
 <div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>  write(os, preamble_longs);</div>
 <div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>  write(os, UNCOMPRESSED_SERIAL_VERSION);</div>
 <div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>  write(os, SKETCH_TYPE);</div>
@@ -648,7 +648,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00459" name="l00459"></a><span class="lineno">  459</span> </div>
 <div class="line"><a id="l00460" name="l00460"></a><span class="lineno">  460</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
 <div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span><span class="keywordtype">void</span> compact_theta_sketch_alloc&lt;A&gt;::serialize_version_4(std::ostream&amp; os)<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span>  <span class="keyword">const</span> uint8_t preamble_longs = this-&gt;is_estimation_mode() ? 2 : 1;</div>
+<div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span>  <span class="keyword">const</span> uint8_t preamble_longs = get_preamble_longs(<span class="keyword">true</span>);</div>
 <div class="line"><a id="l00463" name="l00463"></a><span class="lineno">  463</span>  <span class="keyword">const</span> uint8_t entry_bits = compute_entry_bits();</div>
 <div class="line"><a id="l00464" name="l00464"></a><span class="lineno">  464</span>  <span class="keyword">const</span> uint8_t num_entries_bytes = get_num_entries_bytes();</div>
 <div class="line"><a id="l00465" name="l00465"></a><span class="lineno">  465</span> </div>
