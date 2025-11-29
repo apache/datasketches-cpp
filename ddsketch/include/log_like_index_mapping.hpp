@@ -104,7 +104,7 @@ public:
   bool operator!=(const LogLikeIndexMapping<Derived>& other) const;
 
 private:
-  static double compute_relative_accuracy(const double& gamma, const double& correcting_factor);
+  static double compute_relative_accuracy(const double gamma, const double correcting_factor);
   static double require_valid_gamma(const double& gamma);
   IndexMappingLayout layout() const;
 

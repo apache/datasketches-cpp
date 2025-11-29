@@ -54,11 +54,11 @@ public:
 
   IndexMappingLayout layout() const;
 
-  static constexpr double BASE = 2.0;
-  static constexpr double CORRECTING_FACTOR = 3.0 / (4.0 * 0.69314718055994530941);
+  static constexpr double BASE() { return 2.0; }
+  static constexpr double CORRECTING_FACTOR() { return 3.0 / (4.0 * 0.69314718055994530941); }
 
 private:
-  static constexpr double ONE_THIRD = 1.0 / 3.0;
+  static constexpr double ONE_THIRD() { return 1.0 / 3.0; }
 };
 }
 #endif //QUADRATICALLY_INTERPOLATED_MAPPING_HPP

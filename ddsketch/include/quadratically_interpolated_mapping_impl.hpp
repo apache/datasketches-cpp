@@ -24,12 +24,8 @@
 
 namespace datasketches {
 
-constexpr double QuadraticallyInterpolatedMapping::BASE;
-constexpr double QuadraticallyInterpolatedMapping::CORRECTING_FACTOR;
-constexpr double QuadraticallyInterpolatedMapping::ONE_THIRD;
-
 inline QuadraticallyInterpolatedMapping::QuadraticallyInterpolatedMapping(const double& relative_accuracy) :
-  LogLikeIndexMapping<QuadraticallyInterpolatedMapping>(compute_gamma(require_valid_relative_accuracy(relative_accuracy), CORRECTING_FACTOR), 0.0) {}
+  LogLikeIndexMapping<QuadraticallyInterpolatedMapping>(compute_gamma(require_valid_relative_accuracy(relative_accuracy), CORRECTING_FACTOR()), 0.0) {}
 
 inline QuadraticallyInterpolatedMapping::QuadraticallyInterpolatedMapping(const double& gamma, const double& index_offset) :
   LogLikeIndexMapping<QuadraticallyInterpolatedMapping>(gamma, index_offset) {}
@@ -48,7 +44,7 @@ inline double QuadraticallyInterpolatedMapping::log(const double& value) const {
   int exponent = 0;
   const double mantissa = 2 * std::frexp(value, &exponent);
 
-  return exponent - 1 - (mantissa - 5.0) * (mantissa- 1) * ONE_THIRD;
+  return exponent - 1 - (mantissa - 5.0) * (mantissa- 1) * ONE_THIRD();
 }
 
 inline double QuadraticallyInterpolatedMapping::log_inverse(const double& index) const {

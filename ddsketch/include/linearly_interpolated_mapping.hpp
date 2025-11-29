@@ -55,8 +55,8 @@ public:
 
   IndexMappingLayout layout() const;
 
-  static constexpr double BASE = 2.0;
-  static constexpr double CORRECTING_FACTOR = 1.44269504088896340735;
+  static constexpr double BASE() { return 2.0; }
+  static constexpr double CORRECTING_FACTOR() { return 1.44269504088896340735; }
 
 private:
   static double index_offset_shift(const double& relative_accuracy);

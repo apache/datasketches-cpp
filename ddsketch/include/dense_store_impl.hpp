@@ -27,6 +27,9 @@
 
 namespace datasketches {
 
+template<typename Store, typename Allocator>
+constexpr int DenseStore<Store, Allocator>::DEFAULT_ARRAY_LENGTH_GROWTH_INCREMENT;
+
 template<class Derived, typename Allocator>
 DenseStore<Derived, Allocator>::DenseStore() :
   DenseStore(DEFAULT_ARRAY_LENGTH_GROWTH_INCREMENT)

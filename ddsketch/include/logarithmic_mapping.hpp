@@ -55,8 +55,8 @@ public:
 
   IndexMappingLayout layout() const;
 
-  static constexpr double BASE = 2.71828182845904523536;
-  static constexpr double CORRECTING_FACTOR = 1.0;
+  static constexpr double BASE() { return 2.71828182845904523536; }
+  static constexpr double CORRECTING_FACTOR() { return 1.0; }
 };
 }
 

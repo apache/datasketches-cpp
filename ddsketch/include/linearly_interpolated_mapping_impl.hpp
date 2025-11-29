@@ -22,11 +22,8 @@
 
 namespace datasketches {
 
-constexpr double LinearlyInterpolatedMapping::BASE;
-constexpr double LinearlyInterpolatedMapping::CORRECTING_FACTOR;
-
 inline LinearlyInterpolatedMapping::LinearlyInterpolatedMapping(const double& relative_accuracy):
-  LogLikeIndexMapping<LinearlyInterpolatedMapping>(compute_gamma(require_valid_relative_accuracy(relative_accuracy), CORRECTING_FACTOR), index_offset_shift(relative_accuracy)) {}
+  LogLikeIndexMapping<LinearlyInterpolatedMapping>(compute_gamma(require_valid_relative_accuracy(relative_accuracy), CORRECTING_FACTOR()), index_offset_shift(relative_accuracy)) {}
 
 inline LinearlyInterpolatedMapping::LinearlyInterpolatedMapping(const double& gamma, const double& index_offset):
   LogLikeIndexMapping<LinearlyInterpolatedMapping>(gamma, index_offset) {}
