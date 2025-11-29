@@ -23,7 +23,6 @@
 #include <utility>
 #include <type_traits>
 #include <variant>
-#include "store.hpp"
 #include "store_factory.hpp"
 #include "common_defs.hpp"
 #include "memory_operations.hpp"
@@ -41,7 +40,7 @@ namespace datasketches {
  * @tparam Store underlying data structure that keeps track of bin counts.
  * @tparam Mapping maps an index to its corresponding bin.
  */
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 class  DDSketch {
 public:
 
@@ -75,7 +74,7 @@ public:
   * @param other DDSketch; its counts are added into this store.
   * @tparam OtherStore type of the other store.
   */
-  template<store_concept OtherStore>
+  template<class OtherStore>
   void merge(const DDSketch<OtherStore, Mapping>& other);
 
   /**
@@ -166,16 +165,11 @@ protected:
 
   void check_value_trackable(const double& value) const;
 
-  template<store_concept OtherStore>
+  template<class OtherStore>
   void check_mergeability(const DDSketch<OtherStore, Mapping>& other) const;
 
   double get_quantile(const double& rank, const double& count) const;
 };
-
-// CTA (class template argument deduction) deduction guides (so you can write `ddsketch sketch(s1);`)
-template<store_concept Store, class Mapping>
-DDSketch(Store, Mapping) -> DDSketch<Store, Mapping>;\
-
 
 } /* namespace datasketches */
 

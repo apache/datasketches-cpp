@@ -101,6 +101,7 @@ public:
   string<A> to_string() const;
 
   bool operator==(const LogLikeIndexMapping<Derived>& other) const;
+  bool operator!=(const LogLikeIndexMapping<Derived>& other) const;
 
 private:
   static double compute_relative_accuracy(const double& gamma, const double& correcting_factor);

@@ -18,7 +18,7 @@
 */
 
 #include <catch2/catch.hpp>
-
+#include <sstream>
 #include "index_mapping_factory.hpp"
 #include "linearly_interpolated_mapping.hpp"
 #include "logarithmic_mapping.hpp"
@@ -31,7 +31,7 @@ constexpr double max_tested_relative_accuracy = 1 - 1e-3;
 // For more precise testing
 //constexpr double multiplier = 1 + std::numbers::sqrt2 * 1e-1;
 // For faster testing
-constexpr double multiplier = 1 + std::numbers::sqrt2 * 1e6;
+constexpr double multiplier = 1 + 1.4142135623730950 * 1e6;
 constexpr double floating_point_acceptable_error = 1e-10;
 
 void assert_relative_accuracy(const double& expected, const double& actual, const double& relative_accuracy) {

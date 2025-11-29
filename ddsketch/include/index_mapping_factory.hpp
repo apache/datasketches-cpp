@@ -30,7 +30,7 @@ public:
   template<typename... Args>
   static std::unique_ptr<IndexMapping> new_mapping(Args&&... args)
   {
-    return std::make_unique<IndexMapping>(std::forward<Args>(args)...);
+    return std::unique_ptr<IndexMapping>();
   }
 };
 }

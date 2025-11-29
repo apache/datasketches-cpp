@@ -21,7 +21,6 @@
 #define LINEARLY_INTERPOLATED_MAPPING_HPP
 
 #include "log_like_index_mapping.hpp"
-#include <numbers>
 
 
 namespace datasketches {
@@ -57,7 +56,7 @@ public:
   IndexMappingLayout layout() const;
 
   static constexpr double BASE = 2.0;
-  static constexpr double CORRECTING_FACTOR = std::numbers::log2e;
+  static constexpr double CORRECTING_FACTOR = 1.44269504088896340735;
 
 private:
   static double index_offset_shift(const double& relative_accuracy);

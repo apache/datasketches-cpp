@@ -20,6 +20,7 @@
 #include <catch2/catch.hpp>
 #include "bin.hpp"
 #include <iostream>
+#include <climits>
 namespace datasketches {
 
 void TestBinInitialization(const int index, const uint64_t count) {

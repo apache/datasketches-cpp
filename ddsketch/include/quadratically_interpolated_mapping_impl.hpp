@@ -24,6 +24,10 @@
 
 namespace datasketches {
 
+constexpr double QuadraticallyInterpolatedMapping::BASE;
+constexpr double QuadraticallyInterpolatedMapping::CORRECTING_FACTOR;
+constexpr double QuadraticallyInterpolatedMapping::ONE_THIRD;
+
 inline QuadraticallyInterpolatedMapping::QuadraticallyInterpolatedMapping(const double& relative_accuracy) :
   LogLikeIndexMapping<QuadraticallyInterpolatedMapping>(compute_gamma(require_valid_relative_accuracy(relative_accuracy), CORRECTING_FACTOR), 0.0) {}
 

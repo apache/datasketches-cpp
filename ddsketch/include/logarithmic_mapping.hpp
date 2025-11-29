@@ -19,7 +19,6 @@
 
 #ifndef LOGARITHMIC_MAPPING_HPP
 #define LOGARITHMIC_MAPPING_HPP
-#include <numbers>
 
 #include "log_like_index_mapping.hpp"
 
@@ -56,7 +55,7 @@ public:
 
   IndexMappingLayout layout() const;
 
-  static constexpr double BASE = std::numbers::e;
+  static constexpr double BASE = 2.71828182845904523536;
   static constexpr double CORRECTING_FACTOR = 1.0;
 };
 }

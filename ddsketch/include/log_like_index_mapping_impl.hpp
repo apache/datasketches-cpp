@@ -112,6 +112,10 @@ bool LogLikeIndexMapping<Derived>::operator==(const LogLikeIndexMapping<Derived>
   return gamma == other.gamma && index_offset == other.index_offset;
 }
 
+template<class Derived>
+bool LogLikeIndexMapping<Derived>::operator!=(const LogLikeIndexMapping<Derived> &other) const {
+  return !(*this == other);
+}
 
 
 template<class Derived>

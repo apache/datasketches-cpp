@@ -25,8 +25,6 @@
 #include "common_defs.hpp"
 
 namespace datasketches {
-// Forward declaration
-template<typename Allocator> class SparseStore;
 
 /**
  * @class DenseStore
@@ -108,12 +106,6 @@ public:
    */
   template<class Store>
   void merge(const DenseStore<Store, Allocator>& other);
-
-  /**
-   * @brief Merge a sparse store into this dense store.
-   * @param other SparseStore to accumulate from.
-   */
-  void merge(const SparseStore<Allocator>& other);
 
   /**
    * This method serializes the store into a given stream in a binary form

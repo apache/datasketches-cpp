@@ -22,6 +22,8 @@
 #include "logarithmic_mapping.hpp"
 
 namespace datasketches {
+constexpr double LogarithmicMapping::BASE;
+constexpr double LogarithmicMapping::CORRECTING_FACTOR;
 
 inline LogarithmicMapping::LogarithmicMapping(const double& relative_accuracy) :
   LogLikeIndexMapping<LogarithmicMapping>(compute_gamma(require_valid_relative_accuracy(relative_accuracy), 1.0), 0.0) {}

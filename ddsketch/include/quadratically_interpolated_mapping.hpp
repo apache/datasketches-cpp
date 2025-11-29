@@ -55,13 +55,11 @@ public:
   IndexMappingLayout layout() const;
 
   static constexpr double BASE = 2.0;
-  static constexpr double CORRECTING_FACTOR = 3.0 / (4.0 * std::numbers::ln2);
+  static constexpr double CORRECTING_FACTOR = 3.0 / (4.0 * 0.69314718055994530941);
 
 private:
   static constexpr double ONE_THIRD = 1.0 / 3.0;
 };
 }
-
-#include "quadratically_interpolated_mapping_impl.hpp"
-
 #endif //QUADRATICALLY_INTERPOLATED_MAPPING_HPP
+#include "quadratically_interpolated_mapping_impl.hpp"

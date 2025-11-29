@@ -22,14 +22,16 @@
 
 #include <iomanip>
 #include <iostream>
+#include "bin.hpp"
+#include <sstream>
 #include "ddsketch.hpp"
 #include "store_factory.hpp"
 namespace datasketches {
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 DDSketch<Store, Mapping>::DDSketch(const double& relative_accuracy): DDSketch(Mapping(relative_accuracy)) {}
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 DDSketch<Store, Mapping>::DDSketch(const Mapping& index_mapping):
   index_mapping(index_mapping),
   zero_count(0),
@@ -38,7 +40,7 @@ DDSketch<Store, Mapping>::DDSketch(const Mapping& index_mapping):
 {}
 
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 DDSketch<Store, Mapping>::DDSketch(const Store& positive_store, const Store& negative_store, const Mapping& mapping, const double& zero_count, const double& min_indexed_value):
   positive_store(std::move(positive_store)),
   negative_store(std::move(negative_store)),
@@ -48,22 +50,22 @@ DDSketch<Store, Mapping>::DDSketch(const Store& positive_store, const Store& neg
   max_indexed_value(mapping.max_indexable_value()) {}
 
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 void DDSketch<Store, Mapping>::check_value_trackable(const double& value) const {
   if (value < -max_indexed_value || value > max_indexed_value) {
     throw std::invalid_argument("input value is outside the range that is tracked by the sketch.");
   }
 }
 
-template<store_concept Store, class Mapping>
-template<store_concept OtherStore>
+template<class Store, class Mapping>
+template<class OtherStore>
 void DDSketch<Store, Mapping>::check_mergeability(const DDSketch<OtherStore, Mapping>& other) const {
   if (index_mapping != other.index_mapping) {
     throw std::invalid_argument("sketches are not mergeable because they do not use the same index mappings.");
   }
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 void DDSketch<Store, Mapping>::update(const double& value, const double& count) {
   check_value_trackable(value);
 
@@ -80,8 +82,8 @@ void DDSketch<Store, Mapping>::update(const double& value, const double& count) 
   }
 }
 
-template<store_concept Store, class Mapping>
-template<store_concept OtherStore>
+template<class Store, class Mapping>
+template<class OtherStore>
 void DDSketch<Store, Mapping>::merge(const DDSketch<OtherStore, Mapping>& other) {
   check_mergeability<OtherStore>(other);
   negative_store.merge(other.negative_store);
@@ -89,24 +91,24 @@ void DDSketch<Store, Mapping>::merge(const DDSketch<OtherStore, Mapping>& other)
   zero_count += other.zero_count;
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 bool DDSketch<Store, Mapping>::is_empty() const {
   return zero_count == 0.0 && positive_store.is_empty() && negative_store.is_empty();
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 void DDSketch<Store, Mapping>::clear() {
   negative_store.clear();
   positive_store.clear();
   zero_count = 0.0;
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 double DDSketch<Store, Mapping>::get_count() const {
   return zero_count + negative_store.get_total_count() + positive_store.get_total_count();
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 double DDSketch<Store, Mapping>::get_sum() const {
   double sum = 0.0;
   for (const Bin& bin : negative_store) {
@@ -118,7 +120,7 @@ double DDSketch<Store, Mapping>::get_sum() const {
   return sum;
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 double DDSketch<Store, Mapping>::get_min() const {
   if (!negative_store.is_empty()) {
     return -index_mapping.value(negative_store.get_max_index());
@@ -129,7 +131,7 @@ double DDSketch<Store, Mapping>::get_min() const {
   return index_mapping.value(positive_store.get_min_index());
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 double DDSketch<Store, Mapping>::get_max() const {
   if (!positive_store.is_empty()) {
     return index_mapping.value(positive_store.get_max_index());
@@ -140,7 +142,7 @@ double DDSketch<Store, Mapping>::get_max() const {
   return -index_mapping.value(negative_store.get_min_index());
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 double DDSketch<Store, Mapping>::get_rank(const double &item) const {
   double rank = 0.0;
 
@@ -161,12 +163,12 @@ double DDSketch<Store, Mapping>::get_rank(const double &item) const {
 }
 
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 double DDSketch<Store, Mapping>::get_quantile(const double& rank) const {
   return get_quantile(rank, get_count());
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 double DDSketch<Store, Mapping>::get_quantile(const double& rank, const double& count) const {
   if (rank < 0.0 || rank > 1.0) {
     throw std::invalid_argument("rank must be in [0.0, 1.0]");
@@ -199,7 +201,7 @@ double DDSketch<Store, Mapping>::get_quantile(const double& rank, const double& 
   throw std::invalid_argument("no such element");
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 void DDSketch<Store, Mapping>::serialize(std::ostream& os) const {
   index_mapping.serialize(os);
 
@@ -215,7 +217,7 @@ void DDSketch<Store, Mapping>::serialize(std::ostream& os) const {
   negative_store.serialize(os);
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 DDSketch<Store, Mapping> DDSketch<Store, Mapping>::deserialize(std::istream &is) {
   Mapping deserialized_index_mapping = Mapping::deserialize(is);
   const auto deserialized_zero_count = read<double>(is);
@@ -223,13 +225,13 @@ DDSketch<Store, Mapping> DDSketch<Store, Mapping>::deserialize(std::istream &is)
   const auto positive_store_serialized_size  = read<int>(is);
 
   std::string pos_buf(positive_store_serialized_size, '\0');
-  is.read(pos_buf.data(), pos_buf.size());
+  is.read(&pos_buf[0], pos_buf.size());
   std::stringstream pos_stream(pos_buf);
   Store deserialized_positive_store = Store::deserialize(pos_stream);
 
   const auto negative_store_serialized_size  = read<int>(is);
   std::string neg_buf(negative_store_serialized_size, '\0');
-  is.read(neg_buf.data(), neg_buf.size());
+  is.read(&neg_buf[0], neg_buf.size());
   std::stringstream neg_stream(neg_buf);
   Store deserialized_negative_store = Store::deserialize(neg_stream);
 
@@ -238,7 +240,7 @@ DDSketch<Store, Mapping> DDSketch<Store, Mapping>::deserialize(std::istream &is)
   return ddsketch;
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 int DDSketch<Store, Mapping>::get_serialized_size_bytes() const {
   return index_mapping.get_serialized_size_bytes() +
     positive_store.get_serialized_size_bytes() +
@@ -247,7 +249,7 @@ int DDSketch<Store, Mapping>::get_serialized_size_bytes() const {
           2 * sizeof(double);
 }
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 template<class A>
 string<A> DDSketch<Store, Mapping>::to_string() const {
   std::ostringstream os;
@@ -267,7 +269,7 @@ string<A> DDSketch<Store, Mapping>::to_string() const {
 }
 
 
-template<store_concept Store, class Mapping>
+template<class Store, class Mapping>
 bool DDSketch<Store, Mapping>::operator==(const DDSketch<Store, Mapping>& other) const {
   return positive_store == other.positive_store &&
     negative_store == other.negative_store &&

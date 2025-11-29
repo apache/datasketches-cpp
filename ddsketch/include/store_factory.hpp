@@ -28,7 +28,7 @@ class store_factory {
 public:
   static std::unique_ptr<StoreType> new_store()
   {
-    return std::make_unique<StoreType>();
+    return std::unique_ptr<StoreType>();
   }
 };
 }
