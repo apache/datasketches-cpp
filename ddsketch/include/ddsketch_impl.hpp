@@ -27,7 +27,6 @@
 #include "ddsketch.hpp"
 #include "store_factory.hpp"
 namespace datasketches {
-
 template<class Store, class Mapping>
 DDSketch<Store, Mapping>::DDSketch(const double& relative_accuracy): DDSketch(Mapping(relative_accuracy)) {}
 
@@ -202,6 +201,29 @@ double DDSketch<Store, Mapping>::get_quantile(const double& rank, const double& 
 }
 
 template<class Store, class Mapping>
+typename DDSketch<Store, Mapping>::vector_double DDSketch<Store, Mapping>::get_CDF(const T* split_points, uint32_t size) const {
+  check_split_pints(split_points, size);
+  vector_double ranks;
+  ranks.reserve(size + 1);
+  for (uint32_t i = 0; i < size; ++i) {
+    ranks.push_back(get_rank(split_points[i]));
+  }
+  ranks.push_back(1.0);
+  return ranks;
+}
+
+template<class Store, class Mapping>
+typename DDSketch<Store, Mapping>::vector_double DDSketch<Store, Mapping>::get_PMF(const typename DDSketch<Store, Mapping>::T* split_points, uint32_t size) const {
+  vector_double buckets = get_CDF(split_points, size);
+  for (uint32_t i = size; i > 0; --i) {
+    buckets[i] -= buckets[i - 1];
+  }
+
+  return buckets;
+}
+
+
+template<class Store, class Mapping>
 void DDSketch<Store, Mapping>::serialize(std::ostream& os) const {
   index_mapping.serialize(os);
 
@@ -277,6 +299,18 @@ bool DDSketch<Store, Mapping>::operator==(const DDSketch<Store, Mapping>& other)
         zero_count == other.zero_count &&
           min_indexed_value == other.min_indexed_value &&
             max_indexed_value == other.max_indexed_value;
+}
+
+template<class Store, class Mapping>
+void DDSketch<Store, Mapping>::check_split_pints(const T *items, uint32_t size) {
+  for (uint32_t i = 0; i < size ; i++) {
+    if (std::isnan(items[i])) {
+      throw std::invalid_argument("Values must not be NaN");
+    }
+    if ((i < (size - 1)) && !(items[i] < items[i + 1])) {
+      throw std::invalid_argument("Values must be unique and monotonically increasing");
+    }
+  }
 }
 
 }

@@ -43,6 +43,8 @@ namespace datasketches {
 template<class Store, class Mapping>
 class  DDSketch {
 public:
+  using vector_double = std::vector<double>;
+  using T = typename Store::bins_type::value_type;
 
   /**
    * Constructs an initially empty quantile sketch using the specified {@link IndexMapping} and
@@ -91,6 +93,10 @@ public:
    * Returns a value v such that (approximately) @c get_rank(v) ≥ @p rank.
    */
   double get_quantile(const double& rank) const;
+
+  vector_double get_PMF(const T* split_points, uint32_t size) const;
+
+  vector_double get_CDF(const T* split_pints, uint32_t size) const;
 
 
   bool is_empty() const;
@@ -169,6 +175,8 @@ protected:
   void check_mergeability(const DDSketch<OtherStore, Mapping>& other) const;
 
   double get_quantile(const double& rank, const double& count) const;
+
+  static inline void check_split_pints(const T* values, uint32_t size);
 };
 
 } /* namespace datasketches */
