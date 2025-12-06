@@ -97,6 +97,10 @@ public:
    */
   void serialize(std::ostream& os) const;
 
+  int get_serialized_size_bytes() const {
+  return 16;
+}
+
   template<class A = std::allocator<char>>
   string<A> to_string() const;
 

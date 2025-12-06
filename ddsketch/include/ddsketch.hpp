@@ -96,7 +96,7 @@ public:
 
   vector_double get_PMF(const T* split_points, uint32_t size) const;
 
-  vector_double get_CDF(const T* split_pints, uint32_t size) const;
+  vector_double get_CDF(const T* split_points, uint32_t size) const;
 
 
   bool is_empty() const;

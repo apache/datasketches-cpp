@@ -146,7 +146,7 @@ double DDSketch<Store, Mapping>::get_rank(const double &item) const {
   double rank = 0.0;
 
   if (!negative_store.is_empty()) {
-    for (auto it = negative_store.rbegin(); it != negative_store.rend() && index_mapping.value((*it).get_index()) <= item; ++it) {
+    for (auto it = negative_store.rbegin(); it != negative_store.rend() && -index_mapping.value((*it).get_index()) <= item; ++it) {
       rank += (*it).get_count();
     }
   }
