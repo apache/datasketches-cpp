@@ -21,6 +21,7 @@
 #define SPARSE_STORE_HPP
 
 #include <map>
+#include <string>
 
 #include "bin.hpp"
 

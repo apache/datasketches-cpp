@@ -24,6 +24,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <map>
+#include <cmath>
 
 #include "ddsketch.hpp"
 #include "logarithmic_mapping.hpp"
@@ -31,10 +32,12 @@
 #include "unbounded_size_dense_store.hpp"
 #include "collapsing_highest_dense_store.hpp"
 #include "collapsing_lowest_dense_store.hpp"
+#include "sparse_store.hpp"
+#include "../../tdigest/include/tdigest.hpp"
 
 namespace datasketches {
 
-using A = std::allocator<uint64_t>;
+using A = std::allocator<double>;
 constexpr double EPSILON = 1e-10;
 
 void assert_accurate(double min_expected, double max_expected, double actual, double relative_accuracy) {
@@ -552,21 +555,34 @@ TEMPLATE_TEST_CASE("DDSketch serialize - deserialize test", "[ddsketch][random]"
 }
 
 TEST_CASE("quantile", "[ddsketch]") {
+  DDSketch<CollapsingLowestDenseStore<8, A>, LinearlyInterpolatedMapping> sk(0.01);
   std::random_device rd{};
   std::mt19937_64 gen{rd()};
   std::normal_distribution<double> d(0.0, 1.0);
 
+  std::vector<double> values;
+
+  tdigest<double, A> td(100);
   DDSketch<CollapsingHighestDenseStore<1024, A>, LogarithmicMapping> ddsketch(0.01);
-  for (size_t i = 0; i < 1000000; ++i) {
+  DDSketch<SparseStore<A>, LogarithmicMapping> sparse_sk(0.01);
+  for (size_t i = 0; i < 10000000; ++i) {
     double val = d(gen);
     ddsketch.update(val);
+    sparse_sk.update(val);
+    td.update(val);
   }
 
-  DDSketch<CollapsingLowestDenseStore<8, A>, LinearlyInterpolatedMapping> sk(0.01);
 
-  // std::cout << ddsketch.get_quantile(0.5) << std::endl;
-  // std::cout << ddsketch.get_rank(4) << std::endl;
 
   std::cout << ddsketch.to_string();
+  std::cout << std::endl;
+  std::cout << sparse_sk.to_string();
+  std::cout << std::endl;
+  std::cout << td.to_string();
+
+  std::cout << std::setprecision(20) << std::fixed;
+  for (double q = 0.0; q <= 1.00; q += 0.01) {
+    std::cout << std::setw(4) << q << " " << std::setw(15) << ddsketch.get_quantile(q) << " " << std::setw(15) << sparse_sk.get_quantile(q) << " " << std::setw(15) << td.get_quantile(q) << " " << std::endl;
+  }
 }
 } /* namespace datasketches */
