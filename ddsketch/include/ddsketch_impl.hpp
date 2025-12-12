@@ -201,7 +201,7 @@ double DDSketch<Store, Mapping>::get_quantile(const double& rank, const double& 
 }
 
 template<class Store, class Mapping>
-typename DDSketch<Store, Mapping>::vector_double DDSketch<Store, Mapping>::get_CDF(const T* split_points, uint32_t size) const {
+typename DDSketch<Store, Mapping>::vector_double DDSketch<Store, Mapping>::get_CDF(const double* split_points, uint32_t size) const {
   check_split_pints(split_points, size);
   vector_double ranks;
   ranks.reserve(size + 1);
@@ -213,7 +213,7 @@ typename DDSketch<Store, Mapping>::vector_double DDSketch<Store, Mapping>::get_C
 }
 
 template<class Store, class Mapping>
-typename DDSketch<Store, Mapping>::vector_double DDSketch<Store, Mapping>::get_PMF(const typename DDSketch<Store, Mapping>::T* split_points, uint32_t size) const {
+typename DDSketch<Store, Mapping>::vector_double DDSketch<Store, Mapping>::get_PMF(const double* split_points, uint32_t size) const {
   vector_double buckets = get_CDF(split_points, size);
   for (uint32_t i = size; i > 0; --i) {
     buckets[i] -= buckets[i - 1];
@@ -302,7 +302,7 @@ bool DDSketch<Store, Mapping>::operator==(const DDSketch<Store, Mapping>& other)
 }
 
 template<class Store, class Mapping>
-void DDSketch<Store, Mapping>::check_split_pints(const T *items, uint32_t size) {
+void DDSketch<Store, Mapping>::check_split_pints(const double *items, uint32_t size) {
   for (uint32_t i = 0; i < size ; i++) {
     if (std::isnan(items[i])) {
       throw std::invalid_argument("Values must not be NaN");

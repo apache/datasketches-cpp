@@ -94,9 +94,9 @@ public:
    */
   double get_quantile(const double& rank) const;
 
-  vector_double get_PMF(const T* split_points, uint32_t size) const;
+  vector_double get_PMF(const double* split_points, uint32_t size) const;
 
-  vector_double get_CDF(const T* split_points, uint32_t size) const;
+  vector_double get_CDF(const double* split_points, uint32_t size) const;
 
 
   bool is_empty() const;
@@ -176,7 +176,7 @@ protected:
 
   double get_quantile(const double& rank, const double& count) const;
 
-  static inline void check_split_pints(const T* values, uint32_t size);
+  static inline void check_split_pints(const double* values, uint32_t size);
 };
 
 } /* namespace datasketches */
