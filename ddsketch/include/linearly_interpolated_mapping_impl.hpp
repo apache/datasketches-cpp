@@ -20,6 +20,8 @@
 #ifndef LINEARLY_INTERPOLATED_MAPPING_IMPL_HPP
 #define LINEARLY_INTERPOLATED_MAPPING_IMPL_HPP
 
+#include "linearly_interpolated_mapping.hpp"
+
 namespace datasketches {
 
 inline LinearlyInterpolatedMapping::LinearlyInterpolatedMapping(const double& relative_accuracy):

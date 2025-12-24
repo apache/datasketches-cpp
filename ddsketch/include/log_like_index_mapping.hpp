@@ -20,6 +20,7 @@
 #define LOG_LIKE_INDEX_MAPPING_HPP
 #include "index_mapping.hpp"
 #include <cmath>
+#include <cassert>
 #include <memory>
 #include <stdexcept>
 
