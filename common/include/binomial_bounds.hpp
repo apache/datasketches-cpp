@@ -441,8 +441,8 @@ private:
   }
 
   static void check_theta(double theta) {
-    if (theta < 0 || theta > 1) {
-      throw std::invalid_argument("theta must be in [0, 1]");
+    if (theta <= 0 || theta > 1) {
+      throw std::invalid_argument("theta must be in (0, 1]");
     }
   }
 
