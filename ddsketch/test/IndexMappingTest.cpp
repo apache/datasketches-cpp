@@ -68,7 +68,7 @@ TEMPLATE_TEST_CASE("test index mapping accuracy", "[indexmappingtest]",
   }
 }
 
-TEMPLATE_TEST_CASE("test index mapping validity", "[indexmappingtest}",
+TEMPLATE_TEST_CASE("test index mapping validity", "[indexmappingtest]",
   LinearlyInterpolatedMapping,
   LogarithmicMapping,
   QuadraticallyInterpolatedMapping
@@ -92,7 +92,7 @@ TEMPLATE_TEST_CASE("test index mapping validity", "[indexmappingtest}",
   }
 }
 
-TEMPLATE_TEST_CASE("encode - decode", "[indexmappingtest",
+TEMPLATE_TEST_CASE("encode - decode", "[indexmappingtest]",
   LinearlyInterpolatedMapping,
   LogarithmicMapping,
   QuadraticallyInterpolatedMapping

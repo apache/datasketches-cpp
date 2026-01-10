@@ -23,6 +23,7 @@
 #include <vector>
 #include "bin.hpp"
 #include "common_defs.hpp"
+#include "sparse_store.hpp"
 
 namespace datasketches {
 
@@ -106,6 +107,12 @@ public:
    */
   template<class Store>
   void merge(const DenseStore<Store, Allocator>& other);
+
+  /**
+    * @brief Merge a sparse store (same allocator) into this one.
+    * @param other store; its counts are added here.
+    */
+  void merge(const SparseStore<Allocator>& other);
 
   /**
    * This method serializes the store into a given stream in a binary form

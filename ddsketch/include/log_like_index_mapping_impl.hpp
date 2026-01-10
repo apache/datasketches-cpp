@@ -20,6 +20,7 @@
 #ifndef LOG_LIKE_INDEX_MAPPING_IMPL_HPP
 #define LOG_LIKE_INDEX_MAPPING_IMPL_HPP
 #include "log_like_index_mapping.hpp"
+#include <cassert>
 #include <cmath>
 #include "common_defs.hpp"
 

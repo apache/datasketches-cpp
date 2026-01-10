@@ -132,6 +132,13 @@ void DenseStore<Derived, Allocator>::merge(const DenseStore<OtherDerived, Alloca
 }
 
 template<class Derived, typename Allocator>
+void DenseStore<Derived, Allocator>::merge(const SparseStore<Allocator>& other) {
+  for (const Bin& bin : other) {
+    add(bin);
+  }
+}
+
+template<class Derived, typename Allocator>
 typename DenseStore<Derived, Allocator>::iterator DenseStore<Derived, Allocator>::begin() const {
   if (is_empty()) {
     return end();
