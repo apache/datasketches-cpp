@@ -108,6 +108,7 @@ public:
 
   /**
    * Update this t-Digest with the given value
+   * NaN and infinity values are ignored
    * @param value to update the t-Digest with
    */
   void update(T value);
@@ -153,6 +154,7 @@ public:
    * Compute approximate normalized rank of the given value.
    *
    * <p>If the sketch is empty this throws std::runtime_error.
+   * <p>NaN and infinity values throw std::invalid_argument.
    *
    * @param value to be ranked
    * @return normalized rank (from 0 to 1 inclusive)
