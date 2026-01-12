@@ -22,7 +22,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <sstream>
 
 #include "common_defs.hpp"
 #include "memory_operations.hpp"
@@ -32,18 +31,14 @@ namespace datasketches {
 template<typename T>
 inline void check_not_nan(T value, const char* name) {
   if (std::isnan(value)) {
-    std::ostringstream oss;
-    oss << name << " must not be NaN";
-    throw std::invalid_argument(oss.str());
+    throw std::invalid_argument(std::string(name) + " must not be NaN");
   }
 }
 
 template<typename T>
 inline void check_not_infinite(T value, const char* name) {
   if (std::isinf(value)) {
-    std::ostringstream oss;
-    oss << name << " must not be infinite";
-    throw std::invalid_argument(oss.str());
+    throw std::invalid_argument(std::string(name) + " must not be infinite");
   }
 }
 
