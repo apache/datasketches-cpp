@@ -28,13 +28,13 @@
 namespace datasketches {
 
 namespace {
-constexpr size_t kHeaderSize = 8;
-constexpr size_t kCountsSize = 8;
-constexpr size_t kMinOffset = kHeaderSize + kCountsSize;
-constexpr size_t kMaxOffset = kMinOffset + sizeof(double);
-constexpr size_t kFirstCentroidMeanOffset = kMinOffset + sizeof(double) * 2;
-constexpr size_t kFirstBufferedValueOffset = kFirstCentroidMeanOffset;
-constexpr size_t kSingleValueOffset = kHeaderSize;
+constexpr size_t header_size = 8;
+constexpr size_t counts_size = 8;
+constexpr size_t min_offset = header_size + counts_size;
+constexpr size_t max_offset = min_offset + sizeof(double);
+constexpr size_t first_centroid_mean_offset = min_offset + sizeof(double) * 2;
+constexpr size_t first_buffered_value_offset = first_centroid_mean_offset;
+constexpr size_t single_value_offset = header_size;
 
 template <typename T>
 void write_bytes(std::vector<uint8_t>& bytes, size_t offset, T value) {
@@ -528,7 +528,7 @@ TEST_CASE("deserialize bytes rejects NaN single value", "[tdigest]") {
   tdigest_double td(100);
   td.update(1.0);
   auto bytes = td.serialize();
-  write_bytes(bytes, kSingleValueOffset, std::numeric_limits<double>::quiet_NaN());
+  write_bytes(bytes, single_value_offset, std::numeric_limits<double>::quiet_NaN());
   REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
 }
 
@@ -539,7 +539,7 @@ TEST_CASE("deserialize stream rejects infinity min", "[tdigest]") {
   td.update(3.0);
   auto bytes = td.serialize();
   std::string data(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-  write_bytes(data, kMinOffset, std::numeric_limits<double>::infinity());
+  write_bytes(data, min_offset, std::numeric_limits<double>::infinity());
   std::istringstream is(data, std::ios::binary);
   REQUIRE_THROWS_AS(tdigest_double::deserialize(is), std::invalid_argument);
 }
@@ -548,7 +548,7 @@ TEST_CASE("deserialize bytes rejects NaN centroid mean", "[tdigest]") {
   tdigest_double td(100);
   for (int i = 0; i < 10; ++i) td.update(i);
   auto bytes = td.serialize();
-  write_bytes(bytes, kFirstCentroidMeanOffset, std::numeric_limits<double>::quiet_NaN());
+  write_bytes(bytes, first_centroid_mean_offset, std::numeric_limits<double>::quiet_NaN());
   REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
 }
 
@@ -557,7 +557,7 @@ TEST_CASE("deserialize bytes rejects NaN buffered value", "[tdigest]") {
   td.update(1.0);
   td.update(2.0);
   auto bytes = td.serialize(0, true);
-  write_bytes(bytes, kFirstBufferedValueOffset, std::numeric_limits<double>::quiet_NaN());
+  write_bytes(bytes, first_buffered_value_offset, std::numeric_limits<double>::quiet_NaN());
   REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
 }
 
@@ -565,7 +565,7 @@ TEST_CASE("deserialize bytes rejects infinity single value", "[tdigest]") {
   tdigest_double td(100);
   td.update(1.0);
   auto bytes = td.serialize();
-  write_bytes(bytes, kSingleValueOffset, std::numeric_limits<double>::infinity());
+  write_bytes(bytes, single_value_offset, std::numeric_limits<double>::infinity());
   REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
 }
 
@@ -574,7 +574,7 @@ TEST_CASE("deserialize bytes rejects NaN max", "[tdigest]") {
   td.update(1.0);
   td.update(2.0);
   auto bytes = td.serialize();
-  write_bytes(bytes, kMaxOffset, std::numeric_limits<double>::quiet_NaN());
+  write_bytes(bytes, max_offset, std::numeric_limits<double>::quiet_NaN());
   REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
 }
 
@@ -583,7 +583,7 @@ TEST_CASE("deserialize bytes rejects infinity max", "[tdigest]") {
   td.update(1.0);
   td.update(2.0);
   auto bytes = td.serialize();
-  write_bytes(bytes, kMaxOffset, std::numeric_limits<double>::infinity());
+  write_bytes(bytes, max_offset, std::numeric_limits<double>::infinity());
   REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
 }
 
@@ -592,7 +592,7 @@ TEST_CASE("deserialize bytes rejects infinity buffered value", "[tdigest]") {
   td.update(1.0);
   td.update(2.0);
   auto bytes = td.serialize(0, true);
-  write_bytes(bytes, kFirstBufferedValueOffset, std::numeric_limits<double>::infinity());
+  write_bytes(bytes, first_buffered_value_offset, std::numeric_limits<double>::infinity());
   REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
 }
 
