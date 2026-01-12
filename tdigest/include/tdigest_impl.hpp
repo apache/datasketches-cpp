@@ -37,6 +37,7 @@ tdigest(false, k, std::numeric_limits<T>::infinity(), -std::numeric_limits<T>::i
 template<typename T, typename A>
 void tdigest<T, A>::update(T value) {
   if (std::isnan(value)) return;
+  if (std::isinf(value)) return;
   if (buffer_.size() == centroids_capacity_ * BUFFER_MULTIPLIER) compress();
   buffer_.push_back(value);
   min_ = std::min(min_, value);
@@ -94,6 +95,7 @@ template<typename T, typename A>
 double tdigest<T, A>::get_rank(T value) const {
   if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   if (std::isnan(value)) throw std::invalid_argument("operation is undefined for NaN");
+  if (std::isinf(value)) throw std::invalid_argument("operation is undefined for infinity");
   if (value < min_) return 0;
   if (value > max_) return 1;
   // one centroid and value == min_ == max_
@@ -620,6 +622,9 @@ void tdigest<T, A>::check_split_points(const T* values, uint32_t size) {
   for (uint32_t i = 0; i < size ; i++) {
     if (std::isnan(values[i])) {
       throw std::invalid_argument("Values must not be NaN");
+    }
+    if (std::isinf(values[i])) {
+      throw std::invalid_argument("Values must not be infinity");
     }
     if ((i < (size - 1)) && !(values[i] < values[i + 1])) {
       throw std::invalid_argument("Values must be unique and monotonically increasing");

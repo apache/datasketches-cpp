@@ -470,4 +470,57 @@ TEST_CASE("iterate centroids", "[tdigest]") {
   REQUIRE(td.get_total_weight() == total_weight);
 }
 
+TEST_CASE("update rejects positive infinity", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  td.update(std::numeric_limits<double>::infinity());
+  REQUIRE(td.get_total_weight() == 2);
+  REQUIRE(td.get_max_value() == 2.0);
+}
+
+TEST_CASE("update rejects negative infinity", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  td.update(-std::numeric_limits<double>::infinity());
+  REQUIRE(td.get_total_weight() == 2);
+  REQUIRE(td.get_min_value() == 1.0);
+}
+
+TEST_CASE("get_rank rejects positive infinity", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  REQUIRE_THROWS_AS(td.get_rank(std::numeric_limits<double>::infinity()), std::invalid_argument);
+}
+
+TEST_CASE("get_rank rejects negative infinity", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  REQUIRE_THROWS_AS(td.get_rank(-std::numeric_limits<double>::infinity()), std::invalid_argument);
+}
+
+TEST_CASE("get_CDF rejects positive infinity in split points", "[tdigest]") {
+  tdigest_double td(100);
+  for (int i = 0; i < 100; ++i) td.update(i);
+  const double split_points[2] = {50.0, std::numeric_limits<double>::infinity()};
+  REQUIRE_THROWS_AS(td.get_CDF(split_points, 2), std::invalid_argument);
+}
+
+TEST_CASE("get_CDF rejects negative infinity in split points", "[tdigest]") {
+  tdigest_double td(100);
+  for (int i = 0; i < 100; ++i) td.update(i);
+  const double split_points[2] = {-std::numeric_limits<double>::infinity(), 50.0};
+  REQUIRE_THROWS_AS(td.get_CDF(split_points, 2), std::invalid_argument);
+}
+
+TEST_CASE("get_PMF rejects infinity in split points", "[tdigest]") {
+  tdigest_double td(100);
+  for (int i = 0; i < 100; ++i) td.update(i);
+  const double split_points[1] = {std::numeric_limits<double>::infinity()};
+  REQUIRE_THROWS_AS(td.get_PMF(split_points, 1), std::invalid_argument);
+}
+
 } /* namespace datasketches */
