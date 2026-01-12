@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <sstream>
 
 #include "common_defs.hpp"
 #include "memory_operations.hpp"
