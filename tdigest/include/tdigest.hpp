@@ -154,6 +154,7 @@ public:
    * Compute approximate normalized rank of the given value.
    *
    * <p>If the sketch is empty this throws std::runtime_error.
+   * <p>NaN value throw std::invalid_argument.
    *
    * @param value to be ranked
    * @return normalized rank (from 0 to 1 inclusive)
