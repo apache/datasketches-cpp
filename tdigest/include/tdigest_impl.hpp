@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <sstream>
+#include <type_traits>
 
 #include "common_defs.hpp"
 #include "memory_operations.hpp"
@@ -40,6 +41,14 @@ template<typename T>
 inline void check_not_infinite(T value, const char* name) {
   if (std::isinf(value)) {
     throw std::invalid_argument(std::string(name) + " must not be infinite");
+  }
+}
+
+template<typename T>
+inline void check_non_zero(T value, const char* name) {
+  static_assert(std::is_arithmetic<T>::value, "T must be an arithmetic type");
+  if (value == 0) {
+    throw std::invalid_argument(std::string(name) + " must not be zero");
   }
 }
 
@@ -437,6 +446,8 @@ tdigest<T, A> tdigest<T, A>::deserialize(std::istream& is, const A& allocator) {
   for (const auto& c: centroids) {
     check_not_nan(c.get_mean(), "centroid mean");
     check_not_infinite(c.get_mean(), "centroid mean");
+    check_non_zero(c.get_weight(), "centroid weight");
+
     weight += c.get_weight();
   }
   for (const auto& value: buffer) {
@@ -508,6 +519,8 @@ tdigest<T, A> tdigest<T, A>::deserialize(const void* bytes, size_t size, const A
   for (const auto& c: centroids) {
     check_not_nan(c.get_mean(), "centroid mean");
     check_not_infinite(c.get_mean(), "centroid mean");
+    check_non_zero(c.get_weight(), "centroid weight");
+
     weight += c.get_weight();
   }
   for (const auto& value: buffer) {
@@ -542,6 +555,8 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
       const auto weight_double = read_big_endian<double>(is);
       check_not_nan(weight_double, "centroid weight");
       check_not_infinite(weight_double, "centroid weight");
+      check_non_zero(weight_double, "centroid weight");
+
       const auto mean = read_big_endian<double>(is);
       check_not_nan(mean, "centroid mean");
       check_not_infinite(mean, "centroid mean");
