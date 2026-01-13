@@ -109,7 +109,6 @@ template<typename T, typename A>
 double tdigest<T, A>::get_rank(T value) const {
   if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
   if (std::isnan(value)) throw std::invalid_argument("operation is undefined for NaN");
-  if (std::isinf(value)) throw std::invalid_argument("operation is undefined for infinity");
   if (value < min_) return 0;
   if (value > max_) return 1;
   // one centroid and value == min_ == max_

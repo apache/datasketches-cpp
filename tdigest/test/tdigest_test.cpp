@@ -510,20 +510,6 @@ TEST_CASE("update rejects negative infinity", "[tdigest]") {
   REQUIRE(td.get_min_value() == 1.0);
 }
 
-TEST_CASE("get_rank rejects positive infinity", "[tdigest]") {
-  tdigest_double td(100);
-  td.update(1.0);
-  td.update(2.0);
-  REQUIRE_THROWS_AS(td.get_rank(std::numeric_limits<double>::infinity()), std::invalid_argument);
-}
-
-TEST_CASE("get_rank rejects negative infinity", "[tdigest]") {
-  tdigest_double td(100);
-  td.update(1.0);
-  td.update(2.0);
-  REQUIRE_THROWS_AS(td.get_rank(-std::numeric_limits<double>::infinity()), std::invalid_argument);
-}
-
 TEST_CASE("deserialize bytes rejects NaN single value", "[tdigest]") {
   tdigest_double td(100);
   td.update(1.0);
