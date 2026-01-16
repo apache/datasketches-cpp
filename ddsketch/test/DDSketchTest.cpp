@@ -550,47 +550,5 @@ TEMPLATE_TEST_CASE("DDSketch serialize - deserialize test", "[ddsketch][random]"
     ss.clear();
 
   }
-
-
-}
-
-TEST_CASE("quantile", "[ddsketch]") {
-  DDSketch<CollapsingLowestDenseStore<8, A>, LinearlyInterpolatedMapping> sk(0.01);
-  std::random_device rd{};
-  std::mt19937_64 gen{rd()};
-  // std::normal_distribution<double> d(0.0, 1.0);
-  std::exponential_distribution<double> d(1.5);
-  int sample_size = 10000000;
-
-  std::vector<double> values;
-
-  tdigest<double, A> td(100);
-  DDSketch<CollapsingLowestDenseStore<4096, A>, LogarithmicMapping> ddsketch(0.001);
-  DDSketch<SparseStore<A>, LogarithmicMapping> sparse_sk(0.01);
-  for (size_t i = 0; i < sample_size; ++i) {
-    double val = d(gen);
-    values.push_back(val);
-    ddsketch.update(val);
-    sparse_sk.update(val);
-    td.update(val);
-  }
-
-  std::sort(values.begin(), values.end());
-
-
-  std::cout << ddsketch.to_string();
-  std::cout << std::endl;
-  std::cout << sparse_sk.to_string();
-  std::cout << std::endl;
-  std::cout << td.to_string();
-
-  std::cout << std::setprecision(20) << std::fixed;
-  for (double q = 0.0; q <= 1.00; q += 0.01) {
-    const double true_q =  values[(sample_size-1) * q];
-    const double ddsketch_est = std::abs(true_q - ddsketch.get_quantile(q)) / true_q;
-    const double tdigest_est = std::abs(true_q - td.get_quantile(q)) / true_q;
-    std::cout << q << " " << ddsketch_est << " " << tdigest_est << std::endl;
-    // std::cout << std::setw(4) << q << " " << values[(sample_size-1) * q] << " "  << std::setw(15) << ddsketch.get_quantile(q) << " " << std::setw(15) << sparse_sk.get_quantile(q) << " " << std::setw(15) << td.get_quantile(q) << " " << std::endl;
-  }
 }
 } /* namespace datasketches */
