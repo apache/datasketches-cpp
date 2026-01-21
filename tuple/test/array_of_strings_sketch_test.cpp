@@ -1,0 +1,243 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+#include <algorithm>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <catch2/catch.hpp>
+
+#include "array_of_strings_sketch.hpp"
+
+namespace datasketches {
+
+using array_of_strings = array<std::string>;
+
+TEST_CASE("aos update policy", "[tuple_sketch]") {
+  default_array_of_strings_update_policy<> policy;
+
+  SECTION("create empty") {
+    auto values = policy.create();
+    REQUIRE(values.size() == 0);
+  }
+
+  SECTION("replace array") {
+    auto values = policy.create();
+
+    array_of_strings input(2, "", std::allocator<std::string>());
+    input[0] = "alpha";
+    input[1] = "beta";
+    policy.update(values, input);
+    REQUIRE(values.size() == 2);
+    REQUIRE(values[0] == "alpha");
+    REQUIRE(values[1] == "beta");
+    input[0] = "changed";
+    REQUIRE(values[0] == "alpha");
+
+    array_of_strings input2(1, "", std::allocator<std::string>());
+    input2[0] = "gamma";
+    policy.update(values, input2);
+    REQUIRE(values.size() == 1);
+    REQUIRE(values[0] == "gamma");
+  }
+
+  SECTION("nullptr clears") {
+    array_of_strings values(2, "", std::allocator<std::string>());
+    values[0] = "one";
+    values[1] = "two";
+
+    policy.update(values, static_cast<const array_of_strings*>(nullptr));
+    REQUIRE(values.size() == 0);
+  }
+
+  SECTION("pointer input copies") {
+    auto values = policy.create();
+
+    array_of_strings input(2, "", std::allocator<std::string>());
+    input[0] = "first";
+    input[1] = "second";
+    policy.update(values, &input);
+    REQUIRE(values.size() == 2);
+    REQUIRE(values[1] == "second");
+    input[1] = "changed";
+    REQUIRE(values[1] == "second");
+  }
+}
+
+TEST_CASE("aos sketch update", "[tuple_sketch]") {
+  auto make_array = [](std::initializer_list<const char*> entries) {
+    array_of_strings array(static_cast<uint8_t>(entries.size()), "", std::allocator<std::string>());
+    uint8_t i = 0;
+    for (const auto* entry: entries) array[i++] = entry;
+    return array;
+  };
+
+  SECTION("same key replaces summary") {
+    auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
+
+    sketch.update(make_array({"alpha", "beta"}), make_array({"first"}));
+    sketch.update(make_array({"alpha", "beta"}), make_array({"second", "third"}));
+
+    REQUIRE(sketch.get_num_retained() == 1);
+
+    auto it = sketch.begin();
+    REQUIRE(it != sketch.end());
+    REQUIRE(it->second.size() == 2);
+    REQUIRE(it->second[0] == "second");
+    REQUIRE(it->second[1] == "third");
+  }
+
+  SECTION("distinct keys retain multiple entries") {
+    auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
+
+    sketch.update(make_array({"a", "bc"}), make_array({"one"}));
+    sketch.update(make_array({"ab", "c"}), make_array({"two"}));
+
+    REQUIRE(sketch.get_num_retained() == 2);
+
+    bool saw_one = false;
+    bool saw_two = false;
+    for (const auto& entry: sketch) {
+      REQUIRE(entry.second.size() == 1);
+      if (entry.second[0] == "one") saw_one = true;
+      if (entry.second[0] == "two") saw_two = true;
+    }
+    REQUIRE(saw_one);
+    REQUIRE(saw_two);
+  }
+
+  SECTION("empty key") {
+    auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
+
+    sketch.update(make_array({}), make_array({"value"}));
+    REQUIRE(sketch.get_num_retained() == 1);
+
+    auto it = sketch.begin();
+    REQUIRE(it != sketch.end());
+    REQUIRE(it->second.size() == 1);
+    REQUIRE(it->second[0] == "value");
+  }
+}
+
+TEST_CASE("aos sketch: serialize deserialize", "[tuple_sketch]") {
+  auto make_array = [](std::initializer_list<std::string> entries) {
+    array_of_strings array(static_cast<uint8_t>(entries.size()), "", std::allocator<std::string>());
+    uint8_t i = 0;
+    for (const auto& entry: entries) array[i++] = entry;
+    return array;
+  };
+
+  auto collect_entries = [](const compact_array_of_strings_tuple_sketch<>& sketch) {
+    typedef std::pair<uint64_t, array_of_strings> entry_type;
+    std::vector<entry_type> entries;
+    for (const auto& entry: sketch) entries.push_back(entry);
+    struct entry_less {
+      bool operator()(const entry_type& lhs, const entry_type& rhs) const {
+        return lhs.first < rhs.first;
+      }
+    };
+    std::sort(entries.begin(), entries.end(), entry_less());
+    return entries;
+  };
+
+  auto check_round_trip = [&](const compact_array_of_strings_tuple_sketch<>& compact_sketch) {
+    std::stringstream ss;
+    ss.exceptions(std::ios::failbit | std::ios::badbit);
+    compact_sketch.serialize(ss);
+    auto deserialized_stream = compact_array_of_strings_tuple_sketch<>::deserialize(ss);
+
+    auto bytes = compact_sketch.serialize();
+    auto deserialized_bytes = compact_array_of_strings_tuple_sketch<>::deserialize(bytes.data(), bytes.size());
+
+    const compact_array_of_strings_tuple_sketch<>* deserialized_list[2] = {
+      &deserialized_stream,
+      &deserialized_bytes
+    };
+    for (int list_index = 0; list_index < 2; ++list_index) {
+      const compact_array_of_strings_tuple_sketch<>* deserialized = deserialized_list[list_index];
+      REQUIRE(compact_sketch.is_empty() == deserialized->is_empty());
+      REQUIRE(compact_sketch.is_estimation_mode() == deserialized->is_estimation_mode());
+      REQUIRE(compact_sketch.is_ordered() == deserialized->is_ordered());
+      REQUIRE(compact_sketch.get_num_retained() == deserialized->get_num_retained());
+      REQUIRE(compact_sketch.get_theta() == Approx(deserialized->get_theta()).margin(1e-10));
+      REQUIRE(compact_sketch.get_estimate() == Approx(deserialized->get_estimate()).margin(1e-10));
+      REQUIRE(compact_sketch.get_lower_bound(1) == Approx(deserialized->get_lower_bound(1)).margin(1e-10));
+      REQUIRE(compact_sketch.get_upper_bound(1) == Approx(deserialized->get_upper_bound(1)).margin(1e-10));
+
+      auto original_entries = collect_entries(compact_sketch);
+      auto round_trip_entries = collect_entries(*deserialized);
+      REQUIRE(original_entries.size() == round_trip_entries.size());
+      for (size_t i = 0; i < original_entries.size(); ++i) {
+        REQUIRE(original_entries[i].first == round_trip_entries[i].first);
+        REQUIRE(original_entries[i].second.size() == round_trip_entries[i].second.size());
+        for (size_t j = 0; j < original_entries[i].second.size(); ++j) {
+          REQUIRE(original_entries[i].second[static_cast<uint8_t>(j)] ==
+            round_trip_entries[i].second[static_cast<uint8_t>(j)]);
+        }
+      }
+    }
+  };
+
+  auto exercise_ordering = [&](const update_array_of_strings_tuple_sketch<>& sketch) {
+    auto ordered = sketch.compact(true);
+    auto unordered = sketch.compact(false);
+    check_round_trip(ordered);
+    check_round_trip(unordered);
+  };
+
+  SECTION("empty sketch") {
+    auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
+    exercise_ordering(sketch);
+  }
+
+  SECTION("single entry sketch") {
+    auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
+    sketch.update(make_array({"key"}), make_array({"value"}));
+    exercise_ordering(sketch);
+  }
+
+  SECTION("multiple entries exact mode") {
+    auto sketch = update_array_of_strings_tuple_sketch<>::builder().set_lg_k(8).build();
+    for (int i = 0; i < 50; ++i) {
+      sketch.update(
+        make_array({std::string("key-") + std::to_string(i)}),
+        make_array({std::string("value-") + std::to_string(i), "extra"})
+      );
+    }
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+    exercise_ordering(sketch);
+  }
+
+  SECTION("multiple entries estimation mode") {
+    auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
+    for (int i = 0; i < 10000; ++i) {
+      sketch.update(
+        make_array({std::string("key-") + std::to_string(i)}),
+        make_array({std::string("value-") + std::to_string(i)})
+      );
+    }
+    REQUIRE(sketch.is_estimation_mode());
+    exercise_ordering(sketch);
+  }
+}
+
+} /* namespace datasketches */
