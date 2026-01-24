@@ -39,6 +39,7 @@ target_sources(tdigest_test
   PRIVATE
     tdigest_test.cpp
     tdigest_custom_allocator_test.cpp
+    tdigest_iterator_test.cpp
 )
 
 if (SERDE_COMPAT)
