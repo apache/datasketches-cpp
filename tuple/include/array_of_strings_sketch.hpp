@@ -49,8 +49,11 @@ private:
 // serializer/deserializer for an array of strings
 // Requirements: all strings must be valid UTF-8 and array size must be <= 127.
 template<typename Allocator = std::allocator<std::string>>
-struct array_of_strings_serde {
+struct default_array_of_strings_serde {
   using array_of_strings = array<std::string, Allocator>;
+  using summary_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<array_of_strings>;
+
+  explicit default_array_of_strings_serde(const Allocator& allocator = Allocator());
 
   void serialize(std::ostream& os, const array_of_strings* items, unsigned num) const;
   void deserialize(std::istream& is, array_of_strings* items, unsigned num) const;
@@ -59,6 +62,8 @@ struct array_of_strings_serde {
   size_t size_of_item(const array_of_strings& item) const;
 
 private:
+  Allocator allocator_;
+  summary_allocator summary_allocator_;
   static void check_num_nodes(uint8_t num_nodes);
   static uint32_t compute_total_bytes(const array_of_strings& item);
   static void check_utf8(const std::string& value);
@@ -79,17 +84,41 @@ public:
   using summary_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<array_of_strings>;
   using Base = compact_tuple_sketch<array_of_strings, summary_allocator>;
   using vector_bytes = typename Base::vector_bytes;
+  using Base::serialize;
 
+  /**
+   * Copy constructor.
+   * Constructs a compact sketch from another sketch (update or compact)
+   * @param other sketch to be constructed from
+   * @param ordered if true make the resulting sketch ordered
+   */
   template<typename Sketch>
   compact_array_of_strings_tuple_sketch(const Sketch& sketch, bool ordered = true);
 
-  void serialize(std::ostream& os) const;
-  vector_bytes serialize(unsigned header_size_bytes = 0) const;
-
+  /**
+   * This method deserializes a sketch from a given stream.
+   * @param is input stream
+   * @param seed the seed for the hash function that was used to create the sketch
+   * @param sd instance of a SerDe
+   * @param allocator instance of an Allocator
+   * @return an instance of the sketch
+   */
+  template<typename SerDe = default_array_of_strings_serde<Allocator>>
   static compact_array_of_strings_tuple_sketch deserialize(std::istream& is, uint64_t seed = DEFAULT_SEED,
-      const Allocator& allocator = Allocator());
+      const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
+
+  /**
+   * This method deserializes a sketch from a given array of bytes.
+   * @param bytes pointer to the array of bytes
+   * @param size the size of the array
+   * @param seed the seed for the hash function that was used to create the sketch
+   * @param sd instance of a SerDe
+   * @param allocator instance of an Allocator
+   * @return an instance of the sketch
+   */
+  template<typename SerDe = default_array_of_strings_serde<Allocator>>
   static compact_array_of_strings_tuple_sketch deserialize(const void* bytes, size_t size, uint64_t seed = DEFAULT_SEED,
-      const Allocator& allocator = Allocator());
+      const SerDe& sd = SerDe(), const Allocator& allocator = Allocator());
 
 private:
   explicit compact_array_of_strings_tuple_sketch(Base&& base);
@@ -97,20 +126,20 @@ private:
 
 /**
  * Extended class of update_tuple_sketch for array of strings
- * Requirements: all strings must be valid UTF-8 and array size must be <= 127.
  */
-template<typename Allocator = std::allocator<std::string>>
+template<template<typename> class Policy = default_array_of_strings_update_policy,
+         typename Allocator = std::allocator<std::string>>
 class update_array_of_strings_tuple_sketch:
   public update_tuple_sketch<
     array<std::string, Allocator>,
     array<std::string, Allocator>,
-    default_array_of_strings_update_policy<Allocator>,
+    Policy<Allocator>,
     typename std::allocator_traits<Allocator>::template rebind_alloc<array<std::string, Allocator>>
   > {
 public:
   using array_of_strings = array<std::string, Allocator>;
   using summary_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<array_of_strings>;
-  using policy_type = default_array_of_strings_update_policy<Allocator>;
+  using policy_type = Policy<Allocator>;
   using Base = update_tuple_sketch<
     array_of_strings,
     array_of_strings,
@@ -121,7 +150,18 @@ public:
   class builder;
   using Base::update;
 
+  /**
+   * Updates the sketch with string array for both key and value.
+   * @param key the given string array key
+   * @param value the given string array value
+   */
   void update(const array_of_strings& key, const array_of_strings& value);
+
+  /**
+   * Converts this sketch to a compact sketch (ordered or unordered).
+   * @param ordered optional flag to specify if an ordered sketch should be produced
+   * @return compact array of strings sketch
+   */
   compact_array_of_strings_tuple_sketch<Allocator> compact(bool ordered = true) const;
 
 private:
@@ -134,8 +174,8 @@ private:
   static uint64_t hash_key(const array_of_strings& key);
 };
 
-template<typename Allocator>
-class update_array_of_strings_tuple_sketch<Allocator>::builder:
+template<template<typename> class Policy, typename Allocator>
+class update_array_of_strings_tuple_sketch<Policy, Allocator>::builder:
   public tuple_base_builder<builder, policy_type, summary_allocator> {
 public:
   builder(const policy_type& policy = policy_type(), const summary_allocator& allocator = summary_allocator());

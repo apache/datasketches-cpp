@@ -40,9 +40,9 @@ template<typename Allocator>
 void default_array_of_strings_update_policy<Allocator>::update(
   array_of_strings& array, const array_of_strings& input
 ) const {
-  const auto length = input.size();
-  array = array_of_strings(length, "", allocator_);
-  for (uint8_t i = 0; i < length; ++i) array[i] = input[i];
+  const auto length = static_cast<size_t>(input.size());
+  array = array_of_strings(static_cast<uint8_t>(length), "", allocator_);
+  for (size_t i = 0; i < length; ++i) array[i] = input[i];
 }
 
 template<typename Allocator>
@@ -53,53 +53,53 @@ void default_array_of_strings_update_policy<Allocator>::update(
     array = array_of_strings(0, "", allocator_);
     return;
   }
-  const auto length = input->size();
-  array = array_of_strings(length, "", allocator_);
-  for (uint8_t i = 0; i < length; ++i) array[i] = (*input)[i];
+  const auto length = static_cast<size_t>(input->size());
+  array = array_of_strings(static_cast<uint8_t>(length), "", allocator_);
+  for (size_t i = 0; i < length; ++i) array[i] = (*input)[i];
 }
 
-template<typename Allocator>
-update_array_of_strings_tuple_sketch<Allocator>::update_array_of_strings_tuple_sketch(
+template<template<typename> class Policy, typename Allocator>
+update_array_of_strings_tuple_sketch<Policy, Allocator>::update_array_of_strings_tuple_sketch(
   uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta,
   uint64_t seed, const policy_type& policy, const summary_allocator& allocator
 ):
 Base(lg_cur_size, lg_nom_size, rf, p, theta, seed, policy, allocator) {}
 
-template<typename Allocator>
-void update_array_of_strings_tuple_sketch<Allocator>::update(
+template<template<typename> class Policy, typename Allocator>
+void update_array_of_strings_tuple_sketch<Policy, Allocator>::update(
   const array_of_strings& key, const array_of_strings& value
 ) {
   const uint64_t hash = hash_key(key);
   Base::update(hash, value);
 }
 
-template<typename Allocator>
-uint64_t update_array_of_strings_tuple_sketch<Allocator>::hash_key(const array_of_strings& key) {
+template<template<typename> class Policy, typename Allocator>
+uint64_t update_array_of_strings_tuple_sketch<Policy, Allocator>::hash_key(const array_of_strings& key) {
   XXHash64 hasher(STRING_ARR_HASH_SEED);
   const auto size = static_cast<size_t>(key.size());
   for (size_t i = 0; i < size; ++i) {
-    const auto& entry = key[static_cast<uint8_t>(i)];
+    const auto& entry = key[i];
     hasher.add(entry.data(), entry.size());
     if (i + 1 < size) hasher.add(",", 1);
   }
   return hasher.hash();
 }
 
-template<typename Allocator>
-compact_array_of_strings_tuple_sketch<Allocator> update_array_of_strings_tuple_sketch<Allocator>::compact(bool ordered) const {
+template<template<typename> class Policy, typename Allocator>
+compact_array_of_strings_tuple_sketch<Allocator> update_array_of_strings_tuple_sketch<Policy, Allocator>::compact(bool ordered) const {
   return compact_array_of_strings_tuple_sketch<Allocator>(*this, ordered);
 }
 
 // builder
 
-template<typename Allocator>
-update_array_of_strings_tuple_sketch<Allocator>::builder::builder(
+template<template<typename> class Policy, typename Allocator>
+update_array_of_strings_tuple_sketch<Policy, Allocator>::builder::builder(
   const policy_type& policy, const summary_allocator& allocator
 ):
 tuple_base_builder<builder, policy_type, summary_allocator>(policy, allocator) {}
 
-template<typename Allocator>
-auto update_array_of_strings_tuple_sketch<Allocator>::builder::build() const -> update_array_of_strings_tuple_sketch {
+template<template<typename> class Policy, typename Allocator>
+auto update_array_of_strings_tuple_sketch<Policy, Allocator>::builder::build() const -> update_array_of_strings_tuple_sketch {
   return update_array_of_strings_tuple_sketch(
     this->starting_lg_size(),
     this->lg_k_,
@@ -124,35 +124,32 @@ compact_array_of_strings_tuple_sketch<Allocator>::compact_array_of_strings_tuple
 ): Base(std::move(base)) {}
 
 template<typename Allocator>
-void compact_array_of_strings_tuple_sketch<Allocator>::serialize(std::ostream& os) const {
-  Base::serialize(os, array_of_strings_serde<Allocator>());
-}
-
-template<typename Allocator>
-auto compact_array_of_strings_tuple_sketch<Allocator>::serialize(unsigned header_size_bytes) const -> vector_bytes {
-  return Base::serialize(header_size_bytes, array_of_strings_serde<Allocator>());
-}
-
-template<typename Allocator>
+template<typename SerDe>
 auto compact_array_of_strings_tuple_sketch<Allocator>::deserialize(
-  std::istream& is, uint64_t seed, const Allocator& allocator
+  std::istream& is, uint64_t seed, const SerDe& sd, const Allocator& allocator
 ) -> compact_array_of_strings_tuple_sketch {
   summary_allocator alloc(allocator);
-  auto base = Base::deserialize(is, seed, array_of_strings_serde<Allocator>(), alloc);
+  auto base = Base::deserialize(is, seed, sd, alloc);
   return compact_array_of_strings_tuple_sketch(std::move(base));
 }
 
 template<typename Allocator>
+template<typename SerDe>
 auto compact_array_of_strings_tuple_sketch<Allocator>::deserialize(
-  const void* bytes, size_t size, uint64_t seed, const Allocator& allocator
+  const void* bytes, size_t size, uint64_t seed, const SerDe& sd, const Allocator& allocator
 ) -> compact_array_of_strings_tuple_sketch {
   summary_allocator alloc(allocator);
-  auto base = Base::deserialize(bytes, size, seed, array_of_strings_serde<Allocator>(), alloc);
+  auto base = Base::deserialize(bytes, size, seed, sd, alloc);
   return compact_array_of_strings_tuple_sketch(std::move(base));
 }
 
 template<typename Allocator>
-void array_of_strings_serde<Allocator>::serialize(
+default_array_of_strings_serde<Allocator>::default_array_of_strings_serde(const Allocator& allocator):
+  allocator_(allocator),
+  summary_allocator_(allocator) {}
+
+template<typename Allocator>
+void default_array_of_strings_serde<Allocator>::serialize(
   std::ostream& os, const array_of_strings* items, unsigned num
 ) const {
   for (unsigned i = 0; i < num; ++i) {
@@ -171,27 +168,34 @@ void array_of_strings_serde<Allocator>::serialize(
 }
 
 template<typename Allocator>
-void array_of_strings_serde<Allocator>::deserialize(
+void default_array_of_strings_serde<Allocator>::deserialize(
   std::istream& is, array_of_strings* items, unsigned num
 ) const {
   for (unsigned i = 0; i < num; ++i) {
     read<uint32_t>(is); // total_bytes
+    if (!is) throw std::runtime_error("array_of_strings stream read failed");
     const uint8_t num_nodes = read<uint8_t>(is);
+    if (!is) throw std::runtime_error("array_of_strings stream read failed");
     check_num_nodes(num_nodes);
-    array_of_strings array(num_nodes, "", Allocator());
+    array_of_strings array(num_nodes, "", allocator_);
     for (uint8_t j = 0; j < num_nodes; ++j) {
       const uint32_t length = read<uint32_t>(is);
+      if (!is) throw std::runtime_error("array_of_strings stream read failed");
       std::string value(length, '\0');
-      is.read(&value[0], length);
+      if (length != 0) {
+        is.read(value.data(), length);
+        if (!is) throw std::runtime_error("array_of_strings stream read failed");
+      }
       check_utf8(value);
       array[j] = std::move(value);
     }
-    new (&items[i]) array_of_strings(std::move(array));
+    summary_allocator alloc(summary_allocator_);
+    std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
   }
 }
 
 template<typename Allocator>
-size_t array_of_strings_serde<Allocator>::serialize(
+size_t default_array_of_strings_serde<Allocator>::serialize(
   void* ptr, size_t capacity, const array_of_strings* items, unsigned num
 ) const {
   uint8_t* ptr8 = static_cast<uint8_t*>(ptr);
@@ -216,7 +220,7 @@ size_t array_of_strings_serde<Allocator>::serialize(
 }
 
 template<typename Allocator>
-size_t array_of_strings_serde<Allocator>::deserialize(
+size_t default_array_of_strings_serde<Allocator>::deserialize(
   const void* ptr, size_t capacity, array_of_strings* items, unsigned num
 ) const {
   const uint8_t* ptr8 = static_cast<const uint8_t*>(ptr);
@@ -231,34 +235,37 @@ size_t array_of_strings_serde<Allocator>::deserialize(
     uint8_t num_nodes;
     bytes_read += copy_from_mem(ptr8 + bytes_read, num_nodes);
     check_num_nodes(num_nodes);
-    array_of_strings array(num_nodes, "", Allocator());
+    array_of_strings array(num_nodes, "", allocator_);
     for (uint8_t j = 0; j < num_nodes; ++j) {
       uint32_t length;
       bytes_read += copy_from_mem(ptr8 + bytes_read, length);
       std::string value(length, '\0');
-      bytes_read += copy_from_mem(ptr8 + bytes_read, &value[0], length);
+      if (length != 0) {
+        bytes_read += copy_from_mem(ptr8 + bytes_read, value.data(), length);
+      }
       check_utf8(value);
       array[j] = std::move(value);
     }
-    new (&items[i]) array_of_strings(std::move(array));
+    summary_allocator alloc(summary_allocator_);
+    std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
   }
   return bytes_read;
 }
 
 template<typename Allocator>
-size_t array_of_strings_serde<Allocator>::size_of_item(const array_of_strings& item) const {
+size_t default_array_of_strings_serde<Allocator>::size_of_item(const array_of_strings& item) const {
   return compute_total_bytes(item);
 }
 
 template<typename Allocator>
-void array_of_strings_serde<Allocator>::check_num_nodes(uint8_t num_nodes) {
+void default_array_of_strings_serde<Allocator>::check_num_nodes(uint8_t num_nodes) {
   if (num_nodes > 127) {
     throw std::runtime_error("array_of_strings size exceeds 127");
   }
 }
 
 template<typename Allocator>
-uint32_t array_of_strings_serde<Allocator>::compute_total_bytes(const array_of_strings& item) {
+uint32_t default_array_of_strings_serde<Allocator>::compute_total_bytes(const array_of_strings& item) {
   const auto count = item.size();
   check_num_nodes(static_cast<uint8_t>(count));
   size_t total = sizeof(uint32_t) + sizeof(uint8_t) + count * sizeof(uint32_t);
@@ -273,7 +280,7 @@ uint32_t array_of_strings_serde<Allocator>::compute_total_bytes(const array_of_s
 }
 
 template<typename Allocator>
-void array_of_strings_serde<Allocator>::check_utf8(const std::string& value) {
+void default_array_of_strings_serde<Allocator>::check_utf8(const std::string& value) {
   if (!utf8::is_valid(value.begin(), value.end())) {
     throw std::runtime_error("array_of_strings contains invalid UTF-8");
   }

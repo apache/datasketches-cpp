@@ -52,7 +52,7 @@ TEST_CASE("aos sketch generate one value", "[serialize_for_java]") {
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
     std::ofstream os("aos_1_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
-    sketch.compact().serialize(os);
+    sketch.compact().serialize(os, default_array_of_strings_serde<>());
   }
 }
 
@@ -72,7 +72,7 @@ TEST_CASE("aos sketch generate three values", "[serialize_for_java]") {
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
     std::ofstream os("aos_3_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
-    sketch.compact().serialize(os);
+    sketch.compact().serialize(os, default_array_of_strings_serde<>());
   }
 }
 
@@ -90,7 +90,7 @@ TEST_CASE("aos sketch generate non-empty no entries", "[serialize_for_java]") {
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 0);
   std::ofstream os("aos_1_non_empty_no_entries_cpp.sk", std::ios::binary);
-  sketch.compact().serialize(os);
+  sketch.compact().serialize(os, default_array_of_strings_serde<>());
 }
 
 TEST_CASE("aos sketch generate multi key strings", "[serialize_for_java]") {
@@ -108,7 +108,7 @@ TEST_CASE("aos sketch generate multi key strings", "[serialize_for_java]") {
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
     std::ofstream os("aos_multikey_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
-    sketch.compact().serialize(os);
+    sketch.compact().serialize(os, default_array_of_strings_serde<>());
   }
 }
 
@@ -129,7 +129,7 @@ TEST_CASE("aos sketch generate unicode strings", "[serialize_for_java]") {
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 3);
   std::ofstream os("aos_unicode_cpp.sk", std::ios::binary);
-  sketch.compact().serialize(os);
+  sketch.compact().serialize(os, default_array_of_strings_serde<>());
 }
 
 TEST_CASE("aos sketch generate empty strings", "[serialize_for_java]") {
@@ -149,7 +149,7 @@ TEST_CASE("aos sketch generate empty strings", "[serialize_for_java]") {
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 3);
   std::ofstream os("aos_empty_strings_cpp.sk", std::ios::binary);
-  sketch.compact().serialize(os);
+  sketch.compact().serialize(os, default_array_of_strings_serde<>());
 }
 
 } /* namespace datasketches */

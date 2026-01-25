@@ -65,7 +65,7 @@ TEST_CASE("aos update policy", "[tuple_sketch]") {
     values[0] = "one";
     values[1] = "two";
 
-    policy.update(values, static_cast<const array_of_strings*>(nullptr));
+    policy.update(values, nullptr);
     REQUIRE(values.size() == 0);
   }
 
@@ -162,11 +162,15 @@ TEST_CASE("aos sketch: serialize deserialize", "[tuple_sketch]") {
   auto check_round_trip = [&](const compact_array_of_strings_tuple_sketch<>& compact_sketch) {
     std::stringstream ss;
     ss.exceptions(std::ios::failbit | std::ios::badbit);
-    compact_sketch.serialize(ss);
-    auto deserialized_stream = compact_array_of_strings_tuple_sketch<>::deserialize(ss);
+    compact_sketch.serialize(ss, default_array_of_strings_serde<>());
+    auto deserialized_stream = compact_array_of_strings_tuple_sketch<>::deserialize(
+      ss, DEFAULT_SEED, default_array_of_strings_serde<>()
+    );
 
-    auto bytes = compact_sketch.serialize();
-    auto deserialized_bytes = compact_array_of_strings_tuple_sketch<>::deserialize(bytes.data(), bytes.size());
+    auto bytes = compact_sketch.serialize(0, default_array_of_strings_serde<>());
+    auto deserialized_bytes = compact_array_of_strings_tuple_sketch<>::deserialize(
+      bytes.data(), bytes.size(), DEFAULT_SEED, default_array_of_strings_serde<>()
+    );
 
     const compact_array_of_strings_tuple_sketch<>* deserialized_list[2] = {
       &deserialized_stream,
