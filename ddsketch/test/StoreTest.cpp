@@ -23,6 +23,8 @@
 #include <climits>
 #include <map>
 #include <algorithm>
+#include <memory>
+#include <type_traits>
 
 #include "collapsing_highest_dense_store.hpp"
 #include "store_factory.hpp"
@@ -175,7 +177,7 @@ void assert_encode_bins(StoreType& store, const std::vector<Bin>& normalized_bin
 
 template<class StoreType>
 void test_copy(StoreType& store, const std::vector<Bin>& normalized_bins) {
-  auto store_copy = store->copy();
+  auto store_copy(store->copy());
   store->merge(*store_copy);
   assert_encode_bins(store_copy, normalized_bins);
   store->clear();
@@ -192,6 +194,7 @@ void test_copy(StoreType& store, const std::vector<Bin>& normalized_bins) {
   }
 
   assert_encode_bins(store, normalized_bins);
+  delete store_copy;
 }
 
 template<class StoreType>
