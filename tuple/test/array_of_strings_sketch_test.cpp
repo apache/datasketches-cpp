@@ -18,7 +18,6 @@
  */
 
 #include <algorithm>
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -94,8 +93,14 @@ TEST_CASE("aos sketch update", "[tuple_sketch]") {
   SECTION("same key replaces summary") {
     auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
 
-    sketch.update(make_array({"alpha", "beta"}), make_array({"first"}));
-    sketch.update(make_array({"alpha", "beta"}), make_array({"second", "third"}));
+    sketch.update(
+      hash_array_of_strings_key(make_array({"alpha", "beta"})),
+      make_array({"first"})
+    );
+    sketch.update(
+      hash_array_of_strings_key(make_array({"alpha", "beta"})),
+      make_array({"second", "third"})
+    );
 
     REQUIRE(sketch.get_num_retained() == 1);
 
@@ -109,8 +114,14 @@ TEST_CASE("aos sketch update", "[tuple_sketch]") {
   SECTION("distinct keys retain multiple entries") {
     auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
 
-    sketch.update(make_array({"a", "bc"}), make_array({"one"}));
-    sketch.update(make_array({"ab", "c"}), make_array({"two"}));
+    sketch.update(
+      hash_array_of_strings_key(make_array({"a", "bc"})),
+      make_array({"one"})
+    );
+    sketch.update(
+      hash_array_of_strings_key(make_array({"ab", "c"})),
+      make_array({"two"})
+    );
 
     REQUIRE(sketch.get_num_retained() == 2);
 
@@ -128,7 +139,7 @@ TEST_CASE("aos sketch update", "[tuple_sketch]") {
   SECTION("empty key") {
     auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
 
-    sketch.update(make_array({}), make_array({"value"}));
+    sketch.update(hash_array_of_strings_key(make_array({})), make_array({"value"}));
     REQUIRE(sketch.get_num_retained() == 1);
 
     auto it = sketch.begin();
@@ -201,46 +212,46 @@ TEST_CASE("aos sketch: serialize deserialize", "[tuple_sketch]") {
     }
   };
 
-  auto exercise_ordering = [&](const update_array_of_strings_tuple_sketch<>& sketch) {
-    auto ordered = sketch.compact(true);
-    auto unordered = sketch.compact(false);
+  auto run_tests = [&](const update_array_of_strings_tuple_sketch<>& sketch) {
+    auto ordered = compact_array_of_strings_sketch(sketch, true);
+    auto unordered = compact_array_of_strings_sketch(sketch, false);
     check_round_trip(ordered);
     check_round_trip(unordered);
   };
 
   SECTION("empty sketch") {
     auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
-    exercise_ordering(sketch);
+    run_tests(sketch);
   }
 
   SECTION("single entry sketch") {
     auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
-    sketch.update(make_array({"key"}), make_array({"value"}));
-    exercise_ordering(sketch);
+    sketch.update(hash_array_of_strings_key(make_array({"key"})), make_array({"value"}));
+    run_tests(sketch);
   }
 
   SECTION("multiple entries exact mode") {
     auto sketch = update_array_of_strings_tuple_sketch<>::builder().set_lg_k(8).build();
     for (int i = 0; i < 50; ++i) {
       sketch.update(
-        make_array({std::string("key-") + std::to_string(i)}),
+        hash_array_of_strings_key(make_array({std::string("key-") + std::to_string(i)})),
         make_array({std::string("value-") + std::to_string(i), "extra"})
       );
     }
     REQUIRE_FALSE(sketch.is_estimation_mode());
-    exercise_ordering(sketch);
+    run_tests(sketch);
   }
 
   SECTION("multiple entries estimation mode") {
     auto sketch = update_array_of_strings_tuple_sketch<>::builder().build();
     for (int i = 0; i < 10000; ++i) {
       sketch.update(
-        make_array({std::string("key-") + std::to_string(i)}),
+        hash_array_of_strings_key(make_array({std::string("key-") + std::to_string(i)})),
         make_array({std::string("value-") + std::to_string(i)})
       );
     }
     REQUIRE(sketch.is_estimation_mode());
-    exercise_ordering(sketch);
+    run_tests(sketch);
   }
 }
 

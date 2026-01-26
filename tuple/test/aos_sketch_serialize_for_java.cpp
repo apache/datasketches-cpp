@@ -26,7 +26,7 @@
 namespace datasketches {
 
 using aos_sketch = update_array_of_strings_tuple_sketch<>;
-using array_of_strings = aos_sketch::array_of_strings;
+using array_of_strings = array<std::string>;
 
 static array_of_strings make_array(std::initializer_list<std::string> items) {
   array_of_strings array(static_cast<uint8_t>(items.size()), "");
@@ -47,12 +47,12 @@ TEST_CASE("aos sketch generate one value", "[serialize_for_java]") {
       key[0] = std::to_string(i);
       array_of_strings value(1, "");
       value[0] = "value" + std::to_string(i);
-      sketch.update(key, value);
+      sketch.update(hash_array_of_strings_key(key), value);
     }
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
     std::ofstream os("aos_1_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
-    sketch.compact().serialize(os, default_array_of_strings_serde<>());
+    compact_array_of_strings_sketch(sketch).serialize(os, default_array_of_strings_serde<>());
   }
 }
 
@@ -67,12 +67,12 @@ TEST_CASE("aos sketch generate three values", "[serialize_for_java]") {
       value[0] = "a" + std::to_string(i);
       value[1] = "b" + std::to_string(i);
       value[2] = "c" + std::to_string(i);
-      sketch.update(key, value);
+      sketch.update(hash_array_of_strings_key(key), value);
     }
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
     std::ofstream os("aos_3_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
-    sketch.compact().serialize(os, default_array_of_strings_serde<>());
+    compact_array_of_strings_sketch(sketch).serialize(os, default_array_of_strings_serde<>());
   }
 }
 
@@ -86,11 +86,11 @@ TEST_CASE("aos sketch generate non-empty no entries", "[serialize_for_java]") {
   key[0] = "key1";
   array_of_strings value(1, "");
   value[0] = "value1";
-  sketch.update(key, value);
+  sketch.update(hash_array_of_strings_key(key), value);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 0);
   std::ofstream os("aos_1_non_empty_no_entries_cpp.sk", std::ios::binary);
-  sketch.compact().serialize(os, default_array_of_strings_serde<>());
+  compact_array_of_strings_sketch(sketch).serialize(os, default_array_of_strings_serde<>());
 }
 
 TEST_CASE("aos sketch generate multi key strings", "[serialize_for_java]") {
@@ -103,53 +103,44 @@ TEST_CASE("aos sketch generate multi key strings", "[serialize_for_java]") {
       key[1] = "subkey" + std::to_string(i % 10);
       array_of_strings value(1, "");
       value[0] = "value" + std::to_string(i);
-      sketch.update(key, value);
+      sketch.update(hash_array_of_strings_key(key), value);
     }
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
     std::ofstream os("aos_multikey_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
-    sketch.compact().serialize(os, default_array_of_strings_serde<>());
+    compact_array_of_strings_sketch(sketch).serialize(os, default_array_of_strings_serde<>());
   }
 }
 
 TEST_CASE("aos sketch generate unicode strings", "[serialize_for_java]") {
   auto sketch = aos_sketch::builder().build();
   sketch.update(
-    make_array({u8"키", u8"열쇠"}),
+    hash_array_of_strings_key(make_array({u8"키", u8"열쇠"})),
     make_array({u8"밸류", u8"값"})
   );
   sketch.update(
-    make_array({u8"🔑", u8"🗝️"}),
+    hash_array_of_strings_key(make_array({u8"🔑", u8"🗝️"})),
     make_array({u8"📦", u8"🎁"})
   );
   sketch.update(
-    make_array({u8"ключ1", u8"ключ2"}),
+    hash_array_of_strings_key(make_array({u8"ключ1", u8"ключ2"})),
     make_array({u8"ценить1", u8"ценить2"})
   );
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 3);
   std::ofstream os("aos_unicode_cpp.sk", std::ios::binary);
-  sketch.compact().serialize(os, default_array_of_strings_serde<>());
+  compact_array_of_strings_sketch(sketch).serialize(os, default_array_of_strings_serde<>());
 }
 
 TEST_CASE("aos sketch generate empty strings", "[serialize_for_java]") {
   auto sketch = aos_sketch::builder().build();
-  sketch.update(
-    make_array({""}),
-    make_array({"empty_key_value"})
-  );
-  sketch.update(
-    make_array({"empty_value_key"}),
-    make_array({""})
-  );
-  sketch.update(
-    make_array({"", ""}),
-    make_array({"", ""})
-  );
+  sketch.update(hash_array_of_strings_key(make_array({""})), make_array({"empty_key_value"}));
+  sketch.update(hash_array_of_strings_key(make_array({"empty_value_key"})), make_array({""}));
+  sketch.update(hash_array_of_strings_key(make_array({"", ""})), make_array({"", ""}));
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 3);
   std::ofstream os("aos_empty_strings_cpp.sk", std::ios::binary);
-  sketch.compact().serialize(os, default_array_of_strings_serde<>());
+  compact_array_of_strings_sketch(sketch).serialize(os, default_array_of_strings_serde<>());
 }
 
 } /* namespace datasketches */

@@ -58,23 +58,10 @@ void default_array_of_strings_update_policy<Allocator>::update(
   for (size_t i = 0; i < length; ++i) array[i] = (*input)[i];
 }
 
-template<template<typename> class Policy, typename Allocator>
-update_array_of_strings_tuple_sketch<Policy, Allocator>::update_array_of_strings_tuple_sketch(
-  uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta,
-  uint64_t seed, const policy_type& policy, const summary_allocator& allocator
-):
-Base(lg_cur_size, lg_nom_size, rf, p, theta, seed, policy, allocator) {}
-
-template<template<typename> class Policy, typename Allocator>
-void update_array_of_strings_tuple_sketch<Policy, Allocator>::update(
-  const array_of_strings& key, const array_of_strings& value
-) {
-  const uint64_t hash = hash_key(key);
-  Base::update(hash, value);
-}
-
-template<template<typename> class Policy, typename Allocator>
-uint64_t update_array_of_strings_tuple_sketch<Policy, Allocator>::hash_key(const array_of_strings& key) {
+template<typename Allocator>
+uint64_t hash_array_of_strings_key(const array<std::string, Allocator>& key) {
+  // Matches Java Util.PRIME for ArrayOfStrings key hashing.
+  static constexpr uint64_t STRING_ARR_HASH_SEED = 0x7A3CCA71ULL;
   XXHash64 hasher(STRING_ARR_HASH_SEED);
   const auto size = static_cast<size_t>(key.size());
   for (size_t i = 0; i < size; ++i) {
@@ -85,31 +72,11 @@ uint64_t update_array_of_strings_tuple_sketch<Policy, Allocator>::hash_key(const
   return hasher.hash();
 }
 
-template<template<typename> class Policy, typename Allocator>
-compact_array_of_strings_tuple_sketch<Allocator> update_array_of_strings_tuple_sketch<Policy, Allocator>::compact(bool ordered) const {
-  return compact_array_of_strings_tuple_sketch<Allocator>(*this, ordered);
-}
-
-// builder
-
-template<template<typename> class Policy, typename Allocator>
-update_array_of_strings_tuple_sketch<Policy, Allocator>::builder::builder(
-  const policy_type& policy, const summary_allocator& allocator
-):
-tuple_base_builder<builder, policy_type, summary_allocator>(policy, allocator) {}
-
-template<template<typename> class Policy, typename Allocator>
-auto update_array_of_strings_tuple_sketch<Policy, Allocator>::builder::build() const -> update_array_of_strings_tuple_sketch {
-  return update_array_of_strings_tuple_sketch(
-    this->starting_lg_size(),
-    this->lg_k_,
-    this->rf_,
-    this->p_,
-    this->starting_theta(),
-    this->seed_,
-    this->policy_,
-    this->allocator_
-  );
+template<typename Allocator, typename Policy>
+compact_array_of_strings_tuple_sketch<Allocator> compact_array_of_strings_sketch(
+  const update_array_of_strings_tuple_sketch<Allocator, Policy>& sketch, bool ordered
+) {
+  return compact_array_of_strings_tuple_sketch<Allocator>(sketch, ordered);
 }
 
 template<typename Allocator>
@@ -183,7 +150,7 @@ void default_array_of_strings_serde<Allocator>::deserialize(
       if (!is) throw std::runtime_error("array_of_strings stream read failed");
       std::string value(length, '\0');
       if (length != 0) {
-        is.read(value.data(), length);
+        is.read(&value[0], length);
         if (!is) throw std::runtime_error("array_of_strings stream read failed");
       }
       check_utf8(value);
@@ -241,7 +208,7 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
       bytes_read += copy_from_mem(ptr8 + bytes_read, length);
       std::string value(length, '\0');
       if (length != 0) {
-        bytes_read += copy_from_mem(ptr8 + bytes_read, value.data(), length);
+        bytes_read += copy_from_mem(ptr8 + bytes_read, &value[0], length);
       }
       check_utf8(value);
       array[j] = std::move(value);

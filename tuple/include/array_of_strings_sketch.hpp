@@ -70,6 +70,12 @@ private:
 };
 
 /**
+ * Hashes an array of strings using ArrayOfStrings-compatible hashing.
+ */
+template<typename Allocator = std::allocator<std::string>>
+uint64_t hash_array_of_strings_key(const array<std::string, Allocator>& key);
+
+/**
  * Extended class of compact_tuple_sketch for array of strings
  * Requirements: all strings must be valid UTF-8 and array size must be <= 127.
  */
@@ -125,63 +131,26 @@ private:
 };
 
 /**
- * Extended class of update_tuple_sketch for array of strings
+ * Convenience alias for update_tuple_sketch for array of strings
  */
-template<template<typename> class Policy = default_array_of_strings_update_policy,
-         typename Allocator = std::allocator<std::string>>
-class update_array_of_strings_tuple_sketch:
-  public update_tuple_sketch<
-    array<std::string, Allocator>,
-    array<std::string, Allocator>,
-    Policy<Allocator>,
-    typename std::allocator_traits<Allocator>::template rebind_alloc<array<std::string, Allocator>>
-  > {
-public:
-  using array_of_strings = array<std::string, Allocator>;
-  using summary_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<array_of_strings>;
-  using policy_type = Policy<Allocator>;
-  using Base = update_tuple_sketch<
-    array_of_strings,
-    array_of_strings,
-    policy_type,
-    summary_allocator
-  >;
-  using resize_factor = typename Base::resize_factor;
-  class builder;
-  using Base::update;
+template<typename Allocator = std::allocator<std::string>,
+         typename Policy = default_array_of_strings_update_policy<Allocator>>
+using update_array_of_strings_tuple_sketch = update_tuple_sketch<
+  array<std::string, Allocator>,
+  array<std::string, Allocator>,
+  Policy,
+  typename std::allocator_traits<Allocator>::template rebind_alloc<array<std::string, Allocator>>
+>;
 
-  /**
-   * Updates the sketch with string array for both key and value.
-   * @param key the given string array key
-   * @param value the given string array value
-   */
-  void update(const array_of_strings& key, const array_of_strings& value);
-
-  /**
-   * Converts this sketch to a compact sketch (ordered or unordered).
-   * @param ordered optional flag to specify if an ordered sketch should be produced
-   * @return compact array of strings sketch
-   */
-  compact_array_of_strings_tuple_sketch<Allocator> compact(bool ordered = true) const;
-
-private:
-  update_array_of_strings_tuple_sketch(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta,
-      uint64_t seed, const policy_type& policy, const summary_allocator& allocator);
-
-  // Matches Java Util.PRIME for ArrayOfStrings key hashing.
-  static constexpr uint64_t STRING_ARR_HASH_SEED = 0x7A3CCA71ULL;
-
-  static uint64_t hash_key(const array_of_strings& key);
-};
-
-template<template<typename> class Policy, typename Allocator>
-class update_array_of_strings_tuple_sketch<Policy, Allocator>::builder:
-  public tuple_base_builder<builder, policy_type, summary_allocator> {
-public:
-  builder(const policy_type& policy = policy_type(), const summary_allocator& allocator = summary_allocator());
-
-  update_array_of_strings_tuple_sketch build() const;
-};
+/**
+ * Converts an array of strings tuple sketch to a compact sketch (ordered or unordered).
+ * @param sketch input sketch
+ * @param ordered optional flag to specify if an ordered sketch should be produced
+ * @return compact array of strings sketch
+ */
+template<typename Allocator = std::allocator<std::string>, typename Policy = default_array_of_strings_update_policy<Allocator>>
+compact_array_of_strings_tuple_sketch<Allocator> compact_array_of_strings_sketch(
+  const update_array_of_strings_tuple_sketch<Allocator, Policy>& sketch, bool ordered = true);
 
 } /* namespace datasketches */
 
