@@ -316,7 +316,7 @@ template<typename T, typename A>
 class tdigest<T, A>::const_iterator {
 public:
   using iterator_category = std::input_iterator_tag;
-  using value_type = std::pair<const T&, const W>;
+  using value_type = std::pair<T, W>;
   using difference_type = void;
   using pointer = const return_value_holder<value_type>;
   using reference = const value_type;
