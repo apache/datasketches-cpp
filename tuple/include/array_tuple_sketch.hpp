@@ -23,7 +23,6 @@
 #include <vector>
 #include <memory>
 #include <type_traits>
-#include <cstring>
 #include <algorithm>
 
 #include "serde.hpp"
