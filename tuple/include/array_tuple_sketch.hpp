@@ -22,6 +22,9 @@
 
 #include <vector>
 #include <memory>
+#include <type_traits>
+#include <cstring>
+#include <algorithm>
 
 #include "serde.hpp"
 #include "tuple_sketch.hpp"
@@ -38,18 +41,14 @@ public:
 
   explicit array(uint8_t size, const T& value, const Allocator& allocator = Allocator()):
   allocator_(allocator), size_(size), array_(allocator_.allocate(size_)) {
-    for (uint8_t i = 0; i < size_; ++i) {
-      alloc_traits::construct(allocator_, array_ + i, value);
-    }
+    init_values(value, std::is_trivially_copyable<T>());
   }
   array(const array& other):
     allocator_(other.allocator_),
     size_(other.size_),
     array_(allocator_.allocate(size_))
   {
-    for (uint8_t i = 0; i < size_; ++i) {
-      alloc_traits::construct(allocator_, array_ + i, other.array_[i]);
-    }
+    copy_from(other, std::is_trivially_copyable<T>());
   }
   array(array&& other) noexcept:
     allocator_(std::move(other.allocator_)),
@@ -61,9 +60,7 @@ public:
   }
   ~array() {
     if (array_ != nullptr) {
-      for (uint8_t i = 0; i < size_; ++i) {
-        alloc_traits::destroy(allocator_, array_ + i);
-      }
+      destroy_values(std::is_trivially_destructible<T>());
       allocator_.deallocate(array_, size_);
     }
   }
@@ -90,6 +87,29 @@ public:
     return true;
   }
 private:
+  void init_values(const T& value, std::true_type) {
+    std::fill(array_, array_ + size_, value);
+  }
+  void init_values(const T& value, std::false_type) {
+    for (uint8_t i = 0; i < size_; ++i) {
+      alloc_traits::construct(allocator_, array_ + i, value);
+    }
+  }
+  void copy_from(const array& other, std::true_type) {
+    std::copy(other.array_, other.array_ + size_, array_);
+  }
+  void copy_from(const array& other, std::false_type) {
+    for (uint8_t i = 0; i < size_; ++i) {
+      alloc_traits::construct(allocator_, array_ + i, other.array_[i]);
+    }
+  }
+  void destroy_values(std::true_type) {}
+  void destroy_values(std::false_type) {
+    for (uint8_t i = 0; i < size_; ++i) {
+      alloc_traits::destroy(allocator_, array_ + i);
+    }
+  }
+
   Allocator allocator_;
   uint8_t size_;
   T* array_;
