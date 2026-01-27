@@ -240,9 +240,6 @@ uint32_t default_array_of_strings_serde<Allocator>::compute_total_bytes(const ar
   for (uint32_t j = 0; j < count; ++j) {
     total += data[j].size();
   }
-  if (total > std::numeric_limits<uint32_t>::max()) {
-    throw std::runtime_error("array_of_strings serialized size exceeds uint32_t max");
-  }
   return static_cast<uint32_t>(total);
 }
 

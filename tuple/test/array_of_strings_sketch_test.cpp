@@ -255,4 +255,30 @@ TEST_CASE("aos sketch: serialize deserialize", "[tuple_sketch]") {
   }
 }
 
+TEST_CASE("aos serde validation", "[tuple_sketch]") {
+  default_array_of_strings_serde<> serde;
+
+  SECTION("invalid utf8 rejected") {
+    array_of_strings array(1, "", std::allocator<std::string>());
+    const std::string invalid_utf8("\xC3\x28", 2);
+    array[0] = invalid_utf8;
+    std::stringstream ss;
+    ss.exceptions(std::ios::failbit | std::ios::badbit);
+    REQUIRE_THROWS_WITH(
+      serde.serialize(ss, &array, 1),
+      Catch::Matchers::Contains("invalid UTF-8")
+    );
+  }
+
+  SECTION("too many nodes rejected") {
+    array_of_strings array(128, "", std::allocator<std::string>());
+    std::stringstream ss;
+    ss.exceptions(std::ios::failbit | std::ios::badbit);
+    REQUIRE_THROWS_WITH(
+      serde.serialize(ss, &array, 1),
+      Catch::Matchers::Contains("size exceeds 127")
+    );
+  }
+}
+
 } /* namespace datasketches */
