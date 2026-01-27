@@ -37,7 +37,7 @@ public:
   using alloc_traits = std::allocator_traits<Allocator>;
 
   explicit array(uint8_t size, const T& value, const Allocator& allocator = Allocator()):
-  allocator_(allocator), size_(size), array_(size_ == 0 ? nullptr : allocator_.allocate(size_)) {
+  allocator_(allocator), size_(size), array_(allocator_.allocate(size_)) {
     for (uint8_t i = 0; i < size_; ++i) {
       alloc_traits::construct(allocator_, array_ + i, value);
     }
@@ -45,7 +45,7 @@ public:
   array(const array& other):
     allocator_(other.allocator_),
     size_(other.size_),
-    array_(size_ == 0 ? nullptr : allocator_.allocate(size_))
+    array_(allocator_.allocate(size_))
   {
     for (uint8_t i = 0; i < size_; ++i) {
       alloc_traits::construct(allocator_, array_ + i, other.array_[i]);
