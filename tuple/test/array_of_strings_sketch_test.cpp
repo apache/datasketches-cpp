@@ -29,7 +29,11 @@
 
 namespace datasketches {
 
-using array_of_strings = array<std::string>;
+using types = array_of_strings_types<std::allocator<char>>;
+using array_of_strings = types::array_of_strings;
+using string_allocator = types::string_allocator;
+using string_type = types::string_type;
+using array_allocator = types::array_allocator;
 
 TEST_CASE("aos update policy", "[tuple_sketch]") {
   default_array_of_strings_update_policy<> policy;
@@ -42,7 +46,8 @@ TEST_CASE("aos update policy", "[tuple_sketch]") {
   SECTION("replace array") {
     auto values = policy.create();
 
-    array_of_strings input(2, "", std::allocator<std::string>());
+    const string_type empty{string_allocator()};
+    array_of_strings input(2, empty, array_allocator());
     input[0] = "alpha";
     input[1] = "beta";
     policy.update(values, input);
@@ -52,7 +57,7 @@ TEST_CASE("aos update policy", "[tuple_sketch]") {
     input[0] = "changed";
     REQUIRE(values[0] == "alpha");
 
-    array_of_strings input2(1, "", std::allocator<std::string>());
+    array_of_strings input2(1, empty, array_allocator());
     input2[0] = "gamma";
     policy.update(values, input2);
     REQUIRE(values.size() == 1);
@@ -60,7 +65,8 @@ TEST_CASE("aos update policy", "[tuple_sketch]") {
   }
 
   SECTION("nullptr clears") {
-    array_of_strings values(2, "", std::allocator<std::string>());
+    const string_type empty{string_allocator()};
+    array_of_strings values(2, empty, array_allocator());
     values[0] = "one";
     values[1] = "two";
 
@@ -71,7 +77,8 @@ TEST_CASE("aos update policy", "[tuple_sketch]") {
   SECTION("pointer input copies") {
     auto values = policy.create();
 
-    array_of_strings input(2, "", std::allocator<std::string>());
+    const string_type empty{string_allocator()};
+    array_of_strings input(2, empty, array_allocator());
     input[0] = "first";
     input[1] = "second";
     policy.update(values, &input);
@@ -84,7 +91,8 @@ TEST_CASE("aos update policy", "[tuple_sketch]") {
 
 TEST_CASE("aos sketch update", "[tuple_sketch]") {
   auto make_array = [](std::initializer_list<const char*> entries) {
-    array_of_strings array(static_cast<uint8_t>(entries.size()), "", std::allocator<std::string>());
+    const string_type empty{string_allocator()};
+    array_of_strings array(static_cast<uint8_t>(entries.size()), empty, array_allocator());
     uint8_t i = 0;
     for (const auto* entry: entries) array[i++] = entry;
     return array;
@@ -151,9 +159,12 @@ TEST_CASE("aos sketch update", "[tuple_sketch]") {
 
 TEST_CASE("aos sketch: serialize deserialize", "[tuple_sketch]") {
   auto make_array = [](std::initializer_list<std::string> entries) {
-    array_of_strings array(static_cast<uint8_t>(entries.size()), "", std::allocator<std::string>());
+    const string_type empty{string_allocator()};
+    array_of_strings array(static_cast<uint8_t>(entries.size()), empty, array_allocator());
     uint8_t i = 0;
-    for (const auto& entry: entries) array[i++] = entry;
+    for (const auto& entry: entries) {
+      array[i++] = string_type(entry.data(), entry.size(), string_allocator());
+    }
     return array;
   };
 
@@ -259,8 +270,9 @@ TEST_CASE("aos serde validation", "[tuple_sketch]") {
   default_array_of_strings_serde<> serde;
 
   SECTION("invalid utf8 rejected") {
-    array_of_strings array(1, "", std::allocator<std::string>());
-    const std::string invalid_utf8("\xC3\x28", 2);
+    const string_type empty{string_allocator()};
+    array_of_strings array(1, empty, array_allocator());
+    const string_type invalid_utf8("\xC3\x28", 2, string_allocator());
     array[0] = invalid_utf8;
     std::stringstream ss;
     ss.exceptions(std::ios::failbit | std::ios::badbit);
@@ -271,7 +283,8 @@ TEST_CASE("aos serde validation", "[tuple_sketch]") {
   }
 
   SECTION("too many nodes rejected") {
-    array_of_strings array(128, "", std::allocator<std::string>());
+    const string_type empty{string_allocator()};
+    array_of_strings array(128, empty, array_allocator());
     std::stringstream ss;
     ss.exceptions(std::ios::failbit | std::ios::badbit);
     REQUIRE_THROWS_WITH(

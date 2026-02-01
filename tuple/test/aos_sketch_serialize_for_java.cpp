@@ -26,13 +26,18 @@
 namespace datasketches {
 
 using aos_sketch = update_array_of_strings_tuple_sketch<>;
-using array_of_strings = array<std::string>;
+using types = array_of_strings_types<std::allocator<char>>;
+using array_of_strings = types::array_of_strings;
+using string_allocator = types::string_allocator;
+using string_type = types::string_type;
+using array_allocator = types::array_allocator;
 
 static array_of_strings make_array(std::initializer_list<std::string> items) {
-  array_of_strings array(static_cast<uint8_t>(items.size()), "");
+  const string_type empty{string_allocator()};
+  array_of_strings array(static_cast<uint8_t>(items.size()), empty, array_allocator());
   size_t i = 0;
   for (const auto& item: items) {
-    array[static_cast<uint8_t>(i)] = item;
+    array[static_cast<uint8_t>(i)] = string_type(item.data(), item.size(), string_allocator());
     ++i;
   }
   return array;
@@ -43,10 +48,13 @@ TEST_CASE("aos sketch generate one value", "[serialize_for_java]") {
   for (const unsigned n: n_arr) {
     auto sketch = aos_sketch::builder().build();
     for (unsigned i = 0; i < n; ++i) {
-      array_of_strings key(1, "");
-      key[0] = std::to_string(i);
-      array_of_strings value(1, "");
-      value[0] = "value" + std::to_string(i);
+      const string_type empty{string_allocator()};
+      array_of_strings key(1, empty, array_allocator());
+      const std::string key_value = std::to_string(i);
+      key[0] = string_type(key_value.data(), key_value.size(), string_allocator());
+      array_of_strings value(1, empty, array_allocator());
+      const std::string value_str = "value" + std::to_string(i);
+      value[0] = string_type(value_str.data(), value_str.size(), string_allocator());
       sketch.update(hash_array_of_strings_key(key), value);
     }
     REQUIRE(sketch.is_empty() == (n == 0));
@@ -61,12 +69,17 @@ TEST_CASE("aos sketch generate three values", "[serialize_for_java]") {
   for (const unsigned n: n_arr) {
     auto sketch = aos_sketch::builder().build();
     for (unsigned i = 0; i < n; ++i) {
-      array_of_strings key(1, "");
-      key[0] = std::to_string(i);
-      array_of_strings value(3, "");
-      value[0] = "a" + std::to_string(i);
-      value[1] = "b" + std::to_string(i);
-      value[2] = "c" + std::to_string(i);
+      const string_type empty{string_allocator()};
+      array_of_strings key(1, empty, array_allocator());
+      const std::string key_value = std::to_string(i);
+      key[0] = string_type(key_value.data(), key_value.size(), string_allocator());
+      array_of_strings value(3, empty, array_allocator());
+      const std::string value_a = "a" + std::to_string(i);
+      const std::string value_b = "b" + std::to_string(i);
+      const std::string value_c = "c" + std::to_string(i);
+      value[0] = string_type(value_a.data(), value_a.size(), string_allocator());
+      value[1] = string_type(value_b.data(), value_b.size(), string_allocator());
+      value[2] = string_type(value_c.data(), value_c.size(), string_allocator());
       sketch.update(hash_array_of_strings_key(key), value);
     }
     REQUIRE(sketch.is_empty() == (n == 0));
@@ -82,9 +95,10 @@ TEST_CASE("aos sketch generate non-empty no entries", "[serialize_for_java]") {
     .set_resize_factor(resize_factor::X8)
     .set_p(0.01f)
     .build();
-  array_of_strings key(1, "");
+  const string_type empty{string_allocator()};
+  array_of_strings key(1, empty, array_allocator());
   key[0] = "key1";
-  array_of_strings value(1, "");
+  array_of_strings value(1, empty, array_allocator());
   value[0] = "value1";
   sketch.update(hash_array_of_strings_key(key), value);
   REQUIRE_FALSE(sketch.is_empty());
@@ -98,11 +112,15 @@ TEST_CASE("aos sketch generate multi key strings", "[serialize_for_java]") {
   for (const unsigned n: n_arr) {
     auto sketch = aos_sketch::builder().build();
     for (unsigned i = 0; i < n; ++i) {
-      array_of_strings key(2, "");
-      key[0] = "key" + std::to_string(i);
-      key[1] = "subkey" + std::to_string(i % 10);
-      array_of_strings value(1, "");
-      value[0] = "value" + std::to_string(i);
+      const string_type empty{string_allocator()};
+      array_of_strings key(2, empty, array_allocator());
+      const std::string key0 = "key" + std::to_string(i);
+      const std::string key1 = "subkey" + std::to_string(i % 10);
+      key[0] = string_type(key0.data(), key0.size(), string_allocator());
+      key[1] = string_type(key1.data(), key1.size(), string_allocator());
+      array_of_strings value(1, empty, array_allocator());
+      const std::string value_str = "value" + std::to_string(i);
+      value[0] = string_type(value_str.data(), value_str.size(), string_allocator());
       sketch.update(hash_array_of_strings_key(key), value);
     }
     REQUIRE(sketch.is_empty() == (n == 0));

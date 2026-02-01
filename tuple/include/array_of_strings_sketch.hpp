@@ -28,11 +28,22 @@
 
 namespace datasketches {
 
+template<typename Allocator>
+struct array_of_strings_types {
+  using string_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<char>;
+  using string_type = std::basic_string<char, std::char_traits<char>, string_allocator>;
+  using array_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<string_type>;
+  using array_of_strings = array<string_type, array_allocator>;
+};
+
 // default update policy for an array of strings
-template<typename Allocator = std::allocator<std::string>>
+template<typename Allocator = std::allocator<char>>
 class default_array_of_strings_update_policy {
 public:
-  using array_of_strings = array<std::string, Allocator>;
+  using string_allocator = typename array_of_strings_types<Allocator>::string_allocator;
+  using string_type = typename array_of_strings_types<Allocator>::string_type;
+  using array_allocator = typename array_of_strings_types<Allocator>::array_allocator;
+  using array_of_strings = typename array_of_strings_types<Allocator>::array_of_strings;
 
   explicit default_array_of_strings_update_policy(const Allocator& allocator = Allocator());
 
@@ -48,9 +59,12 @@ private:
 
 // serializer/deserializer for an array of strings
 // Requirements: all strings must be valid UTF-8 and array size must be <= 127.
-template<typename Allocator = std::allocator<std::string>>
+template<typename Allocator = std::allocator<char>>
 struct default_array_of_strings_serde {
-  using array_of_strings = array<std::string, Allocator>;
+  using string_allocator = typename array_of_strings_types<Allocator>::string_allocator;
+  using string_type = typename array_of_strings_types<Allocator>::string_type;
+  using array_allocator = typename array_of_strings_types<Allocator>::array_allocator;
+  using array_of_strings = typename array_of_strings_types<Allocator>::array_of_strings;
   using summary_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<array_of_strings>;
 
   explicit default_array_of_strings_serde(const Allocator& allocator = Allocator());
@@ -66,27 +80,29 @@ private:
   summary_allocator summary_allocator_;
   static void check_num_nodes(uint8_t num_nodes);
   static uint32_t compute_total_bytes(const array_of_strings& item);
-  static void check_utf8(const std::string& value);
+  static void check_utf8(const string_type& value);
 };
 
 /**
  * Hashes an array of strings using ArrayOfStrings-compatible hashing.
  */
-template<typename Allocator = std::allocator<std::string>>
-uint64_t hash_array_of_strings_key(const array<std::string, Allocator>& key);
+template<typename Allocator = std::allocator<char>>
+uint64_t hash_array_of_strings_key(const typename array_of_strings_types<Allocator>::array_of_strings& key);
 
 /**
  * Extended class of compact_tuple_sketch for array of strings
  * Requirements: all strings must be valid UTF-8 and array size must be <= 127.
  */
-template<typename Allocator = std::allocator<std::string>>
+template<typename Allocator = std::allocator<char>>
 class compact_array_of_strings_tuple_sketch:
   public compact_tuple_sketch<
-    array<std::string, Allocator>,
-    typename std::allocator_traits<Allocator>::template rebind_alloc<array<std::string, Allocator>>
+    typename array_of_strings_types<Allocator>::array_of_strings,
+    typename std::allocator_traits<Allocator>::template rebind_alloc<
+      typename array_of_strings_types<Allocator>::array_of_strings
+    >
   > {
 public:
-  using array_of_strings = array<std::string, Allocator>;
+  using array_of_strings = typename array_of_strings_types<Allocator>::array_of_strings;
   using summary_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<array_of_strings>;
   using Base = compact_tuple_sketch<array_of_strings, summary_allocator>;
   using vector_bytes = typename Base::vector_bytes;
@@ -133,13 +149,15 @@ private:
 /**
  * Convenience alias for update_tuple_sketch for array of strings
  */
-template<typename Allocator = std::allocator<std::string>,
+template<typename Allocator = std::allocator<char>,
          typename Policy = default_array_of_strings_update_policy<Allocator>>
 using update_array_of_strings_tuple_sketch = update_tuple_sketch<
-  array<std::string, Allocator>,
-  array<std::string, Allocator>,
+  typename array_of_strings_types<Allocator>::array_of_strings,
+  typename array_of_strings_types<Allocator>::array_of_strings,
   Policy,
-  typename std::allocator_traits<Allocator>::template rebind_alloc<array<std::string, Allocator>>
+  typename std::allocator_traits<Allocator>::template rebind_alloc<
+    typename array_of_strings_types<Allocator>::array_of_strings
+  >
 >;
 
 /**
@@ -148,7 +166,7 @@ using update_array_of_strings_tuple_sketch = update_tuple_sketch<
  * @param ordered optional flag to specify if an ordered sketch should be produced
  * @return compact array of strings sketch
  */
-template<typename Allocator = std::allocator<std::string>, typename Policy = default_array_of_strings_update_policy<Allocator>>
+template<typename Allocator = std::allocator<char>, typename Policy = default_array_of_strings_update_policy<Allocator>>
 compact_array_of_strings_tuple_sketch<Allocator> compact_array_of_strings_sketch(
   const update_array_of_strings_tuple_sketch<Allocator, Policy>& sketch, bool ordered = true);
 
