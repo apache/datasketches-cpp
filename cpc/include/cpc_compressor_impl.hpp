@@ -157,7 +157,7 @@ void cpc_compressor<A>::compress(const cpc_sketch_alloc<A>& source, compressed_s
       break;
     case cpc_sketch_alloc<A>::flavor::PINNED:
       compress_pinned_flavor(source, result);
-      if (result.window_data.size() == 0) throw std::logic_error("window is not expected");
+      if (result.window_data.size() == 0) throw std::logic_error("window is expected");
       break;
     case cpc_sketch_alloc<A>::flavor::SLIDING:
       compress_sliding_flavor(source, result);
