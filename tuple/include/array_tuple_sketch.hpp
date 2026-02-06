@@ -82,6 +82,7 @@ public:
   T* data() { return array_; }
   const T* data() const { return array_; }
   bool operator==(const array& other) const {
+    if (size_ != other.size_) return false;
     for (uint8_t i = 0; i < size_; ++i) if (array_[i] != other.array_[i]) return false;
     return true;
   }
