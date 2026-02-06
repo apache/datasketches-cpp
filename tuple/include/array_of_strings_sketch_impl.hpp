@@ -33,8 +33,7 @@ default_array_of_strings_update_policy<Allocator>::default_array_of_strings_upda
 
 template<typename Allocator>
 auto default_array_of_strings_update_policy<Allocator>::create() const -> array_of_strings {
-  const string_type empty{string_allocator(allocator_)};
-  return array_of_strings(0, empty, array_allocator(allocator_));
+  return array_of_strings(0, "", allocator_);
 }
 
 template<typename Allocator>
@@ -42,8 +41,7 @@ void default_array_of_strings_update_policy<Allocator>::update(
   array_of_strings& array, const array_of_strings& input
 ) const {
   const auto length = static_cast<size_t>(input.size());
-  const string_type empty{string_allocator(allocator_)};
-  array = array_of_strings(static_cast<uint8_t>(length), empty, array_allocator(allocator_));
+  array = array_of_strings(static_cast<uint8_t>(length), "", allocator_);
   for (size_t i = 0; i < length; ++i) array[i] = input[i];
 }
 
@@ -52,18 +50,16 @@ void default_array_of_strings_update_policy<Allocator>::update(
   array_of_strings& array, const array_of_strings* input
 ) const {
   if (input == nullptr) {
-    const string_type empty{string_allocator(allocator_)};
-    array = array_of_strings(0, empty, array_allocator(allocator_));
+    array = array_of_strings(0, "", allocator_);
     return;
   }
   const auto length = static_cast<size_t>(input->size());
-  const string_type empty{string_allocator(allocator_)};
-  array = array_of_strings(static_cast<uint8_t>(length), empty, array_allocator(allocator_));
+  array = array_of_strings(static_cast<uint8_t>(length), "", allocator_);
   for (size_t i = 0; i < length; ++i) array[i] = (*input)[i];
 }
 
 template<typename Allocator>
-uint64_t hash_array_of_strings_key(const typename array_of_strings_types<Allocator>::array_of_strings& key) {
+uint64_t hash_array_of_strings_key(const array<std::string, Allocator>& key) {
   // Matches Java Util.PRIME for ArrayOfStrings key hashing.
   static constexpr uint64_t STRING_ARR_HASH_SEED = 0x7A3CCA71ULL;
   XXHash64 hasher(STRING_ARR_HASH_SEED);
@@ -128,7 +124,7 @@ void default_array_of_strings_serde<Allocator>::serialize(
     const uint8_t num_nodes = static_cast<uint8_t>(items[i].size());
     write(os, total_bytes);
     write(os, num_nodes);
-    const string_type* data = items[i].data();
+    const std::string* data = items[i].data();
     for (uint8_t j = 0; j < num_nodes; ++j) {
       check_utf8(data[j]);
       const uint32_t length = static_cast<uint32_t>(data[j].size());
@@ -148,12 +144,11 @@ void default_array_of_strings_serde<Allocator>::deserialize(
     const uint8_t num_nodes = read<uint8_t>(is);
     if (!is) throw std::runtime_error("array_of_strings stream read failed");
     check_num_nodes(num_nodes);
-    const string_type empty{string_allocator(allocator_)};
-    array_of_strings array(num_nodes, empty, array_allocator(allocator_));
+    array_of_strings array(num_nodes, "", allocator_);
     for (uint8_t j = 0; j < num_nodes; ++j) {
       const uint32_t length = read<uint32_t>(is);
       if (!is) throw std::runtime_error("array_of_strings stream read failed");
-      string_type value(length, '\0', string_allocator(allocator_));
+      std::string value(length, '\0');
       if (length != 0) {
         is.read(&value[0], length);
         if (!is) throw std::runtime_error("array_of_strings stream read failed");
@@ -179,7 +174,7 @@ size_t default_array_of_strings_serde<Allocator>::serialize(
     check_memory_size(bytes_written + total_bytes, capacity);
     bytes_written += copy_to_mem(total_bytes, ptr8 + bytes_written);
     bytes_written += copy_to_mem(num_nodes, ptr8 + bytes_written);
-    const string_type* data = items[i].data();
+    const std::string* data = items[i].data();
     for (uint8_t j = 0; j < num_nodes; ++j) {
       check_utf8(data[j]);
       const uint32_t length = static_cast<uint32_t>(data[j].size());
@@ -207,12 +202,11 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
     uint8_t num_nodes;
     bytes_read += copy_from_mem(ptr8 + bytes_read, num_nodes);
     check_num_nodes(num_nodes);
-    const string_type empty{string_allocator(allocator_)};
-    array_of_strings array(num_nodes, empty, array_allocator(allocator_));
+    array_of_strings array(num_nodes, "", allocator_);
     for (uint8_t j = 0; j < num_nodes; ++j) {
       uint32_t length;
       bytes_read += copy_from_mem(ptr8 + bytes_read, length);
-      string_type value(length, '\0', string_allocator(allocator_));
+      std::string value(length, '\0');
       if (length != 0) {
         bytes_read += copy_from_mem(ptr8 + bytes_read, &value[0], length);
       }
@@ -242,7 +236,7 @@ uint32_t default_array_of_strings_serde<Allocator>::compute_total_bytes(const ar
   const auto count = item.size();
   check_num_nodes(static_cast<uint8_t>(count));
   size_t total = sizeof(uint32_t) + sizeof(uint8_t) + count * sizeof(uint32_t);
-  const string_type* data = item.data();
+  const std::string* data = item.data();
   for (uint32_t j = 0; j < count; ++j) {
     total += data[j].size();
   }
@@ -250,7 +244,7 @@ uint32_t default_array_of_strings_serde<Allocator>::compute_total_bytes(const ar
 }
 
 template<typename Allocator>
-void default_array_of_strings_serde<Allocator>::check_utf8(const string_type& value) {
+void default_array_of_strings_serde<Allocator>::check_utf8(const std::string& value) {
   if (!utf8::is_valid(value.begin(), value.end())) {
     throw std::runtime_error("array_of_strings contains invalid UTF-8");
   }
