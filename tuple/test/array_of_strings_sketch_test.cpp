@@ -29,10 +29,8 @@
 
 namespace datasketches {
 
-using array_of_strings = array<std::string>;
-
 TEST_CASE("aos update policy", "[tuple_sketch]") {
-  default_array_of_strings_update_policy<> policy;
+  default_array_of_strings_update_policy policy;
 
   SECTION("create empty") {
     auto values = policy.create();

@@ -22,44 +22,37 @@
 
 #include <stdexcept>
 
+#include "array_of_strings_sketch.hpp"
 #include "common_defs.hpp"
 #include "third_party/utf8cpp/utf8.h"
 
 namespace datasketches {
 
-template<typename Allocator>
-default_array_of_strings_update_policy<Allocator>::default_array_of_strings_update_policy(const Allocator& allocator):
-  allocator_(allocator) {}
-
-template<typename Allocator>
-auto default_array_of_strings_update_policy<Allocator>::create() const -> array_of_strings {
-  return array_of_strings(0, "", allocator_);
+inline array_of_strings default_array_of_strings_update_policy::create() const {
+  return array_of_strings(0, "");
 }
 
-template<typename Allocator>
-void default_array_of_strings_update_policy<Allocator>::update(
+inline void default_array_of_strings_update_policy::update(
   array_of_strings& array, const array_of_strings& input
 ) const {
   const auto length = static_cast<size_t>(input.size());
-  array = array_of_strings(static_cast<uint8_t>(length), "", allocator_);
+  array = array_of_strings(static_cast<uint8_t>(length), "");
   for (size_t i = 0; i < length; ++i) array[i] = input[i];
 }
 
-template<typename Allocator>
-void default_array_of_strings_update_policy<Allocator>::update(
+inline void default_array_of_strings_update_policy::update(
   array_of_strings& array, const array_of_strings* input
 ) const {
   if (input == nullptr) {
-    array = array_of_strings(0, "", allocator_);
+    array = array_of_strings(0, "");
     return;
   }
   const auto length = static_cast<size_t>(input->size());
-  array = array_of_strings(static_cast<uint8_t>(length), "", allocator_);
+  array = array_of_strings(static_cast<uint8_t>(length), "");
   for (size_t i = 0; i < length; ++i) array[i] = (*input)[i];
 }
 
-template<typename Allocator>
-uint64_t hash_array_of_strings_key(const array<std::string, Allocator>& key) {
+inline uint64_t hash_array_of_strings_key(const array_of_strings& key) {
   // Matches Java Util.PRIME for ArrayOfStrings key hashing.
   static constexpr uint64_t STRING_ARR_HASH_SEED = 0x7A3CCA71ULL;
   XXHash64 hasher(STRING_ARR_HASH_SEED);
@@ -95,8 +88,7 @@ template<typename SerDe>
 auto compact_array_of_strings_tuple_sketch<Allocator>::deserialize(
   std::istream& is, uint64_t seed, const SerDe& sd, const Allocator& allocator
 ) -> compact_array_of_strings_tuple_sketch {
-  summary_allocator alloc(allocator);
-  auto base = Base::deserialize(is, seed, sd, alloc);
+  auto base = Base::deserialize(is, seed, sd, allocator);
   return compact_array_of_strings_tuple_sketch(std::move(base));
 }
 
@@ -105,14 +97,12 @@ template<typename SerDe>
 auto compact_array_of_strings_tuple_sketch<Allocator>::deserialize(
   const void* bytes, size_t size, uint64_t seed, const SerDe& sd, const Allocator& allocator
 ) -> compact_array_of_strings_tuple_sketch {
-  summary_allocator alloc(allocator);
-  auto base = Base::deserialize(bytes, size, seed, sd, alloc);
+  auto base = Base::deserialize(bytes, size, seed, sd, allocator);
   return compact_array_of_strings_tuple_sketch(std::move(base));
 }
 
 template<typename Allocator>
 default_array_of_strings_serde<Allocator>::default_array_of_strings_serde(const Allocator& allocator):
-  allocator_(allocator),
   summary_allocator_(allocator) {}
 
 template<typename Allocator>
@@ -144,7 +134,7 @@ void default_array_of_strings_serde<Allocator>::deserialize(
     const uint8_t num_nodes = read<uint8_t>(is);
     if (!is) throw std::runtime_error("array_of_strings stream read failed");
     check_num_nodes(num_nodes);
-    array_of_strings array(num_nodes, "", allocator_);
+    array_of_strings array(num_nodes, "");
     for (uint8_t j = 0; j < num_nodes; ++j) {
       const uint32_t length = read<uint32_t>(is);
       if (!is) throw std::runtime_error("array_of_strings stream read failed");
@@ -202,7 +192,7 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
     uint8_t num_nodes;
     bytes_read += copy_from_mem(ptr8 + bytes_read, num_nodes);
     check_num_nodes(num_nodes);
-    array_of_strings array(num_nodes, "", allocator_);
+    array_of_strings array(num_nodes, "");
     for (uint8_t j = 0; j < num_nodes; ++j) {
       uint32_t length;
       bytes_read += copy_from_mem(ptr8 + bytes_read, length);
