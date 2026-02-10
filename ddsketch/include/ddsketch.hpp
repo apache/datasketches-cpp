@@ -20,10 +20,6 @@
 #ifndef _DDSKETCH_HPP_
 #define _DDSKETCH_HPP_
 
-#include <utility>
-#include <type_traits>
-#include <variant>
-#include "store_factory.hpp"
 #include "common_defs.hpp"
 #include "memory_operations.hpp"
 

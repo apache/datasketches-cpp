@@ -97,7 +97,7 @@ void test_adding(SketchType& sketch, const std::vector<double>& values, double r
     // Test individual additions
     sketch.clear();
     for (const double& value : values) {
-        sketch.update(value);
+      sketch.update(value);
     }
     assert_encodes(sketch, values, relative_accuracy);
 
@@ -106,11 +106,13 @@ void test_adding(SketchType& sketch, const std::vector<double>& values, double r
     auto sketch_weighted(sketch);
     std::map<double, int> value_counts;
     for (const double& value : values) {
-        value_counts[value]++;
+      value_counts[value]++;
     }
 
-    for (const auto& [value, count] : value_counts) {
-        sketch_weighted.update(value, count);
+    for (const auto& value_count : value_counts) {
+      double value = value_count.first;
+      double count = value_count.second;
+      sketch_weighted.update(value, count);
     }
     assert_encodes(sketch_weighted, values, relative_accuracy);
 }

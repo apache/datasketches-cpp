@@ -21,7 +21,6 @@
 #define DENSE_STORE_IMPL_HPP
 
 #include <algorithm>
-#include <filesystem>
 
 #include "common_defs.hpp"
 
