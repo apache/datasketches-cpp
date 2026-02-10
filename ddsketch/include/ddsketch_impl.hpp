@@ -202,7 +202,7 @@ double DDSketch<Store, Mapping>::get_quantile(const double& rank, const double& 
 
 template<class Store, class Mapping>
 typename DDSketch<Store, Mapping>::vector_double DDSketch<Store, Mapping>::get_CDF(const double* split_points, uint32_t size) const {
-  check_split_pints(split_points, size);
+  check_split_points(split_points, size);
   vector_double ranks;
   ranks.reserve(size + 1);
   for (uint32_t i = 0; i < size; ++i) {
@@ -302,12 +302,12 @@ bool DDSketch<Store, Mapping>::operator==(const DDSketch<Store, Mapping>& other)
 }
 
 template<class Store, class Mapping>
-void DDSketch<Store, Mapping>::check_split_pints(const double *items, uint32_t size) {
+void DDSketch<Store, Mapping>::check_split_points(const double *values, uint32_t size) {
   for (uint32_t i = 0; i < size ; i++) {
-    if (std::isnan(items[i])) {
+    if (std::isnan(values[i])) {
       throw std::invalid_argument("Values must not be NaN");
     }
-    if ((i < (size - 1)) && !(items[i] < items[i + 1])) {
+    if ((i < (size - 1)) && !(values[i] < values[i + 1])) {
       throw std::invalid_argument("Values must be unique and monotonically increasing");
     }
   }

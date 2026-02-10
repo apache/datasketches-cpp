@@ -172,7 +172,7 @@ protected:
 
   double get_quantile(const double& rank, const double& count) const;
 
-  static inline void check_split_pints(const double* values, uint32_t size);
+  static inline void check_split_points(const double* values, uint32_t size);
 };
 
 } /* namespace datasketches */
