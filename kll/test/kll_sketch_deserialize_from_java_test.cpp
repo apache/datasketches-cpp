@@ -100,4 +100,28 @@ TEST_CASE("kll string", "[serde_compat]") {
   }
 }
 
+TEST_CASE("kll long", "[serde_compat]") {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open(testBinaryInputPath + "kll_long_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = kll_sketch<long>::deserialize(is);
+    REQUIRE(sketch.is_empty() == (n == 0));
+    REQUIRE(sketch.is_estimation_mode() == (n > kll_constants::DEFAULT_K));
+    REQUIRE(sketch.get_n() == n);
+    if (n > 0) {
+      REQUIRE(sketch.get_min_item() == 1);
+      REQUIRE(sketch.get_max_item() == static_cast<long>(n));
+      uint64_t weight = 0;
+      for (const auto pair: sketch) {
+        REQUIRE(pair.first >= sketch.get_min_item());
+        REQUIRE(pair.first <= sketch.get_max_item());
+        weight += pair.second;
+      }
+      REQUIRE(weight == sketch.get_n());
+    }
+  }
+}
+
 } /* namespace datasketches */

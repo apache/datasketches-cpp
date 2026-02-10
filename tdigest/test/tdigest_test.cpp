@@ -18,12 +18,35 @@
  */
 
 #include <catch2/catch.hpp>
+#include <cstring>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "tdigest.hpp"
 
 namespace datasketches {
+
+namespace {
+constexpr size_t header_size = 8;
+constexpr size_t counts_size = 8;
+constexpr size_t min_offset = header_size + counts_size;
+constexpr size_t max_offset = min_offset + sizeof(double);
+constexpr size_t first_centroid_mean_offset = min_offset + sizeof(double) * 2;
+constexpr size_t first_centroid_weight_offset = first_centroid_mean_offset + sizeof(double);
+constexpr size_t first_buffered_value_offset = first_centroid_mean_offset;
+constexpr size_t single_value_offset = header_size;
+
+template <typename T>
+void write_bytes(std::vector<uint8_t>& bytes, size_t offset, T value) {
+  std::memcpy(bytes.data() + offset, &value, sizeof(T));
+}
+
+template <typename T>
+void write_bytes(std::string& data, size_t offset, T value) {
+  std::memcpy(&data[offset], &value, sizeof(T));
+}
+} // namespace
 
 TEST_CASE("empty", "[tdigest]") {
   tdigest_double td(10);
@@ -468,6 +491,114 @@ TEST_CASE("iterate centroids", "[tdigest]") {
   // Ensure that centroids are retrieved for a case where there is buffered values
   REQUIRE(centroid_count == 10);
   REQUIRE(td.get_total_weight() == total_weight);
+}
+
+TEST_CASE("update rejects positive infinity", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  td.update(std::numeric_limits<double>::infinity());
+  REQUIRE(td.get_total_weight() == 2);
+  REQUIRE(td.get_max_value() == 2.0);
+}
+
+TEST_CASE("update rejects negative infinity", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  td.update(-std::numeric_limits<double>::infinity());
+  REQUIRE(td.get_total_weight() == 2);
+  REQUIRE(td.get_min_value() == 1.0);
+}
+
+TEST_CASE("deserialize bytes rejects NaN single value", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  auto bytes = td.serialize();
+  write_bytes(bytes, single_value_offset, std::numeric_limits<double>::quiet_NaN());
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+}
+
+TEST_CASE("deserialize stream rejects infinity min", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  td.update(3.0);
+  auto bytes = td.serialize();
+  std::string data(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  write_bytes(data, min_offset, std::numeric_limits<double>::infinity());
+  std::istringstream is(data, std::ios::binary);
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(is), std::invalid_argument);
+}
+
+TEST_CASE("deserialize bytes rejects NaN centroid mean", "[tdigest]") {
+  tdigest_double td(100);
+  for (int i = 0; i < 10; ++i) td.update(i);
+  auto bytes = td.serialize();
+  write_bytes(bytes, first_centroid_mean_offset, std::numeric_limits<double>::quiet_NaN());
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+}
+
+TEST_CASE("deserialize bytes rejects NaN buffered value", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  auto bytes = td.serialize(0, true);
+  write_bytes(bytes, first_buffered_value_offset, std::numeric_limits<double>::quiet_NaN());
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+}
+
+TEST_CASE("deserialize bytes rejects infinity single value", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  auto bytes = td.serialize();
+  write_bytes(bytes, single_value_offset, std::numeric_limits<double>::infinity());
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+}
+
+TEST_CASE("deserialize bytes rejects NaN max", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  auto bytes = td.serialize();
+  write_bytes(bytes, max_offset, std::numeric_limits<double>::quiet_NaN());
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+}
+
+TEST_CASE("deserialize bytes rejects infinity max", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  auto bytes = td.serialize();
+  write_bytes(bytes, max_offset, std::numeric_limits<double>::infinity());
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+}
+
+TEST_CASE("deserialize bytes rejects infinity buffered value", "[tdigest]") {
+  tdigest_double td(100);
+  td.update(1.0);
+  td.update(2.0);
+  auto bytes = td.serialize(0, true);
+  write_bytes(bytes, first_buffered_value_offset, std::numeric_limits<double>::infinity());
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+}
+
+TEST_CASE("deserialize bytes rejects zero centroid weight", "[tdigest]") {
+  tdigest_double td(100);
+  for (int i = 0; i < 10; ++i) td.update(i);
+  auto bytes = td.serialize();
+  write_bytes(bytes, first_centroid_weight_offset, static_cast<uint64_t>(0));
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+}
+
+TEST_CASE("deserialize stream rejects zero centroid weight", "[tdigest]") {
+  tdigest_double td(100);
+  for (int i = 0; i < 10; ++i) td.update(i);
+  auto bytes = td.serialize();
+  std::string data(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  write_bytes(data, first_centroid_weight_offset, static_cast<uint64_t>(0));
+  std::istringstream is(data, std::ios::binary);
+  REQUIRE_THROWS_AS(tdigest_double::deserialize(is), std::invalid_argument);
 }
 
 } /* namespace datasketches */
