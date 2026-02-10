@@ -87,8 +87,11 @@ void assert_encodes(const SketchType& sketch, const std::vector<double>& values,
 
     // Test sum accuracy (if values have same sign)
     if (sorted_values[0] >= 0 || sorted_values.back() <= 0) {
-        const double expected_sum = std::accumulate(values.begin(), values.end(), 0.0);
-        assert_accurate(expected_sum, expected_sum, sketch.get_sum(), relative_accuracy);
+      double expected_sum = 0;
+      for (const double v : values) {
+        expected_sum += v;
+      }
+      assert_accurate(expected_sum, expected_sum, sketch.get_sum(), relative_accuracy);
     }
 }
 
