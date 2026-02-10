@@ -74,7 +74,7 @@ uint64_t count_min_sketch<W,A>::get_seed() const {
 
 template<typename W, typename A>
 double count_min_sketch<W,A>::get_relative_error() const {
-  return exp(1.0) / double(_num_buckets);
+  return exp(1.0) / static_cast<double>(_num_buckets);
 }
 
 template<typename W, typename A>
@@ -449,8 +449,9 @@ string<A> count_min_sketch<W,A>::to_string() const {
   // count the number of used entries in the sketch
   uint64_t num_nonzero = 0;
   for (const auto entry: _sketch_array) {
-    if (entry != static_cast<W>(0.0))
+    if (entry != static_cast<W>(0.0)){
       ++num_nonzero;
+    }
   }
 
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
