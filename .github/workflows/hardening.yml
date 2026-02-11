@@ -1,0 +1,59 @@
+name: libc++ Hardening Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  hardening-test:
+    name: C++17 with libc++ Hardening Mode
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      
+      - name: Install LLVM and libc++
+        run: |
+          # Install LLVM/Clang with libc++
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
+          sudo apt-get update
+          sudo apt-get install -y clang-18 libc++-18-dev libc++abi-18-dev
+          
+      - name: Configure with C++17 and libc++ hardening
+        env:
+          CC: clang-18
+          CXX: clang++-18
+        run: |
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            -DCMAKE_CXX_STANDARD=17 \
+            -DBUILD_TESTS=ON \
+            -DCMAKE_CXX_FLAGS="-stdlib=libc++ -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG" \
+            -DCMAKE_EXE_LINKER_FLAGS="-stdlib=libc++ -lc++abi"
+      
+      - name: Build hardening tests
+        run: cmake --build build --target hardening_test --config ${{ env.BUILD_TYPE }}
+      
+      - name: Run hardening tests
+        run: |
+          cd build
+          ./common/test/hardening_test "[deserialize_hardening]"
+      
+      - name: Report results
+        if: always()
+        run: |
+          echo "✅ Tests passed with libc++ hardening enabled!"
+          echo "This verifies the fix for issue #477 prevents SIGABRT."

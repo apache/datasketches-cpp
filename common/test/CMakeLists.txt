@@ -75,10 +75,15 @@ target_sources(common_test
 # now the integration test part
 add_executable(integration_test)
 
-target_link_libraries(integration_test count cpc density fi hll kll req sampling theta tuple common_test_lib)
+target_link_libraries(integration_test count cpc density fi hll kll req sampling theta tuple quantiles common_test_lib)
 
+# Use CMAKE_CXX_STANDARD if defined, otherwise C++11
+set(_integration_cxx_standard 11)
+if(DEFINED CMAKE_CXX_STANDARD)
+  set(_integration_cxx_standard ${CMAKE_CXX_STANDARD})
+endif()
 set_target_properties(integration_test PROPERTIES
-  CXX_STANDARD 11
+  CXX_STANDARD ${_integration_cxx_standard}
   CXX_STANDARD_REQUIRED YES
 )
 
@@ -90,4 +95,40 @@ add_test(
 target_sources(integration_test
   PRIVATE
     integration_test.cpp
+)
+
+# Separate hardening test executable (header-only, no pre-compiled libs)
+# This ensures the sketch code is compiled with C++17 + hardening
+# Always build this target - it will use CMAKE_CXX_STANDARD if set (and >= 17), otherwise C++17
+
+add_executable(hardening_test)
+target_link_libraries(hardening_test common common_test_lib)
+
+# Include directories for header-only sketch implementations
+target_include_directories(hardening_test PRIVATE
+  ${CMAKE_SOURCE_DIR}/quantiles/include
+  ${CMAKE_SOURCE_DIR}/kll/include
+  ${CMAKE_SOURCE_DIR}/req/include
+  ${CMAKE_SOURCE_DIR}/common/include
+)
+
+# Use C++17 minimum for hardening tests
+set(_hardening_cxx_standard 17)
+if(DEFINED CMAKE_CXX_STANDARD AND CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+  set(_hardening_cxx_standard ${CMAKE_CXX_STANDARD})
+endif()
+set_target_properties(hardening_test PROPERTIES
+  CXX_STANDARD ${_hardening_cxx_standard}
+  CXX_STANDARD_REQUIRED YES
+)
+message(STATUS "hardening_test will use C++${_hardening_cxx_standard}")
+
+add_test(
+  NAME hardening_test
+  COMMAND hardening_test "[deserialize_hardening]"
+)
+
+target_sources(hardening_test
+  PRIVATE
+    deserialize_hardening_test.cpp
 )

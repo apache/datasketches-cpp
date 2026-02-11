@@ -25,6 +25,7 @@
 #include <stdexcept>
 #include <iomanip>
 #include <sstream>
+#include <type_traits>
 
 #include "count_zeros.hpp"
 #include "conditional_forward.hpp"
@@ -393,18 +394,22 @@ auto quantiles_sketch<T, C, A>::deserialize(std::istream &is, const SerDe& serde
   const bool is_compact = (serial_version == 2) | ((flags_byte & (1 << flags::IS_COMPACT)) > 0);
   const bool is_sorted = (flags_byte & (1 << flags::IS_SORTED)) > 0;
 
-  optional<T> tmp; // space to deserialize min and max
   optional<T> min_item;
   optional<T> max_item;
 
-  serde.deserialize(is, &*tmp, 1);
+  // Space to deserialize min and max.
+  // serde::deserialize expects allocated but not initialized storage.
+  typename std::aligned_storage<sizeof(T), alignof(T)>::type tmp_storage;
+  T* tmp = reinterpret_cast<T*>(&tmp_storage);
+
+  serde.deserialize(is, tmp, 1);
   // serde call did not throw, repackage and cleanup
-  min_item.emplace(*tmp);
-  (*tmp).~T();
-  serde.deserialize(is, &*tmp, 1);
+  min_item.emplace(std::move(*tmp));
+  tmp->~T();
+  serde.deserialize(is, tmp, 1);
   // serde call did not throw, repackage and cleanup
-  max_item.emplace(*tmp);
-  (*tmp).~T();
+  max_item.emplace(std::move(*tmp));
+  tmp->~T();
 
   if (serial_version == 1) {
     read<uint64_t>(is); // no longer used
@@ -507,18 +512,22 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
   const bool is_compact = (serial_version == 2) | ((flags_byte & (1 << flags::IS_COMPACT)) > 0);
   const bool is_sorted = (flags_byte & (1 << flags::IS_SORTED)) > 0;
 
-  optional<T> tmp; // space to deserialize min and max
   optional<T> min_item;
   optional<T> max_item;
 
-  ptr += serde.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+  // Space to deserialize min and max.
+  // serde::deserialize expects allocated but not initialized storage.
+  typename std::aligned_storage<sizeof(T), alignof(T)>::type tmp_storage;
+  T* tmp = reinterpret_cast<T*>(&tmp_storage);
+
+  ptr += serde.deserialize(ptr, end_ptr - ptr, tmp, 1);
   // serde call did not throw, repackage and cleanup
-  min_item.emplace(*tmp);
-  (*tmp).~T();
-  ptr += serde.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+  min_item.emplace(std::move(*tmp));
+  tmp->~T();
+  ptr += serde.deserialize(ptr, end_ptr - ptr, tmp, 1);
   // serde call did not throw, repackage and cleanup
-  max_item.emplace(*tmp);
-  (*tmp).~T();
+  max_item.emplace(std::move(*tmp));
+  tmp->~T();
 
   if (serial_version == 1) {
     uint64_t unused_long;

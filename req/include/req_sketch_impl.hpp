@@ -22,6 +22,7 @@
 
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 
 namespace datasketches {
 
@@ -461,7 +462,6 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   const bool hra = flags_byte & (1 << flags::IS_HIGH_RANK);
   if (is_empty) return req_sketch(k, hra, comparator, allocator);
 
-  optional<T> tmp; // space to deserialize min and max
   optional<T> min_item;
   optional<T> max_item;
 
@@ -472,14 +472,19 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   uint64_t n = 1;
   if (num_levels > 1) {
     n = read<uint64_t>(is);
-    sd.deserialize(is, &*tmp, 1);
+    // Space to deserialize min and max.
+    // serde::deserialize expects allocated but not initialized storage.
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type tmp_storage;
+    T* tmp = reinterpret_cast<T*>(&tmp_storage);
+
+    sd.deserialize(is, tmp, 1);
     // serde call did not throw, repackage and cleanup
-    min_item.emplace(*tmp);
-    (*tmp).~T();
-    sd.deserialize(is, &*tmp, 1);
+    min_item.emplace(std::move(*tmp));
+    tmp->~T();
+    sd.deserialize(is, tmp, 1);
     // serde call did not throw, repackage and cleanup
-    max_item.emplace(*tmp);
-    (*tmp).~T();
+    max_item.emplace(std::move(*tmp));
+    tmp->~T();
   }
 
   if (raw_items) {
@@ -537,7 +542,6 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   const bool hra = flags_byte & (1 << flags::IS_HIGH_RANK);
   if (is_empty) return req_sketch(k, hra, comparator, allocator);
 
-  optional<T> tmp; // space to deserialize min and max
   optional<T> min_item;
   optional<T> max_item;
 
@@ -549,14 +553,19 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   if (num_levels > 1) {
     ensure_minimum_memory(end_ptr - ptr, sizeof(n));
     ptr += copy_from_mem(ptr, n);
-    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+    // Space to deserialize min and max.
+    // serde::deserialize expects allocated but not initialized storage.
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type tmp_storage;
+    T* tmp = reinterpret_cast<T*>(&tmp_storage);
+
+    ptr += sd.deserialize(ptr, end_ptr - ptr, tmp, 1);
     // serde call did not throw, repackage and cleanup
-    min_item.emplace(*tmp);
-    (*tmp).~T();
-    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+    min_item.emplace(std::move(*tmp));
+    tmp->~T();
+    ptr += sd.deserialize(ptr, end_ptr - ptr, tmp, 1);
     // serde call did not throw, repackage and cleanup
-    max_item.emplace(*tmp);
-    (*tmp).~T();
+    max_item.emplace(std::move(*tmp));
+    tmp->~T();
   }
 
   if (raw_items) {

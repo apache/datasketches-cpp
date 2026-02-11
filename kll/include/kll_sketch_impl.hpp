@@ -24,6 +24,7 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 
 #include "conditional_forward.hpp"
 #include "count_zeros.hpp"
@@ -481,18 +482,22 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
     read(is, levels.data(), sizeof(levels[0]) * num_levels);
   }
   levels[num_levels] = capacity;
-  optional<T> tmp; // space to deserialize min and max
   optional<T> min_item;
   optional<T> max_item;
   if (!is_single_item) {
-    sd.deserialize(is, &*tmp, 1);
+    // Space to deserialize min and max.
+    // serde::deserialize expects allocated but not initialized storage.
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type tmp_storage;
+    T* tmp = reinterpret_cast<T*>(&tmp_storage);
+
+    sd.deserialize(is, tmp, 1);
     // serde call did not throw, repackage and cleanup
-    min_item.emplace(*tmp);
-    (*tmp).~T();
-    sd.deserialize(is, &*tmp, 1);
+    min_item.emplace(std::move(*tmp));
+    tmp->~T();
+    sd.deserialize(is, tmp, 1);
     // serde call did not throw, repackage and cleanup
-    max_item.emplace(*tmp);
-    (*tmp).~T();
+    max_item.emplace(std::move(*tmp));
+    tmp->~T();
   }
   A alloc(allocator);
   auto items_buffer_deleter = [capacity, &alloc](T* ptr) { alloc.deallocate(ptr, capacity); };
@@ -565,18 +570,22 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     ptr += copy_from_mem(ptr, levels.data(), sizeof(levels[0]) * num_levels);
   }
   levels[num_levels] = capacity;
-  optional<T> tmp; // space to deserialize min and max
   optional<T> min_item;
   optional<T> max_item;
   if (!is_single_item) {
-    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+    // Space to deserialize min and max.
+    // serde::deserialize expects allocated but not initialized storage.
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type tmp_storage;
+    T* tmp = reinterpret_cast<T*>(&tmp_storage);
+
+    ptr += sd.deserialize(ptr, end_ptr - ptr, tmp, 1);
     // serde call did not throw, repackage and cleanup
-    min_item.emplace(*tmp);
-    (*tmp).~T();
-    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+    min_item.emplace(std::move(*tmp));
+    tmp->~T();
+    ptr += sd.deserialize(ptr, end_ptr - ptr, tmp, 1);
     // serde call did not throw, repackage and cleanup
-    max_item.emplace(*tmp);
-    (*tmp).~T();
+    max_item.emplace(std::move(*tmp));
+    tmp->~T();
   }
   A alloc(allocator);
   auto items_buffer_deleter = [capacity, &alloc](T* ptr) { alloc.deallocate(ptr, capacity); };

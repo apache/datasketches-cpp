@@ -28,6 +28,7 @@
 #include <cmath>
 #include <string>
 #include <sstream>
+#include <type_traits>
 
 namespace datasketches {
 
@@ -365,11 +366,15 @@ std::pair<ebpps_sample<T, A>, size_t> ebpps_sample<T, A>::deserialize(const uint
 
   optional<T> partial_item;
   if (has_partial) {
-    optional<T> tmp; // space to deserialize
-    ptr += sd.deserialize(ptr, end_ptr - ptr, &*tmp, 1);
+    // Space to deserialize.
+    // serde::deserialize expects allocated but not initialized storage.
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type tmp_storage;
+    T* tmp = reinterpret_cast<T*>(&tmp_storage);
+
+    ptr += sd.deserialize(ptr, end_ptr - ptr, tmp, 1);
     // serde did not throw so place item and clean up
-    partial_item.emplace(*tmp);
-    (*tmp).~T();
+    partial_item.emplace(std::move(*tmp));
+    tmp->~T();
   }
 
   return std::pair<ebpps_sample<T,A>, size_t>(
@@ -400,11 +405,15 @@ ebpps_sample<T, A> ebpps_sample<T, A>::deserialize(std::istream& is, const SerDe
 
   optional<T> partial_item;
   if (has_partial) {
-    optional<T> tmp; // space to deserialize
-    sd.deserialize(is, &*tmp, 1);
+    // Space to deserialize.
+    // serde::deserialize expects allocated but not initialized storage.
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type tmp_storage;
+    T* tmp = reinterpret_cast<T*>(&tmp_storage);
+
+    sd.deserialize(is, tmp, 1);
     // serde did not throw so place item and clean up
-    partial_item.emplace(*tmp);
-    (*tmp).~T();
+    partial_item.emplace(std::move(*tmp));
+    tmp->~T();
   }
 
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
