@@ -145,7 +145,7 @@ var_opt_sketch<T, A>::var_opt_sketch(var_opt_sketch&& other) noexcept :
 template<typename T, typename A>
 var_opt_sketch<T, A>::var_opt_sketch(uint32_t k, resize_factor rf, bool is_gadget, const A& allocator) :
   k_(k), h_(0), m_(0), r_(0), n_(0), total_wt_r_(0.0), rf_(rf), allocator_(allocator) {
-  if (k == 0 || k_ > MAX_K) {
+  if (k < 1 || k_ > MAX_K) {
     throw std::invalid_argument("k must be at least 1 and less than 2^31 - 1");
   }
 

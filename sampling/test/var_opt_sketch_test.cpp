@@ -71,6 +71,7 @@ static void check_if_equal(var_opt_sketch<T, A>& sk1, var_opt_sketch<T, A>& sk2)
 TEST_CASE("varopt sketch: invalid k", "[var_opt_sketch]") {
   REQUIRE_THROWS_AS(var_opt_sketch<int>(0), std::invalid_argument);
   REQUIRE_THROWS_AS(var_opt_sketch<int>(1U << 31), std::invalid_argument); // aka k < 0
+  REQUIRE_THROWS_AS(var_opt_sketch<int>(-1), std::invalid_argument);
 }
 
 TEST_CASE("varopt sketch: bad serialization version", "[var_opt_sketch]") {
