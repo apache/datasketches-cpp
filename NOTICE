@@ -10,3 +10,6 @@ The Apache Software Foundation (http://www.apache.org/).
 
 Prior to moving to ASF, the software for this project was developed at
 Yahoo Inc. (https://developer.yahoo.com).
+
+This product includes utf8cpp (https://github.com/nemtrif/utfcpp),
+licensed under the Boost Software License, Version 1.0.

@@ -51,3 +51,14 @@ install(FILES
       include/serde.hpp
       include/xxhash64.h
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
+
+install(FILES
+      include/third_party/utf8cpp/utf8.h
+      include/third_party/utf8cpp/utf8/checked.h
+      include/third_party/utf8cpp/utf8/core.h
+      include/third_party/utf8cpp/utf8/cpp11.h
+      include/third_party/utf8cpp/utf8/cpp17.h
+      include/third_party/utf8cpp/utf8/cpp20.h
+      include/third_party/utf8cpp/utf8/unchecked.h
+      include/third_party/utf8cpp/LICENSE
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches/third_party/utf8cpp")

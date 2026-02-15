@@ -44,6 +44,7 @@ target_sources(tuple_test
     tuple_a_not_b_test.cpp
     tuple_jaccard_similarity_test.cpp
     array_of_doubles_sketch_test.cpp
+    array_of_strings_sketch_test.cpp
     engagement_test.cpp
 )
 
@@ -52,6 +53,7 @@ target_sources(tuple_test
   PRIVATE
     aod_sketch_deserialize_from_java_test.cpp
     tuple_sketch_deserialize_from_java_test.cpp
+    aos_sketch_deserialize_from_java_test.cpp
 )
 endif()
 
@@ -60,5 +62,6 @@ target_sources(tuple_test
   PRIVATE
     aod_sketch_serialize_for_java.cpp
     tuple_sketch_serialize_for_java.cpp
+    aos_sketch_serialize_for_java.cpp
 )
 endif()
