@@ -39,7 +39,9 @@ _num_buckets(num_buckets),
 _sketch_array((num_hashes*num_buckets < 1<<30) ? num_hashes*num_buckets : 0, 0, _allocator),
 _seed(seed),
 _total_weight(0) {
-  if (num_buckets < 3) throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.");
+  if (num_buckets < 3) {
+    throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.");
+  }
 
   // This check is to ensure later compatibility with a Java implementation whose maximum size can only
   // be 2^31-1.  We check only against 2^30 for simplicity.
@@ -147,7 +149,7 @@ W count_min_sketch<W,A>::get_estimate(int64_t item) const {return get_estimate(&
 
 template<typename W, typename A>
 W count_min_sketch<W,A>::get_estimate(const std::string& item) const {
-  if (item.empty()) return 0; // Empty strings are not inserted into the sketch.
+  if (item.empty()) { return 0; } // Empty strings are not inserted into the sketch.
   return get_estimate(item.c_str(), item.length());
 }
 
@@ -176,7 +178,7 @@ void count_min_sketch<W,A>::update(int64_t item, W weight) {
 
 template<typename W, typename A>
 void count_min_sketch<W,A>::update(const std::string& item, W weight) {
-  if (item.empty()) return;
+  if (item.empty()) { return; }
   update(item.c_str(), item.length(), weight);
 }
 
@@ -201,7 +203,7 @@ W count_min_sketch<W,A>::get_upper_bound(int64_t item) const {return get_upper_b
 
 template<typename W, typename A>
 W count_min_sketch<W,A>::get_upper_bound(const std::string& item) const {
-  if (item.empty()) return 0; // Empty strings are not inserted into the sketch.
+  if (item.empty()) { return 0; } // Empty strings are not inserted into the sketch.
   return get_upper_bound(item.c_str(), item.length());
 }
 
@@ -218,7 +220,7 @@ W count_min_sketch<W,A>::get_lower_bound(int64_t item) const {return get_lower_b
 
 template<typename W, typename A>
 W count_min_sketch<W,A>::get_lower_bound(const std::string& item) const {
-  if (item.empty()) return 0; // Empty strings are not inserted into the sketch.
+  if (item.empty()) { return 0; } // Empty strings are not inserted into the sketch.
   return get_lower_bound(item.c_str(), item.length());
 }
 
@@ -232,17 +234,13 @@ void count_min_sketch<W,A>::merge(const count_min_sketch &other_sketch) {
   /*
   * Merges this sketch into other_sketch sketch by elementwise summing of buckets
   */
-  if (this == &other_sketch) {
-    throw std::invalid_argument( "Cannot merge a sketch with itself." );
-  }
+  if (this == &other_sketch) { throw std::invalid_argument( "Cannot merge a sketch with itself." ); }
 
   bool acceptable_config =
     (get_num_hashes() == other_sketch.get_num_hashes())   &&
     (get_num_buckets() == other_sketch.get_num_buckets()) &&
     (get_seed() == other_sketch.get_seed());
-  if (!acceptable_config) {
-    throw std::invalid_argument( "Incompatible sketch configuration." );
-  }
+  if (!acceptable_config) { throw std::invalid_argument( "Incompatible sketch configuration." ); }
 
   // Merge step - iterate over the other vector and add the weights to this sketch
   auto it = _sketch_array.begin(); // This is a std::vector iterator.
@@ -290,7 +288,7 @@ void count_min_sketch<W,A>::serialize(std::ostream& os) const {
   write(os, nhashes);
   write(os, seed_hash);
   write(os, unused8);
-  if (is_empty()) return; // sketch is empty, no need to write further bytes.
+  if (is_empty()) { return; } // sketch is empty, no need to write further bytes.
 
   // Long 2
   write(os, _total_weight);
@@ -327,7 +325,7 @@ auto count_min_sketch<W,A>::deserialize(std::istream& is, uint64_t seed, const A
   }
   count_min_sketch c(nhashes, nbuckets, seed, allocator);
   const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
-  if (is_empty == 1) return c; // sketch is empty, no need to read further.
+  if (is_empty == 1) { return c; } // sketch is empty, no need to read further.
 
   // Set the sketch weight and read in the sketch values
   const auto weight = read<W>(is);
@@ -373,7 +371,7 @@ auto count_min_sketch<W,A>::serialize(unsigned header_size_bytes) const -> vecto
   ptr += copy_to_mem(nhashes, ptr);
   ptr += copy_to_mem(seed_hash, ptr);
   ptr += copy_to_mem(null_characters_8, ptr);
-  if (is_empty()) return bytes; // sketch is empty, no need to write further bytes.
+  if (is_empty()) { return bytes; } // sketch is empty, no need to write further bytes.
 
   // Long 2
   const W t_weight = _total_weight;
@@ -423,7 +421,7 @@ auto count_min_sketch<W,A>::deserialize(const void* bytes, size_t size, uint64_t
   }
   count_min_sketch c(nhashes, nbuckets, seed, allocator);
   const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
-  if (is_empty) return c; // sketch is empty, no need to read further.
+  if (is_empty) { return c; } // sketch is empty, no need to read further.
 
   ensure_minimum_memory(size, sizeof(W) * (1 + nbuckets * nhashes));
 
@@ -449,9 +447,7 @@ string<A> count_min_sketch<W,A>::to_string() const {
   // count the number of used entries in the sketch
   uint64_t num_nonzero = 0;
   for (const auto entry: _sketch_array) {
-    if (entry != static_cast<W>(0.0)){
-      ++num_nonzero;
-    }
+    if (entry != static_cast<W>(0.0)) { ++num_nonzero; }
   }
 
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
