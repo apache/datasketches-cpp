@@ -199,7 +199,7 @@ void kll_sketch<T, C, A>::update_min_max(const T& item) {
 
 template<typename T, typename C, typename A>
 uint32_t kll_sketch<T, C, A>::internal_update() {
-  if (levels_[0] == 0) compress_while_updating();
+  if (levels_[0] == 0) { compress_while_updating(); }
   n_++;
   is_level_zero_sorted_ = false;
   return --levels_[0];
@@ -208,7 +208,7 @@ uint32_t kll_sketch<T, C, A>::internal_update() {
 template<typename T, typename C, typename A>
 template<typename FwdSk>
 void kll_sketch<T, C, A>::merge(FwdSk&& other) {
-  if (other.is_empty()) return;
+  if (other.is_empty()) { return; }
   if (m_ != other.m_) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
   }
@@ -224,9 +224,9 @@ void kll_sketch<T, C, A>::merge(FwdSk&& other) {
     const uint32_t index = internal_update();
     new (&items_[index]) T(conditional_forward<FwdSk>(other.items_[i]));
   }
-  if (other.num_levels_ >= 2) merge_higher_levels(other, final_n);
+  if (other.num_levels_ >= 2) { merge_higher_levels(other, final_n); }
   n_ = final_n;
-  if (other.is_estimation_mode()) min_k_ = std::min(min_k_, other.min_k_);
+  if (other.is_estimation_mode()) { min_k_ = std::min(min_k_, other.min_k_); }
   assert_correct_total_weight();
   reset_sorted_view();
 }
@@ -258,13 +258,13 @@ bool kll_sketch<T, C, A>::is_estimation_mode() const {
 
 template<typename T, typename C, typename A>
 T kll_sketch<T, C, A>::get_min_item() const {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
+  if (is_empty()) { throw std::runtime_error("operation is undefined for an empty sketch"); }
   return *min_item_;
 }
 
 template<typename T, typename C, typename A>
 T kll_sketch<T, C, A>::get_max_item() const {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
+  if (is_empty()) { throw std::runtime_error("operation is undefined for an empty sketch"); }
   return *max_item_;
 }
 
@@ -280,28 +280,28 @@ A kll_sketch<T, C, A>::get_allocator() const {
 
 template<typename T, typename C, typename A>
 double kll_sketch<T, C, A>::get_rank(const T& item, bool inclusive) const {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
+  if (is_empty()) { throw std::runtime_error("operation is undefined for an empty sketch"); }
   setup_sorted_view();
   return sorted_view_->get_rank(item, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto kll_sketch<T, C, A>::get_PMF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
+  if (is_empty()) { throw std::runtime_error("operation is undefined for an empty sketch"); }
   setup_sorted_view();
   return sorted_view_->get_PMF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto kll_sketch<T, C, A>::get_CDF(const T* split_points, uint32_t size, bool inclusive) const -> vector_double {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
+  if (is_empty()) { throw std::runtime_error("operation is undefined for an empty sketch"); }
   setup_sorted_view();
   return sorted_view_->get_CDF(split_points, size, inclusive);
 }
 
 template<typename T, typename C, typename A>
 auto kll_sketch<T, C, A>::get_quantile(double rank, bool inclusive) const -> quantile_return_type {
-  if (is_empty()) throw std::runtime_error("operation is undefined for an empty sketch");
+  if (is_empty()) { throw std::runtime_error("operation is undefined for an empty sketch"); }
   if ((rank < 0.0) || (rank > 1.0)) {
     throw std::invalid_argument("normalized rank cannot be less than zero or greater than 1.0");
   }
