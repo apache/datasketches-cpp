@@ -109,15 +109,15 @@ void cpc_union_alloc<A>::internal_update(S&& sketch) {
         + std::to_string(seed_hash_sketch));
   }
   const auto src_flavor = sketch.determine_flavor();
-  if (cpc_sketch_alloc<A>::flavor::EMPTY == src_flavor) return;
+  if (cpc_sketch_alloc<A>::flavor::EMPTY == src_flavor) { return; }
 
-  if (sketch.get_lg_k() < lg_k) reduce_k(sketch.get_lg_k());
-  if (sketch.get_lg_k() < lg_k) throw std::logic_error("sketch lg_k < union lg_k");
+  if (sketch.get_lg_k() < lg_k) { reduce_k(sketch.get_lg_k()); }
+  if (sketch.get_lg_k() < lg_k) { throw std::logic_error("sketch lg_k < union lg_k"); }
 
-  if (accumulator == nullptr && bit_matrix.size() == 0) throw std::logic_error("both accumulator and bit matrix are absent");
+  if (accumulator == nullptr && bit_matrix.size() == 0) { throw std::logic_error("both accumulator and bit matrix are absent"); }
 
   if (cpc_sketch_alloc<A>::flavor::SPARSE == src_flavor && accumulator != nullptr)  { // Case A
-    if (bit_matrix.size() > 0) throw std::logic_error("union bit_matrix is not expected");
+    if (bit_matrix.size() > 0) { throw std::logic_error("union bit_matrix is not expected"); }
     const auto initial_dest_flavor = accumulator->determine_flavor();
     if (cpc_sketch_alloc<A>::flavor::EMPTY != initial_dest_flavor &&
         cpc_sketch_alloc<A>::flavor::SPARSE != initial_dest_flavor) throw std::logic_error("wrong flavor");
@@ -138,24 +138,24 @@ void cpc_union_alloc<A>::internal_update(S&& sketch) {
   }
 
   if (cpc_sketch_alloc<A>::flavor::SPARSE == src_flavor && bit_matrix.size() > 0)  { // Case B
-    if (accumulator != nullptr) throw std::logic_error("union accumulator != null");
+    if (accumulator != nullptr) { throw std::logic_error("union accumulator != null"); }
     or_table_into_matrix(sketch.surprising_value_table);
     return;
   }
 
   if (cpc_sketch_alloc<A>::flavor::HYBRID != src_flavor && cpc_sketch_alloc<A>::flavor::PINNED != src_flavor
-      && cpc_sketch_alloc<A>::flavor::SLIDING != src_flavor) throw std::logic_error("wrong flavor");
+      && cpc_sketch_alloc<A>::flavor::SLIDING != src_flavor) { throw std::logic_error("wrong flavor"); }
 
   // source is past SPARSE mode, so make sure that dest is a bit matrix
   if (accumulator != nullptr) {
-    if (bit_matrix.size() > 0) throw std::logic_error("union bit matrix is not expected");
+    if (bit_matrix.size() > 0) { throw std::logic_error("union bit matrix is not expected"); }
     const auto dst_flavor = accumulator->determine_flavor();
     if (cpc_sketch_alloc<A>::flavor::EMPTY != dst_flavor && cpc_sketch_alloc<A>::flavor::SPARSE != dst_flavor) {
       throw std::logic_error("wrong flavor");
     }
     switch_to_bit_matrix();
   }
-  if (bit_matrix.size() == 0) throw std::logic_error("union bit_matrix is expected");
+  if (bit_matrix.size() == 0) { throw std::logic_error("union bit_matrix is expected"); }
 
   if (cpc_sketch_alloc<A>::flavor::HYBRID == src_flavor || cpc_sketch_alloc<A>::flavor::PINNED == src_flavor) { // Case C
     or_window_into_matrix(sketch.sliding_window, sketch.window_offset, sketch.get_lg_k());
@@ -165,7 +165,7 @@ void cpc_union_alloc<A>::internal_update(S&& sketch) {
 
   // SLIDING mode involves inverted logic, so we can't just walk the source sketch.
   // Instead, we convert it to a bitMatrix that can be OR'ed into the destination.
-  if (cpc_sketch_alloc<A>::flavor::SLIDING != src_flavor) throw std::logic_error("wrong flavor"); // Case D
+  if (cpc_sketch_alloc<A>::flavor::SLIDING != src_flavor) { throw std::logic_error("wrong flavor"); } // Case D
   vector_u64 src_matrix = sketch.build_bit_matrix();
   or_matrix_into_matrix(src_matrix, sketch.get_lg_k());
 }
@@ -173,20 +173,20 @@ void cpc_union_alloc<A>::internal_update(S&& sketch) {
 template<typename A>
 cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result() const {
   if (accumulator != nullptr) {
-    if (bit_matrix.size() > 0) throw std::logic_error("bit_matrix is not expected");
+    if (bit_matrix.size() > 0) { throw std::logic_error("bit_matrix is not expected"); }
     return get_result_from_accumulator();
   }
-  if (bit_matrix.size() == 0) throw std::logic_error("bit_matrix is expected");
+  if (bit_matrix.size() == 0) { throw std::logic_error("bit_matrix is expected"); }
   return get_result_from_bit_matrix();
 }
 
 template<typename A>
 cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_accumulator() const {
-  if (lg_k != accumulator->get_lg_k()) throw std::logic_error("lg_k != accumulator->lg_k");
+  if (lg_k != accumulator->get_lg_k()) { throw std::logic_error("lg_k != accumulator->lg_k"); }
   if (accumulator->get_num_coupons() == 0) {
     return cpc_sketch_alloc<A>(lg_k, seed, accumulator->get_allocator());
   }
-  if (accumulator->determine_flavor() != cpc_sketch_alloc<A>::flavor::SPARSE) throw std::logic_error("wrong flavor");
+  if (accumulator->determine_flavor() != cpc_sketch_alloc<A>::flavor::SPARSE) { throw std::logic_error("wrong flavor"); }
   cpc_sketch_alloc<A> copy(*accumulator);
   copy.was_merged = true;
   return copy;
@@ -199,7 +199,7 @@ cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_bit_matrix() const {
 
   const auto flavor = cpc_sketch_alloc<A>::determine_flavor(lg_k, num_coupons);
   if (flavor != cpc_sketch_alloc<A>::flavor::HYBRID && flavor != cpc_sketch_alloc<A>::flavor::PINNED
-      && flavor != cpc_sketch_alloc<A>::flavor::SLIDING) throw std::logic_error("wrong flavor");
+      && flavor != cpc_sketch_alloc<A>::flavor::SLIDING) { throw std::logic_error("wrong flavor"); }
 
   const uint8_t offset = cpc_sketch_alloc<A>::determine_correct_offset(lg_k, num_coupons);
 
@@ -208,7 +208,7 @@ cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_bit_matrix() const {
 
   // dynamically growing caused snowplow effect
   uint8_t table_lg_size = lg_k - 4; // K/16; in some cases this will end up being oversized
-  if (table_lg_size < 2) table_lg_size = 2;
+  if (table_lg_size < 2) { table_lg_size = 2; }
   u32_table<A> table(table_lg_size, 6 + lg_k, bit_matrix.get_allocator());
 
   // the following should work even when the offset is zero
@@ -229,14 +229,14 @@ cpc_sketch_alloc<A> cpc_union_alloc<A>::get_result_from_bit_matrix() const {
       pattern = pattern ^ (static_cast<uint64_t>(1) << col); // erase the 1
       const uint32_t row_col = (i << 6) | col;
       bool is_novel = table.maybe_insert(row_col);
-      if (!is_novel) throw std::logic_error("is_novel != true");
+      if (!is_novel) { throw std::logic_error("is_novel != true"); }
     }
   }
 
   // at this point we could shrink an oversized hash table, but the relative waste isn't very big
 
   uint8_t first_interesting_column = count_trailing_zeros_in_u64(all_surprises_ored);
-  if (first_interesting_column > offset) first_interesting_column = offset; // corner case
+  if (first_interesting_column > offset) { first_interesting_column = offset; } // corner case
 
   // HIP-related fields will contain zeros, and that is okay
   return cpc_sketch_alloc<A>(lg_k, num_coupons, first_interesting_column, std::move(table), std::move(sliding_window), false, 0, 0, seed);
@@ -260,9 +260,9 @@ void cpc_union_alloc<A>::walk_table_updating_sketch(const u32_table<A>& table) {
   // Using a golden ratio stride fixes the snowplow effect.
   const double golden = 0.6180339887498949025;
   uint32_t stride = static_cast<uint32_t>(golden * static_cast<double>(num_slots));
-  if (stride < 2) throw std::logic_error("stride < 2");
-  if (stride == ((stride >> 1) << 1)) stride += 1; // force the stride to be odd
-  if (stride < 3 || stride >= num_slots) throw std::out_of_range("stride out of range");
+  if (stride < 2) { throw std::logic_error("stride < 2"); }
+  if (stride == ((stride >> 1) << 1)) { stride += 1; } // force the stride to be odd
+  if (stride < 3 || stride >= num_slots) { throw std::out_of_range("stride out of range"); }
 
   for (uint32_t i = 0, j = 0; i < num_slots; i++, j += stride) {
     j &= num_slots - 1;
@@ -290,7 +290,7 @@ void cpc_union_alloc<A>::or_table_into_matrix(const u32_table<A>& table) {
 
 template<typename A>
 void cpc_union_alloc<A>::or_window_into_matrix(const vector_bytes& sliding_window, uint8_t offset, uint8_t src_lg_k) {
-  if (lg_k > src_lg_k) throw std::logic_error("dst LgK > src LgK");
+  if (lg_k > src_lg_k) { throw std::logic_error("dst LgK > src LgK"); }
   const uint64_t dst_mask = (1 << lg_k) - 1; // downsamples when dst lgK < src LgK
   const uint32_t src_k = 1 << src_lg_k;
   for (uint32_t src_row = 0; src_row < src_k; src_row++) {
@@ -300,7 +300,7 @@ void cpc_union_alloc<A>::or_window_into_matrix(const vector_bytes& sliding_windo
 
 template<typename A>
 void cpc_union_alloc<A>::or_matrix_into_matrix(const vector_u64& src_matrix, uint8_t src_lg_k) {
-  if (lg_k > src_lg_k) throw std::logic_error("dst LgK > src LgK");
+  if (lg_k > src_lg_k) { throw std::logic_error("dst LgK > src LgK"); }
   const uint64_t dst_mask = (1 << lg_k) - 1; // downsamples when dst lgK < src LgK
   const uint32_t src_k = 1 << src_lg_k;
   for (uint32_t src_row = 0; src_row < src_k; src_row++) {
@@ -310,11 +310,11 @@ void cpc_union_alloc<A>::or_matrix_into_matrix(const vector_u64& src_matrix, uin
 
 template<typename A>
 void cpc_union_alloc<A>::reduce_k(uint8_t new_lg_k) {
-  if (new_lg_k >= lg_k) throw std::logic_error("new LgK >= union lgK");
-  if (accumulator == nullptr && bit_matrix.size() == 0) throw std::logic_error("both accumulator and bit_matrix are absent");
+  if (new_lg_k >= lg_k) { throw std::logic_error("new LgK >= union lgK"); }
+  if (accumulator == nullptr && bit_matrix.size() == 0) { throw std::logic_error("both accumulator and bit_matrix are absent"); }
 
   if (bit_matrix.size() > 0) { // downsample the unioner's bit matrix
-    if (accumulator != nullptr) throw std::logic_error("accumulator is not null");
+    if (accumulator != nullptr) { throw std::logic_error("accumulator is not null"); }
     vector_u64 old_matrix = std::move(bit_matrix);
     const uint8_t old_lg_k = lg_k;
     const uint32_t new_k = 1 << new_lg_k;
@@ -325,7 +325,7 @@ void cpc_union_alloc<A>::reduce_k(uint8_t new_lg_k) {
   }
 
   if (accumulator != nullptr) { // downsample the unioner's sketch
-    if (bit_matrix.size() > 0) throw std::logic_error("bit_matrix is not expected");
+    if (bit_matrix.size() > 0) { throw std::logic_error("bit_matrix is not expected"); }
     if (!accumulator->is_empty()) {
       cpc_sketch_alloc<A> old_accumulator(*accumulator);
       *accumulator = cpc_sketch_alloc<A>(new_lg_k, seed, old_accumulator.get_allocator());
