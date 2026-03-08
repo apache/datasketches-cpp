@@ -22,9 +22,7 @@
 
 #include <stdexcept>
 
-#include "array_of_strings_sketch.hpp"
 #include "common_defs.hpp"
-#include "third_party/utf8cpp/utf8.h"
 
 namespace datasketches {
 
@@ -116,7 +114,6 @@ void default_array_of_strings_serde<Allocator>::serialize(
     write(os, num_nodes);
     const std::string* data = items[i].data();
     for (uint8_t j = 0; j < num_nodes; ++j) {
-      check_utf8(data[j]);
       const uint32_t length = static_cast<uint32_t>(data[j].size());
       write(os, length);
       os.write(data[j].data(), length);
@@ -143,7 +140,6 @@ void default_array_of_strings_serde<Allocator>::deserialize(
         is.read(&value[0], length);
         if (!is) throw std::runtime_error("array_of_strings stream read failed");
       }
-      check_utf8(value);
       array[j] = std::move(value);
     }
     summary_allocator alloc(summary_allocator_);
@@ -166,7 +162,6 @@ size_t default_array_of_strings_serde<Allocator>::serialize(
     bytes_written += copy_to_mem(num_nodes, ptr8 + bytes_written);
     const std::string* data = items[i].data();
     for (uint8_t j = 0; j < num_nodes; ++j) {
-      check_utf8(data[j]);
       const uint32_t length = static_cast<uint32_t>(data[j].size());
 
       bytes_written += copy_to_mem(length, ptr8 + bytes_written);
@@ -200,7 +195,6 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
       if (length != 0) {
         bytes_read += copy_from_mem(ptr8 + bytes_read, &value[0], length);
       }
-      check_utf8(value);
       array[j] = std::move(value);
     }
     summary_allocator alloc(summary_allocator_);
@@ -231,13 +225,6 @@ uint32_t default_array_of_strings_serde<Allocator>::compute_total_bytes(const ar
     total += data[j].size();
   }
   return static_cast<uint32_t>(total);
-}
-
-template<typename Allocator>
-void default_array_of_strings_serde<Allocator>::check_utf8(const std::string& value) {
-  if (!utf8::is_valid(value.begin(), value.end())) {
-    throw std::runtime_error("array_of_strings contains invalid UTF-8");
-  }
 }
 
 } /* namespace datasketches */

@@ -42,8 +42,16 @@ public:
   void update(array_of_strings& array, const array_of_strings* input) const;
 };
 
-// serializer/deserializer for an array of strings
-// Requirements: all strings must be valid UTF-8 and array size must be <= 127.
+/**
+ * Serializer/deserializer for an array of strings.
+ *
+ * Requirements:
+ * - Array size must be <= 127.
+ *
+ * This serde does not perform UTF-8 validation. Callers must ensure strings
+ * are valid UTF-8 before serialization to guarantee interoperability with
+ * Java, Go, and Rust implementations.
+ */
 template<typename Allocator = std::allocator<array_of_strings>>
 struct default_array_of_strings_serde {
   using summary_allocator = typename std::allocator_traits<Allocator>::template rebind_alloc<array_of_strings>;
@@ -60,7 +68,6 @@ private:
   summary_allocator summary_allocator_;
   static void check_num_nodes(uint8_t num_nodes);
   static uint32_t compute_total_bytes(const array_of_strings& item);
-  static void check_utf8(const std::string& value);
 };
 
 /**
@@ -69,8 +76,18 @@ private:
 uint64_t hash_array_of_strings_key(const array_of_strings& key);
 
 /**
- * Extended class of compact_tuple_sketch for array of strings
- * Requirements: all strings must be valid UTF-8 and array size must be <= 127.
+ * Extended class of compact_tuple_sketch for array of strings.
+ *
+ * Requirements:
+ * - Array size must be <= 127.
+ *
+ * UTF-8 compatibility:
+ * Serialized sketches are intended to be language and platform independent.
+ * Other implementations (Java, Go, Rust) enforce UTF-8 encoding for strings.
+ * This C++ implementation does not validate UTF-8; it is the caller's
+ * responsibility to ensure all strings are valid UTF-8 before calling update().
+ * Non-UTF-8 strings may serialize successfully but will fail to deserialize
+ * in other language implementations.
  */
 template<typename Allocator = std::allocator<array_of_strings>>
 class compact_array_of_strings_tuple_sketch:
