@@ -155,8 +155,13 @@ void default_array_of_strings_serde<Allocator>::deserialize(
       summary_allocator alloc(summary_allocator_);
       std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
     }
-  } catch (...) {
-    failure = true;
+  } catch (std::exception& e) {
+    summary_allocator alloc(summary_allocator_);
+    for (unsigned j = 0; j < i; ++j) {
+      std::allocator_traits<summary_allocator>::destroy(alloc, &items[j]);
+    }
+    if (std::string(e.what()).find("size exceeds 127") != std::string::npos) throw;
+    throw std::runtime_error("array_of_strings stream read failed at item " + std::to_string(i));
   }
   if (failure) {
     summary_allocator alloc(summary_allocator_);
@@ -219,9 +224,9 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
         uint32_t length;
         bytes_read += copy_from_mem(ptr8 + bytes_read, length);
 
+        check_memory_size(bytes_read + length, capacity);
         std::string value(length, '\0');
         if (length != 0) {
-          check_memory_size(bytes_read + length, capacity);
           bytes_read += copy_from_mem(ptr8 + bytes_read, &value[0], length);
         }
         array[j] = std::move(value);
