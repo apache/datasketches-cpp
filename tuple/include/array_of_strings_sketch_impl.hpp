@@ -125,25 +125,39 @@ template<typename Allocator>
 void default_array_of_strings_serde<Allocator>::deserialize(
   std::istream& is, array_of_strings* items, unsigned num
 ) const {
-  for (unsigned i = 0; i < num; ++i) {
-    read<uint32_t>(is); // total_bytes
-    if (!is) throw std::runtime_error("array_of_strings stream read failed");
-    const uint8_t num_nodes = read<uint8_t>(is);
-    if (!is) throw std::runtime_error("array_of_strings stream read failed");
-    check_num_nodes(num_nodes);
-    array_of_strings array(num_nodes, "");
-    for (uint8_t j = 0; j < num_nodes; ++j) {
-      const uint32_t length = read<uint32_t>(is);
-      if (!is) throw std::runtime_error("array_of_strings stream read failed");
-      std::string value(length, '\0');
-      if (length != 0) {
-        is.read(&value[0], length);
-        if (!is) throw std::runtime_error("array_of_strings stream read failed");
+  unsigned i = 0;
+  bool failure = false;
+  try {
+    for (; i < num; ++i) {
+      read<uint32_t>(is); // total_bytes
+      if (!is) { failure = true; break; }
+      const uint8_t num_nodes = read<uint8_t>(is);
+      if (!is) { failure = true; break; }
+      check_num_nodes(num_nodes);
+      array_of_strings array(num_nodes, "");
+      for (uint8_t j = 0; j < num_nodes; ++j) {
+        const uint32_t length = read<uint32_t>(is);
+        if (!is) { failure = true; break; }
+        std::string value(length, '\0');
+        if (length != 0) {
+          is.read(&value[0], length);
+          if (!is) { failure = true; break; }
+        }
+        array[j] = std::move(value);
       }
-      array[j] = std::move(value);
+      if (failure) break;
+      summary_allocator alloc(summary_allocator_);
+      std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
     }
+  } catch (std::istream::failure&) {
+    failure = true;
+  }
+  if (failure) {
     summary_allocator alloc(summary_allocator_);
-    std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
+    for (unsigned j = 0; j < i; ++j) {
+      std::allocator_traits<summary_allocator>::destroy(alloc, &items[j]);
+    }
+    throw std::runtime_error("array_of_strings stream read failed at item " + std::to_string(i));
   }
 }
 
@@ -177,28 +191,37 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
 ) const {
   const uint8_t* ptr8 = static_cast<const uint8_t*>(ptr);
   size_t bytes_read = 0;
+  unsigned i = 0;
 
-  for (unsigned i = 0; i < num; ++i) {
-    check_memory_size(bytes_read + sizeof(uint32_t), capacity);
-    const size_t item_start = bytes_read;
-    uint32_t total_bytes;
-    bytes_read += copy_from_mem(ptr8 + bytes_read, total_bytes);
-    check_memory_size(item_start + total_bytes, capacity);
-    uint8_t num_nodes;
-    bytes_read += copy_from_mem(ptr8 + bytes_read, num_nodes);
-    check_num_nodes(num_nodes);
-    array_of_strings array(num_nodes, "");
-    for (uint8_t j = 0; j < num_nodes; ++j) {
-      uint32_t length;
-      bytes_read += copy_from_mem(ptr8 + bytes_read, length);
-      std::string value(length, '\0');
-      if (length != 0) {
-        bytes_read += copy_from_mem(ptr8 + bytes_read, &value[0], length);
+  try {
+    for (; i < num; ++i) {
+      check_memory_size(bytes_read + sizeof(uint32_t), capacity);
+      const size_t item_start = bytes_read;
+      uint32_t total_bytes;
+      bytes_read += copy_from_mem(ptr8 + bytes_read, total_bytes);
+      check_memory_size(item_start + total_bytes, capacity);
+      uint8_t num_nodes;
+      bytes_read += copy_from_mem(ptr8 + bytes_read, num_nodes);
+      check_num_nodes(num_nodes);
+      array_of_strings array(num_nodes, "");
+      for (uint8_t j = 0; j < num_nodes; ++j) {
+        uint32_t length;
+        bytes_read += copy_from_mem(ptr8 + bytes_read, length);
+        std::string value(length, '\0');
+        if (length != 0) {
+          bytes_read += copy_from_mem(ptr8 + bytes_read, &value[0], length);
+        }
+        array[j] = std::move(value);
       }
-      array[j] = std::move(value);
+      summary_allocator alloc(summary_allocator_);
+      std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
     }
+  } catch (...) {
     summary_allocator alloc(summary_allocator_);
-    std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
+    for (unsigned j = 0; j < i; ++j) {
+      std::allocator_traits<summary_allocator>::destroy(alloc, &items[j]);
+    }
+    throw;
   }
   return bytes_read;
 }
