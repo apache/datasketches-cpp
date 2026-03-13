@@ -687,7 +687,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>  <span class="keywordflow">if</span> (!is_empty) {</div>
 <div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span>    entries.reserve(num_entries);</div>
 <div class="foldopen" id="foldopen00517" data-start="{" data-end="}">
-<div class="line"><a id="l00517" name="l00517"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a538940c100e4353b3671ad452d3d3056">  517</a></span>    std::unique_ptr&lt;S, deleter_of_summaries&gt; summary(alloc.allocate(1), deleter_of_summaries(1, <span class="keyword">false</span>, allocator));</div>
+<div class="line"><a id="l00517" name="l00517"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__array__of__strings__tuple__sketch.html#a538940c100e4353b3671ad452d3d3056">  517</a></span>    std::unique_ptr&lt;S, deleter_of_summaries&gt; summary(alloc.allocate(1), deleter_of_summaries(1, <span class="keyword">false</span>, allocator));</div>
 <div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_entries; ++i) {</div>
 <div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>      <span class="keyword">const</span> <span class="keyword">auto</span> key = read&lt;uint64_t&gt;(is);</div>
 <div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span>      sd.deserialize(is, summary.get(), 1);</div>

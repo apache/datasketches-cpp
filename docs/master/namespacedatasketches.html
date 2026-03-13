@@ -129,6 +129,9 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1bounds__on__ratios__in__theta__sketched__sets.html">bounds_on_ratios_in_theta_sketched_sets</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bounds on ratios in Theta sketched sets.  <a href="classdatasketches_1_1bounds__on__ratios__in__theta__sketched__sets.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1compact__array__of__strings__tuple__sketch.html">compact_array_of_strings_tuple_sketch</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extended class of <a class="el" href="classdatasketches_1_1compact__tuple__sketch.html" title="Compact Tuple sketch.">compact_tuple_sketch</a> for array of strings.  <a href="classdatasketches_1_1compact__array__of__strings__tuple__sketch.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1compact__array__tuple__sketch.html">compact_array_tuple_sketch</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compact array tuple sketch.  <a href="classdatasketches_1_1compact__array__tuple__sketch.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -146,6 +149,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1cpc__union__alloc.html">cpc_union_alloc</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">High performance C++ implementation of Compressed Probabilistic Counting (CPC) Union.  <a href="classdatasketches_1_1cpc__union__alloc.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structdatasketches_1_1default__array__of__strings__serde.html">default_array_of_strings_serde</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serializer/deserializer for an array of strings.  <a href="structdatasketches_1_1default__array__of__strings__serde.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structdatasketches_1_1default__array__tuple__union__policy.html">default_array_tuple_union_policy</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">default array tuple union policy  <a href="structdatasketches_1_1default__array__tuple__union__policy.html#details">More...</a><br /></td></tr>
@@ -316,6 +322,11 @@ template&lt;typename Policy &gt; </td></tr>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>array_of_doubles_a_not_b</b> = <a class="el" href="classdatasketches_1_1array__tuple__a__not__b.html">array_tuple_a_not_b</a>&lt; array&lt; double &gt; &gt;</td></tr>
 <tr class="memdesc:a8d77b6f0c52087601aa9a3040e14a28a"><td class="mdescLeft">&#160;</td><td class="mdescRight">convenience alias with default allocator, equivalent to ArrayOfDoublesAnotB in Java <br /></td></tr>
 <tr class="separator:a8d77b6f0c52087601aa9a3040e14a28a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7c8aaef497277d10330ee95023737aa5" id="r_a7c8aaef497277d10330ee95023737aa5"><td class="memTemplParams" colspan="2"><a id="a7c8aaef497277d10330ee95023737aa5" name="a7c8aaef497277d10330ee95023737aa5"></a>
+template&lt;typename Allocator  = std::allocator&lt;array_of_strings&gt;, typename Policy  = default_array_of_strings_update_policy&gt; </td></tr>
+<tr class="memitem:a7c8aaef497277d10330ee95023737aa5"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update_array_of_strings_tuple_sketch</b> = <a class="el" href="classdatasketches_1_1update__tuple__sketch.html">update_tuple_sketch</a>&lt; array_of_strings, array_of_strings, Policy, Allocator &gt;</td></tr>
+<tr class="memdesc:a7c8aaef497277d10330ee95023737aa5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience alias for <a class="el" href="classdatasketches_1_1update__tuple__sketch.html" title="Update Tuple sketch.">update_tuple_sketch</a> for array of strings. <br /></td></tr>
+<tr class="separator:a7c8aaef497277d10330ee95023737aa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9edbdcf6010c8d35813ca718d5127212" id="r_a9edbdcf6010c8d35813ca718d5127212"><td class="memTemplParams" colspan="2"><a id="a9edbdcf6010c8d35813ca718d5127212" name="a9edbdcf6010c8d35813ca718d5127212"></a>
 template&lt;typename Summary , typename IntersectionPolicy , typename UnionPolicy  = default_tuple_union_policy&lt;Summary&gt;, typename Allocator  = std::allocator&lt;Summary&gt;&gt; </td></tr>
 <tr class="memitem:a9edbdcf6010c8d35813ca718d5127212"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>tuple_jaccard_similarity</b> = <a class="el" href="classdatasketches_1_1jaccard__similarity__base.html">jaccard_similarity_base</a>&lt; <a class="el" href="classdatasketches_1_1tuple__union.html">tuple_union</a>&lt; Summary, UnionPolicy, Allocator &gt;, <a class="el" href="classdatasketches_1_1tuple__intersection.html">tuple_intersection</a>&lt; Summary, IntersectionPolicy, Allocator &gt;, pair_extract_key&lt; uint64_t, Summary &gt; &gt;</td></tr>
@@ -342,6 +353,14 @@ Functions</h2></td></tr>
 <tr class="memitem:a3a7ac5efb6156547a8da91e937a06b07"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacedatasketches.html#a3a7ac5efb6156547a8da91e937a06b07">cpc_init</a> ()</td></tr>
 <tr class="memdesc:a3a7ac5efb6156547a8da91e937a06b07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocation and initialization of global decompression (decoding) tables.  <br /></td></tr>
 <tr class="separator:a3a7ac5efb6156547a8da91e937a06b07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea4658ab080b54f259377ace71a1b842" id="r_aea4658ab080b54f259377ace71a1b842"><td class="memItemLeft" align="right" valign="top"><a id="aea4658ab080b54f259377ace71a1b842" name="aea4658ab080b54f259377ace71a1b842"></a>
+uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>hash_array_of_strings_key</b> (const array_of_strings &amp;key)</td></tr>
+<tr class="memdesc:aea4658ab080b54f259377ace71a1b842"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hashes an array of strings using ArrayOfStrings-compatible hashing. <br /></td></tr>
+<tr class="separator:aea4658ab080b54f259377ace71a1b842"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abfb090127810cf2bf060e2d6d6ccaeb6" id="r_abfb090127810cf2bf060e2d6d6ccaeb6"><td class="memTemplParams" colspan="2">template&lt;typename Allocator  = std::allocator&lt;array_of_strings&gt;, typename Policy  = default_array_of_strings_update_policy&gt; </td></tr>
+<tr class="memitem:abfb090127810cf2bf060e2d6d6ccaeb6"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classdatasketches_1_1compact__array__of__strings__tuple__sketch.html">compact_array_of_strings_tuple_sketch</a>&lt; Allocator &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacedatasketches.html#abfb090127810cf2bf060e2d6d6ccaeb6">compact_array_of_strings_sketch</a> (const <a class="el" href="namespacedatasketches.html#a7c8aaef497277d10330ee95023737aa5">update_array_of_strings_tuple_sketch</a>&lt; Allocator, Policy &gt; &amp;sketch, bool ordered=true)</td></tr>
+<tr class="memdesc:abfb090127810cf2bf060e2d6d6ccaeb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts an array of strings tuple sketch to a compact sketch (ordered or unordered).  <br /></td></tr>
+<tr class="separator:abfb090127810cf2bf060e2d6d6ccaeb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>DataSketches namespace. </p>
@@ -427,6 +446,46 @@ template&lt;typename A &gt; </div>
 
 <p>Allocation and initialization of global decompression (decoding) tables. </p>
 <p>Call this before anything else if you want to control the initialization time. For instance, to have this happen outside of a transaction context. Otherwise initialization happens on the first use (serialization or deserialization). It is safe to call more than once assuming no race conditions. This is not thread safe! Neither is the rest of the library. </p>
+
+</div>
+</div>
+<a id="abfb090127810cf2bf060e2d6d6ccaeb6" name="abfb090127810cf2bf060e2d6d6ccaeb6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abfb090127810cf2bf060e2d6d6ccaeb6">&#9670;&#160;</a></span>compact_array_of_strings_sketch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Allocator  = std::allocator&lt;array_of_strings&gt;, typename Policy  = default_array_of_strings_update_policy&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classdatasketches_1_1compact__array__of__strings__tuple__sketch.html">compact_array_of_strings_tuple_sketch</a>&lt; Allocator &gt; compact_array_of_strings_sketch </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="namespacedatasketches.html#a7c8aaef497277d10330ee95023737aa5">update_array_of_strings_tuple_sketch</a>&lt; Allocator, Policy &gt; &amp;&#160;</td>
+          <td class="paramname"><em>sketch</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>ordered</em> = <code>true</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Converts an array of strings tuple sketch to a compact sketch (ordered or unordered). </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">sketch</td><td>input sketch </td></tr>
+    <tr><td class="paramname">ordered</td><td>optional flag to specify if an ordered sketch should be produced </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>compact array of strings sketch </dd></dl>
 
 </div>
 </div>

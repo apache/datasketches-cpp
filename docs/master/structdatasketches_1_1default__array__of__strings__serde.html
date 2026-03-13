@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>datasketches-cpp: Class Members</title>
+<title>datasketches-cpp: default_array_of_strings_serde&lt; Allocator &gt; Struct Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -46,7 +46,6 @@ $(function() {
 /* @license-end */
 </script>
 <div id="main-nav"></div>
-</div><!-- top -->
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -68,19 +67,32 @@ $(function() {
 </div>
 </div>
 
+<div id="nav-path" class="navpath">
+  <ul>
+<li class="navelem"><a class="el" href="namespacedatasketches.html">datasketches</a></li><li class="navelem"><a class="el" href="structdatasketches_1_1default__array__of__strings__serde.html">default_array_of_strings_serde</a></li>  </ul>
+</div>
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="structdatasketches_1_1default__array__of__strings__serde-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">default_array_of_strings_serde&lt; Allocator &gt; Struct Template Reference</div></div>
+</div><!--header-->
 <div class="contents">
-<div class="textblock">Here is a list of all documented class members with links to the class documentation for each member:</div>
 
-<h3><a id="index_c" name="index_c"></a>- c -</h3><ul>
-<li>compact()&#160;:&#160;<a class="el" href="classdatasketches_1_1update__theta__sketch__alloc.html#af2a874b603390c143ecd4e6814ecbe3b">update_theta_sketch_alloc&lt; Allocator &gt;</a>, <a class="el" href="classdatasketches_1_1update__tuple__sketch.html#a8adfe3908612dc77d3708cecddb65515">update_tuple_sketch&lt; Summary, Update, Policy, Allocator &gt;</a></li>
-<li>compact_array_of_strings_tuple_sketch()&#160;:&#160;<a class="el" href="classdatasketches_1_1compact__array__of__strings__tuple__sketch.html#a61f29b052ba68b486fdaedfd92984996">compact_array_of_strings_tuple_sketch&lt; Allocator &gt;</a></li>
-<li>compact_array_tuple_sketch()&#160;:&#160;<a class="el" href="classdatasketches_1_1compact__array__tuple__sketch.html#a1d5f786024b3df2ab6993056a22abad0">compact_array_tuple_sketch&lt; Array, Allocator &gt;</a></li>
-<li>compact_theta_sketch_alloc()&#160;:&#160;<a class="el" href="classdatasketches_1_1compact__theta__sketch__alloc.html#a0eaea2a9894acb7b92f5c3f3224c618c">compact_theta_sketch_alloc&lt; Allocator &gt;</a></li>
-<li>compact_tuple_sketch()&#160;:&#160;<a class="el" href="classdatasketches_1_1compact__tuple__sketch.html#a35916bac524f4ff4ff02739553bd4622">compact_tuple_sketch&lt; Summary, Allocator &gt;</a></li>
-<li>compute()&#160;:&#160;<a class="el" href="classdatasketches_1_1array__tuple__a__not__b.html#a3ee0c8ec70c980979f84c68065da3d9b">array_tuple_a_not_b&lt; Array, Allocator &gt;</a>, <a class="el" href="classdatasketches_1_1theta__a__not__b__alloc.html#a3ee0c8ec70c980979f84c68065da3d9b">theta_a_not_b_alloc&lt; Allocator &gt;</a>, <a class="el" href="classdatasketches_1_1tuple__a__not__b.html#a3ee0c8ec70c980979f84c68065da3d9b">tuple_a_not_b&lt; Summary, Allocator &gt;</a></li>
-<li>count_min_sketch()&#160;:&#160;<a class="el" href="classdatasketches_1_1count__min__sketch.html#a8dbb00b2bf984b434482e3da006e2238">count_min_sketch&lt; W, Allocator &gt;</a></li>
-<li>cpc_sketch_alloc()&#160;:&#160;<a class="el" href="classdatasketches_1_1cpc__sketch__alloc.html#a39d6cd5eff1a9af78f58108ba5297b47">cpc_sketch_alloc&lt; A &gt;</a></li>
-<li>cpc_union_alloc()&#160;:&#160;<a class="el" href="classdatasketches_1_1cpc__union__alloc.html#a7d54d46a338588afe9fb768cb0e22082">cpc_union_alloc&lt; A &gt;</a></li>
+<p>Serializer/deserializer for an array of strings.  
+ <a href="structdatasketches_1_1default__array__of__strings__serde.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="array__of__strings__sketch_8hpp_source.html">array_of_strings_sketch.hpp</a>&gt;</code></p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename Allocator = std::allocator&lt;array_of_strings&gt;&gt;<br />
+struct datasketches::default_array_of_strings_serde&lt; Allocator &gt;</div><p>Serializer/deserializer for an array of strings. </p>
+<p>Requirements:</p><ul>
+<li>Array size must be &lt;= 127.</li>
+</ul>
+<p>This serde does not perform UTF-8 validation. Callers must ensure strings are valid UTF-8 before serialization to guarantee interoperability with Java, Go, and Rust implementations. </p>
+</div><hr/>The documentation for this struct was generated from the following files:<ul>
+<li>tuple/include/<a class="el" href="array__of__strings__sketch_8hpp_source.html">array_of_strings_sketch.hpp</a></li>
+<li>tuple/include/<a class="el" href="array__of__strings__sketch__impl_8hpp_source.html">array_of_strings_sketch_impl.hpp</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
