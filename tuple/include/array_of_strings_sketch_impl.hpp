@@ -107,17 +107,23 @@ template<typename Allocator>
 void default_array_of_strings_serde<Allocator>::serialize(
   std::ostream& os, const array_of_strings* items, unsigned num
 ) const {
-  for (unsigned i = 0; i < num; ++i) {
-    const uint32_t total_bytes = compute_total_bytes(items[i]);
-    const uint8_t num_nodes = static_cast<uint8_t>(items[i].size());
-    write(os, total_bytes);
-    write(os, num_nodes);
-    const std::string* data = items[i].data();
-    for (uint8_t j = 0; j < num_nodes; ++j) {
-      const uint32_t length = static_cast<uint32_t>(data[j].size());
-      write(os, length);
-      os.write(data[j].data(), length);
+  unsigned i = 0;
+  try {
+    for (; i < num; ++i) {
+      const uint32_t total_bytes = compute_total_bytes(items[i]);
+      const uint8_t num_nodes = static_cast<uint8_t>(items[i].size());
+      write(os, total_bytes);
+      write(os, num_nodes);
+      const std::string* data = items[i].data();
+      for (uint8_t j = 0; j < num_nodes; ++j) {
+        const uint32_t length = static_cast<uint32_t>(data[j].size());
+        write(os, length);
+        os.write(data[j].data(), length);
+      }
     }
+  } catch (std::runtime_error& e) {
+    if (std::string(e.what()).find("size exceeds 127") != std::string::npos) throw;
+    throw std::runtime_error("array_of_strings stream write failed at item " + std::to_string(i));
   }
 }
 
@@ -149,7 +155,7 @@ void default_array_of_strings_serde<Allocator>::deserialize(
       summary_allocator alloc(summary_allocator_);
       std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
     }
-  } catch (std::istream::failure&) {
+  } catch (...) {
     failure = true;
   }
   if (failure) {
@@ -191,6 +197,7 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
 ) const {
   const uint8_t* ptr8 = static_cast<const uint8_t*>(ptr);
   size_t bytes_read = 0;
+
   unsigned i = 0;
 
   try {
@@ -200,15 +207,21 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
       uint32_t total_bytes;
       bytes_read += copy_from_mem(ptr8 + bytes_read, total_bytes);
       check_memory_size(item_start + total_bytes, capacity);
+
+      check_memory_size(bytes_read + sizeof(uint8_t), capacity);
       uint8_t num_nodes;
       bytes_read += copy_from_mem(ptr8 + bytes_read, num_nodes);
       check_num_nodes(num_nodes);
+
       array_of_strings array(num_nodes, "");
       for (uint8_t j = 0; j < num_nodes; ++j) {
+        check_memory_size(bytes_read + sizeof(uint32_t), capacity);
         uint32_t length;
         bytes_read += copy_from_mem(ptr8 + bytes_read, length);
+
         std::string value(length, '\0');
         if (length != 0) {
+          check_memory_size(bytes_read + length, capacity);
           bytes_read += copy_from_mem(ptr8 + bytes_read, &value[0], length);
         }
         array[j] = std::move(value);
@@ -216,12 +229,13 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
       summary_allocator alloc(summary_allocator_);
       std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
     }
-  } catch (...) {
+  } catch (std::exception& e) {
     summary_allocator alloc(summary_allocator_);
     for (unsigned j = 0; j < i; ++j) {
       std::allocator_traits<summary_allocator>::destroy(alloc, &items[j]);
     }
-    throw;
+    if (std::string(e.what()).find("size exceeds 127") != std::string::npos) throw;
+    throw std::runtime_error("array_of_strings bytes read failed at item " + std::to_string(i));
   }
   return bytes_read;
 }
