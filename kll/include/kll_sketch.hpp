@@ -46,6 +46,11 @@ namespace kll_constants {
  * and nearly optimal accuracy per retained item.
  * See <a href="https://arxiv.org/abs/1603.05346v2">Optimal Quantile Approximation in Streams</a>.
  *
+ * Sketch that may retain string values.
+ * For sketches containing strings, cross-language portability depends on
+ * using compatible string encodings. This class does not by itself enforce
+ * UTF-8 validity for all string inputs.
+ *
  * <p>This is a stochastic streaming sketch that enables near real-time analysis of the
  * approximate distribution of items from a very large stream in a single pass, requiring only
  * that the items are comparable.
@@ -56,7 +61,7 @@ namespace kll_constants {
  * <p>As of May 2020, this implementation produces serialized sketches which are binary-compatible
  * with the equivalent Java implementation only when template parameter T = float
  * (32-bit single precision values).
- * 
+ *
  * <p>Given an input stream of <i>N</i> items, the <i>natural rank</i> of any specific
  * item is defined as its index <i>(1 to N)</i> in inclusive mode
  * or <i>(0 to N-1)</i> in exclusive mode
@@ -225,6 +230,8 @@ class kll_sketch {
 
     /**
      * Updates this sketch with the given data item.
+     * If cross-language portability is required, callers should ensure that
+     * the input string uses a compatible encoding (valid UTF-8).
      * @param item from a stream of items
      */
     template<typename FwdT>
@@ -232,6 +239,8 @@ class kll_sketch {
 
     /**
      * Merges another sketch into this one.
+     * If sketches contain strings, callers are responsible for ensuring that
+     * both sketches were built using compatible string encodings.
      * @param other sketch to merge into this one
      */
     template<typename FwdSk>
