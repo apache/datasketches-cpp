@@ -132,6 +132,11 @@ struct serde<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
 /// ItemsSketch<String> with ArrayOfStringsSerDe in Java.
 /// The length of each string is stored as a 32-bit integer (historically),
 /// which may be too wasteful. Treat this as an example.
+///
+/// This implementation treats std::string as an arbitrary byte container.
+/// It does not check whether string contents are valid UTF-8.
+///
+/// Use a UTF-8-validating SerDe when cross-language portability is required.
 template<>
 struct serde<std::string> {
   /// @copydoc serde::serialize
