@@ -47,6 +47,11 @@ namespace quantiles_constants {
  * The analysis is obtained using get_rank() and get_quantile() functions,
  * the Probability Mass Function from get_PMF() and the Cumulative Distribution Function from get_CDF().
  *
+ * Sketch that may retain string values.
+ * For sketches containing strings, cross-language portability depends on
+ * using compatible string encodings. This class does not by itself enforce
+ * UTF-8 validity for all string inputs.
+ *
  * <p>Consider a large stream of one million values such as packet sizes coming into a network node.
  * The natural rank of any specific size value is its index in the hypothetical sorted
  * array of values.
@@ -206,6 +211,8 @@ public:
 
   /**
    * Updates this sketch with the given data item.
+   * If cross-language portability is required, callers should ensure that
+   * the input string uses a compatible encoding (valid UTF-8).
    * @param item from a stream of items
    */
   template<typename FwdT>
@@ -213,6 +220,8 @@ public:
 
   /**
    * Merges another sketch into this one.
+   * If sketches contain strings, callers are responsible for ensuring that
+   * both sketches were built using compatible string encodings.
    * @param other sketch to merge into this one
    */
   template<typename FwdSk>

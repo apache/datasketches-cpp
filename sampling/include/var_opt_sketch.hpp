@@ -57,6 +57,11 @@ namespace var_opt_constants {
  * optimal (varopt) sampling is related to reservoir sampling, with improved error bounds for
  * subset sum estimation.
  *
+ * Sketch that may retain string values.
+ * For sketches containing strings, cross-language portability depends on
+ * using compatible string encodings. This class does not by itself enforce
+ * UTF-8 validity for all string inputs.
+ *
  * author Kevin Lang
  * author Jon Malkin
  */
@@ -111,6 +116,8 @@ class var_opt_sketch {
     /**
      * Updates this sketch with the given data item with the given weight.
      * This method takes an lvalue.
+     * If cross-language portability is required, callers should ensure that
+     * the input string uses a compatible encoding (valid UTF-8).
      * @param item an item from a stream of items
      * @param weight the weight of the item
      */
@@ -119,6 +126,8 @@ class var_opt_sketch {
     /**
      * Updates this sketch with the given data item with the given weight.
      * This method takes an rvalue.
+     * If cross-language portability is required, callers should ensure that
+     * the input string uses a compatible encoding (valid UTF-8).
      * @param item an item from a stream of items
      * @param weight the weight of the item
      */

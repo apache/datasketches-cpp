@@ -46,6 +46,11 @@ struct pair_extract_key {
 /**
  * Base class for Tuple sketch.
  * This is an extension of Theta sketch that allows keeping arbitrary Summary associated with each retained key.
+ *
+ * Summary that may retain string values.
+ * For Summary containing strings, cross-language portability depends on
+ * using compatible string encodings. This class does not by itself enforce
+ * UTF-8 validity for all string inputs.
  */
 template<
   typename Summary,
@@ -253,6 +258,9 @@ public:
 
   /**
    * Update this sketch with a given string.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * @param key string to update the sketch with
    * @param value to update the sketch with
    */
@@ -261,6 +269,9 @@ public:
 
   /**
    * Update this sketch with a given unsigned 64-bit integer.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * @param key uint64_t to update the sketch with
    * @param value to update the sketch with
    */
@@ -269,6 +280,9 @@ public:
 
   /**
    * Update this sketch with a given signed 64-bit integer.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * @param key int64_t to update the sketch with
    * @param value to update the sketch with
    */
@@ -277,6 +291,9 @@ public:
 
   /**
    * Update this sketch with a given unsigned 32-bit integer.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * For compatibility with Java implementation.
    * @param key uint32_t to update the sketch with
    * @param value to update the sketch with
@@ -286,6 +303,9 @@ public:
 
   /**
    * Update this sketch with a given signed 32-bit integer.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * For compatibility with Java implementation.
    * @param key int32_t to update the sketch with
    * @param value to update the sketch with
@@ -295,6 +315,9 @@ public:
 
   /**
    * Update this sketch with a given unsigned 16-bit integer.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * For compatibility with Java implementation.
    * @param key uint16_t to update the sketch with
    * @param value to update the sketch with
@@ -304,6 +327,9 @@ public:
 
   /**
    * Update this sketch with a given signed 16-bit integer.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * For compatibility with Java implementation.
    * @param key int16_t to update the sketch with
    * @param value to update the sketch with
@@ -313,6 +339,9 @@ public:
 
   /**
    * Update this sketch with a given unsigned 8-bit integer.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * For compatibility with Java implementation.
    * @param key uint8_t to update the sketch with
    * @param value to update the sketch with
@@ -322,6 +351,9 @@ public:
 
   /**
    * Update this sketch with a given signed 8-bit integer.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * For compatibility with Java implementation.
    * @param key int8_t to update the sketch with
    * @param value to update the sketch with
@@ -331,6 +363,9 @@ public:
 
   /**
    * Update this sketch with a given double-precision floating point value.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * For compatibility with Java implementation.
    * @param key double to update the sketch with
    * @param value to update the sketch with
@@ -340,6 +375,9 @@ public:
 
   /**
    * Update this sketch with a given floating point value.
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * For compatibility with Java implementation.
    * @param key float to update the sketch with
    * @param value to update the sketch with
@@ -357,6 +395,9 @@ public:
    * Otherwise two sketches that should represent overlapping sets will be disjoint
    * For instance, for signed 32-bit values call update(int32_t) method above,
    * which does widening conversion to int64_t, if compatibility with Java is expected
+   * If the summary contains strings and cross-language portability is required,
+   * callers should ensure that any strings in the summary
+   * use a compatible encoding (valid UTF-8).
    * @param key pointer to the data
    * @param length of the data in bytes
    * @param value to update the sketch with

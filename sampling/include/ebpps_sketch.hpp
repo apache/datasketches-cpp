@@ -50,6 +50,11 @@ namespace ebpps_constants {
  * The sample may be smaller than k and the resulting size of the sample potentially includes
  * a probabilistic component, meaning the resulting sample size is not always constant.
  *
+ * Sketch that may retain string values.
+ * For sketches containing strings, cross-language portability depends on
+ * using compatible string encodings. This class does not by itself enforce
+ * UTF-8 validity for all string inputs.
+ *
  * @author Jon Malkin
  */
 template<
@@ -71,6 +76,8 @@ class ebpps_sketch {
     /**
      * Updates this sketch with the given data item with the given weight.
      * This method takes an lvalue.
+     * If cross-language portability is required, callers should ensure that
+     * the input string uses a compatible encoding (valid UTF-8).
      * @param item an item from a stream of items
      * @param weight the weight of the item
      */
@@ -79,6 +86,8 @@ class ebpps_sketch {
     /**
      * Updates this sketch with the given data item with the given weight.
      * This method takes an rvalue.
+     * If cross-language portability is required, callers should ensure that
+     * the input string uses a compatible encoding (valid UTF-8).
      * @param item an item from a stream of items
      * @param weight the weight of the item
      */
@@ -87,6 +96,8 @@ class ebpps_sketch {
     /**
      * Merges the provided sketch into the current one.
      * This method takes an lvalue.
+     * If sketches contain strings, callers are responsible for ensuring that
+     * both sketches were built using compatible string encodings.
      * @param sketch the sketch to merge into the current object
      */
     void merge(const ebpps_sketch<T, A>& sketch);
@@ -94,6 +105,8 @@ class ebpps_sketch {
     /**
      * Merges the provided sketch into the current one.
      * This method takes an rvalue.
+     * If sketches contain strings, callers are responsible for ensuring that
+     * both sketches were built using compatible string encodings.
      * @param sketch the sketch to merge into the current object
      */
     void merge(ebpps_sketch<T, A>&& sketch);
