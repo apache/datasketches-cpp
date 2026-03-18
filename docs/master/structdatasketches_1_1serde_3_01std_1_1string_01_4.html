@@ -105,7 +105,9 @@ Public Member Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>serde for std::string items. </p>
-<p>This should produce sketches binary-compatible with ItemsSketch&lt;String&gt; with ArrayOfStringsSerDe in Java. The length of each string is stored as a 32-bit integer (historically), which may be too wasteful. Treat this as an example. </p>
+<p>This should produce sketches binary-compatible with ItemsSketch&lt;String&gt; with ArrayOfStringsSerDe in Java. The length of each string is stored as a 32-bit integer (historically), which may be too wasteful. Treat this as an example.</p>
+<p>This implementation treats std::string as an arbitrary byte container. It does not check whether string contents are valid UTF-8.</p>
+<p>Use a UTF-8-validating SerDe when cross-language portability is required. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a0e9b3362722840a638e4e996b1b51948" name="a0e9b3362722840a638e4e996b1b51948"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0e9b3362722840a638e4e996b1b51948">&#9670;&#160;</a></span>serialize() <span class="overload">[1/2]</span></h2>

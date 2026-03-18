@@ -212,6 +212,7 @@ Static Public Member Functions</h2></td></tr>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename T, typename C = std::less&lt;T&gt;, typename A = std::allocator&lt;T&gt;&gt;<br />
 class datasketches::kll_sketch&lt; T, C, A &gt;</div><p>Implementation of a very compact quantiles sketch with lazy compaction scheme and nearly optimal accuracy per retained item. </p>
 <p>See <a href="https://arxiv.org/abs/1603.05346v2">Optimal Quantile Approximation in Streams</a>.</p>
+<p>Sketch that may retain string values. For sketches containing strings, cross-language portability depends on using compatible string encodings. This class does not by itself enforce UTF-8 validity for all string inputs.</p>
 <p>This is a stochastic streaming sketch that enables near real-time analysis of the approximate distribution of items from a very large stream in a single pass, requiring only that the items are comparable. The analysis is obtained using <em><a class="el" href="classdatasketches_1_1kll__sketch.html#ac02fcfb6e706148458a2ef89390223a9" title="Returns an item from the sketch that is the best approximation to an item from the original stream wi...">get_quantile()</a></em> function or the inverse functions <a class="el" href="classdatasketches_1_1kll__sketch.html#a849dfa06c183fd2fdfe4fe4a7e29d918" title="Returns an approximation to the normalized rank of the given item from 0 to 1, inclusive.">get_rank()</a>, <a class="el" href="classdatasketches_1_1kll__sketch.html#a44226b755e73883ea2c128876e35b1d1" title="Returns an approximation to the Probability Mass Function (PMF) of the input stream given a set of sp...">get_PMF()</a> (Probability Mass Function), and <a class="el" href="classdatasketches_1_1kll__sketch.html#a20a4d992209b2aa58614c998d143705c" title="Returns an approximation to the Cumulative Distribution Function (CDF), which is the cumulative analo...">get_CDF()</a> (Cumulative Distribution Function).</p>
 <p>As of May 2020, this implementation produces serialized sketches which are binary-compatible with the equivalent Java implementation only when template parameter T = float (32-bit single precision values).</p>
 <p>Given an input stream of <em>N</em> items, the <em>natural rank</em> of any specific item is defined as its index <em>(1 to N)</em> in inclusive mode or <em>(0 to N-1)</em> in exclusive mode in the hypothetical sorted stream of all <em>N</em> input items.</p>
@@ -504,7 +505,7 @@ template&lt;typename FwdT &gt; </div>
 </div><div class="memdoc">
 
 <p>Updates this sketch with the given data item. </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>from a stream of items </td></tr>
   </table>
@@ -534,7 +535,7 @@ template&lt;typename FwdSk &gt; </div>
 </div><div class="memdoc">
 
 <p>Merges another sketch into this one. </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">other</td><td>sketch to merge into this one </td></tr>
   </table>

@@ -155,7 +155,7 @@ template&lt;typename T , typename A &gt; </div>
 </div><div class="memdoc">
 
 <p>Updates this union with the given sketch This method takes an lvalue. </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">sk</td><td>a sketch to add to the union </td></tr>
   </table>
@@ -183,7 +183,7 @@ template&lt;typename T , typename A &gt; </div>
 </div><div class="memdoc">
 
 <p>Updates this union with the given sketch This method takes an rvalue. </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">sk</td><td>a sketch to add to the union </td></tr>
   </table>

@@ -217,6 +217,7 @@ Static Public Member Functions</h2></td></tr>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename T, typename Comparator = std::less&lt;T&gt;, typename Allocator = std::allocator&lt;T&gt;&gt;<br />
 class datasketches::req_sketch&lt; T, Comparator, Allocator &gt;</div><p>Relative Error Quantiles Sketch. </p>
 <p>This is an implementation based on the paper "Relative Error Streaming Quantiles" by Graham Cormode, Zohar Karnin, Edo Liberty, Justin Thaler, Pavel Veselý, and loosely derived from a Python prototype written by Pavel Veselý.</p>
+<p>Sketch that may retain string values. For sketches containing strings, cross-language portability depends on using compatible string encodings. This class does not by itself enforce UTF-8 validity for all string inputs.</p>
 <p>Reference: <a href="https://arxiv.org/abs/2004.01668">https://arxiv.org/abs/2004.01668</a></p>
 <p>This implementation differs from the algorithm described in the paper in the following:</p>
 <ul>
@@ -654,7 +655,7 @@ template&lt;typename FwdT &gt; </div>
 </div><div class="memdoc">
 
 <p>Updates this sketch with the given data item. </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>from a stream of items </td></tr>
   </table>
@@ -684,7 +685,7 @@ template&lt;typename FwdSk &gt; </div>
 </div><div class="memdoc">
 
 <p>Merges another sketch into this one. </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">other</td><td>sketch to merge into this one </td></tr>
   </table>

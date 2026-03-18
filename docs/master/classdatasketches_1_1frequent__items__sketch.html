@@ -173,7 +173,8 @@ Static Public Member Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename T, typename W = uint64_t, typename H = std::hash&lt;T&gt;, typename E = std::equal_to&lt;T&gt;, typename A = std::allocator&lt;T&gt;&gt;<br />
 class datasketches::frequent_items_sketch&lt; T, W, H, E, A &gt;</div><p>Frequent Items sketch. </p>
-<p>Based on Java implementation here: <a href="https://github.com/apache/datasketches-java/blob/master/src/main/java/org/apache/datasketches/frequencies/ItemsSketch.java">https://github.com/apache/datasketches-java/blob/master/src/main/java/org/apache/datasketches/frequencies/ItemsSketch.java</a> </p><dl class="section author"><dt>Author</dt><dd>Alexander Saydakov </dd></dl>
+<p>Based on Java implementation here: <a href="https://github.com/apache/datasketches-java/blob/master/src/main/java/org/apache/datasketches/frequencies/ItemsSketch.java">https://github.com/apache/datasketches-java/blob/master/src/main/java/org/apache/datasketches/frequencies/ItemsSketch.java</a> </p><dl class="section author"><dt>Author</dt><dd>Alexander Saydakov</dd></dl>
+<p>Sketch that may retain string values. For sketches containing strings, cross-language portability depends on using compatible string encodings. This class does not by itself enforce UTF-8 validity for all string inputs. </p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a225f700985a82a592a6fd7dc685d6044" name="a225f700985a82a592a6fd7dc685d6044"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a225f700985a82a592a6fd7dc685d6044">&#9670;&#160;</a></span>frequent_items_sketch()</h2>
@@ -266,7 +267,7 @@ template&lt;typename T , typename W , typename H , typename E , typename A &gt; 
 </div><div class="memdoc">
 
 <p>Update this sketch with an item and a positive weight (frequency count). </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>for which the weight should be increased (lvalue) </td></tr>
     <tr><td class="paramname">weight</td><td>the amount by which the weight of the item should be increased A count of zero is a no-op, and a negative count will throw an exception. </td></tr>
@@ -305,7 +306,7 @@ template&lt;typename T , typename W , typename H , typename E , typename A &gt; 
 </div><div class="memdoc">
 
 <p>Update this sketch with an item and a positive weight (frequency count). </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>for which the weight should be increased (rvalue) </td></tr>
     <tr><td class="paramname">weight</td><td>the amount by which the weight of the item should be increased A count of zero is a no-op, and a negative count will throw an exception. </td></tr>
@@ -334,7 +335,7 @@ template&lt;typename T , typename W , typename H , typename E , typename A &gt; 
 </div><div class="memdoc">
 
 <p>This function merges the other sketch into this one. </p>
-<p>The other sketch may be of a different size. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>The other sketch may be of a different size. If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">other</td><td>sketch to be merged into this (lvalue) </td></tr>
   </table>
@@ -362,7 +363,7 @@ template&lt;typename T , typename W , typename H , typename E , typename A &gt; 
 </div><div class="memdoc">
 
 <p>This function merges the other sketch into this one. </p>
-<p>The other sketch may be of a different size. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>The other sketch may be of a different size. If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">other</td><td>sketch to be merged into this (rvalue) </td></tr>
   </table>
