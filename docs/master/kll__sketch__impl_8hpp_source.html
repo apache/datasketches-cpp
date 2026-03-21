@@ -294,7 +294,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span> </div>
 <div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
 <div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>uint32_t kll_sketch&lt;T, C, A&gt;::internal_update() {</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keywordflow">if</span> (levels_[0] == 0) compress_while_updating();</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keywordflow">if</span> (levels_[0] == 0) { compress_while_updating(); }</div>
 <div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>  n_++;</div>
 <div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>  is_level_zero_sorted_ = <span class="keyword">false</span>;</div>
 <div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="keywordflow">return</span> --levels_[0];</div>
@@ -304,7 +304,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> FwdSk&gt;</div>
 <div class="foldopen" id="foldopen00210" data-start="{" data-end="}">
 <div class="line"><a id="l00210" name="l00210"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a49bb19e78f36fb72b8496cd6cff71fec">  210</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a49bb19e78f36fb72b8496cd6cff71fec">kll_sketch&lt;T, C, A&gt;::merge</a>(FwdSk&amp;&amp; other) {</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>  <span class="keywordflow">if</span> (other.is_empty()) <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>  <span class="keywordflow">if</span> (other.is_empty()) { <span class="keywordflow">return</span>; }</div>
 <div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>  <span class="keywordflow">if</span> (m_ != other.m_) {</div>
 <div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;incompatible M: &quot;</span> + std::to_string(m_) + <span class="stringliteral">&quot; and &quot;</span> + std::to_string(other.m_));</div>
 <div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>  }</div>
@@ -320,9 +320,9 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>    <span class="keyword">const</span> uint32_t index = internal_update();</div>
 <div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>    <span class="keyword">new</span> (&amp;items_[index]) T(conditional_forward&lt;FwdSk&gt;(other.items_[i]));</div>
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  }</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  <span class="keywordflow">if</span> (other.num_levels_ &gt;= 2) merge_higher_levels(other, final_n);</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  <span class="keywordflow">if</span> (other.num_levels_ &gt;= 2) { merge_higher_levels(other, final_n); }</div>
 <div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  n_ = final_n;</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>  <span class="keywordflow">if</span> (other.is_estimation_mode()) min_k_ = std::min(min_k_, other.min_k_);</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>  <span class="keywordflow">if</span> (other.is_estimation_mode()) { min_k_ = std::min(min_k_, other.min_k_); }</div>
 <div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>  assert_correct_total_weight();</div>
 <div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>  reset_sorted_view();</div>
 <div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>}</div>
@@ -366,7 +366,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
 <div class="foldopen" id="foldopen00260" data-start="{" data-end="}">
 <div class="line"><a id="l00260" name="l00260"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#aa3f3769ba3fae6fa0e8a0bd65fef5422">  260</a></span>T <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#aa3f3769ba3fae6fa0e8a0bd65fef5422">kll_sketch&lt;T, C, A&gt;::get_min_item</a>()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>  <span class="keywordflow">if</span> (is_empty()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>);</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>  <span class="keywordflow">if</span> (is_empty()) { <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>); }</div>
 <div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>  <span class="keywordflow">return</span> *min_item_;</div>
 <div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>}</div>
 </div>
@@ -374,7 +374,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
 <div class="foldopen" id="foldopen00266" data-start="{" data-end="}">
 <div class="line"><a id="l00266" name="l00266"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a4cdb10e4f2949d55d29421c6e381a300">  266</a></span>T <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a4cdb10e4f2949d55d29421c6e381a300">kll_sketch&lt;T, C, A&gt;::get_max_item</a>()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>  <span class="keywordflow">if</span> (is_empty()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>);</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>  <span class="keywordflow">if</span> (is_empty()) { <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>); }</div>
 <div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>  <span class="keywordflow">return</span> *max_item_;</div>
 <div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>}</div>
 </div>
@@ -396,7 +396,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
 <div class="foldopen" id="foldopen00282" data-start="{" data-end="}">
 <div class="line"><a id="l00282" name="l00282"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a849dfa06c183fd2fdfe4fe4a7e29d918">  282</a></span><span class="keywordtype">double</span> <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a849dfa06c183fd2fdfe4fe4a7e29d918">kll_sketch&lt;T, C, A&gt;::get_rank</a>(<span class="keyword">const</span> T&amp; item, <span class="keywordtype">bool</span> inclusive)<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  <span class="keywordflow">if</span> (is_empty()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>);</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  <span class="keywordflow">if</span> (is_empty()) { <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>); }</div>
 <div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>  setup_sorted_view();</div>
 <div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  <span class="keywordflow">return</span> sorted_view_-&gt;get_rank(item, inclusive);</div>
 <div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>}</div>
@@ -405,7 +405,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
 <div class="foldopen" id="foldopen00289" data-start="{" data-end="}">
 <div class="line"><a id="l00289" name="l00289"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a44226b755e73883ea2c128876e35b1d1">  289</a></span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a44226b755e73883ea2c128876e35b1d1">kll_sketch&lt;T, C, A&gt;::get_PMF</a>(<span class="keyword">const</span> T* split_points, uint32_t size, <span class="keywordtype">bool</span> inclusive) <span class="keyword">const</span> -&gt; vector_double {</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>  <span class="keywordflow">if</span> (is_empty()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>);</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>  <span class="keywordflow">if</span> (is_empty()) { <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>); }</div>
 <div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>  setup_sorted_view();</div>
 <div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>  <span class="keywordflow">return</span> sorted_view_-&gt;get_PMF(split_points, size, inclusive);</div>
 <div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>}</div>
@@ -414,7 +414,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
 <div class="foldopen" id="foldopen00296" data-start="{" data-end="}">
 <div class="line"><a id="l00296" name="l00296"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a20a4d992209b2aa58614c998d143705c">  296</a></span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a20a4d992209b2aa58614c998d143705c">kll_sketch&lt;T, C, A&gt;::get_CDF</a>(<span class="keyword">const</span> T* split_points, uint32_t size, <span class="keywordtype">bool</span> inclusive) <span class="keyword">const</span> -&gt; vector_double {</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>  <span class="keywordflow">if</span> (is_empty()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>);</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>  <span class="keywordflow">if</span> (is_empty()) { <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>); }</div>
 <div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>  setup_sorted_view();</div>
 <div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>  <span class="keywordflow">return</span> sorted_view_-&gt;get_CDF(split_points, size, inclusive);</div>
 <div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>}</div>
@@ -423,7 +423,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
 <div class="foldopen" id="foldopen00303" data-start="{" data-end="}">
 <div class="line"><a id="l00303" name="l00303"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#ac02fcfb6e706148458a2ef89390223a9">  303</a></span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#ac02fcfb6e706148458a2ef89390223a9">kll_sketch&lt;T, C, A&gt;::get_quantile</a>(<span class="keywordtype">double</span> rank, <span class="keywordtype">bool</span> inclusive) <span class="keyword">const</span> -&gt; <a class="code hl_typedef" href="classdatasketches_1_1kll__sketch.html#aa796209b1ef5dc41e83ed8158f77d280">quantile_return_type</a> {</div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>  <span class="keywordflow">if</span> (is_empty()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>);</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>  <span class="keywordflow">if</span> (is_empty()) { <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;operation is undefined for an empty sketch&quot;</span>); }</div>
 <div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>  <span class="keywordflow">if</span> ((rank &lt; 0.0) || (rank &gt; 1.0)) {</div>
 <div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;normalized rank cannot be less than zero or greater than 1.0&quot;</span>);</div>
 <div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>  }</div>
