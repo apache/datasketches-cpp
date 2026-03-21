@@ -166,7 +166,7 @@ compact_array_tuple_sketch<Array, Allocator> compact_array_tuple_sketch<Array, A
     for (size_t i = 0; i < num_entries; ++i) {
       Array summary(num_values, 0, allocator);
       read(is, summary.data(), num_values * sizeof(typename Array::value_type));
-      entries.push_back(Entry(keys[i], std::move(summary)));
+      entries.emplace_back(keys[i], std::move(summary));
     }
   }
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
@@ -213,7 +213,7 @@ compact_array_tuple_sketch<Array, Allocator> compact_array_tuple_sketch<Array, A
     for (size_t i = 0; i < num_entries; ++i) {
       Array summary(num_values, 0, allocator);
       ptr += copy_from_mem(ptr, summary.data(), num_values * sizeof(typename Array::value_type));
-      entries.push_back(Entry(keys[i], std::move(summary)));
+      entries.emplace_back(keys[i], std::move(summary));
     }
   }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
