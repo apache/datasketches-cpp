@@ -165,10 +165,10 @@ static int recursiveFindStraddle(const double xArr[], const int l, const int r, 
     throw std::logic_error("target value invariant violated in search");
   }
 
-  if (l+1 == r) return (l);
+  if (l+1 == r) { return (l); }
   m = l + ((r-l)/2);
-  if (xArr[m] <= x) return (recursiveFindStraddle<A>(xArr, m, r, x));
-  else              return (recursiveFindStraddle<A>(xArr, l, m, x));
+  if (xArr[m] <= x) { return (recursiveFindStraddle<A>(xArr, m, r, x)); }
+  else              { return (recursiveFindStraddle<A>(xArr, l, m, x)); }
 }
 
 

@@ -176,8 +176,7 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is, const A& allocator)
     read(is, sketch->coupons_.data(), sketch->coupons_.size() * sizeof(uint32_t));
   } 
 
-  if (!is.good())
-    throw std::runtime_error("error reading from std::istream"); 
+  if (!is.good()) { throw std::runtime_error("error reading from std::istream"); } 
 
   return ptr.release();
 }

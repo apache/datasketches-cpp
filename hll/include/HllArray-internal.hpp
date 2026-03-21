@@ -142,15 +142,16 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len, const A& allocat
   HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, startFullSizeFlag, allocator);
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
-  if (!oooFlag) sketch->putHipAccum(hip);
+  if (!oooFlag) { sketch->putHipAccum(hip); }
   sketch->putKxQ0(kxq0);
   sketch->putKxQ1(kxq1);
   sketch->putNumAtCurMin(numAtCurMin);
 
   std::memcpy(sketch->hllByteArr_.data(), data + hll_constants::HLL_BYTE_ARR_START, arrayBytes);
 
-  if (auxHashMap != nullptr)
+  if (auxHashMap != nullptr) {
     ((Hll4Array<A>*)sketch)->putAuxHashMap(auxHashMap);
+  }
 
   aux_ptr.release();
   return sketch;
@@ -193,7 +194,7 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is, const A& allocator) {
   const auto hip = read<double>(is);
   const auto kxq0 = read<double>(is);
   const auto kxq1 = read<double>(is);
-  if (!oooFlag) sketch->putHipAccum(hip);
+  if (!oooFlag) { sketch->putHipAccum(hip); }
   sketch->putKxQ0(kxq0);
   sketch->putKxQ1(kxq1);
 
@@ -209,8 +210,7 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is, const A& allocator) {
     ((Hll4Array<A>*)sketch)->putAuxHashMap(auxHashMap);
   }
 
-  if (!is.good())
-    throw std::runtime_error("error reading from std::istream"); 
+  if (!is.good()) { throw std::runtime_error("error reading from std::istream"); } 
 
   return sketch_ptr.release();
 }
@@ -545,7 +545,7 @@ template<typename A>
 void HllArray<A>::hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue) {
   const uint32_t configK = 1 << this->getLgConfigK();
   // update hip BEFORE updating kxq
-  if (!oooFlag_) hipAccum_ += configK / (kxq0_ + kxq1_);
+  if (!oooFlag_) { hipAccum_ += configK / (kxq0_ + kxq1_); }
   // update kxq0 and kxq1; subtract first, then add
   if (oldValue < 32) { kxq0_ -= INVERSE_POWERS_OF_2[oldValue]; }
   else               { kxq1_ -= INVERSE_POWERS_OF_2[oldValue]; }
@@ -648,7 +648,7 @@ array_(array), array_size_(array_size), index_(index), hll_type_(hll_type), exce
 {
   while (index_ < array_size_) {
     value_ = get_value(array_, index_, hll_type_, exceptions_, offset_);
-    if (all_ || value_ != hll_constants::EMPTY) break;
+    if (all_ || value_ != hll_constants::EMPTY) { break; }
     ++index_;
   }
 }
@@ -657,7 +657,7 @@ template<typename A>
 typename HllArray<A>::const_iterator& HllArray<A>::const_iterator::operator++() {
   while (++index_ < array_size_) {
     value_ = get_value(array_, index_, hll_type_, exceptions_, offset_);
-    if (all_ || value_ != hll_constants::EMPTY) break;
+    if (all_ || value_ != hll_constants::EMPTY) { break; }
   }
   return *this;
 }
