@@ -43,8 +43,8 @@ num_valid_bits(num_valid_bits),
 num_items(0),
 slots(1ULL << lg_size, UINT32_MAX, allocator)
 {
-  if (lg_size < 2) throw std::invalid_argument("lg_size must be >= 2");
-  if (num_valid_bits < 1 || num_valid_bits > 32) throw std::invalid_argument("num_valid_bits must be between 1 and 32");
+  if (lg_size < 2) { throw std::invalid_argument("lg_size must be >= 2"); }
+  if (num_valid_bits < 1 || num_valid_bits > 32) { throw std::invalid_argument("num_valid_bits must be between 1 and 32"); }
 }
 
 template<typename A>
@@ -71,8 +71,8 @@ void u32_table<A>::clear() {
 template<typename A>
 bool u32_table<A>::maybe_insert(uint32_t item) {
   const uint32_t index = lookup(item);
-  if (slots[index] == item) return false;
-  if (slots[index] != UINT32_MAX) throw std::logic_error("could not insert");
+  if (slots[index] == item) { return false; }
+  if (slots[index] != UINT32_MAX) { throw std::logic_error("could not insert"); }
   slots[index] = item;
   num_items++;
   if (U32_TABLE_UPSIZE_DENOM * num_items > U32_TABLE_UPSIZE_NUMER * (1 << lg_size)) {
@@ -84,9 +84,9 @@ bool u32_table<A>::maybe_insert(uint32_t item) {
 template<typename A>
 bool u32_table<A>::maybe_delete(uint32_t item) {
   const uint32_t index = lookup(item);
-  if (slots[index] == UINT32_MAX) return false;
-  if (slots[index] != item) throw std::logic_error("item does not exist");
-  if (num_items == 0) throw std::logic_error("delete error");
+  if (slots[index] == UINT32_MAX) { return false; }
+  if (slots[index] != item) { throw std::logic_error("item does not exist"); }
+  if (num_items == 0) { throw std::logic_error("delete error"); }
   // delete the item
   slots[index] = UINT32_MAX;
   num_items--;
@@ -129,7 +129,7 @@ uint32_t u32_table<A>::lookup(uint32_t item) const {
   const uint32_t mask = size - 1;
   const uint8_t shift = num_valid_bits - lg_size;
   uint32_t probe = item >> shift;
-  if (probe > mask) throw std::logic_error("probe out of range");
+  if (probe > mask) { throw std::logic_error("probe out of range"); }
   while (slots[probe] != item && slots[probe] != UINT32_MAX) {
     probe = (probe + 1) & mask;
   }
@@ -140,17 +140,17 @@ uint32_t u32_table<A>::lookup(uint32_t item) const {
 template<typename A>
 void u32_table<A>::must_insert(uint32_t item) {
   const uint32_t index = lookup(item);
-  if (slots[index] == item) throw std::logic_error("item exists");
-  if (slots[index] != UINT32_MAX) throw std::logic_error("could not insert");
+  if (slots[index] == item) { throw std::logic_error("item exists"); }
+  if (slots[index] != UINT32_MAX) { throw std::logic_error("could not insert"); }
   slots[index] = item;
 }
 
 template<typename A>
 void u32_table<A>::rebuild(uint8_t new_lg_size) {
-  if (new_lg_size < 2) throw std::logic_error("lg_size must be >= 2");
+  if (new_lg_size < 2) { throw std::logic_error("lg_size must be >= 2"); }
   const uint32_t old_size = 1 << lg_size;
   const uint32_t new_size = 1 << new_lg_size;
-  if (new_size <= num_items) throw std::logic_error("new_size <= num_items");
+  if (new_size <= num_items) { throw std::logic_error("new_size <= num_items"); }
   vector_u32 old_slots = std::move(slots);
   slots = vector_u32(new_size, UINT32_MAX, old_slots.get_allocator());
   lg_size = new_lg_size;
@@ -169,7 +169,7 @@ void u32_table<A>::rebuild(uint8_t new_lg_size) {
 // The result is nearly sorted, so make sure to use an efficient sort for that case
 template<typename A>
 auto u32_table<A>::unwrapping_get_items() const -> vector_u32 {
-  if (num_items == 0) return vector_u32(slots.get_allocator());
+  if (num_items == 0) { return vector_u32(slots.get_allocator()); }
   const uint32_t table_size = 1 << lg_size;
   vector_u32 result(num_items, 0, slots.get_allocator());
   size_t i = 0;
@@ -187,9 +187,9 @@ auto u32_table<A>::unwrapping_get_items() const -> vector_u32 {
   // the rest of the table is processed normally
   while (i < table_size) {
     const uint32_t item = slots[i++];
-    if (item != UINT32_MAX) result[l++] = item;
+    if (item != UINT32_MAX) { result[l++] = item; }
   }
-  if (l != r + 1) throw std::logic_error("unwrapping error");
+  if (l != r + 1) { throw std::logic_error("unwrapping error"); }
   return result;
 }
 
@@ -213,7 +213,7 @@ void u32_table<A>::merge(
     else if (arr_a[a] < arr_b[b]) { arr_c[c] = arr_a[a++]; }
     else                          { arr_c[c] = arr_b[b++]; }
   }
-  if (a != lim_a || b != lim_b) throw std::logic_error("merging error");
+  if (a != lim_a || b != lim_b) { throw std::logic_error("merging error"); }
 }
 
 // In applications where the input array is already nearly sorted,
