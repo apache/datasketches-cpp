@@ -108,19 +108,19 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacedatasketches.html">datasketches</a> {</div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">static</span> <span class="keyword">inline</span> uint64_t divide_longs_rounding_up(uint64_t x, uint64_t y) {</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>  <span class="keywordflow">if</span> (y == 0) <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;divide_longs_rounding_up: bad argument&quot;</span>);</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>  <span class="keywordflow">if</span> (y == 0) { <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;divide_longs_rounding_up: bad argument&quot;</span>); }</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>  <span class="keyword">const</span> uint64_t quotient = x / y;</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>  <span class="keywordflow">if</span> (quotient * y == x) <span class="keywordflow">return</span> (quotient);</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>  <span class="keywordflow">else</span> <span class="keywordflow">return</span> quotient + 1;</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>  <span class="keywordflow">if</span> (quotient * y == x) { <span class="keywordflow">return</span> (quotient); }</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>  <span class="keywordflow">else</span> { <span class="keywordflow">return</span> quotient + 1; }</div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>}</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="keyword">static</span> <span class="keyword">inline</span> uint8_t floor_log2_of_long(uint64_t x) {</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  <span class="keywordflow">if</span> (x &lt; 1) <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;floor_log2_of_long: bad argument&quot;</span>);</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  <span class="keywordflow">if</span> (x &lt; 1) { <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;floor_log2_of_long: bad argument&quot;</span>); }</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  uint8_t p = 0;</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  uint64_t y = 1;</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>  <span class="keywordflow">while</span> (<span class="keyword">true</span>) {</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordflow">if</span> (y == x) <span class="keywordflow">return</span> p;</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="keywordflow">if</span> (y &gt; x) <span class="keywordflow">return</span> p - 1;</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordflow">if</span> (y == x) { <span class="keywordflow">return</span> p; }</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="keywordflow">if</span> (y &gt; x) { <span class="keywordflow">return</span> p - 1; }</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    p += 1;</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    y &lt;&lt;= 1;</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  }</div>
@@ -181,7 +181,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span><span class="preprocessor">  }</span></div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="keyword">static</span> <span class="keyword">inline</span> uint32_t count_bits_set_in_matrix(<span class="keyword">const</span> uint64_t* a, uint32_t length) {</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>  <span class="keywordflow">if</span> ((length &amp; 0x7) != 0) <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;the length of the array must be a multiple of 8&quot;</span>);</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>  <span class="keywordflow">if</span> ((length &amp; 0x7) != 0) { <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;the length of the array must be a multiple of 8&quot;</span>); }</div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>  uint32_t total = 0;</div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>  uint64_t ones, twos, twos_a, twos_b, fours, fours_a, fours_b, eights;</div>
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>  fours = twos = ones = 0;</div>
