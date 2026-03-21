@@ -111,7 +111,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>coupon_iterator&lt;A&gt;::coupon_iterator(<span class="keyword">const</span> uint32_t* array, <span class="keywordtype">size_t</span> array_size, <span class="keywordtype">size_t</span> index, <span class="keywordtype">bool</span> all):</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>array_(array), array_size_(array_size), index_(index), all_(all) {</div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>  <span class="keywordflow">while</span> (index_ &lt; array_size_) {</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="keywordflow">if</span> (all_ || array_[index_] != hll_constants::EMPTY) <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="keywordflow">if</span> (all_ || array_[index_] != hll_constants::EMPTY) { <span class="keywordflow">break</span>; }</div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    ++index_;</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>  }</div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>}</div>
@@ -119,7 +119,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>coupon_iterator&lt;A&gt;&amp; coupon_iterator&lt;A&gt;::operator++() {</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>  <span class="keywordflow">while</span> (++index_ &lt; array_size_) {</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordflow">if</span> (all_ || array_[index_] != hll_constants::EMPTY) <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordflow">if</span> (all_ || array_[index_] != hll_constants::EMPTY) { <span class="keywordflow">break</span>; }</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  }</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>}</div>

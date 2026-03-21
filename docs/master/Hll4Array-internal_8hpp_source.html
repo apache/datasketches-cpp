@@ -214,7 +214,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span> </div>
 <div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> A&gt;</div>
 <div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>uint8_t Hll4Array&lt;A&gt;::adjustRawValue(uint32_t slot, uint8_t value)<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>  <span class="keywordflow">if</span> (value != hll_constants::AUX_TOKEN) <span class="keywordflow">return</span> value + this-&gt;curMin_;</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>  <span class="keywordflow">if</span> (value != hll_constants::AUX_TOKEN) { <span class="keywordflow">return</span> value + this-&gt;curMin_; }</div>
 <div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>  <span class="keywordflow">return</span> auxHashMap_-&gt;mustFindValueFor(slot);</div>
 <div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>}</div>
 <div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span> </div>
