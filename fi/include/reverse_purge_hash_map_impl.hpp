@@ -74,7 +74,7 @@ states_(nullptr)
       if (other.states_[i] > 0) {
         new (&keys_[i]) K(other.keys_[i]);
         values_[i] = other.values_[i];
-         if (--num == 0) break;
+         if (--num == 0) { break; }
       }
     }
   }
@@ -105,7 +105,7 @@ reverse_purge_hash_map<K, V, H, E, A>::~reverse_purge_hash_map() {
     for (uint32_t i = 0; i < size; i++) {
       if (is_active(i)) {
         keys_[i].~K();
-        if (--num_active_ == 0) break;
+        if (--num_active_ == 0) { break; }
       }
     }
   }
@@ -166,7 +166,7 @@ V reverse_purge_hash_map<K, V, H, E, A>::get(const K& key) const {
   const uint32_t mask = (1 << lg_cur_size_) - 1;
   uint32_t probe = fmix64(H()(key)) & mask;
   while (is_active(probe)) {
-    if (E()(keys_[probe], key)) return values_[probe];
+    if (E()(keys_[probe], key)) { return values_[probe]; }
     probe = (probe + 1) & mask;
   }
   return 0;
@@ -271,7 +271,7 @@ void reverse_purge_hash_map<K, V, H, E, A>::hash_delete(uint32_t delete_index) {
     probe = (probe + 1) & mask;
     drift++;
     // only used for theoretical analysis
-    if (drift >= DRIFT_LIMIT) throw std::logic_error("drift: " + std::to_string(drift) + " >= DRIFT_LIMIT");
+    if (drift >= DRIFT_LIMIT) { throw std::logic_error("drift: " + std::to_string(drift) + " >= DRIFT_LIMIT"); }
   }
 }
 
@@ -289,7 +289,7 @@ uint32_t reverse_purge_hash_map<K, V, H, E, A>::internal_adjust_or_insert(const 
     index = (index + 1) & mask;
     drift++;
     // only used for theoretical analysis
-    if (drift >= DRIFT_LIMIT) throw std::logic_error("drift limit reached");
+    if (drift >= DRIFT_LIMIT) { throw std::logic_error("drift limit reached"); }
   }
   // adding the key and value to the table
   if (num_active_ > get_capacity()) {

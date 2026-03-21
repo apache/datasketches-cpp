@@ -45,13 +45,13 @@ map(
   allocator
 )
 {
-  if (lg_start_map_size > lg_max_map_size) throw std::invalid_argument("starting size must not be greater than maximum size");
+  if (lg_start_map_size > lg_max_map_size) { throw std::invalid_argument("starting size must not be greater than maximum size"); }
 }
 
 template<typename T, typename W, typename H, typename E, typename A>
 void frequent_items_sketch<T, W, H, E, A>::update(const T& item, W weight) {
   check_weight(weight);
-  if (weight == 0) return;
+  if (weight == 0) { return; }
   total_weight += weight;
   offset += map.adjust_or_insert(item, weight);
 }
@@ -59,14 +59,14 @@ void frequent_items_sketch<T, W, H, E, A>::update(const T& item, W weight) {
 template<typename T, typename W, typename H, typename E, typename A>
 void frequent_items_sketch<T, W, H, E, A>::update(T&& item, W weight) {
   check_weight(weight);
-  if (weight == 0) return;
+  if (weight == 0) { return; }
   total_weight += weight;
   offset += map.adjust_or_insert(std::move(item), weight);
 }
 
 template<typename T, typename W, typename H, typename E, typename A>
 void frequent_items_sketch<T, W, H, E, A>::merge(const frequent_items_sketch& other) {
-  if (other.is_empty()) return;
+  if (other.is_empty()) { return; }
   const W merged_total_weight = total_weight + other.get_total_weight(); // for correction at the end
   for (auto it: other.map) {
     update(it.first, it.second);
@@ -77,7 +77,7 @@ void frequent_items_sketch<T, W, H, E, A>::merge(const frequent_items_sketch& ot
 
 template<typename T, typename W, typename H, typename E, typename A>
 void frequent_items_sketch<T, W, H, E, A>::merge(frequent_items_sketch&& other) {
-  if (other.is_empty()) return;
+  if (other.is_empty()) { return; }
   const W merged_total_weight = total_weight + other.get_total_weight(); // for correction at the end
   for (auto it: other.map) {
     update(std::move(it.first), it.second);
@@ -105,7 +105,7 @@ template<typename T, typename W, typename H, typename E, typename A>
 W frequent_items_sketch<T, W, H, E, A>::get_estimate(const T& item) const {
   // if item is tracked estimate = weight + offset, otherwise 0
   const W weight = map.get(item);
-  if (weight > 0) return weight + offset;
+  if (weight > 0) { return weight + offset; }
   return 0;
 }
 
@@ -210,7 +210,7 @@ void frequent_items_sketch<T, W, H, E, A>::serialize(std::ostream& os, const Ser
 template<typename T, typename W, typename H, typename E, typename A>
 template<typename SerDe>
 size_t frequent_items_sketch<T, W, H, E, A>::get_serialized_size_bytes(const SerDe& sd) const {
-  if (is_empty()) return PREAMBLE_LONGS_EMPTY * sizeof(uint64_t);
+  if (is_empty()) { return PREAMBLE_LONGS_EMPTY * sizeof(uint64_t); }
   size_t size = PREAMBLE_LONGS_NONEMPTY * sizeof(uint64_t) + map.get_num_active() * sizeof(W);
   for (auto it: map) size += sd.size_of_item(it.first);
   return size;
@@ -328,8 +328,7 @@ frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deser
     sketch.total_weight = total_weight;
     sketch.offset = offset;
   }
-  if (!is.good())
-    throw std::runtime_error("error reading from std::istream"); 
+  if (!is.good()) { throw std::runtime_error("error reading from std::istream"); } 
   return sketch;
 }
 
