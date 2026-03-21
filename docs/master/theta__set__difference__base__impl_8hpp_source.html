@@ -152,7 +152,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        <span class="keyword">const</span> uint64_t hash = EK()(entry);</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        <span class="keywordflow">if</span> (hash &lt; theta) {</div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>          <span class="keyword">auto</span> result = table.find(hash);</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>          <span class="keywordflow">if</span> (!result.second) entries.push_back(conditional_forward&lt;FwdSketch&gt;(entry));</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>          <span class="keywordflow">if</span> (!result.second) entries.emplace_back(conditional_forward&lt;FwdSketch&gt;(entry));</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (a.is_ordered()) {</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>          <span class="keywordflow">break</span>; <span class="comment">// early stop</span></div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        }</div>

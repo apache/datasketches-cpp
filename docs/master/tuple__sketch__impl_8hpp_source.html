@@ -458,7 +458,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>{</div>
 <div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>  entries_.reserve(other.<a class="code hl_function" href="classdatasketches_1_1base__theta__sketch__alloc.html#a9c71f891e4b0d3d3dc6a6f4b30ed9261">get_num_retained</a>());</div>
 <div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>  <span class="keywordflow">for</span> (uint64_t hash: other) {</div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>    entries_.push_back(Entry(hash, summary));</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>    entries_.emplace_back(hash, summary);</div>
 <div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>  }</div>
 <div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>  <span class="keywordflow">if</span> (ordered &amp;&amp; !other.<a class="code hl_function" href="classdatasketches_1_1base__theta__sketch__alloc.html#a358923431da50e8d43651795e2515c01">is_ordered</a>()) std::sort(entries_.begin(), entries_.end(), comparator());</div>
 <div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>}</div>
@@ -683,7 +683,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_entries; ++i) {</div>
 <div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>      <span class="keyword">const</span> <span class="keyword">auto</span> key = read&lt;uint64_t&gt;(is);</div>
 <div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span>      sd.deserialize(is, summary.get(), 1);</div>
-<div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span>      entries.push_back(Entry(key, std::move(*summary)));</div>
+<div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span>      entries.emplace_back(key, std::move(*summary));</div>
 <div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span>      (*summary).~S();</div>
 <div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span>    }</div>
 <div class="line"><a id="l00524" name="l00524"></a><span class="lineno">  524</span>  }</div>
@@ -761,7 +761,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span>      uint64_t key;</div>
 <div class="line"><a id="l00586" name="l00586"></a><span class="lineno">  586</span>      ptr += copy_from_mem(ptr, key);</div>
 <div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span>      ptr += sd.deserialize(ptr, base + size - ptr, summary.get(), 1);</div>
-<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span>      entries.push_back(Entry(key, std::move(*summary)));</div>
+<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span>      entries.emplace_back(key, std::move(*summary));</div>
 <div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span>      (*summary).~S();</div>
 <div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span>    }</div>
 <div class="line"><a id="l00591" name="l00591"></a><span class="lineno">  591</span>  }</div>

@@ -262,7 +262,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_entries; ++i) {</div>
 <div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>      Array summary(num_values, 0, allocator);</div>
 <div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>      read(is, summary.data(), num_values * <span class="keyword">sizeof</span>(<span class="keyword">typename</span> Array::value_type));</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>      entries.push_back(Entry(keys[i], std::move(summary)));</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>      entries.emplace_back(keys[i], std::move(summary));</div>
 <div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>    }</div>
 <div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>  }</div>
 <div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>  <span class="keywordflow">if</span> (!is.good()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;error reading from std::istream&quot;</span>);</div>
@@ -311,7 +311,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_entries; ++i) {</div>
 <div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>      Array summary(num_values, 0, allocator);</div>
 <div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>      ptr += copy_from_mem(ptr, summary.data(), num_values * <span class="keyword">sizeof</span>(<span class="keyword">typename</span> Array::value_type));</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>      entries.push_back(Entry(keys[i], std::move(summary)));</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>      entries.emplace_back(keys[i], std::move(summary));</div>
 <div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>    }</div>
 <div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>  }</div>
 <div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="classdatasketches_1_1update__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a> = flags_byte &amp; (1 &lt;&lt; flags::IS_EMPTY);</div>
