@@ -293,7 +293,7 @@ double req_sketch<T, C, A>::get_rank_upper_bound(double rank, uint8_t num_std_de
 
 template<typename T, typename C, typename A>
 double req_sketch<T, C, A>::get_RSE(uint16_t k, double rank, bool hra, uint64_t n) {
-  return get_rank_lb(k, 2, rank, 1, n, hra);
+  return get_rank_ub(k, 2, rank, 1, n, hra) - rank;
 }
 
 template<typename T, typename C, typename A>
