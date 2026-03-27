@@ -423,7 +423,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
 <div class="foldopen" id="foldopen00295" data-start="{" data-end="}">
 <div class="line"><a id="l00295" name="l00295"></a><span class="lineno"><a class="line" href="classdatasketches_1_1req__sketch.html#a899bef2c5e0ea489ed4b023d2b9900ee">  295</a></span><span class="keywordtype">double</span> <a class="code hl_function" href="classdatasketches_1_1req__sketch.html#a899bef2c5e0ea489ed4b023d2b9900ee">req_sketch&lt;T, C, A&gt;::get_RSE</a>(uint16_t k, <span class="keywordtype">double</span> rank, <span class="keywordtype">bool</span> hra, uint64_t n) {</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>  <span class="keywordflow">return</span> get_rank_lb(k, 2, rank, 1, n, hra);</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>  <span class="keywordflow">return</span> get_rank_ub(k, 2, rank, 1, n, hra) - rank;</div>
 <div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>}</div>
 </div>
 <div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span> </div>
