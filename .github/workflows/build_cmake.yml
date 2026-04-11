@@ -20,8 +20,8 @@ jobs:
             cc: "clang", cxx: "clang++"
           }
         - {
-            name: "Windows 2022, MSVC",
-            os: windows-2022,
+            name: "Windows 2025, MSVC",
+            os: windows-2025,
             test_target: RUN_TESTS,
             cc: "cl", cxx: "cl"
           }
