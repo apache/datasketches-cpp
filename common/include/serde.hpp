@@ -20,6 +20,7 @@
 #ifndef DATASKETCHES_SERDE_HPP_
 #define DATASKETCHES_SERDE_HPP_
 
+#include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <memory>

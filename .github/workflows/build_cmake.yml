@@ -6,7 +6,7 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build:
+  build-native:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     strategy:
@@ -14,23 +14,16 @@ jobs:
       matrix:
         config:
         - {
-            name: "MacOS Latest, Clang",
-            os: macos-latest,
+            name: "macOS 15, Clang",
+            os: macos-15,
             test_target: test,
             cc: "clang", cxx: "clang++"
           }
         - {
-            name: "Ubuntu Latest, GCC",
-            os: ubuntu-latest,
-            test_target: test,
-            cc: "gcc", cxx: "g++"
-          }
-        - {
-            name: "Windows Latest, MSVC",
-            os: windows-latest,
+            name: "Windows 2025, MSVC",
+            os: windows-2025,
             test_target: RUN_TESTS,
-            cc: "cl", cxx: "cl",
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            cc: "cl", cxx: "cl"
           }
         #- {
         #    name: "Windows Latest, MinGW+gcc",
@@ -46,6 +39,165 @@ jobs:
           persist-credentials: false
       - name: Configure
         run: cmake -B build -S . -DCMAKE_INSTALL_PREFIX=./install_test
+      - name: Build C++ unit tests
+        run: cmake --build build --config Release
+      - name: Run C++ tests
+        run: cmake --build build --config Release --target ${{ matrix.config.test_target }}
+      - name: Install headers
+        run: cmake --build build -t install
+
+  build-ubuntu-gcc:
+    name: Compiler / ${{ matrix.config.name }}
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ matrix.config.image }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Ubuntu 24.04, GCC 9",
+            image: "ubuntu:24.04",
+            test_target: test,
+            cc: "gcc-9", cxx: "g++-9",
+            packages: "gcc-9 g++-9",
+            cxx_standard: "11"
+          }
+        - {
+            name: "Ubuntu 24.04, GCC 10",
+            image: "ubuntu:24.04",
+            test_target: test,
+            cc: "gcc-10", cxx: "g++-10",
+            packages: "gcc-10 g++-10",
+            cxx_standard: "11"
+          }
+        - {
+            name: "Ubuntu 24.04, GCC 11",
+            image: "ubuntu:24.04",
+            test_target: test,
+            cc: "gcc-11", cxx: "g++-11",
+            packages: "gcc-11 g++-11",
+            cxx_standard: "11"
+          }
+        - {
+            name: "Ubuntu 24.04, GCC 12",
+            image: "ubuntu:24.04",
+            test_target: test,
+            cc: "gcc-12", cxx: "g++-12",
+            packages: "gcc-12 g++-12",
+            cxx_standard: "11"
+          }
+        - {
+            name: "Ubuntu 24.04, GCC 13",
+            image: "ubuntu:24.04",
+            test_target: test,
+            cc: "gcc-13", cxx: "g++-13",
+            packages: "gcc-13 g++-13",
+            cxx_standard: "11"
+          }
+        - {
+            name: "Ubuntu 24.04, GCC 14",
+            image: "ubuntu:24.04",
+            test_target: test,
+            cc: "gcc-14", cxx: "g++-14",
+            packages: "gcc-14 g++-14",
+            cxx_standard: "11"
+          }
+        - {
+            name: "Ubuntu 25.10, GCC 15",
+            image: "ubuntu:25.10",
+            test_target: test,
+            cc: "gcc-15", cxx: "g++-15",
+            packages: "gcc-15 g++-15",
+            cxx_standard: "11"
+          }
+    steps:
+      - name: Install build dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates \
+            cmake \
+            git \
+            make \
+            ${{ matrix.config.packages }}
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Configure
+        env:
+          CC: ${{ matrix.config.cc }}
+          CXX: ${{ matrix.config.cxx }}
+        run: cmake -B build -S . -DCMAKE_CXX_STANDARD=${{ matrix.config.cxx_standard }} -DCMAKE_INSTALL_PREFIX=./install_test
+      - name: Build C++ unit tests
+        run: cmake --build build --config Release
+      - name: Run C++ tests
+        run: cmake --build build --config Release --target ${{ matrix.config.test_target }}
+      - name: Install headers
+        run: cmake --build build -t install
+
+  build-ubuntu-std:
+    name: Standard / Ubuntu 25.10, GCC 15, C++${{ matrix.config.cxx_standard }}
+    runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:25.10
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            cxx_standard: "11",
+            test_target: test
+          }
+        - {
+            cxx_standard: "14",
+            test_target: test
+          }
+        - {
+            cxx_standard: "17",
+            test_target: test
+          }
+        - {
+            cxx_standard: "20",
+            test_target: test
+          }
+        - {
+            cxx_standard: "23",
+            test_target: test,
+          }
+    steps:
+      - name: Install build dependencies
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates \
+            cmake \
+            gcc-15 \
+            g++-15 \
+            git \
+            make
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+      - name: Configure
+        env:
+          CC: gcc-15
+          CXX: g++-15
+        run: cmake -B build -S . -DCMAKE_CXX_STANDARD=${{ matrix.config.cxx_standard }} -DCMAKE_INSTALL_PREFIX=./install_test
       - name: Build C++ unit tests
         run: cmake --build build --config Release
       - name: Run C++ tests
