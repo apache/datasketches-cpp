@@ -24,6 +24,7 @@
 #include <string>
 #include <exception>
 #include <stdexcept>
+#include <vector>
 
 #include "hll.hpp"
 #include "CouponList.hpp"
@@ -178,6 +179,65 @@ TEST_CASE("coupon list: check corrupt stream data", "[coupon_list]") {
   ss.put(0x22); // HLL_8, HLL
   ss.seekg(0);
   REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
+}
+
+TEST_CASE("coupon list: rejects malformed coupon count in bytes", "[coupon_list]") {
+  // Reject declared LIST counts beyond the fixed LIST capacity.
+  uint8_t lgK = 8;
+  hll_sketch sk1(lgK);
+  sk1.update(1);
+  sk1.update(2);
+  auto sketchBytes = sk1.serialize_compact();
+
+  const uint8_t malformedCount = 10;
+  // Keep the input long enough to validate the declared LIST count.
+  const size_t requiredLen = hll_constants::LIST_INT_ARR_START
+                             + malformedCount * sizeof(uint32_t);
+  if (sketchBytes.size() < requiredLen) {
+    sketchBytes.resize(requiredLen, 0);
+  }
+  sketchBytes[hll_constants::LIST_COUNT_BYTE] = malformedCount;
+
+  REQUIRE_THROWS_AS(
+      hll_sketch::deserialize(sketchBytes.data(), sketchBytes.size()),
+      std::invalid_argument);
+  REQUIRE_THROWS_AS(
+      CouponList<std::allocator<uint8_t>>::newList(
+          sketchBytes.data(), sketchBytes.size(), std::allocator<uint8_t>()),
+      std::invalid_argument);
+}
+
+TEST_CASE("coupon list: rejects malformed coupon count in stream", "[coupon_list]") {
+  uint8_t lgK = 8;
+  hll_sketch sk1(lgK);
+  sk1.update(1);
+  sk1.update(2);
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  sk1.serialize_compact(ss);
+
+  const uint8_t malformedCount = 10;
+  const size_t requiredLen = hll_constants::LIST_INT_ARR_START
+                             + malformedCount * sizeof(uint32_t);
+  // Keep the stream long enough to validate the declared LIST count.
+  ss.seekp(0, std::ios::end);
+  const auto endPos = static_cast<size_t>(ss.tellp());
+  if (endPos < requiredLen) {
+    std::vector<char> pad(requiredLen - endPos, 0);
+    ss.write(pad.data(), pad.size());
+  }
+
+  ss.seekp(hll_constants::LIST_COUNT_BYTE);
+  ss.put(static_cast<char>(malformedCount));
+
+  ss.clear();
+  ss.seekg(0);
+  REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
+
+  ss.clear();
+  ss.seekg(0);
+  REQUIRE_THROWS_AS(
+      CouponList<std::allocator<uint8_t>>::newList(ss, std::allocator<uint8_t>()),
+      std::invalid_argument);
 }
 
 } /* namespace datasketches */

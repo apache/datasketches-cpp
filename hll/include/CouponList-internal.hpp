@@ -99,6 +99,13 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len, const A& al
   const bool emptyFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::EMPTY_FLAG_MASK) ? true : false);
 
   const uint32_t couponCount = data[hll_constants::LIST_COUNT_BYTE];
+  // Reject LIST counts larger than the fixed LIST capacity.
+  const uint32_t listCapacity = 1u << hll_constants::LG_INIT_LIST_SIZE;
+  if (couponCount > listCapacity) {
+    throw std::invalid_argument("Attempt to deserialize invalid CouponList with couponCount > capacity. Found couponCount: "
+                                + std::to_string(couponCount)
+                                + ", capacity: " + std::to_string(listCapacity));
+  }
   const uint32_t couponsInArray = (compact ? couponCount : (1 << HllUtil<A>::computeLgArrInts(LIST, couponCount, lgK)));
   const size_t expectedLength = hll_constants::LIST_INT_ARR_START + (couponsInArray * sizeof(uint32_t));
   if (len < expectedLength) {
@@ -146,11 +153,19 @@ CouponList<A>* CouponList<A>::newList(std::istream& is, const A& allocator) {
   const bool oooFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   const bool emptyFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::EMPTY_FLAG_MASK) ? true : false);
 
+  const uint32_t couponCount = listHeader[hll_constants::LIST_COUNT_BYTE];
+  // Reject LIST counts larger than the fixed LIST capacity.
+  const uint32_t listCapacity = 1u << hll_constants::LG_INIT_LIST_SIZE;
+  if (couponCount > listCapacity) {
+    throw std::invalid_argument("Attempt to deserialize invalid CouponList with couponCount > capacity. Found couponCount: "
+                                + std::to_string(couponCount)
+                                + ", capacity: " + std::to_string(listCapacity));
+  }
+
   ClAlloc cla(allocator);
   CouponList<A>* sketch = new (cla.allocate(1)) CouponList<A>(lgK, tgtHllType, mode, allocator);
   using coupon_list_ptr = std::unique_ptr<CouponList<A>, std::function<void(HllSketchImpl<A>*)>>;
   coupon_list_ptr ptr(sketch, sketch->get_deleter());
-  const uint32_t couponCount = listHeader[hll_constants::LIST_COUNT_BYTE];
   sketch->couponCount_ = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
