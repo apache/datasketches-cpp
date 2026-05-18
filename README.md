@@ -4,7 +4,7 @@ This is the core C++ component of the Apache DataSketches library.  It contains 
 
 This component is also a dependency of other library components that create adaptors for target systems, such as [PostgreSQL](https://github.com/apache/datasketches-postgresql).
 
-Note that we have parallel core library components for C++, Python, GO, and Rust implementations of many of the same sketch algorithms:
+Note that we have parallel core library components for Java, Python, GO, and Rust implementations of many of the same sketch algorithms:
 
 - [datasketches-java](https://github.com/apache/datasketches-java)
 - [datasketches-python](https://github.com/apache/datasketches-python)
