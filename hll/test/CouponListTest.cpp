@@ -182,14 +182,16 @@ TEST_CASE("coupon list: check corrupt stream data", "[coupon_list]") {
 }
 
 TEST_CASE("coupon list: rejects malformed coupon count in bytes", "[coupon_list]") {
-  // Reject declared LIST counts beyond the fixed LIST capacity.
+  // Reject declared LIST counts at or beyond the fixed LIST capacity.
   uint8_t lgK = 8;
   hll_sketch sk1(lgK);
   sk1.update(1);
   sk1.update(2);
-  auto sketchBytes = sk1.serialize_compact();
+  const auto validBytes = sk1.serialize_compact();
 
-  const uint8_t malformedCount = 10;
+  const uint8_t listCapacity = static_cast<uint8_t>(1u << hll_constants::LG_INIT_LIST_SIZE);
+  const uint8_t malformedCount = listCapacity;
+  auto sketchBytes = validBytes;
   // Keep the input long enough to validate the declared LIST count.
   const size_t requiredLen = hll_constants::LIST_INT_ARR_START
                              + malformedCount * sizeof(uint32_t);
@@ -212,10 +214,12 @@ TEST_CASE("coupon list: rejects malformed coupon count in stream", "[coupon_list
   hll_sketch sk1(lgK);
   sk1.update(1);
   sk1.update(2);
+
+  const uint8_t listCapacity = static_cast<uint8_t>(1u << hll_constants::LG_INIT_LIST_SIZE);
+  const uint8_t malformedCount = listCapacity;
   std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
   sk1.serialize_compact(ss);
 
-  const uint8_t malformedCount = 10;
   const size_t requiredLen = hll_constants::LIST_INT_ARR_START
                              + malformedCount * sizeof(uint32_t);
   // Keep the stream long enough to validate the declared LIST count.

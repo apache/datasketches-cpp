@@ -99,10 +99,10 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len, const A& al
   const bool emptyFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::EMPTY_FLAG_MASK) ? true : false);
 
   const uint32_t couponCount = data[hll_constants::LIST_COUNT_BYTE];
-  // Reject LIST counts larger than the fixed LIST capacity.
+  // Reject LIST counts at or above the fixed LIST capacity.
   const uint32_t listCapacity = 1u << hll_constants::LG_INIT_LIST_SIZE;
-  if (couponCount > listCapacity) {
-    throw std::invalid_argument("Attempt to deserialize invalid CouponList with couponCount > capacity. Found couponCount: "
+  if (couponCount >= listCapacity) {
+    throw std::invalid_argument("Attempt to deserialize invalid CouponList with couponCount >= capacity. Found couponCount: "
                                 + std::to_string(couponCount)
                                 + ", capacity: " + std::to_string(listCapacity));
   }
@@ -154,10 +154,10 @@ CouponList<A>* CouponList<A>::newList(std::istream& is, const A& allocator) {
   const bool emptyFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::EMPTY_FLAG_MASK) ? true : false);
 
   const uint32_t couponCount = listHeader[hll_constants::LIST_COUNT_BYTE];
-  // Reject LIST counts larger than the fixed LIST capacity.
+  // Reject LIST counts at or above the fixed LIST capacity.
   const uint32_t listCapacity = 1u << hll_constants::LG_INIT_LIST_SIZE;
-  if (couponCount > listCapacity) {
-    throw std::invalid_argument("Attempt to deserialize invalid CouponList with couponCount > capacity. Found couponCount: "
+  if (couponCount >= listCapacity) {
+    throw std::invalid_argument("Attempt to deserialize invalid CouponList with couponCount >= capacity. Found couponCount: "
                                 + std::to_string(couponCount)
                                 + ", capacity: " + std::to_string(listCapacity));
   }
