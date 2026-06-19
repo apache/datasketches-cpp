@@ -1,14 +1,11 @@
-# The default behavior, which overrides 'core.autocrlf', is to use Git's
-# built-in heuristics to determine whether a particular file is text or binary.
-# Text files are automatically normalized to the user's platforms.
-# 15 years ago this was probably OK, but today it is a bad idea.
+# Override 'core.autocrlf' while still using Git's built-in heuristics to detect text vs binary.
+# Normalize all text files to LF line endings on checkout.
 * text=auto eol=lf
 
 # Explicitly declare text files that should always be LF
 .asf.yaml text eol=lf
 .gitattributes text eol=lf
 .gitignore text eol=lf
-git.properties text eol=lf
 LICENSE text eol=lf
 NOTICE text eol=lf
 *.html text eol=lf
@@ -22,7 +19,6 @@ NOTICE text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 *.txt text eol=lf
-GettysburgAddress.txt text eol=lf
 
 
 # Declare files that will always have CRLF line endings on checkout.
