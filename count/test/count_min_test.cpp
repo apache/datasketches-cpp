@@ -215,7 +215,7 @@ TEST_CASE("CountMin sketch: serialize-deserialize empty", "[cm_sketch]") {
     for (auto di: d) {
       REQUIRE(di == 0);
     }
-    std::ofstream os("count_min-empty.bin", std::ios::binary);
+    std::ofstream os("count_min_empty_cpp.sk", std::ios::binary);
     c.serialize(os);
 }
 
@@ -243,7 +243,7 @@ TEST_CASE("CountMin sketch: serialize-deserialize non-empty", "[cm_sketch]") {
     ++d_it;
   }
 
-  std::ofstream os("count_min-non-empty.bin", std::ios::binary);
+  std::ofstream os("count_min_non_empty_cpp.sk", std::ios::binary);
   c.serialize(os);
 }
 
