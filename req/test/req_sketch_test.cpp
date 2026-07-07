@@ -316,6 +316,74 @@ TEST_CASE("req sketch: byte serialize-deserialize estimation mode", "[req_sketch
   REQUIRE(sketch2.get_max_item() == sketch.get_max_item());
 }
 
+TEST_CASE("req sketch: stream serialize-deserialize negative values", "[req_sketch]") {
+  req_sketch<float> sketch(12);
+  const size_t n = 50;
+  for (size_t i = 1; i <= n; ++i) sketch.update(-static_cast<float>(i));
+
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sketch.serialize(s);
+  auto sketch2 = req_sketch<float>::deserialize(s);
+  REQUIRE(s.tellg() == s.tellp());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_item() == -static_cast<float>(n));
+  REQUIRE(sketch2.get_max_item() == -1.0f);
+}
+
+TEST_CASE("req sketch: byte serialize-deserialize negative values", "[req_sketch]") {
+  req_sketch<float> sketch(12);
+  const size_t n = 50;
+  for (size_t i = 1; i <= n; ++i) sketch.update(-static_cast<float>(i));
+
+  auto bytes = sketch.serialize();
+  REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
+  auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_item() == -static_cast<float>(n));
+  REQUIRE(sketch2.get_max_item() == -1.0f);
+}
+
+TEST_CASE("req sketch: stream serialize-deserialize mixed values", "[req_sketch]") {
+  req_sketch<float> sketch(12);
+  const int half = 25;
+  for (int i = -half; i < half; ++i) sketch.update(static_cast<float>(i));
+
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sketch.serialize(s);
+  auto sketch2 = req_sketch<float>::deserialize(s);
+  REQUIRE(s.tellg() == s.tellp());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_item() == static_cast<float>(-half));
+  REQUIRE(sketch2.get_max_item() == static_cast<float>(half - 1));
+}
+
+TEST_CASE("req sketch: byte serialize-deserialize mixed values", "[req_sketch]") {
+  req_sketch<float> sketch(12);
+  const int half = 25;
+  for (int i = -half; i < half; ++i) sketch.update(static_cast<float>(i));
+
+  auto bytes = sketch.serialize();
+  REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
+  auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(bytes.size() == sketch2.get_serialized_size_bytes());
+  REQUIRE(sketch2.is_empty() == sketch.is_empty());
+  REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  REQUIRE(sketch2.get_n() == sketch.get_n());
+  REQUIRE(sketch2.get_min_item() == static_cast<float>(-half));
+  REQUIRE(sketch2.get_max_item() == static_cast<float>(half - 1));
+}
+
 TEST_CASE("req sketch: serialize deserialize stream and bytes equivalence", "[req_sketch]") {
   req_sketch<float> sketch(12);
   const size_t n = 100000;
