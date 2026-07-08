@@ -73,6 +73,7 @@ void BM_CountMinUpdateUInt64(benchmark::State & state)
         for (const auto key : keys)
             sketch.update(&key, sizeof(key), 1);
 
+        benchmark::ClobberMemory();
         benchmark::DoNotOptimize(sketch.get_total_weight());
     }
 
@@ -94,6 +95,7 @@ void BM_CountMinUpdateStringBytes(benchmark::State & state)
         for (const auto & key : keys)
             sketch.update(key.data(), key.size(), 1);
 
+        benchmark::ClobberMemory();
         benchmark::DoNotOptimize(sketch.get_total_weight());
     }
 
