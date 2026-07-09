@@ -326,6 +326,15 @@ public:
    */
   void serialize(std::ostream& os) const;
 
+  /**
+   * This method serializes the sketch by passing binary fragments to a callback.
+   * The callback must be callable as write_bytes(const void* data, size_t size).
+   * The data pointer is valid only until the callback returns.
+   * @return size in bytes written to the callback
+   */
+  template<typename WriteBytes>
+  size_t serialize_to(WriteBytes&& write_bytes) const;
+
   // This is a convenience alias for users
   // The type returned by the following serialize method
   using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;

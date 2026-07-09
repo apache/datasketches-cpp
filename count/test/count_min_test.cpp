@@ -300,4 +300,27 @@ TEST_CASE("CountMin sketch: bytes serialize-deserialize non-empty", "[cm_sketch]
 
 }
 
+TEST_CASE("CountMin sketch: sink serialize matches bytes", "[cm_sketch]") {
+  auto check_sink_serialize = [](const count_min_sketch<uint64_t>& c) {
+    auto bytes = c.serialize();
+    std::vector<uint8_t> sink_bytes;
+    sink_bytes.reserve(c.get_serialized_size_bytes());
+
+    const size_t bytes_written = c.serialize_to([&sink_bytes](const void* data, size_t size) {
+      const auto* begin = static_cast<const uint8_t*>(data);
+      sink_bytes.insert(sink_bytes.end(), begin, begin + size);
+    });
+
+    REQUIRE(bytes_written == bytes.size());
+    REQUIRE(sink_bytes == bytes);
+  };
+
+  count_min_sketch<uint64_t> empty(3, 32);
+  check_sink_serialize(empty);
+
+  count_min_sketch<uint64_t> non_empty(5, 64);
+  for (uint64_t i=0; i < 10; ++i) non_empty.update(i, 10 * i * i);
+  check_sink_serialize(non_empty);
+}
+
 } /* namespace datasketches */
