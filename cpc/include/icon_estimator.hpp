@@ -246,14 +246,14 @@ static inline double icon_exponential_approximation(double k, double c) {
 }
 
 static inline double compute_icon_estimate(uint8_t lg_k, uint32_t c) {
-  if (lg_k < ICON_MIN_LOG_K || lg_k > ICON_MAX_LOG_K) throw std::out_of_range("lg_k out of range");
-  if (c < 2) return ((c == 0) ? 0.0 : 1.0);
+  if (lg_k < ICON_MIN_LOG_K || lg_k > ICON_MAX_LOG_K) { throw std::out_of_range("lg_k out of range"); }
+  if (c < 2) { return ((c == 0) ? 0.0 : 1.0); }
   const uint32_t k = 1 << lg_k;
   const double double_k = static_cast<double>(k);
   const double double_c = static_cast<double>(c);
   // Differing thresholds ensure that the approximated estimator is monotonically increasing.
   const double threshold_factor = ((lg_k < 14) ? 5.7 : 5.6);
-  if (double_c > (threshold_factor * double_k)) return icon_exponential_approximation(double_k, double_c);
+  if (double_c > (threshold_factor * double_k)) { return icon_exponential_approximation(double_k, double_c); }
   const double factor = evaluate_polynomial(
       ICON_POLYNOMIAL_COEFFICIENTS,
       ICON_POLYNOMIAL_NUM_COEFFICIENTS * (lg_k - ICON_MIN_LOG_K),
@@ -265,8 +265,8 @@ static inline double compute_icon_estimate(uint8_t lg_k, uint32_t c) {
   // The somewhat arbitrary constant 66.774757 is baked into the table ICON_POLYNOMIAL_COEFFICIENTS
   const double term = 1.0 + (ratio * ratio * ratio / 66.774757);
   const double result = double_c * factor * term;
-  if (result >= double_c) return result;
-  else return double_c;
+  if (result >= double_c) { return result; }
+  else { return double_c; }
 }
 
 } /* namespace datasketches */

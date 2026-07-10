@@ -58,7 +58,7 @@ static void basicUnion(uint64_t n1, uint64_t n2,
 
   hll_sketch result = u.get_result(resultType);
 
-  // ensure we check a direct union estimate, without first caling get_result()
+  // ensure we check a direct union estimate, without first calling get_result()
   u.reset();
   u.update(std::move(h1));
   u.update(h2);

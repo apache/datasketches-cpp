@@ -609,9 +609,11 @@ private:
   uint32_t index_;
   uint64_t previous_;
   bool is_block_mode_;
-  uint8_t buf_i_;
   uint8_t offset_;
   uint64_t buffer_[8];
+
+  inline void unpack1();
+  inline void unpack8();
 };
 
 } /* namespace datasketches */

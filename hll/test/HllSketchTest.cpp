@@ -298,7 +298,7 @@ TEST_CASE("hll sketch: deserialize list mode buffer overrun", "[hll_sketch]") {
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 7, 0), std::out_of_range);
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), bytes.size() - 1, 0), std::out_of_range);
 
-    // ckeck for leaks on stream exceptions
+    // check for leaks on stream exceptions
     {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
@@ -325,7 +325,7 @@ TEST_CASE("hll sketch: deserialize set mode buffer overrun", "[hll_sketch]") {
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 7, 0), std::out_of_range);
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), bytes.size() - 1, 0), std::out_of_range);
 
-    // ckeck for leaks on stream exceptions
+    // check for leaks on stream exceptions
     {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);
@@ -355,7 +355,7 @@ TEST_CASE("hll sketch: deserialize HLL mode buffer overrun", "[hll_sketch]") {
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), 16420, 0), std::out_of_range); // before aux table
     REQUIRE_THROWS_AS(hll_sketch_test_alloc::deserialize(bytes.data(), bytes.size() - 1, 0), std::out_of_range);
 
-    // ckeck for leaks on stream exceptions
+    // check for leaks on stream exceptions
     {
       std::stringstream ss;
       ss.exceptions(std::ios::failbit | std::ios::badbit);

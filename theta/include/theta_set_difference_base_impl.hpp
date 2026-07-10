@@ -69,7 +69,7 @@ CS theta_set_difference_base<EN, EK, CS, A>::compute(FwdSketch&& a, const Sketch
         const uint64_t hash = EK()(entry);
         if (hash < theta) {
           auto result = table.find(hash);
-          if (!result.second) entries.push_back(conditional_forward<FwdSketch>(entry));
+          if (!result.second) entries.emplace_back(conditional_forward<FwdSketch>(entry));
         } else if (a.is_ordered()) {
           break; // early stop
         }

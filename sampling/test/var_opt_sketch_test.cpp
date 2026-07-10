@@ -178,11 +178,17 @@ TEST_CASE("varopt sketch: non-empty degenerate sketch", "[var_opt_sketch]") {
 
 TEST_CASE("varopt sketch: invalid weight", "[var_opt_sketch]") {
   var_opt_sketch<std::string> sk(100, resize_factor::X2);
-  REQUIRE_THROWS_AS(sk.update("invalid_weight", -1.0), std::invalid_argument);
 
-  // should not throw but sketch should still be empty
-  sk.update("zero weight", 0.0);
-  REQUIRE(sk.is_empty());
+  // Negative
+  REQUIRE_THROWS_AS(sk.update("invalid_weight", -1.0), std::invalid_argument);
+  // Zero
+  REQUIRE_THROWS_AS(sk.update("zero_weight", 0.0), std::invalid_argument);
+  // NaN
+  REQUIRE_THROWS_AS(sk.update("NaN_weight", std::numeric_limits<double>::quiet_NaN()), std::invalid_argument);
+  // +Inf
+  REQUIRE_THROWS_AS(sk.update("positive_infinity", std::numeric_limits<double>::infinity()), std::invalid_argument);
+  // -Inf
+  REQUIRE_THROWS_AS(sk.update("negative_infinity", -std::numeric_limits<double>::infinity()), std::invalid_argument);
 }
 
 TEST_CASE("varopt sketch: corrupt serialized weight", "[var_opt_sketch]") {

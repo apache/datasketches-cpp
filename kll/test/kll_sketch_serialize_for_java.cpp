@@ -43,6 +43,16 @@ TEST_CASE("kll sketch double generate", "[serialize_for_java]") {
   }
 }
 
+TEST_CASE("kll sketch long generate", "[serialize_for_java]") {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
+  for (const unsigned n: n_arr) {
+    kll_sketch<long> sketch;
+    for (unsigned i = 1; i <= n; ++i) sketch.update(i);
+    std::ofstream os("kll_long_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
+    sketch.serialize(os);
+  }
+}
+
 struct compare_as_number {
   bool operator()(const std::string& a, const std::string& b) const {
     return std::stoi(a) < std::stoi(b);

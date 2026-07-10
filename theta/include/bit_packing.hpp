@@ -329,7 +329,7 @@ static inline void pack_bits_13(const uint64_t* values, uint8_t* ptr) {
 
   *ptr++ = static_cast<uint8_t>(values[3] >> 4);
 
-  *ptr = static_cast<uint8_t>(values[3] >> 4);
+  *ptr = static_cast<uint8_t>(values[3] << 4);
   *ptr++ |= static_cast<uint8_t>(values[4] >> 9);
 
   *ptr++ = static_cast<uint8_t>(values[4] >> 1);
@@ -4227,7 +4227,7 @@ static inline void unpack_bits_33(uint64_t* values, const uint8_t* ptr) {
   values[6] |= *ptr >> 1;
 
   values[7] = static_cast<uint64_t>(*ptr++ & 1) << 32;
-  values[7] |= *ptr++ << 24;
+  values[7] |= static_cast<uint64_t>(*ptr++) << 24;
   values[7] |= *ptr++ << 16;
   values[7] |= *ptr++ << 8;
   values[7] |= *ptr;
@@ -4296,7 +4296,7 @@ static inline void unpack_bits_35(uint64_t* values, const uint8_t* ptr) {
   values[1] |= *ptr++ << 6;
   values[1] |= *ptr >> 2;
 
-  values[2] = static_cast<uint64_t>(*ptr++ & 2) << 33;
+  values[2] = static_cast<uint64_t>(*ptr++ & 3) << 33;
   values[2] |= static_cast<uint64_t>(*ptr++) << 25;
   values[2] |= *ptr++ << 17;
   values[2] |= *ptr++ << 9;
@@ -6201,7 +6201,7 @@ static inline void pack_bits_block8(const uint64_t* values, uint8_t* ptr, uint8_
     case 61: pack_bits_61(values, ptr); break;
     case 62: pack_bits_62(values, ptr); break;
     case 63: pack_bits_63(values, ptr); break;
-    default: throw std::logic_error("wrong number of bits " + std::to_string(bits));
+    default: throw std::logic_error("wrong number of bits in pack_bits_block8: " + std::to_string(bits));
   }
 }
 
@@ -6270,7 +6270,7 @@ static inline void unpack_bits_block8(uint64_t* values, const uint8_t* ptr, uint
     case 61: unpack_bits_61(values, ptr); break;
     case 62: unpack_bits_62(values, ptr); break;
     case 63: unpack_bits_63(values, ptr); break;
-    default: throw std::logic_error("wrong number of bits " + std::to_string(bits));
+    default: throw std::logic_error("wrong number of bits in unpack_bits_block8: " + std::to_string(bits));
   }
 }
 

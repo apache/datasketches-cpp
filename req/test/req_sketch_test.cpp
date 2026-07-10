@@ -43,6 +43,7 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 0);
   REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE(sketch.get_RSE(sketch.get_k(), 0.5, true, 0) == 0);
   REQUIRE_THROWS_AS(sketch.get_min_item(), std::runtime_error);
   REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
   REQUIRE_THROWS_AS(sketch.get_rank(0), std::runtime_error);
@@ -61,6 +62,7 @@ TEST_CASE("req sketch: single value, lra", "[req_sketch]") {
   REQUIRE_FALSE(sketch.is_estimation_mode());
   REQUIRE(sketch.get_n() == 1);
   REQUIRE(sketch.get_num_retained() == 1);
+  REQUIRE(sketch.get_RSE(sketch.get_k(), 0.5, false, sketch.get_n()) == 0);
   REQUIRE(sketch.get_rank(1.0f, false) == 0);
   REQUIRE(sketch.get_rank(1.0f) == 1);
   REQUIRE(sketch.get_rank(1.1f, false) == 1);

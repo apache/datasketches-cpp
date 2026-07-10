@@ -315,7 +315,7 @@ entries_(other.get_allocator())
 {
   entries_.reserve(other.get_num_retained());
   for (uint64_t hash: other) {
-    entries_.push_back(Entry(hash, summary));
+    entries_.emplace_back(hash, summary);
   }
   if (ordered && !other.is_ordered()) std::sort(entries_.begin(), entries_.end(), comparator());
 }
@@ -518,7 +518,7 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
     for (size_t i = 0; i < num_entries; ++i) {
       const auto key = read<uint64_t>(is);
       sd.deserialize(is, summary.get(), 1);
-      entries.push_back(Entry(key, std::move(*summary)));
+      entries.emplace_back(key, std::move(*summary));
       (*summary).~S();
     }
   }
@@ -585,7 +585,7 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
       uint64_t key;
       ptr += copy_from_mem(ptr, key);
       ptr += sd.deserialize(ptr, base + size - ptr, summary.get(), 1);
-      entries.push_back(Entry(key, std::move(*summary)));
+      entries.emplace_back(key, std::move(*summary));
       (*summary).~S();
     }
   }

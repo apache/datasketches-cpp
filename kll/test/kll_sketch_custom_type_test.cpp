@@ -31,11 +31,14 @@ using alloc = test_allocator<test_type>;
 
 TEST_CASE("kll sketch custom type", "[kll_sketch]") {
 
-  // setup section
   test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
 
   SECTION("compact level zero") {
     kll_test_type_sketch sketch(8, test_type_less(), 0);
+    REQUIRE(test_allocator_total_bytes != 0);
+    REQUIRE(test_allocator_net_allocations != 0);
+
     REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_min_item(), std::runtime_error);
     REQUIRE_THROWS_AS(sketch.get_max_item(), std::runtime_error);
@@ -146,10 +149,8 @@ TEST_CASE("kll sketch custom type", "[kll_sketch]") {
     REQUIRE(sketch2.get_n() == 11);
   }
 
-  // cleanup
-  if (test_allocator_total_bytes != 0) {
-    REQUIRE(test_allocator_total_bytes == 0);
-  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
 }
 
 } /* namespace datasketches */

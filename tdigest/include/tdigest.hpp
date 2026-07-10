@@ -89,6 +89,7 @@ public:
   using vector_t = std::vector<T, Allocator>;
   using vector_centroid = std::vector<centroid, typename std::allocator_traits<Allocator>::template rebind_alloc<centroid>>;
   using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint8_t>>;
+  using vector_double = std::vector<double, typename std::allocator_traits<Allocator>::template rebind_alloc<double>>;
 
   struct centroid_cmp {
     centroid_cmp() {}
@@ -107,6 +108,7 @@ public:
 
   /**
    * Update this t-Digest with the given value
+   * NaN and infinity values are ignored
    * @param value to update the t-Digest with
    */
   void update(T value);
@@ -115,7 +117,7 @@ public:
    * Merge the given t-Digest into this one
    * @param other t-Digest to merge
    */
-  void merge(tdigest& other);
+  void merge(const tdigest& other);
 
   /**
    * Process buffered values and merge centroids if needed
@@ -143,7 +145,17 @@ public:
   uint64_t get_total_weight() const;
 
   /**
+   * Returns an instance of the allocator for this t-Digest.
+   * @return allocator
+   */
+  Allocator get_allocator() const;
+
+  /**
    * Compute approximate normalized rank of the given value.
+   *
+   * <p>If the sketch is empty this throws std::runtime_error.
+   * <p>NaN value throw std::invalid_argument.
+   *
    * @param value to be ranked
    * @return normalized rank (from 0 to 1 inclusive)
    */
@@ -151,10 +163,48 @@ public:
 
   /**
    * Compute approximate quantile value corresponding to the given normalized rank
+   *
+   * <p>If the sketch is empty this throws std::runtime_error.
+   *
    * @param rank normalized rank (from 0 to 1 inclusive)
    * @return quantile value corresponding to the given rank
    */
   T get_quantile(double rank) const;
+
+  /**
+   * Returns an approximation to the Probability Mass Function (PMF) of the input stream
+   * given a set of split points.
+   *
+   * <p>If the sketch is empty this throws std::runtime_error.
+   *
+   * @param split_points an array of <i>m</i> unique, monotonically increasing values
+   * that divide the input domain into <i>m+1</i> consecutive disjoint intervals (bins).
+   *
+   * @param size the number of split points in the array
+   *
+   * @return an array of m+1 doubles each of which is an approximation
+   * to the fraction of the input stream values (the mass) that fall into one of those intervals.
+   */
+  vector_double get_PMF(const T* split_points, uint32_t size) const;
+
+  /**
+   * Returns an approximation to the Cumulative Distribution Function (CDF), which is the
+   * cumulative analog of the PMF, of the input stream given a set of split points.
+   *
+   * <p>If the sketch is empty this throws std::runtime_error.
+   *
+   * @param split_points an array of <i>m</i> unique, monotonically increasing values
+   * that divide the input domain into <i>m+1</i> consecutive disjoint intervals.
+   *
+   * @param size the number of split points in the array
+   *
+   * @return an array of m+1 doubles, which are a consecutive approximation to the CDF
+   * of the input stream given the split_points. The value at array position j of the returned
+   * CDF array is the sum of the returned values in positions 0 through j of the returned PMF
+   * array. This can be viewed as array of ranks of the given split points plus one more value
+   * that is always 1.
+   */
+  vector_double get_CDF(const T* split_points, uint32_t size) const;
 
   /**
    * @return parameter k (compression) that was used to configure this t-Digest
@@ -209,16 +259,29 @@ public:
    */
   static tdigest deserialize(const void* bytes, size_t size, const Allocator& allocator = Allocator());
 
+  class const_iterator;
+
+  /**
+   * Iterator pointing to the first centroid in the sketch.
+   * If the sketch is empty, the returned iterator must not be dereferenced or incremented.
+   * @return iterator pointing to the first centroid in the sketch
+   */
+  const_iterator begin() const;
+
+  /**
+   * Iterator pointing to the past-the-end centroid in the sketch.
+   * It does not point to any centroid, and must not be dereferenced or incremented.
+   * @return iterator pointing to the past-the-end centroid in the sketch
+   */
+  const_iterator end() const;
 private:
   bool reverse_merge_;
   uint16_t k_;
-  uint16_t internal_k_;
   T min_;
   T max_;
   size_t centroids_capacity_;
   vector_centroid centroids_;
   uint64_t centroids_weight_;
-  size_t buffer_capacity_;
   vector_t buffer_;
 
   static const size_t BUFFER_MULTIPLIER = 4;
@@ -245,8 +308,31 @@ private:
   // for compatibility with format of the reference implementation
   static tdigest deserialize_compat(std::istream& is, const Allocator& allocator = Allocator());
   static tdigest deserialize_compat(const void* bytes, size_t size, const Allocator& allocator = Allocator());
+
+  static inline void check_split_points(const T* values, uint32_t size);
 };
 
+template<typename T, typename A>
+class tdigest<T, A>::const_iterator {
+public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = std::pair<T, W>;
+  using difference_type = void;
+  using pointer = const return_value_holder<value_type>;
+  using reference = const value_type;
+
+  const_iterator& operator++();
+  const_iterator& operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  reference operator*() const;
+  pointer operator->() const;
+private:
+  friend class tdigest;
+  uint32_t index_;
+  vector_centroid centroids_;
+  const_iterator(const tdigest& tdigest_, bool is_end);
+};
 } /* namespace datasketches */
 
 #include "tdigest_impl.hpp"

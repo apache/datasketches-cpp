@@ -35,6 +35,11 @@ namespace datasketches {
  * "Relative Error Streaming Quantiles" by Graham Cormode, Zohar Karnin, Edo Liberty,
  * Justin Thaler, Pavel Veselý, and loosely derived from a Python prototype written by Pavel Veselý.
  *
+ * Sketch that may retain string values.
+ * For sketches containing strings, cross-language portability depends on
+ * using compatible string encodings. This class does not by itself enforce
+ * UTF-8 validity for all string inputs.
+ *
  * <p>Reference: https://arxiv.org/abs/2004.01668</p>
  *
  * <p>This implementation differs from the algorithm described in the paper in the following:</p>
@@ -179,6 +184,8 @@ public:
 
   /**
    * Updates this sketch with the given data item.
+   * If cross-language portability is required, callers should ensure that
+   * the input string uses a compatible encoding (valid UTF-8).
    * @param item from a stream of items
    */
   template<typename FwdT>
@@ -186,6 +193,8 @@ public:
 
   /**
    * Merges another sketch into this one.
+   * If sketches contain strings, callers are responsible for ensuring that
+   * both sketches were built using compatible string encodings.
    * @param other sketch to merge into this one
    */
   template<typename FwdSk>

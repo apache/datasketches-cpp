@@ -25,19 +25,19 @@
 namespace datasketches {
 
 static inline uint64_t divide_longs_rounding_up(uint64_t x, uint64_t y) {
-  if (y == 0) throw std::invalid_argument("divide_longs_rounding_up: bad argument");
+  if (y == 0) { throw std::invalid_argument("divide_longs_rounding_up: bad argument"); }
   const uint64_t quotient = x / y;
-  if (quotient * y == x) return (quotient);
-  else return quotient + 1;
+  if (quotient * y == x) { return (quotient); }
+  else { return quotient + 1; }
 }
 
 static inline uint8_t floor_log2_of_long(uint64_t x) {
-  if (x < 1) throw std::invalid_argument("floor_log2_of_long: bad argument");
+  if (x < 1) { throw std::invalid_argument("floor_log2_of_long: bad argument"); }
   uint8_t p = 0;
   uint64_t y = 1;
   while (true) {
-    if (y == x) return p;
-    if (y > x) return p - 1;
+    if (y == x) { return p; }
+    if (y > x) { return p - 1; }
     p += 1;
     y <<= 1;
   }
@@ -98,7 +98,7 @@ static inline uint32_t warren_count_bits_set_in_matrix(const uint64_t* array, ui
   }
 
 static inline uint32_t count_bits_set_in_matrix(const uint64_t* a, uint32_t length) {
-  if ((length & 0x7) != 0) throw std::invalid_argument("the length of the array must be a multiple of 8");
+  if ((length & 0x7) != 0) { throw std::invalid_argument("the length of the array must be a multiple of 8"); }
   uint32_t total = 0;
   uint64_t ones, twos, twos_a, twos_b, fours, fours_a, fours_b, eights;
   fours = twos = ones = 0;

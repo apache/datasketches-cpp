@@ -67,7 +67,7 @@ TEST_CASE( "varopt union: move", "[var_opt_union][test_type]") {
     var_opt_test_sketch sk1(k, var_opt_test_sketch::DEFAULT_RESIZE_FACTOR, 0);
     var_opt_test_sketch sk2(k, var_opt_test_sketch::DEFAULT_RESIZE_FACTOR, 0);
 
-    // move udpates
+    // move updates
     for (int i = 0; i < (int) n; ++i) {
       sk1.update(i);
       sk2.update(-i);

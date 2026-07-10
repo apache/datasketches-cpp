@@ -31,7 +31,7 @@ target_include_directories(common
 
 install(TARGETS common EXPORT ${PROJECT_NAME})
 
-install(FILES 
+install(FILES
 			${CMAKE_CURRENT_BINARY_DIR}/include/version.hpp
       include/binomial_bounds.hpp
       include/bounds_binomial_proportions.hpp
@@ -49,4 +49,5 @@ install(FILES
       include/quantiles_sorted_view_impl.hpp
 			include/quantiles_sorted_view.hpp
       include/serde.hpp
+      include/xxhash64.h
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")

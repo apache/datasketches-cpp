@@ -590,7 +590,7 @@ void var_opt_union<T, A>::migrate_marked_items_by_decreasing_k(var_opt_sketch<T,
 
   // if non-full and pseudo-exact, change k so that gcopy is full
   if ((r_count == 0) && (h_count < k)) {
-    gcopy.k_ = h_count; // may leve extra space allocated but that's ok
+    gcopy.k_ = h_count; // may leave extra space allocated but that's ok
   }
 
   // Now k equals the number of samples, so reducing k will increase tau.

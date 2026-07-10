@@ -772,12 +772,11 @@ string<A> var_opt_sketch<T, A>::items_to_string(bool print_gap) const {
 template<typename T, typename A>
 template<typename O>
 void var_opt_sketch<T, A>::update(O&& item, double weight, bool mark) {
-  if (weight < 0.0 || std::isnan(weight) || std::isinf(weight)) {
-    throw std::invalid_argument("Item weights must be nonnegative and finite. Found: "
+  if (weight <= 0.0 || std::isnan(weight) || std::isinf(weight)) {
+    throw std::invalid_argument("Item weights must be positive and finite. Found: "
                                 + std::to_string(weight));
-  } else if (weight == 0.0) {
-    return;
   }
+
   ++n_;
 
   if (r_ == 0) {
@@ -1029,7 +1028,7 @@ void var_opt_sketch<T, A>::transition_from_warmup() {
   total_wt_r_ = weights_[k_]; // only one item, known location
   weights_[k_] = -1.0;
 
-  // The two lightest items are ncessarily downsample-able to one item,
+  // The two lightest items are necessarily downsample-able to one item,
   // and are therefore a valid initial candidate set
   grow_candidate_set(weights_[k_ - 1] + total_wt_r_, 2);
 }
@@ -1065,7 +1064,7 @@ void var_opt_sketch<T, A>::restore_towards_leaves(uint32_t slot_in) {
   while (child <= last_slot) {
     uint32_t child2 = child + 1; // might also be invalid
     if ((child2 <= last_slot) && (weights_[child2] < weights_[child])) {
-      // siwtch to other child if it's both valid and smaller
+      // switch to other child if it's both valid and smaller
       child = child2;
     }
 
@@ -1221,7 +1220,7 @@ uint32_t var_opt_sketch<T, A>::choose_delete_slot(double wt_cands, uint32_t num_
     if ((wt_cands * next_double_exclude_zero()) < ((num_cands - 1) * wt_m_cand)) {
       return pick_random_slot_in_r(); // keep item in M
     } else {
-      return h_; // indext of item in M
+      return h_; // index of item in M
     }
   } else {
     // general case

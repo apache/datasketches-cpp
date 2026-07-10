@@ -44,6 +44,11 @@ enum frequent_items_error_type {
  * Based on Java implementation here:
  * https://github.com/apache/datasketches-java/blob/master/src/main/java/org/apache/datasketches/frequencies/ItemsSketch.java
  * @author Alexander Saydakov
+ *
+ * Sketch that may retain string values.
+ * For sketches containing strings, cross-language portability depends on
+ * using compatible string encodings. This class does not by itself enforce
+ * UTF-8 validity for all string inputs.
  */
 template<
   typename T,
@@ -74,6 +79,8 @@ public:
 
   /**
    * Update this sketch with an item and a positive weight (frequency count).
+   * If cross-language portability is required, callers should ensure that
+   * the input string uses a compatible encoding (valid UTF-8).
    * @param item for which the weight should be increased (lvalue)
    * @param weight the amount by which the weight of the item should be increased
    * A count of zero is a no-op, and a negative count will throw an exception.
@@ -82,6 +89,8 @@ public:
 
   /**
    * Update this sketch with an item and a positive weight (frequency count).
+   * If cross-language portability is required, callers should ensure that
+   * the input string uses a compatible encoding (valid UTF-8).
    * @param item for which the weight should be increased (rvalue)
    * @param weight the amount by which the weight of the item should be increased
    * A count of zero is a no-op, and a negative count will throw an exception.
@@ -91,6 +100,8 @@ public:
   /**
    * This function merges the other sketch into this one.
    * The other sketch may be of a different size.
+   * If sketches contain strings, callers are responsible for ensuring that
+   * both sketches were built using compatible string encodings.
    * @param other sketch to be merged into this (lvalue)
    */
   void merge(const frequent_items_sketch& other);
@@ -98,6 +109,8 @@ public:
   /**
    * This function merges the other sketch into this one.
    * The other sketch may be of a different size.
+   * If sketches contain strings, callers are responsible for ensuring that
+   * both sketches were built using compatible string encodings.
    * @param other sketch to be merged into this (rvalue)
    */
   void merge(frequent_items_sketch&& other);

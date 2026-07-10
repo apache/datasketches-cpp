@@ -20,13 +20,37 @@
 #ifndef _TDIGEST_IMPL_HPP_
 #define _TDIGEST_IMPL_HPP_
 
+#include <algorithm>
 #include <cmath>
 #include <sstream>
+#include <type_traits>
 
 #include "common_defs.hpp"
 #include "memory_operations.hpp"
 
 namespace datasketches {
+
+template<typename T>
+inline void check_not_nan(T value, const char* name) {
+  if (std::isnan(value)) {
+    throw std::invalid_argument(std::string(name) + " must not be NaN");
+  }
+}
+
+template<typename T>
+inline void check_not_infinite(T value, const char* name) {
+  if (std::isinf(value)) {
+    throw std::invalid_argument(std::string(name) + " must not be infinite");
+  }
+}
+
+template<typename T>
+inline void check_non_zero(T value, const char* name) {
+  static_assert(std::is_arithmetic<T>::value, "T must be an arithmetic type");
+  if (value == 0) {
+    throw std::invalid_argument(std::string(name) + " must not be zero");
+  }
+}
 
 template<typename T, typename A>
 tdigest<T, A>::tdigest(uint16_t k, const A& allocator):
@@ -36,6 +60,7 @@ tdigest(false, k, std::numeric_limits<T>::infinity(), -std::numeric_limits<T>::i
 template<typename T, typename A>
 void tdigest<T, A>::update(T value) {
   if (std::isnan(value)) return;
+  if (std::isinf(value)) return;
   if (buffer_.size() == centroids_capacity_ * BUFFER_MULTIPLIER) compress();
   buffer_.push_back(value);
   min_ = std::min(min_, value);
@@ -43,7 +68,7 @@ void tdigest<T, A>::update(T value) {
 }
 
 template<typename T, typename A>
-void tdigest<T, A>::merge(tdigest& other) {
+void tdigest<T, A>::merge(const tdigest& other) {
   if (other.is_empty()) return;
   vector_centroid tmp(buffer_.get_allocator());
   tmp.reserve(buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size());
@@ -82,6 +107,11 @@ T tdigest<T, A>::get_max_value() const {
 template<typename T, typename A>
 uint64_t tdigest<T, A>::get_total_weight() const {
   return centroids_weight_ + buffer_.size();
+}
+
+template<typename T, typename A>
+A tdigest<T, A>::get_allocator() const {
+  return buffer_.get_allocator();
 }
 
 template<typename T, typename A>
@@ -187,7 +217,26 @@ T tdigest<T, A>::get_quantile(double rank) const {
   }
   const double w1 = weight - centroids_weight_ - centroids_.back().get_weight() / 2.0;
   const double w2 = centroids_.back().get_weight() / 2.0 - w1;
-  return weighted_average(centroids_.back().get_weight(), w1, max_, w2);
+  return weighted_average(centroids_.back().get_mean(), w1, max_, w2);
+}
+
+template<typename T, typename A>
+auto tdigest<T, A>::get_PMF(const T* split_points, uint32_t size) const -> vector_double {
+  auto buckets = get_CDF(split_points, size);
+  for (uint32_t i = size; i > 0; --i) {
+    buckets[i] -= buckets[i - 1];
+  }
+  return buckets;
+}
+
+template<typename T, typename A>
+auto tdigest<T, A>::get_CDF(const T* split_points, uint32_t size) const -> vector_double {
+  check_split_points(split_points, size);
+  vector_double ranks(get_allocator());
+  ranks.reserve(size + 1);
+  for (uint32_t i = 0; i < size; ++i) ranks.push_back(get_rank(split_points[i]));
+  ranks.push_back(1);
+  return ranks;
 }
 
 template<typename T, typename A>
@@ -375,6 +424,8 @@ tdigest<T, A> tdigest<T, A>::deserialize(std::istream& is, const A& allocator) {
   const bool reverse_merge = flags_byte & (1 << flags::REVERSE_MERGE);
   if (is_single_value) {
     const T value = read<T>(is);
+    check_not_nan(value, "single_value");
+    check_not_infinite(value, "single_value");
     return tdigest(reverse_merge, k, value, value, vector_centroid(1, centroid(value, 1), allocator), 1, vector_t(allocator));
   }
 
@@ -383,12 +434,26 @@ tdigest<T, A> tdigest<T, A>::deserialize(std::istream& is, const A& allocator) {
 
   const T min = read<T>(is);
   const T max = read<T>(is);
+  check_not_nan(min, "min");
+  check_not_infinite(min, "min");
+  check_not_nan(max, "max");
+  check_not_infinite(max, "max");
   vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
   if (num_centroids > 0) read(is, centroids.data(), num_centroids * sizeof(centroid));
   vector_t buffer(num_buffered, 0, allocator);
   if (num_buffered > 0) read(is, buffer.data(), num_buffered * sizeof(T));
   uint64_t weight = 0;
-  for (const auto& c: centroids) weight += c.get_weight();
+  for (const auto& c: centroids) {
+    check_not_nan(c.get_mean(), "centroid mean");
+    check_not_infinite(c.get_mean(), "centroid mean");
+    check_non_zero(c.get_weight(), "centroid weight");
+
+    weight += c.get_weight();
+  }
+  for (const auto& value: buffer) {
+    check_not_nan(value, "buffered_value");
+    check_not_infinite(value, "buffered_value");
+  }
   return tdigest(reverse_merge, k, min, max, std::move(centroids), weight, std::move(buffer));
 }
 
@@ -426,6 +491,8 @@ tdigest<T, A> tdigest<T, A>::deserialize(const void* bytes, size_t size, const A
     ensure_minimum_memory(end_ptr - ptr, sizeof(T));
     T value;
     ptr += copy_from_mem(ptr, value);
+    check_not_nan(value, "single_value");
+    check_not_infinite(value, "single_value");
     return tdigest(reverse_merge, k, value, value, vector_centroid(1, centroid(value, 1), allocator), 1, vector_t(allocator));
   }
 
@@ -440,12 +507,26 @@ tdigest<T, A> tdigest<T, A>::deserialize(const void* bytes, size_t size, const A
   ptr += copy_from_mem(ptr, min);
   T max;
   ptr += copy_from_mem(ptr, max);
+  check_not_nan(min, "min");
+  check_not_infinite(min, "min");
+  check_not_nan(max, "max");
+  check_not_infinite(max, "max");
   vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
   if (num_centroids > 0) ptr += copy_from_mem(ptr, centroids.data(), num_centroids * sizeof(centroid));
   vector_t buffer(num_buffered, 0, allocator);
   if (num_buffered > 0) copy_from_mem(ptr, buffer.data(), num_buffered * sizeof(T));
   uint64_t weight = 0;
-  for (const auto& c: centroids) weight += c.get_weight();
+  for (const auto& c: centroids) {
+    check_not_nan(c.get_mean(), "centroid mean");
+    check_not_infinite(c.get_mean(), "centroid mean");
+    check_non_zero(c.get_weight(), "centroid weight");
+
+    weight += c.get_weight();
+  }
+  for (const auto& value: buffer) {
+    check_not_nan(value, "buffered_value");
+    check_not_infinite(value, "buffered_value");
+  }
   return tdigest(reverse_merge, k, min, max, std::move(centroids), weight, std::move(buffer));
 }
 
@@ -462,13 +543,24 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
   if (type == COMPAT_DOUBLE) { // compatibility with asBytes()
     const auto min = read_big_endian<double>(is);
     const auto max = read_big_endian<double>(is);
+    check_not_nan(min, "min");
+    check_not_infinite(min, "min");
+    check_not_nan(max, "max");
+    check_not_infinite(max, "max");
     const auto k = static_cast<uint16_t>(read_big_endian<double>(is));
     const auto num_centroids = read_big_endian<uint32_t>(is);
     vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
     uint64_t total_weight = 0;
     for (auto& c: centroids) {
-      const W weight = static_cast<W>(read_big_endian<double>(is));
+      const auto weight_double = read_big_endian<double>(is);
+      check_not_nan(weight_double, "centroid weight");
+      check_not_infinite(weight_double, "centroid weight");
+      check_non_zero(weight_double, "centroid weight");
+
       const auto mean = read_big_endian<double>(is);
+      check_not_nan(mean, "centroid mean");
+      check_not_infinite(mean, "centroid mean");
+      const W weight = static_cast<W>(weight_double);
       c = centroid(mean, weight);
       total_weight += weight;
     }
@@ -477,6 +569,10 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
   // COMPAT_FLOAT: compatibility with asSmallBytes()
   const auto min = read_big_endian<double>(is); // reference implementation uses doubles for min and max
   const auto max = read_big_endian<double>(is);
+  check_not_nan(min, "min");
+  check_not_infinite(min, "min");
+  check_not_nan(max, "max");
+  check_not_infinite(max, "max");
   const auto k = static_cast<uint16_t>(read_big_endian<float>(is));
   // reference implementation stores capacities of the array of centroids and the buffer as shorts
   // they can be derived from k in the constructor
@@ -485,8 +581,13 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(std::istream& is, const A& alloc
   vector_centroid centroids(num_centroids, centroid(0, 0), allocator);
   uint64_t total_weight = 0;
   for (auto& c: centroids) {
-    const W weight = static_cast<W>(read_big_endian<float>(is));
+    const auto weight_float = read_big_endian<float>(is);
+    check_not_nan(weight_float, "centroid weight");
+    check_not_infinite(weight_float, "centroid weight");
     const auto mean = read_big_endian<float>(is);
+    check_not_nan(mean, "centroid mean");
+    check_not_infinite(mean, "centroid mean");
+    const W weight = static_cast<W>(weight_float);
     c = centroid(mean, weight);
     total_weight += weight;
   }
@@ -513,6 +614,10 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
     double max;
     ptr += copy_from_mem(ptr, max);
     max = byteswap(max);
+    check_not_nan(min, "min");
+    check_not_infinite(min, "min");
+    check_not_nan(max, "max");
+    check_not_infinite(max, "max");
     double k_double;
     ptr += copy_from_mem(ptr, k_double);
     const uint16_t k = static_cast<uint16_t>(byteswap(k_double));
@@ -529,6 +634,10 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
       double mean;
       ptr += copy_from_mem(ptr, mean);
       mean = byteswap(mean);
+      check_not_nan(weight, "centroid weight");
+      check_not_infinite(weight, "centroid weight");
+      check_not_nan(mean, "centroid mean");
+      check_not_infinite(mean, "centroid mean");
       c = centroid(mean, static_cast<W>(weight));
       total_weight += static_cast<uint64_t>(weight);
     }
@@ -542,6 +651,10 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
   double max;
   ptr += copy_from_mem(ptr, max);
   max = byteswap(max);
+  check_not_nan(min, "min");
+  check_not_infinite(min, "min");
+  check_not_nan(max, "max");
+  check_not_infinite(max, "max");
   float k_float;
   ptr += copy_from_mem(ptr, k_float);
   const uint16_t k = static_cast<uint16_t>(byteswap(k_float));
@@ -561,6 +674,10 @@ tdigest<T, A> tdigest<T, A>::deserialize_compat(const void* bytes, size_t size, 
     float mean;
     ptr += copy_from_mem(ptr, mean);
     mean = byteswap(mean);
+    check_not_nan(weight, "centroid weight");
+    check_not_infinite(weight, "centroid weight");
+    check_not_nan(mean, "centroid mean");
+    check_not_infinite(mean, "centroid mean");
     c = centroid(mean, static_cast<W>(weight));
     total_weight += static_cast<uint64_t>(weight);
   }
@@ -588,6 +705,77 @@ buffer_(std::move(buffer))
   centroids_capacity_ = 2 * k_ + fudge;
   centroids_.reserve(centroids_capacity_);
   buffer_.reserve(centroids_capacity_ * BUFFER_MULTIPLIER);
+}
+
+template<typename T, typename A>
+void tdigest<T, A>::check_split_points(const T* values, uint32_t size) {
+  for (uint32_t i = 0; i < size ; i++) {
+    if (std::isnan(values[i])) {
+      throw std::invalid_argument("Values must not be NaN");
+    }
+    if ((i < (size - 1)) && !(values[i] < values[i + 1])) {
+      throw std::invalid_argument("Values must be unique and monotonically increasing");
+    }
+  }
+}
+
+template <typename T, typename A>
+typename tdigest<T, A>::const_iterator tdigest<T, A>::begin() const {
+  return tdigest<T, A>::const_iterator(*this, false);
+}
+
+template <typename T, typename A>
+  typename tdigest<T, A>::const_iterator tdigest<T, A>::end() const {
+  return tdigest::const_iterator(*this, true);
+}
+
+template<typename T, typename A>
+tdigest<T, A>::const_iterator::const_iterator(const tdigest& tdigest_, const bool is_end):
+  centroids_(tdigest_.get_allocator())
+{
+  // Create a copy of the tdigest to generate the centroids after processing the buffered values
+  tdigest tmp(tdigest_);
+  tmp.compress();
+  centroids_.insert(centroids_.end(), tmp.centroids_.begin(), tmp.centroids_.end());
+
+  if (is_end) {
+    index_ = centroids_.size();
+  } else {
+    index_ = 0;
+  }
+}
+
+template<typename T, typename A>
+typename tdigest<T, A>::const_iterator& tdigest<T, A>::const_iterator::operator++() {
+  ++index_;
+  return *this;
+}
+
+template<typename T, typename A>
+typename tdigest<T, A>::const_iterator& tdigest<T, A>::const_iterator::operator++(int) {
+  const_iterator tmp(*this);
+  operator++();
+  return tmp;
+}
+
+template<typename T, typename A>
+bool tdigest<T, A>::const_iterator::operator==(const const_iterator& other) const {
+  return index_ == other.index_;
+}
+
+template<typename T, typename A>
+bool tdigest<T, A>::const_iterator::operator!=(const const_iterator& other) const {
+  return !operator==(other);
+}
+
+template<typename T, typename A>
+auto tdigest<T, A>::const_iterator::operator*() const -> reference {
+  return value_type(centroids_[index_].get_mean(), centroids_[index_].get_weight());
+}
+
+template<typename T, typename A>
+auto tdigest<T, A>::const_iterator::operator->() const -> pointer {
+  return **this;
 }
 
 } /* namespace datasketches */

@@ -65,13 +65,17 @@ public:
   /**
    * Updates this union with the given sketch
    * This method takes an lvalue.
+   * If sketches contain strings, callers are responsible for ensuring that
+   * both sketches were built using compatible string encodings.
    * @param sk a sketch to add to the union
    */
   void update(const var_opt_sketch<T, A>& sk);
-  
+
   /**
    * Updates this union with the given sketch
    * This method takes an rvalue.
+   * If sketches contain strings, callers are responsible for ensuring that
+   * both sketches were built using compatible string encodings.
    * @param sk a sketch to add to the union
    */
   void update(var_opt_sketch<T, A>&& sk);

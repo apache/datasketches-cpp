@@ -36,17 +36,17 @@ bool kll_helper::is_odd(uint32_t value) {
 }
 
 uint8_t kll_helper::floor_of_log2_of_fraction(uint64_t numer, uint64_t denom) {
-  if (denom > numer) return 0;
+  if (denom > numer) { return 0; }
   uint8_t count = 0;
   while (true) {
     denom <<= 1;
-    if (denom > numer) return count;
+    if (denom > numer) { return count; }
     count++;
   }
 }
 
 uint8_t kll_helper::ub_on_num_levels(uint64_t n) {
-  if (n == 0) return 1;
+  if (n == 0) { return 1; }
   return 1 + floor_of_log2_of_fraction(n, 1);
 }
 
@@ -65,8 +65,8 @@ uint16_t kll_helper::level_capacity(uint16_t k, uint8_t numLevels, uint8_t heigh
 }
 
 uint16_t kll_helper::int_cap_aux(uint16_t k, uint8_t depth) {
-  if (depth > 60) throw std::invalid_argument("depth > 60");
-  if (depth <= 30) return int_cap_aux_aux(k, depth);
+  if (depth > 60) { throw std::invalid_argument("depth > 60"); }
+  if (depth <= 30) { return int_cap_aux_aux(k, depth); }
   const uint8_t half = depth / 2;
   const uint8_t rest = depth - half;
   const uint16_t tmp = int_cap_aux_aux(k, half);
@@ -74,11 +74,11 @@ uint16_t kll_helper::int_cap_aux(uint16_t k, uint8_t depth) {
 }
 
 uint16_t kll_helper::int_cap_aux_aux(uint16_t k, uint8_t depth) {
-  if (depth > 30) throw std::invalid_argument("depth > 30");
+  if (depth > 30) { throw std::invalid_argument("depth > 30"); }
   const uint64_t twok = k << 1; // for rounding, we pre-multiply by 2
   const uint64_t tmp = (uint64_t) (((uint64_t) twok << depth) / powers_of_three[depth]);
   const uint64_t result = (tmp + 1) >> 1; // then here we add 1 and divide by 2
-  if (result > k) throw std::logic_error("result > k");
+  if (result > k) { throw std::logic_error("result > k"); }
   return static_cast<uint16_t>(result);
 }
 
@@ -94,7 +94,7 @@ uint64_t kll_helper::sum_the_sample_weights(uint8_t num_levels, const uint32_t* 
 
 template <typename T>
 void kll_helper::randomly_halve_down(T* buf, uint32_t start, uint32_t length) {
-  if (!is_even(length)) throw std::invalid_argument("length must be even");
+  if (!is_even(length)) { throw std::invalid_argument("length must be even"); }
   const uint32_t half_length = length / 2;
 #ifdef KLL_VALIDATION
   const uint32_t offset = deterministic_offset();
@@ -110,7 +110,7 @@ void kll_helper::randomly_halve_down(T* buf, uint32_t start, uint32_t length) {
 
 template <typename T>
 void kll_helper::randomly_halve_up(T* buf, uint32_t start, uint32_t length) {
-  if (!is_even(length)) throw std::invalid_argument("length must be even");
+  if (!is_even(length)) { throw std::invalid_argument("length must be even"); }
   const uint32_t half_length = length / 2;
 #ifdef KLL_VALIDATION
   const uint32_t offset = deterministic_offset();
@@ -206,7 +206,7 @@ template <typename T, typename C>
 kll_helper::compress_result kll_helper::general_compress(uint16_t k, uint8_t m, uint8_t num_levels_in, T* items,
         uint32_t* in_levels, uint32_t* out_levels, bool is_level_zero_sorted)
 {
-  if (num_levels_in == 0) throw std::invalid_argument("num_levels_in == 0"); // things are too weird if zero levels are allowed
+  if (num_levels_in == 0) { throw std::invalid_argument("num_levels_in == 0"); } // things are too weird if zero levels are allowed
   const uint32_t starting_item_count = in_levels[num_levels_in] - in_levels[0];
   uint8_t current_num_levels = num_levels_in;
   uint32_t current_item_count = starting_item_count; // decreases with each compaction

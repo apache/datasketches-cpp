@@ -43,7 +43,7 @@ TEST_CASE("theta sketch generate compressed", "[serialize_for_java]") {
     REQUIRE_FALSE(sketch.is_empty());
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
     std::ofstream os("theta_compressed_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
-    sketch.compact().serialize(os);
+    sketch.compact().serialize_compressed(os);
   }
 }
 
