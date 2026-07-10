@@ -301,26 +301,32 @@ TEST_CASE("CountMin sketch: bytes serialize-deserialize non-empty", "[cm_sketch]
 }
 
 TEST_CASE("CountMin sketch: sink serialize matches bytes", "[cm_sketch]") {
-  auto check_sink_serialize = [](const count_min_sketch<uint64_t>& c) {
+  auto check_sink_serialize = [](const count_min_sketch<uint64_t>& c, size_t expected_fragments, size_t expected_last_fragment_size = 0) {
     auto bytes = c.serialize();
     std::vector<uint8_t> sink_bytes;
     sink_bytes.reserve(c.get_serialized_size_bytes());
+    std::vector<size_t> fragment_sizes;
 
-    const size_t bytes_written = c.serialize_to([&sink_bytes](const void* data, size_t size) {
+    const size_t bytes_written = c.serialize_to([&sink_bytes, &fragment_sizes](const void* data, size_t size) {
       const auto* begin = static_cast<const uint8_t*>(data);
       sink_bytes.insert(sink_bytes.end(), begin, begin + size);
+      fragment_sizes.push_back(size);
     });
 
     REQUIRE(bytes_written == bytes.size());
     REQUIRE(sink_bytes == bytes);
+    REQUIRE(fragment_sizes.size() == expected_fragments);
+    if (expected_last_fragment_size > 0) {
+      REQUIRE(fragment_sizes.back() == expected_last_fragment_size);
+    }
   };
 
   count_min_sketch<uint64_t> empty(3, 32);
-  check_sink_serialize(empty);
+  check_sink_serialize(empty, 9);
 
   count_min_sketch<uint64_t> non_empty(5, 64);
   for (uint64_t i=0; i < 10; ++i) non_empty.update(i, 10 * i * i);
-  check_sink_serialize(non_empty);
+  check_sink_serialize(non_empty, 11, sizeof(uint64_t) * non_empty.get_num_hashes() * non_empty.get_num_buckets());
 }
 
 } /* namespace datasketches */

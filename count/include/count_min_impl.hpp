@@ -313,7 +313,11 @@ size_t count_min_sketch<W,A>::serialize_to(WriteBytes&& write_bytes) const {
   write_count_min_value(write_bytes, bytes_written, t_weight);
 
   // Long 3 onwards: remaining bytes are consumed by writing the weight and the array values.
-  for (const auto& value: _sketch_array) write_count_min_value(write_bytes, bytes_written, value);
+  const size_t sketch_array_bytes = sizeof(W) * _sketch_array.size();
+  if (sketch_array_bytes > 0) {
+    write_bytes(_sketch_array.data(), sketch_array_bytes);
+    bytes_written += sketch_array_bytes;
+  }
 
   return bytes_written;
 }

@@ -21,6 +21,8 @@
 #define COUNT_MIN_HPP_
 
 #include <iterator>
+#include <type_traits>
+#include <vector>
 #include "common_defs.hpp"
 
 namespace datasketches {
@@ -36,6 +38,7 @@ template <typename W,
           typename Allocator = std::allocator<W>>
 class count_min_sketch{
   static_assert(std::is_arithmetic<W>::value, "Arithmetic type expected");
+  static_assert(!std::is_same<W, bool>::value, "Boolean weight type is not supported");
 public:
   using allocator_type = Allocator;
   using const_iterator = typename std::vector<W, Allocator>::const_iterator;
