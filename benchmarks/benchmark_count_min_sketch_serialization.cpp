@@ -133,8 +133,29 @@ void BM_CountMinSerializeOStream(benchmark::State& state)
     state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(serialized_size));
 }
 
+void BM_CountMinSerializeToSink(benchmark::State& state)
+{
+    const auto sketch = makeSketch(static_cast<uint32_t>(state.range(0)));
+    const auto serialized_size = sketch.get_serialized_size_bytes();
+    std::vector<uint8_t> bytes(serialized_size);
+
+    for (auto _ : state) {
+        uint8_t* ptr = bytes.data();
+        const auto bytes_written = sketch.serialize_to([&ptr](const void* data, size_t size) {
+            std::memcpy(ptr, data, size);
+            ptr += size;
+        });
+        benchmark::DoNotOptimize(ptr);
+        benchmark::DoNotOptimize(bytes_written);
+        benchmark::ClobberMemory();
+    }
+
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(serialized_size));
+}
+
 }
 
 BENCHMARK(BM_CountMinGetSerializedSizeBytes)->RangeMultiplier(8)->Range(1024, 65536);
 BENCHMARK(BM_CountMinSerializeVector)->RangeMultiplier(8)->Range(1024, 65536);
 BENCHMARK(BM_CountMinSerializeOStream)->RangeMultiplier(8)->Range(1024, 65536);
+BENCHMARK(BM_CountMinSerializeToSink)->RangeMultiplier(8)->Range(1024, 65536);
