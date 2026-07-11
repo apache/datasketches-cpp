@@ -74,6 +74,8 @@ if (BUILD_TESTS)
   enable_testing()
 endif()
 
+option(BUILD_BENCHMARKS "Build benchmarks" OFF)
+
 option(COVERAGE "Enable code coverage reporting (g++/clang only)" OFF)
 if(COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   set(CMAKE_BUILD_TYPE "Debug" FORCE)
@@ -120,6 +122,10 @@ add_subdirectory(count)
 add_subdirectory(density)
 add_subdirectory(tdigest)
 add_subdirectory(filters)
+
+if (BUILD_BENCHMARKS)
+  add_subdirectory(benchmarks)
+endif()
 
 if (WITH_PYTHON)
   add_subdirectory(python)
