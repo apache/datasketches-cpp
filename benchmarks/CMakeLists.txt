@@ -45,15 +45,8 @@ set_target_properties(count_min_sketch_benchmark PROPERTIES
   CXX_STANDARD_REQUIRED YES
 )
 
-set(COUNT_MIN_SKETCH_BENCHMARK_SOURCES
-  benchmark_count_min_sketch_serialization.cpp
-)
-
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/benchmark_count_min_sketch.cpp")
-  list(APPEND COUNT_MIN_SKETCH_BENCHMARK_SOURCES benchmark_count_min_sketch.cpp)
-endif()
-
 target_sources(count_min_sketch_benchmark
   PRIVATE
-    ${COUNT_MIN_SKETCH_BENCHMARK_SOURCES}
+    benchmark_count_min_sketch.cpp
+    benchmark_count_min_sketch_serialization.cpp
 )

@@ -401,12 +401,13 @@ private:
   static void check_header_validity(uint8_t preamble_longs, uint8_t serial_version, uint8_t family_id, uint8_t flags_byte);
 
   /*
-   * Obtain the hash values when inserting an item into the sketch.
-   * @param item pointer to the data item to be inserted into the sketch.
+   * Compute the hash locations for an input item
+   * @param item pointer to the data item to be inserted into or queried from the sketch.
    * @param size of the data in bytes
-   * @return vector of uint64_t which each represent the index to which `value' must update in the sketch
+   * @param callback function to invoke for each sketch array location
    */
-  std::vector<uint64_t> get_hashes(const void* item, size_t size) const;
+  template<typename F>
+  void foreach_hash_location(const void* item, size_t size, F callback) const;
 
 };
 
