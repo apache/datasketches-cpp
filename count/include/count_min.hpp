@@ -21,6 +21,8 @@
 #define COUNT_MIN_HPP_
 
 #include <iterator>
+#include <type_traits>
+#include <vector>
 #include "common_defs.hpp"
 
 namespace datasketches {
@@ -36,6 +38,7 @@ template <typename W,
           typename Allocator = std::allocator<W>>
 class count_min_sketch{
   static_assert(std::is_arithmetic<W>::value, "Arithmetic type expected");
+  static_assert(!std::is_same<W, bool>::value, "Boolean weight type is not supported");
 public:
   using allocator_type = Allocator;
   using const_iterator = typename std::vector<W, Allocator>::const_iterator;
@@ -325,6 +328,15 @@ public:
    * @param os output stream
    */
   void serialize(std::ostream& os) const;
+
+  /**
+   * This method serializes the sketch by passing binary fragments to a callback.
+   * The callback must be callable as write_bytes(const void* data, size_t size).
+   * The data pointer is valid only until the callback returns.
+   * @return size in bytes written to the callback
+   */
+  template<typename WriteBytes>
+  size_t serialize_to(WriteBytes&& write_bytes) const;
 
   // This is a convenience alias for users
   // The type returned by the following serialize method

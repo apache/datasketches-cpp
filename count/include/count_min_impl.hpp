@@ -262,6 +262,22 @@ return _sketch_array.end();
 
 template<typename W, typename A>
 void count_min_sketch<W,A>::serialize(std::ostream& os) const {
+  serialize_to([&os](const void* data, size_t size) {
+    os.write(static_cast<const char*>(data), size);
+  });
+}
+
+template<typename WriteBytes, typename T>
+static inline void write_count_min_value(WriteBytes& write_bytes, size_t& bytes_written, const T& value) {
+  write_bytes(&value, sizeof(value));
+  bytes_written += sizeof(value);
+}
+
+template<typename W, typename A>
+template<typename WriteBytes>
+size_t count_min_sketch<W,A>::serialize_to(WriteBytes&& write_bytes) const {
+  size_t bytes_written = 0;
+
   // Long 0
   //const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_SHORT : PREAMBLE_LONGS_FULL;
   const uint8_t preamble_longs = PREAMBLE_LONGS_SHORT;
@@ -269,32 +285,35 @@ void count_min_sketch<W,A>::serialize(std::ostream& os) const {
   const uint8_t family_id = FAMILY_ID;
   const uint8_t flags_byte = (is_empty() ? 1 << flags::IS_EMPTY : 0);
   const uint32_t unused32 = NULL_32;
-  write(os, preamble_longs);
-  write(os, ser_ver);
-  write(os, family_id);
-  write(os, flags_byte);
-  write(os, unused32);
+  write_count_min_value(write_bytes, bytes_written, preamble_longs);
+  write_count_min_value(write_bytes, bytes_written, ser_ver);
+  write_count_min_value(write_bytes, bytes_written, family_id);
+  write_count_min_value(write_bytes, bytes_written, flags_byte);
+  write_count_min_value(write_bytes, bytes_written, unused32);
 
   // Long 1
   const uint32_t nbuckets = _num_buckets;
   const uint8_t nhashes = _num_hashes;
   const uint16_t seed_hash(compute_seed_hash(_seed));
   const uint8_t unused8 =  NULL_8;
-  write(os, nbuckets);
-  write(os, nhashes);
-  write(os, seed_hash);
-  write(os, unused8);
-  if (is_empty()) { return; } // sketch is empty, no need to write further bytes.
+  write_count_min_value(write_bytes, bytes_written, nbuckets);
+  write_count_min_value(write_bytes, bytes_written, nhashes);
+  write_count_min_value(write_bytes, bytes_written, seed_hash);
+  write_count_min_value(write_bytes, bytes_written, unused8);
+  if (is_empty()) { return bytes_written; } // sketch is empty, no need to write further bytes.
 
   // Long 2
-  write(os, _total_weight);
+  const W t_weight = _total_weight;
+  write_count_min_value(write_bytes, bytes_written, t_weight);
 
   // Long 3 onwards: remaining bytes are consumed by writing the weight and the array values.
-  auto it = _sketch_array.begin();
-  while (it != _sketch_array.end()) {
-    write(os, *it);
-    ++it;
+  const size_t sketch_array_bytes = sizeof(W) * _sketch_array.size();
+  if (sketch_array_bytes > 0) {
+    write_bytes(_sketch_array.data(), sketch_array_bytes);
+    bytes_written += sketch_array_bytes;
   }
+
+  return bytes_written;
 }
 
 template<typename W, typename A>
@@ -345,40 +364,9 @@ template<typename W, typename A>
 auto count_min_sketch<W,A>::serialize(unsigned header_size_bytes) const -> vector_bytes {
   vector_bytes bytes(header_size_bytes + get_serialized_size_bytes(), 0, _allocator);
   uint8_t *ptr = bytes.data() + header_size_bytes;
-
-  // Long 0
-  const uint8_t preamble_longs = PREAMBLE_LONGS_SHORT;
-  ptr += copy_to_mem(preamble_longs, ptr);
-  const uint8_t ser_ver = SERIAL_VERSION_1;
-  ptr += copy_to_mem(ser_ver, ptr);
-  const uint8_t family_id = FAMILY_ID;
-  ptr += copy_to_mem(family_id, ptr);
-  const uint8_t flags_byte = (is_empty() ? 1 << flags::IS_EMPTY : 0);
-  ptr += copy_to_mem(flags_byte, ptr);
-  const uint32_t unused32 = NULL_32;
-  ptr += copy_to_mem(unused32, ptr);
-
-  // Long 1
-  const uint32_t nbuckets = _num_buckets;
-  const uint8_t nhashes = _num_hashes;
-  const uint16_t seed_hash(compute_seed_hash(_seed));
-  const uint8_t null_characters_8 =  NULL_8;
-  ptr += copy_to_mem(nbuckets, ptr);
-  ptr += copy_to_mem(nhashes, ptr);
-  ptr += copy_to_mem(seed_hash, ptr);
-  ptr += copy_to_mem(null_characters_8, ptr);
-  if (is_empty()) { return bytes; } // sketch is empty, no need to write further bytes.
-
-  // Long 2
-  const W t_weight = _total_weight;
-  ptr += copy_to_mem(t_weight, ptr);
-
-  // Long  3 onwards: remaining bytes are consumed by writing the weight and the array values.
-  auto it = _sketch_array.begin();
-  while (it != _sketch_array.end()) {
-    ptr += copy_to_mem(*it, ptr);
-    ++it;
-  }
+  serialize_to([&ptr](const void* data, size_t size) {
+    ptr += copy_to_mem(data, ptr, size);
+  });
 
   return bytes;
 }
