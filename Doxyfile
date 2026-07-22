@@ -955,6 +955,7 @@ INPUT                  = common/include \
                          fi/include \
                          count/include \
                          req/include \
+                         ddsketch/include \
                          README.md
 
 # This tag can be used to specify the character encoding of the source files

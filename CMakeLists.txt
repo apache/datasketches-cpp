@@ -122,12 +122,13 @@ add_subdirectory(count)
 add_subdirectory(density)
 add_subdirectory(tdigest)
 add_subdirectory(filters)
+add_subdirectory(ddsketch)
 
 if (BUILD_BENCHMARKS)
   add_subdirectory(benchmarks)
 endif()
 
-target_link_libraries(datasketches INTERFACE hll cpc kll fi theta sampling req quantiles count)
+target_link_libraries(datasketches INTERFACE hll cpc kll fi theta sampling req quantiles count ddsketch)
 
 if (COVERAGE)
   find_program(LCOV_PATH NAMES "lcov")
