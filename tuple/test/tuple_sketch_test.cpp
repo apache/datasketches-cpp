@@ -371,4 +371,19 @@ TEST_CASE("filter", "[tuple_sketch]") {
   }
 }
 
+TEST_CASE("tuple sketch: deserialize with mismatched summary width", "[tuple_sketch]") {
+  // A compact sketch serialized with a narrower summary (float, 4 bytes) and then
+  // deserialized as a wider summary (double, 8 bytes). The per-entry stride the reader
+  // assumes (8-byte key + 8-byte summary) is larger than the entries actually occupy
+  // (8-byte key + 4-byte summary), so the read cursor advances past the end of the buffer.
+  // num_entries is read from the preamble and is unaffected, so the entry loop still runs
+  // the full count and the per-entry key read walks off the end. This must throw rather
+  // than read out of bounds (a heap-buffer-overflow under AddressSanitizer).
+  auto update_sketch = update_tuple_sketch<float>::builder().build();
+  for (int i = 0; i < 100; ++i) update_sketch.update(i, 1.0f);
+  auto bytes = update_sketch.compact().serialize();
+  REQUIRE_THROWS_AS(compact_tuple_sketch<double>::deserialize(bytes.data(), bytes.size()),
+                    std::out_of_range);
+}
+
 } /* namespace datasketches */
