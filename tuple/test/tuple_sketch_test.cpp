@@ -371,7 +371,7 @@ TEST_CASE("filter", "[tuple_sketch]") {
   }
 }
 
-TEST_CASE("tuple sketch: deserialize with mismatched summary width", "[tuple_sketch]") {
+TEST_CASE("tuple sketch: deserialize bounds-checks each entry key", "[tuple_sketch]") {
   // A compact sketch serialized with a narrower summary (float, 4 bytes) and then
   // deserialized as a wider summary (double, 8 bytes). The per-entry stride the reader
   // assumes (8-byte key + 8-byte summary) is larger than the entries actually occupy
