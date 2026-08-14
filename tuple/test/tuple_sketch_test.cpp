@@ -386,4 +386,23 @@ TEST_CASE("tuple sketch: deserialize bounds-checks each entry key", "[tuple_sket
                     std::out_of_range);
 }
 
+TEST_CASE("tuple sketch: get_live_bytes", "[tuple_sketch]") {
+  auto sketch = update_tuple_sketch<float>::builder().build();
+  // a freshly built update sketch has an allocated hash table
+  const size_t empty_bytes = sketch.get_live_bytes();
+  REQUIRE(empty_bytes > 0);
+
+  // the table only grows as distinct keys are inserted, and it grows past the initial size
+  size_t prev_bytes = empty_bytes;
+  bool non_decreasing = true;
+  for (int i = 0; i < 100000; ++i) {
+    sketch.update(i, 1.0f);
+    const size_t bytes = sketch.get_live_bytes();
+    if (bytes < prev_bytes) non_decreasing = false;
+    prev_bytes = bytes;
+  }
+  REQUIRE(non_decreasing);
+  REQUIRE(prev_bytes > empty_bytes);
+}
+
 } /* namespace datasketches */

@@ -436,6 +436,14 @@ public:
   virtual const_iterator begin() const;
   virtual const_iterator end() const;
 
+  /**
+   * Returns the number of bytes currently allocated for this sketch's internal hash table.
+   * This is the exact live heap footprint of the retained entries right now, not an upper bound
+   * like get_serialized_size_bytes().
+   * @return the current allocated size of the internal hash table in bytes
+   */
+  size_t get_live_bytes() const { return map_.get_live_bytes(); }
+
 protected:
   Policy policy_;
   tuple_map map_;

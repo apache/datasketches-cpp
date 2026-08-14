@@ -411,6 +411,18 @@ class kll_sketch {
     size_t get_serialized_size_bytes(const SerDe& sd = SerDe()) const;
 
     /**
+     * Returns the number of bytes currently allocated on the heap by this sketch: the items_ buffer
+     * (items_size_ elements) plus the levels_ vector. Unlike a hash-table sketch this is not a table
+     * footprint; it mirrors the sketch's allocate() sites. This is the exact live heap footprint
+     * right now, not an upper bound like get_serialized_size_bytes().
+     * @return the current allocated heap size of the sketch in bytes
+     */
+    size_t get_live_bytes() const {
+      return (items_ == nullptr ? 0 : static_cast<size_t>(items_size_) * sizeof(T))
+          + levels_.capacity() * sizeof(uint32_t);
+    }
+
+    /**
      * Returns upper bound on the serialized size of a sketch given a parameter <em>k</em> and stream
      * length. The resulting size is an overestimate to make sure actual sketches don't exceed it.
      * This method can be used if allocation of storage is necessary beforehand, but it is not

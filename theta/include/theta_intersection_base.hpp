@@ -46,6 +46,9 @@ public:
 
   const Policy& get_policy() const;
 
+  // Live heap footprint of the internal hash table in bytes.
+  size_t get_live_bytes() const { return table_.get_live_bytes(); }
+
 private:
   Policy policy_;
   bool is_valid_;

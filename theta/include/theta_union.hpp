@@ -74,6 +74,13 @@ public:
   /// Reset the union to the initial empty state
   void reset();
 
+  /**
+   * Returns the number of bytes currently allocated for this union's internal hash table.
+   * This is the exact live heap footprint right now, not an upper bound.
+   * @return the current allocated size of the internal hash table in bytes
+   */
+  size_t get_live_bytes() const { return state_.get_live_bytes(); }
+
 private:
   State state_;
 
