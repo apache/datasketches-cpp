@@ -98,10 +98,9 @@ void Hll8Array<A>::internalCouponUpdate(uint32_t coupon) {
 
   const uint8_t curVal = this->hllByteArr_[slotNo];
   if (newVal > curVal) {
-    // A prior HLL merge may have deferred rebuilding the estimator state. Rebuild only when
-    // this coupon changes a register, immediately before the incremental update needs KxQ and
-    // numAtCurMin_. Duplicate coupons therefore preserve the lazy-merge optimization.
-    if (this->rebuild_kxq_curmin_) this->check_rebuild_kxq_cur_min();
+    // A prior HLL merge may have left the estimator state stale. Rebuild it before applying
+    // an incremental update for a changed register.
+    this->check_rebuild_kxq_cur_min();
     this->hllByteArr_[slotNo] = newVal;
     this->hipAndKxQIncrementalUpdate(curVal, newVal);
     this->numAtCurMin_ -= curVal == 0; // interpret numAtCurMin as num zeros
