@@ -64,14 +64,10 @@ HllArray<A>::HllArray(const HllArray& other, target_hll_type tgtHllType) :
 
 template<typename A>
 HllArray<A>* HllArray<A>::copyAs(target_hll_type tgtHllType) const {
-  if (tgtHllType == this->getTgtHllType()) {
-    // Preserve lazy merging in the source, but make every same-type result use the direct-sum
-    // rebuild. Replaying registers through the conversion constructor produces slightly
-    // different floating-point KxQ values, making serialization depend on when the lazy state
-    // escaped through copyAs().
-    HllArray* result = static_cast<HllArray*>(copy());
-    result->check_rebuild_kxq_cur_min();
-    return result;
+  // we may need to recompute KxQ and curMin data for a union gadget,
+  // so only use a direct copy if we have a valid sketch
+  if (tgtHllType == this->getTgtHllType() && !this->isRebuildKxqCurminFlag()) {
+    return static_cast<HllArray*>(copy());
   }
   
   // the factory methods replay the coupons and will always rebuild
