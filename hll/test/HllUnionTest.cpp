@@ -314,4 +314,74 @@ TEST_CASE("hll union: check hll to hll", "[hll_union]") {
   union_two_sketches_with_overlap(1000000, 11, HLL_4);
 }
 
+static hll_sketch make_hll_sketch(uint8_t lg_config_k, uint64_t start, uint64_t end) {
+  hll_sketch sketch(lg_config_k);
+  for (uint64_t i = start; i < end; ++i) sketch.update(i);
+  return sketch;
+}
+
+static hll_sketch::vector_bytes serialize_flat_union(
+    const hll_sketch& first, const hll_sketch& second, const hll_sketch& third) {
+  hll_union u(8);
+  u.update(first);
+  u.update(second);
+  u.update(third);
+  return u.get_result(HLL_8).serialize_updatable();
+}
+
+static hll_sketch::vector_bytes serialize_nested_union(
+    const hll_sketch& first, const hll_sketch& second, const hll_sketch& third) {
+  hll_union prefix(8);
+  prefix.update(first);
+  prefix.update(second);
+
+  hll_union u(8);
+  u.update(prefix.get_result(HLL_8));
+  u.update(third);
+  return u.get_result(HLL_8).serialize_updatable();
+}
+
+TEST_CASE("hll union: downsampling merge is not empty", "[hll_union]") {
+  const hll_sketch sketch = make_hll_sketch(15, 0, 100000);
+  hll_union u(8);
+  u.update(sketch);
+  REQUIRE_FALSE(u.is_empty());
+}
+
+TEST_CASE("hll union: mixed lgConfigK estimate is merge-order independent", "[hll_union]") {
+  const uint64_t n = 100000;
+  const hll_sketch a = make_hll_sketch(15, 0, n);
+  const hll_sketch b = make_hll_sketch(8, n, 2 * n);
+  const double truth = 2.0 * n;
+
+  hll_union larger_first(8);
+  larger_first.update(a);
+  larger_first.update(b);
+  REQUIRE(larger_first.get_estimate() == Approx(truth).epsilon(0.1));
+
+  hll_union smaller_first(8);
+  smaller_first.update(b);
+  smaller_first.update(a);
+  REQUIRE(smaller_first.get_estimate() == Approx(truth).epsilon(0.1));
+}
+
+TEST_CASE("hll union: scalar update after downsampling merge", "[hll_union]") {
+  const uint64_t n = 100000;
+  const hll_sketch sketch = make_hll_sketch(15, 0, n);
+  hll_union u(8);
+  u.update(sketch);
+  for (uint64_t i = n; i < 2 * n; ++i) u.update(i);
+  REQUIRE(u.get_estimate() == Approx(2.0 * n).epsilon(0.1));
+}
+
+TEST_CASE("hll union: serialization is grouping independent", "[hll_union]") {
+  const uint64_t n = 100000;
+  const hll_sketch a = make_hll_sketch(15, 0, n);
+  const hll_sketch b = make_hll_sketch(8, n, 2 * n);
+  const hll_sketch c = make_hll_sketch(11, n / 2, n + n / 2);
+  REQUIRE(serialize_nested_union(b, c, a) == serialize_flat_union(b, c, a));
+  REQUIRE(serialize_nested_union(a, c, b) == serialize_flat_union(a, c, b));
+  REQUIRE(serialize_nested_union(a, b, c) == serialize_flat_union(a, b, c));
+}
+
 } /* namespace datasketches */

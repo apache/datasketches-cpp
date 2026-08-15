@@ -39,6 +39,9 @@ hll_union_alloc<A>::hll_union_alloc(uint8_t lg_max_k, const A& allocator):
 
 template<typename A>
 hll_sketch_alloc<A> hll_union_alloc<A>::get_result(target_hll_type target_type) const {
+  if (gadget_.sketch_impl->getCurMode() == hll_mode::HLL) {
+    static_cast<HllArray<A>*>(gadget_.sketch_impl)->check_rebuild_kxq_cur_min();
+  }
   return hll_sketch_alloc<A>(gadget_, target_type);
 }
 

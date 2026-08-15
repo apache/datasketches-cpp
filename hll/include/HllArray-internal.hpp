@@ -465,6 +465,10 @@ bool HllArray<A>::isCompact() const {
 
 template<typename A>
 bool HllArray<A>::isEmpty() const {
+  // mergeHll() is only called with non-empty sketches and sets this flag after updating the
+  // register array. The cached curMin_/numAtCurMin_ may still have their empty-sketch values,
+  // but a pending rebuild therefore proves that this array is not empty.
+  if (rebuild_kxq_curmin_) return false;
   const uint32_t configK = 1 << this->lgConfigK_;
   return (curMin_ == 0) && (numAtCurMin_ == configK);
 }
