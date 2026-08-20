@@ -76,6 +76,29 @@ TEST_CASE("theta union: exact mode half overlap", "[theta_union]") {
   REQUIRE_FALSE(sketch3.is_estimation_mode());
 }
 
+TEST_CASE("theta union: min lg_k", "[theta_union]") {
+  // A union built with the minimum lg_k = 4 (nominal 16) must build and produce a valid result,
+  // matching Java. Requesting a smaller lg_k must throw.
+  REQUIRE_THROWS_AS(theta_union::builder().set_lg_k(theta_constants::MIN_LG_K - 1),
+      std::invalid_argument);
+
+  auto sketch1 = update_theta_sketch::builder().build();
+  for (int i = 0; i < 10000; i++) sketch1.update(i);
+  auto sketch2 = update_theta_sketch::builder().build();
+  for (int i = 5000; i < 15000; i++) sketch2.update(i);
+
+  auto u = theta_union::builder().set_lg_k(theta_constants::MIN_LG_K).build();
+  u.update(sketch1);
+  u.update(sketch2);
+  auto result = u.get_result();
+  REQUIRE(result.is_estimation_mode());
+  REQUIRE(result.get_theta() < 1.0);
+  // the true union cardinality (15000 distinct values) is bracketed by the confidence bounds
+  const int distinct = 15000;
+  REQUIRE(result.get_lower_bound(2) <= distinct);
+  REQUIRE(result.get_upper_bound(2) >= distinct);
+}
+
 TEST_CASE("theta union: exact mode half overlap wrapped compact", "[theta_union]") {
   auto sketch1 = update_theta_sketch::builder().build();
   int value = 0;
