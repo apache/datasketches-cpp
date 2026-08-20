@@ -336,6 +336,13 @@ public:
    */
   compact_theta_sketch_alloc<Allocator> compact(bool ordered = true) const;
 
+  /**
+   * Produces a compact sketch trimmed to the nominal size k in a single pass.
+   * Like trim() followed by compact(), but without rebuilding the hash table. Result is unordered.
+   * @return compact sketch with at most k retained entries
+   */
+  compact_theta_sketch_alloc<Allocator> get_result() const;
+
   virtual iterator begin();
   virtual iterator end();
   virtual const_iterator begin() const;
@@ -518,6 +525,7 @@ private:
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_union_base;
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_intersection_base;
   template<typename E, typename EK, typename CS, typename A> friend class theta_set_difference_base;
+  template<typename A> friend class update_theta_sketch_alloc;
   compact_theta_sketch_alloc(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<uint64_t, Allocator>&& entries);
 };
 

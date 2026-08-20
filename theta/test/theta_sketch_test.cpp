@@ -22,6 +22,7 @@
 #include <sstream>
 #include <vector>
 #include <stdexcept>
+#include <algorithm>
 
 #include <catch2/catch.hpp>
 #include <theta_sketch.hpp>
@@ -165,6 +166,49 @@ TEST_CASE("theta sketch: estimation", "[theta_sketch]") {
   REQUIRE(compact_sketch.get_estimate() == Approx((double) n).margin(n * 0.01));
   REQUIRE(compact_sketch.get_lower_bound(1) < n);
   REQUIRE(compact_sketch.get_upper_bound(1) > n);
+}
+
+TEST_CASE("theta sketch: get_result trims to k in one pass", "[theta_sketch]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  const int n = 8000;
+  for (int i = 0; i < n; i++) update_sketch.update(i);
+  const uint32_t k = 1 << theta_constants::DEFAULT_LG_K;
+  REQUIRE(update_sketch.get_num_retained() > k); // over-provisioned before trimming
+
+  compact_theta_sketch result = update_sketch.get_result();
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE(result.is_estimation_mode());
+  REQUIRE(result.get_num_retained() == k); // trimmed to nominal size
+  REQUIRE_FALSE(result.is_ordered());      // unordered: no sort performed
+
+  // fused get_result() must match trim() + compact()
+  update_theta_sketch trimmed = update_sketch;
+  trimmed.trim();
+  compact_theta_sketch expected = trimmed.compact(false);
+  REQUIRE(result.get_theta64() == expected.get_theta64());
+  REQUIRE(result.get_num_retained() == expected.get_num_retained());
+  REQUIRE(result.get_estimate() == expected.get_estimate());
+
+  // same set of retained hashes (order-independent)
+  std::vector<uint64_t> a(result.begin(), result.end());
+  std::vector<uint64_t> b(expected.begin(), expected.end());
+  std::sort(a.begin(), a.end());
+  std::sort(b.begin(), b.end());
+  REQUIRE(a == b);
+}
+
+TEST_CASE("theta sketch: get_result on empty and below-k sketches", "[theta_sketch]") {
+  compact_theta_sketch empty_result = update_theta_sketch::builder().build().get_result();
+  REQUIRE(empty_result.is_empty());
+  REQUIRE(empty_result.get_num_retained() == 0);
+
+  update_theta_sketch small = update_theta_sketch::builder().build();
+  for (int i = 0; i < 100; i++) small.update(i);
+  REQUIRE_FALSE(small.is_estimation_mode());
+  compact_theta_sketch small_result = small.get_result();
+  REQUIRE_FALSE(small_result.is_estimation_mode());
+  REQUIRE(small_result.get_num_retained() == 100); // below k: nothing trimmed
+  REQUIRE(small_result.get_estimate() == Approx(100.0));
 }
 
 TEST_CASE("theta sketch: deserialize compact v1 empty from java", "[theta_sketch]") {
