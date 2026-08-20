@@ -38,9 +38,7 @@ namespace theta_constants {
   const uint8_t MIN_LG_K = 4;
   /// max log2 of K
   const uint8_t MAX_LG_K = 26;
-  /// min log2 of the internal hash table (cache) size. The hash table needs headroom above the
-  /// nominal size to hold transient entries before rebuild, so its floor is higher than MIN_LG_K.
-  /// Matches Java's ThetaUtil.MIN_LG_ARR_LONGS.
+  /// min log2 of cache size
   const uint8_t MIN_LG_ARR = 5;
   /// default log2 of K
   const uint8_t DEFAULT_LG_K = 12;

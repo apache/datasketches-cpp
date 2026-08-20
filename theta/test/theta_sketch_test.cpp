@@ -66,12 +66,24 @@ TEST_CASE("theta sketch: min lg_k", "[theta_sketch]") {
   update_theta_sketch min_sketch = update_theta_sketch::builder().set_lg_k(theta_constants::MIN_LG_K).build();
   REQUIRE(min_sketch.get_lg_k() == theta_constants::MIN_LG_K);
 
-  // update well past the nominal size to force estimation mode and exercise the rebuild path.
-  // The internal hash table floor stays at MIN_LG_ARR (5, i.e. 32 slots), one above the nominal.
+  // update well past the nominal size to force estimation mode and exercise the rebuild path,
+  // tracking the peak number of retained entries seen between rebuilds.
   const int n = 10000;
-  for (int i = 0; i < n; ++i) min_sketch.update(i);
+  uint32_t max_retained = 0;
+  for (int i = 0; i < n; ++i) {
+    min_sketch.update(i);
+    max_retained = std::max(max_retained, min_sketch.get_num_retained());
+  }
   REQUIRE(min_sketch.is_estimation_mode());
   REQUIRE(min_sketch.get_theta() < 1.0);
+
+  // The internal hash table is floored at MIN_LG_ARR (5, i.e. 32 slots), one lg above the
+  // nominal size. This is exactly what MIN_LG_ARR guarantees: between rebuilds the sketch holds
+  // more than the nominal 2^MIN_LG_K (16) entries, but never more than the 2^MIN_LG_ARR (32)
+  // slots of the table. Were the table sized to the nominal 16, it could not retain more than 16.
+  REQUIRE(max_retained > (1 << theta_constants::MIN_LG_K));
+  REQUIRE(max_retained <= (1 << theta_constants::MIN_LG_ARR));
+
   // the true count is bracketed by the 2-standard-deviation confidence bounds
   REQUIRE(min_sketch.get_lower_bound(2) <= n);
   REQUIRE(min_sketch.get_upper_bound(2) >= n);
