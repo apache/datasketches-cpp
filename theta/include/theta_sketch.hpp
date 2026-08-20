@@ -338,10 +338,11 @@ public:
 
   /**
    * Produces a compact sketch trimmed to the nominal size k in a single pass.
-   * Like trim() followed by compact(), but without rebuilding the hash table. Result is unordered.
+   * Like trim() followed by compact(), but without rebuilding the hash table.
+   * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return compact sketch with at most k retained entries
    */
-  compact_theta_sketch_alloc<Allocator> get_result() const;
+  compact_theta_sketch_alloc<Allocator> get_result(bool ordered = true) const;
 
   virtual iterator begin();
   virtual iterator end();

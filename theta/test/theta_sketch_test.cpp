@@ -175,40 +175,52 @@ TEST_CASE("theta sketch: get_result trims to k in one pass", "[theta_sketch]") {
   const uint32_t k = 1 << theta_constants::DEFAULT_LG_K;
   REQUIRE(update_sketch.get_num_retained() > k); // over-provisioned before trimming
 
-  compact_theta_sketch result = update_sketch.get_result();
-  REQUIRE_FALSE(result.is_empty());
-  REQUIRE(result.is_estimation_mode());
-  REQUIRE(result.get_num_retained() == k); // trimmed to nominal size
-  REQUIRE_FALSE(result.is_ordered());      // unordered: no sort performed
+  // default is ordered, matching union/intersection get_result
+  compact_theta_sketch ordered_result = update_sketch.get_result();
+  REQUIRE_FALSE(ordered_result.is_empty());
+  REQUIRE(ordered_result.is_estimation_mode());
+  REQUIRE(ordered_result.get_num_retained() == k); // trimmed to nominal size
+  REQUIRE(ordered_result.is_ordered());
+  REQUIRE(std::is_sorted(ordered_result.begin(), ordered_result.end()));
 
-  // fused get_result() must match trim() + compact()
+  // fused get_result(true) must match trim() + compact(true)
   update_theta_sketch trimmed = update_sketch;
   trimmed.trim();
-  compact_theta_sketch expected = trimmed.compact(false);
-  REQUIRE(result.get_theta64() == expected.get_theta64());
-  REQUIRE(result.get_num_retained() == expected.get_num_retained());
-  REQUIRE(result.get_estimate() == expected.get_estimate());
+  compact_theta_sketch expected = trimmed.compact(true);
+  REQUIRE(ordered_result.get_theta64() == expected.get_theta64());
+  REQUIRE(ordered_result.get_num_retained() == expected.get_num_retained());
+  REQUIRE(ordered_result.get_estimate() == expected.get_estimate());
+  REQUIRE(std::vector<uint64_t>(ordered_result.begin(), ordered_result.end())
+          == std::vector<uint64_t>(expected.begin(), expected.end()));
 
-  // same set of retained hashes (order-independent)
-  std::vector<uint64_t> a(result.begin(), result.end());
-  std::vector<uint64_t> b(expected.begin(), expected.end());
-  std::sort(a.begin(), a.end());
-  std::sort(b.begin(), b.end());
-  REQUIRE(a == b);
+  // unordered variant: same trimmed set and theta, no sort
+  compact_theta_sketch unordered_result = update_sketch.get_result(false);
+  REQUIRE_FALSE(unordered_result.is_ordered());
+  REQUIRE(unordered_result.get_num_retained() == k);
+  REQUIRE(unordered_result.get_theta64() == expected.get_theta64());
+  std::vector<uint64_t> unordered_hashes(unordered_result.begin(), unordered_result.end());
+  std::sort(unordered_hashes.begin(), unordered_hashes.end());
+  REQUIRE(unordered_hashes == std::vector<uint64_t>(expected.begin(), expected.end()));
 }
 
 TEST_CASE("theta sketch: get_result on empty and below-k sketches", "[theta_sketch]") {
   compact_theta_sketch empty_result = update_theta_sketch::builder().build().get_result();
   REQUIRE(empty_result.is_empty());
   REQUIRE(empty_result.get_num_retained() == 0);
+  REQUIRE(empty_result.is_ordered());
 
   update_theta_sketch small = update_theta_sketch::builder().build();
   for (int i = 0; i < 100; i++) small.update(i);
   REQUIRE_FALSE(small.is_estimation_mode());
-  compact_theta_sketch small_result = small.get_result();
+
+  compact_theta_sketch small_result = small.get_result(); // default ordered
   REQUIRE_FALSE(small_result.is_estimation_mode());
   REQUIRE(small_result.get_num_retained() == 100); // below k: nothing trimmed
   REQUIRE(small_result.get_estimate() == Approx(100.0));
+  REQUIRE(small_result.is_ordered());
+  REQUIRE(std::is_sorted(small_result.begin(), small_result.end()));
+
+  REQUIRE_FALSE(small.get_result(false).is_ordered()); // unordered variant
 }
 
 TEST_CASE("theta sketch: deserialize compact v1 empty from java", "[theta_sketch]") {
