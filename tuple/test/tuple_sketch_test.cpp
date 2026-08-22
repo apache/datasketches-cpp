@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <tuple>
+#include <stdexcept>
 
 namespace datasketches {
 
@@ -47,6 +48,49 @@ TEST_CASE("tuple sketch float: builder", "[tuple_sketch]") {
   REQUIRE(sketch.get_seed_hash() == compute_seed_hash(123));
   sketch.update(1, 0);
   REQUIRE(sketch.get_theta() == 0.5); // theta = p
+}
+
+TEST_CASE("tuple sketch: min lg_k", "[tuple_sketch]") {
+  // Tuple sketches reuse theta's builder and hash table, so the same nominal floor
+  // (MIN_LG_K = 4, matching Java's ThetaUtil.MIN_LG_NOM_LONGS) and cache floor (MIN_LG_ARR = 5)
+  // apply. lg_k = 4 (nominal 16) is the smallest allowed nominal size; below it must throw.
+  REQUIRE(theta_constants::MIN_LG_K == 4);
+  REQUIRE_THROWS_AS(update_tuple_sketch<float>::builder().set_lg_k(theta_constants::MIN_LG_K - 1),
+      std::invalid_argument);
+  auto min_sketch = update_tuple_sketch<float>::builder().set_lg_k(theta_constants::MIN_LG_K).build();
+  REQUIRE(min_sketch.get_lg_k() == theta_constants::MIN_LG_K);
+
+  // update well past the nominal size to force estimation mode and exercise the rebuild path,
+  // tracking the peak number of retained entries seen between rebuilds.
+  const int n = 10000;
+  uint32_t max_retained = 0;
+  for (int i = 0; i < n; ++i) {
+    min_sketch.update(i, 1.0f);
+    if (min_sketch.get_num_retained() > max_retained) max_retained = min_sketch.get_num_retained();
+  }
+  REQUIRE(min_sketch.is_estimation_mode());
+  REQUIRE(min_sketch.get_theta() < 1.0);
+
+  // The internal hash table is floored at MIN_LG_ARR (5, i.e. 32 slots), one lg above the
+  // nominal size. This is exactly what MIN_LG_ARR guarantees: between rebuilds the sketch holds
+  // more than the nominal 2^MIN_LG_K (16) entries, but never more than the 2^MIN_LG_ARR (32)
+  // slots of the table. Were the table sized to the nominal 16, it could not retain more than 16.
+  REQUIRE(max_retained > (1 << theta_constants::MIN_LG_K));
+  REQUIRE(max_retained <= (1 << theta_constants::MIN_LG_ARR));
+
+  // the true count is bracketed by the 2-standard-deviation confidence bounds
+  REQUIRE(min_sketch.get_lower_bound(2) <= n);
+  REQUIRE(min_sketch.get_upper_bound(2) >= n);
+
+  // trimming reduces the sketch to exactly the nominal number of entries (2^4 = 16)
+  min_sketch.trim();
+  REQUIRE(min_sketch.get_num_retained() == (1 << theta_constants::MIN_LG_K));
+
+  // a compacted min-size sketch round trips through serialization
+  auto bytes = min_sketch.compact().serialize();
+  auto deserialized = compact_tuple_sketch<float>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(deserialized.get_num_retained() == min_sketch.get_num_retained());
+  REQUIRE(deserialized.get_estimate() == min_sketch.get_estimate());
 }
 
 TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {
