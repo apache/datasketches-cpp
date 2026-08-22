@@ -339,6 +339,8 @@ public:
   /**
    * Produces a compact sketch trimmed to the nominal size k in a single pass.
    * Like trim() followed by compact(), but without rebuilding the hash table.
+   * Named get_result() to parallel theta_union::get_result() and
+   * theta_intersection::get_result(), which likewise return an already-trimmed result.
    * @param ordered optional flag to specify if an ordered sketch should be produced
    * @return compact sketch with at most k retained entries
    */
