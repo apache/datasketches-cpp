@@ -156,9 +156,6 @@ bloom_filter_alloc<A>::bloom_filter_alloc(uint64_t seed,
 {
   // private constructor
   // no consistency checks since we should have done those prior to calling this
-  if (is_read_only_ && memory_ != nullptr && num_bits_set == DIRTY_BITS_VALUE) {
-    num_bits_set_ = bit_array_ops::count_num_bits_set(bit_array_, capacity_bits_ >> 3);
-  }
 }
 
 template<typename A>
