@@ -241,6 +241,28 @@ TEST_CASE("theta a-not-b: seed mismatch", "[theta_a_not_b]") {
   REQUIRE_THROWS_AS(a_not_b.compute(sketch, sketch), std::invalid_argument);
 }
 
+TEST_CASE("theta a-not-b: empty B with different seed must be ignored", "[theta_a_not_b]") {
+  // An empty sketch carries no hashes, so its seed hash is meaningless. Deserialization,
+  // theta_union::update() and theta_intersection::update() all skip the seed hash check
+  // for empty inputs; a-not-b must do the same. This matters across languages because
+  // datasketches-java serializes every empty compact sketch with a seed hash of 0.
+
+  // A: non-empty, but with zero retained entries (all hashes exceeded theta)
+  update_theta_sketch a = update_theta_sketch::builder().set_p(1e-6f).build();
+  a.update(1);
+  REQUIRE_FALSE(a.is_empty());
+  REQUIRE(a.get_num_retained() == 0);
+
+  // B: empty, built with a different seed
+  compact_theta_sketch b = update_theta_sketch::builder().set_seed(123).build().compact();
+  REQUIRE(b.is_empty());
+
+  theta_a_not_b a_not_b; // default seed
+  compact_theta_sketch result = a_not_b.compute(a.compact(), b);
+  REQUIRE_FALSE(result.is_empty());
+  REQUIRE(result.get_num_retained() == 0);
+}
+
 TEST_CASE("theta a-not-b: issue #152", "[theta_a_not_b]") {
   update_theta_sketch a = update_theta_sketch::builder().build();
   int value = 0;
