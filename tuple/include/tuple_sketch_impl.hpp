@@ -347,7 +347,7 @@ uint32_t compact_tuple_sketch<S, A>::get_num_retained() const {
 
 template<typename S, typename A>
 uint16_t compact_tuple_sketch<S, A>::get_seed_hash() const {
-  return seed_hash_;
+  return is_empty_ ? 0 : seed_hash_;
 }
 
 template<typename S, typename A>
