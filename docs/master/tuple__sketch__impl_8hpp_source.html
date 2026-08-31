@@ -501,7 +501,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
 <div class="foldopen" id="foldopen00349" data-start="{" data-end="}">
 <div class="line"><a id="l00349" name="l00349"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a6f69b50bc13da11d255d0e583e2376ba">  349</a></span>uint16_t <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a6f69b50bc13da11d255d0e583e2376ba">compact_tuple_sketch&lt;S, A&gt;::get_seed_hash</a>()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>  <span class="keywordflow">return</span> seed_hash_;</div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>  <span class="keywordflow">return</span> is_empty_ ? 0 : seed_hash_;</div>
 <div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>}</div>
 </div>
 <div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span> </div>
