@@ -122,51 +122,53 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>CS theta_set_difference_base&lt;EN, EK, CS, A&gt;::compute(FwdSketch&amp;&amp; a, <span class="keyword">const</span> Sketch&amp; b, <span class="keywordtype">bool</span> ordered)<span class="keyword"> const </span>{</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  <span class="keywordflow">if</span> (a.is_empty() || (a.get_num_retained() &gt; 0 &amp;&amp; b.is_empty())) <span class="keywordflow">return</span> CS(a, ordered);</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  <span class="keywordflow">if</span> (a.get_seed_hash() != seed_hash_) <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;A seed hash mismatch&quot;</span>);</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  <span class="keywordflow">if</span> (b.get_seed_hash() != seed_hash_) <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;B seed hash mismatch&quot;</span>);</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  <span class="keyword">const</span> uint64_t theta = std::min(a.get_theta64(), b.get_theta64());</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>  std::vector&lt;EN, A&gt; entries(allocator_);</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <span class="keywordtype">bool</span> is_empty = a.is_empty();</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  <span class="keywordflow">if</span> (b.get_num_retained() == 0) {</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    std::copy_if(forward_begin(std::forward&lt;FwdSketch&gt;(a)), forward_end(std::forward&lt;FwdSketch&gt;(a)), std::back_inserter(entries),</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        key_less_than&lt;uint64_t, EN, EK&gt;(theta));</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>  } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    <span class="keywordflow">if</span> (a.is_ordered() &amp;&amp; b.is_ordered()) { <span class="comment">// sort-based</span></div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>      std::set_difference(forward_begin(std::forward&lt;FwdSketch&gt;(a)), forward_end(std::forward&lt;FwdSketch&gt;(a)), b.begin(), b.end(),</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>          conditional_back_inserter(entries, key_less_than&lt;uint64_t, EN, EK&gt;(theta)), comparator());</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    } <span class="keywordflow">else</span> { <span class="comment">// hash-based</span></div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>      <span class="keyword">const</span> uint8_t lg_size = lg_size_from_count(b.get_num_retained(), hash_table::REBUILD_THRESHOLD);</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>      hash_table table(lg_size, lg_size, hash_table::resize_factor::X1, 1, 0, 0, allocator_); <span class="comment">// theta and seed are not used here</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>      <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; entry: b) {</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        <span class="keyword">const</span> uint64_t hash = EK()(entry);</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        <span class="keywordflow">if</span> (hash &lt; theta) {</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>          table.insert(table.find(hash).first, hash);</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (b.is_ordered()) {</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>          <span class="keywordflow">break</span>; <span class="comment">// early stop</span></div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        }</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>      }</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>      <span class="comment">// scan A lookup B</span></div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>      <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp;&amp; entry: a) {</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        <span class="keyword">const</span> uint64_t hash = EK()(entry);</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        <span class="keywordflow">if</span> (hash &lt; theta) {</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>          <span class="keyword">auto</span> result = table.find(hash);</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>          <span class="keywordflow">if</span> (!result.second) entries.emplace_back(conditional_forward&lt;FwdSketch&gt;(entry));</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (a.is_ordered()) {</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>          <span class="keywordflow">break</span>; <span class="comment">// early stop</span></div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        }</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>      }</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    }</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>  }</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>  <span class="keywordflow">if</span> (entries.empty() &amp;&amp; theta == theta_constants::MAX_THETA) is_empty = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>  <span class="keywordflow">if</span> (ordered &amp;&amp; !a.is_ordered()) std::sort(entries.begin(), entries.end(), comparator());</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>  <span class="keywordflow">return</span> CS(is_empty, a.is_ordered() || ordered, seed_hash_, theta, std::move(entries));</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>}</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span> </div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  <span class="comment">// an empty sketch has no hashes, so its seed hash is meaningless and must be ignored,</span></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  <span class="comment">// consistent with deserialization, theta_union::update() and theta_intersection::update()</span></div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  <span class="keywordflow">if</span> (!b.is_empty() &amp;&amp; b.get_seed_hash() != seed_hash_) <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;B seed hash mismatch&quot;</span>);</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <span class="keyword">const</span> uint64_t theta = std::min(a.get_theta64(), b.get_theta64());</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  std::vector&lt;EN, A&gt; entries(allocator_);</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  <span class="keywordtype">bool</span> is_empty = a.is_empty();</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>  <span class="keywordflow">if</span> (b.get_num_retained() == 0) {</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    std::copy_if(forward_begin(std::forward&lt;FwdSketch&gt;(a)), forward_end(std::forward&lt;FwdSketch&gt;(a)), std::back_inserter(entries),</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        key_less_than&lt;uint64_t, EN, EK&gt;(theta));</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>  } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keywordflow">if</span> (a.is_ordered() &amp;&amp; b.is_ordered()) { <span class="comment">// sort-based</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>      std::set_difference(forward_begin(std::forward&lt;FwdSketch&gt;(a)), forward_end(std::forward&lt;FwdSketch&gt;(a)), b.begin(), b.end(),</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>          conditional_back_inserter(entries, key_less_than&lt;uint64_t, EN, EK&gt;(theta)), comparator());</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    } <span class="keywordflow">else</span> { <span class="comment">// hash-based</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>      <span class="keyword">const</span> uint8_t lg_size = lg_size_from_count(b.get_num_retained(), hash_table::REBUILD_THRESHOLD);</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>      hash_table table(lg_size, lg_size, hash_table::resize_factor::X1, 1, 0, 0, allocator_); <span class="comment">// theta and seed are not used here</span></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>      <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; entry: b) {</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        <span class="keyword">const</span> uint64_t hash = EK()(entry);</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        <span class="keywordflow">if</span> (hash &lt; theta) {</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>          table.insert(table.find(hash).first, hash);</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (b.is_ordered()) {</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>          <span class="keywordflow">break</span>; <span class="comment">// early stop</span></div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        }</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>      }</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>      <span class="comment">// scan A lookup B</span></div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>      <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp;&amp; entry: a) {</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        <span class="keyword">const</span> uint64_t hash = EK()(entry);</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        <span class="keywordflow">if</span> (hash &lt; theta) {</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>          <span class="keyword">auto</span> result = table.find(hash);</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>          <span class="keywordflow">if</span> (!result.second) entries.emplace_back(conditional_forward&lt;FwdSketch&gt;(entry));</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (a.is_ordered()) {</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>          <span class="keywordflow">break</span>; <span class="comment">// early stop</span></div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        }</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>      }</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    }</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>  }</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>  <span class="keywordflow">if</span> (entries.empty() &amp;&amp; theta == theta_constants::MAX_THETA) is_empty = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>  <span class="keywordflow">if</span> (ordered &amp;&amp; !a.is_ordered()) std::sort(entries.begin(), entries.end(), comparator());</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>  <span class="keywordflow">return</span> CS(is_empty, a.is_ordered() || ordered, seed_hash_, theta, std::move(entries));</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>}</div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span> </div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition</b> binomial_bounds.hpp:38</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
