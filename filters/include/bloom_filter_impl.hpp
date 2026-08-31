@@ -37,6 +37,19 @@
 
 namespace datasketches {
 
+static uint64_t validate_bloom_filter_num_bits_set(uint64_t num_bits_set,
+                                                   uint8_t* bit_array,
+                                                   uint64_t length_bytes,
+                                                   uint64_t dirty_bits_value)
+{
+  const uint64_t counted_bits_set = bit_array_ops::count_num_bits_set(bit_array, length_bytes);
+  if (num_bits_set != dirty_bits_value && num_bits_set != counted_bits_set) {
+    throw std::invalid_argument("Possible corruption: invalid number of bits set. Expected "
+      + std::to_string(counted_bits_set) + ", found " + std::to_string(num_bits_set));
+  }
+  return counted_bits_set;
+}
+
 template<typename A>
 bloom_filter_alloc<A>::bloom_filter_alloc(uint64_t num_bits, uint16_t num_hashes, uint64_t seed, const A& allocator) :
   allocator_(allocator),
@@ -143,9 +156,6 @@ bloom_filter_alloc<A>::bloom_filter_alloc(uint64_t seed,
 {
   // private constructor
   // no consistency checks since we should have done those prior to calling this
-  if (is_read_only_ && memory_ != nullptr && num_bits_set == DIRTY_BITS_VALUE) {
-    num_bits_set_ = bit_array_ops::count_num_bits_set(bit_array_, capacity_bits_ >> 3);
-  }
 }
 
 template<typename A>
@@ -298,8 +308,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
     return bloom_filter_alloc<A>(num_longs << 6, num_hashes, seed, allocator);
   }
 
-  const uint64_t num_bits_set = read<uint64_t>(is);
-  const bool is_dirty = (num_bits_set == DIRTY_BITS_VALUE);
+  const uint64_t raw_num_bits_set = read<uint64_t>(is);
 
   // allocate memory
   const uint64_t num_bytes = num_longs << 3;
@@ -310,8 +319,17 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   }
   read(is, bit_array, num_bytes);
 
+  uint64_t num_bits_set;
+  try {
+    num_bits_set = validate_bloom_filter_num_bits_set(
+      raw_num_bits_set, bit_array, num_bytes, DIRTY_BITS_VALUE);
+  } catch (...) {
+    alloc.deallocate(bit_array, num_bytes);
+    throw;
+  }
+
   // pass to constructor
-  return bloom_filter_alloc<A>(seed, num_hashes, is_dirty, true, false, num_longs << 6, num_bits_set, bit_array, nullptr, allocator);
+  return bloom_filter_alloc<A>(seed, num_hashes, false, true, false, num_longs << 6, num_bits_set, bit_array, nullptr, allocator);
 }
 
 template<typename A>
@@ -374,9 +392,13 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
     return bloom_filter_alloc<A>(num_longs << 6, num_hashes, seed, allocator);
   }
 
-  uint64_t num_bits_set;
-  ptr += copy_from_mem(ptr, num_bits_set);
-  const bool is_dirty = (num_bits_set == DIRTY_BITS_VALUE);
+  uint64_t raw_num_bits_set;
+  ptr += copy_from_mem(ptr, raw_num_bits_set);
+
+  const uint64_t num_bytes = num_longs << 3;
+  ensure_minimum_memory(end_ptr - ptr, num_bytes);
+  const uint64_t num_bits_set = validate_bloom_filter_num_bits_set(
+    raw_num_bits_set, const_cast<uint8_t*>(ptr), num_bytes, DIRTY_BITS_VALUE);
 
   uint8_t* bit_array;
   uint8_t* memory;
@@ -386,8 +408,6 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
   } else {
     // allocate memory
     memory = nullptr;
-    const uint64_t num_bytes = num_longs << 3;
-    ensure_minimum_memory(end_ptr - ptr, num_bytes);
     AllocUint8 alloc(allocator);
     bit_array = alloc.allocate(num_bytes);
     if (bit_array == nullptr) {
@@ -397,7 +417,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
   }
 
   // pass to constructor -- !wrap == is_owned_
-  return bloom_filter_alloc<A>(seed, num_hashes, is_dirty, !wrap, read_only, num_longs << 6, num_bits_set, bit_array, memory, allocator);
+  return bloom_filter_alloc<A>(seed, num_hashes, false, !wrap, read_only, num_longs << 6, num_bits_set, bit_array, memory, allocator);
 }
 
 template<typename A>

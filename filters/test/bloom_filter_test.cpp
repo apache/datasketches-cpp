@@ -19,6 +19,9 @@
 
 #include <catch2/catch.hpp>
 
+#include <cstring>
+#include <limits>
+
 #include "bloom_filter.hpp"
 
 #ifdef TEST_BINARY_INPUT_PATH
@@ -401,6 +404,30 @@ TEST_CASE("bloom_filter: non-empty serialization", "[bloom_filter]") {
   // not good memory management to do this, but because we wrapped the same bytes as both
   // read-only and writable, that update should have changed the read-only version, too
   REQUIRE(bf_wrap.query(-1.0));
+}
+
+TEST_CASE("bloom_filter: inconsistent num bits set is rejected", "[bloom_filter]") {
+  const size_t num_bits_set_offset = 24;
+
+  auto bf = bloom_filter::builder::create_by_accuracy(100, 0.01);
+  bf.update("apple");
+  bf.update("banana");
+  const uint64_t actual_bits_set = bf.get_bits_used();
+  REQUIRE(actual_bits_set > 1);
+
+  const uint64_t invalid_counts[] = {0, actual_bits_set - 1, actual_bits_set + 1};
+  for (const uint64_t serialized_count: invalid_counts) {
+    auto bytes = bf.serialize();
+    std::memcpy(bytes.data() + num_bits_set_offset, &serialized_count, sizeof(serialized_count));
+
+    REQUIRE_THROWS_AS(bloom_filter::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+    REQUIRE_THROWS_AS(bloom_filter::wrap(bytes.data(), bytes.size()), std::invalid_argument);
+    REQUIRE_THROWS_AS(bloom_filter::writable_wrap(bytes.data(), bytes.size()), std::invalid_argument);
+
+    const std::string serialized(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    std::istringstream is(serialized, std::ios::in | std::ios::binary);
+    REQUIRE_THROWS_AS(bloom_filter::deserialize(is), std::invalid_argument);
+  }
 }
 
 } // namespace datasketches
