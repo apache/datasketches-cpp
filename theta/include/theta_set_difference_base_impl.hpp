@@ -39,7 +39,9 @@ template<typename FwdSketch, typename Sketch>
 CS theta_set_difference_base<EN, EK, CS, A>::compute(FwdSketch&& a, const Sketch& b, bool ordered) const {
   if (a.is_empty() || (a.get_num_retained() > 0 && b.is_empty())) return CS(a, ordered);
   if (a.get_seed_hash() != seed_hash_) throw std::invalid_argument("A seed hash mismatch");
-  if (b.get_seed_hash() != seed_hash_) throw std::invalid_argument("B seed hash mismatch");
+  // an empty sketch has no hashes, so its seed hash is meaningless and must be ignored,
+  // consistent with deserialization, theta_union::update() and theta_intersection::update()
+  if (!b.is_empty() && b.get_seed_hash() != seed_hash_) throw std::invalid_argument("B seed hash mismatch");
 
   const uint64_t theta = std::min(a.get_theta64(), b.get_theta64());
   std::vector<EN, A> entries(allocator_);
