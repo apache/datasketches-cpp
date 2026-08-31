@@ -315,7 +315,7 @@ uint32_t compact_theta_sketch_alloc<A>::get_num_retained() const {
 
 template<typename A>
 uint16_t compact_theta_sketch_alloc<A>::get_seed_hash() const {
-  return seed_hash_;
+  return is_empty_ ? 0 : seed_hash_;
 }
 
 template<typename A>
@@ -782,7 +782,7 @@ uint32_t wrapped_compact_theta_sketch_alloc<A>::get_num_retained() const {
 
 template<typename A>
 uint16_t wrapped_compact_theta_sketch_alloc<A>::get_seed_hash() const {
-  return data_.seed_hash;
+  return is_empty() ? 0 : data_.seed_hash;
 }
 
 template<typename A>
