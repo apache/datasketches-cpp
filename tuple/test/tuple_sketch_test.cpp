@@ -433,7 +433,8 @@ TEST_CASE("tuple sketch: deserialize bounds-checks each entry key", "[tuple_sket
 TEST_CASE("tuple sketch: deserialize rejects unconsumed bytes", "[tuple_sketch]") {
   // A compact sketch serialized with a wider summary (double, 8 bytes) and then
   // deserialized as a narrower summary (float, 4 bytes). The reader consumes less
-  // data than the entries occupy, so it must reject the bytes left after the last entry.
+  // data than the entries occupy, so deserialization must fail if bytes remain 
+  // after the last entry.
   auto update_sketch = update_tuple_sketch<double>::builder().build();
   update_sketch.update(1, 1.0);
   auto bytes = update_sketch.compact().serialize();
