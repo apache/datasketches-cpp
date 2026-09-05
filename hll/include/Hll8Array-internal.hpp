@@ -25,8 +25,8 @@
 namespace datasketches {
 
 template<typename A>
-Hll8Array<A>::Hll8Array(uint8_t lgConfigK, bool startFullSize, const A& allocator):
-HllArray<A>(lgConfigK, target_hll_type::HLL_8, startFullSize, allocator)
+Hll8Array<A>::Hll8Array(uint8_t lgConfigK, const A& allocator):
+HllArray<A>(lgConfigK, target_hll_type::HLL_8, allocator)
 {
   const int numBytes = this->hll8ArrBytes(lgConfigK);
   this->hllByteArr_.resize(numBytes, 0);
@@ -34,7 +34,7 @@ HllArray<A>(lgConfigK, target_hll_type::HLL_8, startFullSize, allocator)
 
 template<typename A>
 Hll8Array<A>::Hll8Array(const HllArray<A>& other):
-  HllArray<A>(other.getLgConfigK(), target_hll_type::HLL_8, other.isStartFullSize(), other.getAllocator())
+  HllArray<A>(other.getLgConfigK(), target_hll_type::HLL_8, other.getAllocator())
 {
   const int numBytes = this->hll8ArrBytes(this->lgConfigK_);
   this->hllByteArr_.resize(numBytes, 0);

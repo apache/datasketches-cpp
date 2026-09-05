@@ -43,7 +43,12 @@ static const uint8_t FAMILY_ID = 7;
 static const uint8_t EMPTY_FLAG_MASK          = 4;
 static const uint8_t COMPACT_FLAG_MASK        = 8;
 static const uint8_t OUT_OF_ORDER_FLAG_MASK   = 16;
-static const uint8_t FULL_SIZE_FLAG_MASK      = 32;
+// Bit 32 is RESERVED and must not be written or interpreted.
+// It was formerly FULL_SIZE_FLAG_MASK here, while datasketches-java uses the same bit as
+// REBUILD_CURMIN_NUM_KXQ_MASK for its union gadget. The two meanings collided across
+// implementations, so this side no longer writes or reads it. Do not reuse: bits 64 and 128
+// are free.
+static const uint8_t RESERVED_FLAG_MASK_32    = 32;
 
 static const uint32_t PREAMBLE_INTS_BYTE = 0;
 static const uint32_t SER_VER_BYTE       = 1;

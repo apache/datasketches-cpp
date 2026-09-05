@@ -45,7 +45,7 @@ template<typename A>
 hll_sketch_alloc<A>::hll_sketch_alloc(uint8_t lg_config_k, target_hll_type tgt_type, bool start_full_size, const A& allocator) {
   HllUtil<A>::checkLgK(lg_config_k);
   if (start_full_size) {
-    sketch_impl = HllSketchImplFactory<A>::newHll(lg_config_k, tgt_type, start_full_size, allocator);
+    sketch_impl = HllSketchImplFactory<A>::newHll(lg_config_k, tgt_type, allocator);
   } else {
     typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
     sketch_impl = new (clAlloc(allocator).allocate(1)) CouponList<A>(lg_config_k, tgt_type, hll_mode::LIST, allocator);
@@ -107,10 +107,8 @@ hll_sketch_alloc<A>& hll_sketch_alloc<A>::operator=(hll_sketch_alloc<A>&& other)
 }
 
 template<typename A>
-void hll_sketch_alloc<A>::reset() {
-  // TODO: need to allow starting from a full-sized sketch
-  //       (either here or in other implementation)
-  sketch_impl = sketch_impl->reset();
+void hll_sketch_alloc<A>::reset(bool full_size) {
+  sketch_impl = sketch_impl->reset(full_size);
 }
 
 template<typename A>
