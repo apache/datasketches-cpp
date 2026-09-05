@@ -296,3 +296,17 @@ APPENDIX B: Additional licenses relevant to this product.
     Code Locations:
       * common/include/ceiling_power_of_2.hpp
     that is adapted from the above.
+
+    =============================================================
+    FDLIBM
+    =============================================================
+    Original source code:
+      Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+      Developed at SunSoft, a Sun Microsystems, Inc. business.
+
+      Permission to use, copy, modify, and distribute this software is freely
+      granted, provided that this notice is preserved.
+
+    Code Locations:
+      common/include/fdlibm_log.hpp
+    that is adapted from __ieee754_log in FDLIBM 5.3.

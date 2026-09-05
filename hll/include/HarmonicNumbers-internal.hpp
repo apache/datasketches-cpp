@@ -21,6 +21,7 @@
 #define _HARMONICNUMBERS_INTERNAL_HPP_
 
 #include "HarmonicNumbers.hpp"
+#include "fdlibm_log.hpp"
 
 #include <cmath>
 
@@ -70,7 +71,7 @@ double HarmonicNumbers<A>::harmonicNumber(const uint64_t x_i) {
   } else {
     double x = static_cast<double>(x_i);
     double invSq = 1.0 / (x * x);
-    double sum = log(x) + EULER_MASCHERONI_CONSTANT + (1.0 / (2.0 * x));
+    double sum = fdlibm::log(x) + EULER_MASCHERONI_CONSTANT + (1.0 / (2.0 * x));
     /* note: the number of terms included from this series expansion is appropriate
        for the size of the exact table (25) and the precision of doubles */
     double pow = invSq; // now n^-2

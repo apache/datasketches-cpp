@@ -21,6 +21,7 @@
 #define _HLLARRAY_INTERNAL_HPP_
 
 #include "HllArray.hpp"
+#include "fdlibm_log.hpp"
 #include "HllUtil.hpp"
 #include "HarmonicNumbers.hpp"
 #include "CubicInterpolation.hpp"
@@ -568,7 +569,7 @@ double HllArray<A>::getHllBitMapEstimate() const {
 
   //This will eventually go away.
   if (numUnhitBuckets == 0) {
-    return configK * log(configK / 0.5);
+    return configK * fdlibm::log(configK / 0.5);
   }
 
   const uint32_t numHitBuckets = configK - numUnhitBuckets;
@@ -601,34 +602,37 @@ bool HllArray<A>::isRebuildKxqCurminFlag() const {
 template<typename A>
 void HllArray<A>::check_rebuild_kxq_cur_min() {
   if (!rebuild_kxq_curmin_) { return; }
+  // the deferred rebuild is only ever set on an HLL_8 union gadget. Guarding here also keeps
+  // this from ever rewriting curMin_ on an HLL_4 array, whose nibbles are stored relative to it.
+  if (this->getCurMode() != hll_mode::HLL || this->getTgtHllType() != target_hll_type::HLL_8) {
+    rebuild_kxq_curmin_ = false;
+    return;
+  }
 
-  uint8_t cur_min = 64;
-  uint32_t num_at_cur_min = 0;
+  uint32_t num_zeros = 0;
   double kxq0 = 1 << this->lgConfigK_;
   double kxq1 = 0;
 
-  auto it = this->begin(true); // want all points to adjust cur_min
+  auto it = this->begin(true); // want all slots, including the empty ones
   const auto end = this->end();
   while (it != end) {
     uint8_t v = HllUtil<A>::getValue(*it);
     if (v > 0) {
       if (v < 32) { kxq0 += INVERSE_POWERS_OF_2[v] - 1.0; }
       else        { kxq1 += INVERSE_POWERS_OF_2[v] - 1.0; }
-    }
-    if (v > cur_min) { ++it; continue; }
-    if (v < cur_min) {
-      cur_min = v;
-      num_at_cur_min = 1;
     } else {
-      ++num_at_cur_min;
-    }    
+      ++num_zeros;
+    }
     ++it;
   }
 
   kxq0_ = kxq0;
   kxq1_ = kxq1;
-  curMin_ = cur_min;
-  numAtCurMin_ = num_at_cur_min;
+  // HLL_8 convention: curMin is always 0 and numAtCurMin is the number of zero registers.
+  // That is the representation the incremental update path maintains, so the rebuilt state is
+  // indistinguishable from it and the timing of this rebuild is not observable in the image.
+  curMin_ = 0;
+  numAtCurMin_ = num_zeros;
   rebuild_kxq_curmin_ = false;
   // HipAccum is not affected
 

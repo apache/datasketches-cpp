@@ -87,8 +87,8 @@ static const uint32_t EMPTY = 0;
 static const uint8_t MIN_LOG_K = 4;
 static const uint8_t MAX_LOG_K = 21;
 
-static const double HLL_HIP_RSE_FACTOR = 0.8325546; // sqrt(ln(2))
-static const double HLL_NON_HIP_RSE_FACTOR = 1.03896; // sqrt((3 * ln(2)) - 1)
+static const double HLL_HIP_RSE_FACTOR = 0.8325546111576977; // sqrt(ln(2))
+static const double HLL_NON_HIP_RSE_FACTOR = 1.0389617614136892; // sqrt((3 * ln(2)) - 1)
 static const double COUPON_RSE_FACTOR = 0.409; // at transition point not the asymptote
 static const double COUPON_RSE = COUPON_RSE_FACTOR / (1 << 13);
 
