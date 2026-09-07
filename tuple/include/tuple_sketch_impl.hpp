@@ -590,6 +590,11 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
       (*summary).~S();
     }
   }
+  const size_t bytes_consumed = ptr - base;
+  if (bytes_consumed != size) {
+    throw std::out_of_range("Unexpected buffer size: bytes consumed "
+        + std::to_string(bytes_consumed) + ", bytes available " + std::to_string(size));
+  }
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
   return compact_tuple_sketch(is_empty, is_ordered, seed_hash, theta, std::move(entries));
 }
