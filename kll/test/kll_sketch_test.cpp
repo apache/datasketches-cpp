@@ -835,4 +835,23 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   REQUIRE(test_allocator_total_bytes == 0);
 }
 
+TEST_CASE("kll sketch: get_live_bytes", "[kll_sketch]") {
+  kll_sketch<float> sketch;
+  // a fresh sketch has already allocated its items buffer and level boundaries
+  const size_t empty_bytes = sketch.get_live_bytes();
+  REQUIRE(empty_bytes > 0);
+
+  // the items buffer and levels only grow as the sketch fills, and grow past the initial size
+  size_t prev_bytes = empty_bytes;
+  bool non_decreasing = true;
+  for (int i = 0; i < 1000000; ++i) {
+    sketch.update(static_cast<float>(i));
+    const size_t bytes = sketch.get_live_bytes();
+    if (bytes < prev_bytes) non_decreasing = false;
+    prev_bytes = bytes;
+  }
+  REQUIRE(non_decreasing);
+  REQUIRE(prev_bytes > empty_bytes);
+}
+
 } /* namespace datasketches */

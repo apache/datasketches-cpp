@@ -237,4 +237,19 @@ TEST_CASE("theta intersection: seed mismatch", "[theta_intersection]") {
   REQUIRE_THROWS_AS(intersection.update(sketch), std::invalid_argument);
 }
 
+TEST_CASE("theta intersection: get_live_bytes", "[theta_intersection]") {
+  theta_intersection intersection;
+  // before any update the intersection holds no table
+  REQUIRE(intersection.get_live_bytes() == 0);
+
+  update_theta_sketch sketch = update_theta_sketch::builder().build();
+  for (int i = 0; i < 100000; ++i) sketch.update(i);
+  intersection.update(sketch);
+  const size_t bytes = intersection.get_live_bytes();
+  REQUIRE(bytes > 0);
+  REQUIRE(bytes % sizeof(uint64_t) == 0);
+  const size_t entries = bytes / sizeof(uint64_t);
+  REQUIRE((entries & (entries - 1)) == 0);
+}
+
 } /* namespace datasketches */

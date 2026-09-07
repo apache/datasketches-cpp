@@ -62,6 +62,13 @@ struct theta_update_sketch_base {
   iterator begin() const;
   iterator end() const;
 
+  // Bytes currently allocated for the entries_ hash table: (1 << lg_cur_size_) entries, or 0 when
+  // the table is unallocated (lg_cur_size_ == 0 leaves entries_ == nullptr). This is the exact live
+  // heap footprint of the table right now, not an upper bound like the serialized-size estimates.
+  size_t get_live_bytes() const {
+    return entries_ == nullptr ? 0 : (static_cast<size_t>(1) << lg_cur_size_) * sizeof(Entry);
+  }
+
   // resize threshold = 0.5 tuned for speed
   static constexpr double RESIZE_THRESHOLD = 0.5;
   // hash table rebuild threshold = 15/16

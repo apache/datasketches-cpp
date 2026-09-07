@@ -153,4 +153,19 @@ TEST_CASE("theta union: larger K", "[theta_union]") {
   REQUIRE(result2.get_estimate() == update_sketch3.get_estimate());
 }
 
+TEST_CASE("theta union: get_live_bytes", "[theta_union]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  for (int i = 0; i < 100000; ++i) update_sketch.update(i);
+
+  theta_union u = theta_union::builder().build();
+  const size_t empty_bytes = u.get_live_bytes();
+  u.update(update_sketch);
+  const size_t bytes = u.get_live_bytes();
+  // unioning a large sketch grows the internal table past its initial footprint
+  REQUIRE(bytes > empty_bytes);
+  REQUIRE(bytes % sizeof(uint64_t) == 0);
+  const size_t entries = bytes / sizeof(uint64_t);
+  REQUIRE((entries & (entries - 1)) == 0);
+}
+
 } /* namespace datasketches */

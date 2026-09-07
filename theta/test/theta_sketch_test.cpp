@@ -667,4 +667,28 @@ TEST_CASE("max serialized size", "[theta_sketch]") {
   REQUIRE(max_size_bytes == compact_theta_sketch::get_max_serialized_size_bytes(lg_k));
 }
 
+TEST_CASE("theta sketch: get_live_bytes", "[theta_sketch]") {
+  update_theta_sketch sketch = update_theta_sketch::builder().build();
+  // a freshly built update sketch has an allocated hash table of 8-byte entries
+  const size_t empty_bytes = sketch.get_live_bytes();
+  REQUIRE(empty_bytes > 0);
+  REQUIRE(empty_bytes % sizeof(uint64_t) == 0);
+  const size_t empty_entries = empty_bytes / sizeof(uint64_t);
+  REQUIRE((empty_entries & (empty_entries - 1)) == 0); // capacity is a power of two
+
+  // the table only grows as distinct keys are inserted, and it grows past the initial size
+  size_t prev_bytes = empty_bytes;
+  bool non_decreasing = true;
+  for (int i = 0; i < 100000; ++i) {
+    sketch.update(i);
+    const size_t bytes = sketch.get_live_bytes();
+    if (bytes < prev_bytes) non_decreasing = false;
+    prev_bytes = bytes;
+  }
+  REQUIRE(non_decreasing);
+  REQUIRE(prev_bytes > empty_bytes);
+  const size_t entries = prev_bytes / sizeof(uint64_t);
+  REQUIRE((entries & (entries - 1)) == 0);
+}
+
 } /* namespace datasketches */
