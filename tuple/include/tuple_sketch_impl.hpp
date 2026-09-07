@@ -25,48 +25,59 @@
 
 namespace datasketches {
 
+template<typename Entry>
+auto print_tuple_entry(std::ostringstream& os, const Entry& entry, int)
+    -> decltype(os << entry.second, void()) {
+  os << entry.first << ": " << entry.second << std::endl;
+}
+
+template<typename Entry>
+void print_tuple_entry(std::ostringstream& os, const Entry& entry, long) {
+  os << entry.first << std::endl;
+}
+
 template<typename S, typename A>
-bool tuple_sketch<S, A>::is_estimation_mode() const {
+bool base_tuple_sketch<S, A>::is_estimation_mode() const {
   return get_theta64() < theta_constants::MAX_THETA && !is_empty();
 }
 
 template<typename S, typename A>
-double tuple_sketch<S, A>::get_theta() const {
+double base_tuple_sketch<S, A>::get_theta() const {
   return static_cast<double>(get_theta64()) /
          static_cast<double>(theta_constants::MAX_THETA);
 }
 
 template<typename S, typename A>
-double tuple_sketch<S, A>::get_estimate() const {
+double base_tuple_sketch<S, A>::get_estimate() const {
   return get_num_retained() / get_theta();
 }
 
 template<typename S, typename A>
-double tuple_sketch<S, A>::get_lower_bound(uint8_t num_std_devs, uint32_t num_subset_entries) const {
+double base_tuple_sketch<S, A>::get_lower_bound(uint8_t num_std_devs, uint32_t num_subset_entries) const {
     num_subset_entries = std::min(num_subset_entries, get_num_retained()) ;
     if (!is_estimation_mode()) return num_subset_entries;
     return binomial_bounds::get_lower_bound(num_subset_entries, get_theta(), num_std_devs);
 }
 
 template<typename S, typename A>
-double tuple_sketch<S, A>::get_lower_bound(uint8_t num_std_devs) const {
+double base_tuple_sketch<S, A>::get_lower_bound(uint8_t num_std_devs) const {
   return get_lower_bound(num_std_devs, get_num_retained()) ;
 }
 
 template<typename S, typename A>
-double tuple_sketch<S, A>::get_upper_bound(uint8_t num_std_devs, uint32_t num_subset_entries) const {
+double base_tuple_sketch<S, A>::get_upper_bound(uint8_t num_std_devs, uint32_t num_subset_entries) const {
     num_subset_entries = std::min(num_subset_entries, get_num_retained()) ;
     if (!is_estimation_mode()) return num_subset_entries;
     return binomial_bounds::get_upper_bound(num_subset_entries, get_theta(), num_std_devs);
 }
 
 template<typename S, typename A>
-double tuple_sketch<S, A>::get_upper_bound(uint8_t num_std_devs) const {
+double base_tuple_sketch<S, A>::get_upper_bound(uint8_t num_std_devs) const {
     return get_upper_bound(num_std_devs, get_num_retained()) ;
 }
 
 template<typename S, typename A>
-string<A> tuple_sketch<S, A>::to_string(bool detail) const {
+string<A> base_tuple_sketch<S, A>::to_string(bool detail) const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
   // The stream does not support passing an allocator instance, and alternatives are complicated.
   std::ostringstream os;
@@ -84,13 +95,18 @@ string<A> tuple_sketch<S, A>::to_string(bool detail) const {
   print_specifics(os);
   os << "### End sketch summary" << std::endl;
   if (detail) {
-    os << "### Retained entries" << std::endl;
-    for (const auto& it: *this) {
-      os << it.first << ": " << it.second << std::endl;
-    }
-    os << "### End retained entries" << std::endl;
+    print_items(os);
   }
   return string<A>(os.str().c_str(), get_allocator());
+}
+
+template<typename S, typename A>
+void tuple_sketch<S, A>::print_items(std::ostringstream& os) const {
+  os << "### Retained entries" << std::endl;
+  for (const auto& entry: *this) {
+    print_tuple_entry(os, entry, 0);
+  }
+  os << "### End retained entries" << std::endl;
 }
 
 // update sketch
@@ -284,7 +300,9 @@ entries_(std::move(entries))
 {}
 
 template<typename S, typename A>
-compact_tuple_sketch<S, A>::compact_tuple_sketch(const Base& other, bool ordered):
+template<typename Sketch>
+compact_tuple_sketch<S, A>::compact_tuple_sketch(const Sketch& other, bool ordered,
+    typename std::enable_if<std::is_same<typename Sketch::Entry, Entry>::value>::type*):
 is_empty_(other.is_empty()),
 is_ordered_(other.is_ordered() || ordered),
 seed_hash_(other.get_seed_hash()),
@@ -616,6 +634,294 @@ auto compact_tuple_sketch<S, A>::end() const -> const_iterator {
 
 template<typename S, typename A>
 void compact_tuple_sketch<S, A>::print_specifics(std::ostringstream&) const {}
+
+// wrapped compact sketch
+
+template<typename S, typename A, typename SD>
+wrapped_compact_tuple_sketch<S, A, SD>::wrapped_compact_tuple_sketch(
+    bool is_empty, bool is_ordered, uint16_t seed_hash, uint32_t num_entries,
+    uint64_t theta, const char* entries_start, const char* entries_end,
+    const SD& sd, const A& allocator):
+is_empty_(is_empty),
+is_ordered_(is_ordered),
+seed_hash_(seed_hash),
+num_entries_(num_entries),
+theta_(theta),
+entries_start_(entries_start),
+entries_end_(entries_end),
+sd_(sd),
+allocator_(allocator)
+{}
+
+template<typename S, typename A, typename SD>
+A wrapped_compact_tuple_sketch<S, A, SD>::get_allocator() const {
+  return allocator_;
+}
+
+template<typename S, typename A, typename SD>
+bool wrapped_compact_tuple_sketch<S, A, SD>::is_empty() const {
+  return is_empty_;
+}
+
+template<typename S, typename A, typename SD>
+bool wrapped_compact_tuple_sketch<S, A, SD>::is_ordered() const {
+  return is_ordered_;
+}
+
+template<typename S, typename A, typename SD>
+uint64_t wrapped_compact_tuple_sketch<S, A, SD>::get_theta64() const {
+  return is_empty_ ? theta_constants::MAX_THETA : theta_;
+}
+
+template<typename S, typename A, typename SD>
+uint32_t wrapped_compact_tuple_sketch<S, A, SD>::get_num_retained() const {
+  return num_entries_;
+}
+
+template<typename S, typename A, typename SD>
+uint16_t wrapped_compact_tuple_sketch<S, A, SD>::get_seed_hash() const {
+  return is_empty_ ? 0 : seed_hash_;
+}
+
+template<typename S, typename A, typename SD>
+auto wrapped_compact_tuple_sketch<S, A, SD>::begin() const -> const_iterator {
+  return const_iterator(entries_start_, entries_end_, num_entries_, 0, sd_);
+}
+
+template<typename S, typename A, typename SD>
+auto wrapped_compact_tuple_sketch<S, A, SD>::end() const -> const_iterator {
+  return const_iterator(entries_end_, entries_end_, num_entries_, num_entries_, sd_);
+}
+
+template<typename S, typename A, typename SD>
+wrapped_compact_tuple_sketch<S, A, SD> wrapped_compact_tuple_sketch<S, A, SD>::wrap(
+    const void* bytes, size_t size, uint64_t seed, const SD& sd, const A& allocator) {
+  ensure_minimum_memory(size, sizeof(uint64_t));
+  const char* ptr = static_cast<const char*>(bytes);
+  const char* const end = ptr + size;
+
+  uint8_t preamble_longs;
+  ptr += copy_from_mem(ptr, preamble_longs);
+  uint8_t serial_version;
+  ptr += copy_from_mem(ptr, serial_version);
+  uint8_t family;
+  ptr += copy_from_mem(ptr, family);
+  uint8_t type;
+  ptr += copy_from_mem(ptr, type);
+  ptr += sizeof(uint8_t); // unused
+  uint8_t flags_byte;
+  ptr += copy_from_mem(ptr, flags_byte);
+  uint16_t seed_hash;
+  ptr += copy_from_mem(ptr, seed_hash);
+
+  using CompactSketch = compact_tuple_sketch<S, A>;
+  if (preamble_longs < 1 || preamble_longs > 3) {
+    throw std::invalid_argument("invalid preamble length");
+  }
+  if (serial_version != CompactSketch::SERIAL_VERSION
+      && serial_version != CompactSketch::SERIAL_VERSION_LEGACY) {
+    throw std::invalid_argument("serial version mismatch: expected "
+        + std::to_string(CompactSketch::SERIAL_VERSION) + " or "
+        + std::to_string(CompactSketch::SERIAL_VERSION_LEGACY) + ", actual "
+        + std::to_string(serial_version));
+  }
+  checker<true>::check_sketch_family(family, CompactSketch::SKETCH_FAMILY);
+  if (type != CompactSketch::SKETCH_TYPE && type != CompactSketch::SKETCH_TYPE_LEGACY) {
+    throw std::invalid_argument("sketch type mismatch: expected "
+        + std::to_string(CompactSketch::SKETCH_TYPE) + " or "
+        + std::to_string(CompactSketch::SKETCH_TYPE_LEGACY) + ", actual "
+        + std::to_string(type));
+  }
+
+  const bool is_empty = flags_byte & (1 << CompactSketch::flags::IS_EMPTY);
+  if (is_empty && preamble_longs != 1) {
+    throw std::invalid_argument("empty sketch must have one preamble long");
+  }
+  if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+
+  uint64_t theta = theta_constants::MAX_THETA;
+  uint32_t num_entries = 0;
+  if (!is_empty) {
+    if (preamble_longs == 1) {
+      num_entries = 1;
+    } else {
+      ensure_minimum_memory(static_cast<size_t>(end - ptr), sizeof(uint64_t));
+      ptr += copy_from_mem(ptr, num_entries);
+      ptr += sizeof(uint32_t); // unused
+      if (preamble_longs == 3) {
+        ensure_minimum_memory(static_cast<size_t>(end - ptr), sizeof(uint64_t));
+        ptr += copy_from_mem(ptr, theta);
+      }
+    }
+  }
+
+  const char* const entries_start = ptr;
+  for (uint32_t i = 0; i < num_entries; ++i) {
+    ensure_minimum_memory(static_cast<size_t>(end - ptr), sizeof(uint64_t));
+    ptr += sizeof(uint64_t);
+    typename std::aligned_storage<sizeof(S), alignof(S)>::type summary_storage;
+    S* summary = reinterpret_cast<S*>(&summary_storage);
+    const size_t bytes_read = sd.deserialize(
+        ptr, static_cast<size_t>(end - ptr), summary, 1);
+    check_memory_size(bytes_read, static_cast<size_t>(end - ptr));
+    ptr += bytes_read;
+    summary->~S();
+  }
+  if (ptr != end) {
+    throw std::invalid_argument("serialized sketch size mismatch");
+  }
+
+  const bool is_ordered = flags_byte & (1 << CompactSketch::flags::IS_ORDERED);
+  return wrapped_compact_tuple_sketch(is_empty, is_ordered, seed_hash, num_entries,
+      theta, entries_start, ptr, sd, allocator);
+}
+
+template<typename S, typename A, typename SD>
+void wrapped_compact_tuple_sketch<S, A, SD>::print_specifics(std::ostringstream&) const {}
+
+template<typename S, typename A, typename SD>
+void wrapped_compact_tuple_sketch<S, A, SD>::print_items(std::ostringstream& os) const {
+  os << "### Retained entries" << std::endl;
+  for (const auto& entry: *this) {
+    print_tuple_entry(os, entry, 0);
+  }
+  os << "### End retained entries" << std::endl;
+}
+
+template<typename S, typename A, typename SD>
+wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::const_iterator(
+    const char* ptr, const char* end, uint32_t num_entries, uint32_t index,
+    const SD& sd):
+ptr_(ptr),
+end_(end),
+num_entries_(num_entries),
+index_(index),
+sd_(sd),
+entry_initialized_(false)
+{
+  if (index_ < num_entries_) load_entry();
+}
+
+template<typename S, typename A, typename SD>
+wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::const_iterator(
+    const const_iterator& other):
+ptr_(other.ptr_),
+end_(other.end_),
+num_entries_(other.num_entries_),
+index_(other.index_),
+sd_(other.sd_),
+entry_initialized_(false)
+{
+  if (other.entry_initialized_) {
+    new (entry()) Entry(*other.entry());
+    entry_initialized_ = true;
+  }
+}
+
+template<typename S, typename A, typename SD>
+auto wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::operator=(
+    const const_iterator& other) -> const_iterator& {
+  if (this != &other) {
+    destroy_entry();
+    ptr_ = other.ptr_;
+    end_ = other.end_;
+    num_entries_ = other.num_entries_;
+    index_ = other.index_;
+    sd_ = other.sd_;
+    if (other.entry_initialized_) {
+      new (entry()) Entry(*other.entry());
+      entry_initialized_ = true;
+    }
+  }
+  return *this;
+}
+
+template<typename S, typename A, typename SD>
+wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::~const_iterator() {
+  destroy_entry();
+}
+
+template<typename S, typename A, typename SD>
+auto wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::operator++()
+    -> const_iterator& {
+  destroy_entry();
+  ++index_;
+  if (index_ < num_entries_) load_entry();
+  return *this;
+}
+
+template<typename S, typename A, typename SD>
+auto wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::operator++(int)
+    -> const_iterator {
+  const_iterator previous(*this);
+  operator++();
+  return previous;
+}
+
+template<typename S, typename A, typename SD>
+bool wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::operator==(
+    const const_iterator& other) const {
+  return index_ == other.index_ && ptr_ == other.ptr_;
+}
+
+template<typename S, typename A, typename SD>
+bool wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::operator!=(
+    const const_iterator& other) const {
+  return !(*this == other);
+}
+
+template<typename S, typename A, typename SD>
+auto wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::operator*() const
+    -> reference {
+  return *entry();
+}
+
+template<typename S, typename A, typename SD>
+auto wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::operator->() const
+    -> pointer {
+  return entry();
+}
+
+template<typename S, typename A, typename SD>
+auto wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::entry() -> Entry* {
+  return reinterpret_cast<Entry*>(&entry_storage_);
+}
+
+template<typename S, typename A, typename SD>
+auto wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::entry() const
+    -> const Entry* {
+  return reinterpret_cast<const Entry*>(&entry_storage_);
+}
+
+template<typename S, typename A, typename SD>
+void wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::load_entry() {
+  ensure_minimum_memory(static_cast<size_t>(end_ - ptr_), sizeof(uint64_t));
+  uint64_t key;
+  ptr_ += copy_from_mem(ptr_, key);
+
+  typename std::aligned_storage<sizeof(S), alignof(S)>::type summary_storage;
+  S* summary = reinterpret_cast<S*>(&summary_storage);
+  const size_t bytes_read = sd_.deserialize(
+      ptr_, static_cast<size_t>(end_ - ptr_), summary, 1);
+  check_memory_size(bytes_read, static_cast<size_t>(end_ - ptr_));
+  ptr_ += bytes_read;
+  try {
+    new (entry()) Entry(key, std::move(*summary));
+  } catch (...) {
+    summary->~S();
+    throw;
+  }
+  summary->~S();
+  entry_initialized_ = true;
+}
+
+template<typename S, typename A, typename SD>
+void wrapped_compact_tuple_sketch<S, A, SD>::const_iterator::destroy_entry() {
+  if (entry_initialized_) {
+    entry()->~Entry();
+    entry_initialized_ = false;
+  }
+}
 
 // builder
 
