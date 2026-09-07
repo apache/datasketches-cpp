@@ -22,6 +22,7 @@
 #include <sstream>
 #include <vector>
 #include <stdexcept>
+#include <algorithm>
 
 #include <catch2/catch.hpp>
 #include <theta_sketch.hpp>
@@ -149,6 +150,130 @@ TEST_CASE("theta sketch: single item", "[theta_sketch]") {
 
   // single item is forced to be ordered
   REQUIRE(update_sketch.compact(false).is_ordered());
+}
+
+TEST_CASE("theta sketch: compact with trim, all four cases", "[theta_sketch]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  for (int i = 0; i < 8000; i++) update_sketch.update(i);
+  const uint32_t k = 1 << theta_constants::DEFAULT_LG_K;
+  // an update sketch retains more than k between rebuilds, so trimming has work to do
+  REQUIRE(update_sketch.get_num_retained() > k);
+  const uint32_t retained_before = update_sketch.get_num_retained();
+  const uint64_t theta_before = update_sketch.get_theta64();
+
+  // the trimmed result is what trim() + compact() would produce
+  update_theta_sketch trimmed = update_sketch;
+  trimmed.trim();
+  compact_theta_sketch expected = trimmed.compact(true);
+  const std::vector<uint64_t> expected_entries(expected.begin(), expected.end());
+
+  // case 1: ordered, not trimmed (the default) keeps every retained entry
+  compact_theta_sketch c1 = update_sketch.compact(true, false);
+  REQUIRE(c1.is_ordered());
+  REQUIRE(c1.get_num_retained() == retained_before);
+  REQUIRE(c1.get_theta64() == theta_before);
+  REQUIRE(std::is_sorted(c1.begin(), c1.end()));
+
+  // case 2: unordered, not trimmed
+  compact_theta_sketch c2 = update_sketch.compact(false, false);
+  REQUIRE_FALSE(c2.is_ordered());
+  REQUIRE(c2.get_num_retained() == retained_before);
+  REQUIRE(c2.get_theta64() == theta_before);
+
+  // case 3: ordered and trimmed
+  compact_theta_sketch c3 = update_sketch.compact(true, true);
+  REQUIRE(c3.is_ordered());
+  REQUIRE(c3.get_num_retained() == k);
+  REQUIRE(c3.get_theta64() < theta_before); // new theta is the k-th smallest hash
+  REQUIRE(c3.get_theta64() == expected.get_theta64());
+  REQUIRE(std::is_sorted(c3.begin(), c3.end()));
+  REQUIRE(std::vector<uint64_t>(c3.begin(), c3.end()) == expected_entries);
+  // every retained hash is strictly below the new theta
+  for (auto h: c3) REQUIRE(h < c3.get_theta64());
+
+  // case 4: unordered and trimmed: same set and theta, no sort
+  compact_theta_sketch c4 = update_sketch.compact(false, true);
+  REQUIRE_FALSE(c4.is_ordered());
+  REQUIRE(c4.get_num_retained() == k);
+  REQUIRE(c4.get_theta64() == expected.get_theta64());
+  std::vector<uint64_t> c4_entries(c4.begin(), c4.end());
+  std::sort(c4_entries.begin(), c4_entries.end());
+  REQUIRE(c4_entries == expected_entries);
+
+  // the source sketch must be untouched by any of the four
+  REQUIRE(update_sketch.get_num_retained() == retained_before);
+  REQUIRE(update_sketch.get_theta64() == theta_before);
+}
+
+TEST_CASE("theta sketch: compact with trim widens the bounds in estimation mode", "[theta_sketch]") {
+  // trimming is lossy even when the source is already estimating: it discards
+  // retained entries, and the relative error scales with 1 / sqrt(retained)
+  const uint32_t k = 1 << theta_constants::DEFAULT_LG_K;
+  update_theta_sketch sketch = update_theta_sketch::builder().build();
+  for (int i = 0; i < 40000; i++) sketch.update(i);
+  REQUIRE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_num_retained() > k);
+
+  compact_theta_sketch plain = sketch.compact(true, false);
+  compact_theta_sketch trimmed = sketch.compact(true, true);
+  REQUIRE(trimmed.get_num_retained() == k);
+  REQUIRE(plain.get_num_retained() > trimmed.get_num_retained());
+
+  // fewer retained entries -> strictly wider confidence interval
+  const double plain_width = plain.get_upper_bound(2) - plain.get_lower_bound(2);
+  const double trimmed_width = trimmed.get_upper_bound(2) - trimmed.get_lower_bound(2);
+  REQUIRE(trimmed_width > plain_width);
+}
+
+TEST_CASE("theta sketch: compact with trim converts exact mode to estimation", "[theta_sketch]") {
+  // an update sketch can retain far more than k entries while still in exact mode:
+  // nothing has been evicted yet, so theta is still 1.0 and the count is exact
+  const uint32_t k = 1 << theta_constants::DEFAULT_LG_K;
+  update_theta_sketch sketch = update_theta_sketch::builder().build();
+  const int n = 5000;
+  for (int i = 0; i < n; i++) sketch.update(i);
+  REQUIRE(sketch.get_num_retained() > k);
+  REQUIRE_FALSE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_theta() == 1.0);
+
+  // not trimming keeps every entry and the exact count
+  compact_theta_sketch exact = sketch.compact(true, false);
+  REQUIRE_FALSE(exact.is_estimation_mode());
+  REQUIRE(exact.get_num_retained() == static_cast<uint32_t>(n));
+  REQUIRE(exact.get_estimate() == Approx(n));
+
+  // trimming is lossy: it discards real data, lowers theta below 1.0 and the
+  // result is an estimate carrying error where the source held an exact count
+  compact_theta_sketch trimmed = sketch.compact(true, true);
+  REQUIRE(trimmed.is_estimation_mode());
+  REQUIRE(trimmed.get_num_retained() == k);
+  REQUIRE(trimmed.get_theta() < 1.0);
+  REQUIRE(trimmed.get_estimate() != Approx(n));
+  // the estimate is still sound: n must lie inside the 3-sigma bounds
+  REQUIRE(trimmed.get_lower_bound(3) <= n);
+  REQUIRE(trimmed.get_upper_bound(3) >= n);
+}
+
+TEST_CASE("theta sketch: compact with trim, empty and below k", "[theta_sketch]") {
+  // empty: trimming changes nothing
+  update_theta_sketch empty_sketch = update_theta_sketch::builder().build();
+  compact_theta_sketch empty_result = empty_sketch.compact(true, true);
+  REQUIRE(empty_result.is_empty());
+  REQUIRE(empty_result.get_num_retained() == 0);
+  REQUIRE(empty_result.is_ordered());
+
+  // below k: nothing to trim, theta and entries are preserved
+  update_theta_sketch small = update_theta_sketch::builder().build();
+  for (int i = 0; i < 100; i++) small.update(i);
+  REQUIRE_FALSE(small.is_estimation_mode());
+
+  compact_theta_sketch small_result = small.compact(true, true);
+  REQUIRE_FALSE(small_result.is_estimation_mode());
+  REQUIRE(small_result.get_num_retained() == 100);
+  REQUIRE(small_result.get_theta64() == small.get_theta64());
+  REQUIRE(small_result.get_estimate() == Approx(100.0));
+  REQUIRE(std::is_sorted(small_result.begin(), small_result.end()));
+  REQUIRE_FALSE(small.compact(false, true).is_ordered());
 }
 
 TEST_CASE("theta sketch: resize exact", "[theta_sketch]") {
