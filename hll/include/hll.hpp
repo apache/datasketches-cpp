@@ -120,7 +120,10 @@ class hll_sketch_alloc final {
      * @param tgt_type The HLL mode to use, if/when the sketch reaches that state
      * @param start_full_size Indicates whether to start in HLL mode,
      *        keeping memory use constant (if HLL_6 or HLL_8) at the cost of
-     *        starting out using much more memory
+     *        starting out using much more memory. This is a property of this
+     *        constructor call only: it is not retained by the sketch and is not
+     *        serialized, so reset() returns to coupon collection mode unless
+     *        reset(true) is used.
      * @param allocator instance of an Allocator
      */
     explicit hll_sketch_alloc(uint8_t lg_config_k, target_hll_type tgt_type = HLL_4, bool start_full_size = false, const A& allocator = A());
@@ -177,10 +180,14 @@ class hll_sketch_alloc final {
     hll_sketch_alloc& operator=(hll_sketch_alloc<A>&& other);
 
     /**
-     * Resets the sketch to an empty state in coupon collection mode.
+     * Resets the sketch to an empty state.
      * Does not re-use existing internal objects.
+     * @param full_size if true, reset to an empty full-size HLL array, as
+     *        the start_full_size constructor argument does; otherwise reset to
+     *        coupon collection mode. Full size is not remembered across a reset
+     *        or a serialization round trip, so it must be requested each time.
      */
-    void reset();
+    void reset(bool full_size = false);
 
     // This is a convenience alias for users
     // The type returned by the following serialize method

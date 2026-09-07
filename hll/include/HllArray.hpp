@@ -33,7 +33,7 @@ class HllArray : public HllSketchImpl<A> {
   public:
     using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
 
-    HllArray(uint8_t lgConfigK, target_hll_type tgtHllType, bool startFullSize, const A& allocator);
+    HllArray(uint8_t lgConfigK, target_hll_type tgtHllType, const A& allocator);
     explicit HllArray(const HllArray& other, target_hll_type tgtHllType);
 
     static HllArray* newHll(const void* bytes, size_t len, const A& allocator);

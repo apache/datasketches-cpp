@@ -42,6 +42,7 @@ target_sources(hll_test
     CouponListTest.cpp
     CrossCountingTest.cpp
     HllArrayTest.cpp
+    HllFullSizeTest.cpp
     HllSketchTest.cpp
     HllUnionTest.cpp
     TablesTest.cpp

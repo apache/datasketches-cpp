@@ -29,11 +29,10 @@ namespace datasketches {
 
 template<typename A>
 HllSketchImpl<A>::HllSketchImpl(uint8_t lgConfigK, target_hll_type tgtHllType,
-                                hll_mode mode, bool startFullSize)
+                                hll_mode mode)
   : lgConfigK_(lgConfigK),
     tgtHllType_(tgtHllType),
-    mode_(mode),
-    startFullSize_(startFullSize)
+    mode_(mode)
 {
 }
 
@@ -75,7 +74,7 @@ uint8_t HllSketchImpl<A>::makeFlagsByte(bool compact) const {
   flags |= (isEmpty() ? hll_constants::EMPTY_FLAG_MASK : 0);
   flags |= (compact ? hll_constants::COMPACT_FLAG_MASK : 0);
   flags |= (isOutOfOrderFlag() ? hll_constants::OUT_OF_ORDER_FLAG_MASK : 0);
-  flags |= (startFullSize_ ? hll_constants::FULL_SIZE_FLAG_MASK : 0);
+  // bit 32 is reserved: see RESERVED_FLAG_MASK_32 in HllUtil.hpp
   return flags;
 }
 
@@ -122,8 +121,8 @@ uint8_t HllSketchImpl<A>::makeModeByte() const {
 }
 
 template<typename A>
-HllSketchImpl<A>* HllSketchImpl<A>::reset() {
-  return HllSketchImplFactory<A>::reset(this, startFullSize_);
+HllSketchImpl<A>* HllSketchImpl<A>::reset(bool full_size) {
+  return HllSketchImplFactory<A>::reset(this, full_size);
 }
 
 template<typename A>
@@ -139,11 +138,6 @@ uint8_t HllSketchImpl<A>::getLgConfigK() const {
 template<typename A>
 hll_mode HllSketchImpl<A>::getCurMode() const {
   return mode_;
-}
-
-template<typename A>
-bool HllSketchImpl<A>::isStartFullSize() const {
-  return startFullSize_;
 }
 
 }

@@ -32,7 +32,7 @@ class HllSketchImpl {
   public:
     using vector_bytes = std::vector<uint8_t, typename std::allocator_traits<A>::template rebind_alloc<uint8_t>>;
 
-    HllSketchImpl(uint8_t lgConfigK, target_hll_type tgtHllType, hll_mode mode, bool startFullSize);
+    HllSketchImpl(uint8_t lgConfigK, target_hll_type tgtHllType, hll_mode mode);
     virtual ~HllSketchImpl();
 
     virtual void serialize(std::ostream& os, bool compact) const = 0;
@@ -40,7 +40,7 @@ class HllSketchImpl {
 
     virtual HllSketchImpl* copy() const = 0;
     virtual HllSketchImpl* copyAs(target_hll_type tgtHllType) const = 0;
-    HllSketchImpl<A>* reset();
+    HllSketchImpl<A>* reset(bool full_size);
 
     virtual std::function<void(HllSketchImpl<A>*)> get_deleter() const = 0;
 
@@ -69,7 +69,6 @@ class HllSketchImpl {
     virtual bool isOutOfOrderFlag() const = 0;
     virtual void putOutOfOrderFlag(bool oooFlag) = 0;
     virtual A getAllocator() const = 0;
-    bool isStartFullSize() const;
 
   protected:
     static target_hll_type extractTgtHllType(uint8_t modeByte);
@@ -80,7 +79,6 @@ class HllSketchImpl {
     const uint8_t lgConfigK_;
     const target_hll_type tgtHllType_;
     const hll_mode mode_;
-    const bool startFullSize_;
 };
 
 }

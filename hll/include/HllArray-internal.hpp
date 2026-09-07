@@ -35,8 +35,8 @@
 namespace datasketches {
 
 template<typename A>
-HllArray<A>::HllArray(uint8_t lgConfigK, target_hll_type tgtHllType, bool startFullSize, const A& allocator):
-HllSketchImpl<A>(lgConfigK, tgtHllType, hll_mode::HLL, startFullSize),
+HllArray<A>::HllArray(uint8_t lgConfigK, target_hll_type tgtHllType, const A& allocator):
+HllSketchImpl<A>(lgConfigK, tgtHllType, hll_mode::HLL),
 hipAccum_(0.0),
 kxq0_(1 << lgConfigK),
 kxq1_(0.0),
@@ -49,7 +49,7 @@ rebuild_kxq_curmin_(false)
 
 template<typename A>
 HllArray<A>::HllArray(const HllArray& other, target_hll_type tgtHllType) :
-  HllSketchImpl<A>(other.getLgConfigK(), tgtHllType, hll_mode::HLL, other.isStartFullSize()),
+  HllSketchImpl<A>(other.getLgConfigK(), tgtHllType, hll_mode::HLL),
   // remaining fields are initialized to empty sketch defaults
   // and left to subclass constructor to populate
   hipAccum_(0.0),
@@ -109,7 +109,6 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len, const A& allocat
   const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(data[hll_constants::MODE_BYTE]);
   const bool oooFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   const bool comapctFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::COMPACT_FLAG_MASK) ? true : false);
-  const bool startFullSizeFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::FULL_SIZE_FLAG_MASK) ? true : false);
 
   const uint8_t lgK = data[hll_constants::LG_K_BYTE];
   const uint8_t curMin = data[hll_constants::HLL_CUR_MIN_BYTE];
@@ -139,7 +138,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len, const A& allocat
     aux_ptr = aux_hash_map_ptr(auxHashMap, auxHashMap->make_deleter());
   }
 
-  HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, startFullSizeFlag, allocator);
+  HllArray<A>* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, allocator);
   sketch->putCurMin(curMin);
   sketch->putOutOfOrderFlag(oooFlag);
   if (!oooFlag) { sketch->putHipAccum(hip); }
@@ -180,12 +179,11 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is, const A& allocator) {
   const target_hll_type tgtHllType = HllSketchImpl<A>::extractTgtHllType(listHeader[hll_constants::MODE_BYTE]);
   const bool oooFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::OUT_OF_ORDER_FLAG_MASK) ? true : false);
   const bool comapctFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::COMPACT_FLAG_MASK) ? true : false);
-  const bool startFullSizeFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::FULL_SIZE_FLAG_MASK) ? true : false);
 
   const uint8_t lgK = listHeader[hll_constants::LG_K_BYTE];
   const uint8_t curMin = listHeader[hll_constants::HLL_CUR_MIN_BYTE];
 
-  HllArray* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, startFullSizeFlag, allocator);
+  HllArray* sketch = HllSketchImplFactory<A>::newHll(lgK, tgtHllType, allocator);
   typedef std::unique_ptr<HllArray<A>, std::function<void(HllSketchImpl<A>*)>> hll_array_ptr;
   hll_array_ptr sketch_ptr(sketch, sketch->get_deleter());
   sketch->putCurMin(curMin);

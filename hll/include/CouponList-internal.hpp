@@ -33,7 +33,7 @@ namespace datasketches {
 
 template<typename A>
 CouponList<A>::CouponList(uint8_t lgConfigK, target_hll_type tgtHllType, hll_mode mode, const A& allocator):
-HllSketchImpl<A>(lgConfigK, tgtHllType, mode, false),
+HllSketchImpl<A>(lgConfigK, tgtHllType, mode),
 couponCount_(0),
 oooFlag_(false),
 coupons_(1ULL << (mode == hll_mode::LIST ? hll_constants::LG_INIT_LIST_SIZE : hll_constants::LG_INIT_SET_SIZE), 0, allocator)
@@ -41,7 +41,7 @@ coupons_(1ULL << (mode == hll_mode::LIST ? hll_constants::LG_INIT_LIST_SIZE : hl
 
 template<typename A>
 CouponList<A>::CouponList(const CouponList& that, const target_hll_type tgtHllType):
-HllSketchImpl<A>(that.lgConfigK_, tgtHllType, that.mode_, false),
+HllSketchImpl<A>(that.lgConfigK_, tgtHllType, that.mode_),
 couponCount_(that.couponCount_),
 oooFlag_(that.oooFlag_),
 coupons_(that.coupons_)
