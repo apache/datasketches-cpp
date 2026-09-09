@@ -1,0 +1,26 @@
+# Files excluded from the Apache RAT license-header audit.
+#
+# NOTE: RAT matches these regular expressions against the FILE NAME, not the path.
+#
+# Third-party sources vendored into this tree do not carry the ASF header; they
+# keep their own notice and are enumerated in LICENSE. When adding one here, add
+# the matching entry to LICENSE in the same commit.
+MurmurHash3\.h
+xxhash64\.h
+#
+# Dotfiles and repository metadata with no comment convention.
+\..*
+#
+# Documentation.
+README\.md
+CONTRIBUTING\.md
+CODE_OF_CONDUCT\.md
+#
+# Generated and template files consumed by the build.
+Doxyfile
+version\.cfg\.in
+DataSketchesConfig\.cmake\.in
+#
+# The license texts themselves.
+LICENSE
+NOTICE

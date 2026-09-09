@@ -49,6 +49,9 @@ static const uint8_t OUT_OF_ORDER_FLAG_MASK   = 16;
 // implementations, so this side no longer writes or reads it. Do not reuse: bits 64 and 128
 // are free.
 static const uint8_t RESERVED_FLAG_MASK_32    = 32;
+// Deprecated alias for the bit above, retained for source compatibility. Do not use.
+// (No [[deprecated]] attribute: this library targets C++11, where it is unavailable.)
+static const uint8_t FULL_SIZE_FLAG_MASK      = RESERVED_FLAG_MASK_32;
 
 static const uint32_t PREAMBLE_INTS_BYTE = 0;
 static const uint32_t SER_VER_BYTE       = 1;
