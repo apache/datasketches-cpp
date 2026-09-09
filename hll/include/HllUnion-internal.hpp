@@ -39,6 +39,9 @@ hll_union_alloc<A>::hll_union_alloc(uint8_t lg_max_k, const A& allocator):
 
 template<typename A>
 hll_sketch_alloc<A> hll_union_alloc<A>::get_result(target_hll_type target_type) const {
+  if (gadget_.sketch_impl->getCurMode() == hll_mode::HLL) {
+    static_cast<HllArray<A>*>(gadget_.sketch_impl)->check_rebuild_kxq_cur_min();
+  }
   return hll_sketch_alloc<A>(gadget_, target_type);
 }
 
@@ -168,7 +171,9 @@ uint8_t hll_union_alloc<A>::get_lg_config_k() const {
 
 template<typename A>
 void hll_union_alloc<A>::reset() {
-  gadget_.reset();
+  // always coupon collection mode: the gadget is an internal detail and must not
+  // inherit a full-size state from whatever sketches happen to have been unioned in
+  gadget_.reset(false);
 }
 
 template<typename A>
@@ -213,7 +218,7 @@ HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(const HllSketchImpl<A>*
     return src->copyAs(HLL_8);
   }
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>> hll8Alloc;
-  Hll8Array<A>* tgtHllArr = new (hll8Alloc(src->getAllocator()).allocate(1)) Hll8Array<A>(tgt_lg_k, false, src->getAllocator());
+  Hll8Array<A>* tgtHllArr = new (hll8Alloc(src->getAllocator()).allocate(1)) Hll8Array<A>(tgt_lg_k, src->getAllocator());
   tgtHllArr->mergeHll(*src);
   //both of these are required for isomorphism
   tgtHllArr->putHipAccum(src->getHipAccum());

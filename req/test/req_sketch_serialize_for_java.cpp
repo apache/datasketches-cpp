@@ -33,4 +33,24 @@ TEST_CASE("req sketch float generate", "[serialize_for_java]") {
   }
 }
 
+TEST_CASE("req sketch float negative generate", "[serialize_for_java]") {
+  const unsigned n_arr[] = {1, 10};
+  for (const unsigned n: n_arr) {
+    req_sketch<float> sketch(12);
+    for (unsigned i = 1; i <= n; ++i) sketch.update(-static_cast<float>(i));
+    std::ofstream os("req_float_negative_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
+    sketch.serialize(os);
+  }
+}
+
+TEST_CASE("req sketch float mixed generate", "[serialize_for_java]") {
+  const unsigned n_arr[] = {1, 10};
+  for (const unsigned n: n_arr) {
+    req_sketch<float> sketch(12);
+    for (int i = -static_cast<int>(n); i <= static_cast<int>(n); ++i) sketch.update(static_cast<float>(i));
+    std::ofstream os("req_float_mixed_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
+    sketch.serialize(os);
+  }
+}
+
 } /* namespace datasketches */

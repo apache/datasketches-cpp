@@ -30,7 +30,7 @@ class Hll6Iterator;
 template<typename A>
 class Hll6Array final : public HllArray<A> {
   public:
-    Hll6Array(uint8_t lgConfigK, bool startFullSize, const A& allocator);
+    Hll6Array(uint8_t lgConfigK, const A& allocator);
     explicit Hll6Array(const HllArray<A>& that);
 
     virtual ~Hll6Array() = default;

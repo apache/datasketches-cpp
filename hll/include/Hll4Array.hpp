@@ -28,7 +28,7 @@ namespace datasketches {
 template<typename A>
 class Hll4Array final : public HllArray<A> {
   public:
-    explicit Hll4Array(uint8_t lgConfigK, bool startFullSize, const A& allocator);
+    explicit Hll4Array(uint8_t lgConfigK, const A& allocator);
     explicit Hll4Array(const Hll4Array<A>& that);
     explicit Hll4Array(const HllArray<A>& that);
 

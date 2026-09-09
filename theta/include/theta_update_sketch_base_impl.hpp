@@ -265,7 +265,7 @@ void theta_update_sketch_base<EN, EK, A>::reset() {
     }
   }
   const uint8_t starting_lg_size = theta_build_helper<true>::starting_sub_multiple(
-      lg_nom_size_ + 1, theta_constants::MIN_LG_K, static_cast<uint8_t>(rf_));
+      lg_nom_size_ + 1, theta_constants::MIN_LG_ARR, static_cast<uint8_t>(rf_));
   if (starting_lg_size != lg_cur_size_) {
     allocator_.deallocate(entries_, cur_size);
     lg_cur_size_ = starting_lg_size;
@@ -346,7 +346,7 @@ uint64_t theta_base_builder<Derived, Allocator>::starting_theta() const {
 
 template<typename Derived, typename Allocator>
 uint8_t theta_base_builder<Derived, Allocator>::starting_lg_size() const {
-  return theta_build_helper<true>::starting_sub_multiple(lg_k_ + 1, theta_constants::MIN_LG_K, static_cast<uint8_t>(rf_));
+  return theta_build_helper<true>::starting_sub_multiple(lg_k_ + 1, theta_constants::MIN_LG_ARR, static_cast<uint8_t>(rf_));
 }
 
 // iterator

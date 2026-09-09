@@ -52,4 +52,50 @@ TEST_CASE("req float", "[serde_compat]") {
   }
 }
 
+TEST_CASE("req float negative", "[serde_compat]") {
+  const unsigned n_arr[] = {1, 10};
+  for (const unsigned n: n_arr) {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open(testBinaryInputPath + "req_float_negative_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = req_sketch<float>::deserialize(is);
+    REQUIRE(sketch.is_HRA());
+    REQUIRE_FALSE(sketch.is_empty());
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_n() == n);
+    REQUIRE(sketch.get_min_item() == -static_cast<float>(n));
+    REQUIRE(sketch.get_max_item() == -1.0f);
+    uint64_t weight = 0;
+    for (const auto pair: sketch) {
+      REQUIRE(pair.first >= sketch.get_min_item());
+      REQUIRE(pair.first <= sketch.get_max_item());
+      weight += pair.second;
+    }
+    REQUIRE(weight == sketch.get_n());
+  }
+}
+
+TEST_CASE("req float mixed", "[serde_compat]") {
+  const unsigned n_arr[] = {1, 10};
+  for (const unsigned n: n_arr) {
+    std::ifstream is;
+    is.exceptions(std::ios::failbit | std::ios::badbit);
+    is.open(testBinaryInputPath + "req_float_mixed_n" + std::to_string(n) + "_java.sk", std::ios::binary);
+    const auto sketch = req_sketch<float>::deserialize(is);
+    REQUIRE(sketch.is_HRA());
+    REQUIRE_FALSE(sketch.is_empty());
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_n() == 2 * n + 1);
+    REQUIRE(sketch.get_min_item() == -static_cast<float>(n));
+    REQUIRE(sketch.get_max_item() == static_cast<float>(n));
+    uint64_t weight = 0;
+    for (const auto pair: sketch) {
+      REQUIRE(pair.first >= sketch.get_min_item());
+      REQUIRE(pair.first <= sketch.get_max_item());
+      weight += pair.second;
+    }
+    REQUIRE(weight == sketch.get_n());
+  }
+}
+
 } /* namespace datasketches */
