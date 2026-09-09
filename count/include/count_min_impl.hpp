@@ -267,15 +267,15 @@ void count_min_sketch<W,A>::serialize(std::ostream& os) const {
   });
 }
 
-template<typename WriteBytes, typename T>
-static inline void write_count_min_value(WriteBytes& write_bytes, size_t& bytes_written, const T& value) {
-  write_bytes(&value, sizeof(value));
+template<typename Sink, typename T>
+static inline void write_count_min_value(Sink& sink, size_t& bytes_written, const T& value) {
+  sink(&value, sizeof(value));
   bytes_written += sizeof(value);
 }
 
 template<typename W, typename A>
-template<typename WriteBytes>
-size_t count_min_sketch<W,A>::serialize_to(WriteBytes&& write_bytes) const {
+template<typename Sink>
+size_t count_min_sketch<W,A>::serialize_to(Sink&& sink) const {
   size_t bytes_written = 0;
 
   // Long 0
@@ -285,31 +285,31 @@ size_t count_min_sketch<W,A>::serialize_to(WriteBytes&& write_bytes) const {
   const uint8_t family_id = FAMILY_ID;
   const uint8_t flags_byte = (is_empty() ? 1 << flags::IS_EMPTY : 0);
   const uint32_t unused32 = NULL_32;
-  write_count_min_value(write_bytes, bytes_written, preamble_longs);
-  write_count_min_value(write_bytes, bytes_written, ser_ver);
-  write_count_min_value(write_bytes, bytes_written, family_id);
-  write_count_min_value(write_bytes, bytes_written, flags_byte);
-  write_count_min_value(write_bytes, bytes_written, unused32);
+  write_count_min_value(sink, bytes_written, preamble_longs);
+  write_count_min_value(sink, bytes_written, ser_ver);
+  write_count_min_value(sink, bytes_written, family_id);
+  write_count_min_value(sink, bytes_written, flags_byte);
+  write_count_min_value(sink, bytes_written, unused32);
 
   // Long 1
   const uint32_t nbuckets = _num_buckets;
   const uint8_t nhashes = _num_hashes;
   const uint16_t seed_hash(compute_seed_hash(_seed));
   const uint8_t unused8 =  NULL_8;
-  write_count_min_value(write_bytes, bytes_written, nbuckets);
-  write_count_min_value(write_bytes, bytes_written, nhashes);
-  write_count_min_value(write_bytes, bytes_written, seed_hash);
-  write_count_min_value(write_bytes, bytes_written, unused8);
+  write_count_min_value(sink, bytes_written, nbuckets);
+  write_count_min_value(sink, bytes_written, nhashes);
+  write_count_min_value(sink, bytes_written, seed_hash);
+  write_count_min_value(sink, bytes_written, unused8);
   if (is_empty()) { return bytes_written; } // sketch is empty, no need to write further bytes.
 
   // Long 2
   const W t_weight = _total_weight;
-  write_count_min_value(write_bytes, bytes_written, t_weight);
+  write_count_min_value(sink, bytes_written, t_weight);
 
   // Long 3 onwards: remaining bytes are consumed by writing the weight and the array values.
   const size_t sketch_array_bytes = sizeof(W) * _sketch_array.size();
   if (sketch_array_bytes > 0) {
-    write_bytes(_sketch_array.data(), sketch_array_bytes);
+    sink(_sketch_array.data(), sketch_array_bytes);
     bytes_written += sketch_array_bytes;
   }
 

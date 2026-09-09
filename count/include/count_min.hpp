@@ -335,8 +335,8 @@ public:
    * The data pointer is valid only until the callback returns.
    * @return size in bytes written to the callback
    */
-  template<typename WriteBytes>
-  size_t serialize_to(WriteBytes&& write_bytes) const;
+  template<typename Sink>
+  size_t serialize_to(Sink&& sink) const;
 
   // This is a convenience alias for users
   // The type returned by the following serialize method
