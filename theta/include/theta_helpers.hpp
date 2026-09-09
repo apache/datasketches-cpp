@@ -20,12 +20,44 @@
 #ifndef THETA_HELPERS_HPP_
 #define THETA_HELPERS_HPP_
 
+#include <algorithm>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include "theta_constants.hpp"
+#include "theta_comparators.hpp"
 
 namespace datasketches {
+
+/**
+ * Trims a vector of theta entries down to at most nominal_size and returns the theta the
+ * result must carry.
+ *
+ * The entry at index nominal_size becomes the new theta and is itself discarded, so every
+ * entry kept is strictly below the returned value. That is what keeps the estimator
+ * unbiased: theta must be an exclusive upper bound on the retained hashes. Getting this
+ * off by one does not fail loudly, it quietly biases every estimate the sketch produces.
+ *
+ * Capacity is released as well as size. Callers reserve an upper bound before filling, so
+ * without the shrink a trimmed result keeps the untrimmed allocation, which for an update
+ * sketch just under the rebuild threshold is nearly twice what it reports.
+ *
+ * @param entries entries to trim in place; reordered even when nothing is removed
+ * @param nominal_size the most entries to keep
+ * @param theta returned unchanged when there is nothing to trim
+ * @return the theta of the trimmed result
+ */
+template<typename ExtractKey, typename Entry, typename Allocator>
+static uint64_t trim_to_nominal(std::vector<Entry, Allocator>& entries, uint32_t nominal_size, uint64_t theta) {
+  if (entries.size() <= nominal_size) return theta;
+  std::nth_element(entries.begin(), entries.begin() + nominal_size, entries.end(), compare_by_key<ExtractKey>());
+  const uint64_t new_theta = ExtractKey()(entries[nominal_size]);
+  entries.erase(entries.begin() + nominal_size, entries.end());
+  entries.shrink_to_fit();
+  return new_theta;
+}
 
 template<typename T>
 static void check_value(T actual, T expected, const char* description) {

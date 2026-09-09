@@ -252,13 +252,7 @@ compact_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::compact(bool ordered
   std::copy(this->begin(), this->end(), std::back_inserter(entries));
   uint64_t theta = this->get_theta64();
   const uint32_t nominal_size = 1 << table_.lg_nom_size_;
-  if (entries.size() > nominal_size) {
-    // partial sort so that entries[nominal_size] is the (nominal_size + 1)-th smallest hash;
-    // it becomes the new theta, and the nominal_size entries below it are all we keep
-    std::nth_element(entries.begin(), entries.begin() + nominal_size, entries.end());
-    theta = entries[nominal_size];
-    entries.erase(entries.begin() + nominal_size, entries.end());
-  }
+  theta = trim_to_nominal<trivial_extract_key>(entries, nominal_size, theta);
   if (ordered) std::sort(entries.begin(), entries.end());
   return compact_theta_sketch_alloc<A>(false, ordered, this->get_seed_hash(), theta, std::move(entries));
 }

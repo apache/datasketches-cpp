@@ -24,6 +24,7 @@
 #include <stdexcept>
 
 #include "conditional_forward.hpp"
+#include "theta_helpers.hpp"
 
 namespace datasketches {
 
@@ -70,12 +71,7 @@ CS theta_union_base<EN, EK, P, S, CS, A>::get_result(bool ordered) const {
   } else {
     std::copy_if(table_.begin(), table_.end(), std::back_inserter(entries), key_not_zero_less_than<uint64_t, EN, EK>(theta));
   }
-  if (entries.size() > nominal_num) {
-    std::nth_element(entries.begin(), entries.begin() + nominal_num, entries.end(), comparator());
-    theta = EK()(entries[nominal_num]);
-    entries.erase(entries.begin() + nominal_num, entries.end());
-    entries.shrink_to_fit();
-  }
+  theta = trim_to_nominal<EK>(entries, nominal_num, theta);
   if (ordered) std::sort(entries.begin(), entries.end(), comparator());
   return CS(table_.is_empty_, ordered, compute_seed_hash(table_.seed_), theta, std::move(entries));
 }
