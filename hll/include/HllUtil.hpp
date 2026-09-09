@@ -50,7 +50,8 @@ static const uint8_t OUT_OF_ORDER_FLAG_MASK   = 16;
 // are free.
 static const uint8_t RESERVED_FLAG_MASK_32    = 32;
 // Deprecated alias for the bit above, retained for source compatibility. Do not use.
-// (No [[deprecated]] attribute: this library targets C++11, where it is unavailable.)
+// Added 2026-09-07 (#521), first shipping in the release after 5.2.0. No [[deprecated]]:
+// this library targets C++11, so the alias warns no one.
 static const uint8_t FULL_SIZE_FLAG_MASK      = RESERVED_FLAG_MASK_32;
 
 static const uint32_t PREAMBLE_INTS_BYTE = 0;
