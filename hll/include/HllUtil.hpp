@@ -50,7 +50,8 @@ static const uint8_t OUT_OF_ORDER_FLAG_MASK   = 16;
 // are free.
 static const uint8_t RESERVED_FLAG_MASK_32    = 32;
 // Deprecated alias for the bit above, retained for source compatibility. Do not use.
-// (No [[deprecated]] attribute: this library targets C++11, where it is unavailable.)
+// Added 2026-09-07 (#521), first shipping in the release after 5.2.0. No [[deprecated]]:
+// this library targets C++11, so the alias warns no one.
 static const uint8_t FULL_SIZE_FLAG_MASK      = RESERVED_FLAG_MASK_32;
 
 static const uint32_t PREAMBLE_INTS_BYTE = 0;
@@ -90,8 +91,8 @@ static const uint32_t EMPTY = 0;
 static const uint8_t MIN_LOG_K = 4;
 static const uint8_t MAX_LOG_K = 21;
 
-static const double HLL_HIP_RSE_FACTOR = 0.8325546; // sqrt(ln(2))
-static const double HLL_NON_HIP_RSE_FACTOR = 1.03896; // sqrt((3 * ln(2)) - 1)
+static const double HLL_HIP_RSE_FACTOR = 0.8325546111576977; // sqrt(ln(2))
+static const double HLL_NON_HIP_RSE_FACTOR = 1.0389617614136892; // sqrt((3 * ln(2)) - 1)
 static const double COUPON_RSE_FACTOR = 0.409; // at transition point not the asymptote
 static const double COUPON_RSE = COUPON_RSE_FACTOR / (1 << 13);
 

@@ -11,7 +11,6 @@ NOTICE text eol=lf
 *.html text eol=lf
 *.hpp text eol=lf
 *.cpp text eol=lf
-*.sk text eol=lf
 *.md text eol=lf
 *.properties text eol=lf
 *.sh text eol=lf
@@ -27,6 +26,10 @@ NOTICE text eol=lf
 *.cmd text eol=crlf
 
 # Explicitly denote all files that are truly binary and should not be modified.
+# .sk files are serialized sketch images: arbitrary bytes that must never be
+# line-ending converted. A stray CRLF pair would be rewritten to LF on check-in,
+# silently truncating the fixture by one byte.
+*.sk binary
 *.jpg binary
 *.png binary
 *.svg binary

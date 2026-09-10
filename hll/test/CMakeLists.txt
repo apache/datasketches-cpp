@@ -43,6 +43,7 @@ target_sources(hll_test
     CrossCountingTest.cpp
     HllArrayTest.cpp
     HllFullSizeTest.cpp
+    HllKxqRebuildTest.cpp
     HllSketchTest.cpp
     HllUnionTest.cpp
     TablesTest.cpp

@@ -7,6 +7,7 @@
 # the matching entry to LICENSE in the same commit.
 MurmurHash3\.h
 xxhash64\.h
+fdlibm_log\.hpp
 #
 # Dotfiles and repository metadata with no comment convention.
 \..*
