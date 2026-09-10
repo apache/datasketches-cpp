@@ -300,4 +300,40 @@ TEST_CASE("CountMin sketch: bytes serialize-deserialize non-empty", "[cm_sketch]
 
 }
 
+TEST_CASE("CountMin sketch: sink serialize-deserialize round trip", "[cm_sketch]") {
+  auto check_sink_serialize = [](const count_min_sketch<uint64_t>& c) {
+    std::vector<uint8_t> sink_bytes;
+    sink_bytes.reserve(c.get_serialized_size_bytes());
+
+    const size_t bytes_written = c.serialize_to([&sink_bytes](const void* data, size_t size) {
+      const auto* begin = static_cast<const uint8_t*>(data);
+      sink_bytes.insert(sink_bytes.end(), begin, begin + size);
+    });
+
+    REQUIRE(bytes_written == c.get_serialized_size_bytes());
+    REQUIRE(sink_bytes.size() == bytes_written);
+
+    auto d = count_min_sketch<uint64_t>::deserialize(sink_bytes.data(), sink_bytes.size(), c.get_seed());
+    REQUIRE(c.get_num_hashes() == d.get_num_hashes());
+    REQUIRE(c.get_num_buckets() == d.get_num_buckets());
+    REQUIRE(c.get_seed() == d.get_seed());
+    REQUIRE(c.get_total_weight() == d.get_total_weight());
+
+    auto c_it = c.begin();
+    auto d_it = d.begin();
+    while (c_it != c.end()) {
+      REQUIRE(*c_it == *d_it);
+      ++c_it;
+      ++d_it;
+    }
+  };
+
+  count_min_sketch<uint64_t> empty(3, 32);
+  check_sink_serialize(empty);
+
+  count_min_sketch<uint64_t> non_empty(5, 64);
+  for (uint64_t i=0; i < 10; ++i) non_empty.update(i, 10 * i * i);
+  check_sink_serialize(non_empty);
+}
+
 } /* namespace datasketches */
