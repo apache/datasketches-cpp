@@ -23,6 +23,7 @@
 #include <sstream>
 #include <vector>
 #include <stdexcept>
+#include <algorithm>
 
 #include "binomial_bounds.hpp"
 #include "theta_helpers.hpp"
@@ -239,8 +240,21 @@ auto update_theta_sketch_alloc<A>::end() const -> const_iterator {
 }
 
 template<typename A>
-compact_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::compact(bool ordered) const {
-  return compact_theta_sketch_alloc<A>(*this, ordered);
+compact_theta_sketch_alloc<A> update_theta_sketch_alloc<A>::compact(bool ordered, bool trim) const {
+  if (!trim) return compact_theta_sketch_alloc<A>(*this, ordered);
+
+  std::vector<uint64_t, A> entries(table_.allocator_);
+  if (this->is_empty()) {
+    return compact_theta_sketch_alloc<A>(true, true, this->get_seed_hash(), this->get_theta64(), std::move(entries));
+  }
+  // copy first: this method is const, and quick select would permute the source table
+  entries.reserve(this->get_num_retained());
+  std::copy(this->begin(), this->end(), std::back_inserter(entries));
+  uint64_t theta = this->get_theta64();
+  const uint32_t nominal_size = 1 << table_.lg_nom_size_;
+  theta = trim_to_nominal<trivial_extract_key>(entries, nominal_size, theta);
+  if (ordered) std::sort(entries.begin(), entries.end());
+  return compact_theta_sketch_alloc<A>(false, ordered, this->get_seed_hash(), theta, std::move(entries));
 }
 
 template<typename A>
