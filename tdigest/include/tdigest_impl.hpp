@@ -70,6 +70,9 @@ void tdigest<T, A>::update(T value) {
 template<typename T, typename A>
 void tdigest<T, A>::merge(const tdigest& other) {
   if (other.is_empty()) return;
+  // Extreme centroid means are not the true min/max when those centroids have weight > 1.
+  min_ = std::min(min_, other.min_);
+  max_ = std::max(max_, other.max_);
   vector_centroid tmp(buffer_.get_allocator());
   tmp.reserve(buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size());
   for (const T value: buffer_) tmp.push_back(centroid(value, 1));
