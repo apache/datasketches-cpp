@@ -38,6 +38,7 @@ add_test(
 target_sources(tuple_test
   PRIVATE
     tuple_sketch_test.cpp
+    wrapped_compact_tuple_sketch_test.cpp
     tuple_sketch_allocation_test.cpp
     tuple_union_test.cpp
     tuple_intersection_test.cpp
