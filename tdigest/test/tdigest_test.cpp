@@ -168,6 +168,31 @@ TEST_CASE("merge small", "[tdigest]") {
   REQUIRE(td1.get_rank(3.01) == 1);
 }
 
+TEST_CASE("merge preserves deserialized min max with weighted tails", "[tdigest]") {
+  tdigest_double source(100);
+  source.update(0);
+  source.update(50);
+  source.update(90);
+  auto bytes = source.serialize();
+  write_bytes(bytes, min_offset, -1.0);
+  write_bytes(bytes, max_offset, 100.0);
+  auto other = tdigest_double::deserialize(bytes.data(), bytes.size());
+  REQUIRE(other.get_min_value() == -1.0);
+  REQUIRE(other.get_max_value() == 100.0);
+
+  tdigest_double empty(100);
+  empty.merge(other);
+  REQUIRE(empty.get_min_value() == -1.0);
+  REQUIRE(empty.get_max_value() == 100.0);
+
+  tdigest_double left(100);
+  left.update(10);
+  left.update(20);
+  left.merge(other);
+  REQUIRE(left.get_min_value() == -1.0);
+  REQUIRE(left.get_max_value() == 100.0);
+}
+
 TEST_CASE("merge large", "[tdigest]") {
   const size_t n = 10000;
   tdigest_double td1;
