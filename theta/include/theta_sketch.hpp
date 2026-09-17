@@ -506,7 +506,7 @@ public:
       uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
 private:
-  enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED };
+  enum flags { IS_BIG_ENDIAN, IS_READ_ONLY, IS_EMPTY, IS_COMPACT, IS_ORDERED, IS_SINGLE_ITEM };
 
   bool is_empty_;
   bool is_ordered_;
@@ -515,6 +515,7 @@ private:
   std::vector<uint64_t, Allocator> entries_;
 
   uint8_t get_preamble_longs(bool compressed) const;
+  bool is_single_item() const;
   bool is_suitable_for_compression() const;
   uint8_t compute_entry_bits() const;
   uint8_t get_num_entries_bytes() const;

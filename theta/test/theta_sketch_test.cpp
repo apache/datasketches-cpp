@@ -152,6 +152,72 @@ TEST_CASE("theta sketch: single item", "[theta_sketch]") {
   REQUIRE(update_sketch.compact(false).is_ordered());
 }
 
+// Java writes exactly these images (EmptyCompactSketch.EMPTY_COMPACT_SKETCH_ARR and SingleItemSketch),
+// and the cross-language tests compare the two languages byte for byte.
+// An empty sketch carries no hashes, so its seed hash bytes are zero; a single item keeps its seed hash.
+static std::vector<uint8_t> serialized_bytes(const compact_theta_sketch& sketch) {
+  auto bytes = sketch.serialize();
+  return std::vector<uint8_t>(bytes.begin(), bytes.end());
+}
+
+static std::vector<uint8_t> serialized_stream(const compact_theta_sketch& sketch) {
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sketch.serialize(s);
+  const std::string str = s.str();
+  return std::vector<uint8_t>(str.begin(), str.end());
+}
+
+static std::vector<uint8_t> serialized_compressed(const compact_theta_sketch& sketch) {
+  auto bytes = sketch.serialize_compressed();
+  return std::vector<uint8_t>(bytes.begin(), bytes.end());
+}
+
+TEST_CASE("theta sketch: empty serialized image", "[theta_sketch]") {
+  const uint64_t seed = 12345; // not the default, to prove the seed hash is not written
+  auto sketch = update_theta_sketch::builder().set_seed(seed).build().compact();
+  const std::vector<uint8_t> expected = {1, 3, 3, 0, 0, 0x1E, 0, 0};
+  REQUIRE(serialized_bytes(sketch) == expected);
+  REQUIRE(serialized_stream(sketch) == expected);
+  REQUIRE(serialized_compressed(sketch) == expected); // no compressed form of an empty sketch
+}
+
+TEST_CASE("theta sketch: single item serialized image", "[theta_sketch]") {
+  const uint64_t seed = 12345;
+  const uint16_t seed_hash = compute_seed_hash(seed);
+  update_theta_sketch update_sketch = update_theta_sketch::builder().set_seed(seed).build();
+  update_sketch.update(1);
+  auto sketch = update_sketch.compact();
+  const uint64_t hash = *sketch.begin();
+
+  // flags: single item | ordered | compact | read-only, then seed hash and the one hash, little-endian
+  std::vector<uint8_t> expected = {1, 3, 3, 0, 0, 0x3A,
+      static_cast<uint8_t>(seed_hash), static_cast<uint8_t>(seed_hash >> 8)};
+  for (unsigned i = 0; i < 8; ++i) expected.push_back(static_cast<uint8_t>(hash >> (i * 8)));
+  REQUIRE(serialized_bytes(sketch) == expected);
+  REQUIRE(serialized_stream(sketch) == expected);
+  REQUIRE(serialized_compressed(sketch) == expected); // no compressed form of a single item
+
+  // the single item flag is informational: the reader does not depend on it
+  auto deserialized = compact_theta_sketch::deserialize(expected.data(), expected.size(), seed);
+  REQUIRE(deserialized.get_num_retained() == 1);
+  REQUIRE(*deserialized.begin() == hash);
+  expected[5] = 0x1A; // as written before this flag existed
+  deserialized = compact_theta_sketch::deserialize(expected.data(), expected.size(), seed);
+  REQUIRE(deserialized.get_num_retained() == 1);
+  REQUIRE(*deserialized.begin() == hash);
+}
+
+TEST_CASE("theta sketch: one entry in estimation mode is not a single item", "[theta_sketch]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().set_p(0.5f).build();
+  for (uint64_t i = 0; update_sketch.get_num_retained() < 1; ++i) update_sketch.update(i);
+  auto sketch = update_sketch.compact();
+  REQUIRE(sketch.get_num_retained() == 1);
+  REQUIRE(sketch.is_estimation_mode());
+  const auto bytes = serialized_bytes(sketch);
+  REQUIRE(bytes[0] == 3); // theta is present, so this is the 3-long preamble
+  REQUIRE(bytes[5] == 0x1A); // ordered | compact | read-only, no single item flag
+}
+
 TEST_CASE("theta sketch: compact with trim, all four cases", "[theta_sketch]") {
   update_theta_sketch update_sketch = update_theta_sketch::builder().build();
   for (int i = 0; i < 8000; i++) update_sketch.update(i);

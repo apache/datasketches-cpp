@@ -399,7 +399,8 @@ void compact_theta_sketch_alloc<A>::serialize(std::ostream& os) const {
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
     (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
-    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
+    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0) |
+    (is_single_item() ? 1 << flags::IS_SINGLE_ITEM : 0)
   );
   write(os, flags_byte);
   write(os, get_seed_hash());
@@ -425,7 +426,8 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
     (1 << flags::IS_COMPACT) |
     (1 << flags::IS_READ_ONLY) |
     (this->is_empty() ? 1 << flags::IS_EMPTY : 0) |
-    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0)
+    (this->is_ordered() ? 1 << flags::IS_ORDERED : 0) |
+    (is_single_item() ? 1 << flags::IS_SINGLE_ITEM : 0)
   );
   *ptr++ = flags_byte;
   ptr += copy_to_mem(get_seed_hash(), ptr);
@@ -436,6 +438,12 @@ auto compact_theta_sketch_alloc<A>::serialize(unsigned header_size_bytes) const 
   if (this->is_estimation_mode()) ptr += copy_to_mem(theta_, ptr);
   if (entries_.size() > 0) ptr += copy_to_mem(entries_.data(), ptr, entries_.size() * sizeof(uint64_t));
   return bytes;
+}
+
+template<typename A>
+bool compact_theta_sketch_alloc<A>::is_single_item() const {
+  // one entry in exact mode: the same condition Java uses to set its SingleItem flag
+  return entries_.size() == 1 && !this->is_estimation_mode();
 }
 
 template<typename A>
