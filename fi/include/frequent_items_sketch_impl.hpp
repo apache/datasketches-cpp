@@ -88,7 +88,9 @@ void frequent_items_sketch<T, W, H, E, A>::merge(frequent_items_sketch&& other) 
 
 template<typename T, typename W, typename H, typename E, typename A>
 bool frequent_items_sketch<T, W, H, E, A>::is_empty() const {
-  return map.get_num_active() == 0;
+  // a purge may clear all counters while offset and total_weight remain non-zero;
+  // emptiness must mean "no observations", not "no retained items"
+  return total_weight == 0;
 }
 
 template<typename T, typename W, typename H, typename E, typename A>
