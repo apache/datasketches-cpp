@@ -87,6 +87,13 @@ void frequent_items_sketch<T, W, H, E, A>::merge(frequent_items_sketch&& other) 
 }
 
 template<typename T, typename W, typename H, typename E, typename A>
+void frequent_items_sketch<T, W, H, E, A>::reset() {
+  map = reverse_purge_hash_map<T, W, H, E, A>(LG_MIN_MAP_SIZE, map.get_lg_max_size(), map.get_equal(), map.get_allocator());
+  total_weight = 0;
+  offset = 0;
+}
+
+template<typename T, typename W, typename H, typename E, typename A>
 bool frequent_items_sketch<T, W, H, E, A>::is_empty() const {
   // a purge may clear all counters while offset and total_weight remain non-zero;
   // emptiness must mean "no observations", not "no retained items"
@@ -302,9 +309,8 @@ frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deser
   const auto flags_byte = read<uint8_t>(is);
   read<uint16_t>(is); // unused
 
-  const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY_1)) | (flags_byte & (1 << flags::IS_EMPTY_2));
-
-  check_preamble_longs(preamble_longs, is_empty);
+  check_preamble_longs(preamble_longs, flags_byte);
+  const bool is_empty = preamble_longs == PREAMBLE_LONGS_EMPTY;
   check_serial_version(serial_version);
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
@@ -315,6 +321,7 @@ frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deser
     read<uint32_t>(is); // unused
     const auto total_weight = read<W>(is);
     const auto offset = read<W>(is);
+    check_total_weight(total_weight);
 
     // batch deserialization with intermediate array of items and weights
     using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
@@ -355,9 +362,8 @@ frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deser
   ptr += copy_from_mem(ptr, flags_byte);
   ptr += sizeof(uint16_t); // unused
 
-  const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY_1)) | (flags_byte & (1 << flags::IS_EMPTY_2));
-
-  check_preamble_longs(preamble_longs, is_empty);
+  check_preamble_longs(preamble_longs, flags_byte);
+  const bool is_empty = preamble_longs == PREAMBLE_LONGS_EMPTY;
   check_serial_version(serial_version);
   check_family_id(family_id);
   check_size(lg_cur_size, lg_max_size);
@@ -372,6 +378,7 @@ frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deser
     ptr += copy_from_mem(ptr, total_weight);
     W offset;
     ptr += copy_from_mem(ptr, offset);
+    check_total_weight(total_weight);
 
     ensure_minimum_memory(size, ptr - base + (sizeof(W) * num_items));
     // batch deserialization with intermediate array of items and weights
@@ -394,15 +401,23 @@ frequent_items_sketch<T, W, H, E, A> frequent_items_sketch<T, W, H, E, A>::deser
 }
 
 template<typename T, typename W, typename H, typename E, typename A>
-void frequent_items_sketch<T, W, H, E, A>::check_preamble_longs(uint8_t preamble_longs, bool is_empty) {
-  if (is_empty) {
-    if (preamble_longs != PREAMBLE_LONGS_EMPTY) {
-      throw std::invalid_argument("Possible corruption: preamble longs of an empty sketch must be " + std::to_string(PREAMBLE_LONGS_EMPTY) + ": " + std::to_string(preamble_longs));
-    }
-  } else {
-    if (preamble_longs != PREAMBLE_LONGS_NONEMPTY) {
-      throw std::invalid_argument("Possible corruption: preamble longs of an non-empty sketch must be " + std::to_string(PREAMBLE_LONGS_NONEMPTY) + ": " + std::to_string(preamble_longs));
-    }
+void frequent_items_sketch<T, W, H, E, A>::check_preamble_longs(uint8_t preamble_longs, uint8_t flags_byte) {
+  if (preamble_longs != PREAMBLE_LONGS_EMPTY && preamble_longs != PREAMBLE_LONGS_NONEMPTY) {
+    throw std::invalid_argument("Possible corruption: preamble longs must be " + std::to_string(PREAMBLE_LONGS_EMPTY)
+        + " or " + std::to_string(PREAMBLE_LONGS_NONEMPTY) + ": " + std::to_string(preamble_longs));
+  }
+  const bool empty_flag = (flags_byte & ((1 << flags::IS_EMPTY_1) | (1 << flags::IS_EMPTY_2))) != 0;
+  if (empty_flag != (preamble_longs == PREAMBLE_LONGS_EMPTY)) {
+    throw std::invalid_argument("Possible corruption: empty flag does not match preamble longs: flags "
+        + std::to_string(flags_byte) + ", preamble longs " + std::to_string(preamble_longs));
+  }
+}
+
+template<typename T, typename W, typename H, typename E, typename A>
+void frequent_items_sketch<T, W, H, E, A>::check_total_weight(W total_weight) {
+  // written as !(x > 0) to also reject NaN
+  if (!(total_weight > 0)) {
+    throw std::invalid_argument("Possible corruption: total weight of a non-empty sketch must be positive");
   }
 }
 

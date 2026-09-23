@@ -198,6 +198,11 @@ const A& reverse_purge_hash_map<K, V, H, E, A>::get_allocator() const {
 }
 
 template<typename K, typename V, typename H, typename E, typename A>
+const E& reverse_purge_hash_map<K, V, H, E, A>::get_equal() const {
+  return equal_;
+}
+
+template<typename K, typename V, typename H, typename E, typename A>
 typename reverse_purge_hash_map<K, V, H, E, A>::iterator reverse_purge_hash_map<K, V, H, E, A>::begin() const {
   const uint32_t size = 1 << lg_cur_size_;
   uint32_t i = 0;

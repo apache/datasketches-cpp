@@ -62,6 +62,7 @@ public:
   uint32_t get_capacity() const;
   uint32_t get_num_active() const;
   const A& get_allocator() const;
+  const E& get_equal() const;
 
   class iterator;
   iterator begin() const;
