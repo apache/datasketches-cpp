@@ -48,4 +48,5 @@ set_target_properties(count_min_sketch_benchmark PROPERTIES
 target_sources(count_min_sketch_benchmark
   PRIVATE
     benchmark_count_min_sketch.cpp
+    benchmark_count_min_sketch_serialization.cpp
 )
