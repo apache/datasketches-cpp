@@ -131,6 +131,32 @@ TEST_CASE("frequent items: estimation mode", "[frequent_items_sketch]") {
   REQUIRE(12 >= items.size()); // but not more than 12 items
 }
 
+TEST_CASE("frequent items: purge clearing all counters is not empty", "[frequent_items_sketch]") {
+  // lg_k=8 -> capacity 192; the 193rd distinct item triggers a purge whose
+  // median (1) wipes every counter. The sketch still holds observations:
+  // offset=1, total_weight=193. It must not be considered empty, and must
+  // survive serialization and merge without losing weight or error.
+  frequent_items_sketch<uint64_t> sketch(8);
+  for (uint64_t i = 0; i < 193; ++i) sketch.update(i);
+
+  REQUIRE(sketch.get_num_active_items() == 0); // purge wiped all counters
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.get_total_weight() == 193);
+  REQUIRE(sketch.get_maximum_error() == 1);
+
+  auto bytes = sketch.serialize();
+  auto sketch2 = frequent_items_sketch<uint64_t>::deserialize(bytes.data(), bytes.size());
+  REQUIRE_FALSE(sketch2.is_empty());
+  REQUIRE(sketch2.get_total_weight() == 193);
+  REQUIRE(sketch2.get_maximum_error() == 1);
+
+  frequent_items_sketch<uint64_t> sketch3(8);
+  sketch3.update(999999);
+  sketch3.merge(sketch);
+  REQUIRE(sketch3.get_total_weight() == 194);
+  REQUIRE(sketch3.get_maximum_error() == 1);
+}
+
 TEST_CASE("frequent items: merge exact mode", "[frequent_items_sketch]") {
   frequent_items_sketch<int> sketch1(3);
   sketch1.update(1);
