@@ -281,174 +281,179 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>}</div>
 <div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span> </div>
 <div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span><span class="keyword">typename</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::iterator reverse_purge_hash_map&lt;K, V, H, E, A&gt;::begin()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keyword">const</span> uint32_t size = 1 &lt;&lt; lg_cur_size_;</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>  uint32_t i = 0;</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>  <span class="keywordflow">while</span> (i &lt; size &amp;&amp; !is_active(i)) i++;</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="keywordflow">return</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::iterator(<span class="keyword">this</span>, i, 0);</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>}</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span> </div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span><span class="keyword">typename</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::iterator reverse_purge_hash_map&lt;K, V, H, E, A&gt;::end()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>  <span class="keywordflow">return</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::iterator(<span class="keyword">this</span>, 1 &lt;&lt; lg_cur_size_, num_active_);</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span><span class="keyword">const</span> E&amp; reverse_purge_hash_map&lt;K, V, H, E, A&gt;::get_equal()<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keywordflow">return</span> equal_;</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>}</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span> </div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span><span class="keyword">typename</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::iterator reverse_purge_hash_map&lt;K, V, H, E, A&gt;::begin()<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>  <span class="keyword">const</span> uint32_t size = 1 &lt;&lt; lg_cur_size_;</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  uint32_t i = 0;</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  <span class="keywordflow">while</span> (i &lt; size &amp;&amp; !is_active(i)) i++;</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>  <span class="keywordflow">return</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::iterator(<span class="keyword">this</span>, i, 0);</div>
 <div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>}</div>
 <div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
 <div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span><span class="keywordtype">bool</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::is_active(uint32_t index)<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>  <span class="keywordflow">return</span> states_[index] &gt; 0;</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span><span class="keyword">typename</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::iterator reverse_purge_hash_map&lt;K, V, H, E, A&gt;::end()<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>  <span class="keywordflow">return</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::iterator(<span class="keyword">this</span>, 1 &lt;&lt; lg_cur_size_, num_active_);</div>
 <div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>}</div>
 <div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span> </div>
 <div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span><span class="keywordtype">void</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::subtract_and_keep_positive_only(V amount) {</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  <span class="comment">// starting from the back, find the first empty cell,</span></div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>  <span class="comment">// which establishes the high end of a cluster.</span></div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  uint32_t first_probe = (1 &lt;&lt; lg_cur_size_) - 1;</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  <span class="keywordflow">while</span> (is_active(first_probe)) first_probe--;</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>  <span class="comment">// when we find the next non-empty cell, we know we are at the high end of a cluster</span></div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  <span class="comment">// work towards the front, delete any non-positive entries.</span></div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  <span class="keywordflow">for</span> (uint32_t probe = first_probe; probe-- &gt; 0;) {</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>    <span class="keywordflow">if</span> (is_active(probe)) {</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>      <span class="keywordflow">if</span> (values_[probe] &lt;= amount) {</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>        hash_delete(probe); <span class="comment">// does the work of deletion and moving higher items towards the front</span></div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        num_active_--;</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>      } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        values_[probe] -= amount;</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>      }</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    }</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>  }</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>  <span class="comment">// now work on the first cluster that was skipped</span></div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>  <span class="keywordflow">for</span> (uint32_t probe = (1 &lt;&lt; lg_cur_size_); probe-- &gt; first_probe;) {</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>    <span class="keywordflow">if</span> (is_active(probe)) {</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>      <span class="keywordflow">if</span> (values_[probe] &lt;= amount) {</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>        hash_delete(probe);</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>        num_active_--;</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>      } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        values_[probe] -= amount;</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>      }</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>    }</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>  }</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>}</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span> </div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span><span class="keywordtype">void</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::hash_delete(uint32_t delete_index) {</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>  <span class="comment">// Looks ahead in the table to search for another</span></div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  <span class="comment">// item to move to this location</span></div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>  <span class="comment">// if none are found, the status is changed</span></div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>  states_[delete_index] = 0; <span class="comment">// mark as empty</span></div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>  keys_[delete_index].~K();</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  uint16_t drift = 1;</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>  <span class="keyword">const</span> uint32_t mask = (1 &lt;&lt; lg_cur_size_) - 1;</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>  uint32_t probe = (delete_index + drift) &amp; mask; <span class="comment">// map length must be a power of 2</span></div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>  <span class="comment">// advance until we find a free location replacing locations as needed</span></div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>  <span class="keywordflow">while</span> (is_active(probe)) {</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>    <span class="keywordflow">if</span> (states_[probe] &gt; drift) {</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>      <span class="comment">// move current element</span></div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>      <span class="keyword">new</span> (&amp;keys_[delete_index]) K(std::move(keys_[probe]));</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>      values_[delete_index] = values_[probe];</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>      states_[delete_index] = states_[probe] - drift;</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>      states_[probe] = 0; <span class="comment">// mark as empty</span></div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>      keys_[probe].~K();</div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>      drift = 0;</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>      delete_index = probe;</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>    }</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>    probe = (probe + 1) &amp; mask;</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>    drift++;</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>    <span class="comment">// only used for theoretical analysis</span></div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>    <span class="keywordflow">if</span> (drift &gt;= DRIFT_LIMIT) { <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;drift: &quot;</span> + std::to_string(drift) + <span class="stringliteral">&quot; &gt;= DRIFT_LIMIT&quot;</span>); }</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>  }</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>}</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span> </div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>uint32_t reverse_purge_hash_map&lt;K, V, H, E, A&gt;::internal_adjust_or_insert(<span class="keyword">const</span> K&amp; key, V value) {</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>  <span class="keyword">const</span> uint32_t mask = (1 &lt;&lt; lg_cur_size_) - 1;</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>  uint32_t index = fmix64(H()(key)) &amp; mask;</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>  uint16_t drift = 1;</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  <span class="keywordflow">while</span> (is_active(index)) {</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>    <span class="keywordflow">if</span> (E()(keys_[index], key)) {</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>      <span class="comment">// adjusting the value of an existing key</span></div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>      values_[index] += value;</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>      <span class="keywordflow">return</span> index;</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>    }</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>    index = (index + 1) &amp; mask;</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>    drift++;</div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>    <span class="comment">// only used for theoretical analysis</span></div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>    <span class="keywordflow">if</span> (drift &gt;= DRIFT_LIMIT) { <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;drift limit reached&quot;</span>); }</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>  }</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>  <span class="comment">// adding the key and value to the table</span></div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>  <span class="keywordflow">if</span> (num_active_ &gt; get_capacity()) {</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>    <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;num_active &quot;</span> + std::to_string(num_active_) + <span class="stringliteral">&quot; &gt; capacity &quot;</span> + std::to_string(get_capacity()));</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>  }</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>  values_[index] = value;</div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>  states_[index] = drift;</div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>  num_active_++;</div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>  <span class="keywordflow">return</span> index;</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>}</div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span> </div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>V reverse_purge_hash_map&lt;K, V, H, E, A&gt;::resize_or_purge_if_needed() {</div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>  <span class="keywordflow">if</span> (num_active_ &gt; get_capacity()) {</div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>    <span class="keywordflow">if</span> (lg_cur_size_ &lt; lg_max_size_) { <span class="comment">// can grow</span></div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>      resize(lg_cur_size_ + 1);</div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>    } <span class="keywordflow">else</span> { <span class="comment">// at target size, must purge</span></div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>      <span class="keyword">const</span> V offset = purge();</div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>      <span class="keywordflow">if</span> (num_active_ &gt; get_capacity()) {</div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>        <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;purge did not reduce number of active items&quot;</span>);</div>
-<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>      }</div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>      <span class="keywordflow">return</span> offset;</div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>    }</div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>  }</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>  <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>}</div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span> </div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span><span class="keywordtype">void</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::resize(uint8_t lg_new_size) {</div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>  <span class="keyword">const</span> uint32_t old_size = 1 &lt;&lt; lg_cur_size_;</div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>  K* old_keys = keys_;</div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>  V* old_values = values_;</div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>  uint16_t* old_states = states_;</div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>  <span class="keyword">const</span> uint32_t new_size = 1 &lt;&lt; lg_new_size;</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>  keys_ = allocator_.allocate(new_size);</div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>  AllocV av(allocator_);</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>  values_ = av.allocate(new_size);</div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>  AllocU16 au16(allocator_);</div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>  states_ = au16.allocate(new_size);</div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>  std::fill(states_, states_ + new_size, <span class="keyword">static_cast&lt;</span>uint16_t<span class="keyword">&gt;</span>(0));</div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>  num_active_ = 0;</div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>  lg_cur_size_ = lg_new_size;</div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>  <span class="keywordflow">for</span> (uint32_t i = 0; i &lt; old_size; i++) {</div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>    <span class="keywordflow">if</span> (old_states[i] &gt; 0) {</div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>      adjust_or_insert(std::move(old_keys[i]), old_values[i]);</div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>      old_keys[i].~K();</div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>    }</div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>  }</div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>  allocator_.deallocate(old_keys, old_size);</div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>  av.deallocate(old_values, old_size);</div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>  au16.deallocate(old_states, old_size);</div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>}</div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span> </div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>V reverse_purge_hash_map&lt;K, V, H, E, A&gt;::purge() {</div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>  <span class="keyword">const</span> uint32_t limit = std::min(MAX_SAMPLE_SIZE, num_active_);</div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>  uint32_t num_samples = 0;</div>
-<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>  uint32_t i = 0;</div>
-<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>  AllocV av(allocator_);</div>
-<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>  V* samples = av.allocate(limit);</div>
-<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>  <span class="keywordflow">while</span> (num_samples &lt; limit) {</div>
-<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>    <span class="keywordflow">if</span> (is_active(i)) {</div>
-<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>      samples[num_samples++] = values_[i];</div>
-<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>    }</div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>    i++;</div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>  }</div>
-<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>  std::nth_element(samples, samples+ (num_samples / 2), samples + num_samples);</div>
-<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>  <span class="keyword">const</span> V median = samples[num_samples / 2];</div>
-<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>  av.deallocate(samples, limit);</div>
-<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>  subtract_and_keep_positive_only(median);</div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>  <span class="keywordflow">return</span> median;</div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>}</div>
-<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span> </div>
-<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>} <span class="comment">/* namespace datasketches */</span></div>
-<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span> </div>
-<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span><span class="preprocessor"># endif</span></div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span><span class="keywordtype">bool</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::is_active(uint32_t index)<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  <span class="keywordflow">return</span> states_[index] &gt; 0;</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>}</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span> </div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span><span class="keywordtype">void</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::subtract_and_keep_positive_only(V amount) {</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  <span class="comment">// starting from the back, find the first empty cell,</span></div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  <span class="comment">// which establishes the high end of a cluster.</span></div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  uint32_t first_probe = (1 &lt;&lt; lg_cur_size_) - 1;</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  <span class="keywordflow">while</span> (is_active(first_probe)) first_probe--;</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>  <span class="comment">// when we find the next non-empty cell, we know we are at the high end of a cluster</span></div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>  <span class="comment">// work towards the front, delete any non-positive entries.</span></div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>  <span class="keywordflow">for</span> (uint32_t probe = first_probe; probe-- &gt; 0;) {</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>    <span class="keywordflow">if</span> (is_active(probe)) {</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>      <span class="keywordflow">if</span> (values_[probe] &lt;= amount) {</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>        hash_delete(probe); <span class="comment">// does the work of deletion and moving higher items towards the front</span></div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>        num_active_--;</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>      } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>        values_[probe] -= amount;</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>      }</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>    }</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>  }</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>  <span class="comment">// now work on the first cluster that was skipped</span></div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>  <span class="keywordflow">for</span> (uint32_t probe = (1 &lt;&lt; lg_cur_size_); probe-- &gt; first_probe;) {</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>    <span class="keywordflow">if</span> (is_active(probe)) {</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>      <span class="keywordflow">if</span> (values_[probe] &lt;= amount) {</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>        hash_delete(probe);</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        num_active_--;</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>      } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>        values_[probe] -= amount;</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>      }</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>    }</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>  }</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>}</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span> </div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span><span class="keywordtype">void</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::hash_delete(uint32_t delete_index) {</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  <span class="comment">// Looks ahead in the table to search for another</span></div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>  <span class="comment">// item to move to this location</span></div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>  <span class="comment">// if none are found, the status is changed</span></div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>  states_[delete_index] = 0; <span class="comment">// mark as empty</span></div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>  keys_[delete_index].~K();</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>  uint16_t drift = 1;</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>  <span class="keyword">const</span> uint32_t mask = (1 &lt;&lt; lg_cur_size_) - 1;</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>  uint32_t probe = (delete_index + drift) &amp; mask; <span class="comment">// map length must be a power of 2</span></div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>  <span class="comment">// advance until we find a free location replacing locations as needed</span></div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>  <span class="keywordflow">while</span> (is_active(probe)) {</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>    <span class="keywordflow">if</span> (states_[probe] &gt; drift) {</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>      <span class="comment">// move current element</span></div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>      <span class="keyword">new</span> (&amp;keys_[delete_index]) K(std::move(keys_[probe]));</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>      values_[delete_index] = values_[probe];</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>      states_[delete_index] = states_[probe] - drift;</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>      states_[probe] = 0; <span class="comment">// mark as empty</span></div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>      keys_[probe].~K();</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>      drift = 0;</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>      delete_index = probe;</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>    }</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>    probe = (probe + 1) &amp; mask;</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>    drift++;</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>    <span class="comment">// only used for theoretical analysis</span></div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>    <span class="keywordflow">if</span> (drift &gt;= DRIFT_LIMIT) { <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;drift: &quot;</span> + std::to_string(drift) + <span class="stringliteral">&quot; &gt;= DRIFT_LIMIT&quot;</span>); }</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>  }</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>}</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span> </div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>uint32_t reverse_purge_hash_map&lt;K, V, H, E, A&gt;::internal_adjust_or_insert(<span class="keyword">const</span> K&amp; key, V value) {</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  <span class="keyword">const</span> uint32_t mask = (1 &lt;&lt; lg_cur_size_) - 1;</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>  uint32_t index = fmix64(H()(key)) &amp; mask;</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>  uint16_t drift = 1;</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>  <span class="keywordflow">while</span> (is_active(index)) {</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>    <span class="keywordflow">if</span> (E()(keys_[index], key)) {</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>      <span class="comment">// adjusting the value of an existing key</span></div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>      values_[index] += value;</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>      <span class="keywordflow">return</span> index;</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>    }</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>    index = (index + 1) &amp; mask;</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>    drift++;</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>    <span class="comment">// only used for theoretical analysis</span></div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>    <span class="keywordflow">if</span> (drift &gt;= DRIFT_LIMIT) { <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;drift limit reached&quot;</span>); }</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>  }</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>  <span class="comment">// adding the key and value to the table</span></div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>  <span class="keywordflow">if</span> (num_active_ &gt; get_capacity()) {</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>    <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;num_active &quot;</span> + std::to_string(num_active_) + <span class="stringliteral">&quot; &gt; capacity &quot;</span> + std::to_string(get_capacity()));</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>  }</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>  values_[index] = value;</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>  states_[index] = drift;</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>  num_active_++;</div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>  <span class="keywordflow">return</span> index;</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>}</div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span> </div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>V reverse_purge_hash_map&lt;K, V, H, E, A&gt;::resize_or_purge_if_needed() {</div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>  <span class="keywordflow">if</span> (num_active_ &gt; get_capacity()) {</div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>    <span class="keywordflow">if</span> (lg_cur_size_ &lt; lg_max_size_) { <span class="comment">// can grow</span></div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>      resize(lg_cur_size_ + 1);</div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>    } <span class="keywordflow">else</span> { <span class="comment">// at target size, must purge</span></div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>      <span class="keyword">const</span> V offset = purge();</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>      <span class="keywordflow">if</span> (num_active_ &gt; get_capacity()) {</div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>        <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;purge did not reduce number of active items&quot;</span>);</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>      }</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>      <span class="keywordflow">return</span> offset;</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>    }</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>  }</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>  <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>}</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span> </div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span><span class="keywordtype">void</span> reverse_purge_hash_map&lt;K, V, H, E, A&gt;::resize(uint8_t lg_new_size) {</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>  <span class="keyword">const</span> uint32_t old_size = 1 &lt;&lt; lg_cur_size_;</div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>  K* old_keys = keys_;</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>  V* old_values = values_;</div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>  uint16_t* old_states = states_;</div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>  <span class="keyword">const</span> uint32_t new_size = 1 &lt;&lt; lg_new_size;</div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>  keys_ = allocator_.allocate(new_size);</div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>  AllocV av(allocator_);</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>  values_ = av.allocate(new_size);</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>  AllocU16 au16(allocator_);</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>  states_ = au16.allocate(new_size);</div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>  std::fill(states_, states_ + new_size, <span class="keyword">static_cast&lt;</span>uint16_t<span class="keyword">&gt;</span>(0));</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>  num_active_ = 0;</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>  lg_cur_size_ = lg_new_size;</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>  <span class="keywordflow">for</span> (uint32_t i = 0; i &lt; old_size; i++) {</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>    <span class="keywordflow">if</span> (old_states[i] &gt; 0) {</div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>      adjust_or_insert(std::move(old_keys[i]), old_values[i]);</div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>      old_keys[i].~K();</div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>    }</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>  }</div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>  allocator_.deallocate(old_keys, old_size);</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>  av.deallocate(old_values, old_size);</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>  au16.deallocate(old_states, old_size);</div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>}</div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span> </div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> K, <span class="keyword">typename</span> V, <span class="keyword">typename</span> H, <span class="keyword">typename</span> E, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>V reverse_purge_hash_map&lt;K, V, H, E, A&gt;::purge() {</div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>  <span class="keyword">const</span> uint32_t limit = std::min(MAX_SAMPLE_SIZE, num_active_);</div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>  uint32_t num_samples = 0;</div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>  uint32_t i = 0;</div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>  AllocV av(allocator_);</div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>  V* samples = av.allocate(limit);</div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>  <span class="keywordflow">while</span> (num_samples &lt; limit) {</div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>    <span class="keywordflow">if</span> (is_active(i)) {</div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>      samples[num_samples++] = values_[i];</div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>    }</div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>    i++;</div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>  }</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>  std::nth_element(samples, samples+ (num_samples / 2), samples + num_samples);</div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>  <span class="keyword">const</span> V median = samples[num_samples / 2];</div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>  av.deallocate(samples, limit);</div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>  subtract_and_keep_positive_only(median);</div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>  <span class="keywordflow">return</span> median;</div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>}</div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span> </div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span> </div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span><span class="preprocessor"># endif</span></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition</b> binomial_bounds.hpp:38</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

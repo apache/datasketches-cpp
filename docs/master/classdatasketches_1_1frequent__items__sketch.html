@@ -110,7 +110,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a67646860b1cb8e835604a008fd7d062a" id="r_a67646860b1cb8e835604a008fd7d062a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1frequent__items__sketch.html#a67646860b1cb8e835604a008fd7d062a">merge</a> (<a class="el" href="classdatasketches_1_1frequent__items__sketch.html">frequent_items_sketch</a> &amp;&amp;other)</td></tr>
 <tr class="memdesc:a67646860b1cb8e835604a008fd7d062a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function merges the other sketch into this one.  <br /></td></tr>
 <tr class="separator:a67646860b1cb8e835604a008fd7d062a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad20897c5c8bd47f5d4005989bead0e55" id="r_ad20897c5c8bd47f5d4005989bead0e55"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1frequent__items__sketch.html#ad20897c5c8bd47f5d4005989bead0e55">reset</a> ()</td></tr>
+<tr class="memdesc:ad20897c5c8bd47f5d4005989bead0e55"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets this sketch to the empty state, as if newly constructed.  <br /></td></tr>
+<tr class="separator:ad20897c5c8bd47f5d4005989bead0e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a2b7a58dc85678d08752945ff655362" id="r_a5a2b7a58dc85678d08752945ff655362"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1frequent__items__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a> () const</td></tr>
+<tr class="memdesc:a5a2b7a58dc85678d08752945ff655362"><td class="mdescLeft">&#160;</td><td class="mdescRight">A sketch is empty if it has not been updated with any positive weight.  <br /></td></tr>
 <tr class="separator:a5a2b7a58dc85678d08752945ff655362"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af72439eee5521a156379f0fbd869cb12" id="r_af72439eee5521a156379f0fbd869cb12"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1frequent__items__sketch.html#af72439eee5521a156379f0fbd869cb12">get_num_active_items</a> () const</td></tr>
 <tr class="separator:af72439eee5521a156379f0fbd869cb12"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -372,6 +376,28 @@ template&lt;typename T , typename W , typename H , typename E , typename A &gt; 
 
 </div>
 </div>
+<a id="ad20897c5c8bd47f5d4005989bead0e55" name="ad20897c5c8bd47f5d4005989bead0e55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad20897c5c8bd47f5d4005989bead0e55">&#9670;&#160;</a></span>reset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , typename W , typename H , typename E , typename A &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void reset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Resets this sketch to the empty state, as if newly constructed. </p>
+<p>The maximum map size, equality operator and allocator are retained. The internal hash map restarts at its minimum size. </p>
+
+</div>
+</div>
 <a id="a5a2b7a58dc85678d08752945ff655362" name="a5a2b7a58dc85678d08752945ff655362"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5a2b7a58dc85678d08752945ff655362">&#9670;&#160;</a></span>is_empty()</h2>
 
@@ -388,7 +414,9 @@ template&lt;typename T , typename W , typename H , typename E , typename A &gt; 
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>true if this sketch is empty </dd></dl>
+
+<p>A sketch is empty if it has not been updated with any positive weight. </p>
+<p>A non-empty sketch may retain no items if a purge removed all of them. </p><dl class="section return"><dt>Returns</dt><dd>true if this sketch is empty </dd></dl>
 
 </div>
 </div>
