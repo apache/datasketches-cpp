@@ -21,6 +21,7 @@
 #define TUPLE_SKETCH_HPP_
 
 #include <string>
+#include <type_traits>
 
 #include "serde.hpp"
 #include "theta_update_sketch_base.hpp"
@@ -31,6 +32,7 @@ namespace datasketches {
 template<typename S, typename A> class tuple_sketch;
 template<typename S, typename U, typename P, typename A> class update_tuple_sketch;
 template<typename S, typename A> class compact_tuple_sketch;
+template<typename S, typename A, typename SD> class wrapped_compact_tuple_sketch;
 template<typename A> class theta_sketch_alloc;
 
 template<typename K, typename V>
@@ -56,14 +58,12 @@ template<
   typename Summary,
   typename Allocator = std::allocator<Summary>
 >
-class tuple_sketch {
+class base_tuple_sketch {
 public:
   using Entry = std::pair<uint64_t, Summary>;
   using ExtractKey = pair_extract_key<uint64_t, Summary>;
-  using iterator = theta_iterator<Entry, ExtractKey>;
-  using const_iterator = theta_const_iterator<Entry, ExtractKey>;
 
-  virtual ~tuple_sketch() = default;
+  virtual ~base_tuple_sketch() = default;
 
   /**
    * @return allocator
@@ -159,40 +159,39 @@ public:
    */
   string<Allocator> to_string(bool print_items = false) const;
 
-  /**
-   * Iterator over entries in this sketch.
-   * @return begin iterator
-   */
-  virtual iterator begin() = 0;
-
-  /**
-   * Iterator pointing past the valid range.
-   * Not to be incremented or dereferenced.
-   * @return end iterator
-   */
-  virtual iterator end() = 0;
-
-  /**
-   * Const iterator over entries in this sketch.
-   * @return begin const iterator
-   */
-  virtual const_iterator begin() const = 0;
-
-  /**
-   * Const iterator pointing past the valid range.
-   * Not to be incremented or dereferenced.
-   * @return end const iterator
-   */
-  virtual const_iterator end() const = 0;
-
 protected:
   virtual void print_specifics(std::ostringstream& os) const = 0;
+  virtual void print_items(std::ostringstream& os) const = 0;
 
   static uint16_t get_seed_hash(uint64_t seed);
 
   static void check_sketch_type(uint8_t actual, uint8_t expected);
   static void check_serial_version(uint8_t actual, uint8_t expected);
   static void check_seed_hash(uint16_t actual, uint16_t expected);
+};
+
+/** Base class for Tuple sketches whose entries are materialized in memory. */
+template<
+  typename Summary,
+  typename Allocator = std::allocator<Summary>
+>
+class tuple_sketch: public base_tuple_sketch<Summary, Allocator> {
+public:
+  using Base = base_tuple_sketch<Summary, Allocator>;
+  using Entry = typename Base::Entry;
+  using ExtractKey = typename Base::ExtractKey;
+  using iterator = theta_iterator<Entry, ExtractKey>;
+  using const_iterator = theta_const_iterator<Entry, ExtractKey>;
+
+  virtual ~tuple_sketch() = default;
+
+  virtual iterator begin() = 0;
+  virtual iterator end() = 0;
+  virtual const_iterator begin() const = 0;
+  virtual const_iterator end() const = 0;
+
+protected:
+  virtual void print_items(std::ostringstream& os) const;
 };
 
 // update sketch
@@ -485,7 +484,9 @@ public:
    * @param other sketch to be copied
    * @param ordered if true make the resulting sketch ordered
    */
-  compact_tuple_sketch(const Base& other, bool ordered);
+  template<typename Sketch>
+  compact_tuple_sketch(const Sketch& other, bool ordered,
+      typename std::enable_if<std::is_same<typename Sketch::Entry, Entry>::value>::type* = nullptr);
 
   /**
    * Copy constructor.
@@ -648,6 +649,97 @@ protected:
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_intersection_base;
   template<typename E, typename EK, typename CS, typename A> friend class theta_set_difference_base;
   compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash, uint64_t theta, std::vector<Entry, AllocEntry>&& entries);
+};
+
+/**
+ * Wrapped Compact Tuple sketch.
+ * This wraps serialized bytes without taking ownership or materializing all entries.
+ * The input buffer must remain valid for the lifetime of this sketch and its iterators.
+ */
+template<
+  typename Summary,
+  typename Allocator = std::allocator<Summary>,
+  typename SerDe = serde<Summary>
+>
+class wrapped_compact_tuple_sketch: public base_tuple_sketch<Summary, Allocator> {
+public:
+  using Base = base_tuple_sketch<Summary, Allocator>;
+  using Entry = typename Base::Entry;
+  class const_iterator;
+
+  Allocator get_allocator() const;
+  bool is_empty() const;
+  bool is_ordered() const;
+  uint64_t get_theta64() const;
+  uint32_t get_num_retained() const;
+  uint16_t get_seed_hash() const;
+
+  const_iterator begin() const;
+  const_iterator end() const;
+
+  /**
+   * Wraps a buffer containing a serialized Compact Tuple sketch.
+   * The complete buffer is validated before this method returns.
+   */
+  static wrapped_compact_tuple_sketch wrap(const void* bytes, size_t size,
+      uint64_t seed = DEFAULT_SEED, const SerDe& sd = SerDe(),
+      const Allocator& allocator = Allocator());
+
+protected:
+  virtual void print_specifics(std::ostringstream& os) const;
+  virtual void print_items(std::ostringstream& os) const;
+
+private:
+  bool is_empty_;
+  bool is_ordered_;
+  uint16_t seed_hash_;
+  uint32_t num_entries_;
+  uint64_t theta_;
+  const char* entries_start_;
+  const char* entries_end_;
+  SerDe sd_;
+  Allocator allocator_;
+
+  wrapped_compact_tuple_sketch(bool is_empty, bool is_ordered, uint16_t seed_hash,
+      uint32_t num_entries, uint64_t theta, const char* entries_start,
+      const char* entries_end, const SerDe& sd, const Allocator& allocator);
+};
+
+template<typename Summary, typename Allocator, typename SerDe>
+class wrapped_compact_tuple_sketch<Summary, Allocator, SerDe>::const_iterator {
+public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type = Entry;
+  using difference_type = std::ptrdiff_t;
+  using pointer = const Entry*;
+  using reference = const Entry&;
+
+  const_iterator(const char* ptr, const char* end, uint32_t num_entries,
+      uint32_t index, const SerDe& sd);
+  const_iterator(const const_iterator& other);
+  const_iterator& operator=(const const_iterator& other);
+  ~const_iterator();
+
+  const_iterator& operator++();
+  const_iterator operator++(int);
+  bool operator==(const const_iterator& other) const;
+  bool operator!=(const const_iterator& other) const;
+  reference operator*() const;
+  pointer operator->() const;
+
+private:
+  const char* ptr_;
+  const char* end_;
+  uint32_t num_entries_;
+  uint32_t index_;
+  SerDe sd_;
+  typename std::aligned_storage<sizeof(Entry), alignof(Entry)>::type entry_storage_;
+  bool entry_initialized_;
+
+  Entry* entry();
+  const Entry* entry() const;
+  void load_entry();
+  void destroy_entry();
 };
 
 /// Tuple base builder
