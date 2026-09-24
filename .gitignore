@@ -6,6 +6,9 @@
 # Visual Studio Code
 .vscode/
 
+# Intellij
+.idea/
+
 # OSX files
 .DS_Store
 
@@ -43,3 +46,9 @@ _*/
 
 docs
 java
+
+# clang 
+.clangd
+
+# CMakeFiles
+CMakeFiles/
