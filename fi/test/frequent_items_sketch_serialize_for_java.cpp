@@ -57,6 +57,30 @@ TEST_CASE("frequent strings sketch generate", "[serialize_for_java]") {
   }
 }
 
+// lg_max_map_size=8 -> capacity 192; the 193rd distinct item triggers a purge
+// whose median (1) removes every counter: non-empty with no retained items
+TEST_CASE("frequent longs sketch purged to zero items", "[serialize_for_java]") {
+  frequent_items_sketch<long> sketch(8);
+  for (long i = 1; i <= 193; ++i) sketch.update(i);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.get_num_active_items() == 0);
+  REQUIRE(sketch.get_total_weight() == 193);
+  REQUIRE(sketch.get_maximum_error() == 1);
+  std::ofstream os("frequent_long_purged_cpp.sk", std::ios::binary);
+  sketch.serialize(os);
+}
+
+TEST_CASE("frequent strings sketch purged to zero items", "[serialize_for_java]") {
+  frequent_items_sketch<std::string> sketch(8);
+  for (unsigned i = 1; i <= 193; ++i) sketch.update(std::to_string(i));
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.get_num_active_items() == 0);
+  REQUIRE(sketch.get_total_weight() == 193);
+  REQUIRE(sketch.get_maximum_error() == 1);
+  std::ofstream os("frequent_string_purged_cpp.sk", std::ios::binary);
+  sketch.serialize(os);
+}
+
 TEST_CASE("frequent strings sketch ascii", "[serialize_for_java]") {
   frequent_items_sketch<std::string> sketch(6);
   sketch.update("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1);

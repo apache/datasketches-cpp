@@ -116,6 +116,15 @@ public:
   void merge(frequent_items_sketch&& other);
 
   /**
+   * Resets this sketch to the empty state, as if newly constructed.
+   * The maximum map size, equality operator and allocator are retained.
+   * The internal hash map restarts at its minimum size.
+   */
+  void reset();
+
+  /**
+   * A sketch is empty if it has not been updated with any positive weight.
+   * A non-empty sketch may retain no items if a purge removed all of them.
    * @return true if this sketch is empty
    */
   bool is_empty() const;
@@ -311,13 +320,16 @@ private:
   static const uint8_t PREAMBLE_LONGS_EMPTY = 1;
   static const uint8_t PREAMBLE_LONGS_NONEMPTY = 4;
   static constexpr double EPSILON_FACTOR = 3.5;
-  // due to a mistake different bits were used in C++ and Java to indicate empty sketch
-  // therefore both are set and checked for compatibility with historical binary format
+  // Emptiness of a serialized image is determined by preamble longs (1 for empty, 4 otherwise).
+  // The flags byte is only cross-checked against it. Due to a mistake different bits were used
+  // in C++ and Java to indicate an empty sketch, therefore both are set for compatibility with
+  // the historical binary format, and either one is accepted on read. No other flag bits are defined.
   enum flags { IS_EMPTY_1 = 0, IS_EMPTY_2 = 2 };
   W total_weight;
   W offset;
   reverse_purge_hash_map<T, W, H, E, A> map;
-  static void check_preamble_longs(uint8_t preamble_longs, bool is_empty);
+  static void check_preamble_longs(uint8_t preamble_longs, uint8_t flags_byte);
+  static void check_total_weight(W total_weight);
   static void check_serial_version(uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
   static void check_size(uint8_t lg_cur_size, uint8_t lg_max_size);

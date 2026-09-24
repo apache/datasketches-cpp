@@ -157,6 +157,96 @@ TEST_CASE("frequent items: purge clearing all counters is not empty", "[frequent
   REQUIRE(sketch3.get_maximum_error() == 1);
 }
 
+TEST_CASE("frequent items: purge clearing all counters serialized form", "[frequent_items_sketch]") {
+  frequent_items_sketch<uint64_t> sketch(8);
+  for (uint64_t i = 0; i < 193; ++i) sketch.update(i);
+  REQUIRE(sketch.get_num_active_items() == 0);
+
+  // full preamble with no items
+  auto bytes = sketch.serialize();
+  REQUIRE(bytes.size() == 32);
+  REQUIRE(bytes[0] == 4); // preamble longs
+  REQUIRE(bytes[5] == 0); // flags
+
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  sketch.serialize(s);
+  auto sketch2 = frequent_items_sketch<uint64_t>::deserialize(s);
+  REQUIRE_FALSE(sketch2.is_empty());
+  REQUIRE(sketch2.get_num_active_items() == 0);
+  REQUIRE(sketch2.get_total_weight() == 193);
+  REQUIRE(sketch2.get_maximum_error() == 1);
+}
+
+TEST_CASE("frequent items: reset", "[frequent_items_sketch]") {
+  frequent_items_sketch<uint64_t> sketch(8);
+  for (uint64_t i = 0; i < 1000; ++i) sketch.update(i % 300, i % 7 + 1);
+  REQUIRE_FALSE(sketch.is_empty());
+  REQUIRE(sketch.get_maximum_error() > 0);
+  const double epsilon = sketch.get_epsilon();
+
+  sketch.reset();
+  REQUIRE(sketch.is_empty());
+  REQUIRE(sketch.get_num_active_items() == 0);
+  REQUIRE(sketch.get_total_weight() == 0);
+  REQUIRE(sketch.get_maximum_error() == 0);
+  REQUIRE(sketch.get_epsilon() == epsilon); // max map size retained
+  REQUIRE(sketch.get_serialized_size_bytes() == 8);
+
+  // same behavior as a newly constructed sketch
+  frequent_items_sketch<uint64_t> fresh(8);
+  for (uint64_t i = 0; i < 193; ++i) {
+    sketch.update(i);
+    fresh.update(i);
+  }
+  REQUIRE(sketch.serialize() == fresh.serialize());
+}
+
+TEST_CASE("frequent items: empty image with either legacy empty flag", "[frequent_items_sketch]") {
+  frequent_items_sketch<uint64_t> sketch(8);
+  auto bytes = sketch.serialize();
+  REQUIRE(bytes.size() == 8);
+  REQUIRE(bytes[5] == 5); // both empty bits written
+  for (uint8_t flags: {1, 4, 5}) {
+    bytes[5] = flags;
+    auto sketch2 = frequent_items_sketch<uint64_t>::deserialize(bytes.data(), bytes.size());
+    REQUIRE(sketch2.is_empty());
+  }
+}
+
+TEST_CASE("frequent items: corrupt preamble", "[frequent_items_sketch]") {
+  frequent_items_sketch<uint64_t> empty_sketch(8);
+  frequent_items_sketch<uint64_t> sketch(8);
+  sketch.update(1);
+
+  SECTION("invalid preamble longs") {
+    auto bytes = sketch.serialize();
+    bytes[0] = 2;
+    REQUIRE_THROWS_AS(frequent_items_sketch<uint64_t>::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+  }
+  SECTION("empty preamble longs, not empty flag") {
+    auto bytes = empty_sketch.serialize();
+    bytes[5] = 0;
+    REQUIRE_THROWS_AS(frequent_items_sketch<uint64_t>::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+  }
+  SECTION("full preamble longs, empty flag") {
+    auto bytes = sketch.serialize();
+    bytes[5] = 5;
+    REQUIRE_THROWS_AS(frequent_items_sketch<uint64_t>::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+  }
+  SECTION("full preamble longs, zero total weight, bytes") {
+    auto bytes = sketch.serialize();
+    for (size_t i = 16; i < 24; ++i) bytes[i] = 0;
+    REQUIRE_THROWS_AS(frequent_items_sketch<uint64_t>::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+  }
+  SECTION("full preamble longs, zero total weight, stream") {
+    auto bytes = sketch.serialize();
+    for (size_t i = 16; i < 24; ++i) bytes[i] = 0;
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE_THROWS_AS(frequent_items_sketch<uint64_t>::deserialize(s), std::invalid_argument);
+  }
+}
+
 TEST_CASE("frequent items: merge exact mode", "[frequent_items_sketch]") {
   frequent_items_sketch<int> sketch1(3);
   sketch1.update(1);
