@@ -23,6 +23,7 @@
 #include <vector>
 #include <stdexcept>
 #include <algorithm>
+#include <cstring>
 
 #include <catch2/catch.hpp>
 #include <theta_sketch.hpp>
@@ -900,6 +901,43 @@ TEST_CASE("max serialized size", "[theta_sketch]") {
     max_size_bytes = std::max(max_size_bytes, bytes.size());
   }
   REQUIRE(max_size_bytes == compact_theta_sketch::get_max_serialized_size_bytes(lg_k));
+}
+
+TEST_CASE("theta sketch: deserialize v4 corrupt header", "[theta_sketch]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  for (int i = 0; i < 100; ++i) update_sketch.update(i);
+  const auto bytes = update_sketch.compact().serialize_compressed();
+  REQUIRE(bytes[1] == 4);
+  for (uint8_t entry_bits: {0, 64, 255}) {
+    auto corrupt = bytes;
+    corrupt[3] = entry_bits;
+    REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(corrupt.data(), corrupt.size()), std::invalid_argument);
+    std::stringstream s;
+    s.write(reinterpret_cast<const char*>(corrupt.data()), corrupt.size());
+    REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(s), std::invalid_argument);
+  }
+  for (uint8_t num_entries_bytes: {0, 5, 255}) {
+    auto corrupt = bytes;
+    corrupt[4] = num_entries_bytes;
+    REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(corrupt.data(), corrupt.size()), std::invalid_argument);
+    std::stringstream s;
+    s.write(reinterpret_cast<const char*>(corrupt.data()), corrupt.size());
+    REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(s), std::invalid_argument);
+  }
+}
+
+TEST_CASE("theta sketch: deserialize v4 entry bits overflow", "[theta_sketch]") {
+  update_theta_sketch update_sketch = update_theta_sketch::builder().build();
+  for (int i = 0; i < 100; ++i) update_sketch.update(i);
+  auto bytes = update_sketch.compact().serialize_compressed();
+  REQUIRE(bytes[0] == 1); // exact mode, num_entries follows the first preamble long
+  // 8 bits * 2^29 entries = 2^32 bits wraps to 0 in 32-bit arithmetic
+  bytes.resize(12);
+  bytes[3] = 8;
+  bytes[4] = 4;
+  const uint32_t num_entries = 1U << 29;
+  std::memcpy(bytes.data() + 8, &num_entries, sizeof(num_entries));
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size()), std::out_of_range);
 }
 
 } /* namespace datasketches */

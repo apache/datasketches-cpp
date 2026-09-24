@@ -200,6 +200,7 @@ var_opt_union<T, A> var_opt_union<T, A>::deserialize(const void* bytes, size_t s
     return var_opt_union(max_k);
   }
 
+  ensure_minimum_memory(size, PREAMBLE_LONGS_NON_EMPTY << 3);
   uint64_t items_seen;
   ptr += copy_from_mem(ptr, items_seen);
   double outer_tau_numer;

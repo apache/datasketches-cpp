@@ -305,4 +305,16 @@ TEST_CASE("varopt union: serialize sampling", "[var_opt_union]") {
   compare_serialization_deserialization(u);
 }
 
+TEST_CASE("varopt union: deserialize truncated non-empty preamble", "[var_opt_union]") {
+  var_opt_sketch<int> sk(32);
+  sk.update(1);
+  var_opt_union<int> u(32);
+  u.update(sk);
+  auto bytes = u.serialize();
+  // a non-empty union needs 4 preamble longs
+  for (size_t size = 8; size < 32; ++size) {
+    REQUIRE_THROWS_AS(var_opt_union<int>::deserialize(bytes.data(), size), std::out_of_range);
+  }
+}
+
 }
