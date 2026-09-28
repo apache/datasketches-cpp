@@ -20,6 +20,9 @@
 #ifndef _INTARRAYPAIRITERATOR_HPP_
 #define _INTARRAYPAIRITERATOR_HPP_
 
+#include <cstdint>
+#include <iterator>
+
 namespace datasketches {
 
 template<typename A>
