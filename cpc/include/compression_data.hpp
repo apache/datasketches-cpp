@@ -22,6 +22,8 @@
 #ifndef CPC_COMPRESSION_DATA_HPP_
 #define CPC_COMPRESSION_DATA_HPP_
 
+#include <cstdint>
+
 namespace datasketches {
 
 /*
