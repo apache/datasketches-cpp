@@ -133,7 +133,7 @@ double tdigest<T, A>::get_rank(T value) const {
   if (value < first_mean) {
     if (first_mean - min_ > 0) {
       if (value == min_) return 0.5 / centroids_weight_;
-      return (1.0 + (value - min_) / (first_mean - min_) * (centroids_.front().get_weight() / 2.0 - 1.0)); // ?
+      return (1.0 + (value - min_) / (first_mean - min_) * (centroids_.front().get_weight() / 2.0 - 1.0)) / centroids_weight_;
     }
     return 0; // should never happen
   }
@@ -143,7 +143,7 @@ double tdigest<T, A>::get_rank(T value) const {
   if (value > last_mean) {
     if (max_ - last_mean > 0) {
       if (value == max_) return 1.0 - 0.5 / centroids_weight_;
-        return 1.0 - ((1.0 + (max_ - value) / (max_ - last_mean) * (centroids_.back().get_weight() / 2.0 - 1.0)) / centroids_weight_); // ?
+      return 1.0 - ((1.0 + (max_ - value) / (max_ - last_mean) * (centroids_.back().get_weight() / 2.0 - 1.0)) / centroids_weight_);
     }
     return 1; // should never happen
   }
@@ -193,7 +193,10 @@ T tdigest<T, A>::get_quantile(double rank) const {
   }
   const double last_weight = centroids_.back().get_weight();
   if (last_weight > 1 && centroids_weight_ - weight <= last_weight / 2.0) {
-    return max_ + (centroids_weight_ - weight - 1.0) / (last_weight / 2.0 - 1.0) * (max_ - centroids_.back().get_mean());
+    // A last centroid of weight 2 makes the denominator zero. The only rank that
+    // reaches this branch is the one that returns the stored maximum.
+    if (last_weight == 2) return max_;
+    return max_ - (centroids_weight_ - weight - 1.0) / (last_weight / 2.0 - 1.0) * (max_ - centroids_.back().get_mean());
   }
 
   // interpolate between extremes
@@ -214,7 +217,9 @@ T tdigest<T, A>::get_quantile(double rank) const {
       }
       const double w1 = weight - weight_so_far - left_weight;
       const double w2 = weight_so_far + dw - weight - right_weight;
-      return weighted_average(centroids_[i].get_mean(), w1, centroids_[i + 1].get_mean(), w2);
+      // Weight each centroid by the distance to the other one, so the estimate
+      // moves toward the nearer centroid.
+      return weighted_average(centroids_[i].get_mean(), w2, centroids_[i + 1].get_mean(), w1);
     }
     weight_so_far += dw;
   }
