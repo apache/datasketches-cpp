@@ -42,4 +42,7 @@ _*/
 !__init__.py
 
 docs
-java
+# Cross-language test data: sketch snapshots and the datasketches-java checkout used to generate them
+serialization_test_data/
+datasketches-java/
+*.sk
