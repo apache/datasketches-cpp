@@ -570,6 +570,50 @@ TEST_CASE("theta sketch: deserialize estimation mode buffer overrun", "[theta_sk
   REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 }
 
+// The header fields of serial versions 1 to 3 that follow the first 8 bytes must not be read
+// before the size of the buffer is checked. Each buffer below holds exactly the preamble bytes,
+// so that reading beyond them would be an out-of-bounds read, and is followed by the bytes
+// that would make the sketch look empty if they were read.
+TEST_CASE("theta sketch: deserialize truncated preamble", "[theta_sketch]") {
+  const uint16_t seed_hash = compute_seed_hash(DEFAULT_SEED);
+  const uint8_t seed_hash_lo = seed_hash & 0xff;
+  const uint8_t seed_hash_hi = seed_hash >> 8;
+  const uint8_t max_theta[8] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f};
+
+  // serial version 1: three preamble longs, num_entries = 0 and theta = max would be empty
+  std::vector<uint8_t> v1 = {3, 1, 3, 0, 0, 0x1a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  v1.insert(v1.end(), max_theta, max_theta + 8);
+  for (size_t size: {8, 16}) {
+    const std::vector<uint8_t> bytes(v1.begin(), v1.begin() + size);
+    REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size()), std::out_of_range);
+    REQUIRE_THROWS_AS(wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size()), std::out_of_range);
+  }
+
+  // serial version 2: two preamble longs, num_entries = 0 would be empty
+  std::vector<uint8_t> v2_exact = {2, 2, 3, 0, 0, 0x1a, seed_hash_lo, seed_hash_hi, 0, 0, 0, 0, 0, 0, 0, 0};
+  {
+    const std::vector<uint8_t> bytes(v2_exact.begin(), v2_exact.begin() + 8);
+    REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size()), std::out_of_range);
+    REQUIRE_THROWS_AS(wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size()), std::out_of_range);
+  }
+  REQUIRE(compact_theta_sketch::deserialize(v2_exact.data(), v2_exact.size()).is_empty());
+
+  // serial version 2: three preamble longs, num_entries = 0 and theta = max would be empty
+  std::vector<uint8_t> v2_estimation = {3, 2, 3, 0, 0, 0x1a, seed_hash_lo, seed_hash_hi, 0, 0, 0, 0, 0, 0, 0, 0};
+  v2_estimation.insert(v2_estimation.end(), max_theta, max_theta + 8);
+  for (size_t size: {8, 16}) {
+    const std::vector<uint8_t> bytes(v2_estimation.begin(), v2_estimation.begin() + size);
+    REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size()), std::out_of_range);
+    REQUIRE_THROWS_AS(wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size()), std::out_of_range);
+  }
+  REQUIRE(compact_theta_sketch::deserialize(v2_estimation.data(), v2_estimation.size()).is_empty());
+
+  // serial version 3: two preamble longs, not empty
+  const std::vector<uint8_t> v3 = {2, 3, 3, 0, 0, 0x1a, seed_hash_lo, seed_hash_hi};
+  REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(v3.data(), v3.size()), std::out_of_range);
+  REQUIRE_THROWS_AS(wrapped_compact_theta_sketch::wrap(v3.data(), v3.size()), std::out_of_range);
+}
+
 TEST_CASE("theta sketch: conversion constructor and wrapped compact", "[theta_sketch]") {
   update_theta_sketch update_sketch = update_theta_sketch::builder().build();
   const int n = 8192;
