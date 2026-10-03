@@ -38,6 +38,12 @@ static std::vector<uint8_t> read_java_bytes(const std::string& file_name) {
   return bytes;
 }
 
+static compact_theta_sketch deserialize_java_stream(const std::string& file_name) {
+  std::ifstream is(testBinaryInputPath + file_name, std::ios::binary);
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  return compact_theta_sketch::deserialize(is);
+}
+
 template<typename Vector>
 static std::vector<uint8_t> to_std_vector(const Vector& bytes) {
   return std::vector<uint8_t>(bytes.begin(), bytes.end());
@@ -46,8 +52,10 @@ static std::vector<uint8_t> to_std_vector(const Vector& bytes) {
 TEST_CASE("theta sketch", "[serde_compat]") {
   const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
-    const auto bytes = read_java_bytes("theta_n" + std::to_string(n) + "_java.sk");
+    const auto file_name = "theta_n" + std::to_string(n) + "_java.sk";
+    const auto bytes = read_java_bytes(file_name);
     const auto sketch = compact_theta_sketch::deserialize(bytes.data(), bytes.size());
+    const auto stream_sketch = deserialize_java_stream(file_name);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > 1000));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
@@ -57,14 +65,17 @@ TEST_CASE("theta sketch", "[serde_compat]") {
     REQUIRE(sketch.is_ordered());
     REQUIRE(std::is_sorted(sketch.begin(), sketch.end()));
     REQUIRE(to_std_vector(sketch.serialize()) == bytes);
+    REQUIRE(to_std_vector(stream_sketch.serialize()) == bytes);
   }
 }
 
 TEST_CASE("theta sketch compressed", "[serde_compat]") {
   const unsigned n_arr[] = {10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
-    const auto bytes = read_java_bytes("theta_compressed_n" + std::to_string(n) + "_java.sk");
+    const auto file_name = "theta_compressed_n" + std::to_string(n) + "_java.sk";
+    const auto bytes = read_java_bytes(file_name);
     const auto sketch = compact_theta_sketch::deserialize(bytes.data(), bytes.size());
+    const auto stream_sketch = deserialize_java_stream(file_name);
     REQUIRE(sketch.is_estimation_mode() == (n > 1000));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
     for (const auto hash: sketch) {
@@ -73,15 +84,19 @@ TEST_CASE("theta sketch compressed", "[serde_compat]") {
     REQUIRE(sketch.is_ordered());
     REQUIRE(std::is_sorted(sketch.begin(), sketch.end()));
     REQUIRE(to_std_vector(sketch.serialize_compressed()) == bytes);
+    REQUIRE(to_std_vector(stream_sketch.serialize_compressed()) == bytes);
   }
 }
 
 TEST_CASE("theta sketch non-empty no entries", "[serde_compat]") {
-  const auto bytes = read_java_bytes("theta_non_empty_no_entries_java.sk");
+  const std::string file_name = "theta_non_empty_no_entries_java.sk";
+  const auto bytes = read_java_bytes(file_name);
   const auto sketch = compact_theta_sketch::deserialize(bytes.data(), bytes.size());
+  const auto stream_sketch = deserialize_java_stream(file_name);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 0);
   REQUIRE(to_std_vector(sketch.serialize()) == bytes);
+  REQUIRE(to_std_vector(stream_sketch.serialize()) == bytes);
 }
 
 } /* namespace datasketches */
