@@ -54,6 +54,4 @@ install(FILES
 		include/array_tuple_intersection_impl.hpp
 		include/array_tuple_a_not_b.hpp
 		include/array_tuple_a_not_b_impl.hpp
-		include/array_of_strings_sketch.hpp
-		include/array_of_strings_sketch_impl.hpp
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/DataSketches")
