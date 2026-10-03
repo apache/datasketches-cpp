@@ -80,8 +80,9 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
         check_memory_size(ptr, size, 16, dump_on_error);
         return {false, true, seed_hash, 1, theta, reinterpret_cast<const uint64_t*>(ptr) + COMPACT_SKETCH_SINGLE_ENTRY_U64, 64};
       }
-      const uint32_t num_entries = reinterpret_cast<const uint32_t*>(ptr)[COMPACT_SKETCH_NUM_ENTRIES_U32];
       const size_t entries_start_u64 = has_theta ? COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 : COMPACT_SKETCH_ENTRIES_EXACT_U64;
+      check_memory_size(ptr, size, entries_start_u64 * sizeof(uint64_t), dump_on_error);
+      const uint32_t num_entries = reinterpret_cast<const uint32_t*>(ptr)[COMPACT_SKETCH_NUM_ENTRIES_U32];
       const uint64_t* entries = reinterpret_cast<const uint64_t*>(ptr) + entries_start_u64;
       const size_t expected_size_bytes = (entries_start_u64 + num_entries) * sizeof(uint64_t);
       check_memory_size(ptr, size, expected_size_bytes, dump_on_error);
@@ -90,6 +91,7 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
   }
   case 1:  {
       uint16_t seed_hash = compute_seed_hash(seed);
+      check_memory_size(ptr, size, COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 * sizeof(uint64_t), dump_on_error);
       const uint32_t num_entries = reinterpret_cast<const uint32_t*>(ptr)[COMPACT_SKETCH_NUM_ENTRIES_U32];
       uint64_t theta = reinterpret_cast<const uint64_t*>(ptr)[COMPACT_SKETCH_THETA_U64];
       bool is_empty = (num_entries == 0) && (theta == theta_constants::MAX_THETA);
@@ -106,6 +108,7 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
       if (preamble_size == 1) {
           return {true, true, seed_hash, 0, theta_constants::MAX_THETA, nullptr, 64};
       } else if (preamble_size == 2) {
+          check_memory_size(ptr, size, COMPACT_SKETCH_ENTRIES_EXACT_U64 * sizeof(uint64_t), dump_on_error);
           const uint32_t num_entries = reinterpret_cast<const uint32_t*>(ptr)[COMPACT_SKETCH_NUM_ENTRIES_U32];
           if (num_entries == 0) {
               return {true, true, seed_hash, 0, theta_constants::MAX_THETA, nullptr, 64};
@@ -116,6 +119,7 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
               return {false, true, seed_hash, num_entries, theta_constants::MAX_THETA, entries, 64};
           }
       } else if (preamble_size == 3) {
+          check_memory_size(ptr, size, COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 * sizeof(uint64_t), dump_on_error);
           const uint32_t num_entries = reinterpret_cast<const uint32_t*>(ptr)[COMPACT_SKETCH_NUM_ENTRIES_U32];
           uint64_t theta = reinterpret_cast<const uint64_t*>(ptr)[COMPACT_SKETCH_THETA_U64];
           bool is_empty = (num_entries == 0) && (theta == theta_constants::MAX_THETA);
