@@ -20,6 +20,7 @@
 #include <catch2/catch.hpp>
 #include <fstream>
 #include <theta_sketch.hpp>
+#include <vector>
 
 namespace datasketches {
 
@@ -27,13 +28,34 @@ namespace datasketches {
 // in the subdirectory called "java" in the root directory of this project
 static std::string testBinaryInputPath = std::string(TEST_BINARY_INPUT_PATH) + "../../java/";
 
+static std::vector<uint8_t> read_java_bytes(const std::string& file_name) {
+  std::ifstream is(testBinaryInputPath + file_name, std::ios::binary | std::ios::ate);
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  const auto size = is.tellg();
+  std::vector<uint8_t> bytes(static_cast<size_t>(size));
+  is.seekg(0);
+  is.read(reinterpret_cast<char*>(bytes.data()), size);
+  return bytes;
+}
+
+static compact_theta_sketch deserialize_java_stream(const std::string& file_name) {
+  std::ifstream is(testBinaryInputPath + file_name, std::ios::binary);
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  return compact_theta_sketch::deserialize(is);
+}
+
+template<typename Vector>
+static std::vector<uint8_t> to_std_vector(const Vector& bytes) {
+  return std::vector<uint8_t>(bytes.begin(), bytes.end());
+}
+
 TEST_CASE("theta sketch", "[serde_compat]") {
   const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
-    std::ifstream is;
-    is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "theta_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    const auto sketch = compact_theta_sketch::deserialize(is);
+    const auto file_name = "theta_n" + std::to_string(n) + "_java.sk";
+    const auto bytes = read_java_bytes(file_name);
+    const auto sketch = compact_theta_sketch::deserialize(bytes.data(), bytes.size());
+    const auto stream_sketch = deserialize_java_stream(file_name);
     REQUIRE(sketch.is_empty() == (n == 0));
     REQUIRE(sketch.is_estimation_mode() == (n > 1000));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
@@ -42,16 +64,18 @@ TEST_CASE("theta sketch", "[serde_compat]") {
     }
     REQUIRE(sketch.is_ordered());
     REQUIRE(std::is_sorted(sketch.begin(), sketch.end()));
+    REQUIRE(to_std_vector(sketch.serialize()) == bytes);
+    REQUIRE(to_std_vector(stream_sketch.serialize()) == bytes);
   }
 }
 
 TEST_CASE("theta sketch compressed", "[serde_compat]") {
   const unsigned n_arr[] = {10, 100, 1000, 10000, 100000, 1000000};
   for (const unsigned n: n_arr) {
-    std::ifstream is;
-    is.exceptions(std::ios::failbit | std::ios::badbit);
-    is.open(testBinaryInputPath + "theta_compressed_n" + std::to_string(n) + "_java.sk", std::ios::binary);
-    const auto sketch = compact_theta_sketch::deserialize(is);
+    const auto file_name = "theta_compressed_n" + std::to_string(n) + "_java.sk";
+    const auto bytes = read_java_bytes(file_name);
+    const auto sketch = compact_theta_sketch::deserialize(bytes.data(), bytes.size());
+    const auto stream_sketch = deserialize_java_stream(file_name);
     REQUIRE(sketch.is_estimation_mode() == (n > 1000));
     REQUIRE(sketch.get_estimate() == Approx(n).margin(n * 0.03));
     for (const auto hash: sketch) {
@@ -59,16 +83,20 @@ TEST_CASE("theta sketch compressed", "[serde_compat]") {
     }
     REQUIRE(sketch.is_ordered());
     REQUIRE(std::is_sorted(sketch.begin(), sketch.end()));
+    REQUIRE(to_std_vector(sketch.serialize_compressed()) == bytes);
+    REQUIRE(to_std_vector(stream_sketch.serialize_compressed()) == bytes);
   }
 }
 
 TEST_CASE("theta sketch non-empty no entries", "[serde_compat]") {
-  std::ifstream is;
-  is.exceptions(std::ios::failbit | std::ios::badbit);
-  is.open(testBinaryInputPath + "theta_non_empty_no_entries_java.sk", std::ios::binary);
-  const auto sketch = compact_theta_sketch::deserialize(is);
+  const std::string file_name = "theta_non_empty_no_entries_java.sk";
+  const auto bytes = read_java_bytes(file_name);
+  const auto sketch = compact_theta_sketch::deserialize(bytes.data(), bytes.size());
+  const auto stream_sketch = deserialize_java_stream(file_name);
   REQUIRE_FALSE(sketch.is_empty());
   REQUIRE(sketch.get_num_retained() == 0);
+  REQUIRE(to_std_vector(sketch.serialize()) == bytes);
+  REQUIRE(to_std_vector(stream_sketch.serialize()) == bytes);
 }
 
 } /* namespace datasketches */
