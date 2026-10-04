@@ -15,6 +15,11 @@ Please visit the main [Apache DataSketches website](https://datasketches.apache.
 
 If you are interested in making contributions to this site, please see our [Community](https://datasketches.apache.org/docs/Community/) page for how to contact us.
 
+## Supported Platforms
+
+- All Apache DataSketches libraries support little-endian platforms only. The serialized sketch formats, and algorithms such as the HLL, CPC and Theta compression, assume little-endian byte order. Big-endian platforms are not supported.
+- This library is tested on Linux, macOS and Windows.
+
 ---
 
 This code requires C++11.
