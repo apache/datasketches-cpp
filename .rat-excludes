@@ -12,11 +12,6 @@ fdlibm_log\.hpp
 # Dotfiles and repository metadata with no comment convention.
 \..*
 #
-# Documentation.
-README\.md
-CONTRIBUTING\.md
-CODE_OF_CONDUCT\.md
-#
 # Generated and template files consumed by the build.
 Doxyfile
 version\.cfg\.in
