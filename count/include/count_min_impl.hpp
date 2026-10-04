@@ -36,7 +36,7 @@ count_min_sketch<W,A>::count_min_sketch(uint8_t num_hashes, uint32_t num_buckets
 _allocator(allocator),
 _num_hashes(num_hashes),
 _num_buckets(num_buckets),
-_sketch_array((num_hashes*num_buckets < 1<<30) ? num_hashes*num_buckets : 0, 0, _allocator),
+_sketch_array((static_cast<uint64_t>(num_hashes) * num_buckets < 1<<30) ? static_cast<size_t>(num_hashes) * num_buckets : 0, 0, _allocator),
 _seed(seed),
 _total_weight(0) {
   if (num_buckets < 3) {
@@ -45,7 +45,7 @@ _total_weight(0) {
 
   // This check is to ensure later compatibility with a Java implementation whose maximum size can only
   // be 2^31-1.  We check only against 2^30 for simplicity.
-  if (num_buckets * num_hashes >= 1 << 30) {
+  if (static_cast<uint64_t>(num_buckets) * num_hashes >= 1 << 30) {
     throw std::invalid_argument("These parameters generate a sketch that exceeds 2^30 elements."
                                 "Try reducing either the number of buckets or the number of hash functions.");
   }
@@ -407,7 +407,8 @@ auto count_min_sketch<W,A>::deserialize(const void* bytes, size_t size, uint64_t
   const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
   if (is_empty) { return c; } // sketch is empty, no need to read further.
 
-  ensure_minimum_memory(size, sizeof(W) * (1 + nbuckets * nhashes));
+  // preamble (already read) + total weight + table; nbuckets * nhashes < 2^30 was checked by the constructor
+  ensure_minimum_memory(size, PREAMBLE_LONGS_SHORT * sizeof(uint64_t) + sizeof(W) * (1 + c._sketch_array.size()));
 
   // Long 2 is the weight.
   W weight;

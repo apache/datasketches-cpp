@@ -696,7 +696,9 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize_v4(
     uint8_t preamble_longs, std::istream& is, uint64_t seed, const A& allocator)
 {
   const auto entry_bits = read<uint8_t>(is);
+  compact_theta_sketch_parser<true>::check_v4_entry_bits(entry_bits);
   const auto num_entries_bytes = read<uint8_t>(is);
+  compact_theta_sketch_parser<true>::check_v4_num_entries_bytes(num_entries_bytes);
   const auto flags_byte = read<uint8_t>(is);
   const auto seed_hash = read<uint16_t>(is);
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);

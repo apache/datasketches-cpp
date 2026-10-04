@@ -38,6 +38,8 @@ public:
   };
 
   static compact_theta_sketch_data parse(const void* ptr, size_t size, uint64_t seed, bool dump_on_error = false);
+  static void check_v4_entry_bits(uint8_t entry_bits);
+  static void check_v4_num_entries_bytes(uint8_t num_entries_bytes);
 
 private:
   // offsets are in sizeof(type)

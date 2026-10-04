@@ -527,6 +527,7 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t 
   const bool has_hip = flags_byte & (1 << flags::HAS_HIP);
   const bool has_table = flags_byte & (1 << flags::HAS_TABLE);
   const bool has_window = flags_byte & (1 << flags::HAS_WINDOW);
+  check_lg_k(lg_k);
   compressed_state<A> compressed(allocator);
   compressed.table_data_words = 0;
   compressed.table_num_entries = 0;
@@ -581,6 +582,7 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t 
     throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
         + std::to_string(compute_seed_hash(seed)));
   }
+  check_num_coupons(lg_k, num_coupons, compressed.table_num_entries);
   uncompressed_state<A> uncompressed(allocator);
   get_compressor<A>().uncompress(compressed, uncompressed, lg_k, num_coupons);
   if (!is.good()) {
@@ -612,6 +614,7 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
   const bool has_hip = flags_byte & (1 << flags::HAS_HIP);
   const bool has_table = flags_byte & (1 << flags::HAS_TABLE);
   const bool has_window = flags_byte & (1 << flags::HAS_WINDOW);
+  check_lg_k(lg_k);
   ensure_minimum_memory(size, preamble_ints << 2);
   compressed_state<A> compressed(allocator);
   compressed.table_data_words = 0;
@@ -646,13 +649,13 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
       ptr += copy_from_mem(ptr, hip_est_accum);
     }
     if (has_window) {
-      compressed.window_data.resize(compressed.window_data_words);
       check_memory_size(ptr - base + (compressed.window_data_words * sizeof(uint32_t)), size);
+      compressed.window_data.resize(compressed.window_data_words);
       ptr += copy_from_mem(ptr, compressed.window_data.data(), compressed.window_data_words * sizeof(uint32_t));
     }
     if (has_table) {
-      compressed.table_data.resize(compressed.table_data_words);
       check_memory_size(ptr - base + (compressed.table_data_words * sizeof(uint32_t)), size);
+      compressed.table_data.resize(compressed.table_data_words);
       ptr += copy_from_mem(ptr, compressed.table_data.data(), compressed.table_data_words * sizeof(uint32_t));
     }
     if (!has_window) compressed.table_num_entries = num_coupons;
@@ -676,6 +679,7 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
     throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
         + std::to_string(compute_seed_hash(seed)));
   }
+  check_num_coupons(lg_k, num_coupons, compressed.table_num_entries);
   uncompressed_state<A> uncompressed(allocator);
   get_compressor<A>().uncompress(compressed, uncompressed, lg_k, num_coupons);
   return cpc_sketch_alloc(lg_k, num_coupons, first_interesting_column, std::move(uncompressed.table),
@@ -718,6 +722,19 @@ size_t cpc_sketch_alloc<A>::get_max_serialized_size_bytes(uint8_t lg_k) {
   }
   const uint32_t k = 1 << lg_k;
   return (int) (CPC_EMPIRICAL_MAX_SIZE_FACTOR * k) + CPC_MAX_PREAMBLE_SIZE_BYTES;
+}
+
+template<typename A>
+void cpc_sketch_alloc<A>::check_num_coupons(uint8_t lg_k, uint32_t num_coupons, uint32_t num_pairs) {
+  // at most one coupon per bit of the k x 64 bit matrix, and surprising values are a subset of coupons
+  if (num_coupons > (static_cast<uint64_t>(1) << lg_k) * 64) {
+    throw std::invalid_argument("Possible corruption: num_coupons " + std::to_string(num_coupons)
+        + " exceeds the capacity for lg_k " + std::to_string(lg_k));
+  }
+  if (num_pairs > num_coupons) {
+    throw std::invalid_argument("Possible corruption: table entries " + std::to_string(num_pairs)
+        + " exceed num_coupons " + std::to_string(num_coupons));
+  }
 }
 
 template<typename A>

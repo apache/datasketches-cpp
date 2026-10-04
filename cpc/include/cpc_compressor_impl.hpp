@@ -354,6 +354,7 @@ void cpc_compressor<A>::uncompress_sliding_flavor(const compressed_state<A>& sou
       const uint32_t row_col = pairs[i];
       const uint32_t row = row_col >> 6;
       uint8_t col = row_col & 63;
+      if (col >= 56) throw std::out_of_range("col out of range");
       // first undo the permutation
       col = permutation[col];
       // then undo the rotation: old = (new + (offset+8)) mod 64
@@ -390,6 +391,9 @@ auto cpc_compressor<A>::uncompress_surprising_values(const uint32_t* data, uint3
   vector_u32 pairs(num_pairs, 0, allocator);
   const uint8_t num_base_bits = golomb_choose_number_of_base_bits(k + num_pairs, num_pairs);
   low_level_uncompress_pairs(pairs.data(), num_pairs, num_base_bits, data, data_words);
+  for (uint32_t i = 0; i < num_pairs; i++) {
+    if ((pairs[i] >> 6) >= k) throw std::out_of_range("row index out of range");
+  }
   return pairs;
 }
 
@@ -472,8 +476,10 @@ static inline void maybe_flush_bitbuf(uint64_t& bitbuf, uint8_t& bufbits, uint32
   }
 }
 
-static inline void maybe_fill_bitbuf(uint64_t& bitbuf, uint8_t& bufbits, const uint32_t* wordarr, uint32_t& wordindex, uint8_t minbits) {
+static inline void maybe_fill_bitbuf(uint64_t& bitbuf, uint8_t& bufbits, const uint32_t* wordarr, uint32_t& wordindex,
+    uint32_t numwords, uint8_t minbits) {
   if (bufbits < minbits) {
+    if (wordindex >= numwords) throw std::out_of_range("compressed data over-run");
     bitbuf |= static_cast<uint64_t>(wordarr[wordindex++]) << bufbits;
     bufbits += 32;
   }
@@ -530,7 +536,7 @@ void cpc_compressor<A>::low_level_uncompress_bytes(
   if (compressed_words == nullptr) throw std::logic_error("compressed_words == NULL");
 
   for (uint32_t byte_index = 0; byte_index < num_bytes_to_decode; byte_index++) {
-    maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, word_index, 12); // ensure 12 bits in bit buffer
+    maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, word_index, num_compressed_words, 12); // ensure 12 bits in bit buffer
 
     const size_t peek12 = bitbuf & 0xfff; // These 12 bits will include an entire Huffman codeword.
     const uint16_t lookup = decoding_table[peek12];
@@ -547,6 +553,7 @@ void cpc_compressor<A>::low_level_uncompress_bytes(
 
 static inline uint64_t read_unary(
     const uint32_t* compressed_words,
+    uint32_t num_compressed_words,
     uint32_t& next_word_index,
     uint64_t& bitbuf,
     uint8_t& bufbits
@@ -646,7 +653,7 @@ void cpc_compressor<A>::low_level_uncompress_pairs(
   // y_delta_lo (basebits)
 
   for (uint32_t pair_index = 0; pair_index < num_pairs_to_decode; pair_index++) {
-    maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, word_index, 12); // ensure 12 bits in bit buffer
+    maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, word_index, num_compressed_words, 12); // ensure 12 bits in bit buffer
     const size_t peek12 = bitbuf & 0xfff;
     const uint16_t lookup = length_limited_unary_decoding_table65[peek12];
     const uint8_t code_word_length = lookup >> 8;
@@ -654,9 +661,9 @@ void cpc_compressor<A>::low_level_uncompress_pairs(
     bitbuf >>= code_word_length;
     bufbits -= code_word_length;
 
-    const uint64_t golomb_hi = read_unary(compressed_words, word_index, bitbuf, bufbits);
+    const uint64_t golomb_hi = read_unary(compressed_words, num_compressed_words, word_index, bitbuf, bufbits);
 
-    maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, word_index, num_base_bits); // ensure num_base_bits in bit buffer
+    maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, word_index, num_compressed_words, num_base_bits); // ensure num_base_bits in bit buffer
     const uint64_t golomb_lo = bitbuf & golomb_lo_mask;
     bitbuf >>= num_base_bits;
     bufbits -= num_base_bits;
@@ -666,6 +673,7 @@ void cpc_compressor<A>::low_level_uncompress_pairs(
     if (y_delta > 0) predicted_col_index = 0;
     const uint32_t row_index = static_cast<uint32_t>(predicted_row_index + y_delta);
     const uint8_t col_index = predicted_col_index + x_delta;
+    if (col_index > 63) throw std::out_of_range("column index out of range");
     const uint32_t row_col = (row_index << 6) | col_index;
     pair_array[pair_index] = row_col;
     predicted_row_index = row_index;
@@ -676,6 +684,7 @@ void cpc_compressor<A>::low_level_uncompress_pairs(
 
 uint64_t read_unary(
     const uint32_t* compressed_words,
+    uint32_t num_compressed_words,
     uint32_t& next_word_index,
     uint64_t& bitbuf,
     uint8_t& bufbits
@@ -683,7 +692,7 @@ uint64_t read_unary(
   if (compressed_words == nullptr) throw std::logic_error("compressed_words == NULL");
   size_t subtotal = 0;
   while (true) {
-    maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, next_word_index, 8); // ensure 8 bits in bit buffer
+    maybe_fill_bitbuf(bitbuf, bufbits, compressed_words, next_word_index, num_compressed_words, 8); // ensure 8 bits in bit buffer
 
     const uint8_t peek8 = bitbuf & 0xff; // These 8 bits include either all or part of the Unary codeword
     const uint8_t trailing_zeros = byte_trailing_zeros_table[peek8];

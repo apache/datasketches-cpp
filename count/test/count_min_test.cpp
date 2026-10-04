@@ -336,4 +336,24 @@ TEST_CASE("CountMin sketch: sink serialize-deserialize round trip", "[cm_sketch]
   check_sink_serialize(non_empty);
 }
 
+TEST_CASE("CountMin sketch: bytes deserialize truncated non-empty", "[cm_sketch]") {
+  count_min_sketch<uint64_t> c(5, 64);
+  for (uint64_t i = 0; i < 10; ++i) c.update(i, 10 * i * i);
+  auto bytes = c.serialize();
+  for (size_t trim = 1; trim <= 24; ++trim) {
+    REQUIRE_THROWS_AS(count_min_sketch<uint64_t>::deserialize(bytes.data(), bytes.size() - trim), std::out_of_range);
+  }
+}
+
+TEST_CASE("CountMin sketch: deserialize rejects overflowing dimensions", "[cm_sketch]") {
+  // num_buckets * num_hashes wraps to 0 in 32-bit arithmetic
+  count_min_sketch<uint64_t> c(2, 64);
+  c.update(uint64_t(1));
+  auto bytes = c.serialize();
+  const uint32_t num_buckets = 1U << 31;
+  std::memcpy(bytes.data() + 8, &num_buckets, sizeof(num_buckets));
+  REQUIRE_THROWS_AS(count_min_sketch<uint64_t>::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+  REQUIRE_THROWS_AS(count_min_sketch<uint64_t>(2, num_buckets), std::invalid_argument);
+}
+
 } /* namespace datasketches */

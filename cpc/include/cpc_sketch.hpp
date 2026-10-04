@@ -315,6 +315,7 @@ private:
   inline size_t copy_hip_to_mem(void* dst) const;
 
   static void check_lg_k(uint8_t lg_k);
+  static void check_num_coupons(uint8_t lg_k, uint32_t num_coupons, uint32_t num_pairs);
 
   friend cpc_compressor<A>;
   friend cpc_union_alloc<A>;

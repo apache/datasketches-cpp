@@ -379,4 +379,39 @@ TEST_CASE("cpc sketch: max serialized size", "[cpc_sketch]") {
   REQUIRE(cpc_sketch::get_max_serialized_size_bytes(26) == static_cast<size_t>((0.6 * (1 << 26)) + 40));
 }
 
+TEST_CASE("cpc sketch: deserialize corrupt num_coupons", "[cpc_sketch]") {
+  cpc_sketch sketch(11);
+  for (int i = 0; i < 100; i++) sketch.update(i);
+  auto bytes = sketch.serialize();
+  REQUIRE((bytes[5] & (1 << 3)) != 0); // sparse flavor: table present
+  REQUIRE((bytes[5] & (1 << 4)) == 0); // and no window
+  uint32_t num_coupons;
+  std::memcpy(&num_coupons, bytes.data() + 8, sizeof(num_coupons));
+
+  // more pairs than the compressed table holds: decoder must not read past it
+  auto corrupt = bytes;
+  const uint32_t more_coupons = num_coupons + 50;
+  std::memcpy(corrupt.data() + 8, &more_coupons, sizeof(more_coupons));
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(corrupt.data(), corrupt.size()), std::out_of_range);
+
+  // more coupons than the k x 64 bit matrix can hold
+  corrupt = bytes;
+  const uint32_t too_many_coupons = 64 * 2048 + 1;
+  std::memcpy(corrupt.data() + 8, &too_many_coupons, sizeof(too_many_coupons));
+  REQUIRE_THROWS_AS(cpc_sketch::deserialize(corrupt.data(), corrupt.size()), std::invalid_argument);
+}
+
+TEST_CASE("cpc sketch: deserialize corrupt lg_k", "[cpc_sketch]") {
+  cpc_sketch sketch(11);
+  for (int i = 0; i < 100; i++) sketch.update(i);
+  auto bytes = sketch.serialize();
+  for (uint8_t lg_k: {0, 3, 27, 255}) {
+    bytes[3] = lg_k;
+    REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+    std::stringstream s;
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE_THROWS_AS(cpc_sketch::deserialize(s), std::invalid_argument);
+  }
+}
+
 } /* namespace datasketches */
