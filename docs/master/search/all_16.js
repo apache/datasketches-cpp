@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['xxhash64_0',['xxhash64',['../classXXHash64.html',1,'XXHash64'],['../classXXHash64.html#aa066dac9f05cdf8b1adb49e12c64f54b',1,'XXHash64::XXHash64()']]]
+  ['wrap_0',['wrap',['../classdatasketches_1_1wrapped__compact__theta__sketch__alloc.html#a7c8fcc5351cb17b746aef835e65b403a',1,'datasketches::wrapped_compact_theta_sketch_alloc']]],
+  ['wrapped_5fcompact_5ftheta_5fsketch_1',['wrapped_compact_theta_sketch',['../namespacedatasketches.html#aa3beeb0f7bcab82d98ea34a3bab848b6',1,'datasketches']]],
+  ['wrapped_5fcompact_5ftheta_5fsketch_5falloc_2',['wrapped_compact_theta_sketch_alloc',['../classdatasketches_1_1wrapped__compact__theta__sketch__alloc.html',1,'datasketches']]]
 ];
