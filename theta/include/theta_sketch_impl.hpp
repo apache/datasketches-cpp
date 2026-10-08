@@ -668,11 +668,26 @@ template<typename A>
 compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize_v3(
     uint8_t preamble_longs, std::istream& is, uint64_t seed, const A& allocator)
 {
-  read<uint16_t>(is); // unused
+  const auto unused16 = read<uint16_t>(is);
   const auto flags_byte = read<uint8_t>(is);
   const auto seed_hash = read<uint16_t>(is);
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
-  if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+  if (is_empty) {
+    const uint64_t pre0 = static_cast<uint64_t>(preamble_longs)
+        | (static_cast<uint64_t>(UNCOMPRESSED_SERIAL_VERSION) << 8)
+        | (static_cast<uint64_t>(SKETCH_TYPE) << 16)
+        | (static_cast<uint64_t>(unused16) << 24)
+        | (static_cast<uint64_t>(flags_byte) << 40)
+        | (static_cast<uint64_t>(seed_hash) << 48);
+    if (compact_theta_sketch_parser<true>::check_empty_v3(pre0, compute_seed_hash(seed)) == 3) {
+      const auto num_entries = read<uint32_t>(is);
+      read<uint32_t>(is); // unused
+      read<uint64_t>(is); // theta is ignored, empty implies theta = 1.0
+      if (num_entries != 0) throw std::invalid_argument("legacy empty compact sketch has entries");
+    }
+  } else {
+    checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+  }
   uint64_t theta = theta_constants::MAX_THETA;
   uint32_t num_entries = 0;
   if (!is_empty) {
