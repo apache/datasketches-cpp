@@ -17,11 +17,25 @@
  * under the License.
  */
 
+#include <stdexcept>
+#include <string>
+
 namespace datasketches {
 
 template<typename Array, typename Policy, typename Allocator>
 array_tuple_intersection<Array, Policy, Allocator>::array_tuple_intersection(uint64_t seed, const Policy& policy, const Allocator& allocator):
 Base(seed, policy, allocator) {}
+
+template<typename Array, typename Policy, typename Allocator>
+template<typename FwdSketch>
+void array_tuple_intersection<Array, Policy, Allocator>::update(FwdSketch&& sketch) {
+  const uint8_t num_values = this->state_.get_policy().get_external_policy().get_num_values();
+  if (sketch.get_num_values() != num_values) {
+    throw std::invalid_argument("number of values mismatch: intersection has " + std::to_string(num_values)
+        + ", sketch has " + std::to_string(sketch.get_num_values()));
+  }
+  Base::update(std::forward<FwdSketch>(sketch));
+}
 
 template<typename Array, typename Policy, typename Allocator>
 auto array_tuple_intersection<Array, Policy, Allocator>::get_result(bool ordered) const -> CompactSketch {

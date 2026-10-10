@@ -173,6 +173,53 @@ TEST_CASE("aod intersection: half overlap", "[tuple_sketch]") {
   REQUIRE(result.get_estimate() == Approx(500).margin(0.01));
 }
 
+TEST_CASE("aod union: number of values", "[tuple_sketch]") {
+  auto sketch1 = update_array_of_doubles_sketch::builder(1).build();
+  sketch1.update(1, std::vector<double>{1});
+  auto sketch3 = update_array_of_doubles_sketch::builder(3).build();
+  sketch3.update(1, std::vector<double>{1, 2, 3});
+  sketch3.update(2, std::vector<double>{4, 5, 6});
+
+  // matching number of values: entries for the same key are summed
+  auto u = array_of_doubles_union::builder(3).build();
+  u.update(sketch3);
+  u.update(sketch3.compact());
+  auto result = u.get_result();
+  REQUIRE(result.get_num_values() == 3);
+  REQUIRE(result.get_num_retained() == 2);
+  for (const auto& entry: result) {
+    REQUIRE(entry.second.size() == 3);
+  }
+
+  // mismatch is rejected whether or not keys overlap, and for update and compact sketches
+  REQUIRE_THROWS_AS(u.update(sketch1), std::invalid_argument);
+  REQUIRE_THROWS_AS(u.update(sketch1.compact()), std::invalid_argument);
+  auto u1 = array_of_doubles_union::builder(1).build();
+  REQUIRE_THROWS_AS(u1.update(sketch3), std::invalid_argument);
+  auto empty3 = update_array_of_doubles_sketch::builder(3).build();
+  REQUIRE_THROWS_AS(u1.update(empty3), std::invalid_argument);
+
+  // a rejected update leaves the union usable
+  u1.update(sketch1);
+  REQUIRE(u1.get_result().get_num_retained() == 1);
+}
+
+TEST_CASE("aod intersection: number of values", "[tuple_sketch]") {
+  auto sketch1 = update_array_of_doubles_sketch::builder(1).build();
+  sketch1.update(1, std::vector<double>{1});
+  auto sketch3 = update_array_of_doubles_sketch::builder(3).build();
+  sketch3.update(1, std::vector<double>{1, 2, 3});
+
+  array_of_doubles_intersection<default_array_of_doubles_union_policy> intersection(DEFAULT_SEED, 3);
+  REQUIRE_THROWS_AS(intersection.update(sketch1), std::invalid_argument);
+  intersection.update(sketch3);
+  REQUIRE_THROWS_AS(intersection.update(sketch1.compact()), std::invalid_argument);
+  intersection.update(sketch3.compact());
+  auto result = intersection.get_result();
+  REQUIRE(result.get_num_values() == 3);
+  REQUIRE(result.get_num_retained() == 1);
+}
+
 TEST_CASE("aod a-not-b: half overlap", "[tuple_sketch]") {
   double a[1] = {1};
 
