@@ -16,7 +16,6 @@ fdlibm_log\.hpp
 README\.md
 CONTRIBUTING\.md
 CODE_OF_CONDUCT\.md
-SECURITY\.md
 #
 # Generated and template files consumed by the build.
 Doxyfile
