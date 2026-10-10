@@ -238,6 +238,18 @@ class kll_sketch {
     void update(FwdT&& item);
 
     /**
+     * Updates this sketch with the given data item repeated the given number of times.
+     * The result is equivalent to calling update(item) weight times, at a cost that grows
+     * with the logarithm of the weight rather than with the weight itself.
+     * If cross-language portability is required, callers should ensure that
+     * the input string uses a compatible encoding (valid UTF-8).
+     * @param item from a stream of items
+     * @param weight number of times the item is repeated, must be positive
+     */
+    template<typename FwdT>
+    void update(FwdT&& item, uint64_t weight);
+
+    /**
      * Merges another sketch into this one.
      * If sketches contain strings, callers are responsible for ensuring that
      * both sketches were built using compatible string encodings.
@@ -569,6 +581,9 @@ class kll_sketch {
     kll_sketch(uint16_t k, uint16_t min_k, uint64_t n, uint8_t num_levels, vector_u32&& levels,
         std::unique_ptr<T, items_deleter> items, uint32_t items_size, optional<T>&& min_item,
         optional<T>&& max_item, bool is_level_zero_sorted, const C& comparator);
+
+    // for weighted update
+    kll_sketch(uint16_t k, const T& item, uint64_t weight, const C& comparator, const A& allocator);
 
     // common update code
     inline void update_min_max(const T& item);
