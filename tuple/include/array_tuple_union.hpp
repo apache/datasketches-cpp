@@ -60,6 +60,15 @@ public:
 
   class builder;
 
+  /**
+   * Update the union with a given sketch.
+   * The sketch must have the same number of values as the union policy.
+   * @param sketch to update the union with
+   * @throw std::invalid_argument if the number of values does not match
+   */
+  template<typename FwdSketch>
+  void update(FwdSketch&& sketch);
+
   CompactSketch get_result(bool ordered = true) const;
 
 private:
