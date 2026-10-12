@@ -11,22 +11,17 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.config.name }}
+    name: ${{ matrix.sanitizer.name }} (${{ matrix.compiler.cc }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        config:
-        - {
-            name: "Address Sanitizer",
-            sanitize: "address",
-            cc: "gcc", cxx: "g++"
-          }
-        - {
-            name: "Undefined Behavior Sanitizer",
-            sanitize: "undefined,float-cast-overflow",
-            cc: "clang", cxx: "clang++"
-          }
+        sanitizer:
+        - { name: "Address Sanitizer", flags: "address" }
+        - { name: "Undefined Behavior Sanitizer", flags: "undefined,float-cast-overflow" }
+        compiler:
+        - { cc: "gcc", cxx: "g++" }
+        - { cc: "clang", cxx: "clang++" }
     env:
       UBSAN_OPTIONS: print_stacktrace=1
 
@@ -38,9 +33,9 @@ jobs:
           persist-credentials: false
       - name: Configure
         env:
-          CC: ${{ matrix.config.cc }}
-          CXX: ${{ matrix.config.cxx }}
-        run: cmake -B build -S . -DSANITIZE=${{ matrix.config.sanitize }}
+          CC: ${{ matrix.compiler.cc }}
+          CXX: ${{ matrix.compiler.cxx }}
+        run: cmake -B build -S . -DSANITIZE=${{ matrix.sanitizer.flags }}
       - name: Build C++ unit tests
         run: cmake --build build --config Release
       - name: Run C++ tests
