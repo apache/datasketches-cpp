@@ -11,9 +11,25 @@ env:
 
 jobs:
   build:
-    name: Address Sanitizer
+    name: ${{ matrix.config.name }}
     runs-on: ubuntu-latest
-            
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Address Sanitizer",
+            sanitize: "address",
+            cc: "gcc", cxx: "g++"
+          }
+        - {
+            name: "Undefined Behavior Sanitizer",
+            sanitize: "undefined,float-cast-overflow",
+            cc: "clang", cxx: "clang++"
+          }
+    env:
+      UBSAN_OPTIONS: print_stacktrace=1
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,7 +37,10 @@ jobs:
           submodules: true
           persist-credentials: false
       - name: Configure
-        run: cmake -B build -S . -DSANITIZE=address
+        env:
+          CC: ${{ matrix.config.cc }}
+          CXX: ${{ matrix.config.cxx }}
+        run: cmake -B build -S . -DSANITIZE=${{ matrix.config.sanitize }}
       - name: Build C++ unit tests
         run: cmake --build build --config Release
       - name: Run C++ tests
