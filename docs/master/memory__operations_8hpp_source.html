@@ -127,13 +127,13 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="comment">// note: size is in bytes, not items</span></div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">size_t</span> copy_from_mem(<span class="keyword">const</span> <span class="keywordtype">void</span>* src, <span class="keywordtype">void</span>* dst, <span class="keywordtype">size_t</span> size) {</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  memcpy(dst, src, size);</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  <span class="keywordflow">if</span> (size &gt; 0) memcpy(dst, src, size);</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  <span class="keywordflow">return</span> size;</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>}</div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="comment">// note: size is in bytes, not items</span></div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">size_t</span> copy_to_mem(<span class="keyword">const</span> <span class="keywordtype">void</span>* src, <span class="keywordtype">void</span>* dst, <span class="keywordtype">size_t</span> size) {</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>  memcpy(dst, src, size);</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>  <span class="keywordflow">if</span> (size &gt; 0) memcpy(dst, src, size);</div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>  <span class="keywordflow">return</span> size;</div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>}</div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
