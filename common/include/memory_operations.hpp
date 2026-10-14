@@ -44,13 +44,13 @@ static inline void check_memory_size(size_t requested_index, size_t capacity) {
 
 // note: size is in bytes, not items
 static inline size_t copy_from_mem(const void* src, void* dst, size_t size) {
-  memcpy(dst, src, size);
+  if (size > 0) memcpy(dst, src, size);
   return size;
 }
 
 // note: size is in bytes, not items
 static inline size_t copy_to_mem(const void* src, void* dst, size_t size) {
-  memcpy(dst, src, size);
+  if (size > 0) memcpy(dst, src, size);
   return size;
 }
 
