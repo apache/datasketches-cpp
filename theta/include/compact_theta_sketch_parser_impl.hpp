@@ -70,6 +70,12 @@ auto compact_theta_sketch_parser<dummy>::parse(const void* ptr, size_t size, uin
       uint64_t theta = theta_constants::MAX_THETA;
       const uint16_t seed_hash = reinterpret_cast<const uint16_t*>(ptr)[COMPACT_SKETCH_SEED_HASH_U16];
       if (reinterpret_cast<const uint8_t*>(ptr)[COMPACT_SKETCH_FLAGS_BYTE] & (1 << COMPACT_SKETCH_IS_EMPTY_FLAG)) {
+        if (check_empty_v3(reinterpret_cast<const uint64_t*>(ptr)[0], compute_seed_hash(seed)) == 3) {
+          check_memory_size(ptr, size, COMPACT_SKETCH_ENTRIES_ESTIMATION_U64 * sizeof(uint64_t), dump_on_error);
+          if (reinterpret_cast<const uint32_t*>(ptr)[COMPACT_SKETCH_NUM_ENTRIES_U32] != 0) {
+            throw std::invalid_argument("legacy empty compact sketch has entries");
+          }
+        }
         return {true, true, seed_hash, 0, theta, nullptr, 64};
       }
       checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
@@ -144,6 +150,26 @@ void compact_theta_sketch_parser<dummy>::check_memory_size(const void* ptr, size
   if (actual_bytes < expected_bytes) throw std::out_of_range("at least " + std::to_string(expected_bytes)
       + " bytes expected, actual " + std::to_string(actual_bytes)
       + (dump_on_error ? (", sketch dump: " + hex_dump(reinterpret_cast<const uint8_t*>(ptr), actual_bytes)) : ""));
+}
+
+template<bool dummy>
+const uint64_t compact_theta_sketch_parser<dummy>::EMPTY_SKETCH_MASK;
+template<bool dummy>
+const uint64_t compact_theta_sketch_parser<dummy>::EMPTY_SKETCH_TEST;
+template<bool dummy>
+const uint64_t compact_theta_sketch_parser<dummy>::EMPTY_SKETCH_TEST_LEGACY;
+
+template<bool dummy>
+uint8_t compact_theta_sketch_parser<dummy>::check_empty_v3(uint64_t pre0, uint16_t expected_seed_hash) {
+  const uint64_t masked = pre0 & EMPTY_SKETCH_MASK;
+  if (masked == EMPTY_SKETCH_TEST) return 1;
+  if (masked == EMPTY_SKETCH_TEST_LEGACY) {
+    checker<true>::check_seed_hash(static_cast<uint16_t>(pre0 >> 48), expected_seed_hash);
+    return 3;
+  }
+  std::stringstream s;
+  s << "empty compact sketch preamble does not match: 0x" << std::hex << masked;
+  throw std::invalid_argument(s.str());
 }
 
 template<bool dummy>
