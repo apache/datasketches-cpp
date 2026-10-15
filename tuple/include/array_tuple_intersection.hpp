@@ -49,6 +49,15 @@ public:
   explicit array_tuple_intersection(uint64_t seed = DEFAULT_SEED, const Policy& policy = Policy(), const Allocator& allocator = Allocator());
 
   /**
+   * Updates the intersection with a given sketch.
+   * The sketch must have the same number of values as the intersection policy.
+   * @param sketch to intersect with
+   * @throw std::invalid_argument if the number of values does not match
+   */
+  template<typename FwdSketch>
+  void update(FwdSketch&& sketch);
+
+  /**
    * Produces a copy of the current state of the intersection.
    * If update() was not called, the state is the infinite "universe",
    * which is considered an undefined state, and throws an exception.

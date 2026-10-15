@@ -17,12 +17,26 @@
  * under the License.
  */
 
+#include <stdexcept>
+#include <string>
+
 namespace datasketches {
 
 template<typename Array, typename Policy, typename Allocator>
 array_tuple_union<Array, Policy, Allocator>::array_tuple_union(uint8_t lg_cur_size, uint8_t lg_nom_size, resize_factor rf, float p, uint64_t theta, uint64_t seed, const Policy& policy, const Allocator& allocator):
 Base(lg_cur_size, lg_nom_size, rf, p, theta, seed, policy, allocator)
 {}
+
+template<typename Array, typename Policy, typename Allocator>
+template<typename FwdSketch>
+void array_tuple_union<Array, Policy, Allocator>::update(FwdSketch&& sketch) {
+  const uint8_t num_values = this->state_.get_policy().get_external_policy().get_num_values();
+  if (sketch.get_num_values() != num_values) {
+    throw std::invalid_argument("number of values mismatch: union has " + std::to_string(num_values)
+        + ", sketch has " + std::to_string(sketch.get_num_values()));
+  }
+  Base::update(std::forward<FwdSketch>(sketch));
+}
 
 template<typename Array, typename Policy, typename Allocator>
 auto array_tuple_union<Array, Policy, Allocator>::get_result(bool ordered) const -> CompactSketch {
