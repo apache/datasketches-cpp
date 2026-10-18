@@ -99,6 +99,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af032c7e2eeeafda87bf316647465ba4a" id="r_af032c7e2eeeafda87bf316647465ba4a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1array__tuple__intersection.html#af032c7e2eeeafda87bf316647465ba4a">array_tuple_intersection</a> (uint64_t seed=DEFAULT_SEED, const Policy &amp;policy=Policy(), const Allocator &amp;allocator=Allocator())</td></tr>
 <tr class="memdesc:af032c7e2eeeafda87bf316647465ba4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
 <tr class="separator:af032c7e2eeeafda87bf316647465ba4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4fac8167b04c9b5dbaeb5ccbd053703c" id="r_a4fac8167b04c9b5dbaeb5ccbd053703c"><td class="memTemplParams" colspan="2">template&lt;typename FwdSketch &gt; </td></tr>
+<tr class="memitem:a4fac8167b04c9b5dbaeb5ccbd053703c"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1array__tuple__intersection.html#a4fac8167b04c9b5dbaeb5ccbd053703c">update</a> (FwdSketch &amp;&amp;sketch)</td></tr>
+<tr class="memdesc:a4fac8167b04c9b5dbaeb5ccbd053703c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates the intersection with a given sketch.  <br /></td></tr>
+<tr class="separator:a4fac8167b04c9b5dbaeb5ccbd053703c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a037835e8f8e6b5233fa0f0996bba6a99" id="r_a037835e8f8e6b5233fa0f0996bba6a99"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classdatasketches_1_1compact__array__tuple__sketch.html">CompactSketch</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdatasketches_1_1array__tuple__intersection.html#a037835e8f8e6b5233fa0f0996bba6a99">get_result</a> (bool ordered=true) const</td></tr>
 <tr class="memdesc:a037835e8f8e6b5233fa0f0996bba6a99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Produces a copy of the current state of the intersection.  <br /></td></tr>
 <tr class="separator:a037835e8f8e6b5233fa0f0996bba6a99"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -176,6 +180,42 @@ template&lt;typename Array , typename Policy , typename Allocator &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a4fac8167b04c9b5dbaeb5ccbd053703c" name="a4fac8167b04c9b5dbaeb5ccbd053703c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fac8167b04c9b5dbaeb5ccbd053703c">&#9670;&#160;</a></span>update()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Array , typename Policy , typename Allocator &gt; </div>
+<div class="memtemplate">
+template&lt;typename FwdSketch &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void update </td>
+          <td>(</td>
+          <td class="paramtype">FwdSketch &amp;&amp;&#160;</td>
+          <td class="paramname"><em>sketch</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Updates the intersection with a given sketch. </p>
+<p>The sketch must have the same number of values as the intersection policy. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">sketch</td><td>to intersect with </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::invalid_argument</td><td>if the number of values does not match </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a037835e8f8e6b5233fa0f0996bba6a99" name="a037835e8f8e6b5233fa0f0996bba6a99"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a037835e8f8e6b5233fa0f0996bba6a99">&#9670;&#160;</a></span>get_result()</h2>
 
@@ -195,7 +235,7 @@ template&lt;typename Array , typename Policy , typename Allocator &gt; </div>
 </div><div class="memdoc">
 
 <p>Produces a copy of the current state of the intersection. </p>
-<p>If <a class="el" href="classdatasketches_1_1tuple__intersection.html#a4fac8167b04c9b5dbaeb5ccbd053703c" title="Updates the intersection with a given sketch.">update()</a> was not called, the state is the infinite "universe", which is considered an undefined state, and throws an exception. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If <a class="el" href="classdatasketches_1_1array__tuple__intersection.html#a4fac8167b04c9b5dbaeb5ccbd053703c" title="Updates the intersection with a given sketch.">update()</a> was not called, the state is the infinite "universe", which is considered an undefined state, and throws an exception. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ordered</td><td>optional flag to specify if an ordered sketch should be produced </td></tr>
   </table>
