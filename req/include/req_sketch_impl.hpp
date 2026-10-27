@@ -30,7 +30,7 @@ template<typename T, typename C, typename A>
 req_sketch<T, C, A>::req_sketch(uint16_t k, bool hra, const C& comparator, const A& allocator):
 comparator_(comparator),
 allocator_(allocator),
-k_(std::max<uint8_t>(static_cast<int>(k) & -2, static_cast<int>(req_constants::MIN_K))), //rounds down one if odd
+k_(std::max<uint16_t>(static_cast<int>(k) & -2, static_cast<int>(req_constants::MIN_K))), //rounds down one if odd
 hra_(hra),
 max_nom_size_(0),
 num_retained_(0),
