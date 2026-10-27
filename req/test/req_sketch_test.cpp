@@ -54,6 +54,39 @@ TEST_CASE("req sketch: empty", "[req_sketch]") {
   REQUIRE_THROWS_AS(sketch.get_PMF(split_points, 1), std::runtime_error);
 }
 
+TEST_CASE("req sketch: k above 255", "[req_sketch]") {
+  // k used to be truncated to 8 bits: 256 became 4 and 500 became 244
+  REQUIRE(req_sketch<float>(256).get_k() == 256);
+  REQUIRE(req_sketch<float>(500).get_k() == 500);
+  REQUIRE(req_sketch<float>(1024).get_k() == 1024);
+  REQUIRE(req_sketch<float>(1001).get_k() == 1000); // rounds down if odd
+
+  req_sketch<float> sketch(1024);
+  const size_t n = 100000;
+  for (size_t i = 0; i < n; i++) sketch.update(static_cast<float>(i));
+  REQUIRE(sketch.is_estimation_mode());
+  auto bytes = sketch.serialize();
+  auto sketch2 = req_sketch<float>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(sketch2.get_k() == 1024);
+  REQUIRE(sketch2.get_n() == n);
+  REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+}
+
+TEST_CASE("req sketch: k bounds", "[req_sketch]") {
+  for (bool hra: {true, false}) {
+    REQUIRE(req_sketch<float>(0, hra).get_k() == 4);
+    REQUIRE(req_sketch<float>(3, hra).get_k() == 4);
+    REQUIRE(req_sketch<float>(4, hra).get_k() == 4);
+    REQUIRE(req_sketch<float>(5, hra).get_k() == 4);
+    REQUIRE(req_sketch<float>(1023, hra).get_k() == 1022);
+    REQUIRE(req_sketch<float>(1024, hra).get_k() == 1024);
+    // Reject the original k, even if rounding down would put it in range.
+    REQUIRE_THROWS_AS(req_sketch<float>(1025, hra), std::invalid_argument);
+    REQUIRE_THROWS_AS(req_sketch<float>(1026, hra), std::invalid_argument);
+    REQUIRE_THROWS_AS(req_sketch<float>(std::numeric_limits<uint16_t>::max(), hra), std::invalid_argument);
+  }
+}
+
 TEST_CASE("req sketch: single value, lra", "[req_sketch]") {
   req_sketch<float> sketch(12, false);
   sketch.update(1.0f);
