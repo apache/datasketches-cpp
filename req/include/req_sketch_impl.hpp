@@ -40,6 +40,9 @@ min_item_(),
 max_item_(),
 sorted_view_(nullptr)
 {
+  if (k > req_constants::MAX_K) {
+    throw std::invalid_argument("K must be <= " + std::to_string(req_constants::MAX_K) + ": " + std::to_string(k));
+  }
   grow();
 }
 

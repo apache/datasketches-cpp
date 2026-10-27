@@ -72,6 +72,21 @@ TEST_CASE("req sketch: k above 255", "[req_sketch]") {
   REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
 }
 
+TEST_CASE("req sketch: k bounds", "[req_sketch]") {
+  for (bool hra: {true, false}) {
+    REQUIRE(req_sketch<float>(0, hra).get_k() == 4);
+    REQUIRE(req_sketch<float>(3, hra).get_k() == 4);
+    REQUIRE(req_sketch<float>(4, hra).get_k() == 4);
+    REQUIRE(req_sketch<float>(5, hra).get_k() == 4);
+    REQUIRE(req_sketch<float>(1023, hra).get_k() == 1022);
+    REQUIRE(req_sketch<float>(1024, hra).get_k() == 1024);
+    // Reject the original k, even if rounding down would put it in range.
+    REQUIRE_THROWS_AS(req_sketch<float>(1025, hra), std::invalid_argument);
+    REQUIRE_THROWS_AS(req_sketch<float>(1026, hra), std::invalid_argument);
+    REQUIRE_THROWS_AS(req_sketch<float>(std::numeric_limits<uint16_t>::max(), hra), std::invalid_argument);
+  }
+}
+
 TEST_CASE("req sketch: single value, lra", "[req_sketch]") {
   req_sketch<float> sketch(12, false);
   sketch.update(1.0f);
