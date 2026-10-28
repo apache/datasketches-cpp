@@ -382,7 +382,7 @@ private:
   std::vector<W, Allocator> _sketch_array; // the array stored by the sketch
   uint64_t _seed;
   W _total_weight;
-  std::vector<uint64_t> hash_seeds;
+  std::vector<uint64_t, typename std::allocator_traits<Allocator>::template rebind_alloc<uint64_t>> hash_seeds;
 
   enum flags {IS_EMPTY};
   static const uint8_t PREAMBLE_LONGS_SHORT = 2; // Empty -> need second byte for sketch parameters

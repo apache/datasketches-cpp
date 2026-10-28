@@ -152,4 +152,21 @@ TEST_CASE("CountMin sketch test allocator: bytes serialize-deserialize non-empty
   REQUIRE(test_allocator_net_allocations == 0);
 }
 
+TEST_CASE("CountMin sketch test allocator: hash seeds use the sketch's allocator", "[cm_sketch_alloc]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    const uint8_t n_hashes = 5;
+    const uint32_t n_buckets = 100;
+    const long long sketch_bytes = n_hashes * n_buckets * sizeof(uint64_t) + n_hashes * sizeof(uint64_t);
+    count_min_sketch_test_alloc c(n_hashes, n_buckets, DEFAULT_SEED, alloc(0));
+    // the counters and the hash seeds, all through the sketch's allocator
+    REQUIRE(test_allocator_total_bytes == sketch_bytes);
+    count_min_sketch_test_alloc copy(c);
+    REQUIRE(test_allocator_total_bytes == 2 * sketch_bytes);
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
 } // namespace datasketches
