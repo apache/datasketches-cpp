@@ -202,7 +202,7 @@ void ebpps_sketch<T, A>::merge(const ebpps_sketch<T, A>& sk) {
     // need to swap this with sk to merge, so make a copy, swap,
     // and use that to merge
     ebpps_sketch sk_copy(sk);
-    swap(*this, sk_copy);
+    std::swap(*this, sk_copy);
     internal_merge(sk_copy);
   } else {
     internal_merge(sk);
