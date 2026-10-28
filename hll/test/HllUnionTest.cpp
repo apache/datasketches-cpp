@@ -384,4 +384,77 @@ TEST_CASE("hll union: serialization is grouping independent", "[hll_union]") {
   REQUIRE(serialize_nested_union(a, b, c) == serialize_flat_union(a, b, c));
 }
 
+// A stateful allocator: instances with different ids are different allocators, and the bytes each one
+// has outstanding are counted.
+static long long pool_bytes[2] = {0, 0};
+
+template<typename T>
+struct pool_allocator {
+  using value_type = T;
+  int id;
+  explicit pool_allocator(int id): id(id) {}
+  template<typename U>
+  pool_allocator(const pool_allocator<U>& other): id(other.id) {}
+  T* allocate(std::size_t n) {
+    pool_bytes[id] += n * sizeof(T);
+    return static_cast<T*>(::operator new(n * sizeof(T)));
+  }
+  void deallocate(T* p, std::size_t n) {
+    pool_bytes[id] -= n * sizeof(T);
+    ::operator delete(p);
+  }
+};
+template<typename T, typename U>
+bool operator==(const pool_allocator<T>& a, const pool_allocator<U>& b) { return a.id == b.id; }
+template<typename T, typename U>
+bool operator!=(const pool_allocator<T>& a, const pool_allocator<U>& b) { return a.id != b.id; }
+
+using pool_hll_sketch = hll_sketch_alloc<pool_allocator<uint8_t>>;
+using pool_hll_union = hll_union_alloc<pool_allocator<uint8_t>>;
+
+static pool_hll_sketch make_pool_sketch(int id, uint8_t lg_k, target_hll_type type, uint64_t n) {
+  pool_hll_sketch sketch(lg_k, type, false, pool_allocator<uint8_t>(id));
+  for (uint64_t i = 0; i < n; ++i) sketch.update(i);
+  return sketch;
+}
+
+TEST_CASE("hll union: keeps no memory of an input sketch's allocator", "[hll_union]") {
+  const uint8_t lg_max_k = 10;
+  // LIST, SET and HLL inputs, with a smaller, the same and a larger lg_k than the union
+  const uint64_t sizes[] = {5, 100, 10000};
+  const uint8_t lg_ks[] = {8, 10, 12};
+  for (uint64_t n: sizes) {
+    for (uint8_t lg_k: lg_ks) {
+      for (target_hll_type type: {HLL_4, HLL_6, HLL_8}) {
+        for (bool gadget_empty: {true, false}) {
+          for (bool move: {false, true}) {
+            hll_union u(lg_max_k);
+            pool_hll_union pool_union(lg_max_k, pool_allocator<uint8_t>(0));
+            if (!gadget_empty) {
+              for (uint64_t i = 0; i < 3 * n; ++i) {
+                u.update(i + n);
+                pool_union.update(i + n);
+              }
+            }
+            {
+              hll_sketch control(lg_k, type);
+              for (uint64_t i = 0; i < n; ++i) control.update(i);
+              u.update(control);
+              pool_hll_sketch input = make_pool_sketch(1, lg_k, type, n);
+              if (move) {
+                pool_union.update(std::move(input));
+              } else {
+                pool_union.update(input);
+              }
+            }
+            REQUIRE(pool_bytes[1] == 0);
+            REQUIRE(pool_union.get_estimate() == u.get_estimate());
+          }
+        }
+      }
+    }
+  }
+  REQUIRE(pool_bytes[0] == 0);
+}
+
 } /* namespace datasketches */
