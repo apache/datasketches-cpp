@@ -62,6 +62,9 @@ void tdigest<T, A>::update(T value) {
   if (std::isnan(value)) return;
   if (std::isinf(value)) return;
   if (buffer_.size() == centroids_capacity_ * BUFFER_MULTIPLIER) compress();
+  if (buffer_.size() == buffer_.capacity()) {
+    buffer_.reserve(std::min(std::max<size_t>(2 * buffer_.size(), 8), centroids_capacity_ * BUFFER_MULTIPLIER));
+  }
   buffer_.push_back(value);
   min_ = std::min(min_, value);
   max_ = std::max(max_, value);
@@ -73,6 +76,7 @@ void tdigest<T, A>::merge(const tdigest& other) {
   // Extreme centroid means are not the true min/max when those centroids have weight > 1.
   min_ = std::min(min_, other.min_);
   max_ = std::max(max_, other.max_);
+  reserve_centroids(buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size());
   vector_centroid tmp(buffer_.get_allocator());
   tmp.reserve(buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size());
   for (const T value: buffer_) tmp.push_back(centroid(value, 1));
@@ -84,6 +88,7 @@ void tdigest<T, A>::merge(const tdigest& other) {
 template<typename T, typename A>
 void tdigest<T, A>::compress() {
   if (buffer_.size() == 0) return;
+  reserve_centroids(buffer_.size() + centroids_.size());
   vector_centroid tmp(buffer_.get_allocator());
   tmp.reserve(buffer_.size() + centroids_.size());
   for (const T value: buffer_) tmp.push_back(centroid(value, 1));
@@ -711,8 +716,16 @@ buffer_(std::move(buffer))
   if (k < 10) throw std::invalid_argument("k must be at least 10");
   const size_t fudge = k < 30 ? 30 : 10;
   centroids_capacity_ = 2 * k_ + fudge;
-  centroids_.reserve(centroids_capacity_);
-  buffer_.reserve(centroids_capacity_ * BUFFER_MULTIPLIER);
+  // centroids_ and buffer_ grow as they fill (see update() and reserve_centroids()) instead of being reserved
+  // here: many t-digests (e.g. per-group aggregation states) hold few values
+}
+
+template<typename T, typename A>
+void tdigest<T, A>::reserve_centroids(size_t num) {
+  num = std::min(num, centroids_capacity_);
+  if (centroids_.capacity() < num) {
+    centroids_.reserve(std::max(num, std::min(2 * centroids_.capacity(), centroids_capacity_)));
+  }
 }
 
 template<typename T, typename A>
