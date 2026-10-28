@@ -54,7 +54,9 @@ void hll_union_alloc<A>::update(const hll_sketch_alloc<A>& sketch) {
 template<typename A>
 void hll_union_alloc<A>::update(hll_sketch_alloc<A>&& sketch) {
   if (sketch.is_empty()) { return; }
-  if (gadget_.is_empty() && sketch.get_target_type() == HLL_8 && sketch.get_lg_config_k() <= lg_max_k_) {
+  // taking over the sketch is only possible if its memory can be released with the union's allocator
+  if (gadget_.is_empty() && sketch.get_target_type() == HLL_8 && sketch.get_lg_config_k() <= lg_max_k_
+      && sketch.sketch_impl->getAllocator() == gadget_.sketch_impl->getAllocator()) {
     if (sketch.get_current_mode() == HLL || sketch.get_lg_config_k() == lg_max_k_) {
       gadget_ = std::move(sketch);
     }
@@ -208,17 +210,20 @@ double hll_union_alloc<A>::get_rel_err(bool upper_bound, bool unioned,
 }
 
 template<typename A>
-HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(const HllSketchImpl<A>* src_impl, uint8_t tgt_lg_k) {
+HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(const HllSketchImpl<A>* src_impl, uint8_t tgt_lg_k,
+    const A& allocator) {
   if (src_impl->getCurMode() != HLL) {
     throw std::logic_error("Attempt to downsample non-HLL sketch");
   }
   const HllArray<A>* src = static_cast<const HllArray<A>*>(src_impl);
-  const int src_lg_k = src->getLgConfigK();
-  if (src_lg_k <= tgt_lg_k) {
+  const uint8_t src_lg_k = src->getLgConfigK();
+  // a copy keeps the source's allocator, so it is only made if that is the union's allocator
+  if (src_lg_k <= tgt_lg_k && src->getAllocator() == allocator) {
     return src->copyAs(HLL_8);
   }
   typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>> hll8Alloc;
-  Hll8Array<A>* tgtHllArr = new (hll8Alloc(src->getAllocator()).allocate(1)) Hll8Array<A>(tgt_lg_k, src->getAllocator());
+  const uint8_t lg_k = std::min(src_lg_k, tgt_lg_k);
+  Hll8Array<A>* tgtHllArr = new (hll8Alloc(allocator).allocate(1)) Hll8Array<A>(lg_k, allocator);
   tgtHllArr->mergeHll(*src);
   //both of these are required for isomorphism
   tgtHllArr->putHipAccum(src->getHipAccum());
@@ -239,8 +244,12 @@ template<typename A>
 void hll_union_alloc<A>::union_impl(const hll_sketch_alloc<A>& sketch, uint8_t lg_max_k) {
   const HllSketchImpl<A>* src_impl = sketch.sketch_impl; //default
   HllSketchImpl<A>* dst_impl = gadget_.sketch_impl; //default
+  // the gadget allocates with the union's allocator: the input sketch may use another allocator
+  // instance (e.g. a stateful one), and copies of it would keep that allocator
+  const A allocator = dst_impl->getAllocator();
   if (src_impl->getCurMode() == LIST || src_impl->getCurMode() == SET) {
-    if (dst_impl->isEmpty() && src_impl->getLgConfigK() == dst_impl->getLgConfigK()) {
+    if (dst_impl->isEmpty() && src_impl->getLgConfigK() == dst_impl->getLgConfigK()
+        && src_impl->getAllocator() == allocator) {
       dst_impl = src_impl->copyAs(HLL_8);
       gadget_.sketch_impl->get_deleter()(gadget_.sketch_impl); // gadget to be replaced
     } else {
@@ -254,12 +263,12 @@ void hll_union_alloc<A>::union_impl(const hll_sketch_alloc<A>& sketch, uint8_t l
       // swap so that src is LIST or SET, tgt is HLL
       // use lg_max_k because LIST has effective K of 2^26
       const CouponList<A>* src = static_cast<const CouponList<A>*>(dst_impl);
-      dst_impl = copy_or_downsample(src_impl, lg_max_k);
+      dst_impl = copy_or_downsample(src_impl, lg_max_k, allocator);
       static_cast<Hll8Array<A>*>(dst_impl)->mergeList(*src);
       gadget_.sketch_impl->get_deleter()(gadget_.sketch_impl); // gadget to be replaced
     } else { // gadget is HLL
       if (src_impl->getLgConfigK() < dst_impl->getLgConfigK()) {
-        dst_impl = copy_or_downsample(dst_impl, sketch.get_lg_config_k());
+        dst_impl = copy_or_downsample(dst_impl, sketch.get_lg_config_k(), allocator);
         gadget_.sketch_impl->get_deleter()(gadget_.sketch_impl); // gadget to be replaced
       }
       const HllArray<A>* src = static_cast<const HllArray<A>*>(src_impl);
@@ -268,7 +277,7 @@ void hll_union_alloc<A>::union_impl(const hll_sketch_alloc<A>& sketch, uint8_t l
       static_cast<Hll8Array<A>*>(dst_impl)->putHipAccum(0);
     }
   } else { // src is HLL, gadget is empty
-    dst_impl = copy_or_downsample(src_impl, lg_max_k);
+    dst_impl = copy_or_downsample(src_impl, lg_max_k, allocator);
     gadget_.sketch_impl->get_deleter()(gadget_.sketch_impl); // gadget to be replaced
   }
   gadget_.sketch_impl = dst_impl; // gadget replaced

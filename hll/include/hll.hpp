@@ -640,7 +640,7 @@ class hll_union_alloc {
     */
     inline void union_impl(const hll_sketch_alloc<A>& sketch, uint8_t lg_max_k);
 
-    static HllSketchImpl<A>* copy_or_downsample(const HllSketchImpl<A>* src_impl, uint8_t tgt_lg_k);
+    static HllSketchImpl<A>* copy_or_downsample(const HllSketchImpl<A>* src_impl, uint8_t tgt_lg_k, const A& allocator);
 
     void coupon_update(uint32_t coupon);
 
