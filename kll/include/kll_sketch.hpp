@@ -572,6 +572,8 @@ class kll_sketch {
 
     // common update code
     inline void update_min_max(const T& item);
+    // allocates items_ (items_size_ items) unless it is allocated already
+    inline void allocate_items();
     inline uint32_t internal_update();
 
     // The following code is only valid in the special case of exactly reaching capacity while updating.

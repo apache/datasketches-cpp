@@ -55,7 +55,8 @@ sorted_view_(nullptr)
         + std::to_string(kll_constants::MAX_K) + ": " + std::to_string(k));
   }
   levels_[0] = levels_[1] = k;
-  items_ = allocator_.allocate(items_size_);
+  // items_ is allocated by the first update or merge: many sketches (e.g. per-group aggregation states)
+  // stay empty or are only ever merged into
 }
 
 template<typename T, typename C, typename A>
@@ -75,8 +76,10 @@ min_item_(other.min_item_),
 max_item_(other.max_item_),
 sorted_view_(nullptr)
 {
-  items_ = allocator_.allocate(items_size_);
-  for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
+  if (other.items_ != nullptr) {
+    items_ = allocator_.allocate(items_size_);
+    for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
+  }
 }
 
 template<typename T, typename C, typename A>
@@ -171,8 +174,10 @@ sorted_view_(nullptr)
     std::is_constructible<T, TT>::value,
     "Type converting constructor requires new type to be constructible from existing type"
   );
-  items_ = allocator_.allocate(items_size_);
-  for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
+  if (other.items_ != nullptr) {
+    items_ = allocator_.allocate(items_size_);
+    for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
+  }
   check_sorting();
 }
 
@@ -198,7 +203,13 @@ void kll_sketch<T, C, A>::update_min_max(const T& item) {
 }
 
 template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::allocate_items() {
+  if (items_ == nullptr) items_ = allocator_.allocate(items_size_);
+}
+
+template<typename T, typename C, typename A>
 uint32_t kll_sketch<T, C, A>::internal_update() {
+  allocate_items();
   if (levels_[0] == 0) { compress_while_updating(); }
   n_++;
   is_level_zero_sorted_ = false;
@@ -212,6 +223,7 @@ void kll_sketch<T, C, A>::merge(FwdSk&& other) {
   if (m_ != other.m_) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
   }
+  allocate_items(); // the higher levels are merged into items_ even if other's level zero is empty
   if (is_empty()) {
     min_item_.emplace(conditional_forward<FwdSk>(*other.min_item_));
     max_item_.emplace(conditional_forward<FwdSk>(*other.max_item_));
