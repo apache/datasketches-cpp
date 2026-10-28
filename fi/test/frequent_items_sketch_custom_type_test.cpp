@@ -98,4 +98,35 @@ TEST_CASE("frequent items: negative weight", "[frequent_items_sketch]") {
   REQUIRE(test_allocator_total_bytes == 0);
 }
 
+// An allocator that counts its allocate() calls.
+static long long counting_allocations = 0;
+
+template<typename T>
+struct counting_allocator {
+  using value_type = T;
+  counting_allocator() = default;
+  template<typename U>
+  counting_allocator(const counting_allocator<U>&) {}
+  T* allocate(std::size_t n) {
+    ++counting_allocations;
+    return static_cast<T*>(::operator new(n * sizeof(T)));
+  }
+  void deallocate(T* p, std::size_t) { ::operator delete(p); }
+};
+template<typename T, typename U>
+bool operator==(const counting_allocator<T>&, const counting_allocator<U>&) { return true; }
+template<typename T, typename U>
+bool operator!=(const counting_allocator<T>&, const counting_allocator<U>&) { return false; }
+
+TEST_CASE("frequent items: a purge does not allocate", "[frequent_items_sketch]") {
+  using sketch = frequent_items_sketch<int, uint64_t, std::hash<int>, std::equal_to<int>, counting_allocator<int>>;
+  // start the map at its maximum size, so it never grows and only purges
+  sketch s(5, 5);
+  for (int i = 0; i < 1000; ++i) s.update(i);
+  const long long before = counting_allocations;
+  for (int i = 1000; i < 100000; ++i) s.update(i); // thousands of purges
+  REQUIRE(counting_allocations == before);
+  REQUIRE(s.get_total_weight() == 100000);
+}
+
 } /* namespace datasketches */
