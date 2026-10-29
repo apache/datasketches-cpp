@@ -779,8 +779,10 @@ void kll_sketch<T, C, A>::check_sorting() const {
 
 template<typename T, typename C, typename A>
 quantiles_sorted_view<T, C, A> kll_sketch<T, C, A>::get_sorted_view() const {
-  const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
   quantiles_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
+  // Guard both sorting and level ranges here: an empty sketch may have no item storage.
+  if (is_empty()) return view;
+  const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
   for (uint8_t level = 0; level < num_levels_; ++level) {
     const auto from = items_ + levels_[level];
     const auto to = items_ + levels_[level + 1]; // exclusive

@@ -521,6 +521,7 @@ class kll_sketch {
 
     /**
      * Gets the sorted view of this sketch
+     * An empty sketch returns an empty view without allocating item storage.
      * @return the sorted view of this sketch
      */
     quantiles_sorted_view<T, C, A> get_sorted_view() const;
@@ -582,6 +583,7 @@ class kll_sketch {
 
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
+    // Requires a non-empty sketch; get_sorted_view() guards the call.
     void sort_level_zero();
 
     template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);
