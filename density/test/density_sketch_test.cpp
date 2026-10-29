@@ -250,21 +250,22 @@ TEST_CASE("density sketch: custom allocator", "[density_sketch]") {
   test_allocator_net_allocations = 0;
   {
     sketch s(10, 3, gaussian_kernel<double>(), alloc(0));
-    for (int i = 0; i < 1000; ++i) s.update(point({static_cast<double>(i), 1.0, 2.0}, alloc(0)));
+    // Keep every retained point close to the query so the Gaussian kernel cannot underflow to zero.
+    for (int i = 0; i < 1000; ++i) s.update(point({i / 1000.0, 1.0, 2.0}, alloc(0)));
     REQUIRE(s.get_n() == 1000);
     REQUIRE(s.is_estimation_mode());
-    REQUIRE(s.get_estimate({500.0, 1.0, 2.0}) > 0);
+    REQUIRE(s.get_estimate({0.5, 1.0, 2.0}) > 0);
     REQUIRE(test_allocator_total_bytes > 0);
 
     sketch other(10, 3, gaussian_kernel<double>(), alloc(0));
-    for (int i = 0; i < 100; ++i) other.update(point({static_cast<double>(i), 1.0, 2.0}, alloc(0)));
+    for (int i = 0; i < 100; ++i) other.update(point({i / 1000.0, 1.0, 2.0}, alloc(0)));
     s.merge(other);
     REQUIRE(s.get_n() == 1100);
 
     auto bytes = s.serialize();
     auto copy = sketch::deserialize(bytes.data(), bytes.size(), gaussian_kernel<double>(), alloc(0));
     REQUIRE(copy.get_n() == s.get_n());
-    REQUIRE(copy.get_estimate({500.0, 1.0, 2.0}) == s.get_estimate({500.0, 1.0, 2.0}));
+    REQUIRE(copy.get_estimate({0.5, 1.0, 2.0}) == s.get_estimate({0.5, 1.0, 2.0}));
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);
