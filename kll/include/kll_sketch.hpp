@@ -591,10 +591,13 @@ class kll_sketch {
     uint32_t safe_level_size(uint8_t level) const;
     uint32_t get_num_retained_above_level_zero() const;
 
+    static void check_k(uint16_t k);
     static void check_m(uint8_t m);
     static void check_preamble_ints(uint8_t preamble_ints, uint8_t flags_byte);
     static void check_serial_version(uint8_t serial_version);
     static void check_family_id(uint8_t family_id);
+    static void check_num_levels(uint8_t num_levels);
+    static void check_levels(const vector_u32& levels);
 
     void check_sorting() const;
 
