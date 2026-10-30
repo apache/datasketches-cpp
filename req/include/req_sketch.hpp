@@ -98,12 +98,14 @@ public:
 
   /**
    * Constructor
-   * @param k Controls the size and error of the sketch. It must be even and in the range [4, 1024], inclusive.
+   * @param k Controls the size and error of the sketch. It must be no greater than 1024.
+   * Values below 4 are raised to 4, and odd values are rounded down to the nearest even value.
    * Value of 12 roughly corresponds to 1% relative error guarantee at 95% confidence.
    * @param hra if true, the default, the high ranks are prioritized for better
    * accuracy. Otherwise the low ranks are prioritized for better accuracy.
    * @param comparator strict weak ordering function (see C++ named requirements: Compare)
    * @param allocator used by this sketch to allocate memory
+   * @throws std::invalid_argument if k is greater than 1024
    */
   explicit req_sketch(uint16_t k, bool hra = true, const Comparator& comparator = Comparator(),
       const Allocator& allocator = Allocator());
