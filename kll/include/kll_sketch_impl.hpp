@@ -76,10 +76,7 @@ min_item_(other.min_item_),
 max_item_(other.max_item_),
 sorted_view_(nullptr)
 {
-  if (other.items_ != nullptr) {
-    items_ = allocator_.allocate(items_size_);
-    for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
-  }
+  copy_items(other);
 }
 
 template<typename T, typename C, typename A>
@@ -174,10 +171,7 @@ sorted_view_(nullptr)
     std::is_constructible<T, TT>::value,
     "Type converting constructor requires new type to be constructible from existing type"
   );
-  if (other.items_ != nullptr) {
-    items_ = allocator_.allocate(items_size_);
-    for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
-  }
+  copy_items(other);
   check_sorting();
 }
 
@@ -205,6 +199,19 @@ void kll_sketch<T, C, A>::update_min_max(const T& item) {
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::allocate_items() {
   if (items_ == nullptr) items_ = allocator_.allocate(items_size_);
+}
+
+template<typename T, typename C, typename A>
+template<typename O>
+void kll_sketch<T, C, A>::copy_items(const O& other) {
+  if (other.items_ == nullptr) return;
+  allocate_items();
+  for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
+}
+
+template<typename T, typename C, typename A>
+T* kll_sketch<T, C, A>::item_ptr(uint32_t index) const {
+  return items_ == nullptr ? nullptr : items_ + index;
 }
 
 template<typename T, typename C, typename A>
@@ -760,7 +767,7 @@ void kll_sketch<T, C, A>::add_empty_top_level_to_completely_full_sketch() {
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::sort_level_zero() {
   if (!is_level_zero_sorted_) {
-    std::sort(items_ + levels_[0], items_ + levels_[1], comparator_);
+    std::sort(item_ptr(levels_[0]), item_ptr(levels_[1]), comparator_);
     is_level_zero_sorted_ = true;
   }
 }
@@ -769,8 +776,8 @@ template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::check_sorting() const {
   // not checking level 0
   for (uint8_t level = 1; level < num_levels_; ++level) {
-    const auto from = items_ + levels_[level];
-    const auto to = items_ + levels_[level + 1];
+    const auto from = item_ptr(levels_[level]);
+    const auto to = item_ptr(levels_[level + 1]);
     if (!std::is_sorted(from, to, comparator_)) {
       throw std::logic_error("levels must be sorted");
     }
@@ -779,13 +786,11 @@ void kll_sketch<T, C, A>::check_sorting() const {
 
 template<typename T, typename C, typename A>
 quantiles_sorted_view<T, C, A> kll_sketch<T, C, A>::get_sorted_view() const {
-  quantiles_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
-  // Guard both sorting and level ranges here: an empty sketch may have no item storage.
-  if (is_empty()) return view;
   const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
+  quantiles_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
   for (uint8_t level = 0; level < num_levels_; ++level) {
-    const auto from = items_ + levels_[level];
-    const auto to = items_ + levels_[level + 1]; // exclusive
+    const auto from = item_ptr(levels_[level]);
+    const auto to = item_ptr(levels_[level + 1]); // exclusive
     view.add(from, to, 1ULL << level);
   }
   view.convert_to_cummulative();

@@ -559,7 +559,7 @@ class kll_sketch {
     bool is_level_zero_sorted_;
     uint64_t n_;
     vector_u32 levels_;
-    T* items_;
+    T* items_; // nullptr until the sketch first receives items, see allocate_items()
     uint32_t items_size_;
     optional<T> min_item_;
     optional<T> max_item_;
@@ -573,8 +573,13 @@ class kll_sketch {
 
     // common update code
     inline void update_min_max(const T& item);
+    // items_ is allocated lazily, and these are the only places that deal with it being nullptr:
     // allocates items_ (items_size_ items) unless it is allocated already
     inline void allocate_items();
+    // copy-constructs the items of other, if other has any, into this newly constructed sketch
+    template<typename O> void copy_items(const O& other);
+    // &items_[index], or nullptr without item storage, which makes every item range empty
+    inline T* item_ptr(uint32_t index) const;
     inline uint32_t internal_update();
 
     // The following code is only valid in the special case of exactly reaching capacity while updating.
@@ -583,7 +588,6 @@ class kll_sketch {
 
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
-    // Requires a non-empty sketch; get_sorted_view() guards the call.
     void sort_level_zero();
 
     template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);
