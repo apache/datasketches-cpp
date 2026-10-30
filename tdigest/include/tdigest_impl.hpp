@@ -378,7 +378,7 @@ size_t tdigest<T, A>::get_serialized_size_bytes(bool with_buffer) const {
 template<typename T, typename A>
 auto tdigest<T, A>::serialize(unsigned header_size_bytes, bool with_buffer) const -> vector_bytes {
   if (!with_buffer) const_cast<tdigest*>(this)->compress(); // side effect
-  vector_bytes bytes(get_serialized_size_bytes(with_buffer), 0, buffer_.get_allocator());
+  vector_bytes bytes(header_size_bytes + get_serialized_size_bytes(with_buffer), 0, buffer_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
   *ptr++ = get_preamble_longs();
   *ptr++ = SERIAL_VERSION;
