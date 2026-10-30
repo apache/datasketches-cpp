@@ -433,17 +433,17 @@ $(function() {
 <div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>  <span class="keyword">const</span> uint32_t limit = std::min(MAX_SAMPLE_SIZE, num_active_);</div>
 <div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>  uint32_t num_samples = 0;</div>
 <div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>  uint32_t i = 0;</div>
-<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>  AllocV av(allocator_);</div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>  V* samples = av.allocate(limit);</div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>  <span class="keywordflow">while</span> (num_samples &lt; limit) {</div>
-<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>    <span class="keywordflow">if</span> (is_active(i)) {</div>
-<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>      samples[num_samples++] = values_[i];</div>
-<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>    }</div>
-<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>    i++;</div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>  }</div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>  std::nth_element(samples, samples+ (num_samples / 2), samples + num_samples);</div>
-<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>  <span class="keyword">const</span> V median = samples[num_samples / 2];</div>
-<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>  av.deallocate(samples, limit);</div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>  <span class="comment">// A temporary of at most MAX_SAMPLE_SIZE values: on the stack rather than from the allocator, which need not be</span></div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>  <span class="comment">// able to give memory back (e.g. an arena)</span></div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>  V samples[MAX_SAMPLE_SIZE];</div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>  <span class="keywordflow">while</span> (num_samples &lt; limit) {</div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>    <span class="keywordflow">if</span> (is_active(i)) {</div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>      samples[num_samples++] = values_[i];</div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>    }</div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>    i++;</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>  }</div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>  std::nth_element(samples, samples+ (num_samples / 2), samples + num_samples);</div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>  <span class="keyword">const</span> V median = samples[num_samples / 2];</div>
 <div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>  subtract_and_keep_positive_only(median);</div>
 <div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>  <span class="keywordflow">return</span> median;</div>
 <div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>}</div>
