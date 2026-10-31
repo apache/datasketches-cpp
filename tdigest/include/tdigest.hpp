@@ -299,6 +299,8 @@ private:
   bool is_single_value() const;
   uint8_t get_preamble_longs() const;
   void merge(vector_centroid& buffer, W weight);
+  // grows centroids_ to hold num centroids, up to centroids_capacity_, before a merge needs them
+  void reserve_centroids(size_t num);
 
   // for deserialize
   tdigest(bool reverse_merge, uint16_t k, T min, T max, vector_centroid&& centroids, uint64_t total_weight_, vector_t&& buffer);
