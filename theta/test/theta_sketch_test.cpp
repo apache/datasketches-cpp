@@ -940,4 +940,66 @@ TEST_CASE("theta sketch: deserialize v4 entry bits overflow", "[theta_sketch]") 
   REQUIRE_THROWS_AS(compact_theta_sketch::deserialize(bytes.data(), bytes.size()), std::out_of_range);
 }
 
+// Empty images: same rules as Java EmptyCompactSketch
+
+static void check_empty_accepted(const std::vector<uint8_t>& bytes) {
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  REQUIRE(compact_theta_sketch::deserialize(s).is_empty());
+  REQUIRE(s.tellg() == static_cast<std::streampos>(bytes.size())); // whole image consumed
+  REQUIRE(compact_theta_sketch::deserialize(bytes.data(), bytes.size()).is_empty());
+  REQUIRE(wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size()).is_empty());
+}
+
+static void check_empty_rejected(const std::vector<uint8_t>& bytes) {
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  REQUIRE_THROWS(compact_theta_sketch::deserialize(s));
+  REQUIRE_THROWS(compact_theta_sketch::deserialize(bytes.data(), bytes.size()));
+  REQUIRE_THROWS(wrapped_compact_theta_sketch::wrap(bytes.data(), bytes.size()));
+}
+
+// sketches-core 0.9.0, p = 0.5: full 24-byte form, count, p = 1.0f, theta = 0.5
+static std::vector<uint8_t> legacy_empty_p05(uint8_t flags, uint8_t count) {
+  return {3, 3, 3, 0, 0, flags, 0xCC, 0x93,
+          count, 0, 0, 0, 0, 0, 0x80, 0x3F,
+          0, 0, 0, 0, 0, 0, 0, 0x40};
+}
+
+TEST_CASE("theta sketch: empty mask and tests", "[theta_sketch]") {
+  using parser = compact_theta_sketch_parser<true>;
+  REQUIRE((parser::EMPTY_SKETCH_TEST & ~parser::EMPTY_SKETCH_MASK) == 0);
+  REQUIRE((parser::EMPTY_SKETCH_TEST_LEGACY & ~parser::EMPTY_SKETCH_MASK) == 0);
+  // our own empty image must pass
+  auto bytes = update_theta_sketch::builder().build().compact().serialize();
+  uint64_t pre0;
+  std::memcpy(&pre0, bytes.data(), sizeof(pre0));
+  REQUIRE((pre0 & parser::EMPTY_SKETCH_MASK) == parser::EMPTY_SKETCH_TEST);
+}
+
+TEST_CASE("theta sketch: deserialize historical empty images", "[theta_sketch]") {
+  check_empty_accepted({1, 3, 3, 0, 0, 0x1E, 0, 0});       // Java and current C++
+  check_empty_accepted({1, 3, 3, 0, 0, 0x1E, 0xCC, 0x93}); // C++ 1.0.0 to 5.2.0, ordered
+  check_empty_accepted({1, 3, 3, 0, 0, 0x0E, 0xCC, 0x93}); // C++ before 3.3.0, unordered
+  check_empty_accepted(legacy_empty_p05(0x1E, 0));         // Java before 1.0.0, ordered
+  check_empty_accepted(legacy_empty_p05(0x0E, 0));         // Java before 1.0.0, unordered
+}
+
+TEST_CASE("theta sketch: deserialize mangled empty images", "[theta_sketch]") {
+  check_empty_rejected({1, 3, 3, 1, 0, 0x1E, 0, 0}); // byte 3 not zero
+  check_empty_rejected({1, 3, 3, 0, 1, 0x1E, 0, 0}); // byte 4 not zero
+  check_empty_rejected({1, 3, 3, 0, 0, 0x1F, 0, 0}); // reserved bit 0 set
+  check_empty_rejected({1, 3, 3, 0, 0, 0x5E, 0, 0}); // reserved bit 6 set
+  check_empty_rejected({1, 3, 3, 0, 0, 0x9E, 0, 0}); // reserved bit 7 set
+  check_empty_rejected({1, 3, 3, 0, 0, 0x3E, 0, 0}); // single-item set
+  check_empty_rejected({1, 3, 3, 0, 0, 0x1C, 0, 0}); // read-only not set
+  check_empty_rejected({1, 3, 3, 0, 0, 0x16, 0, 0}); // compact not set
+  check_empty_rejected({2, 3, 3, 0, 0, 0x1E, 0, 0}); // preamble longs 2
+  check_empty_rejected(legacy_empty_p05(0x1E, 1));   // preamble longs 3, count not 0
+  check_empty_rejected({3, 3, 3, 0, 0, 0x1E, 0, 0}); // preamble longs 3, too short
+  auto wrong_seed = legacy_empty_p05(0x1E, 0);
+  wrong_seed[6] = 0; wrong_seed[7] = 0;
+  check_empty_rejected(wrong_seed);                  // preamble longs 3, seed hash mismatch
+}
+
 } /* namespace datasketches */
