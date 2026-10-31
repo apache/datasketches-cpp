@@ -32,7 +32,9 @@ namespace datasketches {
 
 template<typename T>
 struct gaussian_kernel {
-  T operator()(const std::vector<T>& v1, const std::vector<T>& v2) const {
+  // any two vectors of T, so the sketch's points can use its allocator
+  template<typename V1, typename V2>
+  T operator()(const V1& v1, const V2& v2) const {
     return exp(-std::inner_product(v1.begin(), v1.end(), v2.begin(), 0.0, std::plus<T>(), [](T a, T b){return (a-b)*(a-b);}));
   }
 };
@@ -203,7 +205,6 @@ private:
   static const uint8_t SERIAL_VERSION = 1;
   static const size_t LEVELS_ARRAY_START = 5;
 
-  Allocator allocator_;
   Kernel kernel_;
   uint16_t k_;
   uint32_t dim_;
