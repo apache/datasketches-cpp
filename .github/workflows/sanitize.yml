@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - minhash/main
   workflow_dispatch:
 
 env:

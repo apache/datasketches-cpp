@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - minhash/main
   workflow_dispatch:
 
 jobs:

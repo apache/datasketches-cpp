@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - master
+      - minhash/main
 
 env:
   BUILD_TYPE: Debug
@@ -37,6 +38,7 @@ jobs:
       - name: Generate coverage .info
         run: cmake --build build --target coverage_report
       - name: Post to Coveralls
+        continue-on-error: true
         run: |
           curl -sL https://coveralls.io/coveralls-linux.tar.gz | tar -xz
           ./coveralls report build/lcov.info

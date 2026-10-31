@@ -1,0 +1,101 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# Fork-only workflow. It runs clang-tidy with the repo's .clang-tidy on the
+# C++ files under minhash/. Any clang-tidy warning fails the job. The job
+# passes when minhash/ has no C++ files.
+
+name: MinHash clang-tidy
+
+on:
+  push:
+    branches:
+      - minhash/main
+  pull_request:
+    branches:
+      - minhash/main
+  workflow_dispatch:
+
+jobs:
+  clang-tidy:
+    name: clang-tidy (minhash/**)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - name: Install clang and clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 clang-tidy-18
+
+      - name: Run clang-tidy on minhash/**
+        env:
+          CC: clang-18
+          CXX: clang++-18
+          CLANG_TIDY: clang-tidy-18
+        run: |
+          set -euo pipefail
+
+          mapfile -t files < <(git ls-files -- 'minhash/**' \
+            | grep -E '\.(h|hh|hpp|hxx|c|cc|cpp|cxx)$' || true)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No C++ files under minhash/. Nothing to check."
+            exit 0
+          fi
+          printf 'Files under minhash/:\n'; printf '  %s\n' "${files[@]}"
+          "$CLANG_TIDY" --version
+
+          # The compilation database gives the real flags for each .cpp file
+          # that CMake builds.
+          cmake -B build -S . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+          # Flags for a file that is not in the compilation database.
+          fallback=(-std=c++11)
+          while IFS= read -r dir; do fallback+=("-I$dir"); done < <(
+            find . -path ./build -prune -o -type d -name include -print | sort)
+
+          tidy=("$CLANG_TIDY" --quiet --config-file=.clang-tidy
+                --warnings-as-errors='*' --header-filter='(^|/)minhash/')
+
+          status=0
+          for f in "${files[@]}"; do
+            case "$f" in
+              # An _impl.hpp file does not include its own declarations.
+              # clang-tidy checks it through its main header instead.
+              *_impl.hpp) continue ;;
+              *.h|*.hh|*.hpp|*.hxx)
+                cmd=("${tidy[@]}" "$f" -- -x c++-header "${fallback[@]}") ;;
+              *)
+                if grep -q "\"file\": \".*/$f\"" build/compile_commands.json; then
+                  cmd=("${tidy[@]}" -p build "$f")
+                else
+                  cmd=("${tidy[@]}" "$f" -- "${fallback[@]}")
+                fi ;;
+            esac
+            echo "::group::clang-tidy $f"
+            if ! "${cmd[@]}"; then
+              echo "::error file=$f::clang-tidy reported problems in $f"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
