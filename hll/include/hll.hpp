@@ -95,6 +95,9 @@ enum target_hll_type {
  * (up to about 10% of <i>K</i>), this implementation leverages a new class of estimator
  * algorithms with significantly better accuracy.
  *
+ * <p>Allocation failures propagate without leaking storage. Updates, copy assignment and
+ * reset leave the sketch unchanged if an allocation fails.
+ *
  * <p>This sketch also offers the capability of operating off-heap. Given a WritableMemory object
  * created by the user, the sketch will perform all of its updates and internal phase transitions
  * in that object, which can actually reside either on-heap or off-heap based on how it is
@@ -445,6 +448,12 @@ class hll_sketch_alloc final {
  * <p>Second, the internal effective value of log-base-2 of <i>k</i> for the union operation can
  * change dynamically based on the smallest <i>lg_config_k</i> that the union operation has seen.
  *
+ * <p>Allocation failures propagate without leaking storage. If an allocation fails while
+ * a LIST or SET sketch is merged into a union in LIST or SET mode, the union stays valid
+ * and usable, holding the coupons inserted before the failure. Repeating the merge gives
+ * the result of an uninterrupted merge. All other updates, copy assignment and reset
+ * leave the union unchanged if an allocation fails.
+ *
  * author Jon Malkin
  * author Lee Rhodes
  * author Kevin Lang
@@ -459,6 +468,32 @@ class hll_union_alloc {
      * @param allocator instance of an Allocator
      */
     explicit hll_union_alloc(uint8_t lg_max_k, const A& allocator = A());
+
+    /**
+     * Copy constructor
+     * @param that union to be copied
+     */
+    hll_union_alloc(const hll_union_alloc& that) = default;
+
+    /**
+     * Move constructor
+     * @param that union to be moved
+     */
+    hll_union_alloc(hll_union_alloc&& that) = default;
+
+    /**
+     * Copy assignment operator
+     * @param other union to be copied
+     * @return reference to this union
+     */
+    hll_union_alloc& operator=(const hll_union_alloc& other);
+
+    /**
+     * Move assignment operator
+     * @param other union to be moved
+     * @return reference to this union
+     */
+    hll_union_alloc& operator=(hll_union_alloc&& other) = default;
 
     /**
      * Returns the current cardinality estimate
@@ -647,9 +682,6 @@ class hll_union_alloc {
     hll_mode get_current_mode() const;
     bool is_out_of_order_flag() const;
     bool is_estimation_mode() const;
-
-    // calls couponUpdate on sketch, freeing the old sketch upon changes in hll_mode
-    static HllSketchImpl<A>* leak_free_coupon_update(HllSketchImpl<A>* impl, uint32_t coupon);
 
     uint8_t lg_max_k_;
     hll_sketch_alloc<A> gadget_;
