@@ -21,7 +21,7 @@ This code requires C++11.
 
 This library is header-only. The provided build process is only for unit tests.
 
-Building the unit tests requires CMake 3.12.0 or higher.
+Building the unit tests requires CMake 3.16.0 or higher.
 
 Installing the latest CMake on OSX: `brew install cmake`.
 
