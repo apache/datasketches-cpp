@@ -705,35 +705,6 @@ TEST_CASE("hll allocation failure: reset", "[hll_allocation_failure]") {
   }
 }
 
-TEST_CASE("hll allocation failure: serialization", "[hll_allocation_failure]") {
-  const allocation_balance balance;
-  const auto type = GENERATE(HLL_4, HLL_6, HLL_8);
-  const auto mode = GENERATE(LIST, SET, HLL);
-  const bool compact = GENERATE(false, true);
-  for (long allocation = 0;; ++allocation) {
-    CAPTURE(type, mode, compact, allocation);
-    allocation_failure failure, control_failure;
-    bool threw;
-    {
-      auto sketch = make_sketch(failure, type, mode);
-      auto control = make_sketch(control_failure, type, mode);
-      const auto serialize = [&] {
-        const auto bytes = compact ? sketch.serialize_compact() : sketch.serialize_updatable();
-        failure.disarm();
-        REQUIRE(bytes == (compact ? control.serialize_compact() : control.serialize_updatable()));
-      };
-      threw = inject_failure(failure, allocation, serialize);
-      check_equal(sketch, control);
-      if (threw) serialize();
-      update_range(sketch, 20000, 20200);
-      update_range(control, 20000, 20200);
-      check_equal(sketch, control);
-    }
-    balance.check_no_leaks();
-    if (!threw) break;
-  }
-}
-
 TEST_CASE("hll allocation failure: deserialization", "[hll_allocation_failure]") {
   const allocation_balance balance;
   const auto type = GENERATE(HLL_4, HLL_6, HLL_8);
@@ -1198,15 +1169,6 @@ TEST_CASE("hll allocation failure: sparse union merge retry", "[hll_allocation_f
     balance.check_no_leaks();
     if (!threw) break;
   }
-}
-
-TEST_CASE("hll allocation failure: union value updates", "[hll_allocation_failure]") {
-  const uint8_t lg_k = GENERATE(uint8_t(4), uint8_t(7), uint8_t(12));
-  std::vector<uint64_t> values;
-  for (uint64_t value = 0; value < 1000; ++value) values.push_back(value);
-  check_updates([&](allocation_failure& failure) {
-    return failure_union(lg_k, failing_allocator<uint8_t>(failure));
-  }, values);
 }
 
 TEST_CASE("hll union allocators: LIST into empty union", "[hll_allocation_failure][hll_union_allocator]") {

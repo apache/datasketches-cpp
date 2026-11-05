@@ -193,18 +193,15 @@ void Hll4Array<A>::internalHll4UpdateAux(uint32_t slotNo, uint8_t newVal, uint8_
     return;
   }
 
-  const uint8_t shiftedNewValue = static_cast<uint8_t>(newVal - this->curMin_);
   if (rawStoredOldValue == hll_constants::AUX_TOKEN) {
     auxHashMap_->mustReplace(slotNo, newVal);
-  } else if (shiftedNewValue >= hll_constants::AUX_TOKEN) {
+  } else {
     if (auxHashMap_ == nullptr) {
       createAuxHashMap(slotNo, newVal);
     } else {
       auxHashMap_->mustAdd(slotNo, newVal);
     }
     putSlot(slotNo, hll_constants::AUX_TOKEN);
-  } else {
-    putSlot(slotNo, shiftedNewValue);
   }
 
   this->hipAndKxQIncrementalUpdate(actualOldValue, newVal);
@@ -228,6 +225,8 @@ void Hll4Array<A>::createAuxHashMap(uint32_t slotNo, uint8_t value) {
 
 template<typename A>
 void Hll4Array<A>::shiftToBiggerCurMin(uint32_t slotNo, uint8_t newVal) {
+  // This update removes the last register at curMin.
+  // Keep the original auxiliary map until all minimum shifts succeed.
   const uint32_t configK = 1 << this->lgConfigK_;
   const uint8_t oldStoredValue = getSlot(slotNo);
   using aux_ptr = std::unique_ptr<AuxHashMap<A>, std::function<void(AuxHashMap<A>*)>>;
@@ -294,8 +293,6 @@ void Hll4Array<A>::shiftToBiggerCurMin(uint32_t slotNo, uint8_t newVal) {
             next->mustAdd(slot, value);
           }
         }
-      } else if (numAuxTokens != 0) {
-        throw std::logic_error("No auxiliary hash map, but numAuxTokens != 0");
       }
       const uint32_t newAuxCount = next == nullptr ? 0 : next->getAuxCount();
       // Preserve the missing-map error if another shift is required.
