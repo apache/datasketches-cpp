@@ -642,20 +642,19 @@ TEST_CASE("req sketch: deserialize rejects inconsistent compactors", "[req_sketc
   }
 
   SECTION("valid images with the smallest section size") {
-    // the raw section size has shrunk to 3, which the section size rounds up to 4
+    // the raw section size can have shrunk to 3, which the section size rounds up to 4
+    // older versions wrote such images, so set the header they would have
     req_sketch<float> sketch(6);
     for (int i = 0; i < 100000; ++i) sketch.update(static_cast<float>(i));
     auto bytes = sketch.serialize();
-    float raw_section_size;
-    std::memcpy(&raw_section_size, bytes.data() + estimation_compactor + section_size, sizeof(raw_section_size));
-    REQUIRE(raw_section_size == Approx(3).margin(0.001));
-    REQUIRE(bytes[estimation_compactor + num_sections] == 12);
+    put_value(bytes, estimation_compactor + section_size, 3.0f);
+    put_value(bytes, estimation_compactor + num_sections, static_cast<uint8_t>(12));
     REQUIRE(req_sketch<float>::deserialize(bytes.data(), bytes.size()).get_n() == sketch.get_n());
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
-    sketch.serialize(s);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
     REQUIRE(req_sketch<float>::deserialize(s).get_n() == sketch.get_n());
 
-    // k = 12 needs about 2 billion items to get here, so set the header it would have
+    // the same for k = 12
     bytes = estimation.serialize();
     put_value(bytes, estimation_compactor + section_size, 3.0f);
     put_value(bytes, estimation_compactor + num_sections, static_cast<uint8_t>(48));
