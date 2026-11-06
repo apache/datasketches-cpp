@@ -301,7 +301,9 @@ template<typename T, typename C, typename A>
 bool req_compactor<T, C, A>::ensure_enough_sections() {
   const float ssr = section_size_raw_ / sqrtf(2);
   const uint32_t ne = nearest_even(ssr);
-  if (state_ >= static_cast<uint64_t>(1ULL << (num_sections_ - 1)) && ne >= req_constants::MIN_K) {
+  if (state_ >= 1ULL << (num_sections_ - 1)
+      && section_size_ > req_constants::MIN_K
+      && ne >= req_constants::MIN_K) {
     section_size_raw_ = ssr;
     section_size_ = ne;
     num_sections_ <<= 1;

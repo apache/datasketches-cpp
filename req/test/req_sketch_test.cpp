@@ -581,15 +581,33 @@ TEST_CASE("get_rank equivalence") {
   }
 }
 
-//TEST_CASE("for manual comparison with Java") {
-//  req_sketch<float> sketch(12, false);
-//  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
-//  sketch.merge(sketch);
-//  std::ofstream os;
-//  os.exceptions(std::ios::failbit | std::ios::badbit);
-//  os.open("req_float_lra_12_100000_merged.sk", std::ios::binary);
-//  sketch.get_quantile(0.5); // force sorting level 0
-//  sketch.serialize(os);
-//}
+using req_compactor_float = req_compactor<float, std::less<float>, std::allocator<float>>;
+
+static req_compactor_float make_compactor_with_state(uint64_t state) {
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  const float section_size_raw = req_constants::MIN_K; // not used by merge
+  const uint8_t lg_weight = 0;
+  const uint8_t num_sections = req_constants::INIT_NUM_SECTIONS;
+  const uint16_t padding = 0;
+  const uint32_t num_items = 0;
+  s.write(reinterpret_cast<const char*>(&state), sizeof(state));
+  s.write(reinterpret_cast<const char*>(&section_size_raw), sizeof(section_size_raw));
+  s.write(reinterpret_cast<const char*>(&lg_weight), sizeof(lg_weight));
+  s.write(reinterpret_cast<const char*>(&num_sections), sizeof(num_sections));
+  s.write(reinterpret_cast<const char*>(&padding), sizeof(padding));
+  s.write(reinterpret_cast<const char*>(&num_items), sizeof(num_items));
+  return req_compactor_float::deserialize(s, serde<float>(), std::less<float>(), std::allocator<float>(), true, true);
+}
+
+TEST_CASE("req compactor: section growth stops at minimum section size", "[req_compactor]") {
+  const uint16_t ks[] = {6, 12, 14};
+  const uint32_t expected_nom_capacities[] = {48, 192, 192};
+  for (size_t i = 0; i < 3; ++i) {
+    req_compactor_float c(true, 0, ks[i], std::less<float>(), std::allocator<float>());
+    for (uint8_t lg_state: {2, 5, 11, 23}) c.merge(make_compactor_with_state(1ULL << lg_state));
+    INFO("k=" << ks[i]);
+    CHECK(c.get_nom_capacity() == expected_nom_capacities[i]);
+  }
+}
 
 } /* namespace datasketches */
