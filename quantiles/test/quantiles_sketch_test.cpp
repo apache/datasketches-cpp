@@ -956,4 +956,17 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 }
 
+
+TEST_CASE("quantiles sketch: deserialize serial version 1 truncated after min and max", "[quantiles_sketch]") {
+  quantiles_sketch<int> sketch(16);
+  for (int i = 0; i < 1000; ++i) sketch.update(i);
+  auto bytes = sketch.serialize();
+  // serial version 1 has an unused 8-byte field after min and max
+  bytes[0] = 5; // preamble longs
+  bytes[1] = 1; // serial version
+  bytes[3] &= ~(1 << 3); // not compact
+  bytes.resize(8 + sizeof(uint64_t) + 2 * sizeof(int)); // preamble, n, min and max
+  REQUIRE_THROWS_AS(quantiles_sketch<int>::deserialize(bytes.data(), bytes.size()), std::out_of_range);
+}
+
 } /* namespace datasketches */

@@ -23,6 +23,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <cstring>
 #include <limits>
 #include <stdexcept>
 
@@ -591,5 +592,146 @@ TEST_CASE("get_rank equivalence") {
 //  sketch.get_quantile(0.5); // force sorting level 0
 //  sketch.serialize(os);
 //}
+
+
+template<typename Bytes, typename V>
+static void put_value(Bytes& bytes, size_t offset, V value) {
+  std::memcpy(bytes.data() + offset, &value, sizeof(value));
+}
+
+TEST_CASE("req sketch: deserialize rejects inconsistent compactors", "[req_sketch]") {
+  using vector_bytes = req_sketch<float>::vector_bytes;
+  // preamble: k at 4, number of levels at 6, number of raw items at 7
+  // compactor: state(8), section size(4), lg_weight(1), number of sections(1), padding(2), number of items(4), items
+  const size_t k_offset = 4;
+  const size_t num_levels_offset = 6;
+  const size_t num_raw_items_offset = 7;
+  const size_t estimation_compactor = 24; // after the preamble, n, min and max
+  const size_t exact_compactor = 8; // after the preamble
+  const size_t section_size = 8;
+  const size_t lg_weight = 12;
+  const size_t num_sections = 13;
+  const size_t num_items = 16;
+  const size_t items = 20;
+  auto check_rejected = [](const vector_bytes& bytes) {
+    REQUIRE_THROWS_AS(req_sketch<float>::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE_THROWS_AS(req_sketch<float>::deserialize(s), std::invalid_argument);
+  };
+
+  req_sketch<float> raw(12);
+  for (int i = 0; i < 3; ++i) raw.update(static_cast<float>(i));
+  req_sketch<float> exact(12);
+  for (int i = 0; i < 50; ++i) exact.update(static_cast<float>(i));
+  req_sketch<float> estimation(12);
+  for (int i = 0; i < 1000; ++i) estimation.update(static_cast<float>(i));
+  REQUIRE(estimation.serialize()[num_levels_offset] > 2);
+
+  SECTION("valid images") {
+    // sketches deep enough for the sections to have grown, in both rank accuracy modes
+    for (bool hra: {true, false}) {
+      req_sketch<float> sketch(12, hra);
+      for (int i = 0; i < 1000000; ++i) sketch.update(static_cast<float>(i));
+      auto bytes = sketch.serialize();
+      REQUIRE(req_sketch<float>::deserialize(bytes.data(), bytes.size()).get_n() == sketch.get_n());
+      std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+      sketch.serialize(s);
+      REQUIRE(req_sketch<float>::deserialize(s).get_n() == sketch.get_n());
+    }
+  }
+
+  SECTION("valid images with the smallest section size") {
+    // the raw section size can have shrunk to 3, which the section size rounds up to 4
+    // older versions wrote such images, so set the header they would have
+    req_sketch<float> sketch(6);
+    for (int i = 0; i < 100000; ++i) sketch.update(static_cast<float>(i));
+    auto bytes = sketch.serialize();
+    put_value(bytes, estimation_compactor + section_size, 3.0f);
+    put_value(bytes, estimation_compactor + num_sections, static_cast<uint8_t>(12));
+    REQUIRE(req_sketch<float>::deserialize(bytes.data(), bytes.size()).get_n() == sketch.get_n());
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE(req_sketch<float>::deserialize(s).get_n() == sketch.get_n());
+
+    // the same for k = 12
+    bytes = estimation.serialize();
+    put_value(bytes, estimation_compactor + section_size, 3.0f);
+    put_value(bytes, estimation_compactor + num_sections, static_cast<uint8_t>(48));
+    REQUIRE(req_sketch<float>::deserialize(bytes.data(), bytes.size()).get_n() == estimation.get_n());
+  }
+
+  SECTION("invalid k") {
+    for (uint16_t k: {2, 13, 2000}) {
+      auto bytes = estimation.serialize();
+      put_value(bytes, k_offset, k);
+      check_rejected(bytes);
+    }
+  }
+
+  SECTION("section size out of range") {
+    for (float size: {0.0f, 2.0f, 14.0f, 1e12f, std::numeric_limits<float>::quiet_NaN()}) {
+      auto bytes = estimation.serialize();
+      put_value(bytes, estimation_compactor + section_size, size);
+      check_rejected(bytes);
+    }
+  }
+
+  SECTION("number of sections out of range") {
+    for (uint8_t sections: {0, 65}) {
+      auto bytes = estimation.serialize();
+      put_value(bytes, estimation_compactor + num_sections, sections);
+      check_rejected(bytes);
+    }
+    // in range, but too many for this section size and k
+    auto bytes = estimation.serialize();
+    put_value(bytes, estimation_compactor + section_size, 3.0f);
+    put_value(bytes, estimation_compactor + num_sections, static_cast<uint8_t>(64));
+    check_rejected(bytes);
+  }
+
+  SECTION("wrong lg_weight") {
+    for (uint8_t weight: {1, 70}) {
+      auto bytes = estimation.serialize();
+      put_value(bytes, estimation_compactor + lg_weight, weight);
+      check_rejected(bytes);
+    }
+    auto bytes = exact.serialize();
+    put_value(bytes, exact_compactor + lg_weight, static_cast<uint8_t>(1));
+    check_rejected(bytes);
+    // the second compactor repeats the first one's lg_weight
+    bytes = estimation.serialize();
+    uint32_t count;
+    std::memcpy(&count, bytes.data() + estimation_compactor + num_items, sizeof(count));
+    const size_t second_compactor = estimation_compactor + items + count * sizeof(float);
+    REQUIRE(bytes[second_compactor + lg_weight] == 1);
+    put_value(bytes, second_compactor + lg_weight, static_cast<uint8_t>(0));
+    check_rejected(bytes);
+  }
+
+  SECTION("no levels") {
+    auto bytes = exact.serialize();
+    bytes[num_levels_offset] = 0;
+    check_rejected(bytes);
+    bytes = raw.serialize();
+    bytes[num_levels_offset] = 0;
+    check_rejected(bytes);
+  }
+
+  SECTION("no items") {
+    auto bytes = exact.serialize();
+    put_value(bytes, exact_compactor + num_items, static_cast<uint32_t>(0));
+    check_rejected(bytes);
+    bytes = raw.serialize();
+    bytes[num_raw_items_offset] = 0;
+    check_rejected(bytes);
+  }
+
+  SECTION("compactor header beyond the input") {
+    auto bytes = estimation.serialize();
+    bytes.resize(estimation_compactor + 10);
+    REQUIRE_THROWS_AS(req_sketch<float>::deserialize(bytes.data(), bytes.size()), std::out_of_range);
+  }
+}
 
 } /* namespace datasketches */
