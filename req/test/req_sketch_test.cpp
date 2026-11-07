@@ -581,6 +581,17 @@ TEST_CASE("get_rank equivalence") {
   }
 }
 
+//TEST_CASE("for manual comparison with Java") {
+//  req_sketch<float> sketch(12, false);
+//  for (size_t i = 0; i < 100000; ++i) sketch.update(i);
+//  sketch.merge(sketch);
+//  std::ofstream os;
+//  os.exceptions(std::ios::failbit | std::ios::badbit);
+//  os.open("req_float_lra_12_100000_merged.sk", std::ios::binary);
+//  sketch.get_quantile(0.5); // force sorting level 0
+//  sketch.serialize(os);
+//}
+
 using req_compactor_float = req_compactor<float, std::less<float>, std::allocator<float>>;
 
 static req_compactor_float make_compactor_with_state(uint64_t state) {
