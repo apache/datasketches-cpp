@@ -465,7 +465,9 @@ private:
       optional<T>&& min_item, optional<T>&& max_item,
       std::vector<Compactor, AllocCompactor>&& compactors, const Comparator& comparator);
 
+  static void check_k(uint16_t k);
   static void check_preamble_ints(uint8_t preamble_ints, uint8_t num_levels);
+  static void check_num_levels(uint8_t num_levels, bool raw_items);
   static void check_serial_version(uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
 

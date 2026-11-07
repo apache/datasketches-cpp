@@ -456,6 +456,7 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   const auto num_levels = read<uint8_t>(is);
   const auto num_raw_items = read<uint8_t>(is);
 
+  check_k(k);
   check_preamble_ints(preamble_ints, num_levels);
   check_serial_version(serial_version);
   check_family_id(family_id);
@@ -469,6 +470,7 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   optional<T> max_item;
 
   const bool raw_items = flags_byte & (1 << flags::RAW_ITEMS);
+  check_num_levels(num_levels, raw_items);
   const bool is_level_0_sorted = flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED);
   std::vector<Compactor, AllocCompactor> compactors(allocator);
 
@@ -494,10 +496,12 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
     compactors.push_back(Compactor::deserialize(is, sd, comparator, allocator, is_level_0_sorted, k, num_raw_items, hra));
   } else {
     for (size_t i = 0; i < num_levels; ++i) {
-      compactors.push_back(Compactor::deserialize(is, sd, comparator, allocator, i == 0 ? is_level_0_sorted : true, hra));
+      compactors.push_back(Compactor::deserialize(is, sd, comparator, allocator, i == 0 ? is_level_0_sorted : true, hra,
+          k, static_cast<uint8_t>(i)));
     }
   }
   if (num_levels == 1) {
+    if (compactors[0].get_num_items() == 0) throw std::invalid_argument("Possible corruption: non-empty sketch with no items");
     const auto begin = compactors[0].begin();
     const auto end = compactors[0].end();
     n = compactors[0].get_num_items();
@@ -537,6 +541,7 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   uint8_t num_raw_items;
   ptr += copy_from_mem(ptr, num_raw_items);
 
+  check_k(k);
   check_preamble_ints(preamble_ints, num_levels);
   check_serial_version(serial_version);
   check_family_id(family_id);
@@ -549,6 +554,7 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   optional<T> max_item;
 
   const bool raw_items = flags_byte & (1 << flags::RAW_ITEMS);
+  check_num_levels(num_levels, raw_items);
   const bool is_level_0_sorted = flags_byte & (1 << flags::IS_LEVEL_ZERO_SORTED);
   std::vector<Compactor, AllocCompactor> compactors(allocator);
 
@@ -577,12 +583,14 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     ptr += pair.second;
   } else {
     for (size_t i = 0; i < num_levels; ++i) {
-      auto pair = Compactor::deserialize(ptr, end_ptr - ptr, sd, comparator, allocator, i == 0 ? is_level_0_sorted : true, hra);
+      auto pair = Compactor::deserialize(ptr, end_ptr - ptr, sd, comparator, allocator, i == 0 ? is_level_0_sorted : true, hra,
+          k, static_cast<uint8_t>(i));
       compactors.push_back(std::move(pair.first));
       ptr += pair.second;
     }
   }
   if (num_levels == 1) {
+    if (compactors[0].get_num_items() == 0) throw std::invalid_argument("Possible corruption: non-empty sketch with no items");
     const auto begin = compactors[0].begin();
     const auto end = compactors[0].end();
     n = compactors[0].get_num_items();
@@ -704,6 +712,23 @@ sorted_view_(nullptr)
 {
   update_max_nom_size();
   update_num_retained();
+}
+
+template<typename T, typename C, typename A>
+void req_sketch<T, C, A>::check_k(uint16_t k) {
+  if (k < req_constants::MIN_K || k > req_constants::MAX_K || (k & 1) != 0) {
+    throw std::invalid_argument("Possible corruption: k must be even and in the range ["
+        + std::to_string(req_constants::MIN_K) + ", " + std::to_string(req_constants::MAX_K) + "]: " + std::to_string(k));
+  }
+}
+
+template<typename T, typename C, typename A>
+void req_sketch<T, C, A>::check_num_levels(uint8_t num_levels, bool raw_items) {
+  // a non-empty sketch has at least one compactor, and raw items fit in one
+  if (num_levels == 0 || (raw_items && num_levels != 1)) {
+    throw std::invalid_argument("Possible corruption: number of levels " + std::to_string(num_levels)
+        + (raw_items ? " with raw items" : ""));
+  }
 }
 
 template<typename T, typename C, typename A>
