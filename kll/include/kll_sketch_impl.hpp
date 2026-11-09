@@ -208,6 +208,7 @@ uint32_t kll_sketch<T, C, A>::internal_update() {
 template<typename T, typename C, typename A>
 template<typename FwdSk>
 void kll_sketch<T, C, A>::merge(FwdSk&& other) {
+  if (this == &other) { throw std::invalid_argument("A sketch cannot merge with itself."); }
   if (other.is_empty()) { return; }
   if (m_ != other.m_) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
