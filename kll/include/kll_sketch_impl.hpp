@@ -396,7 +396,7 @@ void kll_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& sd) const {
     write(os, min_k_);
     write(os, num_levels_);
     write(os, unused);
-    if (items_size_ < k_) {
+    if (num_levels_ == 1 && items_size_ < k_) {
       write(os, levels_[0] + (k_ - items_size_));
     } else {
       write(os, levels_.data(), sizeof(levels_[0]) * num_levels_);
@@ -436,7 +436,7 @@ auto kll_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& sd)
       ptr += copy_to_mem(min_k_, ptr);
       ptr += copy_to_mem(num_levels_, ptr);
       ptr += sizeof(uint8_t); // unused
-      if (items_size_ < k_) {
+      if (num_levels_ == 1 && items_size_ < k_) {
         ptr += copy_to_mem(levels_[0] + (k_ - items_size_), ptr);
       } else {
         ptr += copy_to_mem(levels_.data(), ptr, sizeof(levels_[0]) * num_levels_);

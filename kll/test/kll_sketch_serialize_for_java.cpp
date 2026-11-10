@@ -69,4 +69,45 @@ TEST_CASE("kll sketch string generate", "[serialize_for_java]") {
   }
 }
 
+// with k = 65535, the items buffer is still growing at these n
+TEST_CASE("kll sketch float generate, k = 65535", "[serialize_for_java]") {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000};
+  for (const unsigned n: n_arr) {
+    kll_sketch<float> sketch(kll_constants::MAX_K);
+    for (unsigned i = 1; i <= n; ++i) sketch.update(i);
+    std::ofstream os("kll_float_k65535_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
+    sketch.serialize(os);
+  }
+}
+
+TEST_CASE("kll sketch double generate, k = 65535", "[serialize_for_java]") {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000};
+  for (const unsigned n: n_arr) {
+    kll_sketch<double> sketch(kll_constants::MAX_K);
+    for (unsigned i = 1; i <= n; ++i) sketch.update(i);
+    std::ofstream os("kll_double_k65535_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
+    sketch.serialize(os);
+  }
+}
+
+TEST_CASE("kll sketch long generate, k = 65535", "[serialize_for_java]") {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000};
+  for (const unsigned n: n_arr) {
+    kll_sketch<long> sketch(kll_constants::MAX_K);
+    for (unsigned i = 1; i <= n; ++i) sketch.update(i);
+    std::ofstream os("kll_long_k65535_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
+    sketch.serialize(os);
+  }
+}
+
+TEST_CASE("kll sketch string generate, k = 65535", "[serialize_for_java]") {
+  const unsigned n_arr[] = {0, 1, 10, 100, 1000, 10000};
+  for (const unsigned n: n_arr) {
+    kll_sketch<std::string, compare_as_number> sketch(kll_constants::MAX_K);
+    for (unsigned i = 1; i <= n; ++i) sketch.update(std::to_string(i));
+    std::ofstream os("kll_string_k65535_n" + std::to_string(n) + "_cpp.sk", std::ios::binary);
+    sketch.serialize(os);
+  }
+}
+
 } /* namespace datasketches */
