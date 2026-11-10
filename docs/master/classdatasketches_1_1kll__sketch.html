@@ -489,7 +489,7 @@ template&lt;typename FwdSk&gt; </div>
 </div><div class="memdoc">
 
 <p>Merges another sketch into this one. </p>
-<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. If other is this sketch, this throws std::invalid_argument. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">other</td><td>sketch to merge into this one </td></tr>
   </table>
