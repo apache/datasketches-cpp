@@ -183,7 +183,9 @@ class kll_sketch {
     using quantile_return_type = typename quantiles_sorted_view<T, C, A>::quantile_return_type;
 
     /**
-     * Constructor
+     * Constructor.
+     * The items buffer starts with space for min(k, DEFAULT_K) items (k items if RESIZE_FACTOR is X1),
+     * and grows by RESIZE_FACTOR up to k items before the first compaction.
      * @param k affects the size of the sketch and its estimation error
      * @param comparator strict weak ordering function (see C++ named requirements: Compare)
      * @param allocator used by this sketch to allocate memory
@@ -550,6 +552,10 @@ class kll_sketch {
     static const uint8_t PREAMBLE_INTS_SHORT = 2; // for empty and single item
     static const uint8_t PREAMBLE_INTS_FULL = 5;
 
+    // growth factor of the items buffer until it holds k items
+    static const resize_factor RESIZE_FACTOR = resize_factor::X8;
+    static_assert(RESIZE_FACTOR >= resize_factor::X1, "RESIZE_FACTOR must be at least X1");
+
     C comparator_;
     A allocator_;
     uint16_t k_;
@@ -581,6 +587,7 @@ class kll_sketch {
 
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
+    void grow_items();
     void sort_level_zero();
 
     template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);

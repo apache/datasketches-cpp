@@ -18,11 +18,13 @@
  */
 
 #include <catch2/catch.hpp>
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <sstream>
 #include <fstream>
 #include <stdexcept>
+#include <vector>
 
 #include <kll_sketch.hpp>
 #include <test_allocator.hpp>
@@ -913,6 +915,217 @@ TEST_CASE("kll sketch: deserialize rejects inconsistent levels", "[kll_sketch]")
     s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
     REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(s), std::runtime_error);
   }
+}
+
+// A deserialized sketch has a buffer of the full size.
+template<typename Sketch>
+static Sketch with_full_buffer(const Sketch& sketch) {
+  auto bytes = sketch.serialize();
+  return Sketch::deserialize(bytes.data(), bytes.size(), serde<typename Sketch::value_type>(),
+      sketch.get_comparator(), sketch.get_allocator());
+}
+
+// Applies fn to both sketches with the same random bits, so that they compact the same way.
+template<typename Sketch, typename Fn>
+static void apply_to_both(Sketch& growing, Sketch& full, const Fn& fn) {
+  const auto random_bit = random_utils::random_bit;
+  fn(growing);
+  random_utils::random_bit = random_bit;
+  fn(full);
+}
+
+template<typename Sketch>
+static std::vector<std::pair<typename Sketch::value_type, uint64_t>> items_and_weights(const Sketch& sketch) {
+  std::vector<std::pair<typename Sketch::value_type, uint64_t>> result;
+  for (const auto pair: sketch) { result.emplace_back(pair.first, pair.second); }
+  return result;
+}
+
+// Requires the same retained items and weights, the same query results and the same bytes.
+template<typename Sketch>
+static void require_identical(const Sketch& growing, const Sketch& full) {
+  REQUIRE(growing.get_n() == full.get_n());
+  REQUIRE(growing.get_num_retained() == full.get_num_retained());
+  REQUIRE(growing.is_estimation_mode() == full.is_estimation_mode());
+  REQUIRE(growing.get_normalized_rank_error(false) == full.get_normalized_rank_error(false));
+  REQUIRE(growing.get_normalized_rank_error(true) == full.get_normalized_rank_error(true));
+  REQUIRE(items_and_weights(growing) == items_and_weights(full));
+  if (!growing.is_empty()) {
+    REQUIRE(growing.get_min_item() == full.get_min_item());
+    REQUIRE(growing.get_max_item() == full.get_max_item());
+    std::vector<typename Sketch::value_type> split_points;
+    for (int i = 0; i <= 100; ++i) {
+      const double rank = i / 100.0;
+      for (const bool inclusive: {false, true}) {
+        const auto quantile = growing.get_quantile(rank, inclusive);
+        REQUIRE(quantile == full.get_quantile(rank, inclusive));
+        REQUIRE(growing.get_rank(quantile, inclusive) == full.get_rank(quantile, inclusive));
+      }
+      split_points.push_back(growing.get_quantile(rank));
+    }
+    split_points.erase(std::unique(split_points.begin(), split_points.end()), split_points.end());
+    for (const bool inclusive: {false, true}) {
+      REQUIRE(growing.get_PMF(split_points.data(), split_points.size(), inclusive)
+          == full.get_PMF(split_points.data(), split_points.size(), inclusive));
+      REQUIRE(growing.get_CDF(split_points.data(), split_points.size(), inclusive)
+          == full.get_CDF(split_points.data(), split_points.size(), inclusive));
+    }
+  }
+  REQUIRE(growing.serialize() == full.serialize());
+  std::stringstream growing_stream, full_stream;
+  growing.serialize(growing_stream);
+  full.serialize(full_stream);
+  REQUIRE(growing_stream.str() == full_stream.str());
+  REQUIRE(growing.to_string(true, false) == full.to_string(true, false));
+}
+
+// Sizes of the items buffer as it grows by 8x up to k.
+static std::vector<uint32_t> buffer_sizes(uint16_t k) {
+  std::vector<uint32_t> sizes = {std::min(k, kll_constants::DEFAULT_K)};
+  while (sizes.back() < k) {
+    sizes.push_back(std::min<uint32_t>(sizes.back() * 8, k));
+  }
+  return sizes;
+}
+
+// Updates a sketch and a copy of it with a full buffer the same way, and requires the same results.
+template<typename Sketch>
+static void require_same_as_full_buffer(Sketch& growing, uint32_t num_items) {
+  auto full = with_full_buffer(growing);
+  random_utils::random_bit.seed(4);
+  for (uint32_t i = 0; i < num_items; ++i) {
+    const auto item = static_cast<typename Sketch::value_type>(i % 7777);
+    apply_to_both(growing, full, [&item](Sketch& sketch) { sketch.update(item); });
+    if (i == 1000 || i == 20000) { require_identical(growing, full); }
+  }
+  require_identical(growing, full);
+}
+
+TEST_CASE("kll sketch: lazy growth of the items buffer", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  const long long levels_bytes = 2 * sizeof(uint32_t);
+
+  SECTION("k below DEFAULT_K allocates k items") {
+    const uint16_t k = kll_constants::DEFAULT_K / 2;
+    kll_float_sketch sketch(k, std::less<float>(), 0);
+    sketch.update(0);
+    REQUIRE(test_allocator_total_bytes == static_cast<long long>(levels_bytes + k * sizeof(float)));
+    for (int i = 1; i < k; ++i) { sketch.update(static_cast<float>(i)); }
+    REQUIRE(test_allocator_total_bytes == static_cast<long long>(levels_bytes + k * sizeof(float)));
+  }
+
+  SECTION("buffer grows by 8x up to k") {
+    REQUIRE(buffer_sizes(kll_constants::MAX_K) == std::vector<uint32_t>{200, 1600, 12800, 65535});
+    kll_float_sketch sketch(kll_constants::MAX_K, std::less<float>(), 0);
+    REQUIRE(test_allocator_total_bytes
+        == static_cast<long long>(levels_bytes + kll_constants::DEFAULT_K * sizeof(float)));
+    uint32_t n = 0;
+    for (const uint32_t size: buffer_sizes(kll_constants::MAX_K)) {
+      while (n < size) {
+        sketch.update(static_cast<float>(n++));
+        // the buffer grows when an item does not fit
+        REQUIRE(test_allocator_total_bytes == static_cast<long long>(levels_bytes + size * sizeof(float)));
+      }
+    }
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+    sketch.update(0);
+    REQUIRE(sketch.is_estimation_mode());
+  }
+
+  SECTION("merge grows the buffer like updates") {
+    kll_float_sketch other(kll_constants::MAX_K, std::less<float>(), 0);
+    for (int i = 0; i < 1000; ++i) { other.update(static_cast<float>(i)); }
+    const long long other_bytes = test_allocator_total_bytes;
+    kll_float_sketch sketch(kll_constants::MAX_K, std::less<float>(), 0);
+    sketch.merge(other);
+    REQUIRE(test_allocator_total_bytes - other_bytes == static_cast<long long>(levels_bytes + 1600 * sizeof(float)));
+    REQUIRE(sketch.get_n() == 1000);
+  }
+
+  SECTION("same as a full buffer through compactions") {
+    // the buffer grows 1, 2 and 3 times before it reaches these k
+    const uint16_t ks[] = {201, 5000, 20000};
+    for (const uint16_t k: ks) {
+      random_utils::random_bit.seed(k);
+      kll_float_sketch growing(k, std::less<float>(), 0);
+      growing.update(0);
+      const long long growing_bytes = test_allocator_total_bytes;
+      kll_float_sketch full = with_full_buffer(growing);
+      REQUIRE(test_allocator_total_bytes - growing_bytes == static_cast<long long>(levels_bytes + k * sizeof(float)));
+      const auto sizes = buffer_sizes(k);
+      for (uint32_t n = 2; n <= 10u * k; ++n) {
+        const float item = static_cast<float>((n * 7919) % 10007) / 3;
+        apply_to_both(growing, full, [item](kll_float_sketch& sketch) { sketch.update(item); });
+        const bool at_growth = std::find(sizes.begin(), sizes.end(), n) != sizes.end()
+            || std::find(sizes.begin(), sizes.end(), n - 1) != sizes.end();
+        if (at_growth || n % 997 == 0 || n % k <= 1) { require_identical(growing, full); }
+      }
+      REQUIRE(growing.is_estimation_mode());
+      require_identical(growing, full);
+    }
+  }
+
+  SECTION("same as a full buffer when merging") {
+    random_utils::random_bit.seed(3);
+    // exact mode sketches first, so that merging grows the buffer before compactions start
+    const std::vector<std::pair<uint16_t, uint32_t>> k_and_n = {
+        {30000, 1000}, {30000, 3000}, {20000, 15000}, {2000, 10000}, {8, 100}, {20000, 60000}};
+    std::vector<kll_float_sketch> others;
+    for (const auto& shape: k_and_n) {
+      others.emplace_back(shape.first, std::less<float>(), 0);
+      for (uint32_t i = 0; i < shape.second; ++i) { others.back().update(static_cast<float>((i * 31) % 4999)); }
+    }
+    for (const bool reversed: {false, true}) {
+      kll_float_sketch growing(20000, std::less<float>(), 0);
+      growing.update(0);
+      kll_float_sketch full = with_full_buffer(growing);
+      for (size_t i = 0; i < others.size(); ++i) {
+        const auto& other = others[reversed ? others.size() - 1 - i : i];
+        apply_to_both(growing, full, [&other](kll_float_sketch& sketch) { sketch.merge(other); });
+        require_identical(growing, full);
+      }
+      for (int i = 0; i < 50000; ++i) {
+        apply_to_both(growing, full, [i](kll_float_sketch& sketch) { sketch.update(static_cast<float>(i)); });
+      }
+      require_identical(growing, full);
+    }
+  }
+
+  SECTION("copies, moves and converted sketches keep growing the same") {
+    kll_float_sketch sketch(kll_constants::MAX_K, std::less<float>(), 0);
+    for (int i = 0; i < 500; ++i) { sketch.update(static_cast<float>(i)); }
+    kll_float_sketch copied(sketch);
+    kll_float_sketch assigned(8, std::less<float>(), 0);
+    assigned = sketch;
+    kll_float_sketch to_move(sketch);
+    kll_float_sketch moved(std::move(to_move));
+    kll_float_sketch move_assigned(8, std::less<float>(), 0);
+    kll_float_sketch to_move_assign(sketch);
+    move_assigned = std::move(to_move_assign);
+    for (auto* growing: {&sketch, &copied, &assigned, &moved, &move_assigned}) {
+      require_same_as_full_buffer(*growing, 200000);
+    }
+    kll_float_sketch source(kll_constants::MAX_K, std::less<float>(), 0);
+    for (int i = 0; i < 500; ++i) { source.update(static_cast<float>(i)); }
+    kll_sketch<double, std::less<double>, test_allocator<double>> converted(source, std::less<double>(), 0);
+    require_same_as_full_buffer(converted, 200000);
+  }
+
+  SECTION("same as a full buffer with strings") {
+    random_utils::random_bit.seed(5);
+    kll_string_sketch growing(5000, std::less<std::string>(), 0);
+    growing.update("0");
+    kll_string_sketch full = with_full_buffer(growing);
+    for (int i = 1; i < 30000; ++i) {
+      const std::string item = std::to_string((i * 7919) % 10007);
+      apply_to_both(growing, full, [&item](kll_string_sketch& sketch) { sketch.update(item); });
+      if (i == 199 || i == 200 || i == 1599 || i == 1600 || i == 4999 || i == 10000) { require_identical(growing, full); }
+    }
+    require_identical(growing, full);
+  }
+
+  // cleanup
+  REQUIRE(test_allocator_total_bytes == 0);
 }
 
 } /* namespace datasketches */
