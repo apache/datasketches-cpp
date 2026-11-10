@@ -241,6 +241,7 @@ class kll_sketch {
      * Merges another sketch into this one.
      * If sketches contain strings, callers are responsible for ensuring that
      * both sketches were built using compatible string encodings.
+     * If other is this sketch, this throws std::invalid_argument.
      * @param other sketch to merge into this one
      */
     template<typename FwdSk>

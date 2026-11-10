@@ -566,6 +566,16 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_max_item() == 999999.0f);
   }
 
+  SECTION("merge into itself") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    REQUIRE_THROWS_WITH(sketch.merge(sketch), "A sketch cannot merge with itself.");
+    for (int i = 0; i < 150; i++) sketch.update(static_cast<float>(i));
+    const auto bytes = sketch.serialize();
+    REQUIRE_THROWS_WITH(sketch.merge(sketch), "A sketch cannot merge with itself.");
+    REQUIRE_THROWS_WITH(sketch.merge(static_cast<const kll_float_sketch&>(sketch)), "A sketch cannot merge with itself.");
+    REQUIRE(sketch.serialize() == bytes);
+  }
+
   SECTION("sketch of ints") {
     kll_sketch<int> sketch;
     REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
