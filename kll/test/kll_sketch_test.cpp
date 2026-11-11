@@ -1043,8 +1043,8 @@ TEST_CASE("kll sketch: lazy growth of the items buffer", "[kll_sketch]") {
   }
 
   SECTION("same as a full buffer through compactions") {
-    // the buffer grows 1, 2 and 3 times before it reaches these k
-    const uint16_t ks[] = {201, 5000, 20000};
+    // the buffer grows once (k = 201 and 1000), twice (5000) or three times (20000) before k
+    const uint16_t ks[] = {201, 1000, 5000, 20000};
     for (const uint16_t k: ks) {
       random_utils::random_bit.seed(k);
       kll_float_sketch growing(k, std::less<float>(), 0);
