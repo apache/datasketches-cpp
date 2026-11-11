@@ -966,15 +966,10 @@ static std::vector<uint8_t> legacy_empty_p05(uint8_t flags, uint8_t count) {
           0, 0, 0, 0, 0, 0, 0, 0x40};
 }
 
-TEST_CASE("theta sketch: empty mask and tests", "[theta_sketch]") {
-  using parser = compact_theta_sketch_parser<true>;
-  REQUIRE((parser::EMPTY_SKETCH_TEST & ~parser::EMPTY_SKETCH_MASK) == 0);
-  REQUIRE((parser::EMPTY_SKETCH_TEST_LEGACY & ~parser::EMPTY_SKETCH_MASK) == 0);
-  // our own empty image must pass
+TEST_CASE("theta sketch: own empty image passes the empty check", "[theta_sketch]") {
+  // that the tests lie within the mask is checked at compile time in compact_theta_sketch_parser
   auto bytes = update_theta_sketch::builder().build().compact().serialize();
-  uint64_t pre0;
-  std::memcpy(&pre0, bytes.data(), sizeof(pre0));
-  REQUIRE((pre0 & parser::EMPTY_SKETCH_MASK) == parser::EMPTY_SKETCH_TEST);
+  check_empty_accepted(std::vector<uint8_t>(bytes.begin(), bytes.end()));
 }
 
 TEST_CASE("theta sketch: deserialize historical empty images", "[theta_sketch]") {

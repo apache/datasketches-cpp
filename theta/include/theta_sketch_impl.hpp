@@ -679,7 +679,8 @@ compact_theta_sketch_alloc<A> compact_theta_sketch_alloc<A>::deserialize_v3(
         | (static_cast<uint64_t>(unused16) << 24)
         | (static_cast<uint64_t>(flags_byte) << 40)
         | (static_cast<uint64_t>(seed_hash) << 48);
-    if (compact_theta_sketch_parser<true>::check_empty_v3(pre0, compute_seed_hash(seed)) == 3) {
+    compact_theta_sketch_parser<true>::check_empty_v3(pre0, compute_seed_hash(seed));
+    if (preamble_longs == 3) {
       const auto num_entries = read<uint32_t>(is);
       read<uint32_t>(is); // unused
       read<uint64_t>(is); // theta is ignored, empty implies theta = 1.0
