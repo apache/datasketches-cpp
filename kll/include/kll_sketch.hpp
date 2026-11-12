@@ -158,6 +158,13 @@ namespace kll_constants {
  * <li>Then <i>q<sub>lo</sub> &le; q &le; q<sub>hi</sub></i>, with 99% confidence.</li>
  * </ul>
  *
+ * <p>Memory allocation: a new sketch does not allocate storage for items until it first needs it,
+ * on the first update or the first merge of a non-empty sketch. Sketches that stay empty, or that
+ * are only ever merged into, use little memory. As a result, the first update or merge can throw
+ * std::bad_alloc while allocating this storage, rather than the constructor. If that happens, the
+ * sketch is unchanged and can still be used. Call reserve() right after construction to allocate
+ * the storage up front.
+ *
  * author Kevin Lang
  * author Alexander Saydakov
  * author Lee Rhodes
@@ -183,7 +190,8 @@ class kll_sketch {
     using quantile_return_type = typename quantiles_sorted_view<T, C, A>::quantile_return_type;
 
     /**
-     * Constructor
+     * Constructor.
+     * Storage for items is allocated on first use, see reserve().
      * @param k affects the size of the sketch and its estimation error
      * @param comparator strict weak ordering function (see C++ named requirements: Compare)
      * @param allocator used by this sketch to allocate memory
@@ -232,6 +240,7 @@ class kll_sketch {
      * Updates this sketch with the given data item.
      * If cross-language portability is required, callers should ensure that
      * the input string uses a compatible encoding (valid UTF-8).
+     * The first update allocates storage for items, unless reserve() or a merge already did.
      * @param item from a stream of items
      */
     template<typename FwdT>
@@ -241,10 +250,21 @@ class kll_sketch {
      * Merges another sketch into this one.
      * If sketches contain strings, callers are responsible for ensuring that
      * both sketches were built using compatible string encodings.
+     * The first merge of a non-empty sketch allocates storage for items,
+     * unless reserve() or an update already did.
      * @param other sketch to merge into this one
      */
     template<typename FwdSk>
     void merge(FwdSk&& other);
+
+    /**
+     * Allocates storage for items now, rather than on the first update or merge.
+     * Call this right after construction if allocation failures should happen here,
+     * or if the first update should not pay for the allocation.
+     * Does nothing if the storage is already allocated.
+     * @throw std::bad_alloc if the allocation fails, in which case the sketch is unchanged
+     */
+    void reserve();
 
     /**
      * Returns true if this sketch is empty.

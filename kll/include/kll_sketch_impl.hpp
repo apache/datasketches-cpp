@@ -179,6 +179,7 @@ template<typename T, typename C, typename A>
 template<typename FwdT>
 void kll_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_item(item)) { return; }
+  allocate_items(); // first, so that a failure leaves the sketch unchanged
   update_min_max(static_cast<const T&>(item)); // min and max are always copies
   const uint32_t index = internal_update();
   new (&items_[index]) T(std::forward<FwdT>(item));
@@ -194,6 +195,11 @@ void kll_sketch<T, C, A>::update_min_max(const T& item) {
     if (comparator_(item, *min_item_)) *min_item_ = item;
     if (comparator_(*max_item_, item)) *max_item_ = item;
   }
+}
+
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::reserve() {
+  allocate_items();
 }
 
 template<typename T, typename C, typename A>
