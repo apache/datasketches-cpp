@@ -98,12 +98,14 @@ public:
 
   /**
    * Constructor
-   * @param k Controls the size and error of the sketch. It must be even and in the range [4, 1024], inclusive.
+   * @param k Controls the size and error of the sketch. It must be no greater than 1024.
+   * Values below 4 are raised to 4, and odd values are rounded down to the nearest even value.
    * Value of 12 roughly corresponds to 1% relative error guarantee at 95% confidence.
    * @param hra if true, the default, the high ranks are prioritized for better
    * accuracy. Otherwise the low ranks are prioritized for better accuracy.
    * @param comparator strict weak ordering function (see C++ named requirements: Compare)
    * @param allocator used by this sketch to allocate memory
+   * @throws std::invalid_argument if k is greater than 1024
    */
   explicit req_sketch(uint16_t k, bool hra = true, const Comparator& comparator = Comparator(),
       const Allocator& allocator = Allocator());
@@ -463,7 +465,9 @@ private:
       optional<T>&& min_item, optional<T>&& max_item,
       std::vector<Compactor, AllocCompactor>&& compactors, const Comparator& comparator);
 
+  static void check_k(uint16_t k);
   static void check_preamble_ints(uint8_t preamble_ints, uint8_t num_levels);
+  static void check_num_levels(uint8_t num_levels, bool raw_items);
   static void check_serial_version(uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
 

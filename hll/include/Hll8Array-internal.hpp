@@ -120,30 +120,29 @@ void Hll8Array<A>::mergeHll(const HllArray<A>& src) {
   // we can optimize further when the k values are equal
   if (this->getLgConfigK() == src.getLgConfigK()) {
     if (src.getTgtHllType() == target_hll_type::HLL_8) {
-      uint32_t i = 0;
-      for (const auto value: src.getHllArray()) {
-        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
-        ++i;
+      // Hoist the data pointer out of the loop to encourage vectorization
+      const uint8_t* src_data = src.getHllArray().data();
+      uint8_t* data = this->hllByteArr_.data();
+      const size_t n = src.getHllArray().size();
+      for (size_t i = 0; i < n; ++i) {
+        data[i] = std::max(data[i], src_data[i]);
       }
     } else if (src.getTgtHllType() == target_hll_type::HLL_6) {
-      const uint32_t src_k = 1 << src.getLgConfigK();
-      uint32_t i = 0;
-      const uint8_t* ptr = src.getHllArray().data();
-      while (i < src_k) {
-        uint8_t value = *ptr & 0x3f;
-        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
-        ++i;
-        value = *ptr++ >> 6;
-        value |= (*ptr & 0x0f) << 2;
-        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
-        ++i;
-        value = *ptr++ >> 4;
-        value |= (*ptr & 3) << 4;
-        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
-        ++i;
-        value = *ptr++ >> 2;
-        this->hllByteArr_[i] = std::max(this->hllByteArr_[i], value);
-        ++i;
+      const uint8_t* src_data = src.getHllArray().data();
+      uint8_t* data = this->hllByteArr_.data();
+      const size_t src_k = 1 << src.getLgConfigK();
+      const size_t num_groups = src_k / 4;
+      for (size_t g = 0; g < num_groups; ++g) {
+        const size_t i = 4 * g;
+        const size_t j = 3 * g;
+        // Read into locals so that stores don't force reloads
+        const uint8_t b0 = src_data[j];
+        const uint8_t b1 = src_data[j + 1];
+        const uint8_t b2 = src_data[j + 2];
+        data[i] = std::max<uint8_t>(data[i], b0 & 0x3f);
+        data[i + 1] = std::max<uint8_t>(data[i + 1], (b0 >> 6) | ((b1 & 0x0f) << 2));
+        data[i + 2] = std::max<uint8_t>(data[i + 2], (b1 >> 4) | ((b2 & 3) << 4));
+        data[i + 3] = std::max<uint8_t>(data[i + 3], b2 >> 2);
       }
     } else { // HLL_4
       const auto& src4 = static_cast<const Hll4Array<A>&>(src);

@@ -38,8 +38,9 @@ entries_(allocator)
 template<typename T, typename C, typename A>
 template<typename Iterator>
 void quantiles_sorted_view<T, C, A>::add(Iterator first, Iterator last, uint64_t weight) {
+  if (first == last) return;
   const size_t size_before = entries_.size();
-  for (auto it = first; it != last; ++it) entries_.push_back(Entry(ref_helper(*it), weight));
+  for (auto it = first; it != last; ++it) entries_.emplace_back(ref_helper(*it), weight);
   if (size_before > 0) {
     Container tmp(entries_.get_allocator());
     tmp.reserve(entries_.capacity());

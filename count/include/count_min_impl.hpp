@@ -38,7 +38,8 @@ _num_hashes(num_hashes),
 _num_buckets(num_buckets),
 _sketch_array((static_cast<uint64_t>(num_hashes) * num_buckets < 1<<30) ? static_cast<size_t>(num_hashes) * num_buckets : 0, 0, _allocator),
 _seed(seed),
-_total_weight(0) {
+_total_weight(0),
+hash_seeds(_allocator) {
   if (num_buckets < 3) {
     throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.");
   }

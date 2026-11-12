@@ -301,7 +301,9 @@ template<typename T, typename C, typename A>
 bool req_compactor<T, C, A>::ensure_enough_sections() {
   const float ssr = section_size_raw_ / sqrtf(2);
   const uint32_t ne = nearest_even(ssr);
-  if (state_ >= static_cast<uint64_t>(1ULL << (num_sections_ - 1)) && ne >= req_constants::MIN_K) {
+  if (state_ >= static_cast<uint64_t>(1ULL << (num_sections_ - 1))
+      && section_size_ > req_constants::MIN_K
+      && ne >= req_constants::MIN_K) {
     section_size_raw_ = ssr;
     section_size_ = ne;
     num_sections_ <<= 1;
@@ -324,6 +326,30 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compute_compaction_range(u
 template<typename T, typename C, typename A>
 uint32_t req_compactor<T, C, A>::nearest_even(float value) {
   return static_cast<uint32_t>(round(value / 2)) << 1;
+}
+
+template<typename T, typename C, typename A>
+void req_compactor<T, C, A>::check_header(uint16_t k, uint8_t level, uint8_t lg_weight, float section_size_raw,
+    uint8_t num_sections) {
+  // the sketch creates the compactor at level h with lg_weight h
+  if (lg_weight != level) {
+    throw std::invalid_argument("Possible corruption: compactor " + std::to_string(level) + " has lg_weight "
+        + std::to_string(lg_weight));
+  }
+  // the section size starts at k and shrinks to no less than MIN_K
+  // (the first check is false for NaN and keeps nearest_even() in range)
+  const uint32_t section_size = (section_size_raw > 0 && section_size_raw <= k + 1) ? nearest_even(section_size_raw) : 0;
+  if (section_size < req_constants::MIN_K || section_size > k) {
+    throw std::invalid_argument("Possible corruption: section size " + std::to_string(section_size_raw)
+        + " is out of range for k " + std::to_string(k));
+  }
+  // the number of sections starts at 3 and doubles, and must keep 1 << (num_sections - 1) defined
+  // the limit uses the raw section size: when that has shrunk to 3, the even section size is 4 and can exceed it
+  const uint32_t rounded_section_size = static_cast<uint32_t>(round(section_size_raw));
+  if (num_sections < 1 || num_sections > 64 || rounded_section_size * num_sections > static_cast<uint32_t>(k) * k) {
+    throw std::invalid_argument("Possible corruption: number of sections " + std::to_string(num_sections)
+        + " is out of range for section size " + std::to_string(section_size_raw) + " and k " + std::to_string(k));
+  }
 }
 
 template<typename T, typename C, typename A>
@@ -394,13 +420,15 @@ size_t req_compactor<T, C, A>::serialize(void* dst, size_t capacity, const S& se
 template<typename T, typename C, typename A>
 template<typename S>
 req_compactor<T, C, A> req_compactor<T, C, A>::deserialize(std::istream& is, const S& serde,
-    const C& comparator, const A& allocator, bool sorted, bool hra) {
+    const C& comparator, const A& allocator, bool sorted, bool hra, uint16_t k, uint8_t level) {
   auto state = read<decltype(state_)>(is);
   auto section_size_raw = read<decltype(section_size_raw_)>(is);
   auto lg_weight = read<decltype(lg_weight_)>(is);
   auto num_sections = read<decltype(num_sections_)>(is);
   read<uint16_t>(is); // padding
   auto num_items = read<uint32_t>(is);
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
+  check_header(k, level, lg_weight, section_size_raw, num_sections);
   auto items = deserialize_items(is, serde, allocator, num_items);
   return req_compactor(hra, lg_weight, sorted, section_size_raw, num_sections, state, std::move(items), num_items,
       comparator, allocator);
@@ -431,8 +459,9 @@ auto req_compactor<T, C, A>::deserialize_items(std::istream& is, const S& serde,
 template<typename T, typename C, typename A>
 template<typename S>
 std::pair<req_compactor<T, C, A>, size_t> req_compactor<T, C, A>::deserialize(const void* bytes, size_t size,
-    const S& serde, const C& comparator, const A& allocator, bool sorted, bool hra) {
-  ensure_minimum_memory(size, 8);
+    const S& serde, const C& comparator, const A& allocator, bool sorted, bool hra, uint16_t k, uint8_t level) {
+  ensure_minimum_memory(size, sizeof(state_) + sizeof(section_size_raw_) + sizeof(lg_weight_) + sizeof(num_sections_)
+      + sizeof(uint16_t) + sizeof(num_items_));
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
 
@@ -447,6 +476,7 @@ std::pair<req_compactor<T, C, A>, size_t> req_compactor<T, C, A>::deserialize(co
   ptr += 2; // padding
   uint32_t num_items;
   ptr += copy_from_mem(ptr, num_items);
+  check_header(k, level, lg_weight, section_size_raw, num_sections);
   auto pair = deserialize_items(ptr, end_ptr - ptr, serde, allocator, num_items);
   ptr += pair.second;
   return std::pair<req_compactor, size_t>(

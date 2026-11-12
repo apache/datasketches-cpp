@@ -87,11 +87,11 @@ public:
 
   template<typename S>
   static req_compactor deserialize(std::istream& is, const S& serde, const Comparator& comparator,
-      const Allocator& allocator, bool sorted, bool hra);
+      const Allocator& allocator, bool sorted, bool hra, uint16_t k, uint8_t level);
 
   template<typename S>
   static std::pair<req_compactor, size_t> deserialize(const void* bytes, size_t size, const S& serde,
-      const Comparator& comparator, const Allocator& allocator, bool sorted, bool hra);
+      const Comparator& comparator, const Allocator& allocator, bool sorted, bool hra, uint16_t k, uint8_t level);
 
   template<typename S>
   static req_compactor deserialize(std::istream& is, const S& serde, const Comparator& comparator,
@@ -122,6 +122,7 @@ private:
   void ensure_space(uint32_t num);
 
   static uint32_t nearest_even(float value);
+  static void check_header(uint16_t k, uint8_t level, uint8_t lg_weight, float section_size_raw, uint8_t num_sections);
 
   template<typename InIter, typename OutIter>
   static void promote_evens_or_odds(InIter from, InIter to, bool flag, OutIter dst);

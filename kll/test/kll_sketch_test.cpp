@@ -566,6 +566,16 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_max_item() == 999999.0f);
   }
 
+  SECTION("merge into itself") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    REQUIRE_THROWS_WITH(sketch.merge(sketch), "A sketch cannot merge with itself.");
+    for (int i = 0; i < 150; i++) sketch.update(static_cast<float>(i));
+    const auto bytes = sketch.serialize();
+    REQUIRE_THROWS_WITH(sketch.merge(sketch), "A sketch cannot merge with itself.");
+    REQUIRE_THROWS_WITH(sketch.merge(static_cast<const kll_float_sketch&>(sketch)), "A sketch cannot merge with itself.");
+    REQUIRE(sketch.serialize() == bytes);
+  }
+
   SECTION("sketch of ints") {
     kll_sketch<int> sketch;
     REQUIRE_THROWS_AS(sketch.get_quantile(0), std::runtime_error);
@@ -833,6 +843,76 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   // cleanup
   REQUIRE(test_allocator_total_bytes == 0);
+}
+
+
+TEST_CASE("kll sketch: deserialize rejects inconsistent levels", "[kll_sketch]") {
+  using vector_bytes = kll_sketch<int>::vector_bytes;
+  const size_t k_offset = 4;
+  const size_t num_levels_offset = 18;
+  const size_t levels_offset = 20;
+  auto put_u32 = [](vector_bytes& bytes, size_t offset, uint32_t value) {
+    std::memcpy(bytes.data() + offset, &value, sizeof(value));
+  };
+  auto get_u32 = [](const vector_bytes& bytes, size_t offset) {
+    uint32_t value;
+    std::memcpy(&value, bytes.data() + offset, sizeof(value));
+    return value;
+  };
+  auto check_rejected = [](const vector_bytes& bytes) {
+    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(s), std::invalid_argument);
+  };
+
+  kll_sketch<int> one_level(8);
+  for (int i = 0; i < 3; ++i) one_level.update(i);
+  kll_sketch<int> three_levels(8);
+  for (int i = 0; i < 40; ++i) three_levels.update(i);
+  REQUIRE(three_levels.serialize()[num_levels_offset] == 3);
+
+  SECTION("first level beyond capacity") {
+    auto bytes = one_level.serialize();
+    put_u32(bytes, levels_offset, 1009);
+    check_rejected(bytes);
+  }
+
+  SECTION("level beyond capacity") {
+    auto bytes = three_levels.serialize();
+    put_u32(bytes, levels_offset + sizeof(uint32_t), 100000);
+    check_rejected(bytes);
+  }
+
+  SECTION("decreasing levels") {
+    auto bytes = three_levels.serialize();
+    REQUIRE(get_u32(bytes, levels_offset) > 0);
+    put_u32(bytes, levels_offset + sizeof(uint32_t), 0);
+    check_rejected(bytes);
+  }
+
+  SECTION("zero levels") {
+    auto bytes = three_levels.serialize();
+    bytes[num_levels_offset] = 0;
+    check_rejected(bytes);
+  }
+
+  SECTION("k below minimum") {
+    auto bytes = three_levels.serialize();
+    const uint16_t k = 4;
+    std::memcpy(bytes.data() + k_offset, &k, sizeof(k));
+    check_rejected(bytes);
+  }
+
+  SECTION("levels beyond the input") {
+    auto bytes = three_levels.serialize();
+    bytes[num_levels_offset] = 40;
+    bytes.resize(levels_offset);
+    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(bytes.data(), bytes.size()), std::out_of_range);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE_THROWS_AS(kll_sketch<int>::deserialize(s), std::runtime_error);
+  }
 }
 
 } /* namespace datasketches */
