@@ -158,7 +158,8 @@ TEST_CASE("cpc union: bounds of the result", "[cpc_union]") {
     {16, 15005.337536986240, {14964.818701476400, 14924.518102269025, 14884.433980953483}, {15047, 15088, 15129}}
   };
   for (const auto& c: cases) {
-    CAPTURE(c.lg_k);
+    const int lg_k = c.lg_k; // printed as a number, not a character
+    CAPTURE(lg_k);
     cpc_sketch s1(c.lg_k), s2(c.lg_k);
     for (uint64_t i = 0; i < 5000; ++i) s1.update(i);
     for (uint64_t i = 5000; i < 15000; ++i) s2.update(i);
@@ -166,11 +167,14 @@ TEST_CASE("cpc union: bounds of the result", "[cpc_union]") {
     u.update(s1);
     u.update(s2);
     const auto result = u.get_result();
-    REQUIRE(result.get_estimate() == Approx(c.estimate).epsilon(1e-12));
+    // Floating-point results differ slightly between compilers and math libraries
+    // (about 4e-12 relative with gcc in the sanitizer builds), so compare within 1e-9.
+    // The upper bound is rounded up to a whole number, so it may differ by 1.
+    REQUIRE(result.get_estimate() == Approx(c.estimate).epsilon(1e-9));
     for (unsigned kappa = 1; kappa <= 3; ++kappa) {
       CAPTURE(kappa);
-      REQUIRE(result.get_lower_bound(kappa) == Approx(c.lb[kappa - 1]).epsilon(1e-12));
-      REQUIRE(result.get_upper_bound(kappa) == Approx(c.ub[kappa - 1]).epsilon(1e-12));
+      REQUIRE(result.get_lower_bound(kappa) == Approx(c.lb[kappa - 1]).epsilon(1e-9));
+      REQUIRE(result.get_upper_bound(kappa) == Approx(c.ub[kappa - 1]).margin(1));
     }
     REQUIRE_THROWS_AS(result.get_lower_bound(0), std::invalid_argument);
     REQUIRE_THROWS_AS(result.get_upper_bound(4), std::invalid_argument);
