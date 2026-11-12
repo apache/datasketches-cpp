@@ -27,19 +27,33 @@
 
 #include "MurmurHash3.h"
 #include "count_min.hpp"
+#include "xxhash64.h"
 #include "memory_operations.hpp"
 
 namespace datasketches {
 
 template<typename W, typename A>
 count_min_sketch<W,A>::count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed, const A& allocator):
+count_min_sketch(num_hashes, num_buckets, seed, SERIAL_VERSION_2, allocator)
+{}
+
+template<typename W, typename A>
+count_min_sketch<W,A>::count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed, uint8_t serial_version,
+    const A& allocator):
 _allocator(allocator),
+_serial_version(serial_version),
 _num_hashes(num_hashes),
 _num_buckets(num_buckets),
 _sketch_array((static_cast<uint64_t>(num_hashes) * num_buckets < 1<<30) ? static_cast<size_t>(num_hashes) * num_buckets : 0, 0, _allocator),
 _seed(seed),
 _total_weight(0),
 hash_seeds(_allocator) {
+  // version 1 images written by C++ may have up to 255 rows
+  const uint8_t max_num_hashes = serial_version == SERIAL_VERSION_1 ? UINT8_MAX : MAX_NUM_HASHES;
+  if (num_hashes < 1 || num_hashes > max_num_hashes) {
+    throw std::invalid_argument("The number of hashes must be in [1, " + std::to_string(max_num_hashes) + "], actual "
+                                + std::to_string(num_hashes));
+  }
   if (num_buckets < 3) {
     throw std::invalid_argument("Using fewer than 3 buckets incurs relative error greater than 1.");
   }
@@ -51,13 +65,25 @@ hash_seeds(_allocator) {
                                 "Try reducing either the number of buckets or the number of hash functions.");
   }
 
-  std::default_random_engine rng(_seed);
-  std::uniform_int_distribution<uint64_t> extra_hash_seeds(0, std::numeric_limits<uint64_t>::max());
   hash_seeds.reserve(num_hashes);
-
-  for (uint64_t i=0; i < num_hashes; ++i) {
-    hash_seeds.push_back(extra_hash_seeds(rng) + _seed); // Adds the global seed to all hash functions.
+  if (serial_version == SERIAL_VERSION_1) {
+    // legacy row seeds: these depend on the C++ standard library
+    std::default_random_engine rng(_seed);
+    std::uniform_int_distribution<uint64_t> extra_hash_seeds(0, std::numeric_limits<uint64_t>::max());
+    for (uint64_t i=0; i < num_hashes; ++i) {
+      hash_seeds.push_back(extra_hash_seeds(rng) + _seed); // Adds the global seed to all hash functions.
+    }
+  } else {
+    // rowSeed[i] = XXH64(LE64(i), seed = seed), see the Count-Min format specification in datasketches-tck
+    for (uint64_t i=0; i < num_hashes; ++i) {
+      hash_seeds.push_back(XXHash64::hash(&i, sizeof(i), _seed));
+    }
   }
+}
+
+template<typename W, typename A>
+uint8_t count_min_sketch<W,A>::get_serial_version() const {
+  return _serial_version;
 }
 
 template<typename W, typename A>
@@ -107,7 +133,7 @@ uint8_t count_min_sketch<W,A>::suggest_num_hashes(double confidence) {
   if (confidence < 0. || confidence > 1.0) {
     throw std::invalid_argument("Confidence must be between 0 and 1.0 (inclusive).");
   }
-  return std::min<uint8_t>(ceil(log(1.0 / (1.0 - confidence))), UINT8_MAX);
+  return static_cast<uint8_t>(std::max(1.0, std::min(ceil(log(1.0 / (1.0 - confidence))), static_cast<double>(MAX_NUM_HASHES))));
 }
 
 template<typename W, typename A>
@@ -131,10 +157,14 @@ void count_min_sketch<W,A>::foreach_hash_location(const void* item, size_t size,
 
   uint64_t hash_seed_index = 0;
   for (const auto &it: hash_seeds) {
-    HashState hashes;
-    MurmurHash3_x64_128(item, size, it, hashes); // ? BEWARE OVERFLOW.
-    uint64_t hash = hashes.h1;
-    bucket_index = hash % _num_buckets;
+    if (_serial_version == SERIAL_VERSION_1) {
+      HashState hashes;
+      MurmurHash3_x64_128(item, size, it, hashes); // ? BEWARE OVERFLOW.
+      bucket_index = hashes.h1 % _num_buckets;
+    } else {
+      // the shift clears the top bit, so that languages with signed 64-bit integers get the same bucket
+      bucket_index = (XXHash64::hash(item, size, it) >> 1) % _num_buckets;
+    }
     callback((hash_seed_index * _num_buckets) + bucket_index);
     hash_seed_index += 1;
   }
@@ -157,6 +187,7 @@ W count_min_sketch<W,A>::get_estimate(const void* item, size_t size) const {
   /*
    * Returns the estimated frequency of the item
    */
+  if (size == 0) { return 0; } // empty items are not inserted into the sketch
   W estimate = std::numeric_limits<W>::max();
   foreach_hash_location(item, size, [this, &estimate](uint64_t h) {
     estimate = std::min(estimate, _sketch_array[h]);
@@ -186,6 +217,7 @@ void count_min_sketch<W,A>::update(const void* item, size_t size, W weight) {
    * Gets the item's hash locations and then increments the sketch in those
    * locations by the weight.
    */
+  if (size == 0) { return; } // empty items are ignored
   _total_weight += weight >= 0 ? weight : -weight;
   foreach_hash_location(item, size, [this, weight](uint64_t h) {
     _sketch_array[h] += weight;
@@ -206,6 +238,7 @@ W count_min_sketch<W,A>::get_upper_bound(const std::string& item) const {
 
 template<typename W, typename A>
 W count_min_sketch<W,A>::get_upper_bound(const void* item, size_t size) const {
+  if (size == 0) { return 0; } // empty items are not inserted into the sketch
   return static_cast<W>(get_estimate(item, size) + get_relative_error() * get_total_weight());
 }
 
@@ -223,6 +256,7 @@ W count_min_sketch<W,A>::get_lower_bound(const std::string& item) const {
 
 template<typename W, typename A>
 W count_min_sketch<W,A>::get_lower_bound(const void* item, size_t size) const {
+  if (size == 0) { return 0; } // empty items are not inserted into the sketch
   return get_estimate(item, size);
 }
 
@@ -238,6 +272,12 @@ void count_min_sketch<W,A>::merge(const count_min_sketch &other_sketch) {
     (get_num_buckets() == other_sketch.get_num_buckets()) &&
     (get_seed() == other_sketch.get_seed());
   if (!acceptable_config) { throw std::invalid_argument( "Incompatible sketch configuration." ); }
+  if (get_serial_version() != other_sketch.get_serial_version()) {
+    // the two versions hash items into different buckets
+    throw std::invalid_argument("Cannot merge sketches with different serial versions: "
+                                + std::to_string(get_serial_version()) + " and "
+                                + std::to_string(other_sketch.get_serial_version()));
+  }
 
   // Merge step - iterate over the other vector and add the weights to this sketch
   auto it = _sketch_array.begin(); // This is a std::vector iterator.
@@ -282,7 +322,7 @@ size_t count_min_sketch<W,A>::serialize_to(Sink&& sink) const {
   // Long 0
   //const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_SHORT : PREAMBLE_LONGS_FULL;
   const uint8_t preamble_longs = PREAMBLE_LONGS_SHORT;
-  const uint8_t ser_ver = SERIAL_VERSION_1;
+  const uint8_t ser_ver = _serial_version;
   const uint8_t family_id = FAMILY_ID;
   const uint8_t flags_byte = (is_empty() ? 1 << flags::IS_EMPTY : 0);
   const uint32_t unused32 = NULL_32;
@@ -339,7 +379,7 @@ auto count_min_sketch<W,A>::deserialize(std::istream& is, uint64_t seed, const A
     throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
                                 + std::to_string(compute_seed_hash(seed)));
   }
-  count_min_sketch c(nhashes, nbuckets, seed, allocator);
+  count_min_sketch c(nhashes, nbuckets, seed, serial_version, allocator);
   const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
   if (is_empty == 1) { return c; } // sketch is empty, no need to read further.
 
@@ -404,7 +444,7 @@ auto count_min_sketch<W,A>::deserialize(const void* bytes, size_t size, uint64_t
     throw std::invalid_argument("Incompatible seed hashes: " + std::to_string(seed_hash) + ", "
                                 + std::to_string(compute_seed_hash(seed)));
   }
-  count_min_sketch c(nhashes, nbuckets, seed, allocator);
+  count_min_sketch c(nhashes, nbuckets, seed, serial_version, allocator);
   const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
   if (is_empty) { return c; } // sketch is empty, no need to read further.
 
@@ -460,6 +500,8 @@ void count_min_sketch<W,A>::check_header_validity(uint8_t preamble_longs, uint8_
   switch (sw) { // exhaustive list and description of all valid cases
     case 138 : break; // !empty, ser_ver==1, family==18, preLongs=2;
     case 139 : break; // empty, ser_ver==1, family==18, preLongs=2;
+    case 140 : break; // !empty, ser_ver==2, family==18, preLongs=2;
+    case 141 : break; // empty, ser_ver==2, family==18, preLongs=2;
     //case 170 : break; // !empty, ser_ver==1, family==18, preLongs=3;
     default : // all other case values are invalid
       valid = false;

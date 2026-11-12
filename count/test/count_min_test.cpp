@@ -21,7 +21,6 @@
 #include <vector>
 #include <cstring>
 #include <sstream>
-#include <fstream>
 
 #include "count_min.hpp"
 #include "common_defs.hpp"
@@ -107,7 +106,7 @@ TEST_CASE("CM one update: uint64_t") {
 }
 
 TEST_CASE("CM frequency cancellation") {
-  count_min_sketch<int64_t> c(1, 5);
+  count_min_sketch<int64_t> c(1, 6); // "x" and "y" are in different buckets
   c.update("x");
   c.update("y", -1);
   REQUIRE(c.get_total_weight() == 2);
@@ -215,8 +214,6 @@ TEST_CASE("CountMin sketch: serialize-deserialize empty", "[cm_sketch]") {
     for (auto di: d) {
       REQUIRE(di == 0);
     }
-    std::ofstream os("count_min_empty_cpp.sk", std::ios::binary);
-    c.serialize(os);
 }
 
 TEST_CASE("CountMin sketch: serialize-deserialize non-empty", "[cm_sketch]") {
@@ -242,9 +239,6 @@ TEST_CASE("CountMin sketch: serialize-deserialize non-empty", "[cm_sketch]") {
     ++c_it;
     ++d_it;
   }
-
-  std::ofstream os("count_min_non_empty_cpp.sk", std::ios::binary);
-  c.serialize(os);
 }
 
 TEST_CASE("CountMin sketch: bytes serialize-deserialize empty", "[cm_sketch]") {

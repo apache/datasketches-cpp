@@ -32,6 +32,18 @@ namespace datasketches {
  * [1] - http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
  * The template type W is the type of the vector that contains the weights of the objects inserted into the sketch,
  * not the type of the input items themselves.
+ *
+ * New sketches use serialization version 2, as specified in the Count-Min format specification in
+ * <a href="https://github.com/apache/datasketches-tck/blob/main/docs/count-min-format.md">datasketches-tck</a>.
+ * Version 2 hashes items with XXH64 and derives the row seeds from the seed, so its images give the same
+ * results in every language and with every C++ standard library. Other languages read only images with
+ * W = int64_t (signed 64-bit counters).
+ *
+ * Sketches deserialized from version 1 images keep the version 1 hashing, and serialize as version 1.
+ * Version 1 row seeds depend on the C++ standard library, so version 1 images are reliable only with the
+ * standard library that wrote them. Sketches of different versions can't be merged.
+ *
+ * Empty items (an empty string, or a size of 0) are ignored: an update does nothing, and every query returns 0.
  * @author Charlie Dickens
  */
 template <typename W,
@@ -45,13 +57,17 @@ public:
 
   /**
    * Creates an instance of the sketch given parameters _num_hashes, _num_buckets and hash seed, `seed`.
-   * @param num_hashes number of hash functions in the sketch. Equivalently the number of rows in the array
-   * @param num_buckets number of buckets that hash functions map into. Equivalently the number of columns in the array
+   * The sketch uses serialization version 2.
+   * @param num_hashes number of hash functions in the sketch. Equivalently the number of rows in the array.
+   * It must be in [1, 127].
+   * @param num_buckets number of buckets that hash functions map into. Equivalently the number of columns in the array.
+   * It must be at least 3, and num_hashes * num_buckets must be less than 2^30.
    * @param seed for hash function
    * @param allocator to acquire and release memory
+   * @throw std::invalid_argument if a parameter is out of range
    *
-   * The items inserted into the sketch can be arbitrary type, so long as they are hashable via murmurhash.
-   * Only update and estimate methods are added for uint64_t and string types.
+   * Items are hashed as bytes: the generic methods take a pointer and a size, and there are
+   * specific methods for 64-bit integers (8 little-endian bytes) and strings (their bytes, which should be UTF-8).
    */
   count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed = DEFAULT_SEED, const Allocator& allocator = Allocator());
 
@@ -59,6 +75,11 @@ public:
    * @return configured _num_hashes of this sketch
    */
   uint8_t get_num_hashes() const;
+
+  /**
+   * @return the serialization version: 2 for new sketches, or 1 for a sketch deserialized from a version 1 image
+   */
+  uint8_t get_serial_version() const;
 
   /**
    * @return configured _num_buckets of this sketch
@@ -100,7 +121,7 @@ public:
    * @param confidence the desired confidence with which estimates should be correct.
    * For example, with 95% confidence, frequency estimates satisfy the `relative_error` guarantee.
    * @return the number of hash functions that are required in
-   * order to achieve the specified confidence of the sketch.
+   * order to achieve the specified confidence of the sketch, from 1 to 127.
    * confidence = 1 - delta, with delta denoting the sketch failure probability in the literature.
    * [1] - Section 3 ``Data Structure'', page 6.
    */
@@ -377,6 +398,7 @@ public:
 
 private:
   Allocator _allocator;
+  uint8_t _serial_version; // determines the row seeds and the hashing
   uint8_t _num_hashes;
   uint32_t _num_buckets;
   std::vector<W, Allocator> _sketch_array; // the array stored by the sketch
@@ -388,9 +410,14 @@ private:
   static const uint8_t PREAMBLE_LONGS_SHORT = 2; // Empty -> need second byte for sketch parameters
   static const uint8_t PREAMBLE_LONGS_FULL = 3; // Not empty -> need (at least) third byte for total weight.
   static const uint8_t SERIAL_VERSION_1 = 1;
+  static const uint8_t SERIAL_VERSION_2 = 2;
+  static const uint8_t MAX_NUM_HASHES = 127; // stored as a signed byte in Java and Go
   static const uint8_t FAMILY_ID = 18;
   static const uint8_t NULL_8 = 0;
   static const uint32_t NULL_32 = 0;
+
+  // used by deserialize to keep the hashing of a version 1 image
+  count_min_sketch(uint8_t num_hashes, uint32_t num_buckets, uint64_t seed, uint8_t serial_version, const Allocator& allocator);
 
   /**
    * Throws an error if the header is not valid.
