@@ -135,7 +135,7 @@ if (COVERAGE)
   find_program(GENHTML_PATH NAMES "genhtml")
   if (NOT LCOV_PATH-NOTFOUND AND NOT GENHTML_PATH-NOTFOUND)
     add_custom_target(coverage_report
-            COMMAND ${LCOV_PATH} --capture --exclude '*/test/*' --exclude '/Library/*' --exclude '/usr/include/*' --directory . --output-file lcov.info
+            COMMAND ${LCOV_PATH} --capture --exclude '*/test/*' --exclude '*/_deps/*' --exclude '/Library/*' --exclude '/usr/include/*' --directory . --output-file lcov.info
             COMMAND ${GENHTML_PATH} --legend lcov.info --output-directory coverage --demangle-cpp)
   endif()
 endif()
