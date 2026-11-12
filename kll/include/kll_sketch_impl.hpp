@@ -232,6 +232,7 @@ uint32_t kll_sketch<T, C, A>::internal_update() {
 template<typename T, typename C, typename A>
 template<typename FwdSk>
 void kll_sketch<T, C, A>::merge(FwdSk&& other) {
+  if (this == &other) { throw std::invalid_argument("A sketch cannot merge with itself."); }
   if (other.is_empty()) { return; }
   if (m_ != other.m_) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
@@ -475,6 +476,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   const auto m = read<uint8_t>(is);
   read<uint8_t>(is); // skip unused byte
 
+  check_k(k);
   check_m(m);
   check_preamble_ints(preamble_ints, flags_byte);
   check_serial_version(serial_version);
@@ -497,6 +499,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
     min_k = read<uint16_t>(is);
     num_levels = read<uint8_t>(is);
     read<uint8_t>(is); // skip unused byte
+    check_num_levels(num_levels);
   }
   vector_u32 levels(num_levels + 1, 0, allocator);
   const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));
@@ -505,8 +508,10 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   } else {
     // the last integer in levels_ is not serialized because it can be derived
     read(is, levels.data(), sizeof(levels[0]) * num_levels);
+    if (!is.good()) throw std::runtime_error("error reading from std::istream");
   }
   levels[num_levels] = capacity;
+  check_levels(levels);
   optional<T> min_item;
   optional<T> max_item;
   if (!is_single_item) {
@@ -562,6 +567,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   ptr += copy_from_mem(ptr, m);
   ptr += sizeof(uint8_t); // skip unused byte
 
+  check_k(k);
   check_m(m);
   check_preamble_ints(preamble_ints, flags_byte);
   check_serial_version(serial_version);
@@ -585,6 +591,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     ptr += copy_from_mem(ptr, min_k);
     ptr += copy_from_mem(ptr, num_levels);
     ptr += sizeof(uint8_t); // skip unused byte
+    check_num_levels(num_levels);
   }
   vector_u32 levels(num_levels + 1, 0, allocator);
   const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));
@@ -592,9 +599,11 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     levels[0] = capacity - 1;
   } else {
     // the last integer in levels_ is not serialized because it can be derived
+    ensure_minimum_memory(size, (ptr - static_cast<const char*>(bytes)) + sizeof(levels[0]) * num_levels);
     ptr += copy_from_mem(ptr, levels.data(), sizeof(levels[0]) * num_levels);
   }
   levels[num_levels] = capacity;
+  check_levels(levels);
   optional<T> min_item;
   optional<T> max_item;
   if (!is_single_item) {
@@ -893,6 +902,14 @@ uint32_t kll_sketch<T, C, A>::get_num_retained_above_level_zero() const {
 }
 
 template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::check_k(uint16_t k) {
+  if (k < kll_constants::MIN_K) {
+    throw std::invalid_argument("Possible corruption: K must be >= " + std::to_string(kll_constants::MIN_K)
+        + ": " + std::to_string(k));
+  }
+}
+
+template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::check_m(uint8_t m) {
   if (m != kll_constants::DEFAULT_M) {
     throw std::invalid_argument("Possible corruption: M must be " + std::to_string(kll_constants::DEFAULT_M)
@@ -931,6 +948,25 @@ void kll_sketch<T, C, A>::check_family_id(uint8_t family_id) {
   if (family_id != FAMILY) {
     throw std::invalid_argument("Possible corruption: family mismatch: expected "
         + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
+  }
+}
+
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::check_num_levels(uint8_t num_levels) {
+  if (num_levels == 0) {
+    throw std::invalid_argument("Possible corruption: number of levels must be > 0");
+  }
+}
+
+// The last entry is the capacity. Each level must start at or after the previous one,
+// so every level lies within the items buffer.
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::check_levels(const vector_u32& levels) {
+  for (size_t i = 1; i < levels.size(); ++i) {
+    if (levels[i - 1] > levels[i]) {
+      throw std::invalid_argument("Possible corruption: levels[" + std::to_string(i - 1) + "] = "
+          + std::to_string(levels[i - 1]) + " > levels[" + std::to_string(i) + "] = " + std::to_string(levels[i]));
+    }
   }
 }
 
