@@ -73,12 +73,13 @@ void tdigest<T, A>::update(T value) {
 template<typename T, typename A>
 void tdigest<T, A>::merge(const tdigest& other) {
   if (other.is_empty()) return;
-  // Extreme centroid means are not the true min/max when those centroids have weight > 1.
-  min_ = std::min(min_, other.min_);
-  max_ = std::max(max_, other.max_);
+  // allocate before changing anything, so that a failure leaves this t-Digest unchanged
   reserve_centroids(buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size());
   vector_centroid tmp(buffer_.get_allocator());
   tmp.reserve(buffer_.size() + centroids_.size() + other.buffer_.size() + other.centroids_.size());
+  // Extreme centroid means are not the true min/max when those centroids have weight > 1.
+  min_ = std::min(min_, other.min_);
+  max_ = std::max(max_, other.max_);
   for (const T value: buffer_) tmp.push_back(centroid(value, 1));
   for (const T value: other.buffer_) tmp.push_back(centroid(value, 1));
   std::copy(other.centroids_.begin(), other.centroids_.end(), std::back_inserter(tmp));
@@ -718,6 +719,12 @@ buffer_(std::move(buffer))
   centroids_capacity_ = 2 * k_ + fudge;
   // centroids_ and buffer_ grow as they fill (see update() and reserve_centroids()) instead of being reserved
   // here: many t-digests (e.g. per-group aggregation states) hold few values
+}
+
+template<typename T, typename A>
+void tdigest<T, A>::reserve() {
+  centroids_.reserve(centroids_capacity_);
+  buffer_.reserve(centroids_capacity_ * BUFFER_MULTIPLIER);
 }
 
 template<typename T, typename A>

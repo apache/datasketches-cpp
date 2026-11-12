@@ -59,6 +59,13 @@ using tdigest_double = tdigest<double>;
  * and the following implementation in Java:
  * https://github.com/tdunning/t-digest
  * This implementation is similar to MergingDigest in the above Java implementation
+ *
+ * Memory allocation: a new t-Digest does not allocate its storage for centroids and buffered
+ * values up front. The storage grows as values arrive, up to its full size. t-Digests that stay
+ * empty or hold few values use little memory. As a result, update() and merge() can throw
+ * std::bad_alloc while growing this storage, rather than the constructor. If that happens, the
+ * t-Digest is unchanged and can still be used. Call reserve() right after construction to allocate
+ * the full storage up front.
  */
 template <typename T, typename Allocator>
 class tdigest {
@@ -100,7 +107,8 @@ public:
   };
 
   /**
-   * Constructor
+   * Constructor.
+   * Storage for centroids and buffered values is allocated as it fills, see reserve().
    * @param k affects the size of the sketch and its estimation error
    * @param allocator used to allocate memory
    */
@@ -118,6 +126,15 @@ public:
    * @param other t-Digest to merge
    */
   void merge(const tdigest& other);
+
+  /**
+   * Allocates the full storage for centroids and buffered values now, rather than as it fills.
+   * Call this right after construction if allocation failures should happen here,
+   * or if updates should not pay for growing the storage.
+   * Does nothing for storage that is already allocated in full.
+   * @throw std::bad_alloc if an allocation fails, in which case the contents of the t-Digest are unchanged
+   */
+  void reserve();
 
   /**
    * Process buffered values and merge centroids if needed
