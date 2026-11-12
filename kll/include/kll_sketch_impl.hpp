@@ -181,8 +181,15 @@ template<typename FwdT>
 void kll_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_item(item)) { return; }
   update_min_max(static_cast<const T&>(item)); // min and max are always copies
-  const uint32_t index = internal_update();
-  new (&items_[index]) T(std::forward<FwdT>(item));
+  if (levels_[0] == 0) {
+    // item can refer into items_, and internal_update() can destroy it
+    T copy(std::forward<FwdT>(item));
+    const uint32_t index = internal_update();
+    new (&items_[index]) T(std::move(copy));
+  } else {
+    const uint32_t index = internal_update();
+    new (&items_[index]) T(std::forward<FwdT>(item));
+  }
   reset_sorted_view();
 }
 
