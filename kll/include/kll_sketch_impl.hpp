@@ -778,12 +778,14 @@ template<typename T, typename C, typename A>
 quantiles_sorted_view<T, C, A> kll_sketch<T, C, A>::get_sorted_view() const {
   const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
   quantiles_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
+  if (is_empty()) return view;
+  if (!is_min_retained()) view.add_min(*min_item_);
   for (uint8_t level = 0; level < num_levels_; ++level) {
     const auto from = items_ + levels_[level];
     const auto to = items_ + levels_[level + 1]; // exclusive
     view.add(from, to, 1ULL << level);
   }
-  view.convert_to_cummulative();
+  view.convert_to_cummulative(*max_item_);
   return view;
 }
 
@@ -874,6 +876,19 @@ template<typename T, typename C, typename A>
 uint32_t kll_sketch<T, C, A>::get_num_retained_above_level_zero() const {
   if (num_levels_ == 1) return 0;
   return levels_[num_levels_] - levels_[1];
+}
+
+template<typename T, typename C, typename A>
+bool kll_sketch<T, C, A>::is_min_retained() const {
+  for (uint8_t level = 0; level < num_levels_; ++level) {
+    const bool level_is_nonempty = levels_[level] < levels_[level + 1];
+    if (level_is_nonempty) { // the if exists to skip a potentially expensive comparator run
+      // min_item_ is the smallest item of the stream, so min_item_ <= item,
+      // and !(min_item_ < item) means that item == min_item_
+      if (!comparator_(*min_item_, items_[levels_[level]])) return true;
+    }
+  }
+  return false;
 }
 
 template<typename T, typename C, typename A>

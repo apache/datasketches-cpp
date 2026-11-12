@@ -202,6 +202,96 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(total_weight == sketch.get_n());
   }
 
+  SECTION("estimation mode, exact min and max at ranks 0 and 1") {
+    const int n = 1000;
+    int num_min_dropped = 0;
+    int num_max_dropped = 0;
+    for (int t = 0; t < 1000; ++t) {
+      kll_float_sketch sketch(8, std::less<float>(), 0);
+      // min and max go in first, so compaction often drops them
+      sketch.update(0.0f);
+      sketch.update(static_cast<float>(n - 1));
+      for (int i = 1; i < n - 1; ++i) sketch.update(static_cast<float>(i));
+      bool min_retained = false;
+      bool max_retained = false;
+      for (auto pair: sketch) {
+        if (pair.first == 0) min_retained = true;
+        if (pair.first == n - 1) max_retained = true;
+      }
+      REQUIRE(sketch.get_quantile(0) == 0);
+      REQUIRE(sketch.get_quantile(0, false) == 0);
+      REQUIRE(sketch.get_quantile(1) == n - 1);
+      REQUIRE(sketch.get_quantile(1, false) == n - 1);
+      if (!min_retained) {
+        ++num_min_dropped;
+        REQUIRE(sketch.get_rank(0.0f) == 1.0 / n);
+      }
+      if (!max_retained) {
+        ++num_max_dropped;
+        REQUIRE(sketch.get_rank(static_cast<float>(n - 1), false) == (n - 1.0) / n);
+      }
+    }
+    REQUIRE(num_min_dropped > 0);
+    REQUIRE(num_max_dropped > 0);
+  }
+
+  SECTION("estimation mode, exact min and max at ranks 0 and 1, strings") {
+    int num_dropped = 0;
+    for (int t = 0; t < 1000; ++t) {
+      kll_string_sketch sketch(8, std::less<std::string>(), 0);
+      sketch.update(std::string("a"));
+      sketch.update(std::string("z"));
+      for (int i = 0; i < 1000; ++i) sketch.update("m" + std::to_string(i));
+      bool min_retained = false;
+      bool max_retained = false;
+      for (auto pair: sketch) {
+        if (pair.first == "a") min_retained = true;
+        if (pair.first == "z") max_retained = true;
+      }
+      if (!min_retained || !max_retained) ++num_dropped;
+      REQUIRE(sketch.get_quantile(0) == "a");
+      REQUIRE(sketch.get_quantile(0, false) == "a");
+      REQUIRE(sketch.get_quantile(1) == "z");
+      REQUIRE(sketch.get_quantile(1, false) == "z");
+    }
+    REQUIRE(num_dropped > 0);
+  }
+
+  SECTION("estimation mode, exact min and max at ranks 0 and 1 after deserialize and merge") {
+    const int n = 1000;
+    int num_dropped = 0;
+    for (int t = 0; t < 1000; ++t) {
+      kll_float_sketch sketch1(8, std::less<float>(), 0);
+      kll_float_sketch sketch2(8, std::less<float>(), 0);
+      // sketch1 gets the min first and sketch2 gets the max first, so compaction often drops them
+      sketch1.update(0.0f);
+      for (int i = 1; i < n; ++i) sketch1.update(static_cast<float>(i));
+      sketch2.update(static_cast<float>(2 * n - 1));
+      for (int i = n; i < 2 * n - 1; ++i) sketch2.update(static_cast<float>(i));
+
+      auto bytes = sketch1.serialize();
+      auto sketch = kll_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), std::less<float>(), 0);
+      REQUIRE(sketch.get_quantile(0) == 0);
+      REQUIRE(sketch.get_quantile(0, false) == 0);
+      REQUIRE(sketch.get_quantile(1) == n - 1);
+      REQUIRE(sketch.get_quantile(1, false) == n - 1);
+
+      sketch.merge(sketch2);
+      bool min_retained = false;
+      bool max_retained = false;
+      for (auto pair: sketch) {
+        if (pair.first == 0) min_retained = true;
+        if (pair.first == 2 * n - 1) max_retained = true;
+      }
+      if (!min_retained || !max_retained) ++num_dropped;
+      REQUIRE(sketch.get_quantile(0) == 0);
+      REQUIRE(sketch.get_quantile(0, false) == 0);
+      REQUIRE(sketch.get_quantile(1) == 2 * n - 1);
+      REQUIRE(sketch.get_quantile(1, false) == 2 * n - 1);
+    }
+    REQUIRE(num_dropped > 0);
+  }
+
   SECTION("consistency between get_rank and get_PMF/CDF") {
     kll_float_sketch sketch(200, std::less<float>(), 0);
     const int n = 200;

@@ -309,6 +309,9 @@ class kll_sketch {
      *
      * <p>If the sketch is empty this throws std::runtime_error.
      *
+     * <p>For non-arithmetic types, the returned reference refers to an item of this sketch, so it
+     * must not be used after this sketch is updated, merged, assigned to, moved or destroyed.
+     *
      * @param rank of an item in the hypothetical sorted stream.
      * @param inclusive if true, the given rank is considered inclusive (includes weight of an item)
      *
@@ -521,7 +524,9 @@ class kll_sketch {
     const_iterator end() const;
 
     /**
-     * Gets the sorted view of this sketch
+     * Gets the sorted view of this sketch.
+     * For non-arithmetic types, the view refers to the items of this sketch, so it must not be used
+     * after this sketch is updated, merged, assigned to, moved or destroyed.
      * @return the sorted view of this sketch
      */
     quantiles_sorted_view<T, C, A> get_sorted_view() const;
@@ -591,6 +596,7 @@ class kll_sketch {
     void assert_correct_total_weight() const;
     uint32_t safe_level_size(uint8_t level) const;
     uint32_t get_num_retained_above_level_zero() const;
+    bool is_min_retained() const;
 
     static void check_k(uint16_t k);
     static void check_m(uint8_t m);
