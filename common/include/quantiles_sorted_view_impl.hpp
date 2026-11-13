@@ -30,9 +30,11 @@ template<typename T, typename C, typename A>
 quantiles_sorted_view<T, C, A>::quantiles_sorted_view(uint32_t num, const C& comparator, const A& allocator):
 comparator_(comparator),
 total_weight_(0),
+min_added_(false),
 entries_(allocator)
 {
-  entries_.reserve(num);
+  if (num > 0) // the if exists to optimise for empty sketches
+    entries_.reserve(num + 2); // room for the min and max
 }
 
 template<typename T, typename C, typename A>
@@ -41,7 +43,7 @@ void quantiles_sorted_view<T, C, A>::add(Iterator first, Iterator last, uint64_t
   if (first == last) return;
   const size_t size_before = entries_.size();
   for (auto it = first; it != last; ++it) entries_.emplace_back(ref_helper(*it), weight);
-  if (size_before > 0) {
+  if (size_before > (min_added_ ? 1 : 0)) { // an added min is smaller than all items, so it needs no merge
     Container tmp(entries_.get_allocator());
     tmp.reserve(entries_.capacity());
     std::merge(
@@ -59,6 +61,22 @@ void quantiles_sorted_view<T, C, A>::convert_to_cummulative() {
     total_weight_ += entry.second;
     entry.second = total_weight_;
   }
+}
+
+template<typename T, typename C, typename A>
+void quantiles_sorted_view<T, C, A>::add_min(const T& min_item) {
+  entries_.emplace_back(ref_helper(min_item), 1);
+  min_added_ = true;
+}
+
+template<typename T, typename C, typename A>
+void quantiles_sorted_view<T, C, A>::convert_to_cummulative(const T& max_item) {
+  if (min_added_) --entries_[1].second;
+  if (comparator_(deref_helper(entries_.back().first), max_item)) {
+    --entries_.back().second;
+    entries_.push_back(Entry(ref_helper(max_item), 1));
+  }
+  convert_to_cummulative();
 }
 
 template<typename T, typename C, typename A>
