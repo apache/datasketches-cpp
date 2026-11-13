@@ -48,9 +48,7 @@ public:
  * Requirements:
  * - Array size must be <= 127.
  *
- * This serde does not perform UTF-8 validation. Callers must ensure strings
- * are valid UTF-8 before serialization to guarantee interoperability with
- * Java, Go, and Rust implementations.
+ * Strings are written and read as raw bytes without UTF-8 validation.
  */
 template<typename Allocator = std::allocator<array_of_strings>>
 struct default_array_of_strings_serde {
@@ -68,6 +66,7 @@ private:
   summary_allocator summary_allocator_;
   static void check_num_nodes(uint8_t num_nodes);
   static uint32_t compute_total_bytes(const array_of_strings& item);
+  void destroy_items(array_of_strings* items, unsigned num) const;
 };
 
 /**
@@ -97,11 +96,9 @@ uint64_t hash_array_of_strings_key(const array_of_strings& key);
  *
  * UTF-8 compatibility:
  * Serialized sketches are intended to be language and platform independent.
- * Other implementations (Java, Go, Rust) enforce UTF-8 encoding for strings.
- * This C++ implementation does not validate UTF-8; it is the caller's
- * responsibility to ensure all strings are valid UTF-8 before calling update().
- * Non-UTF-8 strings may serialize successfully but will fail to deserialize
- * in other language implementations.
+ * Summary strings are stored as raw bytes without UTF-8 validation. Java decodes
+ * them with new String(bytes, StandardCharsets.UTF_8), which replaces invalid
+ * UTF-8 with U+FFFD, so use valid UTF-8 for sketches shared with Java.
  */
 template<typename Allocator = std::allocator<array_of_strings>>
 class compact_array_of_strings_tuple_sketch:

@@ -18,6 +18,7 @@
  */
 
 #include <algorithm>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -370,6 +371,64 @@ TEST_CASE("aos serde validation", "[tuple_sketch]") {
       serde.serialize(ss, &array, 1),
       Catch::Matchers::Contains("size exceeds 127")
     );
+  }
+
+  // never destroyed: every case below throws before the item is constructed
+  alignas(array_of_strings) unsigned char storage[sizeof(array_of_strings)];
+  auto* item = reinterpret_cast<array_of_strings*>(storage);
+
+  const auto serialize_item = [&serde](const array_of_strings& array) {
+    std::vector<uint8_t> bytes(serde.size_of_item(array));
+    serde.serialize(bytes.data(), bytes.size(), &array, 1);
+    return bytes;
+  };
+  const auto deserialize_from_stream = [&serde, item](const std::vector<uint8_t>& bytes, bool exceptions) {
+    std::stringstream ss;
+    ss.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    if (exceptions) ss.exceptions(std::ios::failbit | std::ios::badbit);
+    serde.deserialize(ss, item, 1);
+  };
+
+  SECTION("total_bytes mismatch rejected") {
+    auto bytes = serialize_item(to_array({"a", "bc"}));
+    REQUIRE(bytes[0] == 16); // 4 + 1 + (4 + 1) + (4 + 2), little-endian
+    bytes[0] = 15;
+    const auto message = Catch::Matchers::Contains("total_bytes mismatch: expected 15, actual 16");
+    REQUIRE_THROWS_AS(serde.deserialize(bytes.data(), bytes.size(), item, 1), std::invalid_argument);
+    REQUIRE_THROWS_WITH(serde.deserialize(bytes.data(), bytes.size(), item, 1), message);
+    for (bool exceptions: {false, true}) {
+      REQUIRE_THROWS_AS(deserialize_from_stream(bytes, exceptions), std::invalid_argument);
+      REQUIRE_THROWS_WITH(deserialize_from_stream(bytes, exceptions), message);
+    }
+  }
+
+  SECTION("too many nodes rejected on deserialize") {
+    std::vector<uint8_t> bytes(sizeof(uint32_t) + sizeof(uint8_t) + 128 * sizeof(uint32_t), 0);
+    const uint32_t total_bytes = static_cast<uint32_t>(bytes.size());
+    std::memcpy(bytes.data(), &total_bytes, sizeof(total_bytes));
+    bytes[sizeof(uint32_t)] = 128; // num_nodes
+    const auto message = Catch::Matchers::Contains("size exceeds 127");
+    REQUIRE_THROWS_AS(serde.deserialize(bytes.data(), bytes.size(), item, 1), std::invalid_argument);
+    REQUIRE_THROWS_WITH(serde.deserialize(bytes.data(), bytes.size(), item, 1), message);
+    for (bool exceptions: {false, true}) {
+      REQUIRE_THROWS_AS(deserialize_from_stream(bytes, exceptions), std::invalid_argument);
+      REQUIRE_THROWS_WITH(deserialize_from_stream(bytes, exceptions), message);
+    }
+  }
+
+  SECTION("truncated input reported as read failure") {
+    auto bytes = serialize_item(to_array({"a", "bc"}));
+    bytes.pop_back();
+    REQUIRE_THROWS_WITH(
+      serde.deserialize(bytes.data(), bytes.size(), item, 1),
+      Catch::Matchers::Contains("bytes read failed at item 0")
+    );
+    for (bool exceptions: {false, true}) {
+      REQUIRE_THROWS_WITH(
+        deserialize_from_stream(bytes, exceptions),
+        Catch::Matchers::Contains("stream read failed at item 0")
+      );
+    }
   }
 }
 

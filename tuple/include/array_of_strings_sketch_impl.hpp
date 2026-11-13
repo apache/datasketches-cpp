@@ -23,6 +23,7 @@
 #include <stdexcept>
 
 #include "common_defs.hpp"
+#include "theta_helpers.hpp"
 
 namespace datasketches {
 
@@ -237,8 +238,9 @@ void default_array_of_strings_serde<Allocator>::serialize(
         os.write(data[j].data(), length);
       }
     }
-  } catch (std::runtime_error& e) {
-    if (std::string(e.what()).find("size exceeds 127") != std::string::npos) throw;
+  } catch (const std::invalid_argument&) {
+    throw;
+  } catch (const std::exception&) {
     throw std::runtime_error("array_of_strings stream write failed at item " + std::to_string(i));
   }
 }
@@ -251,11 +253,12 @@ void default_array_of_strings_serde<Allocator>::deserialize(
   bool failure = false;
   try {
     for (; i < num; ++i) {
-      read<uint32_t>(is); // total_bytes
+      const uint32_t total_bytes = read<uint32_t>(is);
       if (!is) { failure = true; break; }
       const uint8_t num_nodes = read<uint8_t>(is);
       if (!is) { failure = true; break; }
       check_num_nodes(num_nodes);
+      size_t item_bytes = sizeof(total_bytes) + sizeof(num_nodes);
       array_of_strings array(num_nodes, "");
       for (uint8_t j = 0; j < num_nodes; ++j) {
         const uint32_t length = read<uint32_t>(is);
@@ -266,24 +269,21 @@ void default_array_of_strings_serde<Allocator>::deserialize(
           if (!is) { failure = true; break; }
         }
         array[j] = std::move(value);
+        item_bytes += sizeof(length) + length;
       }
       if (failure) break;
+      check_value<size_t>(item_bytes, total_bytes, "array_of_strings total_bytes");
       summary_allocator alloc(summary_allocator_);
       std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
     }
-  } catch (std::exception& e) {
-    summary_allocator alloc(summary_allocator_);
-    for (unsigned j = 0; j < i; ++j) {
-      std::allocator_traits<summary_allocator>::destroy(alloc, &items[j]);
-    }
-    if (std::string(e.what()).find("size exceeds 127") != std::string::npos) throw;
-    throw std::runtime_error("array_of_strings stream read failed at item " + std::to_string(i));
+  } catch (const std::invalid_argument&) {
+    destroy_items(items, i);
+    throw;
+  } catch (const std::exception&) {
+    failure = true;
   }
   if (failure) {
-    summary_allocator alloc(summary_allocator_);
-    for (unsigned j = 0; j < i; ++j) {
-      std::allocator_traits<summary_allocator>::destroy(alloc, &items[j]);
-    }
+    destroy_items(items, i);
     throw std::runtime_error("array_of_strings stream read failed at item " + std::to_string(i));
   }
 }
@@ -347,15 +347,15 @@ size_t default_array_of_strings_serde<Allocator>::deserialize(
         }
         array[j] = std::move(value);
       }
+      check_value<size_t>(bytes_read - item_start, total_bytes, "array_of_strings total_bytes");
       summary_allocator alloc(summary_allocator_);
       std::allocator_traits<summary_allocator>::construct(alloc, &items[i], std::move(array));
     }
-  } catch (std::exception& e) {
-    summary_allocator alloc(summary_allocator_);
-    for (unsigned j = 0; j < i; ++j) {
-      std::allocator_traits<summary_allocator>::destroy(alloc, &items[j]);
-    }
-    if (std::string(e.what()).find("size exceeds 127") != std::string::npos) throw;
+  } catch (const std::invalid_argument&) {
+    destroy_items(items, i);
+    throw;
+  } catch (const std::exception&) {
+    destroy_items(items, i);
     throw std::runtime_error("array_of_strings bytes read failed at item " + std::to_string(i));
   }
   return bytes_read;
@@ -369,7 +369,15 @@ size_t default_array_of_strings_serde<Allocator>::size_of_item(const array_of_st
 template<typename Allocator>
 void default_array_of_strings_serde<Allocator>::check_num_nodes(uint8_t num_nodes) {
   if (num_nodes > 127) {
-    throw std::runtime_error("array_of_strings size exceeds 127");
+    throw std::invalid_argument("array_of_strings size exceeds 127");
+  }
+}
+
+template<typename Allocator>
+void default_array_of_strings_serde<Allocator>::destroy_items(array_of_strings* items, unsigned num) const {
+  summary_allocator alloc(summary_allocator_);
+  for (unsigned i = 0; i < num; ++i) {
+    std::allocator_traits<summary_allocator>::destroy(alloc, &items[i]);
   }
 }
 
