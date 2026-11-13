@@ -1,0 +1,7 @@
+var searchData=
+[
+  ['jaccard_5fsimilarity_5fbase_0',['jaccard_similarity_base',['../classdatasketches_1_1jaccard__similarity__base.html',1,'datasketches']]],
+  ['jaccard_5fsimilarity_5fbase_3c_20theta_5funion_5falloc_3c_20allocator_20_3e_2c_20theta_5fintersection_5falloc_3c_20allocator_20_3e_2c_20trivial_5fextract_5fkey_20_3e_1',['jaccard_similarity_base&lt; theta_union_alloc&lt; Allocator &gt;, theta_intersection_alloc&lt; Allocator &gt;, trivial_extract_key &gt;',['../classdatasketches_1_1jaccard__similarity__base.html',1,'datasketches']]],
+  ['jaccard_5fsimilarity_5fbase_3c_20theta_5funion_5falloc_3c_20allocator_20_3e_2c_20theta_5fintersection_5falloc_3c_20allocator_20_3e_2c_20trivial_5fextract_5fkey_20_3e_3c_20std_3a_3aallocator_3c_20uint64_5ft_20_3e_20_3e_2',['jaccard_similarity_base&lt; theta_union_alloc&lt; Allocator &gt;, theta_intersection_alloc&lt; Allocator &gt;, trivial_extract_key &gt;&lt; std::allocator&lt; uint64_t &gt; &gt;',['../classdatasketches_1_1jaccard__similarity__base.html',1,'datasketches']]],
+  ['jaccard_5fsimilarity_5fbase_3c_20tuple_5funion_3c_20summary_2c_20unionpolicy_2c_20allocator_20_3e_2c_20tuple_5fintersection_3c_20summary_2c_20intersectionpolicy_2c_20allocator_20_3e_2c_20pair_5fextract_5fkey_3c_20uint64_5ft_2c_20summary_20_3e_20_3e_3',['jaccard_similarity_base&lt; tuple_union&lt; Summary, UnionPolicy, Allocator &gt;, tuple_intersection&lt; Summary, IntersectionPolicy, Allocator &gt;, pair_extract_key&lt; uint64_t, Summary &gt; &gt;',['../classdatasketches_1_1jaccard__similarity__base.html',1,'datasketches']]]
+];
