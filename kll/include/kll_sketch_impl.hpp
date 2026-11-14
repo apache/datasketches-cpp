@@ -187,6 +187,51 @@ void kll_sketch<T, C, A>::update(FwdT&& item) {
 }
 
 template<typename T, typename C, typename A>
+template<typename FwdT>
+void kll_sketch<T, C, A>::update(FwdT&& item, uint64_t weight) {
+  if (weight == 0) throw std::invalid_argument("weight must be positive");
+  if (!check_update_item(item)) { return; }
+  if (weight < levels_[0]) { // fits into level zero without compaction
+    update_min_max(static_cast<const T&>(item));
+    for (uint64_t i = 1; i < weight; ++i) new (&items_[internal_update()]) T(static_cast<const T&>(item));
+    new (&items_[internal_update()]) T(std::forward<FwdT>(item));
+    reset_sorted_view();
+  } else {
+    merge(kll_sketch(k_, static_cast<const T&>(item), weight, comparator_, allocator_));
+  }
+}
+
+// An item at level h carries weight 2^h, so one copy of the item at each level
+// whose bit is set in the weight is an exact sketch of that many copies.
+// Level capacities are defined up to 61 levels, so bits above the top level
+// fold into weight >> 60 copies at level 60.
+template<typename T, typename C, typename A>
+kll_sketch<T, C, A>::kll_sketch(uint16_t k, const T& item, uint64_t weight, const C& comparator, const A& allocator):
+comparator_(comparator),
+allocator_(allocator),
+k_(k),
+m_(kll_constants::DEFAULT_M),
+min_k_(k),
+num_levels_(std::min<uint8_t>(64 - count_leading_zeros_in_u64(weight), 61)),
+is_level_zero_sorted_(true),
+n_(weight),
+levels_(num_levels_ + 1, 0, allocator),
+items_(nullptr),
+items_size_(0),
+min_item_(item),
+max_item_(item),
+sorted_view_(nullptr)
+{
+  for (uint8_t level = 0; level < num_levels_; ++level) {
+    const uint64_t count = level + 1 < num_levels_ ? (weight >> level) & 1 : weight >> level;
+    levels_[level + 1] = levels_[level] + static_cast<uint32_t>(count);
+  }
+  items_size_ = levels_[num_levels_];
+  items_ = allocator_.allocate(items_size_);
+  for (uint32_t i = 0; i < items_size_; ++i) new (&items_[i]) T(item);
+}
+
+template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::update_min_max(const T& item) {
   if (is_empty()) {
     min_item_.emplace(item);
