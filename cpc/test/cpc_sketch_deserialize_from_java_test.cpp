@@ -39,6 +39,15 @@ TEST_CASE("cpc sketch", "[serde_compat]") {
   }
 }
 
+TEST_CASE("cpc sketch empty, update after deserialize", "[serde_compat]") {
+  std::ifstream is;
+  is.exceptions(std::ios::failbit | std::ios::badbit);
+  is.open(testBinaryInputPath + "cpc_n0_java.sk", std::ios::binary);
+  auto sketch = cpc_sketch::deserialize(is);
+  for (int i = 0; i < 1000; i++) sketch.update(i);
+  REQUIRE(sketch.get_estimate() == Approx(1000).margin(1000 * 0.02));
+}
+
 TEST_CASE("cpc sketch negative one", "[serde_compat]") {
   std::ifstream is;
   is.exceptions(std::ios::failbit | std::ios::badbit);

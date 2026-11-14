@@ -185,6 +185,26 @@ TEST_CASE("cpc sketch: serialize deserialize empty, bytes", "[cpc_sketch]") {
   REQUIRE_THROWS_AS(cpc_sketch::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
 }
 
+TEST_CASE("cpc sketch: update after deserialize empty", "[cpc_sketch]") {
+  cpc_sketch reference(11);
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  reference.serialize(s);
+  const auto bytes = reference.serialize();
+  cpc_sketch from_stream = cpc_sketch::deserialize(s);
+  cpc_sketch from_bytes = cpc_sketch::deserialize(bytes.data(), bytes.size());
+
+  for (int i = 0; i < 1000; i++) {
+    reference.update(i);
+    from_stream.update(i);
+    from_bytes.update(i);
+  }
+
+  REQUIRE(from_stream.get_estimate() == reference.get_estimate());
+  REQUIRE(from_bytes.get_estimate() == reference.get_estimate());
+  REQUIRE(from_stream.serialize() == reference.serialize());
+  REQUIRE(from_bytes.serialize() == reference.serialize());
+}
+
 TEST_CASE("cpc sketch: serialize deserialize sparse, bytes", "[cpc_sketch]") {
   cpc_sketch sketch(11);
   const int n(100);
