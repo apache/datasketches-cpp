@@ -309,6 +309,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   }
 
   const uint64_t raw_num_bits_set = read<uint64_t>(is);
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
 
   // allocate memory
   const uint64_t num_bytes = num_longs << 3;
@@ -317,10 +318,11 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   if (bit_array == nullptr) {
     throw std::bad_alloc();
   }
-  read(is, bit_array, num_bytes);
 
   uint64_t num_bits_set;
   try {
+    read(is, bit_array, num_bytes);
+    if (!is.good()) throw std::runtime_error("error reading from std::istream");
     num_bits_set = validate_bloom_filter_num_bits_set(
       raw_num_bits_set, bit_array, num_bytes, DIRTY_BITS_VALUE);
   } catch (...) {
