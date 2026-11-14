@@ -73,9 +73,6 @@ bloom_filter_alloc<A>::bloom_filter_alloc(uint64_t num_bits, uint16_t num_hashes
   const uint64_t num_bytes = capacity_bits_ >> 3;
   bit_array_ = AllocUint8(allocator_).allocate(num_bytes);
   std::fill_n(bit_array_, num_bytes, 0);
-  if (bit_array_ == nullptr) {
-    throw std::bad_alloc();
-  }
   memory_ = nullptr;
 }
 
@@ -172,9 +169,6 @@ bloom_filter_alloc<A>::bloom_filter_alloc(const bloom_filter_alloc& other) :
   if (is_owned_) {
     const size_t num_bytes = capacity_bits_ >> 3;
     bit_array_ = AllocUint8(allocator_).allocate(num_bytes);
-    if (bit_array_ == nullptr) {
-      throw std::bad_alloc();
-    }
     std::copy_n(other.bit_array_, num_bytes, bit_array_);
     memory_ = nullptr;
   } else {
@@ -314,9 +308,6 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   const uint64_t num_bytes = num_longs << 3;
   AllocUint8 alloc(allocator);
   uint8_t* bit_array = alloc.allocate(num_bytes);
-  if (bit_array == nullptr) {
-    throw std::bad_alloc();
-  }
   read(is, bit_array, num_bytes);
 
   uint64_t num_bits_set;
@@ -410,9 +401,6 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
     memory = nullptr;
     AllocUint8 alloc(allocator);
     bit_array = alloc.allocate(num_bytes);
-    if (bit_array == nullptr) {
-      throw std::bad_alloc();
-    }
     copy_from_mem(ptr, bit_array, num_bytes);
   }
 

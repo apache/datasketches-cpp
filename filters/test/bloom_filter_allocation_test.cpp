@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <new>
 #include <sstream>
 
 #include <catch2/catch.hpp>
@@ -70,6 +71,36 @@ TEST_CASE("bloom filter allocation test", "[bloom_filter][test_type]") {
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);
+}
+
+// Standard-conforming allocator that always fails: allocate() throws std::bad_alloc.
+template<typename T>
+struct throwing_allocator {
+  using value_type = T;
+  throwing_allocator() = default;
+  template<typename U> throwing_allocator(const throwing_allocator<U>&) {}
+  T* allocate(std::size_t) { throw std::bad_alloc(); }
+  void deallocate(T*, std::size_t) {}
+  bool operator==(const throwing_allocator&) const { return true; }
+  bool operator!=(const throwing_allocator&) const { return false; }
+};
+
+TEST_CASE("bloom filter: allocation failure propagates std::bad_alloc", "[bloom_filter]") {
+  using bloom_filter_throwing_alloc = bloom_filter_alloc<throwing_allocator<uint8_t>>;
+  REQUIRE_THROWS_AS(bloom_filter_throwing_alloc::builder::create_by_size(1024, 3, 1234,
+                                                                         throwing_allocator<uint8_t>()),
+                    std::bad_alloc);
+
+  auto bf = bloom_filter::builder::create_by_size(1024, 3, 1234);
+  bf.update(1);
+  auto bytes = bf.serialize();
+  REQUIRE_THROWS_AS(bloom_filter_throwing_alloc::deserialize(bytes.data(), bytes.size(),
+                                                             throwing_allocator<uint8_t>()),
+                    std::bad_alloc);
+  std::stringstream ss;
+  bf.serialize(ss);
+  REQUIRE_THROWS_AS(bloom_filter_throwing_alloc::deserialize(ss, throwing_allocator<uint8_t>()),
+                    std::bad_alloc);
 }
 
 }
