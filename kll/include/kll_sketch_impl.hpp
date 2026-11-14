@@ -801,26 +801,44 @@ void kll_sketch<T, C, A>::merge_higher_levels(O&& other, uint64_t final_n) {
 
   const uint8_t provisional_num_levels = std::max(num_levels_, other.num_levels_);
 
+  // Allocate everything the merge needs before any item is moved out of this sketch,
+  // so that an allocation failure leaves this sketch valid.
+  // The level sizes after compression depend only on the level sizes before it.
+  worklevels[0] = 0;
+  worklevels[1] = safe_level_size(0); // the level zero items of other were already inserted into this
+  for (uint8_t lvl = 1; lvl < provisional_num_levels; lvl++) {
+    worklevels[lvl + 1] = worklevels[lvl] + safe_level_size(lvl) + other.safe_level_size(lvl);
+  }
+  const kll_helper::compress_result predicted = kll_helper::predict_compress(k_, m_, provisional_num_levels,
+      worklevels.data(), outlevels.data());
+  // ub can sometimes be much bigger
+  if (predicted.final_num_levels > ub) throw std::logic_error("merge error");
+  auto new_items_deleter = [&predicted, &alloc](T* ptr) { alloc.deallocate(ptr, predicted.final_capacity); }; // holds no items
+  std::unique_ptr<T, decltype(new_items_deleter)> new_items(
+      predicted.final_capacity != items_size_ ? allocator_.allocate(predicted.final_capacity) : nullptr, new_items_deleter);
+  const size_t new_levels_size = predicted.final_num_levels + 1;
+  levels_.reserve(new_levels_size);
+
   populate_work_arrays(std::forward<O>(other), workbuf.get(), worklevels.data(), provisional_num_levels);
 
   const kll_helper::compress_result result = kll_helper::general_compress<T, C>(k_, m_, provisional_num_levels, workbuf.get(),
       worklevels.data(), outlevels.data(), is_level_zero_sorted_);
-
-  // ub can sometimes be much bigger
-  if (result.final_num_levels > ub) throw std::logic_error("merge error");
+  if (result.final_num_levels != predicted.final_num_levels || result.final_capacity != predicted.final_capacity
+      || result.final_num_items != predicted.final_num_items) {
+    throw std::logic_error("merge error: compression does not match the prediction");
+  }
 
   // now we need to transfer the results back into "this" sketch
-  if (result.final_capacity != items_size_) {
+  if (new_items) {
     allocator_.deallocate(items_, items_size_);
     items_size_ = result.final_capacity;
-    items_ = allocator_.allocate(items_size_);
+    items_ = new_items.release();
   }
   const uint32_t free_space_at_bottom = result.final_capacity - result.final_num_items;
   kll_helper::move_construct<T>(workbuf.get(), outlevels[0], outlevels[0] + result.final_num_items, items_, free_space_at_bottom, true);
 
-  const size_t new_levels_size = result.final_num_levels + 1;
   if (levels_.size() < new_levels_size) {
-    levels_.resize(new_levels_size);
+    levels_.resize(new_levels_size); // within the reserved capacity
   }
   const uint32_t offset = free_space_at_bottom - outlevels[0];
   for (uint8_t lvl = 0; lvl < levels_.size(); lvl++) { // includes the "extra" index
