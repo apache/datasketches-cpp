@@ -64,9 +64,7 @@ std::function<void(HllSketchImpl<A>*)> Hll8Array<A>::get_deleter() const {
 
 template<typename A>
 Hll8Array<A>* Hll8Array<A>::copy() const {
-  using Hll8Alloc = typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>>;
-  Hll8Alloc hll8Alloc(this->getAllocator());
-  return new (hll8Alloc.allocate(1)) Hll8Array<A>(*this);
+  return HllUtil<A>::template newObject<Hll8Array<A>>(this->getAllocator(), *this);
 }
 
 template<typename A>

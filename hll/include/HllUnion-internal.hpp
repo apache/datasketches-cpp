@@ -38,6 +38,14 @@ hll_union_alloc<A>::hll_union_alloc(uint8_t lg_max_k, const A& allocator):
 {}
 
 template<typename A>
+hll_union_alloc<A>& hll_union_alloc<A>::operator=(const hll_union_alloc<A>& other) {
+  hll_union_alloc<A> copy(other);
+  std::swap(lg_max_k_, copy.lg_max_k_);
+  std::swap(gadget_, copy.gadget_);
+  return *this;
+}
+
+template<typename A>
 hll_sketch_alloc<A> hll_union_alloc<A>::get_result(target_hll_type target_type) const {
   if (gadget_.sketch_impl->getCurMode() == hll_mode::HLL) {
     static_cast<HllArray<A>*>(gadget_.sketch_impl)->check_rebuild_kxq_cur_min();
@@ -221,23 +229,14 @@ HllSketchImpl<A>* hll_union_alloc<A>::copy_or_downsample(const HllSketchImpl<A>*
   if (src_lg_k <= tgt_lg_k && src->getAllocator() == allocator) {
     return src->copyAs(HLL_8);
   }
-  typedef typename std::allocator_traits<A>::template rebind_alloc<Hll8Array<A>> hll8Alloc;
   const uint8_t lg_k = std::min(src_lg_k, tgt_lg_k);
-  Hll8Array<A>* tgtHllArr = new (hll8Alloc(allocator).allocate(1)) Hll8Array<A>(lg_k, allocator);
+  auto tgtHllArr = HllUtil<A>::template newObject<Hll8Array<A>>(allocator, lg_k, allocator);
+  std::unique_ptr<Hll8Array<A>, std::function<void(HllSketchImpl<A>*)>> ptr(tgtHllArr, tgtHllArr->get_deleter());
   tgtHllArr->mergeHll(*src);
   //both of these are required for isomorphism
   tgtHllArr->putHipAccum(src->getHipAccum());
   tgtHllArr->putOutOfOrderFlag(src->isOutOfOrderFlag());
-  return tgtHllArr;
-}
-
-template<typename A>
-inline HllSketchImpl<A>* hll_union_alloc<A>::leak_free_coupon_update(HllSketchImpl<A>* impl, uint32_t coupon) {
-  HllSketchImpl<A>* result = impl->couponUpdate(coupon);
-  if (result != impl) {
-    impl->get_deleter()(impl);
-  }
-  return result;
+  return ptr.release();
 }
 
 template<typename A>
@@ -255,7 +254,12 @@ void hll_union_alloc<A>::union_impl(const hll_sketch_alloc<A>& sketch, uint8_t l
     } else {
       const CouponList<A>* src = static_cast<const CouponList<A>*>(src_impl);
       for (auto coupon: *src) {
-        dst_impl = leak_free_coupon_update(dst_impl, coupon); //assignment required
+        HllSketchImpl<A>* result = dst_impl->couponUpdate(coupon);
+        if (result != dst_impl) {
+          dst_impl->get_deleter()(dst_impl);
+          dst_impl = result;
+          gadget_.sketch_impl = dst_impl;
+        }
       }
     }
   } else if (!dst_impl->isEmpty()) { // src is HLL

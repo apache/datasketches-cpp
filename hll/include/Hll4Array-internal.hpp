@@ -22,6 +22,7 @@
 
 #include "Hll4Array.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <stdexcept>
@@ -53,15 +54,12 @@ Hll4Array<A>::Hll4Array(const Hll4Array<A>& that) :
 
 template<typename A>
 Hll4Array<A>::Hll4Array(const HllArray<A>& other) :
-  HllArray<A>(other.getLgConfigK(), target_hll_type::HLL_4, other.getAllocator()),
-  auxHashMap_(nullptr)
+  Hll4Array<A>(other.getLgConfigK(), other.getAllocator())
 {
-  const int numBytes = this->hll4ArrBytes(this->lgConfigK_);
-  this->hllByteArr_.resize(numBytes, 0);
   this->oooFlag_ = other.isOutOfOrderFlag();
 
   for (const auto coupon : other) { // all = false, so skip empty values
-    internalCouponUpdate(coupon); // updates KxQ registers
+    internalHll4Update(HllUtil<A>::getLow26(coupon), HllUtil<A>::getValue(coupon));
   }
   this->hipAccum_ = other.getHipAccum();
   this->rebuild_kxq_curmin_ = false;
@@ -88,9 +86,7 @@ std::function<void(HllSketchImpl<A>*)> Hll4Array<A>::get_deleter() const {
 
 template<typename A>
 Hll4Array<A>* Hll4Array<A>::copy() const {
-  using Hll4Alloc = typename std::allocator_traits<A>::template rebind_alloc<Hll4Array<A>>;
-  Hll4Alloc hll4Alloc(this->getAllocator());
-  return new (hll4Alloc.allocate(1)) Hll4Array<A>(*this);
+  return HllUtil<A>::template newObject<Hll4Array<A>>(this->getAllocator(), *this);
 }
 
 template<typename A>
@@ -165,169 +161,167 @@ void Hll4Array<A>::putSlot(uint32_t slotNo, uint8_t newValue) {
   }
 }
 
-//In C: two-registers.c Line 836 in "hhb_abstract_set_slot_if_new_value_bigger" non-sparse
 template<typename A>
 void Hll4Array<A>::internalHll4Update(uint32_t slotNo, uint8_t newVal) {
-
-  const uint8_t rawStoredOldValue = getSlot(slotNo); // could be a 0
-  // this is provably a LB:
-  const uint8_t lbOnOldValue = rawStoredOldValue + this->curMin_; // lower bound, could be 0
-
-  if (newVal > lbOnOldValue) { // 842
-    // Note: if an AUX_TOKEN exists, then auxHashMap must already exist
-    // 846: rawStoredOldValue == AUX_TOKEN
-    const uint8_t actualOldValue = (rawStoredOldValue < hll_constants::AUX_TOKEN)
-       ? (lbOnOldValue) : (auxHashMap_->mustFindValueFor(slotNo));
-
-    if (newVal > actualOldValue) { // 848: actualOldValue could still be 0; newValue > 0
-      // we know that the array will change, but we haven't actually updated yet
-      this->hipAndKxQIncrementalUpdate(actualOldValue, newVal);
-
-      // newVal >= curMin
-
-      const uint8_t shiftedNewValue = newVal - this->curMin_; // 874
-      // redundant since we know newVal >= curMin,
-      // and lgConfigK bounds do not allow overflowing an int
-      //assert(shiftedNewValue >= 0);
-
-      if (rawStoredOldValue == hll_constants::AUX_TOKEN) { // 879
-        // Given that we have an AUX_TOKEN, there are 4 cases for how to
-        // actually modify the data structure
-
-        if (shiftedNewValue >= hll_constants::AUX_TOKEN) { // case 1: 881
-          // the byte array already contains aux token
-          // This is the case where old and new values are both exceptions.
-          // The 4-bit array already is AUX_TOKEN, only need to update auxHashMap
-          auxHashMap_->mustReplace(slotNo, newVal);
-        }
-        else { // case 2: 885
-          // This is the hypothetical case where the old value is an exception and the new one is not,
-          // which is impossible given that curMin has not changed here and newVal > oldValue
-        }
-      } else { // rawStoredOldValue != AUX_TOKEN
-        if (shiftedNewValue >= hll_constants::AUX_TOKEN) { // case 3: 892
-          // This is the case where the old value is not an exception and the new value is.
-          // The AUX_TOKEN must be stored in the 4-bit array and the new value
-          // added to the exception table
-          putSlot(slotNo, hll_constants::AUX_TOKEN);
-          if (auxHashMap_ == nullptr) {
-            auxHashMap_ = AuxHashMap<A>::newAuxHashMap(hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_],
-                this->lgConfigK_, this->getAllocator());
-          }
-          auxHashMap_->mustAdd(slotNo, newVal);
-        }
-        else { // case 4: 897
-          // This is the case where neither the old value nor the new value is an exception.
-          // We just overwrite the 4-bit array with the shifted new value.
-          putSlot(slotNo, shiftedNewValue);
-        }
-      }
-
-      // we just increased a pair value, so it might be time to change curMin
-      if (actualOldValue == this->curMin_) { // 908
-        --(this->numAtCurMin_);
-        while (this->numAtCurMin_ == 0) {
-          shiftToBiggerCurMin(); // increases curMin by 1, builds a new aux table
-          // shifts values in 4-bit table and recounts curMin
-        }
-      }
-    } // end newVal <= actualOldValue
-  } // end newValue <= lbOnOldValue -> return, no need to update array
+  const uint8_t rawStoredOldValue = getSlot(slotNo);
+  const uint8_t lbOnOldValue = rawStoredOldValue + this->curMin_;
+  if (newVal <= lbOnOldValue) return;
+  const uint8_t shiftedNewValue = static_cast<uint8_t>(newVal - this->curMin_);
+  if (rawStoredOldValue == hll_constants::AUX_TOKEN || shiftedNewValue >= hll_constants::AUX_TOKEN) {
+    internalHll4UpdateAux(slotNo, newVal, rawStoredOldValue);
+    return;
+  }
+  if (rawStoredOldValue == 0) {
+    if (this->numAtCurMin_ == 1) {
+      shiftToBiggerCurMin(slotNo, newVal);
+      return;
+    }
+    --this->numAtCurMin_;
+  }
+  this->hipAndKxQIncrementalUpdate(lbOnOldValue, newVal);
+  putSlot(slotNo, shiftedNewValue);
 }
 
-// This scheme only works with two double registers (2 kxq values).
-//   HipAccum, kxq0 and kxq1 remain untouched.
-//   This changes curMin, numAtCurMin, hllByteArr and auxMap.
-// Entering this routine assumes that all slots have valid values > 0 and <= 15.
-// An AuxHashMap must exist if any values in the current hllByteArray are already 15.
-// In C: again-two-registers.c Lines 710 "hhb_shift_to_bigger_curmin"
 template<typename A>
-void Hll4Array<A>::shiftToBiggerCurMin() {
-  const uint8_t newCurMin = this->curMin_ + 1;
+void Hll4Array<A>::internalHll4UpdateAux(uint32_t slotNo, uint8_t newVal, uint8_t rawStoredOldValue) {
+  const uint8_t actualOldValue = rawStoredOldValue < hll_constants::AUX_TOKEN
+      ? static_cast<uint8_t>(rawStoredOldValue + this->curMin_) : auxHashMap_->mustFindValueFor(slotNo);
+  if (newVal <= actualOldValue) return;
+
+  if (actualOldValue == this->curMin_ && this->numAtCurMin_ == 1) {
+    shiftToBiggerCurMin(slotNo, newVal);
+    return;
+  }
+
+  if (rawStoredOldValue == hll_constants::AUX_TOKEN) {
+    auxHashMap_->mustReplace(slotNo, newVal);
+  } else {
+    if (auxHashMap_ == nullptr) {
+      createAuxHashMap(slotNo, newVal);
+    } else {
+      auxHashMap_->mustAdd(slotNo, newVal);
+    }
+    putSlot(slotNo, hll_constants::AUX_TOKEN);
+  }
+
+  this->hipAndKxQIncrementalUpdate(actualOldValue, newVal);
+  if (actualOldValue == this->curMin_) --this->numAtCurMin_;
+}
+
+template<typename A>
+void Hll4Array<A>::createAuxHashMap(uint32_t slotNo, uint8_t value) {
+  auto deleter = [this](AuxHashMap<A>* map) {
+    using Alloc = typename std::allocator_traits<A>::template rebind_alloc<AuxHashMap<A>>;
+    Alloc alloc(this->getAllocator());
+    map->~AuxHashMap();
+    alloc.deallocate(map, 1);
+  };
+  std::unique_ptr<AuxHashMap<A>, decltype(deleter)> ptr(
+      AuxHashMap<A>::newAuxHashMap(hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_],
+          this->lgConfigK_, this->getAllocator()), deleter);
+  ptr->mustAdd(slotNo, value);
+  auxHashMap_ = ptr.release();
+}
+
+template<typename A>
+void Hll4Array<A>::shiftToBiggerCurMin(uint32_t slotNo, uint8_t newVal) {
+  // This update removes the last register at curMin.
+  // Keep the original auxiliary map until all minimum shifts succeed.
   const uint32_t configK = 1 << this->lgConfigK_;
-  const uint32_t configKmask = configK - 1;
+  const uint8_t oldStoredValue = getSlot(slotNo);
+  using aux_ptr = std::unique_ptr<AuxHashMap<A>, std::function<void(AuxHashMap<A>*)>>;
+  aux_ptr pending(nullptr, AuxHashMap<A>::make_deleter());
+  const AuxHashMap<A>* current = auxHashMap_;
+  if (newVal - this->curMin_ >= hll_constants::AUX_TOKEN) {
+    pending.reset(current == nullptr
+        ? AuxHashMap<A>::newAuxHashMap(hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_],
+            this->lgConfigK_, this->getAllocator())
+        : current->copy());
+    if (oldStoredValue == hll_constants::AUX_TOKEN) pending->mustReplace(slotNo, newVal);
+    else pending->mustAdd(slotNo, newVal);
+    current = pending.get();
+  }
 
+  putSlot(slotNo, std::min(static_cast<uint8_t>(newVal - this->curMin_), hll_constants::AUX_TOKEN));
+  uint8_t curMin = this->curMin_;
   uint32_t numAtNewCurMin = 0;
-  uint32_t numAuxTokens = 0;
-
-  // Walk through the slots of 4-bit array decrementing stored values by one unless it
-  // equals AUX_TOKEN, where it is left alone but counted to be checked later.
-  // If oldStoredValue is 0 it is an error.
-  // If the decremented value is 0, we increment numAtNewCurMin.
-  // Because getNibble is masked to 4 bits oldStoredValue can never be > 15 or negative
-  for (uint32_t i = 0; i < configK; i++) { //724
-    uint8_t oldStoredValue = getSlot(i);
-    if (oldStoredValue == 0) {
-      throw std::runtime_error("Array slots cannot be 0 at this point.");
-    }
-    if (oldStoredValue < hll_constants::AUX_TOKEN) {
-      putSlot(i, --oldStoredValue);
-      if (oldStoredValue == 0) { numAtNewCurMin++; }
-    } else { //oldStoredValue == AUX_TOKEN
-      numAuxTokens++;
-      if (auxHashMap_ == nullptr) {
-        throw std::logic_error("auxHashMap cannot be null at this point");
-      }
-    }
-  }
-
-  // If old AuxHashMap exists, walk through it updating some slots and build a new AuxHashMap
-  // if needed.
-  AuxHashMap<A>* newAuxMap = nullptr;
-  if (auxHashMap_ != nullptr) {
-    uint32_t slotNum;
-    uint8_t oldActualVal;
-    uint8_t newShiftedVal;
-
-    for (const auto coupon: *auxHashMap_) {
-      slotNum = HllUtil<A>::getLow26(coupon) & configKmask;
-      oldActualVal = HllUtil<A>::getValue(coupon);
-      if (oldActualVal < newCurMin) {
-        throw std::logic_error("oldActualVal < newCurMin when incrementing curMin");
-      }
-      newShiftedVal = oldActualVal - newCurMin;
-
-      if (getSlot(slotNum) != hll_constants::AUX_TOKEN) {
-        throw std::logic_error("getSlot(slotNum) != AUX_TOKEN for item in auxiliary hash map");
-      }
-      // Array slot != AUX_TOKEN at getSlot(slotNum);
-      if (newShiftedVal < hll_constants::AUX_TOKEN) { // 756
-        if (newShiftedVal != 14) {
-          throw std::logic_error("newShiftedVal != 14 for item in old auxHashMap despite curMin increment");
+  uint32_t shiftedSlots = 0;
+  try {
+    do {
+      const uint8_t newCurMin = static_cast<uint8_t>(curMin + 1);
+      numAtNewCurMin = 0;
+      uint32_t numAuxTokens = 0;
+      for (shiftedSlots = 0; shiftedSlots < configK; ++shiftedSlots) {
+        uint8_t value = getSlot(shiftedSlots);
+        if (value == 0) {
+          throw std::runtime_error("Array slots cannot be 0 at this point.");
         }
-        // The former exception value isn't one anymore, so it stays out of new AuxHashMap.
-        // Correct the AUX_TOKEN value in the HLL array to the newShiftedVal (14).
-        putSlot(slotNum, newShiftedVal);
-        numAuxTokens--;
-      } else { //newShiftedVal >= AUX_TOKEN
-        // the former exception remains an exception, so must be added to the newAuxMap
-        if (newAuxMap == nullptr) {
-          newAuxMap = AuxHashMap<A>::newAuxHashMap(hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_],
-              this->lgConfigK_, this->getAllocator());
+        if (value < hll_constants::AUX_TOKEN) {
+          putSlot(shiftedSlots, --value);
+          if (value == 0) ++numAtNewCurMin;
+        } else {
+          ++numAuxTokens;
+          if (current == nullptr) {
+            throw std::logic_error("auxHashMap cannot be null at this point");
+          }
         }
-        newAuxMap->mustAdd(slotNum, oldActualVal);
       }
-    } //end scan of oldAuxMap
-  } //end if (auxHashMap != null)
-  else { // oldAuxMap == null
-    if (numAuxTokens != 0) {
-      throw std::logic_error("No auxiliary hash map, but numAuxTokens != 0");
+
+      aux_ptr next(nullptr, AuxHashMap<A>::make_deleter());
+      if (current != nullptr) {
+        for (const auto coupon: *current) {
+          const uint32_t slot = HllUtil<A>::getLow26(coupon) & (configK - 1);
+          const uint8_t value = HllUtil<A>::getValue(coupon);
+          if (value < newCurMin) {
+            throw std::logic_error("oldActualVal < newCurMin when incrementing curMin");
+          }
+          if (getSlot(slot) != hll_constants::AUX_TOKEN) {
+            throw std::logic_error("getSlot(slotNum) != AUX_TOKEN for item in auxiliary hash map");
+          }
+          const uint8_t shifted = static_cast<uint8_t>(value - newCurMin);
+          if (shifted < hll_constants::AUX_TOKEN) {
+            if (shifted != 14) {
+              throw std::logic_error("newShiftedVal != 14 for item in old auxHashMap despite curMin increment");
+            }
+            putSlot(slot, shifted);
+            --numAuxTokens;
+          } else {
+            if (next == nullptr) {
+              next.reset(AuxHashMap<A>::newAuxHashMap(hll_constants::LG_AUX_ARR_INTS[this->lgConfigK_],
+                  this->lgConfigK_, this->getAllocator()));
+            }
+            next->mustAdd(slot, value);
+          }
+        }
+      }
+      const uint32_t newAuxCount = next == nullptr ? 0 : next->getAuxCount();
+      // Preserve the missing-map error if another shift is required.
+      if ((next != nullptr || numAtNewCurMin != 0) && newAuxCount != numAuxTokens) {
+        throw std::runtime_error("Inconsistent counts: auxCount: " + std::to_string(newAuxCount)
+            + ", HLL tokesn: " + std::to_string(numAuxTokens));
+      }
+      pending = std::move(next);
+      current = pending.get();
+      curMin = newCurMin;
+      shiftedSlots = 0;
+    } while (numAtNewCurMin == 0);
+  } catch (...) {
+    // Undo completed shifts and the written prefix; demoted exceptions saturate back to AUX_TOKEN.
+    for (uint32_t i = 0; i < configK; ++i) {
+      const uint8_t value = getSlot(i);
+      if (value < hll_constants::AUX_TOKEN) {
+        const uint8_t restored = static_cast<uint8_t>(value + curMin - this->curMin_ + (i < shiftedSlots));
+        putSlot(i, std::min(restored, hll_constants::AUX_TOKEN));
+      }
     }
+    putSlot(slotNo, oldStoredValue);
+    throw;
   }
 
-  if (newAuxMap != nullptr) {
-    if (newAuxMap->getAuxCount() != numAuxTokens) {
-      throw std::runtime_error("Inconsistent counts: auxCount: " + std::to_string(newAuxMap->getAuxCount())
-                               + ", HLL tokesn: " + std::to_string(numAuxTokens));
-    }
-  }
-
-  if (auxHashMap_ != nullptr) {
-    AuxHashMap<A>::make_deleter()(auxHashMap_);
-  }
-  auxHashMap_ = newAuxMap;
-
-  this->curMin_ = newCurMin;
+  this->hipAndKxQIncrementalUpdate(this->curMin_, newVal);
+  if (auxHashMap_ != nullptr) AuxHashMap<A>::make_deleter()(auxHashMap_);
+  auxHashMap_ = pending.release();
+  this->curMin_ = curMin;
   this->numAtCurMin_ = numAtNewCurMin;
 }
 

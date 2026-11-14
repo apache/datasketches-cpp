@@ -83,12 +83,20 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len, const 
   if (lgK <= 7) {
     throw std::invalid_argument("Attempt to deserialize invalid CouponHashSet with lgConfigK <= 7. Found: "
                                 + std::to_string(lgK));
-  }   
+  }
+  HllUtil<A>::checkLgK(lgK);
   uint8_t lgArrInts = data[hll_constants::LG_ARR_BYTE];
   const bool compactFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::COMPACT_FLAG_MASK) ? true : false);
 
   uint32_t couponCount;
   std::memcpy(&couponCount, data + hll_constants::HASH_SET_COUNT_INT, sizeof(couponCount));
+  const uint32_t maxCouponCount = hll_constants::RESIZE_NUMER * (uint32_t(1) << (lgK - 3))
+      / hll_constants::RESIZE_DENOM;
+  if (compactFlag && couponCount > maxCouponCount) {
+    throw std::invalid_argument("Attempt to deserialize invalid compact CouponHashSet with couponCount > capacity. Found couponCount: "
+                                + std::to_string(couponCount)
+                                + ", capacity: " + std::to_string(maxCouponCount));
+  }
   if (lgArrInts < hll_constants::LG_INIT_SET_SIZE) {
     lgArrInts = HllUtil<>::computeLgArrInts(SET, couponCount, lgK);
   }
@@ -101,8 +109,8 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len, const 
                                 + ", found: " + std::to_string(len));
   }
 
-  ChsAlloc chsa(allocator);
-  CouponHashSet<A>* sketch = new (chsa.allocate(1)) CouponHashSet<A>(lgK, tgtHllType, allocator);
+  auto sketch = HllUtil<A>::template newObject<CouponHashSet<A>>(allocator, lgK, tgtHllType, allocator);
+  std::unique_ptr<CouponHashSet<A>, std::function<void(HllSketchImpl<A>*)>> ptr(sketch, sketch->get_deleter());
 
   if (compactFlag) {
     const uint8_t* curPos = data + hll_constants::HASH_SET_INT_ARR_START;
@@ -119,7 +127,7 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len, const 
                 couponsInArray * sizeof(uint32_t));
   }
 
-  return sketch;
+  return ptr.release();
 }
 
 template<typename A>
@@ -149,16 +157,23 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is, const A& allocator)
     throw std::invalid_argument("Attempt to deserialize invalid CouponHashSet with lgConfigK <= 7. Found: "
                                 + std::to_string(lgK));
   }
+  HllUtil<A>::checkLgK(lgK);
   uint8_t lgArrInts = listHeader[hll_constants::LG_ARR_BYTE];
   const bool compactFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::COMPACT_FLAG_MASK) ? true : false);
 
   const auto couponCount = read<uint32_t>(is);
+  const uint32_t maxCouponCount = hll_constants::RESIZE_NUMER * (uint32_t(1) << (lgK - 3))
+      / hll_constants::RESIZE_DENOM;
+  if (compactFlag && couponCount > maxCouponCount) {
+    throw std::invalid_argument("Attempt to deserialize invalid compact CouponHashSet with couponCount > capacity. Found couponCount: "
+                                + std::to_string(couponCount)
+                                + ", capacity: " + std::to_string(maxCouponCount));
+  }
   if (lgArrInts < hll_constants::LG_INIT_SET_SIZE) {
     lgArrInts = HllUtil<>::computeLgArrInts(SET, couponCount, lgK);
   }
 
-  ChsAlloc chsa(allocator);
-  CouponHashSet<A>* sketch = new (chsa.allocate(1)) CouponHashSet<A>(lgK, tgtHllType, allocator);
+  auto sketch = HllUtil<A>::template newObject<CouponHashSet<A>>(allocator, lgK, tgtHllType, allocator);
   typedef std::unique_ptr<CouponHashSet<A>, std::function<void(HllSketchImpl<A>*)>> coupon_hash_set_ptr;
   coupon_hash_set_ptr ptr(sketch, sketch->get_deleter());
 
@@ -183,14 +198,12 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is, const A& allocator)
 
 template<typename A>
 CouponHashSet<A>* CouponHashSet<A>::copy() const {
-  ChsAlloc chsa(this->coupons_.get_allocator());
-  return new (chsa.allocate(1)) CouponHashSet<A>(*this);
+  return HllUtil<A>::template newObject<CouponHashSet<A>>(this->getAllocator(), *this);
 }
 
 template<typename A>
 CouponHashSet<A>* CouponHashSet<A>::copyAs(target_hll_type tgtHllType) const {
-  ChsAlloc chsa(this->coupons_.get_allocator());
-  return new (chsa.allocate(1)) CouponHashSet<A>(*this, tgtHllType);
+  return HllUtil<A>::template newObject<CouponHashSet<A>>(this->getAllocator(), *this, tgtHllType);
 }
 
 template<typename A>
@@ -202,8 +215,8 @@ HllSketchImpl<A>* CouponHashSet<A>::couponUpdate(uint32_t coupon) {
   }
   this->coupons_[~index] = coupon; // found empty
   ++this->couponCount_;
-  if (checkGrowOrPromote()) {
-    return this->promoteHeapListOrSetToHll(*this);
+  if (static_cast<size_t>(hll_constants::RESIZE_DENOM * this->couponCount_) > (hll_constants::RESIZE_NUMER * this->coupons_.size())) {
+    return growOrPromoteWithRollback(static_cast<uint32_t>(~index));
   }
   return this;
 }
@@ -219,15 +232,19 @@ uint8_t CouponHashSet<A>::getPreInts() const {
 }
 
 template<typename A>
-bool CouponHashSet<A>::checkGrowOrPromote() {
-  if (static_cast<size_t>(hll_constants::RESIZE_DENOM * this->couponCount_) > (hll_constants::RESIZE_NUMER * this->coupons_.size())) {
+HllSketchImpl<A>* CouponHashSet<A>::growOrPromoteWithRollback(uint32_t index) {
+  try {
     const uint8_t lgCouponArrInts = count_trailing_zeros_in_u32(static_cast<uint32_t>(this->coupons_.size()));
     if (lgCouponArrInts == (this->lgConfigK_ - 3)) { // at max size
-      return true; // promote to HLL
+      return this->promoteHeapListOrSetToHll(*this);
     }
-    growHashSet(lgCouponArrInts + 1);
+    growHashSet(static_cast<uint8_t>(lgCouponArrInts + 1));
+  } catch (...) {
+    this->coupons_[index] = hll_constants::EMPTY;
+    --this->couponCount_;
+    throw;
   }
-  return false;
+  return this;
 }
 
 template<typename A>

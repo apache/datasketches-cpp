@@ -37,6 +37,7 @@ add_test(
 
 target_sources(hll_test
   PRIVATE
+    AllocationFailureTest.cpp
     AuxHashMapTest.cpp
     CouponHashSetTest.cpp
     CouponListTest.cpp

@@ -42,13 +42,12 @@ typedef union {
 } longDoubleUnion;
 
 template<typename A>
-hll_sketch_alloc<A>::hll_sketch_alloc(uint8_t lg_config_k, target_hll_type tgt_type, bool start_full_size, const A& allocator) {
+inline hll_sketch_alloc<A>::hll_sketch_alloc(uint8_t lg_config_k, target_hll_type tgt_type, bool start_full_size, const A& allocator) {
   HllUtil<A>::checkLgK(lg_config_k);
   if (start_full_size) {
     sketch_impl = HllSketchImplFactory<A>::newHll(lg_config_k, tgt_type, allocator);
   } else {
-    typedef typename std::allocator_traits<A>::template rebind_alloc<CouponList<A>> clAlloc;
-    sketch_impl = new (clAlloc(allocator).allocate(1)) CouponList<A>(lg_config_k, tgt_type, hll_mode::LIST, allocator);
+    sketch_impl = HllUtil<A>::template newObject<CouponList<A>>(allocator, lg_config_k, tgt_type, hll_mode::LIST, allocator);
   }
 }
 
@@ -95,8 +94,8 @@ hll_sketch_alloc<A>::hll_sketch_alloc(HllSketchImpl<A>* that) :
 
 template<typename A>
 hll_sketch_alloc<A>& hll_sketch_alloc<A>::operator=(const hll_sketch_alloc<A>& other) {
-  sketch_impl->get_deleter()(sketch_impl);
-  sketch_impl = other.sketch_impl->copy();
+  hll_sketch_alloc<A> copy(other);
+  std::swap(sketch_impl, copy.sketch_impl);
   return *this;
 }
 

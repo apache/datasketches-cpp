@@ -59,14 +59,12 @@ std::function<void(HllSketchImpl<A>*)> CouponList<A>::get_deleter() const {
 
 template<typename A>
 CouponList<A>* CouponList<A>::copy() const {
-  ClAlloc cla(coupons_.get_allocator());
-  return new (cla.allocate(1)) CouponList<A>(*this);
+  return HllUtil<A>::template newObject<CouponList<A>>(getAllocator(), *this);
 }
 
 template<typename A>
 CouponList<A>* CouponList<A>::copyAs(target_hll_type tgtHllType) const {
-  ClAlloc cla(coupons_.get_allocator());
-  return new (cla.allocate(1)) CouponList<A>(*this, tgtHllType);
+  return HllUtil<A>::template newObject<CouponList<A>>(getAllocator(), *this, tgtHllType);
 }
 
 template<typename A>
@@ -113,8 +111,7 @@ CouponList<A>* CouponList<A>::newList(const void* bytes, size_t len, const A& al
                                 + ", found: " + std::to_string(len));
   }
 
-  ClAlloc cla(allocator);
-  CouponList<A>* sketch = new (cla.allocate(1)) CouponList<A>(lgK, tgtHllType, mode, allocator);
+  auto sketch = HllUtil<A>::template newObject<CouponList<A>>(allocator, lgK, tgtHllType, mode, allocator);
   sketch->couponCount_ = couponCount;
   sketch->putOutOfOrderFlag(oooFlag); // should always be false for LIST
 
@@ -162,8 +159,7 @@ CouponList<A>* CouponList<A>::newList(std::istream& is, const A& allocator) {
                                 + ", capacity: " + std::to_string(listCapacity));
   }
 
-  ClAlloc cla(allocator);
-  CouponList<A>* sketch = new (cla.allocate(1)) CouponList<A>(lgK, tgtHllType, mode, allocator);
+  auto sketch = HllUtil<A>::template newObject<CouponList<A>>(allocator, lgK, tgtHllType, mode, allocator);
   using coupon_list_ptr = std::unique_ptr<CouponList<A>, std::function<void(HllSketchImpl<A>*)>>;
   coupon_list_ptr ptr(sketch, sketch->get_deleter());
   sketch->couponCount_ = couponCount;
@@ -287,10 +283,7 @@ HllSketchImpl<A>* CouponList<A>::couponUpdate(uint32_t coupon) {
       coupons_[i] = coupon; // the actual update
       ++couponCount_;
       if (couponCount_ == static_cast<uint32_t>(coupons_.size())) { // array full
-        if (this->lgConfigK_ < 8) {
-          return promoteHeapListOrSetToHll(*this);
-        }
-        return promoteHeapListToSet(*this);
+        return promoteWithRollback(static_cast<uint32_t>(i));
       }
       return this;
     }
@@ -301,6 +294,20 @@ HllSketchImpl<A>* CouponList<A>::couponUpdate(uint32_t coupon) {
     // cell not empty and not a duplicate, continue
   }
   throw std::runtime_error("Array invalid: no empties and no duplicates");
+}
+
+template<typename A>
+HllSketchImpl<A>* CouponList<A>::promoteWithRollback(uint32_t index) {
+  try {
+    if (this->lgConfigK_ < 8) {
+      return promoteHeapListOrSetToHll(*this);
+    }
+    return promoteHeapListToSet(*this);
+  } catch (...) {
+    coupons_[index] = hll_constants::EMPTY;
+    --couponCount_;
+    throw;
+  }
 }
 
 template<typename A>
