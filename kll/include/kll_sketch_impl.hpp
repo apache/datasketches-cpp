@@ -45,7 +45,7 @@ is_level_zero_sorted_(false),
 n_(0),
 levels_(2, 0, allocator),
 items_(nullptr),
-items_size_(k_),
+items_size_(RESIZE_FACTOR == resize_factor::X1 ? k_ : std::min(k_, kll_constants::DEFAULT_K)),
 min_item_(),
 max_item_(),
 sorted_view_(nullptr)
@@ -54,7 +54,7 @@ sorted_view_(nullptr)
     throw std::invalid_argument("K must be >= " + std::to_string(kll_constants::MIN_K) + " and <= "
         + std::to_string(kll_constants::MAX_K) + ": " + std::to_string(k));
   }
-  levels_[0] = levels_[1] = k;
+  levels_[0] = levels_[1] = items_size_;
   items_ = allocator_.allocate(items_size_);
 }
 
@@ -199,7 +199,13 @@ void kll_sketch<T, C, A>::update_min_max(const T& item) {
 
 template<typename T, typename C, typename A>
 uint32_t kll_sketch<T, C, A>::internal_update() {
-  if (levels_[0] == 0) { compress_while_updating(); }
+  if (levels_[0] == 0) {
+    if (items_size_ < k_) {
+      grow_items();
+    } else {
+      compress_while_updating();
+    }
+  }
   n_++;
   is_level_zero_sorted_ = false;
   return --levels_[0];
@@ -390,7 +396,11 @@ void kll_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& sd) const {
     write(os, min_k_);
     write(os, num_levels_);
     write(os, unused);
-    write(os, levels_.data(), sizeof(levels_[0]) * num_levels_);
+    if (num_levels_ == 1 && items_size_ < k_) {
+      write(os, levels_[0] + (k_ - items_size_));
+    } else {
+      write(os, levels_.data(), sizeof(levels_[0]) * num_levels_);
+    }
     sd.serialize(os, &*min_item_, 1);
     sd.serialize(os, &*max_item_, 1);
   }
@@ -426,7 +436,11 @@ auto kll_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& sd)
       ptr += copy_to_mem(min_k_, ptr);
       ptr += copy_to_mem(num_levels_, ptr);
       ptr += sizeof(uint8_t); // unused
-      ptr += copy_to_mem(levels_.data(), ptr, sizeof(levels_[0]) * num_levels_);
+      if (num_levels_ == 1 && items_size_ < k_) {
+        ptr += copy_to_mem(levels_[0] + (k_ - items_size_), ptr);
+      } else {
+        ptr += copy_to_mem(levels_.data(), ptr, sizeof(levels_[0]) * num_levels_);
+      }
       ptr += sd.serialize(ptr, end_ptr - ptr, &*min_item_, 1);
       ptr += sd.serialize(ptr, end_ptr - ptr, &*max_item_, 1);
     }
@@ -754,6 +768,21 @@ void kll_sketch<T, C, A>::add_empty_top_level_to_completely_full_sketch() {
   levels_[num_levels_] = new_total_cap; // initialize the new "extra" index at the top
 }
 
+// Grows the items buffer of a one-level sketch when it is full and smaller than k.
+// Compaction starts only when the buffer is full at k items, so growing does not change the result.
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::grow_items() {
+  const uint32_t new_size = std::min<uint32_t>(items_size_ << static_cast<uint8_t>(RESIZE_FACTOR), k_);
+  const uint32_t delta = new_size - items_size_;
+  T* new_items = allocator_.allocate(new_size);
+  kll_helper::move_construct<T>(items_, levels_[0], levels_[1], new_items, levels_[0] + delta, true);
+  allocator_.deallocate(items_, items_size_);
+  items_ = new_items;
+  items_size_ = new_size;
+  levels_[0] += delta;
+  levels_[1] += delta;
+}
+
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::sort_level_zero() {
   if (!is_level_zero_sorted_) {
@@ -961,7 +990,8 @@ string<A> kll_sketch<T, C, A>::to_string(bool print_levels, bool print_items) co
   os << "   Estimation mode: " << (is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   Levels         : " << (unsigned int) num_levels_ << std::endl;
   os << "   Sorted         : " << (is_level_zero_sorted_ ? "true" : "false") << std::endl;
-  os << "   Capacity items : " << items_size_ << std::endl;
+  // a buffer still growing to k items shows the capacity of a full one
+  os << "   Capacity items : " << std::max<uint32_t>(items_size_, k_) << std::endl;
   os << "   Retained items : " << get_num_retained() << std::endl;
   if (!is_empty()) {
     os << "   Min item      : " << *min_item_ << std::endl;
