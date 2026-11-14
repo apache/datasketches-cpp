@@ -53,6 +53,9 @@ public:
 
   uint64_t compute_weight(const T& item, bool inclusive) const;
 
+  // allocates the initial storage for items, unless the compactor has storage already
+  void reserve();
+
   template<typename FwdT>
   void append(FwdT&& item);
 
@@ -113,8 +116,8 @@ private:
   uint8_t num_sections_;
   uint64_t state_; // state of the deterministic compaction schedule
   uint32_t num_items_;
-  uint32_t capacity_;
-  T* items_;
+  uint32_t capacity_; // 0 while items_ is nullptr
+  T* items_; // nullptr until first use, see reserve()
 
   bool ensure_enough_sections();
   std::pair<uint32_t, uint32_t> compute_compaction_range(uint32_t secs_to_compact) const;

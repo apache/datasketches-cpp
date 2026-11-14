@@ -173,6 +173,7 @@ template<typename T, typename C, typename A>
 template<typename FwdT>
 void req_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_item(item)) { return; }
+  compactors_[0].reserve(); // first, so that a failure leaves the sketch unchanged
   if (is_empty()) {
     min_item_.emplace(item);
     max_item_.emplace(item);
@@ -183,8 +184,8 @@ void req_sketch<T, C, A>::update(FwdT&& item) {
   compactors_[0].append(std::forward<FwdT>(item));
   ++num_retained_;
   ++n_;
-  if (num_retained_ == max_nom_size_) compress();
   reset_sorted_view();
+  if (num_retained_ >= max_nom_size_) compress();
 }
 
 template<typename T, typename C, typename A>
@@ -192,6 +193,7 @@ template<typename FwdSk>
 void req_sketch<T, C, A>::merge(FwdSk&& other) {
   if (is_HRA() != other.is_HRA()) throw std::invalid_argument("merging HRA and LRA is not valid");
   if (other.is_empty()) return;
+  reset_sorted_view();
   if (is_empty()) {
     min_item_.emplace(conditional_forward<FwdSk>(*other.min_item_));
     max_item_.emplace(conditional_forward<FwdSk>(*other.max_item_));
@@ -199,17 +201,26 @@ void req_sketch<T, C, A>::merge(FwdSk&& other) {
     if (comparator_(*other.min_item_, *min_item_)) *min_item_ = conditional_forward<FwdSk>(*other.min_item_);
     if (comparator_(*max_item_, *other.max_item_)) *max_item_ = conditional_forward<FwdSk>(*other.max_item_);
   }
-  // grow until this has at least as many compactors as other
-  while (get_num_levels() < other.get_num_levels()) grow();
-  // merge the items in all height compactors
-  for (size_t i = 0; i < other.get_num_levels(); ++i) {
-    compactors_[i].merge(conditional_forward<FwdSk>(other.compactors_[i]));
+  try {
+    // grow until this has at least as many compactors as other
+    while (get_num_levels() < other.get_num_levels()) grow();
+    // merge the items in all height compactors
+    for (size_t i = 0; i < other.get_num_levels(); ++i) {
+      compactors_[i].merge(conditional_forward<FwdSk>(other.compactors_[i]));
+    }
+  } catch (...) {
+    restore_counts(); // some levels may be merged already
+    throw;
   }
   n_ += other.n_;
   update_max_nom_size();
   update_num_retained();
   if (num_retained_ >= max_nom_size_) compress();
-  reset_sorted_view();
+}
+
+template<typename T, typename C, typename A>
+void req_sketch<T, C, A>::reserve() {
+  compactors_[0].reserve();
 }
 
 template<typename T, typename C, typename A>
@@ -632,7 +643,26 @@ void req_sketch<T, C, A>::update_num_retained() {
 }
 
 template<typename T, typename C, typename A>
+void req_sketch<T, C, A>::restore_counts() {
+  // the total weight of the retained items is always n
+  n_ = 0;
+  for (const auto& compactor: compactors_) n_ += static_cast<uint64_t>(compactor.get_num_items()) << compactor.get_lg_weight();
+  update_num_retained();
+  update_max_nom_size();
+}
+
+template<typename T, typename C, typename A>
 void req_sketch<T, C, A>::compress() {
+  try {
+    compress_levels();
+  } catch (...) {
+    restore_counts(); // a compactor can fail to grow after a compaction moved its items
+    throw;
+  }
+}
+
+template<typename T, typename C, typename A>
+void req_sketch<T, C, A>::compress_levels() {
   for (size_t h = 0; h < compactors_.size(); ++h) {
     if (compactors_[h].get_num_items() >= compactors_[h].get_nom_capacity()) {
       if (h == 0) compactors_[0].sort();
@@ -791,15 +821,23 @@ template<typename T, typename C, typename A>
 req_sketch<T, C, A>::const_iterator::const_iterator(LevelsIterator begin, LevelsIterator end):
     levels_it_(begin),
     levels_end_(end),
-    compactor_it_(begin == end ? nullptr : (*levels_it_).begin())
-{}
+    compactor_it_(nullptr)
+{
+  skip_empty_levels();
+}
+
+template<typename T, typename C, typename A>
+void req_sketch<T, C, A>::const_iterator::skip_empty_levels() {
+  while (levels_it_ != levels_end_ && (*levels_it_).get_num_items() == 0) ++levels_it_;
+  if (levels_it_ != levels_end_) compactor_it_ = (*levels_it_).begin();
+}
 
 template<typename T, typename C, typename A>
 auto req_sketch<T, C, A>::const_iterator::operator++() -> const_iterator& {
   ++compactor_it_;
   if (compactor_it_ == (*levels_it_).end()) {
     ++levels_it_;
-    if (levels_it_ != levels_end_) compactor_it_ = (*levels_it_).begin();
+    skip_empty_levels();
   }
   return *this;
 }

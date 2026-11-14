@@ -75,6 +75,13 @@ namespace datasketches {
  * two levels of detail output. This is not only useful for debugging, but is a powerful tool to
  * help users understand how the sketch works.</li>
  * </ul>
+ *
+ * <p>Memory allocation: a new sketch does not allocate storage for items until it first needs it,
+ * on the first update or the first merge of a non-empty sketch. Sketches that stay empty use
+ * little memory. As a result, the first update or merge can throw std::bad_alloc while allocating
+ * this storage, rather than the constructor. If the first update fails this way, the sketch is
+ * unchanged and can still be used. Call reserve() right after construction to allocate the storage
+ * up front.</p>
  */
 template<
   typename T,
@@ -106,6 +113,7 @@ public:
    * @param comparator strict weak ordering function (see C++ named requirements: Compare)
    * @param allocator used by this sketch to allocate memory
    * @throws std::invalid_argument if k is greater than 1024
+   * Storage for items is allocated on first use, see reserve().
    */
   explicit req_sketch(uint16_t k, bool hra = true, const Comparator& comparator = Comparator(),
       const Allocator& allocator = Allocator());
@@ -188,6 +196,7 @@ public:
    * Updates this sketch with the given data item.
    * If cross-language portability is required, callers should ensure that
    * the input string uses a compatible encoding (valid UTF-8).
+   * The first update allocates storage for items, unless reserve() or a merge already did.
    * @param item from a stream of items
    */
   template<typename FwdT>
@@ -197,10 +206,21 @@ public:
    * Merges another sketch into this one.
    * If sketches contain strings, callers are responsible for ensuring that
    * both sketches were built using compatible string encodings.
+   * The first merge of a non-empty sketch allocates storage for items,
+   * unless reserve() or an update already did.
    * @param other sketch to merge into this one
    */
   template<typename FwdSk>
   void merge(FwdSk&& other);
+
+  /**
+   * Allocates storage for items now, rather than on the first update or merge.
+   * Call this right after construction if allocation failures should happen here,
+   * or if the first update should not pay for the allocation.
+   * Does nothing if the storage is already allocated.
+   * @throw std::bad_alloc if the allocation fails, in which case the sketch is unchanged
+   */
+  void reserve();
 
   /**
    * Returns the min item of the stream.
@@ -454,7 +474,11 @@ private:
   void grow();
   void update_max_nom_size();
   void update_num_retained();
+  // recomputes n, the number of retained items and the nominal size from the compactors,
+  // after an allocation failed partway through an update or a merge
+  void restore_counts();
   void compress();
+  void compress_levels();
 
   static double get_rank_lb(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
   static double get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
@@ -507,6 +531,8 @@ private:
   const T* compactor_it_;
   friend class req_sketch<T, C, A>;
   const_iterator(LevelsIterator begin, LevelsIterator end);
+  // moves to the first item at or above the current level, skipping levels without items
+  void skip_empty_levels();
 };
 
 } /* namespace datasketches */

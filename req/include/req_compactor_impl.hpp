@@ -44,8 +44,8 @@ section_size_(section_size),
 num_sections_(req_constants::INIT_NUM_SECTIONS),
 state_(0),
 num_items_(0),
-capacity_(2 * get_nom_capacity()),
-items_(allocator_.allocate(capacity_))
+capacity_(0),
+items_(nullptr) // allocated on first use, see reserve()
 {}
 
 template<typename T, typename C, typename A>
@@ -97,6 +97,8 @@ capacity_(other.capacity_),
 items_(other.items_)
 {
   other.items_ = nullptr;
+  other.capacity_ = 0;
+  other.num_items_ = 0;
 }
 
 template<typename T, typename C, typename A>
@@ -194,8 +196,14 @@ uint64_t req_compactor<T, C, A>::compute_weight(const T& item, bool inclusive) c
 }
 
 template<typename T, typename C, typename A>
+void req_compactor<T, C, A>::reserve() {
+  if (items_ == nullptr) grow(2 * get_nom_capacity());
+}
+
+template<typename T, typename C, typename A>
 template<typename FwdT>
 void req_compactor<T, C, A>::append(FwdT&& item) {
+  reserve();
   if (num_items_ == capacity_) grow(capacity_ + get_nom_capacity());
   const uint32_t i = hra_ ? capacity_ - num_items_ - 1 : num_items_;
   new (items_ + i) T(std::forward<FwdT>(item));
@@ -211,13 +219,14 @@ void req_compactor<T, C, A>::grow(uint32_t new_capacity) {
     new (new_items + new_i) T(std::move(*it));
     (*it).~T();
   }
-  allocator_.deallocate(items_, capacity_);
+  if (items_ != nullptr) allocator_.deallocate(items_, capacity_);
   items_ = new_items;
   capacity_ = new_capacity;
 }
 
 template<typename T, typename C, typename A>
 void req_compactor<T, C, A>::ensure_space(uint32_t num) {
+  reserve();
   if (num_items_ + num > capacity_) grow(num_items_ + num + get_nom_capacity());
 }
 
