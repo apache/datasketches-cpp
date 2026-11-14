@@ -153,4 +153,109 @@ TEST_CASE("kll sketch custom type", "[kll_sketch]") {
   REQUIRE(test_allocator_net_allocations == 0);
 }
 
+TEST_CASE("kll sketch custom type: items are allocated on first use", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    kll_test_type_sketch sketch(200, test_type_less(), 0);
+    // only the levels: an empty sketch has no item storage
+    const long long empty_bytes = test_allocator_total_bytes;
+    REQUIRE(empty_bytes < static_cast<long long>(200 * sizeof(test_type)));
+
+    kll_test_type_sketch copy(sketch);
+    kll_test_type_sketch converted(sketch, test_type_less(), alloc(0));
+    REQUIRE(test_allocator_total_bytes == 3 * empty_bytes);
+
+    kll_test_type_sketch target(200, test_type_less(), 0);
+    target.merge(sketch); // merging an empty sketch allocates nothing either
+    REQUIRE(test_allocator_total_bytes == 4 * empty_bytes);
+    REQUIRE(target.is_empty());
+
+    sketch.update(1);
+    REQUIRE(test_allocator_total_bytes == static_cast<long long>(4 * empty_bytes + 200 * sizeof(test_type)));
+    REQUIRE(sketch.get_n() == 1);
+    REQUIRE(sketch.get_min_item().get_value() == 1);
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+TEST_CASE("kll sketch custom type: merge into a sketch without items", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    // estimation mode sizes, some of which leave level zero empty after a compaction
+    for (int n = 1; n < 2000; n += 37) {
+      kll_test_type_sketch source(8, test_type_less(), 0);
+      for (int i = 0; i < n; ++i) source.update(i);
+      kll_test_type_sketch target(8, test_type_less(), 0);
+      target.merge(source);
+      REQUIRE(target.get_n() == source.get_n());
+      REQUIRE(target.get_min_item().get_value() == 0);
+      REQUIRE(target.get_max_item().get_value() == n - 1);
+      kll_test_type_sketch moved_target(8, test_type_less(), 0);
+      moved_target.merge(std::move(source));
+      REQUIRE(moved_target.get_n() == target.get_n());
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+TEST_CASE("kll sketch custom type: empty sorted view", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    kll_test_type_sketch empty(200, test_type_less(), 0);
+    kll_test_type_sketch copy(empty);
+    kll_test_type_sketch converted(empty, test_type_less(), alloc(0));
+    kll_test_type_sketch moved(std::move(copy));
+
+    kll_test_type_sketch assigned(200, test_type_less(), 0);
+    assigned.update(99);
+    REQUIRE(assigned.get_quantile(0).get_value() == 99); // populate the cached view
+    assigned = empty;
+
+    kll_test_type_sketch move_assigned(200, test_type_less(), 0);
+    move_assigned.update(99);
+    REQUIRE(move_assigned.get_quantile(0).get_value() == 99);
+    move_assigned = kll_test_type_sketch(empty);
+
+    const auto bytes = empty.serialize(0, test_type_serde());
+    auto from_bytes = kll_test_type_sketch::deserialize(bytes.data(), bytes.size(),
+        test_type_serde(), test_type_less(), alloc(0));
+    std::stringstream stream;
+    empty.serialize(stream, test_type_serde());
+    auto from_stream = kll_test_type_sketch::deserialize(stream,
+        test_type_serde(), test_type_less(), alloc(0));
+
+    for (auto* sketch: {&empty, &converted, &moved, &assigned, &move_assigned, &from_bytes, &from_stream}) {
+      REQUIRE(sketch->is_empty());
+      REQUIRE(sketch->begin() == sketch->end());
+      const auto bytes_before = test_allocator_total_bytes;
+      const auto allocations_before = test_allocator_net_allocations;
+      for (int i = 0; i < 2; ++i) {
+        const auto view = sketch->get_sorted_view();
+        REQUIRE(view.size() == 0);
+        REQUIRE(view.begin() == view.end());
+        REQUIRE_THROWS_AS(view.get_quantile(0.5), std::runtime_error);
+        REQUIRE(test_allocator_total_bytes == bytes_before);
+        REQUIRE(test_allocator_net_allocations == allocations_before);
+      }
+
+      // Reading an empty view must not interfere with allocation or sorting on the first updates.
+      sketch->update(2);
+      sketch->update(1);
+      REQUIRE(sketch->get_n() == 2);
+      const auto view = sketch->get_sorted_view();
+      REQUIRE(view.size() == 2);
+      REQUIRE(view.get_quantile(0).get_value() == 1);
+      REQUIRE(view.get_quantile(1).get_value() == 2);
+      REQUIRE(sketch->get_quantile(0).get_value() == 1);
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
 } /* namespace datasketches */
