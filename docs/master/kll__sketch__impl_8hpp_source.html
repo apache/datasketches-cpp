@@ -940,317 +940,335 @@ $(function() {
 <div class="line"><a id="l00808" name="l00808"></a><span class="lineno">  808</span> </div>
 <div class="line"><a id="l00809" name="l00809"></a><span class="lineno">  809</span>  <span class="keyword">const</span> uint8_t provisional_num_levels = std::max(num_levels_, other.num_levels_);</div>
 <div class="line"><a id="l00810" name="l00810"></a><span class="lineno">  810</span> </div>
-<div class="line"><a id="l00811" name="l00811"></a><span class="lineno">  811</span>  populate_work_arrays(std::forward&lt;O&gt;(other), workbuf.get(), worklevels.data(), provisional_num_levels);</div>
-<div class="line"><a id="l00812" name="l00812"></a><span class="lineno">  812</span> </div>
-<div class="line"><a id="l00813" name="l00813"></a><span class="lineno">  813</span>  <span class="keyword">const</span> kll_helper::compress_result result = kll_helper::general_compress&lt;T, C&gt;(k_, m_, provisional_num_levels, workbuf.get(),</div>
-<div class="line"><a id="l00814" name="l00814"></a><span class="lineno">  814</span>      worklevels.data(), outlevels.data(), is_level_zero_sorted_);</div>
-<div class="line"><a id="l00815" name="l00815"></a><span class="lineno">  815</span> </div>
-<div class="line"><a id="l00816" name="l00816"></a><span class="lineno">  816</span>  <span class="comment">// ub can sometimes be much bigger</span></div>
-<div class="line"><a id="l00817" name="l00817"></a><span class="lineno">  817</span>  <span class="keywordflow">if</span> (result.final_num_levels &gt; ub) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;merge error&quot;</span>);</div>
-<div class="line"><a id="l00818" name="l00818"></a><span class="lineno">  818</span> </div>
-<div class="line"><a id="l00819" name="l00819"></a><span class="lineno">  819</span>  <span class="comment">// now we need to transfer the results back into &quot;this&quot; sketch</span></div>
-<div class="line"><a id="l00820" name="l00820"></a><span class="lineno">  820</span>  <span class="keywordflow">if</span> (result.final_capacity != items_size_) {</div>
-<div class="line"><a id="l00821" name="l00821"></a><span class="lineno">  821</span>    allocator_.deallocate(items_, items_size_);</div>
-<div class="line"><a id="l00822" name="l00822"></a><span class="lineno">  822</span>    items_size_ = result.final_capacity;</div>
-<div class="line"><a id="l00823" name="l00823"></a><span class="lineno">  823</span>    items_ = allocator_.allocate(items_size_);</div>
-<div class="line"><a id="l00824" name="l00824"></a><span class="lineno">  824</span>  }</div>
-<div class="line"><a id="l00825" name="l00825"></a><span class="lineno">  825</span>  <span class="keyword">const</span> uint32_t free_space_at_bottom = result.final_capacity - result.final_num_items;</div>
-<div class="line"><a id="l00826" name="l00826"></a><span class="lineno">  826</span>  kll_helper::move_construct&lt;T&gt;(workbuf.get(), outlevels[0], outlevels[0] + result.final_num_items, items_, free_space_at_bottom, <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00827" name="l00827"></a><span class="lineno">  827</span> </div>
-<div class="line"><a id="l00828" name="l00828"></a><span class="lineno">  828</span>  <span class="keyword">const</span> <span class="keywordtype">size_t</span> new_levels_size = result.final_num_levels + 1;</div>
-<div class="line"><a id="l00829" name="l00829"></a><span class="lineno">  829</span>  <span class="keywordflow">if</span> (levels_.size() &lt; new_levels_size) {</div>
-<div class="line"><a id="l00830" name="l00830"></a><span class="lineno">  830</span>    levels_.resize(new_levels_size);</div>
-<div class="line"><a id="l00831" name="l00831"></a><span class="lineno">  831</span>  }</div>
-<div class="line"><a id="l00832" name="l00832"></a><span class="lineno">  832</span>  <span class="keyword">const</span> uint32_t offset = free_space_at_bottom - outlevels[0];</div>
-<div class="line"><a id="l00833" name="l00833"></a><span class="lineno">  833</span>  <span class="keywordflow">for</span> (uint8_t lvl = 0; lvl &lt; levels_.size(); lvl++) { <span class="comment">// includes the &quot;extra&quot; index</span></div>
-<div class="line"><a id="l00834" name="l00834"></a><span class="lineno">  834</span>    levels_[lvl] = outlevels[lvl] + offset;</div>
-<div class="line"><a id="l00835" name="l00835"></a><span class="lineno">  835</span>  }</div>
-<div class="line"><a id="l00836" name="l00836"></a><span class="lineno">  836</span>  num_levels_ = result.final_num_levels;</div>
-<div class="line"><a id="l00837" name="l00837"></a><span class="lineno">  837</span>}</div>
-<div class="line"><a id="l00838" name="l00838"></a><span class="lineno">  838</span> </div>
-<div class="line"><a id="l00839" name="l00839"></a><span class="lineno">  839</span><span class="comment">// this leaves items_ uninitialized (all objects moved out and destroyed)</span></div>
-<div class="line"><a id="l00840" name="l00840"></a><span class="lineno">  840</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00841" name="l00841"></a><span class="lineno">  841</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> FwdSk&gt;</div>
-<div class="line"><a id="l00842" name="l00842"></a><span class="lineno">  842</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::populate_work_arrays(FwdSk&amp;&amp; other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {</div>
-<div class="line"><a id="l00843" name="l00843"></a><span class="lineno">  843</span>  worklevels[0] = 0;</div>
-<div class="line"><a id="l00844" name="l00844"></a><span class="lineno">  844</span> </div>
-<div class="line"><a id="l00845" name="l00845"></a><span class="lineno">  845</span>  <span class="comment">// the level zero data from &quot;other&quot; was already inserted into &quot;this&quot;</span></div>
-<div class="line"><a id="l00846" name="l00846"></a><span class="lineno">  846</span>  kll_helper::move_construct&lt;T&gt;(items_, levels_[0], levels_[1], workbuf, 0, <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00847" name="l00847"></a><span class="lineno">  847</span>  worklevels[1] = safe_level_size(0);</div>
-<div class="line"><a id="l00848" name="l00848"></a><span class="lineno">  848</span> </div>
-<div class="line"><a id="l00849" name="l00849"></a><span class="lineno">  849</span>  <span class="keywordflow">for</span> (uint8_t lvl = 1; lvl &lt; provisional_num_levels; lvl++) {</div>
-<div class="line"><a id="l00850" name="l00850"></a><span class="lineno">  850</span>    <span class="keyword">const</span> uint32_t self_pop = safe_level_size(lvl);</div>
-<div class="line"><a id="l00851" name="l00851"></a><span class="lineno">  851</span>    <span class="keyword">const</span> uint32_t other_pop = other.safe_level_size(lvl);</div>
-<div class="line"><a id="l00852" name="l00852"></a><span class="lineno">  852</span>    worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;</div>
-<div class="line"><a id="l00853" name="l00853"></a><span class="lineno">  853</span> </div>
-<div class="line"><a id="l00854" name="l00854"></a><span class="lineno">  854</span>    <span class="keywordflow">if</span> ((self_pop &gt; 0) &amp;&amp; (other_pop == 0)) {</div>
-<div class="line"><a id="l00855" name="l00855"></a><span class="lineno">  855</span>      kll_helper::move_construct&lt;T&gt;(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00856" name="l00856"></a><span class="lineno">  856</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> ((self_pop == 0) &amp;&amp; (other_pop &gt; 0)) {</div>
-<div class="line"><a id="l00857" name="l00857"></a><span class="lineno">  857</span>      <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = other.levels_[lvl], j = worklevels[lvl]; i &lt; other.levels_[lvl] + other_pop; ++i, ++j) {</div>
-<div class="line"><a id="l00858" name="l00858"></a><span class="lineno">  858</span>        <span class="keyword">new</span> (&amp;workbuf[j]) T(conditional_forward&lt;FwdSk&gt;(other.items_[i]));</div>
-<div class="line"><a id="l00859" name="l00859"></a><span class="lineno">  859</span>      }</div>
-<div class="line"><a id="l00860" name="l00860"></a><span class="lineno">  860</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> ((self_pop &gt; 0) &amp;&amp; (other_pop &gt; 0)) {</div>
-<div class="line"><a id="l00861" name="l00861"></a><span class="lineno">  861</span>      kll_helper::merge_sorted_arrays&lt;T, C&gt;(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);</div>
-<div class="line"><a id="l00862" name="l00862"></a><span class="lineno">  862</span>    }</div>
-<div class="line"><a id="l00863" name="l00863"></a><span class="lineno">  863</span>  }</div>
-<div class="line"><a id="l00864" name="l00864"></a><span class="lineno">  864</span>}</div>
-<div class="line"><a id="l00865" name="l00865"></a><span class="lineno">  865</span> </div>
-<div class="line"><a id="l00866" name="l00866"></a><span class="lineno">  866</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00867" name="l00867"></a><span class="lineno">  867</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::assert_correct_total_weight()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00868" name="l00868"></a><span class="lineno">  868</span>  <span class="keyword">const</span> uint64_t total(kll_helper::sum_the_sample_weights(num_levels_, levels_.data()));</div>
-<div class="line"><a id="l00869" name="l00869"></a><span class="lineno">  869</span>  <span class="keywordflow">if</span> (total != n_) {</div>
-<div class="line"><a id="l00870" name="l00870"></a><span class="lineno">  870</span>    <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;Total weight does not match N&quot;</span>);</div>
-<div class="line"><a id="l00871" name="l00871"></a><span class="lineno">  871</span>  }</div>
-<div class="line"><a id="l00872" name="l00872"></a><span class="lineno">  872</span>}</div>
-<div class="line"><a id="l00873" name="l00873"></a><span class="lineno">  873</span> </div>
-<div class="line"><a id="l00874" name="l00874"></a><span class="lineno">  874</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00875" name="l00875"></a><span class="lineno">  875</span>uint32_t kll_sketch&lt;T, C, A&gt;::safe_level_size(uint8_t level)<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00876" name="l00876"></a><span class="lineno">  876</span>  <span class="keywordflow">if</span> (level &gt;= num_levels_) <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a id="l00877" name="l00877"></a><span class="lineno">  877</span>  <span class="keywordflow">return</span> levels_[level + 1] - levels_[level];</div>
-<div class="line"><a id="l00878" name="l00878"></a><span class="lineno">  878</span>}</div>
-<div class="line"><a id="l00879" name="l00879"></a><span class="lineno">  879</span> </div>
-<div class="line"><a id="l00880" name="l00880"></a><span class="lineno">  880</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00881" name="l00881"></a><span class="lineno">  881</span>uint32_t kll_sketch&lt;T, C, A&gt;::get_num_retained_above_level_zero()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00882" name="l00882"></a><span class="lineno">  882</span>  <span class="keywordflow">if</span> (num_levels_ == 1) <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a id="l00883" name="l00883"></a><span class="lineno">  883</span>  <span class="keywordflow">return</span> levels_[num_levels_] - levels_[1];</div>
-<div class="line"><a id="l00884" name="l00884"></a><span class="lineno">  884</span>}</div>
-<div class="line"><a id="l00885" name="l00885"></a><span class="lineno">  885</span> </div>
-<div class="line"><a id="l00886" name="l00886"></a><span class="lineno">  886</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00887" name="l00887"></a><span class="lineno">  887</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_k(uint16_t k) {</div>
-<div class="line"><a id="l00888" name="l00888"></a><span class="lineno">  888</span>  <span class="keywordflow">if</span> (k &lt; <a class="code hl_variable" href="namespacedatasketches_1_1kll__constants.html#ab9f2b631adf46fe04a11814cd1018926">kll_constants::MIN_K</a>) {</div>
-<div class="line"><a id="l00889" name="l00889"></a><span class="lineno">  889</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: K must be &gt;= &quot;</span> + std::to_string(<a class="code hl_variable" href="namespacedatasketches_1_1kll__constants.html#ab9f2b631adf46fe04a11814cd1018926">kll_constants::MIN_K</a>)</div>
-<div class="line"><a id="l00890" name="l00890"></a><span class="lineno">  890</span>        + <span class="stringliteral">&quot;: &quot;</span> + std::to_string(k));</div>
-<div class="line"><a id="l00891" name="l00891"></a><span class="lineno">  891</span>  }</div>
-<div class="line"><a id="l00892" name="l00892"></a><span class="lineno">  892</span>}</div>
-<div class="line"><a id="l00893" name="l00893"></a><span class="lineno">  893</span> </div>
-<div class="line"><a id="l00894" name="l00894"></a><span class="lineno">  894</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00895" name="l00895"></a><span class="lineno">  895</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_m(uint8_t m) {</div>
-<div class="line"><a id="l00896" name="l00896"></a><span class="lineno">  896</span>  <span class="keywordflow">if</span> (m != kll_constants::DEFAULT_M) {</div>
-<div class="line"><a id="l00897" name="l00897"></a><span class="lineno">  897</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: M must be &quot;</span> + std::to_string(kll_constants::DEFAULT_M)</div>
-<div class="line"><a id="l00898" name="l00898"></a><span class="lineno">  898</span>        + <span class="stringliteral">&quot;: &quot;</span> + std::to_string(m));</div>
-<div class="line"><a id="l00899" name="l00899"></a><span class="lineno">  899</span>  }</div>
-<div class="line"><a id="l00900" name="l00900"></a><span class="lineno">  900</span>}</div>
-<div class="line"><a id="l00901" name="l00901"></a><span class="lineno">  901</span> </div>
-<div class="line"><a id="l00902" name="l00902"></a><span class="lineno">  902</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00903" name="l00903"></a><span class="lineno">  903</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_preamble_ints(uint8_t preamble_ints, uint8_t flags_byte) {</div>
-<div class="line"><a id="l00904" name="l00904"></a><span class="lineno">  904</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> is_empty(flags_byte &amp; (1 &lt;&lt; flags::IS_EMPTY));</div>
-<div class="line"><a id="l00905" name="l00905"></a><span class="lineno">  905</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> is_single_item(flags_byte &amp; (1 &lt;&lt; flags::IS_SINGLE_ITEM));</div>
-<div class="line"><a id="l00906" name="l00906"></a><span class="lineno">  906</span>  <span class="keywordflow">if</span> (is_empty || is_single_item) {</div>
-<div class="line"><a id="l00907" name="l00907"></a><span class="lineno">  907</span>    <span class="keywordflow">if</span> (preamble_ints != PREAMBLE_INTS_SHORT) {</div>
-<div class="line"><a id="l00908" name="l00908"></a><span class="lineno">  908</span>      <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: preamble ints must be &quot;</span></div>
-<div class="line"><a id="l00909" name="l00909"></a><span class="lineno">  909</span>          + std::to_string(PREAMBLE_INTS_SHORT) + <span class="stringliteral">&quot; for an empty or single item sketch: &quot;</span> + std::to_string(preamble_ints));</div>
-<div class="line"><a id="l00910" name="l00910"></a><span class="lineno">  910</span>    }</div>
-<div class="line"><a id="l00911" name="l00911"></a><span class="lineno">  911</span>  } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00912" name="l00912"></a><span class="lineno">  912</span>    <span class="keywordflow">if</span> (preamble_ints != PREAMBLE_INTS_FULL) {</div>
-<div class="line"><a id="l00913" name="l00913"></a><span class="lineno">  913</span>      <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: preamble ints must be &quot;</span></div>
-<div class="line"><a id="l00914" name="l00914"></a><span class="lineno">  914</span>          + std::to_string(PREAMBLE_INTS_FULL) + <span class="stringliteral">&quot; for a sketch with more than one item: &quot;</span> + std::to_string(preamble_ints));</div>
-<div class="line"><a id="l00915" name="l00915"></a><span class="lineno">  915</span>    }</div>
-<div class="line"><a id="l00916" name="l00916"></a><span class="lineno">  916</span>  }</div>
-<div class="line"><a id="l00917" name="l00917"></a><span class="lineno">  917</span>}</div>
-<div class="line"><a id="l00918" name="l00918"></a><span class="lineno">  918</span> </div>
-<div class="line"><a id="l00919" name="l00919"></a><span class="lineno">  919</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00920" name="l00920"></a><span class="lineno">  920</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_serial_version(uint8_t serial_version) {</div>
-<div class="line"><a id="l00921" name="l00921"></a><span class="lineno">  921</span>  <span class="keywordflow">if</span> (serial_version != SERIAL_VERSION_1 &amp;&amp; serial_version != SERIAL_VERSION_2) {</div>
-<div class="line"><a id="l00922" name="l00922"></a><span class="lineno">  922</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: serial version mismatch: expected &quot;</span></div>
-<div class="line"><a id="l00923" name="l00923"></a><span class="lineno">  923</span>        + std::to_string(SERIAL_VERSION_1) + <span class="stringliteral">&quot; or &quot;</span> + std::to_string(SERIAL_VERSION_2)</div>
-<div class="line"><a id="l00924" name="l00924"></a><span class="lineno">  924</span>        + <span class="stringliteral">&quot;, got &quot;</span> + std::to_string(serial_version));</div>
-<div class="line"><a id="l00925" name="l00925"></a><span class="lineno">  925</span>  }</div>
-<div class="line"><a id="l00926" name="l00926"></a><span class="lineno">  926</span>}</div>
-<div class="line"><a id="l00927" name="l00927"></a><span class="lineno">  927</span> </div>
-<div class="line"><a id="l00928" name="l00928"></a><span class="lineno">  928</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00929" name="l00929"></a><span class="lineno">  929</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_family_id(uint8_t family_id) {</div>
-<div class="line"><a id="l00930" name="l00930"></a><span class="lineno">  930</span>  <span class="keywordflow">if</span> (family_id != FAMILY) {</div>
-<div class="line"><a id="l00931" name="l00931"></a><span class="lineno">  931</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: family mismatch: expected &quot;</span></div>
-<div class="line"><a id="l00932" name="l00932"></a><span class="lineno">  932</span>        + std::to_string(FAMILY) + <span class="stringliteral">&quot;, got &quot;</span> + std::to_string(family_id));</div>
-<div class="line"><a id="l00933" name="l00933"></a><span class="lineno">  933</span>  }</div>
-<div class="line"><a id="l00934" name="l00934"></a><span class="lineno">  934</span>}</div>
-<div class="line"><a id="l00935" name="l00935"></a><span class="lineno">  935</span> </div>
-<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00937" name="l00937"></a><span class="lineno">  937</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_num_levels(uint8_t num_levels) {</div>
-<div class="line"><a id="l00938" name="l00938"></a><span class="lineno">  938</span>  <span class="keywordflow">if</span> (num_levels == 0) {</div>
-<div class="line"><a id="l00939" name="l00939"></a><span class="lineno">  939</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: number of levels must be &gt; 0&quot;</span>);</div>
-<div class="line"><a id="l00940" name="l00940"></a><span class="lineno">  940</span>  }</div>
-<div class="line"><a id="l00941" name="l00941"></a><span class="lineno">  941</span>}</div>
-<div class="line"><a id="l00942" name="l00942"></a><span class="lineno">  942</span> </div>
-<div class="line"><a id="l00943" name="l00943"></a><span class="lineno">  943</span><span class="comment">// The last entry is the capacity. Each level must start at or after the previous one,</span></div>
-<div class="line"><a id="l00944" name="l00944"></a><span class="lineno">  944</span><span class="comment">// so every level lies within the items buffer.</span></div>
-<div class="line"><a id="l00945" name="l00945"></a><span class="lineno">  945</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00946" name="l00946"></a><span class="lineno">  946</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_levels(<span class="keyword">const</span> vector_u32&amp; levels) {</div>
-<div class="line"><a id="l00947" name="l00947"></a><span class="lineno">  947</span>  <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 1; i &lt; levels.size(); ++i) {</div>
-<div class="line"><a id="l00948" name="l00948"></a><span class="lineno">  948</span>    <span class="keywordflow">if</span> (levels[i - 1] &gt; levels[i]) {</div>
-<div class="line"><a id="l00949" name="l00949"></a><span class="lineno">  949</span>      <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: levels[&quot;</span> + std::to_string(i - 1) + <span class="stringliteral">&quot;] = &quot;</span></div>
-<div class="line"><a id="l00950" name="l00950"></a><span class="lineno">  950</span>          + std::to_string(levels[i - 1]) + <span class="stringliteral">&quot; &gt; levels[&quot;</span> + std::to_string(i) + <span class="stringliteral">&quot;] = &quot;</span> + std::to_string(levels[i]));</div>
-<div class="line"><a id="l00951" name="l00951"></a><span class="lineno">  951</span>    }</div>
-<div class="line"><a id="l00952" name="l00952"></a><span class="lineno">  952</span>  }</div>
-<div class="line"><a id="l00953" name="l00953"></a><span class="lineno">  953</span>}</div>
-<div class="line"><a id="l00954" name="l00954"></a><span class="lineno">  954</span> </div>
-<div class="line"><a id="l00955" name="l00955"></a><span class="lineno">  955</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="foldopen" id="foldopen00956" data-start="{" data-end="}">
-<div class="line"><a id="l00956" name="l00956"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a592a7af55659ff803b26a45552a68dda">  956</a></span>string&lt;A&gt; <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a592a7af55659ff803b26a45552a68dda">kll_sketch&lt;T, C, A&gt;::to_string</a>(<span class="keywordtype">bool</span> print_levels, <span class="keywordtype">bool</span> print_items)<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l00957" name="l00957"></a><span class="lineno">  957</span>  <span class="comment">// Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.</span></div>
-<div class="line"><a id="l00958" name="l00958"></a><span class="lineno">  958</span>  <span class="comment">// The stream does not support passing an allocator instance, and alternatives are complicated.</span></div>
-<div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span>  std::ostringstream os;</div>
-<div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span>  os &lt;&lt; <span class="stringliteral">&quot;### KLL sketch summary:&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00961" name="l00961"></a><span class="lineno">  961</span>  os &lt;&lt; <span class="stringliteral">&quot;   K              : &quot;</span> &lt;&lt; k_ &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span>  os &lt;&lt; <span class="stringliteral">&quot;   min K          : &quot;</span> &lt;&lt; min_k_ &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span>  os &lt;&lt; <span class="stringliteral">&quot;   M              : &quot;</span> &lt;&lt; (<span class="keywordtype">unsigned</span> int) m_ &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00964" name="l00964"></a><span class="lineno">  964</span>  os &lt;&lt; <span class="stringliteral">&quot;   N              : &quot;</span> &lt;&lt; n_ &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span>  os &lt;&lt; <span class="stringliteral">&quot;   Epsilon        : &quot;</span> &lt;&lt; std::setprecision(3) &lt;&lt; <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#ae08ba9502b0403ad4448d649ce29b850">get_normalized_rank_error</a>(<span class="keyword">false</span>) * 100 &lt;&lt; <span class="stringliteral">&quot;%&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>  os &lt;&lt; <span class="stringliteral">&quot;   Epsilon PMF    : &quot;</span> &lt;&lt; <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#ae08ba9502b0403ad4448d649ce29b850">get_normalized_rank_error</a>(<span class="keyword">true</span>) * 100 &lt;&lt; <span class="stringliteral">&quot;%&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span>  os &lt;&lt; <span class="stringliteral">&quot;   Empty          : &quot;</span> &lt;&lt; (<a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>() ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>  os &lt;&lt; <span class="stringliteral">&quot;   Estimation mode: &quot;</span> &lt;&lt; (<a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#ae95a04b1d7dccb3d9b3f3c3d087aa8e6">is_estimation_mode</a>() ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00969" name="l00969"></a><span class="lineno">  969</span>  os &lt;&lt; <span class="stringliteral">&quot;   Levels         : &quot;</span> &lt;&lt; (<span class="keywordtype">unsigned</span> int) num_levels_ &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00970" name="l00970"></a><span class="lineno">  970</span>  os &lt;&lt; <span class="stringliteral">&quot;   Sorted         : &quot;</span> &lt;&lt; (is_level_zero_sorted_ ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00971" name="l00971"></a><span class="lineno">  971</span>  os &lt;&lt; <span class="stringliteral">&quot;   Capacity items : &quot;</span> &lt;&lt; items_size_ &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00972" name="l00972"></a><span class="lineno">  972</span>  os &lt;&lt; <span class="stringliteral">&quot;   Retained items : &quot;</span> &lt;&lt; <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a31fa76458d81a17dbebfcb828e531f14">get_num_retained</a>() &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00973" name="l00973"></a><span class="lineno">  973</span>  <span class="keywordflow">if</span> (!<a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>()) {</div>
-<div class="line"><a id="l00974" name="l00974"></a><span class="lineno">  974</span>    os &lt;&lt; <span class="stringliteral">&quot;   Min item      : &quot;</span> &lt;&lt; *min_item_ &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00975" name="l00975"></a><span class="lineno">  975</span>    os &lt;&lt; <span class="stringliteral">&quot;   Max item      : &quot;</span> &lt;&lt; *max_item_ &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00976" name="l00976"></a><span class="lineno">  976</span>  }</div>
-<div class="line"><a id="l00977" name="l00977"></a><span class="lineno">  977</span>  os &lt;&lt; <span class="stringliteral">&quot;### End sketch summary&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00978" name="l00978"></a><span class="lineno">  978</span> </div>
-<div class="line"><a id="l00979" name="l00979"></a><span class="lineno">  979</span>  <span class="keywordflow">if</span> (print_levels) {</div>
-<div class="line"><a id="l00980" name="l00980"></a><span class="lineno">  980</span>    os &lt;&lt; <span class="stringliteral">&quot;### KLL sketch levels:&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00981" name="l00981"></a><span class="lineno">  981</span>    os &lt;&lt; <span class="stringliteral">&quot;   index: nominal capacity, actual size&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00982" name="l00982"></a><span class="lineno">  982</span>    <span class="keywordflow">for</span> (uint8_t i = 0; i &lt; num_levels_; i++) {</div>
-<div class="line"><a id="l00983" name="l00983"></a><span class="lineno">  983</span>      os &lt;&lt; <span class="stringliteral">&quot;   &quot;</span> &lt;&lt; (<span class="keywordtype">unsigned</span> int) i &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; kll_helper::level_capacity(k_, num_levels_, i, m_) &lt;&lt; <span class="stringliteral">&quot;, &quot;</span> &lt;&lt; safe_level_size(i) &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00984" name="l00984"></a><span class="lineno">  984</span>    }</div>
-<div class="line"><a id="l00985" name="l00985"></a><span class="lineno">  985</span>    os &lt;&lt; <span class="stringliteral">&quot;### End sketch levels&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00986" name="l00986"></a><span class="lineno">  986</span>  }</div>
-<div class="line"><a id="l00987" name="l00987"></a><span class="lineno">  987</span> </div>
-<div class="line"><a id="l00988" name="l00988"></a><span class="lineno">  988</span>  <span class="keywordflow">if</span> (print_items) {</div>
-<div class="line"><a id="l00989" name="l00989"></a><span class="lineno">  989</span>    os &lt;&lt; <span class="stringliteral">&quot;### KLL sketch data:&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00990" name="l00990"></a><span class="lineno">  990</span>    uint8_t level = 0;</div>
-<div class="line"><a id="l00991" name="l00991"></a><span class="lineno">  991</span>    <span class="keywordflow">while</span> (level &lt; num_levels_) {</div>
-<div class="line"><a id="l00992" name="l00992"></a><span class="lineno">  992</span>      <span class="keyword">const</span> uint32_t from_index = levels_[level];</div>
-<div class="line"><a id="l00993" name="l00993"></a><span class="lineno">  993</span>      <span class="keyword">const</span> uint32_t to_index = levels_[level + 1]; <span class="comment">// exclusive</span></div>
-<div class="line"><a id="l00994" name="l00994"></a><span class="lineno">  994</span>      <span class="keywordflow">if</span> (from_index &lt; to_index) {</div>
-<div class="line"><a id="l00995" name="l00995"></a><span class="lineno">  995</span>        os &lt;&lt; <span class="stringliteral">&quot; level &quot;</span> &lt;&lt; (<span class="keywordtype">unsigned</span> int) level &lt;&lt; <span class="stringliteral">&quot;:&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00996" name="l00996"></a><span class="lineno">  996</span>      }</div>
-<div class="line"><a id="l00997" name="l00997"></a><span class="lineno">  997</span>      <span class="keywordflow">for</span> (uint32_t i = from_index; i &lt; to_index; i++) {</div>
-<div class="line"><a id="l00998" name="l00998"></a><span class="lineno">  998</span>        os &lt;&lt; <span class="stringliteral">&quot;   &quot;</span> &lt;&lt; items_[i] &lt;&lt; std::endl;</div>
-<div class="line"><a id="l00999" name="l00999"></a><span class="lineno">  999</span>      }</div>
-<div class="line"><a id="l01000" name="l01000"></a><span class="lineno"> 1000</span>      level++;</div>
-<div class="line"><a id="l01001" name="l01001"></a><span class="lineno"> 1001</span>    }</div>
-<div class="line"><a id="l01002" name="l01002"></a><span class="lineno"> 1002</span>    os &lt;&lt; <span class="stringliteral">&quot;### End sketch data&quot;</span> &lt;&lt; std::endl;</div>
-<div class="line"><a id="l01003" name="l01003"></a><span class="lineno"> 1003</span>  }</div>
-<div class="line"><a id="l01004" name="l01004"></a><span class="lineno"> 1004</span>  <span class="keywordflow">return</span> string&lt;A&gt;(os.str().c_str(), allocator_);</div>
-<div class="line"><a id="l01005" name="l01005"></a><span class="lineno"> 1005</span>}</div>
+<div class="line"><a id="l00811" name="l00811"></a><span class="lineno">  811</span>  <span class="comment">// Allocate everything the merge needs before any item is moved out of this sketch,</span></div>
+<div class="line"><a id="l00812" name="l00812"></a><span class="lineno">  812</span>  <span class="comment">// so that an allocation failure leaves this sketch valid.</span></div>
+<div class="line"><a id="l00813" name="l00813"></a><span class="lineno">  813</span>  <span class="comment">// The level sizes after compression depend only on the level sizes before it.</span></div>
+<div class="line"><a id="l00814" name="l00814"></a><span class="lineno">  814</span>  worklevels[0] = 0;</div>
+<div class="line"><a id="l00815" name="l00815"></a><span class="lineno">  815</span>  worklevels[1] = safe_level_size(0); <span class="comment">// the level zero items of other were already inserted into this</span></div>
+<div class="line"><a id="l00816" name="l00816"></a><span class="lineno">  816</span>  <span class="keywordflow">for</span> (uint8_t lvl = 1; lvl &lt; provisional_num_levels; lvl++) {</div>
+<div class="line"><a id="l00817" name="l00817"></a><span class="lineno">  817</span>    worklevels[lvl + 1] = worklevels[lvl] + safe_level_size(lvl) + other.safe_level_size(lvl);</div>
+<div class="line"><a id="l00818" name="l00818"></a><span class="lineno">  818</span>  }</div>
+<div class="line"><a id="l00819" name="l00819"></a><span class="lineno">  819</span>  <span class="keyword">const</span> kll_helper::compress_result predicted = kll_helper::predict_compress(k_, m_, provisional_num_levels,</div>
+<div class="line"><a id="l00820" name="l00820"></a><span class="lineno">  820</span>      worklevels.data(), outlevels.data());</div>
+<div class="line"><a id="l00821" name="l00821"></a><span class="lineno">  821</span>  <span class="comment">// ub can sometimes be much bigger</span></div>
+<div class="line"><a id="l00822" name="l00822"></a><span class="lineno">  822</span>  <span class="keywordflow">if</span> (predicted.final_num_levels &gt; ub) <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;merge error&quot;</span>);</div>
+<div class="line"><a id="l00823" name="l00823"></a><span class="lineno">  823</span>  <span class="keyword">auto</span> new_items_deleter = [&amp;predicted, &amp;alloc](T* ptr) { alloc.deallocate(ptr, predicted.final_capacity); }; <span class="comment">// holds no items</span></div>
+<div class="line"><a id="l00824" name="l00824"></a><span class="lineno">  824</span>  std::unique_ptr&lt;T, <span class="keyword">decltype</span>(new_items_deleter)&gt; new_items(</div>
+<div class="line"><a id="l00825" name="l00825"></a><span class="lineno">  825</span>      predicted.final_capacity != items_size_ ? allocator_.allocate(predicted.final_capacity) : <span class="keyword">nullptr</span>, new_items_deleter);</div>
+<div class="line"><a id="l00826" name="l00826"></a><span class="lineno">  826</span>  <span class="keyword">const</span> <span class="keywordtype">size_t</span> new_levels_size = predicted.final_num_levels + 1;</div>
+<div class="line"><a id="l00827" name="l00827"></a><span class="lineno">  827</span>  levels_.reserve(new_levels_size);</div>
+<div class="line"><a id="l00828" name="l00828"></a><span class="lineno">  828</span> </div>
+<div class="line"><a id="l00829" name="l00829"></a><span class="lineno">  829</span>  populate_work_arrays(std::forward&lt;O&gt;(other), workbuf.get(), worklevels.data(), provisional_num_levels);</div>
+<div class="line"><a id="l00830" name="l00830"></a><span class="lineno">  830</span> </div>
+<div class="line"><a id="l00831" name="l00831"></a><span class="lineno">  831</span>  <span class="keyword">const</span> kll_helper::compress_result result = kll_helper::general_compress&lt;T, C&gt;(k_, m_, provisional_num_levels, workbuf.get(),</div>
+<div class="line"><a id="l00832" name="l00832"></a><span class="lineno">  832</span>      worklevels.data(), outlevels.data(), is_level_zero_sorted_);</div>
+<div class="line"><a id="l00833" name="l00833"></a><span class="lineno">  833</span>  <span class="keywordflow">if</span> (result.final_num_levels != predicted.final_num_levels || result.final_capacity != predicted.final_capacity</div>
+<div class="line"><a id="l00834" name="l00834"></a><span class="lineno">  834</span>      || result.final_num_items != predicted.final_num_items) {</div>
+<div class="line"><a id="l00835" name="l00835"></a><span class="lineno">  835</span>    <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;merge error: compression does not match the prediction&quot;</span>);</div>
+<div class="line"><a id="l00836" name="l00836"></a><span class="lineno">  836</span>  }</div>
+<div class="line"><a id="l00837" name="l00837"></a><span class="lineno">  837</span> </div>
+<div class="line"><a id="l00838" name="l00838"></a><span class="lineno">  838</span>  <span class="comment">// now we need to transfer the results back into &quot;this&quot; sketch</span></div>
+<div class="line"><a id="l00839" name="l00839"></a><span class="lineno">  839</span>  <span class="keywordflow">if</span> (new_items) {</div>
+<div class="line"><a id="l00840" name="l00840"></a><span class="lineno">  840</span>    allocator_.deallocate(items_, items_size_);</div>
+<div class="line"><a id="l00841" name="l00841"></a><span class="lineno">  841</span>    items_size_ = result.final_capacity;</div>
+<div class="line"><a id="l00842" name="l00842"></a><span class="lineno">  842</span>    items_ = new_items.release();</div>
+<div class="line"><a id="l00843" name="l00843"></a><span class="lineno">  843</span>  }</div>
+<div class="line"><a id="l00844" name="l00844"></a><span class="lineno">  844</span>  <span class="keyword">const</span> uint32_t free_space_at_bottom = result.final_capacity - result.final_num_items;</div>
+<div class="line"><a id="l00845" name="l00845"></a><span class="lineno">  845</span>  kll_helper::move_construct&lt;T&gt;(workbuf.get(), outlevels[0], outlevels[0] + result.final_num_items, items_, free_space_at_bottom, <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00846" name="l00846"></a><span class="lineno">  846</span> </div>
+<div class="line"><a id="l00847" name="l00847"></a><span class="lineno">  847</span>  <span class="keywordflow">if</span> (levels_.size() &lt; new_levels_size) {</div>
+<div class="line"><a id="l00848" name="l00848"></a><span class="lineno">  848</span>    levels_.resize(new_levels_size); <span class="comment">// within the reserved capacity</span></div>
+<div class="line"><a id="l00849" name="l00849"></a><span class="lineno">  849</span>  }</div>
+<div class="line"><a id="l00850" name="l00850"></a><span class="lineno">  850</span>  <span class="keyword">const</span> uint32_t offset = free_space_at_bottom - outlevels[0];</div>
+<div class="line"><a id="l00851" name="l00851"></a><span class="lineno">  851</span>  <span class="keywordflow">for</span> (uint8_t lvl = 0; lvl &lt; levels_.size(); lvl++) { <span class="comment">// includes the &quot;extra&quot; index</span></div>
+<div class="line"><a id="l00852" name="l00852"></a><span class="lineno">  852</span>    levels_[lvl] = outlevels[lvl] + offset;</div>
+<div class="line"><a id="l00853" name="l00853"></a><span class="lineno">  853</span>  }</div>
+<div class="line"><a id="l00854" name="l00854"></a><span class="lineno">  854</span>  num_levels_ = result.final_num_levels;</div>
+<div class="line"><a id="l00855" name="l00855"></a><span class="lineno">  855</span>}</div>
+<div class="line"><a id="l00856" name="l00856"></a><span class="lineno">  856</span> </div>
+<div class="line"><a id="l00857" name="l00857"></a><span class="lineno">  857</span><span class="comment">// this leaves items_ uninitialized (all objects moved out and destroyed)</span></div>
+<div class="line"><a id="l00858" name="l00858"></a><span class="lineno">  858</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00859" name="l00859"></a><span class="lineno">  859</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> FwdSk&gt;</div>
+<div class="line"><a id="l00860" name="l00860"></a><span class="lineno">  860</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::populate_work_arrays(FwdSk&amp;&amp; other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels) {</div>
+<div class="line"><a id="l00861" name="l00861"></a><span class="lineno">  861</span>  worklevels[0] = 0;</div>
+<div class="line"><a id="l00862" name="l00862"></a><span class="lineno">  862</span> </div>
+<div class="line"><a id="l00863" name="l00863"></a><span class="lineno">  863</span>  <span class="comment">// the level zero data from &quot;other&quot; was already inserted into &quot;this&quot;</span></div>
+<div class="line"><a id="l00864" name="l00864"></a><span class="lineno">  864</span>  kll_helper::move_construct&lt;T&gt;(items_, levels_[0], levels_[1], workbuf, 0, <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00865" name="l00865"></a><span class="lineno">  865</span>  worklevels[1] = safe_level_size(0);</div>
+<div class="line"><a id="l00866" name="l00866"></a><span class="lineno">  866</span> </div>
+<div class="line"><a id="l00867" name="l00867"></a><span class="lineno">  867</span>  <span class="keywordflow">for</span> (uint8_t lvl = 1; lvl &lt; provisional_num_levels; lvl++) {</div>
+<div class="line"><a id="l00868" name="l00868"></a><span class="lineno">  868</span>    <span class="keyword">const</span> uint32_t self_pop = safe_level_size(lvl);</div>
+<div class="line"><a id="l00869" name="l00869"></a><span class="lineno">  869</span>    <span class="keyword">const</span> uint32_t other_pop = other.safe_level_size(lvl);</div>
+<div class="line"><a id="l00870" name="l00870"></a><span class="lineno">  870</span>    worklevels[lvl + 1] = worklevels[lvl] + self_pop + other_pop;</div>
+<div class="line"><a id="l00871" name="l00871"></a><span class="lineno">  871</span> </div>
+<div class="line"><a id="l00872" name="l00872"></a><span class="lineno">  872</span>    <span class="keywordflow">if</span> ((self_pop &gt; 0) &amp;&amp; (other_pop == 0)) {</div>
+<div class="line"><a id="l00873" name="l00873"></a><span class="lineno">  873</span>      kll_helper::move_construct&lt;T&gt;(items_, levels_[lvl], levels_[lvl] + self_pop, workbuf, worklevels[lvl], <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00874" name="l00874"></a><span class="lineno">  874</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> ((self_pop == 0) &amp;&amp; (other_pop &gt; 0)) {</div>
+<div class="line"><a id="l00875" name="l00875"></a><span class="lineno">  875</span>      <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = other.levels_[lvl], j = worklevels[lvl]; i &lt; other.levels_[lvl] + other_pop; ++i, ++j) {</div>
+<div class="line"><a id="l00876" name="l00876"></a><span class="lineno">  876</span>        <span class="keyword">new</span> (&amp;workbuf[j]) T(conditional_forward&lt;FwdSk&gt;(other.items_[i]));</div>
+<div class="line"><a id="l00877" name="l00877"></a><span class="lineno">  877</span>      }</div>
+<div class="line"><a id="l00878" name="l00878"></a><span class="lineno">  878</span>    } <span class="keywordflow">else</span> <span class="keywordflow">if</span> ((self_pop &gt; 0) &amp;&amp; (other_pop &gt; 0)) {</div>
+<div class="line"><a id="l00879" name="l00879"></a><span class="lineno">  879</span>      kll_helper::merge_sorted_arrays&lt;T, C&gt;(items_, levels_[lvl], self_pop, other.items_, other.levels_[lvl], other_pop, workbuf, worklevels[lvl]);</div>
+<div class="line"><a id="l00880" name="l00880"></a><span class="lineno">  880</span>    }</div>
+<div class="line"><a id="l00881" name="l00881"></a><span class="lineno">  881</span>  }</div>
+<div class="line"><a id="l00882" name="l00882"></a><span class="lineno">  882</span>}</div>
+<div class="line"><a id="l00883" name="l00883"></a><span class="lineno">  883</span> </div>
+<div class="line"><a id="l00884" name="l00884"></a><span class="lineno">  884</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00885" name="l00885"></a><span class="lineno">  885</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::assert_correct_total_weight()<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l00886" name="l00886"></a><span class="lineno">  886</span>  <span class="keyword">const</span> uint64_t total(kll_helper::sum_the_sample_weights(num_levels_, levels_.data()));</div>
+<div class="line"><a id="l00887" name="l00887"></a><span class="lineno">  887</span>  <span class="keywordflow">if</span> (total != n_) {</div>
+<div class="line"><a id="l00888" name="l00888"></a><span class="lineno">  888</span>    <span class="keywordflow">throw</span> std::logic_error(<span class="stringliteral">&quot;Total weight does not match N&quot;</span>);</div>
+<div class="line"><a id="l00889" name="l00889"></a><span class="lineno">  889</span>  }</div>
+<div class="line"><a id="l00890" name="l00890"></a><span class="lineno">  890</span>}</div>
+<div class="line"><a id="l00891" name="l00891"></a><span class="lineno">  891</span> </div>
+<div class="line"><a id="l00892" name="l00892"></a><span class="lineno">  892</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00893" name="l00893"></a><span class="lineno">  893</span>uint32_t kll_sketch&lt;T, C, A&gt;::safe_level_size(uint8_t level)<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l00894" name="l00894"></a><span class="lineno">  894</span>  <span class="keywordflow">if</span> (level &gt;= num_levels_) <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a id="l00895" name="l00895"></a><span class="lineno">  895</span>  <span class="keywordflow">return</span> levels_[level + 1] - levels_[level];</div>
+<div class="line"><a id="l00896" name="l00896"></a><span class="lineno">  896</span>}</div>
+<div class="line"><a id="l00897" name="l00897"></a><span class="lineno">  897</span> </div>
+<div class="line"><a id="l00898" name="l00898"></a><span class="lineno">  898</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00899" name="l00899"></a><span class="lineno">  899</span>uint32_t kll_sketch&lt;T, C, A&gt;::get_num_retained_above_level_zero()<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l00900" name="l00900"></a><span class="lineno">  900</span>  <span class="keywordflow">if</span> (num_levels_ == 1) <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a id="l00901" name="l00901"></a><span class="lineno">  901</span>  <span class="keywordflow">return</span> levels_[num_levels_] - levels_[1];</div>
+<div class="line"><a id="l00902" name="l00902"></a><span class="lineno">  902</span>}</div>
+<div class="line"><a id="l00903" name="l00903"></a><span class="lineno">  903</span> </div>
+<div class="line"><a id="l00904" name="l00904"></a><span class="lineno">  904</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00905" name="l00905"></a><span class="lineno">  905</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_k(uint16_t k) {</div>
+<div class="line"><a id="l00906" name="l00906"></a><span class="lineno">  906</span>  <span class="keywordflow">if</span> (k &lt; <a class="code hl_variable" href="namespacedatasketches_1_1kll__constants.html#ab9f2b631adf46fe04a11814cd1018926">kll_constants::MIN_K</a>) {</div>
+<div class="line"><a id="l00907" name="l00907"></a><span class="lineno">  907</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: K must be &gt;= &quot;</span> + std::to_string(<a class="code hl_variable" href="namespacedatasketches_1_1kll__constants.html#ab9f2b631adf46fe04a11814cd1018926">kll_constants::MIN_K</a>)</div>
+<div class="line"><a id="l00908" name="l00908"></a><span class="lineno">  908</span>        + <span class="stringliteral">&quot;: &quot;</span> + std::to_string(k));</div>
+<div class="line"><a id="l00909" name="l00909"></a><span class="lineno">  909</span>  }</div>
+<div class="line"><a id="l00910" name="l00910"></a><span class="lineno">  910</span>}</div>
+<div class="line"><a id="l00911" name="l00911"></a><span class="lineno">  911</span> </div>
+<div class="line"><a id="l00912" name="l00912"></a><span class="lineno">  912</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00913" name="l00913"></a><span class="lineno">  913</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_m(uint8_t m) {</div>
+<div class="line"><a id="l00914" name="l00914"></a><span class="lineno">  914</span>  <span class="keywordflow">if</span> (m != kll_constants::DEFAULT_M) {</div>
+<div class="line"><a id="l00915" name="l00915"></a><span class="lineno">  915</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: M must be &quot;</span> + std::to_string(kll_constants::DEFAULT_M)</div>
+<div class="line"><a id="l00916" name="l00916"></a><span class="lineno">  916</span>        + <span class="stringliteral">&quot;: &quot;</span> + std::to_string(m));</div>
+<div class="line"><a id="l00917" name="l00917"></a><span class="lineno">  917</span>  }</div>
+<div class="line"><a id="l00918" name="l00918"></a><span class="lineno">  918</span>}</div>
+<div class="line"><a id="l00919" name="l00919"></a><span class="lineno">  919</span> </div>
+<div class="line"><a id="l00920" name="l00920"></a><span class="lineno">  920</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00921" name="l00921"></a><span class="lineno">  921</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_preamble_ints(uint8_t preamble_ints, uint8_t flags_byte) {</div>
+<div class="line"><a id="l00922" name="l00922"></a><span class="lineno">  922</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> is_empty(flags_byte &amp; (1 &lt;&lt; flags::IS_EMPTY));</div>
+<div class="line"><a id="l00923" name="l00923"></a><span class="lineno">  923</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> is_single_item(flags_byte &amp; (1 &lt;&lt; flags::IS_SINGLE_ITEM));</div>
+<div class="line"><a id="l00924" name="l00924"></a><span class="lineno">  924</span>  <span class="keywordflow">if</span> (is_empty || is_single_item) {</div>
+<div class="line"><a id="l00925" name="l00925"></a><span class="lineno">  925</span>    <span class="keywordflow">if</span> (preamble_ints != PREAMBLE_INTS_SHORT) {</div>
+<div class="line"><a id="l00926" name="l00926"></a><span class="lineno">  926</span>      <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: preamble ints must be &quot;</span></div>
+<div class="line"><a id="l00927" name="l00927"></a><span class="lineno">  927</span>          + std::to_string(PREAMBLE_INTS_SHORT) + <span class="stringliteral">&quot; for an empty or single item sketch: &quot;</span> + std::to_string(preamble_ints));</div>
+<div class="line"><a id="l00928" name="l00928"></a><span class="lineno">  928</span>    }</div>
+<div class="line"><a id="l00929" name="l00929"></a><span class="lineno">  929</span>  } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00930" name="l00930"></a><span class="lineno">  930</span>    <span class="keywordflow">if</span> (preamble_ints != PREAMBLE_INTS_FULL) {</div>
+<div class="line"><a id="l00931" name="l00931"></a><span class="lineno">  931</span>      <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: preamble ints must be &quot;</span></div>
+<div class="line"><a id="l00932" name="l00932"></a><span class="lineno">  932</span>          + std::to_string(PREAMBLE_INTS_FULL) + <span class="stringliteral">&quot; for a sketch with more than one item: &quot;</span> + std::to_string(preamble_ints));</div>
+<div class="line"><a id="l00933" name="l00933"></a><span class="lineno">  933</span>    }</div>
+<div class="line"><a id="l00934" name="l00934"></a><span class="lineno">  934</span>  }</div>
+<div class="line"><a id="l00935" name="l00935"></a><span class="lineno">  935</span>}</div>
+<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span> </div>
+<div class="line"><a id="l00937" name="l00937"></a><span class="lineno">  937</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00938" name="l00938"></a><span class="lineno">  938</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_serial_version(uint8_t serial_version) {</div>
+<div class="line"><a id="l00939" name="l00939"></a><span class="lineno">  939</span>  <span class="keywordflow">if</span> (serial_version != SERIAL_VERSION_1 &amp;&amp; serial_version != SERIAL_VERSION_2) {</div>
+<div class="line"><a id="l00940" name="l00940"></a><span class="lineno">  940</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: serial version mismatch: expected &quot;</span></div>
+<div class="line"><a id="l00941" name="l00941"></a><span class="lineno">  941</span>        + std::to_string(SERIAL_VERSION_1) + <span class="stringliteral">&quot; or &quot;</span> + std::to_string(SERIAL_VERSION_2)</div>
+<div class="line"><a id="l00942" name="l00942"></a><span class="lineno">  942</span>        + <span class="stringliteral">&quot;, got &quot;</span> + std::to_string(serial_version));</div>
+<div class="line"><a id="l00943" name="l00943"></a><span class="lineno">  943</span>  }</div>
+<div class="line"><a id="l00944" name="l00944"></a><span class="lineno">  944</span>}</div>
+<div class="line"><a id="l00945" name="l00945"></a><span class="lineno">  945</span> </div>
+<div class="line"><a id="l00946" name="l00946"></a><span class="lineno">  946</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00947" name="l00947"></a><span class="lineno">  947</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_family_id(uint8_t family_id) {</div>
+<div class="line"><a id="l00948" name="l00948"></a><span class="lineno">  948</span>  <span class="keywordflow">if</span> (family_id != FAMILY) {</div>
+<div class="line"><a id="l00949" name="l00949"></a><span class="lineno">  949</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: family mismatch: expected &quot;</span></div>
+<div class="line"><a id="l00950" name="l00950"></a><span class="lineno">  950</span>        + std::to_string(FAMILY) + <span class="stringliteral">&quot;, got &quot;</span> + std::to_string(family_id));</div>
+<div class="line"><a id="l00951" name="l00951"></a><span class="lineno">  951</span>  }</div>
+<div class="line"><a id="l00952" name="l00952"></a><span class="lineno">  952</span>}</div>
+<div class="line"><a id="l00953" name="l00953"></a><span class="lineno">  953</span> </div>
+<div class="line"><a id="l00954" name="l00954"></a><span class="lineno">  954</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00955" name="l00955"></a><span class="lineno">  955</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_num_levels(uint8_t num_levels) {</div>
+<div class="line"><a id="l00956" name="l00956"></a><span class="lineno">  956</span>  <span class="keywordflow">if</span> (num_levels == 0) {</div>
+<div class="line"><a id="l00957" name="l00957"></a><span class="lineno">  957</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: number of levels must be &gt; 0&quot;</span>);</div>
+<div class="line"><a id="l00958" name="l00958"></a><span class="lineno">  958</span>  }</div>
+<div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span>}</div>
+<div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span> </div>
+<div class="line"><a id="l00961" name="l00961"></a><span class="lineno">  961</span><span class="comment">// The last entry is the capacity. Each level must start at or after the previous one,</span></div>
+<div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span><span class="comment">// so every level lies within the items buffer.</span></div>
+<div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00964" name="l00964"></a><span class="lineno">  964</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::check_levels(<span class="keyword">const</span> vector_u32&amp; levels) {</div>
+<div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span>  <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 1; i &lt; levels.size(); ++i) {</div>
+<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>    <span class="keywordflow">if</span> (levels[i - 1] &gt; levels[i]) {</div>
+<div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span>      <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;Possible corruption: levels[&quot;</span> + std::to_string(i - 1) + <span class="stringliteral">&quot;] = &quot;</span></div>
+<div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>          + std::to_string(levels[i - 1]) + <span class="stringliteral">&quot; &gt; levels[&quot;</span> + std::to_string(i) + <span class="stringliteral">&quot;] = &quot;</span> + std::to_string(levels[i]));</div>
+<div class="line"><a id="l00969" name="l00969"></a><span class="lineno">  969</span>    }</div>
+<div class="line"><a id="l00970" name="l00970"></a><span class="lineno">  970</span>  }</div>
+<div class="line"><a id="l00971" name="l00971"></a><span class="lineno">  971</span>}</div>
+<div class="line"><a id="l00972" name="l00972"></a><span class="lineno">  972</span> </div>
+<div class="line"><a id="l00973" name="l00973"></a><span class="lineno">  973</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="foldopen" id="foldopen00974" data-start="{" data-end="}">
+<div class="line"><a id="l00974" name="l00974"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a592a7af55659ff803b26a45552a68dda">  974</a></span>string&lt;A&gt; <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a592a7af55659ff803b26a45552a68dda">kll_sketch&lt;T, C, A&gt;::to_string</a>(<span class="keywordtype">bool</span> print_levels, <span class="keywordtype">bool</span> print_items)<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l00975" name="l00975"></a><span class="lineno">  975</span>  <span class="comment">// Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.</span></div>
+<div class="line"><a id="l00976" name="l00976"></a><span class="lineno">  976</span>  <span class="comment">// The stream does not support passing an allocator instance, and alternatives are complicated.</span></div>
+<div class="line"><a id="l00977" name="l00977"></a><span class="lineno">  977</span>  std::ostringstream os;</div>
+<div class="line"><a id="l00978" name="l00978"></a><span class="lineno">  978</span>  os &lt;&lt; <span class="stringliteral">&quot;### KLL sketch summary:&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00979" name="l00979"></a><span class="lineno">  979</span>  os &lt;&lt; <span class="stringliteral">&quot;   K              : &quot;</span> &lt;&lt; k_ &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00980" name="l00980"></a><span class="lineno">  980</span>  os &lt;&lt; <span class="stringliteral">&quot;   min K          : &quot;</span> &lt;&lt; min_k_ &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00981" name="l00981"></a><span class="lineno">  981</span>  os &lt;&lt; <span class="stringliteral">&quot;   M              : &quot;</span> &lt;&lt; (<span class="keywordtype">unsigned</span> int) m_ &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00982" name="l00982"></a><span class="lineno">  982</span>  os &lt;&lt; <span class="stringliteral">&quot;   N              : &quot;</span> &lt;&lt; n_ &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00983" name="l00983"></a><span class="lineno">  983</span>  os &lt;&lt; <span class="stringliteral">&quot;   Epsilon        : &quot;</span> &lt;&lt; std::setprecision(3) &lt;&lt; <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#ae08ba9502b0403ad4448d649ce29b850">get_normalized_rank_error</a>(<span class="keyword">false</span>) * 100 &lt;&lt; <span class="stringliteral">&quot;%&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00984" name="l00984"></a><span class="lineno">  984</span>  os &lt;&lt; <span class="stringliteral">&quot;   Epsilon PMF    : &quot;</span> &lt;&lt; <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#ae08ba9502b0403ad4448d649ce29b850">get_normalized_rank_error</a>(<span class="keyword">true</span>) * 100 &lt;&lt; <span class="stringliteral">&quot;%&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00985" name="l00985"></a><span class="lineno">  985</span>  os &lt;&lt; <span class="stringliteral">&quot;   Empty          : &quot;</span> &lt;&lt; (<a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>() ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00986" name="l00986"></a><span class="lineno">  986</span>  os &lt;&lt; <span class="stringliteral">&quot;   Estimation mode: &quot;</span> &lt;&lt; (<a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#ae95a04b1d7dccb3d9b3f3c3d087aa8e6">is_estimation_mode</a>() ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00987" name="l00987"></a><span class="lineno">  987</span>  os &lt;&lt; <span class="stringliteral">&quot;   Levels         : &quot;</span> &lt;&lt; (<span class="keywordtype">unsigned</span> int) num_levels_ &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00988" name="l00988"></a><span class="lineno">  988</span>  os &lt;&lt; <span class="stringliteral">&quot;   Sorted         : &quot;</span> &lt;&lt; (is_level_zero_sorted_ ? <span class="stringliteral">&quot;true&quot;</span> : <span class="stringliteral">&quot;false&quot;</span>) &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00989" name="l00989"></a><span class="lineno">  989</span>  os &lt;&lt; <span class="stringliteral">&quot;   Capacity items : &quot;</span> &lt;&lt; items_size_ &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00990" name="l00990"></a><span class="lineno">  990</span>  os &lt;&lt; <span class="stringliteral">&quot;   Retained items : &quot;</span> &lt;&lt; <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a31fa76458d81a17dbebfcb828e531f14">get_num_retained</a>() &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00991" name="l00991"></a><span class="lineno">  991</span>  <span class="keywordflow">if</span> (!<a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>()) {</div>
+<div class="line"><a id="l00992" name="l00992"></a><span class="lineno">  992</span>    os &lt;&lt; <span class="stringliteral">&quot;   Min item      : &quot;</span> &lt;&lt; *min_item_ &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00993" name="l00993"></a><span class="lineno">  993</span>    os &lt;&lt; <span class="stringliteral">&quot;   Max item      : &quot;</span> &lt;&lt; *max_item_ &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00994" name="l00994"></a><span class="lineno">  994</span>  }</div>
+<div class="line"><a id="l00995" name="l00995"></a><span class="lineno">  995</span>  os &lt;&lt; <span class="stringliteral">&quot;### End sketch summary&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00996" name="l00996"></a><span class="lineno">  996</span> </div>
+<div class="line"><a id="l00997" name="l00997"></a><span class="lineno">  997</span>  <span class="keywordflow">if</span> (print_levels) {</div>
+<div class="line"><a id="l00998" name="l00998"></a><span class="lineno">  998</span>    os &lt;&lt; <span class="stringliteral">&quot;### KLL sketch levels:&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l00999" name="l00999"></a><span class="lineno">  999</span>    os &lt;&lt; <span class="stringliteral">&quot;   index: nominal capacity, actual size&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l01000" name="l01000"></a><span class="lineno"> 1000</span>    <span class="keywordflow">for</span> (uint8_t i = 0; i &lt; num_levels_; i++) {</div>
+<div class="line"><a id="l01001" name="l01001"></a><span class="lineno"> 1001</span>      os &lt;&lt; <span class="stringliteral">&quot;   &quot;</span> &lt;&lt; (<span class="keywordtype">unsigned</span> int) i &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; kll_helper::level_capacity(k_, num_levels_, i, m_) &lt;&lt; <span class="stringliteral">&quot;, &quot;</span> &lt;&lt; safe_level_size(i) &lt;&lt; std::endl;</div>
+<div class="line"><a id="l01002" name="l01002"></a><span class="lineno"> 1002</span>    }</div>
+<div class="line"><a id="l01003" name="l01003"></a><span class="lineno"> 1003</span>    os &lt;&lt; <span class="stringliteral">&quot;### End sketch levels&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l01004" name="l01004"></a><span class="lineno"> 1004</span>  }</div>
+<div class="line"><a id="l01005" name="l01005"></a><span class="lineno"> 1005</span> </div>
+<div class="line"><a id="l01006" name="l01006"></a><span class="lineno"> 1006</span>  <span class="keywordflow">if</span> (print_items) {</div>
+<div class="line"><a id="l01007" name="l01007"></a><span class="lineno"> 1007</span>    os &lt;&lt; <span class="stringliteral">&quot;### KLL sketch data:&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l01008" name="l01008"></a><span class="lineno"> 1008</span>    uint8_t level = 0;</div>
+<div class="line"><a id="l01009" name="l01009"></a><span class="lineno"> 1009</span>    <span class="keywordflow">while</span> (level &lt; num_levels_) {</div>
+<div class="line"><a id="l01010" name="l01010"></a><span class="lineno"> 1010</span>      <span class="keyword">const</span> uint32_t from_index = levels_[level];</div>
+<div class="line"><a id="l01011" name="l01011"></a><span class="lineno"> 1011</span>      <span class="keyword">const</span> uint32_t to_index = levels_[level + 1]; <span class="comment">// exclusive</span></div>
+<div class="line"><a id="l01012" name="l01012"></a><span class="lineno"> 1012</span>      <span class="keywordflow">if</span> (from_index &lt; to_index) {</div>
+<div class="line"><a id="l01013" name="l01013"></a><span class="lineno"> 1013</span>        os &lt;&lt; <span class="stringliteral">&quot; level &quot;</span> &lt;&lt; (<span class="keywordtype">unsigned</span> int) level &lt;&lt; <span class="stringliteral">&quot;:&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l01014" name="l01014"></a><span class="lineno"> 1014</span>      }</div>
+<div class="line"><a id="l01015" name="l01015"></a><span class="lineno"> 1015</span>      <span class="keywordflow">for</span> (uint32_t i = from_index; i &lt; to_index; i++) {</div>
+<div class="line"><a id="l01016" name="l01016"></a><span class="lineno"> 1016</span>        os &lt;&lt; <span class="stringliteral">&quot;   &quot;</span> &lt;&lt; items_[i] &lt;&lt; std::endl;</div>
+<div class="line"><a id="l01017" name="l01017"></a><span class="lineno"> 1017</span>      }</div>
+<div class="line"><a id="l01018" name="l01018"></a><span class="lineno"> 1018</span>      level++;</div>
+<div class="line"><a id="l01019" name="l01019"></a><span class="lineno"> 1019</span>    }</div>
+<div class="line"><a id="l01020" name="l01020"></a><span class="lineno"> 1020</span>    os &lt;&lt; <span class="stringliteral">&quot;### End sketch data&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line"><a id="l01021" name="l01021"></a><span class="lineno"> 1021</span>  }</div>
+<div class="line"><a id="l01022" name="l01022"></a><span class="lineno"> 1022</span>  <span class="keywordflow">return</span> string&lt;A&gt;(os.str().c_str(), allocator_);</div>
+<div class="line"><a id="l01023" name="l01023"></a><span class="lineno"> 1023</span>}</div>
 </div>
-<div class="line"><a id="l01006" name="l01006"></a><span class="lineno"> 1006</span> </div>
-<div class="line"><a id="l01007" name="l01007"></a><span class="lineno"> 1007</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="foldopen" id="foldopen01008" data-start="{" data-end="}">
-<div class="line"><a id="l01008" name="l01008"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a288af208cb43c6bdd67b788dc92037ea"> 1008</a></span><span class="keyword">typename</span> kll_sketch&lt;T, C, A&gt;::const_iterator <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a288af208cb43c6bdd67b788dc92037ea">kll_sketch&lt;T, C, A&gt;::begin</a>()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l01009" name="l01009"></a><span class="lineno"> 1009</span>  <span class="keywordflow">return</span> kll_sketch&lt;T, C, A&gt;::const_iterator(items_, levels_.data(), num_levels_);</div>
-<div class="line"><a id="l01010" name="l01010"></a><span class="lineno"> 1010</span>}</div>
+<div class="line"><a id="l01024" name="l01024"></a><span class="lineno"> 1024</span> </div>
+<div class="line"><a id="l01025" name="l01025"></a><span class="lineno"> 1025</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="foldopen" id="foldopen01026" data-start="{" data-end="}">
+<div class="line"><a id="l01026" name="l01026"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a288af208cb43c6bdd67b788dc92037ea"> 1026</a></span><span class="keyword">typename</span> kll_sketch&lt;T, C, A&gt;::const_iterator <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a288af208cb43c6bdd67b788dc92037ea">kll_sketch&lt;T, C, A&gt;::begin</a>()<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l01027" name="l01027"></a><span class="lineno"> 1027</span>  <span class="keywordflow">return</span> kll_sketch&lt;T, C, A&gt;::const_iterator(items_, levels_.data(), num_levels_);</div>
+<div class="line"><a id="l01028" name="l01028"></a><span class="lineno"> 1028</span>}</div>
 </div>
-<div class="line"><a id="l01011" name="l01011"></a><span class="lineno"> 1011</span> </div>
-<div class="line"><a id="l01012" name="l01012"></a><span class="lineno"> 1012</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="foldopen" id="foldopen01013" data-start="{" data-end="}">
-<div class="line"><a id="l01013" name="l01013"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a5194060fd9b11a856cfb47e59801a3eb"> 1013</a></span><span class="keyword">typename</span> kll_sketch&lt;T, C, A&gt;::const_iterator <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a5194060fd9b11a856cfb47e59801a3eb">kll_sketch&lt;T, C, A&gt;::end</a>()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l01014" name="l01014"></a><span class="lineno"> 1014</span>  <span class="keywordflow">return</span> kll_sketch&lt;T, C, A&gt;::const_iterator(<span class="keyword">nullptr</span>, levels_.data(), num_levels_);</div>
-<div class="line"><a id="l01015" name="l01015"></a><span class="lineno"> 1015</span>}</div>
+<div class="line"><a id="l01029" name="l01029"></a><span class="lineno"> 1029</span> </div>
+<div class="line"><a id="l01030" name="l01030"></a><span class="lineno"> 1030</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="foldopen" id="foldopen01031" data-start="{" data-end="}">
+<div class="line"><a id="l01031" name="l01031"></a><span class="lineno"><a class="line" href="classdatasketches_1_1kll__sketch.html#a5194060fd9b11a856cfb47e59801a3eb"> 1031</a></span><span class="keyword">typename</span> kll_sketch&lt;T, C, A&gt;::const_iterator <a class="code hl_function" href="classdatasketches_1_1kll__sketch.html#a5194060fd9b11a856cfb47e59801a3eb">kll_sketch&lt;T, C, A&gt;::end</a>()<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span>  <span class="keywordflow">return</span> kll_sketch&lt;T, C, A&gt;::const_iterator(<span class="keyword">nullptr</span>, levels_.data(), num_levels_);</div>
+<div class="line"><a id="l01033" name="l01033"></a><span class="lineno"> 1033</span>}</div>
 </div>
-<div class="line"><a id="l01016" name="l01016"></a><span class="lineno"> 1016</span> </div>
-<div class="line"><a id="l01017" name="l01017"></a><span class="lineno"> 1017</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01018" name="l01018"></a><span class="lineno"> 1018</span><span class="keyword">class </span><a class="code hl_class" href="classdatasketches_1_1kll__sketch.html">kll_sketch</a>&lt;T, C, A&gt;::items_deleter {</div>
-<div class="line"><a id="l01019" name="l01019"></a><span class="lineno"> 1019</span>  <span class="keyword">public</span>:</div>
-<div class="line"><a id="l01020" name="l01020"></a><span class="lineno"> 1020</span>  items_deleter(uint32_t start, uint32_t num, <span class="keyword">const</span> A&amp; allocator):</div>
-<div class="line"><a id="l01021" name="l01021"></a><span class="lineno"> 1021</span>    allocator_(allocator), start_(start), num_(num) {}</div>
-<div class="line"><a id="l01022" name="l01022"></a><span class="lineno"> 1022</span>  <span class="keywordtype">void</span> operator() (T* ptr) {</div>
-<div class="line"><a id="l01023" name="l01023"></a><span class="lineno"> 1023</span>    <span class="keywordflow">if</span> (ptr != <span class="keyword">nullptr</span>) {</div>
-<div class="line"><a id="l01024" name="l01024"></a><span class="lineno"> 1024</span>      <span class="keywordflow">for</span> (uint32_t i = start_; i &lt; num_; ++i) ptr[i].~T();</div>
-<div class="line"><a id="l01025" name="l01025"></a><span class="lineno"> 1025</span>      allocator_.deallocate(ptr, num_);</div>
-<div class="line"><a id="l01026" name="l01026"></a><span class="lineno"> 1026</span>    }</div>
-<div class="line"><a id="l01027" name="l01027"></a><span class="lineno"> 1027</span>  }</div>
-<div class="line"><a id="l01028" name="l01028"></a><span class="lineno"> 1028</span>  <span class="keyword">private</span>:</div>
-<div class="line"><a id="l01029" name="l01029"></a><span class="lineno"> 1029</span>  A allocator_;</div>
-<div class="line"><a id="l01030" name="l01030"></a><span class="lineno"> 1030</span>  uint32_t start_;</div>
-<div class="line"><a id="l01031" name="l01031"></a><span class="lineno"> 1031</span>  uint32_t num_;</div>
-<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span>};</div>
-<div class="line"><a id="l01033" name="l01033"></a><span class="lineno"> 1033</span> </div>
-<div class="line"><a id="l01034" name="l01034"></a><span class="lineno"> 1034</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01035" name="l01035"></a><span class="lineno"> 1035</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::setup_sorted_view()<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l01036" name="l01036"></a><span class="lineno"> 1036</span>  <span class="keywordflow">if</span> (sorted_view_ == <span class="keyword">nullptr</span>) {</div>
-<div class="line"><a id="l01037" name="l01037"></a><span class="lineno"> 1037</span>    <span class="keyword">using </span>AllocSortedView = <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;quantiles_sorted_view&lt;T, C, A&gt;&gt;;</div>
-<div class="line"><a id="l01038" name="l01038"></a><span class="lineno"> 1038</span>    sorted_view_ = <span class="keyword">new</span> (AllocSortedView(allocator_).allocate(1)) <a class="code hl_class" href="classdatasketches_1_1quantiles__sorted__view.html">quantiles_sorted_view&lt;T, C, A&gt;</a>(get_sorted_view());</div>
-<div class="line"><a id="l01039" name="l01039"></a><span class="lineno"> 1039</span>  }</div>
-<div class="line"><a id="l01040" name="l01040"></a><span class="lineno"> 1040</span>}</div>
-<div class="line"><a id="l01041" name="l01041"></a><span class="lineno"> 1041</span> </div>
-<div class="line"><a id="l01042" name="l01042"></a><span class="lineno"> 1042</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01043" name="l01043"></a><span class="lineno"> 1043</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::reset_sorted_view() {</div>
-<div class="line"><a id="l01044" name="l01044"></a><span class="lineno"> 1044</span>  <span class="keywordflow">if</span> (sorted_view_ != <span class="keyword">nullptr</span>) {</div>
-<div class="line"><a id="l01045" name="l01045"></a><span class="lineno"> 1045</span>    sorted_view_-&gt;~quantiles_sorted_view();</div>
-<div class="line"><a id="l01046" name="l01046"></a><span class="lineno"> 1046</span>    <span class="keyword">using </span>AllocSortedView = <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;quantiles_sorted_view&lt;T, C, A&gt;&gt;;</div>
-<div class="line"><a id="l01047" name="l01047"></a><span class="lineno"> 1047</span>    AllocSortedView(allocator_).deallocate(sorted_view_, 1);</div>
-<div class="line"><a id="l01048" name="l01048"></a><span class="lineno"> 1048</span>    sorted_view_ = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l01049" name="l01049"></a><span class="lineno"> 1049</span>  }</div>
-<div class="line"><a id="l01050" name="l01050"></a><span class="lineno"> 1050</span>}</div>
+<div class="line"><a id="l01034" name="l01034"></a><span class="lineno"> 1034</span> </div>
+<div class="line"><a id="l01035" name="l01035"></a><span class="lineno"> 1035</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01036" name="l01036"></a><span class="lineno"> 1036</span><span class="keyword">class </span><a class="code hl_class" href="classdatasketches_1_1kll__sketch.html">kll_sketch</a>&lt;T, C, A&gt;::items_deleter {</div>
+<div class="line"><a id="l01037" name="l01037"></a><span class="lineno"> 1037</span>  <span class="keyword">public</span>:</div>
+<div class="line"><a id="l01038" name="l01038"></a><span class="lineno"> 1038</span>  items_deleter(uint32_t start, uint32_t num, <span class="keyword">const</span> A&amp; allocator):</div>
+<div class="line"><a id="l01039" name="l01039"></a><span class="lineno"> 1039</span>    allocator_(allocator), start_(start), num_(num) {}</div>
+<div class="line"><a id="l01040" name="l01040"></a><span class="lineno"> 1040</span>  <span class="keywordtype">void</span> operator() (T* ptr) {</div>
+<div class="line"><a id="l01041" name="l01041"></a><span class="lineno"> 1041</span>    <span class="keywordflow">if</span> (ptr != <span class="keyword">nullptr</span>) {</div>
+<div class="line"><a id="l01042" name="l01042"></a><span class="lineno"> 1042</span>      <span class="keywordflow">for</span> (uint32_t i = start_; i &lt; num_; ++i) ptr[i].~T();</div>
+<div class="line"><a id="l01043" name="l01043"></a><span class="lineno"> 1043</span>      allocator_.deallocate(ptr, num_);</div>
+<div class="line"><a id="l01044" name="l01044"></a><span class="lineno"> 1044</span>    }</div>
+<div class="line"><a id="l01045" name="l01045"></a><span class="lineno"> 1045</span>  }</div>
+<div class="line"><a id="l01046" name="l01046"></a><span class="lineno"> 1046</span>  <span class="keyword">private</span>:</div>
+<div class="line"><a id="l01047" name="l01047"></a><span class="lineno"> 1047</span>  A allocator_;</div>
+<div class="line"><a id="l01048" name="l01048"></a><span class="lineno"> 1048</span>  uint32_t start_;</div>
+<div class="line"><a id="l01049" name="l01049"></a><span class="lineno"> 1049</span>  uint32_t num_;</div>
+<div class="line"><a id="l01050" name="l01050"></a><span class="lineno"> 1050</span>};</div>
 <div class="line"><a id="l01051" name="l01051"></a><span class="lineno"> 1051</span> </div>
-<div class="line"><a id="l01052" name="l01052"></a><span class="lineno"> 1052</span><span class="comment">// kll_sketch::const_iterator implementation</span></div>
-<div class="line"><a id="l01053" name="l01053"></a><span class="lineno"> 1053</span> </div>
-<div class="line"><a id="l01054" name="l01054"></a><span class="lineno"> 1054</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01055" name="l01055"></a><span class="lineno"> 1055</span>kll_sketch&lt;T, C, A&gt;::const_iterator::const_iterator(<span class="keyword">const</span> T* items, <span class="keyword">const</span> uint32_t* levels, <span class="keyword">const</span> uint8_t num_levels):</div>
-<div class="line"><a id="l01056" name="l01056"></a><span class="lineno"> 1056</span>items(items), levels(levels), num_levels(num_levels), index(items == nullptr ? levels[num_levels] : levels[0]), level(items == nullptr ? num_levels : 0), weight(1)</div>
-<div class="line"><a id="l01057" name="l01057"></a><span class="lineno"> 1057</span>{}</div>
-<div class="line"><a id="l01058" name="l01058"></a><span class="lineno"> 1058</span> </div>
-<div class="line"><a id="l01059" name="l01059"></a><span class="lineno"> 1059</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01060" name="l01060"></a><span class="lineno"> 1060</span><span class="keyword">typename</span> kll_sketch&lt;T, C, A&gt;::const_iterator&amp; kll_sketch&lt;T, C, A&gt;::const_iterator::operator++() {</div>
-<div class="line"><a id="l01061" name="l01061"></a><span class="lineno"> 1061</span>  ++index;</div>
-<div class="line"><a id="l01062" name="l01062"></a><span class="lineno"> 1062</span>  <span class="keywordflow">if</span> (index == levels[level + 1]) { <span class="comment">// go to the next non-empty level</span></div>
-<div class="line"><a id="l01063" name="l01063"></a><span class="lineno"> 1063</span>    <span class="keywordflow">do</span> {</div>
-<div class="line"><a id="l01064" name="l01064"></a><span class="lineno"> 1064</span>      ++level;</div>
-<div class="line"><a id="l01065" name="l01065"></a><span class="lineno"> 1065</span>      weight *= 2;</div>
-<div class="line"><a id="l01066" name="l01066"></a><span class="lineno"> 1066</span>    } <span class="keywordflow">while</span> (level &lt; num_levels &amp;&amp; levels[level] == levels[level + 1]);</div>
+<div class="line"><a id="l01052" name="l01052"></a><span class="lineno"> 1052</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01053" name="l01053"></a><span class="lineno"> 1053</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::setup_sorted_view()<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l01054" name="l01054"></a><span class="lineno"> 1054</span>  <span class="keywordflow">if</span> (sorted_view_ == <span class="keyword">nullptr</span>) {</div>
+<div class="line"><a id="l01055" name="l01055"></a><span class="lineno"> 1055</span>    <span class="keyword">using </span>AllocSortedView = <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;quantiles_sorted_view&lt;T, C, A&gt;&gt;;</div>
+<div class="line"><a id="l01056" name="l01056"></a><span class="lineno"> 1056</span>    sorted_view_ = <span class="keyword">new</span> (AllocSortedView(allocator_).allocate(1)) <a class="code hl_class" href="classdatasketches_1_1quantiles__sorted__view.html">quantiles_sorted_view&lt;T, C, A&gt;</a>(get_sorted_view());</div>
+<div class="line"><a id="l01057" name="l01057"></a><span class="lineno"> 1057</span>  }</div>
+<div class="line"><a id="l01058" name="l01058"></a><span class="lineno"> 1058</span>}</div>
+<div class="line"><a id="l01059" name="l01059"></a><span class="lineno"> 1059</span> </div>
+<div class="line"><a id="l01060" name="l01060"></a><span class="lineno"> 1060</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01061" name="l01061"></a><span class="lineno"> 1061</span><span class="keywordtype">void</span> kll_sketch&lt;T, C, A&gt;::reset_sorted_view() {</div>
+<div class="line"><a id="l01062" name="l01062"></a><span class="lineno"> 1062</span>  <span class="keywordflow">if</span> (sorted_view_ != <span class="keyword">nullptr</span>) {</div>
+<div class="line"><a id="l01063" name="l01063"></a><span class="lineno"> 1063</span>    sorted_view_-&gt;~quantiles_sorted_view();</div>
+<div class="line"><a id="l01064" name="l01064"></a><span class="lineno"> 1064</span>    <span class="keyword">using </span>AllocSortedView = <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;quantiles_sorted_view&lt;T, C, A&gt;&gt;;</div>
+<div class="line"><a id="l01065" name="l01065"></a><span class="lineno"> 1065</span>    AllocSortedView(allocator_).deallocate(sorted_view_, 1);</div>
+<div class="line"><a id="l01066" name="l01066"></a><span class="lineno"> 1066</span>    sorted_view_ = <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l01067" name="l01067"></a><span class="lineno"> 1067</span>  }</div>
-<div class="line"><a id="l01068" name="l01068"></a><span class="lineno"> 1068</span>  <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
-<div class="line"><a id="l01069" name="l01069"></a><span class="lineno"> 1069</span>}</div>
-<div class="line"><a id="l01070" name="l01070"></a><span class="lineno"> 1070</span> </div>
-<div class="line"><a id="l01071" name="l01071"></a><span class="lineno"> 1071</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01072" name="l01072"></a><span class="lineno"> 1072</span><span class="keyword">typename</span> kll_sketch&lt;T, C, A&gt;::const_iterator&amp; kll_sketch&lt;T, C, A&gt;::const_iterator::operator++(<span class="keywordtype">int</span>) {</div>
-<div class="line"><a id="l01073" name="l01073"></a><span class="lineno"> 1073</span>  const_iterator tmp(*<span class="keyword">this</span>);</div>
-<div class="line"><a id="l01074" name="l01074"></a><span class="lineno"> 1074</span>  operator++();</div>
-<div class="line"><a id="l01075" name="l01075"></a><span class="lineno"> 1075</span>  <span class="keywordflow">return</span> tmp;</div>
-<div class="line"><a id="l01076" name="l01076"></a><span class="lineno"> 1076</span>}</div>
-<div class="line"><a id="l01077" name="l01077"></a><span class="lineno"> 1077</span> </div>
-<div class="line"><a id="l01078" name="l01078"></a><span class="lineno"> 1078</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01079" name="l01079"></a><span class="lineno"> 1079</span><span class="keywordtype">bool</span> kll_sketch&lt;T, C, A&gt;::const_iterator::operator==(<span class="keyword">const</span> const_iterator&amp; other)<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l01080" name="l01080"></a><span class="lineno"> 1080</span>  <span class="keywordflow">return</span> index == other.index;</div>
-<div class="line"><a id="l01081" name="l01081"></a><span class="lineno"> 1081</span>}</div>
-<div class="line"><a id="l01082" name="l01082"></a><span class="lineno"> 1082</span> </div>
-<div class="line"><a id="l01083" name="l01083"></a><span class="lineno"> 1083</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01084" name="l01084"></a><span class="lineno"> 1084</span><span class="keywordtype">bool</span> kll_sketch&lt;T, C, A&gt;::const_iterator::operator!=(<span class="keyword">const</span> const_iterator&amp; other)<span class="keyword"> const </span>{</div>
-<div class="line"><a id="l01085" name="l01085"></a><span class="lineno"> 1085</span>  <span class="keywordflow">return</span> !operator==(other);</div>
-<div class="line"><a id="l01086" name="l01086"></a><span class="lineno"> 1086</span>}</div>
-<div class="line"><a id="l01087" name="l01087"></a><span class="lineno"> 1087</span> </div>
-<div class="line"><a id="l01088" name="l01088"></a><span class="lineno"> 1088</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01089" name="l01089"></a><span class="lineno"> 1089</span><span class="keyword">auto</span> kll_sketch&lt;T, C, A&gt;::const_iterator::operator*() const -&gt; reference {</div>
-<div class="line"><a id="l01090" name="l01090"></a><span class="lineno"> 1090</span>  <span class="keywordflow">return</span> value_type(items[index], weight);</div>
-<div class="line"><a id="l01091" name="l01091"></a><span class="lineno"> 1091</span>}</div>
-<div class="line"><a id="l01092" name="l01092"></a><span class="lineno"> 1092</span> </div>
-<div class="line"><a id="l01093" name="l01093"></a><span class="lineno"> 1093</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l01094" name="l01094"></a><span class="lineno"> 1094</span><span class="keyword">auto</span> kll_sketch&lt;T, C, A&gt;::const_iterator::operator-&gt;() const -&gt; pointer {</div>
-<div class="line"><a id="l01095" name="l01095"></a><span class="lineno"> 1095</span>  <span class="keywordflow">return</span> **<span class="keyword">this</span>;</div>
-<div class="line"><a id="l01096" name="l01096"></a><span class="lineno"> 1096</span>}</div>
-<div class="line"><a id="l01097" name="l01097"></a><span class="lineno"> 1097</span> </div>
-<div class="line"><a id="l01098" name="l01098"></a><span class="lineno"> 1098</span>} <span class="comment">/* namespace datasketches */</span></div>
-<div class="line"><a id="l01099" name="l01099"></a><span class="lineno"> 1099</span> </div>
-<div class="line"><a id="l01100" name="l01100"></a><span class="lineno"> 1100</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l01068" name="l01068"></a><span class="lineno"> 1068</span>}</div>
+<div class="line"><a id="l01069" name="l01069"></a><span class="lineno"> 1069</span> </div>
+<div class="line"><a id="l01070" name="l01070"></a><span class="lineno"> 1070</span><span class="comment">// kll_sketch::const_iterator implementation</span></div>
+<div class="line"><a id="l01071" name="l01071"></a><span class="lineno"> 1071</span> </div>
+<div class="line"><a id="l01072" name="l01072"></a><span class="lineno"> 1072</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01073" name="l01073"></a><span class="lineno"> 1073</span>kll_sketch&lt;T, C, A&gt;::const_iterator::const_iterator(<span class="keyword">const</span> T* items, <span class="keyword">const</span> uint32_t* levels, <span class="keyword">const</span> uint8_t num_levels):</div>
+<div class="line"><a id="l01074" name="l01074"></a><span class="lineno"> 1074</span>items(items), levels(levels), num_levels(num_levels), index(items == nullptr ? levels[num_levels] : levels[0]), level(items == nullptr ? num_levels : 0), weight(1)</div>
+<div class="line"><a id="l01075" name="l01075"></a><span class="lineno"> 1075</span>{}</div>
+<div class="line"><a id="l01076" name="l01076"></a><span class="lineno"> 1076</span> </div>
+<div class="line"><a id="l01077" name="l01077"></a><span class="lineno"> 1077</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01078" name="l01078"></a><span class="lineno"> 1078</span><span class="keyword">typename</span> kll_sketch&lt;T, C, A&gt;::const_iterator&amp; kll_sketch&lt;T, C, A&gt;::const_iterator::operator++() {</div>
+<div class="line"><a id="l01079" name="l01079"></a><span class="lineno"> 1079</span>  ++index;</div>
+<div class="line"><a id="l01080" name="l01080"></a><span class="lineno"> 1080</span>  <span class="keywordflow">if</span> (index == levels[level + 1]) { <span class="comment">// go to the next non-empty level</span></div>
+<div class="line"><a id="l01081" name="l01081"></a><span class="lineno"> 1081</span>    <span class="keywordflow">do</span> {</div>
+<div class="line"><a id="l01082" name="l01082"></a><span class="lineno"> 1082</span>      ++level;</div>
+<div class="line"><a id="l01083" name="l01083"></a><span class="lineno"> 1083</span>      weight *= 2;</div>
+<div class="line"><a id="l01084" name="l01084"></a><span class="lineno"> 1084</span>    } <span class="keywordflow">while</span> (level &lt; num_levels &amp;&amp; levels[level] == levels[level + 1]);</div>
+<div class="line"><a id="l01085" name="l01085"></a><span class="lineno"> 1085</span>  }</div>
+<div class="line"><a id="l01086" name="l01086"></a><span class="lineno"> 1086</span>  <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
+<div class="line"><a id="l01087" name="l01087"></a><span class="lineno"> 1087</span>}</div>
+<div class="line"><a id="l01088" name="l01088"></a><span class="lineno"> 1088</span> </div>
+<div class="line"><a id="l01089" name="l01089"></a><span class="lineno"> 1089</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01090" name="l01090"></a><span class="lineno"> 1090</span><span class="keyword">typename</span> kll_sketch&lt;T, C, A&gt;::const_iterator&amp; kll_sketch&lt;T, C, A&gt;::const_iterator::operator++(<span class="keywordtype">int</span>) {</div>
+<div class="line"><a id="l01091" name="l01091"></a><span class="lineno"> 1091</span>  const_iterator tmp(*<span class="keyword">this</span>);</div>
+<div class="line"><a id="l01092" name="l01092"></a><span class="lineno"> 1092</span>  operator++();</div>
+<div class="line"><a id="l01093" name="l01093"></a><span class="lineno"> 1093</span>  <span class="keywordflow">return</span> tmp;</div>
+<div class="line"><a id="l01094" name="l01094"></a><span class="lineno"> 1094</span>}</div>
+<div class="line"><a id="l01095" name="l01095"></a><span class="lineno"> 1095</span> </div>
+<div class="line"><a id="l01096" name="l01096"></a><span class="lineno"> 1096</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01097" name="l01097"></a><span class="lineno"> 1097</span><span class="keywordtype">bool</span> kll_sketch&lt;T, C, A&gt;::const_iterator::operator==(<span class="keyword">const</span> const_iterator&amp; other)<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l01098" name="l01098"></a><span class="lineno"> 1098</span>  <span class="keywordflow">return</span> index == other.index;</div>
+<div class="line"><a id="l01099" name="l01099"></a><span class="lineno"> 1099</span>}</div>
+<div class="line"><a id="l01100" name="l01100"></a><span class="lineno"> 1100</span> </div>
+<div class="line"><a id="l01101" name="l01101"></a><span class="lineno"> 1101</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01102" name="l01102"></a><span class="lineno"> 1102</span><span class="keywordtype">bool</span> kll_sketch&lt;T, C, A&gt;::const_iterator::operator!=(<span class="keyword">const</span> const_iterator&amp; other)<span class="keyword"> const </span>{</div>
+<div class="line"><a id="l01103" name="l01103"></a><span class="lineno"> 1103</span>  <span class="keywordflow">return</span> !operator==(other);</div>
+<div class="line"><a id="l01104" name="l01104"></a><span class="lineno"> 1104</span>}</div>
+<div class="line"><a id="l01105" name="l01105"></a><span class="lineno"> 1105</span> </div>
+<div class="line"><a id="l01106" name="l01106"></a><span class="lineno"> 1106</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01107" name="l01107"></a><span class="lineno"> 1107</span><span class="keyword">auto</span> kll_sketch&lt;T, C, A&gt;::const_iterator::operator*() const -&gt; reference {</div>
+<div class="line"><a id="l01108" name="l01108"></a><span class="lineno"> 1108</span>  <span class="keywordflow">return</span> value_type(items[index], weight);</div>
+<div class="line"><a id="l01109" name="l01109"></a><span class="lineno"> 1109</span>}</div>
+<div class="line"><a id="l01110" name="l01110"></a><span class="lineno"> 1110</span> </div>
+<div class="line"><a id="l01111" name="l01111"></a><span class="lineno"> 1111</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> C, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l01112" name="l01112"></a><span class="lineno"> 1112</span><span class="keyword">auto</span> kll_sketch&lt;T, C, A&gt;::const_iterator::operator-&gt;() const -&gt; pointer {</div>
+<div class="line"><a id="l01113" name="l01113"></a><span class="lineno"> 1113</span>  <span class="keywordflow">return</span> **<span class="keyword">this</span>;</div>
+<div class="line"><a id="l01114" name="l01114"></a><span class="lineno"> 1114</span>}</div>
+<div class="line"><a id="l01115" name="l01115"></a><span class="lineno"> 1115</span> </div>
+<div class="line"><a id="l01116" name="l01116"></a><span class="lineno"> 1116</span>} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a id="l01117" name="l01117"></a><span class="lineno"> 1117</span> </div>
+<div class="line"><a id="l01118" name="l01118"></a><span class="lineno"> 1118</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html">datasketches::kll_sketch</a></div><div class="ttdoc">Implementation of a very compact quantiles sketch with lazy compaction scheme and nearly optimal accu...</div><div class="ttdef"><b>Definition</b> kll_sketch.hpp:171</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a076f89979daa6471a3868cb97ea99b40"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a076f89979daa6471a3868cb97ea99b40">datasketches::kll_sketch::get_comparator</a></div><div class="ttdeci">C get_comparator() const</div><div class="ttdoc">Returns an instance of the comparator for this sketch.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:280</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a0a9c9c240dd591017fd6a80e147b7c00"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a0a9c9c240dd591017fd6a80e147b7c00">datasketches::kll_sketch::get_sorted_view</a></div><div class="ttdeci">quantiles_sorted_view&lt; T, C, A &gt; get_sorted_view() const</div><div class="ttdoc">Gets the sorted view of this sketch.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:785</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a0d934088182b8615c2fa34a4716d7d44"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a0d934088182b8615c2fa34a4716d7d44">datasketches::kll_sketch::operator=</a></div><div class="ttdeci">kll_sketch &amp; operator=(const kll_sketch &amp;other)</div><div class="ttdoc">Copy assignment.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:103</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a20a4d992209b2aa58614c998d143705c"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a20a4d992209b2aa58614c998d143705c">datasketches::kll_sketch::get_CDF</a></div><div class="ttdeci">vector_double get_CDF(const T *split_points, uint32_t size, bool inclusive=true) const</div><div class="ttdoc">Returns an approximation to the Cumulative Distribution Function (CDF), which is the cumulative analo...</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:304</div></div>
-<div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a288af208cb43c6bdd67b788dc92037ea"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a288af208cb43c6bdd67b788dc92037ea">datasketches::kll_sketch::begin</a></div><div class="ttdeci">const_iterator begin() const</div><div class="ttdoc">Iterator pointing to the first item in the sketch.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:1008</div></div>
+<div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a288af208cb43c6bdd67b788dc92037ea"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a288af208cb43c6bdd67b788dc92037ea">datasketches::kll_sketch::begin</a></div><div class="ttdeci">const_iterator begin() const</div><div class="ttdoc">Iterator pointing to the first item in the sketch.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:1026</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a31fa76458d81a17dbebfcb828e531f14"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a31fa76458d81a17dbebfcb828e531f14">datasketches::kll_sketch::get_num_retained</a></div><div class="ttdeci">uint32_t get_num_retained() const</div><div class="ttdoc">Returns the number of retained items (samples) in the sketch.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:258</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a3f2a0c95cd2c88854ec9b9ab7088f419"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a3f2a0c95cd2c88854ec9b9ab7088f419">datasketches::kll_sketch::deserialize</a></div><div class="ttdeci">static kll_sketch deserialize(std::istream &amp;is, const SerDe &amp;sd=SerDe(), const C &amp;comparator=C(), const A &amp;allocator=A())</div><div class="ttdoc">This method deserializes a sketch from a given stream.</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a44226b755e73883ea2c128876e35b1d1"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a44226b755e73883ea2c128876e35b1d1">datasketches::kll_sketch::get_PMF</a></div><div class="ttdeci">vector_double get_PMF(const T *split_points, uint32_t size, bool inclusive=true) const</div><div class="ttdoc">Returns an approximation to the Probability Mass Function (PMF) of the input stream given a set of sp...</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:297</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a49bb19e78f36fb72b8496cd6cff71fec"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a49bb19e78f36fb72b8496cd6cff71fec">datasketches::kll_sketch::merge</a></div><div class="ttdeci">void merge(FwdSk &amp;&amp;other)</div><div class="ttdoc">Merges another sketch into this one.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:217</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a4cdb10e4f2949d55d29421c6e381a300"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a4cdb10e4f2949d55d29421c6e381a300">datasketches::kll_sketch::get_max_item</a></div><div class="ttdeci">T get_max_item() const</div><div class="ttdoc">Returns the max item of the stream.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:274</div></div>
-<div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a5194060fd9b11a856cfb47e59801a3eb"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a5194060fd9b11a856cfb47e59801a3eb">datasketches::kll_sketch::end</a></div><div class="ttdeci">const_iterator end() const</div><div class="ttdoc">Iterator pointing to the past-the-end item in the sketch.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:1013</div></div>
+<div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a5194060fd9b11a856cfb47e59801a3eb"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a5194060fd9b11a856cfb47e59801a3eb">datasketches::kll_sketch::end</a></div><div class="ttdeci">const_iterator end() const</div><div class="ttdoc">Iterator pointing to the past-the-end item in the sketch.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:1031</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a5200c74c52ee0f76d0d34c1ca6aec65c"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a5200c74c52ee0f76d0d34c1ca6aec65c">datasketches::kll_sketch::update</a></div><div class="ttdeci">void update(FwdT &amp;&amp;item)</div><div class="ttdoc">Updates this sketch with the given data item.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:181</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a538940c100e4353b3671ad452d3d3056"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a538940c100e4353b3671ad452d3d3056">datasketches::kll_sketch::serialize</a></div><div class="ttdeci">void serialize(std::ostream &amp;os, const SerDe &amp;sd=SerDe()) const</div><div class="ttdoc">This method serializes the sketch into a given stream in a binary form.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:376</div></div>
-<div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a592a7af55659ff803b26a45552a68dda"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a592a7af55659ff803b26a45552a68dda">datasketches::kll_sketch::to_string</a></div><div class="ttdeci">string&lt; A &gt; to_string(bool print_levels=false, bool print_items=false) const</div><div class="ttdoc">Prints a summary of the sketch.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:956</div></div>
+<div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a592a7af55659ff803b26a45552a68dda"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a592a7af55659ff803b26a45552a68dda">datasketches::kll_sketch::to_string</a></div><div class="ttdeci">string&lt; A &gt; to_string(bool print_levels=false, bool print_items=false) const</div><div class="ttdoc">Prints a summary of the sketch.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:974</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a59f4c39b9f2e762e8e3445ef89e1d264"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a59f4c39b9f2e762e8e3445ef89e1d264">datasketches::kll_sketch::get_k</a></div><div class="ttdeci">uint16_t get_k() const</div><div class="ttdoc">Returns configured parameter k.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:248</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a5a2b7a58dc85678d08752945ff655362"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a5a2b7a58dc85678d08752945ff655362">datasketches::kll_sketch::is_empty</a></div><div class="ttdeci">bool is_empty() const</div><div class="ttdoc">Returns true if this sketch is empty.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:243</div></div>
 <div class="ttc" id="aclassdatasketches_1_1kll__sketch_html_a849dfa06c183fd2fdfe4fe4a7e29d918"><div class="ttname"><a href="classdatasketches_1_1kll__sketch.html#a849dfa06c183fd2fdfe4fe4a7e29d918">datasketches::kll_sketch::get_rank</a></div><div class="ttdeci">double get_rank(const T &amp;item, bool inclusive=true) const</div><div class="ttdoc">Returns an approximation to the normalized rank of the given item from 0 to 1, inclusive.</div><div class="ttdef"><b>Definition</b> kll_sketch_impl.hpp:290</div></div>
