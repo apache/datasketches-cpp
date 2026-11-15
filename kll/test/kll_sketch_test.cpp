@@ -75,6 +75,9 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
       unused(pair); // to suppress "unused" warning
       FAIL("should be no iterations over an empty sketch");
     }
+    const auto empty_bytes = test_allocator_total_bytes;
+    REQUIRE(sketch.get_sorted_view().size() == 0);
+    REQUIRE(test_allocator_total_bytes == empty_bytes);
   }
 
   SECTION("get bad quantile") {
@@ -115,6 +118,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     kll_float_sketch sketch(200, std::less<float>(), 0);
     sketch.update(std::numeric_limits<float>::quiet_NaN());
     REQUIRE(sketch.is_empty());
+    REQUIRE(sketch.get_sorted_view().size() == 0);
 
     sketch.update(0);
     sketch.update(std::numeric_limits<float>::quiet_NaN());
