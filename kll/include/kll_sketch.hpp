@@ -261,11 +261,11 @@ class kll_sketch {
     void merge(FwdSk&& other);
 
     /**
-     * Allocates storage for k items now, rather than on the first update or merge.
-     * The buffer then does not need to grow before the first compaction.
+     * Allocates storage for k items now, rather than on the first update or merge,
+     * or as the buffer grows. The buffer then does not need to grow before the first compaction.
      * Call this right after construction if allocation failures should happen here,
-     * or if the first update should not pay for the allocation.
-     * Does nothing if the storage is already allocated.
+     * or if updates should not pay for the allocation.
+     * Does nothing if the storage for k items is already allocated.
      * @throw std::bad_alloc if the allocation fails, in which case the sketch is unchanged
      */
     void reserve();
@@ -616,7 +616,7 @@ class kll_sketch {
 
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
-    void grow_items();
+    void grow_items(uint32_t new_size); // only while there is one level
     void sort_level_zero();
 
     template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);

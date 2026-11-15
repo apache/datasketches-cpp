@@ -1142,13 +1142,23 @@ TEST_CASE("kll sketch: lazy growth of the items buffer", "[kll_sketch]") {
     REQUIRE_FALSE(sketch.is_estimation_mode());
   }
 
-  SECTION("reserve() after the first update does nothing") {
+  SECTION("reserve() after updates grows the buffer to k items") {
     kll_float_sketch sketch(kll_constants::MAX_K, std::less<float>(), 0);
-    sketch.update(0);
-    const long long bytes = test_allocator_total_bytes;
-    REQUIRE(bytes == static_cast<long long>(levels_bytes + kll_constants::DEFAULT_K * sizeof(float)));
+    for (int i = 0; i < 10; ++i) sketch.update(static_cast<float>(i));
+    REQUIRE(test_allocator_total_bytes == static_cast<long long>(levels_bytes + kll_constants::DEFAULT_K * sizeof(float)));
     sketch.reserve();
+    const long long bytes = test_allocator_total_bytes;
+    REQUIRE(bytes == static_cast<long long>(levels_bytes + kll_constants::MAX_K * sizeof(float)));
+    REQUIRE(sketch.get_n() == 10);
+    REQUIRE(sketch.get_min_item() == 0);
+    REQUIRE(sketch.get_max_item() == 9);
+    for (const auto pair: sketch) REQUIRE(pair.second == 1);
+    for (int i = 10; i < kll_constants::MAX_K; ++i) sketch.update(static_cast<float>(i));
+    REQUIRE(test_allocator_total_bytes == bytes); // no growth before the first compaction
+    sketch.reserve(); // the buffer is already at k items
     REQUIRE(test_allocator_total_bytes == bytes);
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_rank(100) == Approx(101.0 / kll_constants::MAX_K)); // inclusive
   }
 
   SECTION("same as a full buffer after reserve()") {

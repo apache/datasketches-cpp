@@ -206,11 +206,14 @@ void kll_sketch<T, C, A>::update_min_max(const T& item) {
 
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::reserve() {
-  if (items_ != nullptr) return;
-  // nothing is stored yet, so the buffer can start at its full size
-  items_ = allocator_.allocate(k_);
-  items_size_ = k_;
-  levels_[0] = levels_[1] = k_;
+  if (items_ == nullptr) {
+    // nothing is stored yet, so the buffer can start at its full size
+    items_ = allocator_.allocate(k_);
+    items_size_ = k_;
+    levels_[0] = levels_[1] = k_;
+  } else if (num_levels_ == 1 && items_size_ < k_) {
+    grow_items(k_); // the buffer is still growing: grow it to its full size in one step
+  }
 }
 
 template<typename T, typename C, typename A>
@@ -236,7 +239,7 @@ uint32_t kll_sketch<T, C, A>::internal_update() {
   allocate_items();
   if (levels_[0] == 0) {
     if (items_size_ < k_) {
-      grow_items();
+      grow_items(std::min<uint32_t>(items_size_ << static_cast<uint8_t>(RESIZE_FACTOR), k_));
     } else {
       compress_while_updating();
     }
@@ -807,8 +810,7 @@ void kll_sketch<T, C, A>::add_empty_top_level_to_completely_full_sketch() {
 // Grows the items buffer of a one-level sketch when it is full and smaller than k.
 // Compaction starts only when the buffer is full at k items, so growing does not change the result.
 template<typename T, typename C, typename A>
-void kll_sketch<T, C, A>::grow_items() {
-  const uint32_t new_size = std::min<uint32_t>(items_size_ << static_cast<uint8_t>(RESIZE_FACTOR), k_);
+void kll_sketch<T, C, A>::grow_items(uint32_t new_size) {
   const uint32_t delta = new_size - items_size_;
   T* new_items = allocator_.allocate(new_size);
   kll_helper::move_construct<T>(items_, levels_[0], levels_[1], new_items, levels_[0] + delta, true);
