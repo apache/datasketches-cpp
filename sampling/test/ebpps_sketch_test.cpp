@@ -263,4 +263,42 @@ TEST_CASE("ebpps sketch: merge small into large", "[ebpps_sketch]") {
   REQUIRE(sk1.get_cumulative_weight() == Approx(1.7 * k).margin(EPS));
 }
 
+TEST_CASE("ebpps sketch: merge keeps the max weight", "[ebpps_sketch]") {
+  const uint32_t k = 10;
+  const uint64_t n = 1000;
+  const double heavy_wt = 500.0;
+
+  // reference: a single sketch fed every item, where the heavy item limits rho to 1 / heavy_wt
+  ebpps_sketch<int> ref = create_unweighted_sketch(k, n);
+  ref.update(-1, heavy_wt);
+  ref.update(static_cast<int>(n), 1.0);
+  REQUIRE(ref.get_c() == Approx((n + 1 + heavy_wt) / heavy_wt).margin(EPS));
+
+  ebpps_sketch<int> heavy(k);
+  heavy.update(-1, heavy_wt);
+
+  // heavy item in the sketch being merged in, lvalue and rvalue
+  ebpps_sketch<int> sk1 = create_unweighted_sketch(k, n);
+  sk1.merge(heavy);
+  sk1.update(static_cast<int>(n), 1.0);
+  REQUIRE(sk1.get_c() == Approx(ref.get_c()).margin(EPS));
+
+  ebpps_sketch<int> sk2 = create_unweighted_sketch(k, n);
+  sk2.merge(ebpps_sketch<int>(heavy));
+  sk2.update(static_cast<int>(n), 1.0);
+  REQUIRE(sk2.get_c() == Approx(ref.get_c()).margin(EPS));
+
+  // heavy item in the target sketch, which has the smaller cumulative weight, lvalue and rvalue
+  ebpps_sketch<int> light = create_unweighted_sketch(k, n);
+  ebpps_sketch<int> sk3(heavy);
+  sk3.merge(light);
+  sk3.update(static_cast<int>(n), 1.0);
+  REQUIRE(sk3.get_c() == Approx(ref.get_c()).margin(EPS));
+
+  ebpps_sketch<int> sk4(heavy);
+  sk4.merge(std::move(light));
+  sk4.update(static_cast<int>(n), 1.0);
+  REQUIRE(sk4.get_c() == Approx(ref.get_c()).margin(EPS));
+}
+
 }
