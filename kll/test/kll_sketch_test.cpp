@@ -915,4 +915,55 @@ TEST_CASE("kll sketch: deserialize rejects inconsistent levels", "[kll_sketch]")
   }
 }
 
+// Compaction: level 0 is full, so update(item) compacts it, which can free the item it reads
+TEST_CASE("kll sketch: update with aliased item during compaction", "[kll_sketch]") {
+  const uint16_t k = 200;
+  kll_sketch<std::string> sketch(k);
+
+  for (int i = 0; i < kll_constants::DEFAULT_K; ++i) {
+    sketch.update(std::string(64, 'x') + std::to_string(i));
+  }
+
+  REQUIRE(sketch.get_n() == kll_constants::DEFAULT_K);
+
+  const std::string& item = sketch.begin()->first;
+  const std::string expected = item;
+
+  // Triggers compaction
+  sketch.update(item);
+
+  REQUIRE(sketch.get_n() == kll_constants::DEFAULT_K + 1);
+
+  // the compaction emptied level 0, so the first item is the one just added
+  REQUIRE(sketch.begin()->first == expected);
+  REQUIRE(sketch.begin()->second == 1);
+}
+
+// Regrowth: if the buffer starts below k items, update(item) grows it, which can free the item
+TEST_CASE("kll sketch: update with aliased item during buffer growth", "[kll_sketch]") {
+  const uint16_t k = 5000;
+  kll_sketch<std::string> sketch(k);
+
+  for (int i = 0; i < kll_constants::DEFAULT_K; ++i) {
+    sketch.update(std::string(64, 'x') + std::to_string(i));
+  }
+
+  REQUIRE(sketch.get_n() == kll_constants::DEFAULT_K);
+
+  const std::string& item = sketch.begin()->first;
+  const std::string expected = item;
+
+  sketch.update(item);
+
+  REQUIRE(sketch.get_n() == kll_constants::DEFAULT_K + 1);
+
+  uint32_t count = 0;
+  for (const auto& entry : sketch) {
+    if (entry.first == expected) {
+      ++count;
+    }
+  }
+  REQUIRE(count == 2);
+}
+
 } /* namespace datasketches */
