@@ -41,6 +41,7 @@ target_sources(kll_test
     kll_sketch_custom_type_test.cpp
     kll_sketch_validation.cpp
     kolmogorov_smirnov_test.cpp
+    kll_sketch_merge_failure_test.cpp
 )
 
 if (SERDE_COMPAT)
