@@ -39,6 +39,8 @@ namespace kll_constants {
   const uint16_t MIN_K = DEFAULT_M;
   /// max value of parameter K
   const uint16_t MAX_K = (1 << 16) - 1;
+  /// maximum weight of a weighted update, the same as in datasketches-java
+  const uint64_t MAX_WEIGHT = (1ULL << 61) - 1;
 }
 
 /**
@@ -252,8 +254,10 @@ class kll_sketch {
      * with the logarithm of the weight rather than with the weight itself.
      * If cross-language portability is required, callers should ensure that
      * the input string uses a compatible encoding (valid UTF-8).
+     * The first update allocates storage for items, unless reserve() or a merge already did.
      * @param item from a stream of items
-     * @param weight number of times the item is repeated, must be positive
+     * @param weight number of times the item is repeated, from 1 to kll_constants::MAX_WEIGHT (2^61 - 1)
+     * @throw std::invalid_argument if the weight is 0 or greater than kll_constants::MAX_WEIGHT
      */
     template<typename FwdT>
     void update(FwdT&& item, uint64_t weight);

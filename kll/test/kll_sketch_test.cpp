@@ -896,8 +896,8 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   SECTION("weighted update: maximum weight") {
     kll_float_sketch sketch(200, std::less<float>(), 0);
     sketch.update(1.0f);
-    sketch.update(2.0f, std::numeric_limits<uint64_t>::max() - 1);
-    REQUIRE(sketch.get_n() == std::numeric_limits<uint64_t>::max());
+    sketch.update(2.0f, kll_constants::MAX_WEIGHT);
+    REQUIRE(sketch.get_n() == kll_constants::MAX_WEIGHT + 1);
     REQUIRE(sketch.get_min_item() == 1.0f);
     REQUIRE(sketch.get_max_item() == 2.0f);
     REQUIRE(sketch.get_quantile(0.5) == 2.0f);
@@ -910,6 +910,42 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), std::less<float>(), 0);
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  }
+
+  SECTION("weighted update: weight above the maximum throws") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    sketch.update(1.0f, 5);
+    const auto bytes = sketch.serialize();
+    REQUIRE_THROWS_AS(sketch.update(2.0f, kll_constants::MAX_WEIGHT + 1), std::invalid_argument);
+    REQUIRE_THROWS_AS(sketch.update(2.0f, std::numeric_limits<uint64_t>::max()), std::invalid_argument);
+    REQUIRE(sketch.serialize() == bytes);
+  }
+
+  SECTION("weighted update: weight 1 is a plain update") {
+    kll_float_sketch weighted(8, std::less<float>(), 0);
+    kll_float_sketch plain(8, std::less<float>(), 0);
+    random_utils::random_bit.seed(7);
+    for (int i = 0; i < 1000; ++i) weighted.update(static_cast<float>(i), 1);
+    random_utils::random_bit.seed(7);
+    for (int i = 0; i < 1000; ++i) plain.update(static_cast<float>(i));
+    REQUIRE(weighted.serialize() == plain.serialize());
+  }
+
+  SECTION("weighted update: first update of a new sketch, both paths") {
+    // small weight: copies into level zero of the storage that this update allocates
+    kll_float_sketch small(200, std::less<float>(), 0);
+    small.update(3.0f, 10);
+    REQUIRE(small.get_n() == 10);
+    REQUIRE(small.get_num_retained() == 10);
+    REQUIRE(small.get_min_item() == 3.0f);
+    // large weight: merges an exact sketch of the item
+    kll_float_sketch large(200, std::less<float>(), 0);
+    large.update(3.0f, 1000);
+    REQUIRE(large.get_n() == 1000);
+    REQUIRE(large.get_max_item() == 3.0f);
+    uint64_t total_weight = 0;
+    for (auto pair: large) total_weight += pair.second;
+    REQUIRE(total_weight == 1000);
   }
 
   SECTION("weighted update: large weights into a full sketch") {

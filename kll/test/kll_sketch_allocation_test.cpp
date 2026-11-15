@@ -227,4 +227,53 @@ TEST_CASE("kll sketch allocation: failure at each allocation of the updates", "[
   REQUIRE(test_allocator_net_allocations == 0);
 }
 
+TEST_CASE("kll sketch allocation: failed first weighted update leaves the sketch unchanged", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    allocation_control control;
+    const failing_allocator<std::string> alloc(control);
+    const kll_string_failing_sketch fresh(200, std::less<std::string>(), alloc);
+    for (const uint64_t weight: {uint64_t(10), uint64_t(1000)}) { // copies into level zero, and a merge
+      kll_string_failing_sketch sketch(200, std::less<std::string>(), alloc);
+      control.arm(0);
+      REQUIRE_THROWS_AS(sketch.update(item(1), weight), std::bad_alloc);
+      check_empty(sketch, fresh);
+      control.disarm();
+      sketch.update(item(2), weight);
+      REQUIRE(sketch.get_n() == weight);
+      REQUIRE(sketch.get_min_item() == item(2));
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+// Fail each allocation made by a stream of weighted updates in turn: the sketch must stay valid and usable.
+TEST_CASE("kll sketch allocation: failure at each allocation of the weighted updates", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    allocation_control control;
+    const failing_allocator<std::string> alloc(control);
+    const kll_string_failing_sketch fresh(8, std::less<std::string>(), alloc);
+    bool completed = false;
+    for (long fail_at = 0; !completed; ++fail_at) {
+      kll_string_failing_sketch sketch(8, std::less<std::string>(), alloc);
+      control.arm(fail_at);
+      try {
+        for (int i = 0; i < 300; ++i) sketch.update(item(i), static_cast<uint64_t>(i % 7) * 100 + 1);
+        completed = true;
+        REQUIRE(fail_at > 0);
+      } catch (const std::bad_alloc&) {
+        if (fail_at == 0) check_empty(sketch, fresh);
+        check_usable(sketch, control);
+      }
+      control.disarm();
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
 } /* namespace datasketches */
