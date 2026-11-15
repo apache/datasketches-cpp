@@ -593,7 +593,6 @@ TEST_CASE("get_rank equivalence") {
 //  sketch.serialize(os);
 //}
 
-
 template<typename Bytes, typename V>
 static void put_value(Bytes& bytes, size_t offset, V value) {
   std::memcpy(bytes.data() + offset, &value, sizeof(value));
@@ -731,6 +730,36 @@ TEST_CASE("req sketch: deserialize rejects inconsistent compactors", "[req_sketc
     auto bytes = estimation.serialize();
     bytes.resize(estimation_compactor + 10);
     REQUIRE_THROWS_AS(req_sketch<float>::deserialize(bytes.data(), bytes.size()), std::out_of_range);
+  }
+}
+
+using req_compactor_float = req_compactor<float, std::less<float>, std::allocator<float>>;
+
+static req_compactor_float make_compactor_with_state(uint16_t k, uint64_t state) {
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  const float section_size_raw = k; // not used by merge
+  const uint8_t lg_weight = 0;
+  const uint8_t num_sections = req_constants::INIT_NUM_SECTIONS;
+  const uint16_t padding = 0;
+  const uint32_t num_items = 0;
+  s.write(reinterpret_cast<const char*>(&state), sizeof(state));
+  s.write(reinterpret_cast<const char*>(&section_size_raw), sizeof(section_size_raw));
+  s.write(reinterpret_cast<const char*>(&lg_weight), sizeof(lg_weight));
+  s.write(reinterpret_cast<const char*>(&num_sections), sizeof(num_sections));
+  s.write(reinterpret_cast<const char*>(&padding), sizeof(padding));
+  s.write(reinterpret_cast<const char*>(&num_items), sizeof(num_items));
+  return req_compactor_float::deserialize(s, serde<float>(), std::less<float>(), std::allocator<float>(), true, true,
+      k, 0);
+}
+
+TEST_CASE("req compactor: section growth stops at minimum section size", "[req_compactor]") {
+  const uint16_t ks[] = {6, 12, 14};
+  const uint32_t expected_nom_capacities[] = {48, 192, 192};
+  for (size_t i = 0; i < 3; ++i) {
+    req_compactor_float c(true, 0, ks[i], std::less<float>(), std::allocator<float>());
+    for (uint8_t lg_state: {2, 5, 11, 23}) c.merge(make_compactor_with_state(ks[i], 1ULL << lg_state));
+    INFO("k=" << ks[i]);
+    CHECK(c.get_nom_capacity() == expected_nom_capacities[i]);
   }
 }
 

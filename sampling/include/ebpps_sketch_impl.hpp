@@ -269,6 +269,7 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
   // avoid numeric issues by setting cumulative weight to the
   // pre-computed value
   cumulative_wt_ = final_cum_wt;
+  wt_max_ = new_wt_max;
   n_ = new_n;
 }
 

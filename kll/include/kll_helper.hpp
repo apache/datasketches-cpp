@@ -89,6 +89,16 @@ class kll_helper {
      * sorted afterwards.
      * Level zero is not required to be sorted before, and may not be sorted afterwards.
      */
+    /*
+     * Returns the result that general_compress() will have for the given level boundaries,
+     * computed from the level sizes alone, without touching any items.
+     * The number of levels and items after compression does not depend on the item values,
+     * so callers can allocate the storage for the result before they move any items.
+     * level_sizes must have room for the final number of levels plus one.
+     */
+    static inline compress_result predict_compress(uint16_t k, uint8_t m, uint8_t num_levels_in,
+            const uint32_t* in_levels, uint32_t* level_sizes);
+
     template <typename T, typename C>
     static compress_result general_compress(uint16_t k, uint8_t m, uint8_t num_levels_in, T* items,
             uint32_t* in_levels, uint32_t* out_levels, bool is_level_zero_sorted);

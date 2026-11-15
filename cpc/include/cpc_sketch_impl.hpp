@@ -533,7 +533,7 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(std::istream& is, uint64_t 
   compressed.table_num_entries = 0;
   compressed.window_data_words = 0;
   uint32_t num_coupons = 0;
-  double kxp = 0;
+  double kxp = 1 << lg_k;
   double hip_est_accum = 0;
   if (has_table || has_window) {
     num_coupons = read<uint32_t>(is);
@@ -621,7 +621,7 @@ cpc_sketch_alloc<A> cpc_sketch_alloc<A>::deserialize(const void* bytes, size_t s
   compressed.table_num_entries = 0;
   compressed.window_data_words = 0;
   uint32_t num_coupons = 0;
-  double kxp = 0;
+  double kxp = 1 << lg_k;
   double hip_est_accum = 0;
   if (has_table || has_window) {
     check_memory_size(ptr - base + sizeof(num_coupons), size);

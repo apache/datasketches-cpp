@@ -77,6 +77,9 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
       unused(pair); // to suppress "unused" warning
       FAIL("should be no iterations over an empty sketch");
     }
+    const auto empty_bytes = test_allocator_total_bytes;
+    REQUIRE(sketch.get_sorted_view().size() == 0);
+    REQUIRE(test_allocator_total_bytes == empty_bytes);
   }
 
   SECTION("get bad quantile") {
@@ -117,6 +120,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     kll_float_sketch sketch(200, std::less<float>(), 0);
     sketch.update(std::numeric_limits<float>::quiet_NaN());
     REQUIRE(sketch.is_empty());
+    REQUIRE(sketch.get_sorted_view().size() == 0);
 
     sketch.update(0);
     sketch.update(std::numeric_limits<float>::quiet_NaN());
@@ -1017,8 +1021,8 @@ TEST_CASE("kll sketch: lazy growth of the items buffer", "[kll_sketch]") {
   SECTION("buffer grows by 8x up to k") {
     REQUIRE(buffer_sizes(kll_constants::MAX_K) == std::vector<uint32_t>{200, 1600, 12800, 65535});
     kll_float_sketch sketch(kll_constants::MAX_K, std::less<float>(), 0);
-    REQUIRE(test_allocator_total_bytes
-        == static_cast<long long>(levels_bytes + kll_constants::DEFAULT_K * sizeof(float)));
+    // nothing is allocated for items before the first update
+    REQUIRE(test_allocator_total_bytes == levels_bytes);
     uint32_t n = 0;
     for (const uint32_t size: buffer_sizes(kll_constants::MAX_K)) {
       while (n < size) {
@@ -1124,8 +1128,104 @@ TEST_CASE("kll sketch: lazy growth of the items buffer", "[kll_sketch]") {
     require_identical(growing, full);
   }
 
+  SECTION("reserve() allocates k items, so the buffer does not grow") {
+    kll_float_sketch sketch(kll_constants::MAX_K, std::less<float>(), 0);
+    sketch.reserve();
+    const long long full_bytes = levels_bytes + kll_constants::MAX_K * sizeof(float);
+    REQUIRE(test_allocator_total_bytes == full_bytes);
+    sketch.reserve();
+    REQUIRE(test_allocator_total_bytes == full_bytes);
+    for (uint32_t i = 0; i < kll_constants::MAX_K; ++i) {
+      sketch.update(static_cast<float>(i));
+      REQUIRE(test_allocator_total_bytes == full_bytes);
+    }
+    REQUIRE_FALSE(sketch.is_estimation_mode());
+  }
+
+  SECTION("reserve() after the first update does nothing") {
+    kll_float_sketch sketch(kll_constants::MAX_K, std::less<float>(), 0);
+    sketch.update(0);
+    const long long bytes = test_allocator_total_bytes;
+    REQUIRE(bytes == static_cast<long long>(levels_bytes + kll_constants::DEFAULT_K * sizeof(float)));
+    sketch.reserve();
+    REQUIRE(test_allocator_total_bytes == bytes);
+  }
+
+  SECTION("same as a full buffer after reserve()") {
+    random_utils::random_bit.seed(6);
+    kll_float_sketch reserved(5000, std::less<float>(), 0);
+    reserved.reserve();
+    reserved.update(0);
+    kll_float_sketch full = with_full_buffer(reserved);
+    kll_float_sketch growing(5000, std::less<float>(), 0);
+    growing.update(0);
+    for (int i = 1; i < 30000; ++i) {
+      const float item = static_cast<float>((i * 7919) % 10007);
+      const auto random_bit = random_utils::random_bit;
+      reserved.update(item);
+      random_utils::random_bit = random_bit;
+      full.update(item);
+      random_utils::random_bit = random_bit;
+      growing.update(item);
+    }
+    // compare the raw items first: queries sort level zero in place
+    REQUIRE(items_and_weights(growing) == items_and_weights(reserved));
+    require_identical(reserved, full);
+  }
+
   // cleanup
   REQUIRE(test_allocator_total_bytes == 0);
+}
+
+// Compaction: level 0 is full, so update(item) compacts it, which can free the item it reads
+TEST_CASE("kll sketch: update with aliased item during compaction", "[kll_sketch]") {
+  const uint16_t k = 200;
+  kll_sketch<std::string> sketch(k);
+
+  for (int i = 0; i < kll_constants::DEFAULT_K; ++i) {
+    sketch.update(std::string(64, 'x') + std::to_string(i));
+  }
+
+  REQUIRE(sketch.get_n() == kll_constants::DEFAULT_K);
+
+  const std::string& item = sketch.begin()->first;
+  const std::string expected = item;
+
+  // Triggers compaction
+  sketch.update(item);
+
+  REQUIRE(sketch.get_n() == kll_constants::DEFAULT_K + 1);
+
+  // the compaction emptied level 0, so the first item is the one just added
+  REQUIRE(sketch.begin()->first == expected);
+  REQUIRE(sketch.begin()->second == 1);
+}
+
+// Regrowth: if the buffer starts below k items, update(item) grows it, which can free the item
+TEST_CASE("kll sketch: update with aliased item during buffer growth", "[kll_sketch]") {
+  const uint16_t k = 5000;
+  kll_sketch<std::string> sketch(k);
+
+  for (int i = 0; i < kll_constants::DEFAULT_K; ++i) {
+    sketch.update(std::string(64, 'x') + std::to_string(i));
+  }
+
+  REQUIRE(sketch.get_n() == kll_constants::DEFAULT_K);
+
+  const std::string& item = sketch.begin()->first;
+  const std::string expected = item;
+
+  sketch.update(item);
+
+  REQUIRE(sketch.get_n() == kll_constants::DEFAULT_K + 1);
+
+  uint32_t count = 0;
+  for (const auto& entry : sketch) {
+    if (entry.first == expected) {
+      ++count;
+    }
+  }
+  REQUIRE(count == 2);
 }
 
 } /* namespace datasketches */

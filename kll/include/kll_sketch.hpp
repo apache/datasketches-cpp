@@ -158,6 +158,13 @@ namespace kll_constants {
  * <li>Then <i>q<sub>lo</sub> &le; q &le; q<sub>hi</sub></i>, with 99% confidence.</li>
  * </ul>
  *
+ * <p>Memory allocation: a new sketch does not allocate storage for items until it first needs it,
+ * on the first update or the first merge of a non-empty sketch. Sketches that stay empty, or that
+ * are only ever merged into, use little memory. As a result, the first update or merge can throw
+ * std::bad_alloc while allocating this storage, rather than the constructor. If that happens, the
+ * sketch is unchanged and can still be used. Call reserve() right after construction to allocate
+ * the storage up front.
+ *
  * author Kevin Lang
  * author Alexander Saydakov
  * author Lee Rhodes
@@ -184,6 +191,7 @@ class kll_sketch {
 
     /**
      * Constructor.
+     * Storage for items is allocated on first use, see reserve().
      * The items buffer starts with space for min(k, DEFAULT_K) items (k items if RESIZE_FACTOR is X1),
      * and grows by RESIZE_FACTOR up to k items before the first compaction.
      * @param k affects the size of the sketch and its estimation error
@@ -234,6 +242,7 @@ class kll_sketch {
      * Updates this sketch with the given data item.
      * If cross-language portability is required, callers should ensure that
      * the input string uses a compatible encoding (valid UTF-8).
+     * The first update allocates storage for items, unless reserve() or a merge already did.
      * @param item from a stream of items
      */
     template<typename FwdT>
@@ -244,10 +253,22 @@ class kll_sketch {
      * If sketches contain strings, callers are responsible for ensuring that
      * both sketches were built using compatible string encodings.
      * If other is this sketch, this throws std::invalid_argument.
+     * The first merge of a non-empty sketch allocates storage for items,
+     * unless reserve() or an update already did.
      * @param other sketch to merge into this one
      */
     template<typename FwdSk>
     void merge(FwdSk&& other);
+
+    /**
+     * Allocates storage for k items now, rather than on the first update or merge.
+     * The buffer then does not need to grow before the first compaction.
+     * Call this right after construction if allocation failures should happen here,
+     * or if the first update should not pay for the allocation.
+     * Does nothing if the storage is already allocated.
+     * @throw std::bad_alloc if the allocation fails, in which case the sketch is unchanged
+     */
+    void reserve();
 
     /**
      * Returns true if this sketch is empty.
@@ -524,6 +545,7 @@ class kll_sketch {
 
     /**
      * Gets the sorted view of this sketch
+     * An empty sketch returns an empty view without allocating item storage.
      * @return the sorted view of this sketch
      */
     quantiles_sorted_view<T, C, A> get_sorted_view() const;
@@ -565,7 +587,7 @@ class kll_sketch {
     bool is_level_zero_sorted_;
     uint64_t n_;
     vector_u32 levels_;
-    T* items_;
+    T* items_; // nullptr until the sketch first receives items, see allocate_items()
     uint32_t items_size_;
     optional<T> min_item_;
     optional<T> max_item_;
@@ -579,6 +601,13 @@ class kll_sketch {
 
     // common update code
     inline void update_min_max(const T& item);
+    // items_ is allocated lazily, and these are the only places that deal with it being nullptr:
+    // allocates items_ (items_size_ items) unless it is allocated already
+    inline void allocate_items();
+    // copy-constructs the items of other, if other has any, into this newly constructed sketch
+    template<typename O> void copy_items(const O& other);
+    // &items_[index], or nullptr without item storage, which makes every item range empty
+    inline T* item_ptr(uint32_t index) const;
     inline uint32_t internal_update();
 
     // The following code is only valid in the special case of exactly reaching capacity while updating.
