@@ -1142,7 +1142,13 @@ void kll_sketch<T, C, A>::reset_sorted_view() {
 template<typename T, typename C, typename A>
 kll_sketch<T, C, A>::const_iterator::const_iterator(const T* items, const uint32_t* levels, const uint8_t num_levels):
 items(items), levels(levels), num_levels(num_levels), index(items == nullptr ? levels[num_levels] : levels[0]), level(items == nullptr ? num_levels : 0), weight(1)
-{}
+{
+  // start at the first non-empty level: level zero can be empty after a merge
+  while (level < num_levels && levels[level] == levels[level + 1]) {
+    ++level;
+    weight *= 2;
+  }
+}
 
 template<typename T, typename C, typename A>
 typename kll_sketch<T, C, A>::const_iterator& kll_sketch<T, C, A>::const_iterator::operator++() {

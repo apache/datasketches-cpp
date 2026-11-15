@@ -970,6 +970,24 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 }
 
 
+TEST_CASE("kll sketch: iterator weights when level zero is empty", "[kll_sketch]") {
+  // merges can leave level zero empty; the iterator must still give each item the weight of its level
+  bool found_empty_level_zero = false;
+  for (int trial = 0; trial < 50; ++trial) {
+    kll_float_sketch target(8, std::less<float>(), 0);
+    for (int j = 0; j < 1 + trial % 5; ++j) {
+      kll_float_sketch sketch(8, std::less<float>(), 0);
+      for (int i = 0; i < 10 + (trial * 37 + j * 11) % 300; ++i) sketch.update(static_cast<float>(i));
+      target.merge(sketch);
+    }
+    uint64_t total_weight = 0;
+    for (const auto pair: target) total_weight += pair.second;
+    REQUIRE(total_weight == target.get_n());
+    if (target.to_string(true, false).find("   0: 8, 0\n") != std::string::npos) found_empty_level_zero = true;
+  }
+  REQUIRE(found_empty_level_zero);
+}
+
 TEST_CASE("kll sketch: deserialize rejects inconsistent levels", "[kll_sketch]") {
   using vector_bytes = kll_sketch<int>::vector_bytes;
   const size_t k_offset = 4;
