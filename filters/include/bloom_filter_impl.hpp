@@ -302,6 +302,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   const uint64_t seed = read<uint64_t>(is);
   const uint32_t num_longs = read<uint32_t>(is); // sized in java longs
   read<uint32_t>(is); // unused
+  if (!is.good()) throw std::runtime_error("error reading from std::istream");
 
   // if empty, stop reading
   if (is_empty) {
@@ -309,7 +310,6 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   }
 
   const uint64_t raw_num_bits_set = read<uint64_t>(is);
-  if (!is.good()) throw std::runtime_error("error reading from std::istream");
 
   // allocate memory
   const uint64_t num_bytes = num_longs << 3;
