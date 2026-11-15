@@ -167,6 +167,22 @@ TEST_CASE("req sketch allocation: an empty sketch has no item storage", "[req_sk
   REQUIRE(test_allocator_net_allocations == 0);
 }
 
+TEST_CASE("req compactor allocation: merging an empty compactor allocates no item storage", "[req_sketch]") {
+  using compactor_type = req_compactor<double, std::less<double>, test_allocator<double>>;
+  for (bool hra: {true, false}) {
+    test_allocator_total_bytes = 0;
+    test_allocator_net_allocations = 0;
+    {
+      compactor_type target(hra, 0, K, std::less<double>(), test_allocator<double>(0));
+      compactor_type source(hra, 0, K, std::less<double>(), test_allocator<double>(0));
+      target.merge(source);
+      REQUIRE(test_allocator_total_bytes == 0);
+      REQUIRE(target.get_num_items() == 0);
+    }
+    REQUIRE(test_allocator_net_allocations == 0);
+  }
+}
+
 TEST_CASE("req sketch: iterating skips levels without items", "[req_sketch]") {
   for (bool hra: {true, false}) {
     req_sketch<double> sketch(K, hra);

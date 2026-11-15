@@ -226,6 +226,7 @@ void req_compactor<T, C, A>::grow(uint32_t new_capacity) {
 
 template<typename T, typename C, typename A>
 void req_compactor<T, C, A>::ensure_space(uint32_t num) {
+  if (num == 0) return; // nothing to add, so an empty compactor stays unallocated
   reserve();
   if (num_items_ + num > capacity_) grow(num_items_ + num + get_nom_capacity());
 }
