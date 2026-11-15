@@ -430,4 +430,17 @@ TEST_CASE("bloom_filter: inconsistent num bits set is rejected", "[bloom_filter]
   }
 }
 
+TEST_CASE("bloom_filter: truncated empty stream is rejected", "[bloom_filter]") {
+  auto bf = bloom_filter::builder::create_by_size(32769, 7);
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  bf.serialize(ss);
+  const std::string serialized = ss.str();
+  REQUIRE(serialized.size() == bf.get_serialized_size_bytes());
+
+  for (size_t len = 4; len < serialized.size(); ++len) {
+    std::istringstream is(serialized.substr(0, len), std::ios::in | std::ios::binary);
+    REQUIRE_THROWS_AS(bloom_filter::deserialize(is), std::runtime_error);
+  }
+}
+
 } // namespace datasketches
