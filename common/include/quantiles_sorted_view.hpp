@@ -28,7 +28,9 @@
 namespace datasketches {
 
 /**
- * Sorted view for quantiles sketches (REQ, KLL and Quantiles)
+ * Sorted view for quantiles sketches (REQ, KLL and Quantiles).
+ * For non-arithmetic types, the view refers to the items of the sketch it came from,
+ * so it must not be used after that sketch is updated, merged, assigned to, moved or destroyed.
  */
 template<
   typename T,
@@ -51,6 +53,12 @@ public:
 
   /// @private
   void convert_to_cummulative();
+
+  /// @private
+  void add_min(const T& min_item);
+
+  /// @private
+  void convert_to_cummulative(const T& max_item);
 
   class const_iterator;
 
@@ -155,6 +163,7 @@ public:
 private:
   Comparator comparator_;
   uint64_t total_weight_;
+  bool min_added_;
   Container entries_;
 
   static inline const T& deref_helper(const T* t) { return *t; }
