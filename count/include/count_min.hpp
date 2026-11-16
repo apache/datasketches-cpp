@@ -423,9 +423,9 @@ private:
    * Throws an error if the header is not valid.
    * @param preamble_longs
    * @param serial_version
-   * @param flags_byte
+   * @param family_id
    */
-  static void check_header_validity(uint8_t preamble_longs, uint8_t serial_version, uint8_t family_id, uint8_t flags_byte);
+  static void check_header_validity(uint8_t preamble_longs, uint8_t serial_version, uint8_t family_id);
 
   /*
    * Compute the hash locations for an input item

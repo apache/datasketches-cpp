@@ -236,6 +236,23 @@ TEST_CASE("count min v2: other serial versions are rejected", "[count_min]") {
   }
 }
 
+TEST_CASE("count min v2: each header field is checked", "[count_min]") {
+  // {preamble longs, serial version, family ID}: each has a wrong field, and the first three
+  // used to pass, because the old check only looked at a weighted sum of the fields
+  const uint8_t headers[][3] = {{2, 0, 19}, {2, 3, 17}, {10, 2, 18}, {3, 2, 18}, {2, 2, 17}};
+  sketch_type sketch(3, 1000);
+  sketch.update(static_cast<int64_t>(1));
+  for (const auto& header: headers) {
+    auto image = to_vector(sketch.serialize());
+    image[0] = header[0];
+    image[1] = header[1];
+    image[2] = header[2];
+    REQUIRE_THROWS_AS(sketch_type::deserialize(image.data(), image.size()), std::invalid_argument);
+    std::stringstream is(std::string(image.begin(), image.end()));
+    REQUIRE_THROWS_AS(sketch_type::deserialize(is), std::invalid_argument);
+  }
+}
+
 TEST_CASE("count min v2: copies keep the serial version", "[count_min]") {
   const std::vector<uint8_t> v1_empty = {
     0x02, 0x01, 0x12, 0x01, 0x00, 0x00, 0x00, 0x00,  0x09, 0x00, 0x00, 0x00, 0x02, 0xcc, 0x93, 0x00

@@ -367,7 +367,7 @@ auto count_min_sketch<W,A>::deserialize(std::istream& is, uint64_t seed, const A
   const auto flags_byte = read<uint8_t>(is);
   read<uint32_t>(is); // 4 unused bytes
 
-  check_header_validity(preamble_longs, serial_version, family_id, flags_byte);
+  check_header_validity(preamble_longs, serial_version, family_id);
 
   // Sketch parameters
   const auto nbuckets = read<uint32_t>(is);
@@ -429,7 +429,7 @@ auto count_min_sketch<W,A>::deserialize(const void* bytes, size_t size, uint64_t
   ptr += copy_from_mem(ptr, flags_byte);
   ptr += sizeof(uint32_t);
 
-  check_header_validity(preamble_longs, serial_version, family_id, flags_byte);
+  check_header_validity(preamble_longs, serial_version, family_id);
 
   // Second 8 bytes are the sketch parameters with a final, unused byte.
   uint32_t nbuckets;
@@ -491,29 +491,20 @@ string<A> count_min_sketch<W,A>::to_string() const {
 }
 
 template<typename W, typename A>
-void count_min_sketch<W,A>::check_header_validity(uint8_t preamble_longs, uint8_t serial_version,  uint8_t family_id, uint8_t flags_byte) {
-  const bool empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
-
-  const uint8_t sw = (empty ? 1 : 0) + (2 * serial_version) + (4 * family_id) + (32 * (preamble_longs & 0x3F));
-  bool valid = true;
-
-  switch (sw) { // exhaustive list and description of all valid cases
-    case 138 : break; // !empty, ser_ver==1, family==18, preLongs=2;
-    case 139 : break; // empty, ser_ver==1, family==18, preLongs=2;
-    case 140 : break; // !empty, ser_ver==2, family==18, preLongs=2;
-    case 141 : break; // empty, ser_ver==2, family==18, preLongs=2;
-    //case 170 : break; // !empty, ser_ver==1, family==18, preLongs=3;
-    default : // all other case values are invalid
-      valid = false;
+void count_min_sketch<W,A>::check_header_validity(uint8_t preamble_longs, uint8_t serial_version, uint8_t family_id) {
+  // each field is checked on its own, so that no combination of wrong values can pass
+  if (preamble_longs != PREAMBLE_LONGS_SHORT) {
+    throw std::invalid_argument("Possible sketch corruption. Preamble longs mismatch: expected "
+                                + std::to_string(PREAMBLE_LONGS_SHORT) + ", actual " + std::to_string(preamble_longs));
   }
-
-  if (!valid) {
-    std::ostringstream os;
-    os << "Possible sketch corruption. Inconsistent state: "
-       << "preamble_longs = " << static_cast<uint32_t>(preamble_longs)
-       << ", empty = " << (empty ? "true" : "false")
-       << ", serialization_version = " << static_cast<uint32_t>(serial_version);
-    throw std::invalid_argument(os.str());
+  if (serial_version != SERIAL_VERSION_1 && serial_version != SERIAL_VERSION_2) {
+    throw std::invalid_argument("Possible sketch corruption. Serial version mismatch: expected "
+                                + std::to_string(SERIAL_VERSION_1) + " or " + std::to_string(SERIAL_VERSION_2)
+                                + ", actual " + std::to_string(serial_version));
+  }
+  if (family_id != FAMILY_ID) {
+    throw std::invalid_argument("Possible sketch corruption. Family ID mismatch: expected "
+                                + std::to_string(FAMILY_ID) + ", actual " + std::to_string(family_id));
   }
 }
 
