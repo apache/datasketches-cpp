@@ -19,6 +19,7 @@
 
 #include <catch2/catch.hpp>
 #include <new>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -157,11 +158,21 @@ TEST_CASE("req sketch allocation: an empty sketch has no item storage", "[req_sk
     REQUIRE(target.is_empty());
 
     const auto b = sketch.serialize();
+    const long long bytes_before = test_allocator_total_bytes;
     auto deserialized = req_double_test_sketch::deserialize(b.data(), b.size(), serde<double>(),
         std::less<double>(), test_allocator<double>(0));
+    REQUIRE(test_allocator_total_bytes - bytes_before == empty_bytes); // no item storage, like a new sketch
     REQUIRE(deserialized.is_empty());
     deserialized.update(1);
     REQUIRE(deserialized.get_n() == 1);
+
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    sketch.serialize(s);
+    const long long stream_bytes_before = test_allocator_total_bytes;
+    auto from_stream = req_double_test_sketch::deserialize(s, serde<double>(), std::less<double>(),
+        test_allocator<double>(0));
+    REQUIRE(test_allocator_total_bytes - stream_bytes_before == empty_bytes);
+    REQUIRE(from_stream.is_empty());
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);
