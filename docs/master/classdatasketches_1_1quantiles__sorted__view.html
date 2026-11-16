@@ -115,6 +115,7 @@ Public Member Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename T, typename Comparator, typename Allocator&gt;<br />
 class datasketches::quantiles_sorted_view&lt; T, Comparator, Allocator &gt;</div><p>Sorted view for quantiles sketches (REQ, KLL and Quantiles). </p>
+<p>For non-arithmetic types, the view refers to the items of the sketch it came from, so it must not be used after that sketch is updated, merged, assigned to, moved or destroyed. </p>
 </div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Member Typedef Documentation</h2>
 <a id="a5ab4905c4f3ebeb14de4e7a2f5d92832" name="a5ab4905c4f3ebeb14de4e7a2f5d92832"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5ab4905c4f3ebeb14de4e7a2f5d92832">&#9670;&#160;</a></span>quantile_return_type</h2>
