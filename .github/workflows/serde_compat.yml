@@ -24,7 +24,7 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
       - name: Run Java
-        run: cd datasketches-java && mvn test -P generate-java-files
+        run: cd datasketches-java && mvn test -P generate_java_files
       - name: Copy files
         run: |
           mkdir -p serialization_test_data/java_generated_files
