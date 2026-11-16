@@ -248,10 +248,13 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("stream serialize deserialize empty") {
     kll_float_sketch sketch(200, std::less<float>(), 0);
+    const long long empty_bytes = test_allocator_total_bytes;
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
+    const long long bytes_before = test_allocator_total_bytes;
     auto sketch2 = kll_float_sketch::deserialize(s, serde<float>(), std::less<float>(), 0);
+    REQUIRE(test_allocator_total_bytes - bytes_before == empty_bytes); // no item storage, like a new sketch
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
@@ -266,8 +269,11 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("bytes serialize deserialize empty") {
     kll_float_sketch sketch(200, std::less<float>(), 0);
+    const long long empty_bytes = test_allocator_total_bytes;
     auto bytes = sketch.serialize();
+    const long long bytes_before = test_allocator_total_bytes;
     auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), std::less<float>(), 0);
+    REQUIRE(test_allocator_total_bytes - bytes_before == empty_bytes); // no item storage, like a new sketch
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
