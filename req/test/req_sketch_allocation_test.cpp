@@ -319,6 +319,7 @@ TEST_CASE("req sketch allocation: failure at each allocation of a merge", "[req_
           const auto source_bytes = bytes(source);
           for (long fail_at = 0; ; ++fail_at) {
             sketch_type target = make_sketch(0, target_n, control, hra);
+            const bool was_estimation_mode = target.is_estimation_mode();
             control.arm(fail_at);
             try {
               target.merge(source);
@@ -330,6 +331,11 @@ TEST_CASE("req sketch allocation: failure at each allocation of a merge", "[req_
               control.disarm();
               CAPTURE(fail_at);
               REQUIRE(bytes(source) == source_bytes);
+              // levels added for the merge must not stay behind empty: if no items were merged,
+              // the target has the same levels as before
+              if (target.get_n() == static_cast<uint64_t>(target_n)) {
+                REQUIRE(target.is_estimation_mode() == was_estimation_mode);
+              }
               check_usable(target, control);
             }
           }

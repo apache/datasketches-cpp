@@ -194,21 +194,24 @@ void req_sketch<T, C, A>::merge(FwdSk&& other) {
   if (is_HRA() != other.is_HRA()) throw std::invalid_argument("merging HRA and LRA is not valid");
   if (other.is_empty()) return;
   reset_sorted_view();
-  if (is_empty()) {
-    min_item_.emplace(conditional_forward<FwdSk>(*other.min_item_));
-    max_item_.emplace(conditional_forward<FwdSk>(*other.max_item_));
-  } else {
-    if (comparator_(*other.min_item_, *min_item_)) *min_item_ = conditional_forward<FwdSk>(*other.min_item_);
-    if (comparator_(*max_item_, *other.max_item_)) *max_item_ = conditional_forward<FwdSk>(*other.max_item_);
-  }
+  const size_t num_levels = compactors_.size();
   try {
     // grow until this has at least as many compactors as other
     while (get_num_levels() < other.get_num_levels()) grow();
+    if (is_empty()) {
+      min_item_.emplace(conditional_forward<FwdSk>(*other.min_item_));
+      max_item_.emplace(conditional_forward<FwdSk>(*other.max_item_));
+    } else {
+      if (comparator_(*other.min_item_, *min_item_)) *min_item_ = conditional_forward<FwdSk>(*other.min_item_);
+      if (comparator_(*max_item_, *other.max_item_)) *max_item_ = conditional_forward<FwdSk>(*other.max_item_);
+    }
     // merge the items in all height compactors
     for (size_t i = 0; i < other.get_num_levels(); ++i) {
       compactors_[i].merge(conditional_forward<FwdSk>(other.compactors_[i]));
     }
   } catch (...) {
+    // remove the levels added for this merge that received no items
+    while (compactors_.size() > num_levels && compactors_.back().get_num_items() == 0) compactors_.pop_back();
     restore_counts(); // some levels may be merged already
     throw;
   }
