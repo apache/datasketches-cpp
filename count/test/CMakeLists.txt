@@ -39,4 +39,19 @@ target_sources(count_min_test
   PRIVATE
     count_min_test.cpp
     count_min_allocation_test.cpp
+    count_min_v2_test.cpp
 )
+
+if (SERDE_COMPAT)
+target_sources(count_min_test
+  PRIVATE
+    count_min_deserialize_from_java_test.cpp
+)
+endif()
+
+if (GENERATE)
+target_sources(count_min_test
+  PRIVATE
+    count_min_serialize_for_java.cpp
+)
+endif()
