@@ -97,6 +97,8 @@ TEST_CASE("bloom filter: truncated stream frees bit array", "[bloom_filter][test
   REQUIRE(test_allocator_net_allocations == 0);
 }
 
+namespace {
+
 // Standard-conforming allocator that always fails: allocate() throws std::bad_alloc.
 template<typename T>
 struct throwing_allocator {
@@ -108,6 +110,8 @@ struct throwing_allocator {
   bool operator==(const throwing_allocator&) const { return true; }
   bool operator!=(const throwing_allocator&) const { return false; }
 };
+
+} // namespace
 
 TEST_CASE("bloom filter: allocation failure propagates std::bad_alloc", "[bloom_filter]") {
   using bloom_filter_throwing_alloc = bloom_filter_alloc<throwing_allocator<uint8_t>>;
