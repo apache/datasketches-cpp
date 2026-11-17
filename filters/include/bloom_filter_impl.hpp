@@ -302,6 +302,10 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   if (is_empty) {
     return bloom_filter_alloc<A>(num_longs << 6, num_hashes, seed, allocator);
   }
+  // a non-empty filter has at least one long, which keeps capacity_bits_ positive
+  if (num_longs == 0) {
+    throw std::invalid_argument("Possible corruption: non-empty filter with a bit array of 0 longs");
+  }
 
   const uint64_t raw_num_bits_set = read<uint64_t>(is);
 
@@ -383,6 +387,10 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
     throw std::invalid_argument("Cannot wrap an empty filter for writing");
   } else if (is_empty) {
     return bloom_filter_alloc<A>(num_longs << 6, num_hashes, seed, allocator);
+  }
+  // a non-empty filter has at least one long, which keeps capacity_bits_ positive
+  if (num_longs == 0) {
+    throw std::invalid_argument("Possible corruption: non-empty filter with a bit array of 0 longs");
   }
 
   uint64_t raw_num_bits_set;
