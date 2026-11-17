@@ -22,6 +22,7 @@
 
 #include "CouponHashSet.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <exception>
 #include <stdexcept>
@@ -56,6 +57,39 @@ std::function<void(HllSketchImpl<A>*)> CouponHashSet<A>::get_deleter() const {
 }
 
 template<typename A>
+uint32_t CouponHashSet<A>::getSerializedArraySize(uint8_t lgK, uint8_t lgArrInts, bool compact, uint32_t couponCount) {
+  const uint32_t maxCouponCount = hll_constants::RESIZE_NUMER * (uint32_t(1) << (lgK - 3))
+      / hll_constants::RESIZE_DENOM;
+  if (couponCount > maxCouponCount) {
+    throw std::invalid_argument("CouponHashSet count exceeds the maximum for its precision: " + std::to_string(couponCount));
+  }
+  if (lgArrInts < hll_constants::LG_INIT_SET_SIZE) {
+    lgArrInts = HllUtil<A>::computeLgArrInts(SET, couponCount, lgK);
+  }
+  if (compact) return couponCount;
+  if (lgArrInts > lgK - 3) {
+    throw std::invalid_argument("CouponHashSet table size exceeds the maximum for its precision: "
+        + std::to_string(lgArrInts));
+  }
+  const uint32_t capacity = uint32_t(1) << lgArrInts;
+  if (couponCount > hll_constants::RESIZE_NUMER * capacity / hll_constants::RESIZE_DENOM) {
+    throw std::invalid_argument("CouponHashSet count exceeds the table load limit: " + std::to_string(couponCount));
+  }
+  return capacity;
+}
+
+template<typename A>
+void CouponHashSet<A>::checkOccupiedSlots(const vector_int& coupons, uint32_t couponCount) {
+  const auto occupied = std::count_if(coupons.begin(), coupons.end(), [](uint32_t coupon) {
+    return coupon != hll_constants::EMPTY;
+  });
+  if (occupied != couponCount) {
+    throw std::invalid_argument("CouponHashSet count does not match the number of occupied slots: "
+        + std::to_string(couponCount) + " vs " + std::to_string(occupied));
+  }
+}
+
+template<typename A>
 CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len, const A& allocator) {
   if (len < hll_constants::HASH_SET_INT_ARR_START) { // hard-coded
     throw std::out_of_range("Input data length insufficient to hold CouponHashSet");
@@ -85,25 +119,14 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len, const 
                                 + std::to_string(lgK));
   }
   HllUtil<A>::checkLgK(lgK);
-  uint8_t lgArrInts = data[hll_constants::LG_ARR_BYTE];
+  const uint8_t lgArrInts = data[hll_constants::LG_ARR_BYTE];
   const bool compactFlag = ((data[hll_constants::FLAGS_BYTE] & hll_constants::COMPACT_FLAG_MASK) ? true : false);
 
   uint32_t couponCount;
   std::memcpy(&couponCount, data + hll_constants::HASH_SET_COUNT_INT, sizeof(couponCount));
-  const uint32_t maxCouponCount = hll_constants::RESIZE_NUMER * (uint32_t(1) << (lgK - 3))
-      / hll_constants::RESIZE_DENOM;
-  if (compactFlag && couponCount > maxCouponCount) {
-    throw std::invalid_argument("Attempt to deserialize invalid compact CouponHashSet with couponCount > capacity. Found couponCount: "
-                                + std::to_string(couponCount)
-                                + ", capacity: " + std::to_string(maxCouponCount));
-  }
-  if (lgArrInts < hll_constants::LG_INIT_SET_SIZE) {
-    lgArrInts = HllUtil<>::computeLgArrInts(SET, couponCount, lgK);
-  }
-  // Don't set couponCount in sketch here;
-  // we'll set later if updatable, and increment with updates if compact
-  const uint32_t couponsInArray = (compactFlag ? couponCount : (1 << lgArrInts));
-  const size_t expectedLength = hll_constants::HASH_SET_INT_ARR_START + (couponsInArray * sizeof(uint32_t));
+  const uint32_t couponsInArray = getSerializedArraySize(lgK, lgArrInts, compactFlag, couponCount);
+  const size_t arrayBytes = couponsInArray * sizeof(uint32_t);
+  const size_t expectedLength = hll_constants::HASH_SET_INT_ARR_START + arrayBytes;
   if (len < expectedLength) {
     throw std::out_of_range("Byte array too short for sketch. Expected " + std::to_string(expectedLength)
                                 + ", found: " + std::to_string(len));
@@ -120,11 +143,10 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len, const 
       sketch->couponUpdate(coupon);
     }
   } else {
-    sketch->coupons_.resize(1ULL << lgArrInts);
+    sketch->coupons_.resize(couponsInArray);
+    std::memcpy(sketch->coupons_.data(), data + hll_constants::HASH_SET_INT_ARR_START, arrayBytes);
+    checkOccupiedSlots(sketch->coupons_, couponCount);
     sketch->couponCount_ = couponCount;
-    std::memcpy(sketch->coupons_.data(),
-                data + hll_constants::HASH_SET_INT_ARR_START,
-                couponsInArray * sizeof(uint32_t));
   }
 
   return ptr.release();
@@ -133,7 +155,8 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(const void* bytes, size_t len, const 
 template<typename A>
 CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is, const A& allocator) {
   uint8_t listHeader[8];
-  read(is, listHeader, 8 * sizeof(uint8_t));
+  read(is, listHeader, sizeof(listHeader));
+  if (!is.good()) { throw std::runtime_error("error reading from std::istream"); }
 
   if (listHeader[hll_constants::PREAMBLE_INTS_BYTE] != hll_constants::HASH_SET_PREINTS) {
     throw std::invalid_argument("Incorrect number of preInts in input stream");
@@ -158,40 +181,32 @@ CouponHashSet<A>* CouponHashSet<A>::newSet(std::istream& is, const A& allocator)
                                 + std::to_string(lgK));
   }
   HllUtil<A>::checkLgK(lgK);
-  uint8_t lgArrInts = listHeader[hll_constants::LG_ARR_BYTE];
+  const uint8_t lgArrInts = listHeader[hll_constants::LG_ARR_BYTE];
   const bool compactFlag = ((listHeader[hll_constants::FLAGS_BYTE] & hll_constants::COMPACT_FLAG_MASK) ? true : false);
 
-  const auto couponCount = read<uint32_t>(is);
-  const uint32_t maxCouponCount = hll_constants::RESIZE_NUMER * (uint32_t(1) << (lgK - 3))
-      / hll_constants::RESIZE_DENOM;
-  if (compactFlag && couponCount > maxCouponCount) {
-    throw std::invalid_argument("Attempt to deserialize invalid compact CouponHashSet with couponCount > capacity. Found couponCount: "
-                                + std::to_string(couponCount)
-                                + ", capacity: " + std::to_string(maxCouponCount));
-  }
-  if (lgArrInts < hll_constants::LG_INIT_SET_SIZE) {
-    lgArrInts = HllUtil<>::computeLgArrInts(SET, couponCount, lgK);
-  }
+  uint32_t couponCount;
+  read(is, &couponCount, sizeof(couponCount));
+  if (!is.good()) { throw std::runtime_error("error reading from std::istream"); }
+  const uint32_t couponsInArray = getSerializedArraySize(lgK, lgArrInts, compactFlag, couponCount);
 
   auto sketch = HllUtil<A>::template newObject<CouponHashSet<A>>(allocator, lgK, tgtHllType, allocator);
   typedef std::unique_ptr<CouponHashSet<A>, std::function<void(HllSketchImpl<A>*)>> coupon_hash_set_ptr;
   coupon_hash_set_ptr ptr(sketch, sketch->get_deleter());
 
-  // Don't set couponCount here;
-  // we'll set later if updatable, and increment with updates if compact
   if (compactFlag) {
     for (uint32_t i = 0; i < couponCount; ++i) {
-      const auto coupon = read<uint32_t>(is);
+      uint32_t coupon;
+      read(is, &coupon, sizeof(coupon));
+      if (!is.good()) { throw std::runtime_error("error reading from std::istream"); }
       sketch->couponUpdate(coupon);
     }
   } else {
-    sketch->coupons_.resize(1ULL << lgArrInts);
+    sketch->coupons_.resize(couponsInArray);
+    read(is, sketch->coupons_.data(), couponsInArray * sizeof(uint32_t));
+    if (!is.good()) { throw std::runtime_error("error reading from std::istream"); }
+    checkOccupiedSlots(sketch->coupons_, couponCount);
     sketch->couponCount_ = couponCount;
-    // for stream processing, read entire list so read pointer ends up set correctly
-    read(is, sketch->coupons_.data(), sketch->coupons_.size() * sizeof(uint32_t));
-  } 
-
-  if (!is.good()) { throw std::runtime_error("error reading from std::istream"); } 
+  }
 
   return ptr.release();
 }

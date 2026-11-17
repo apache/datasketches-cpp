@@ -50,6 +50,8 @@ class CouponHashSet : public CouponList<A> {
 
   private:
     using ChsAlloc = typename std::allocator_traits<A>::template rebind_alloc<CouponHashSet<A>>;
+    static uint32_t getSerializedArraySize(uint8_t lgK, uint8_t lgArrInts, bool compact, uint32_t couponCount);
+    static void checkOccupiedSlots(const vector_int& coupons, uint32_t couponCount);
 #if defined(_MSC_VER)
     __declspec(noinline)
 #elif defined(__GNUC__) || defined(__clang__)
