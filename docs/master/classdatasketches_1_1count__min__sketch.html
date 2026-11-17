@@ -93,6 +93,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8dbb00b2bf984b434482e3da006e2238" id="r_a8dbb00b2bf984b434482e3da006e2238"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8dbb00b2bf984b434482e3da006e2238">count_min_sketch</a> (uint8_t num_hashes, uint32_t num_buckets, uint64_t seed=DEFAULT_SEED, const Allocator &amp;allocator=Allocator())</td></tr>
 <tr class="memdesc:a8dbb00b2bf984b434482e3da006e2238"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an instance of the sketch given parameters _num_hashes, _num_buckets and hash seed, <span class="tt">seed</span>.  <br /></td></tr>
 <tr class="memitem:a6bd30e22135f7abd37d5b2b45d577d0c" id="r_a6bd30e22135f7abd37d5b2b45d577d0c"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6bd30e22135f7abd37d5b2b45d577d0c">get_num_hashes</a> () const</td></tr>
+<tr class="memitem:a85769b7789ee8d2825bb27bb4596d452" id="r_a85769b7789ee8d2825bb27bb4596d452"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a85769b7789ee8d2825bb27bb4596d452">get_serial_version</a> () const</td></tr>
 <tr class="memitem:a56843138b87eb57c033f4ad26d8eb146" id="r_a56843138b87eb57c033f4ad26d8eb146"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a56843138b87eb57c033f4ad26d8eb146">get_num_buckets</a> () const</td></tr>
 <tr class="memitem:a9004656ac2e34c35d8a7a0773285385a" id="r_a9004656ac2e34c35d8a7a0773285385a"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9004656ac2e34c35d8a7a0773285385a">get_seed</a> () const</td></tr>
 <tr class="memitem:a5356c92bb629951dcb748e51677a3886" id="r_a5356c92bb629951dcb748e51677a3886"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5356c92bb629951dcb748e51677a3886">get_relative_error</a> () const</td></tr>
@@ -160,7 +161,10 @@ Static Public Member Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename W, typename Allocator = std::allocator&lt;W&gt;&gt;<br />
 class datasketches::count_min_sketch&lt; W, Allocator &gt;</div><p>C++ implementation of the CountMin sketch data structure of Cormode and Muthukrishnan. </p>
-<p>[1] - <a href="http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf">http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf</a> The template type W is the type of the vector that contains the weights of the objects inserted into the sketch, not the type of the input items themselves. </p><dl class="section author"><dt>Author</dt><dd>Charlie Dickens </dd></dl>
+<p>[1] - <a href="http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf">http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf</a> The template type W is the type of the vector that contains the weights of the objects inserted into the sketch, not the type of the input items themselves.</p>
+<p>New sketches use serialization version 2, as specified in the Count-Min format specification in <a href="https://github.com/apache/datasketches-tck/blob/main/docs/count-min-format.md">datasketches-tck</a>. Version 2 hashes items with XXH64 and derives the row seeds from the seed, so its images give the same results in every language and with every C++ standard library. Other languages read only images with W = int64_t (signed 64-bit counters).</p>
+<p>Sketches deserialized from version 1 images keep the version 1 hashing, and serialize as version 1. Version 1 row seeds depend on the C++ standard library, so version 1 images are reliable only with the standard library that wrote them. Sketches of different versions can't be merged.</p>
+<p>Empty items (an empty string, or a size of 0) are ignored: an update does nothing, and every query returns 0. </p><dl class="section author"><dt>Author</dt><dd>Charlie Dickens </dd></dl>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a8dbb00b2bf984b434482e3da006e2238" name="a8dbb00b2bf984b434482e3da006e2238"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8dbb00b2bf984b434482e3da006e2238">&#9670;&#160;</a></span>count_min_sketch()</h2>
@@ -194,16 +198,22 @@ template&lt;typename W, typename Allocator = std::allocator&lt;W&gt;&gt; </div>
 </div><div class="memdoc">
 
 <p>Creates an instance of the sketch given parameters _num_hashes, _num_buckets and hash seed, <span class="tt">seed</span>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
+<p>The sketch uses serialization version 2. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">num_hashes</td><td>number of hash functions in the sketch. Equivalently the number of rows in the array </td></tr>
-    <tr><td class="paramname">num_buckets</td><td>number of buckets that hash functions map into. Equivalently the number of columns in the array </td></tr>
+    <tr><td class="paramname">num_hashes</td><td>number of hash functions in the sketch. Equivalently the number of rows in the array. It must be in [1, 127]. </td></tr>
+    <tr><td class="paramname">num_buckets</td><td>number of buckets that hash functions map into. Equivalently the number of columns in the array. It must be at least 3, and num_hashes * num_buckets must be less than 2^30. </td></tr>
     <tr><td class="paramname">seed</td><td>for hash function </td></tr>
-    <tr><td class="paramname">allocator</td><td>to acquire and release memory</td></tr>
+    <tr><td class="paramname">allocator</td><td>to acquire and release memory </td></tr>
   </table>
   </dd>
 </dl>
-<p>The items inserted into the sketch can be arbitrary type, so long as they are hashable via murmurhash. Only update and estimate methods are added for uint64_t and string types. </p>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::invalid_argument</td><td>if a parameter is out of range</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Items are hashed as bytes: the generic methods take a pointer and a size, and there are specific methods for 64-bit integers (8 little-endian bytes) and strings (their bytes, which should be UTF-8). </p>
 
 </div>
 </div>
@@ -225,6 +235,26 @@ template&lt;typename W, typename A&gt; </div>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>configured _num_hashes of this sketch </dd></dl>
+
+</div>
+</div>
+<a id="a85769b7789ee8d2825bb27bb4596d452" name="a85769b7789ee8d2825bb27bb4596d452"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85769b7789ee8d2825bb27bb4596d452">&#9670;&#160;</a></span>get_serial_version()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename W, typename A&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t get_serial_version </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the serialization version: 2 for new sketches, or 1 for a sketch deserialized from a version 1 image </dd></dl>
 
 </div>
 </div>
@@ -339,7 +369,7 @@ template&lt;typename W, typename A&gt; </div>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>the number of hash functions that are required in order to achieve the specified confidence of the sketch. confidence = 1 - delta, with delta denoting the sketch failure probability in the literature. [1] - Section 3 ``Data Structure'', page 6. */ static uint8_t suggest_num_hashes(double confidence);</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>the number of hash functions that are required in order to achieve the specified confidence of the sketch, from 1 to 127. confidence = 1 - delta, with delta denoting the sketch failure probability in the literature. [1] - Section 3 ``Data Structure'', page 6. */ static uint8_t suggest_num_hashes(double confidence);</dd></dl>
 <p>/** Specific get_estimate function for uint64_t type see generic get_estimate function </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>uint64_t type. </td></tr>
