@@ -1187,6 +1187,18 @@ TEST_CASE("kll sketch: lazy growth of the items buffer", "[kll_sketch]") {
   REQUIRE(test_allocator_total_bytes == 0);
 }
 
+// The sorted view of a string sketch points into the items buffer, which reserve() can replace
+TEST_CASE("kll sketch: reserve() after a query", "[kll_sketch]") {
+  kll_sketch<std::string> sketch(5000); // the buffer starts at 200 items
+  for (int i = 0; i < 100; ++i) sketch.update(std::string(64, 'x') + std::to_string(1000 + i));
+  const std::string item = std::string(64, 'x') + "1050";
+  const double rank = sketch.get_rank(item); // caches the sorted view
+  const std::string median = sketch.get_quantile(0.5);
+  sketch.reserve(); // grows the buffer
+  REQUIRE(sketch.get_rank(item) == rank);
+  REQUIRE(sketch.get_quantile(0.5) == median);
+}
+
 // Compaction: level 0 is full, so update(item) compacts it, which can free the item it reads
 TEST_CASE("kll sketch: update with aliased item during compaction", "[kll_sketch]") {
   const uint16_t k = 200;

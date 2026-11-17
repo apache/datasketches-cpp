@@ -213,6 +213,7 @@ void kll_sketch<T, C, A>::reserve() {
     levels_[0] = levels_[1] = k_;
   } else if (num_levels_ == 1 && items_size_ < k_) {
     grow_items(k_); // the buffer is still growing: grow it to its full size in one step
+    reset_sorted_view(); // the cached view points into the old buffer
   }
 }
 
