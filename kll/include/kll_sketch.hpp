@@ -192,6 +192,8 @@ class kll_sketch {
     /**
      * Constructor.
      * Storage for items is allocated on first use, see reserve().
+     * The items buffer starts with space for min(k, DEFAULT_K) items (k items if RESIZE_FACTOR is X1),
+     * and grows by RESIZE_FACTOR up to k items before the first compaction.
      * @param k affects the size of the sketch and its estimation error
      * @param comparator strict weak ordering function (see C++ named requirements: Compare)
      * @param allocator used by this sketch to allocate memory
@@ -259,10 +261,11 @@ class kll_sketch {
     void merge(FwdSk&& other);
 
     /**
-     * Allocates storage for items now, rather than on the first update or merge.
+     * Allocates storage for k items now, rather than on the first update or merge,
+     * or as the buffer grows. The buffer then does not need to grow before the first compaction.
      * Call this right after construction if allocation failures should happen here,
-     * or if the first update should not pay for the allocation.
-     * Does nothing if the storage is already allocated.
+     * or if updates should not pay for the allocation.
+     * Does nothing if the storage for k items is already allocated.
      * @throw std::bad_alloc if the allocation fails, in which case the sketch is unchanged
      */
     void reserve();
@@ -576,6 +579,10 @@ class kll_sketch {
     static const uint8_t PREAMBLE_INTS_SHORT = 2; // for empty and single item
     static const uint8_t PREAMBLE_INTS_FULL = 5;
 
+    // growth factor of the items buffer until it holds k items
+    static const resize_factor RESIZE_FACTOR = resize_factor::X8;
+    static_assert(RESIZE_FACTOR >= resize_factor::X1, "RESIZE_FACTOR must be at least X1");
+
     C comparator_;
     A allocator_;
     uint16_t k_;
@@ -614,6 +621,7 @@ class kll_sketch {
 
     uint8_t find_level_to_compact() const;
     void add_empty_top_level_to_completely_full_sketch();
+    void grow_items(uint32_t new_size); // only while there is one level
     void sort_level_zero();
 
     template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);
