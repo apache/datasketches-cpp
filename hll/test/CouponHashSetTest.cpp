@@ -206,7 +206,7 @@ TEST_CASE("coupon hash set: reports truncated stream reads", "[coupon_hash_set]"
     image.resize(hll_constants::HASH_SET_INT_ARR_START - 1);
   }
   SECTION("updatable table") {
-    image.pop_back();
+    image.resize(hll_constants::HASH_SET_INT_ARR_START + sizeof(uint32_t));
   }
   SECTION("compact coupon") {
     image = deserialize_set(image, false).serialize_compact();
