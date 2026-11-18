@@ -113,7 +113,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a49bb19e78f36fb72b8496cd6cff71fec template"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a49bb19e78f36fb72b8496cd6cff71fec">merge</a> (FwdSk &amp;&amp;other)</td></tr>
 <tr class="memdesc:a49bb19e78f36fb72b8496cd6cff71fec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Merges another sketch into this one.  <br /></td></tr>
 <tr class="memitem:a0754e2def4850bd8bf73f69b6f476973" id="r_a0754e2def4850bd8bf73f69b6f476973"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0754e2def4850bd8bf73f69b6f476973">reserve</a> ()</td></tr>
-<tr class="memdesc:a0754e2def4850bd8bf73f69b6f476973"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates storage for items now, rather than on the first update or merge.  <br /></td></tr>
+<tr class="memdesc:a0754e2def4850bd8bf73f69b6f476973"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.  <br /></td></tr>
 <tr class="memitem:a5a2b7a58dc85678d08752945ff655362" id="r_a5a2b7a58dc85678d08752945ff655362"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5a2b7a58dc85678d08752945ff655362">is_empty</a> () const</td></tr>
 <tr class="memdesc:a5a2b7a58dc85678d08752945ff655362"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if this sketch is empty.  <br /></td></tr>
 <tr class="memitem:a59f4c39b9f2e762e8e3445ef89e1d264" id="r_a59f4c39b9f2e762e8e3445ef89e1d264"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a59f4c39b9f2e762e8e3445ef89e1d264">get_k</a> () const</td></tr>
@@ -255,7 +255,7 @@ Let <em>q<sub>hi</sub></em> = estimated quantile of rank <em>(r + eps)</em>. </l
 <li>
 Then <em>q<sub>lo</sub> &le; q &le; q<sub>hi</sub></em>, with 99% confidence. </li>
 </ul>
-<p>Memory allocation: a new sketch does not allocate storage for items until it first needs it, on the first update or the first merge of a non-empty sketch. Sketches that stay empty, or that are only ever merged into, use little memory. As a result, the first update or merge can throw std::bad_alloc while allocating this storage, rather than the constructor. If that happens, the sketch is unchanged and can still be used. Call <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for items now, rather than on the first update or merge.">reserve()</a> right after construction to allocate the storage up front.</p>
+<p>Memory allocation: a new sketch does not allocate storage for items until it first needs it, on the first update or the first merge of a non-empty sketch. Sketches that stay empty, or that are only ever merged into, use little memory. As a result, the first update or merge can throw std::bad_alloc while allocating this storage, rather than the constructor. If that happens, the sketch is unchanged and can still be used. Call <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a> right after construction to allocate the storage up front.</p>
 <p>author Kevin Lang author Alexander Saydakov author Lee Rhodes </p>
 </div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Member Typedef Documentation</h2>
 <a id="aa796209b1ef5dc41e83ed8158f77d280" name="aa796209b1ef5dc41e83ed8158f77d280"></a>
@@ -313,7 +313,7 @@ template&lt;typename T, typename C, typename A&gt; </div>
 </div><div class="memdoc">
 
 <p>Constructor. </p>
-<p>Storage for items is allocated on first use, see <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for items now, rather than on the first update or merge.">reserve()</a>. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Storage for items is allocated on first use, see <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a>. The items buffer starts with space for min(k, DEFAULT_K) items (k items if RESIZE_FACTOR is X1), and grows by RESIZE_FACTOR up to k items before the first compaction. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">k</td><td>affects the size of the sketch and its estimation error </td></tr>
     <tr><td class="paramname">comparator</td><td>strict weak ordering function (see C++ named requirements: Compare) </td></tr>
@@ -463,7 +463,7 @@ template&lt;typename FwdT&gt; </div>
 </div><div class="memdoc">
 
 <p>Updates this sketch with the given data item. </p>
-<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). The first update allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for items now, rather than on the first update or merge.">reserve()</a> or a merge already did. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). The first update allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a> or a merge already did. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>from a stream of items </td></tr>
   </table>
@@ -492,7 +492,7 @@ template&lt;typename FwdSk&gt; </div>
 </div><div class="memdoc">
 
 <p>Merges another sketch into this one. </p>
-<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. If other is this sketch, this throws std::invalid_argument. The first merge of a non-empty sketch allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for items now, rather than on the first update or merge.">reserve()</a> or an update already did. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. If other is this sketch, this throws std::invalid_argument. The first merge of a non-empty sketch allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a> or an update already did. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">other</td><td>sketch to merge into this one </td></tr>
   </table>
@@ -518,8 +518,8 @@ template&lt;typename T, typename C, typename A&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>Allocates storage for items now, rather than on the first update or merge. </p>
-<p>Call this right after construction if allocation failures should happen here, or if the first update should not pay for the allocation. Does nothing if the storage is already allocated. </p><dl class="exception"><dt>Exceptions</dt><dd>
+<p>Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows. </p>
+<p>The buffer then does not need to grow before the first compaction. Call this right after construction if allocation failures should happen here, or if updates should not pay for the allocation. Does nothing if the storage for k items is already allocated. </p><dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
     <tr><td class="paramname">std::bad_alloc</td><td>if the allocation fails, in which case the sketch is unchanged </td></tr>
   </table>
