@@ -92,6 +92,14 @@ $(function() {
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abdb81912e4fcd2547e27c0165affbb99" id="r_abdb81912e4fcd2547e27c0165affbb99"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#abdb81912e4fcd2547e27c0165affbb99">hll_union_alloc</a> (uint8_t lg_max_k, const A &amp;allocator=A())</td></tr>
 <tr class="memdesc:abdb81912e4fcd2547e27c0165affbb99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct an <a class="el" href="namespacedatasketches.html#a78b74cc5f69f052831a8c2cb4481d216" title="HLL union alias with default allocator.">hll_union</a> operator with the given maximum log2 of k.  <br /></td></tr>
+<tr class="memitem:a20eb7e90cb24e16ce8642102ef35efb1" id="r_a20eb7e90cb24e16ce8642102ef35efb1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a20eb7e90cb24e16ce8642102ef35efb1">hll_union_alloc</a> (const hll_union_alloc &amp;that)=default</td></tr>
+<tr class="memdesc:a20eb7e90cb24e16ce8642102ef35efb1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy constructor.  <br /></td></tr>
+<tr class="memitem:a0ca7f7fa2c4213b056c8d49554cc8349" id="r_a0ca7f7fa2c4213b056c8d49554cc8349"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0ca7f7fa2c4213b056c8d49554cc8349">hll_union_alloc</a> (hll_union_alloc &amp;&amp;that)=default</td></tr>
+<tr class="memdesc:a0ca7f7fa2c4213b056c8d49554cc8349"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move constructor.  <br /></td></tr>
+<tr class="memitem:ad0d91b2c9e867f229d30986fb19918e0" id="r_ad0d91b2c9e867f229d30986fb19918e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="#abdb81912e4fcd2547e27c0165affbb99">hll_union_alloc</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad0d91b2c9e867f229d30986fb19918e0">operator=</a> (const <a class="el" href="#abdb81912e4fcd2547e27c0165affbb99">hll_union_alloc</a> &amp;other)</td></tr>
+<tr class="memdesc:ad0d91b2c9e867f229d30986fb19918e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy assignment operator.  <br /></td></tr>
+<tr class="memitem:ad09814d6c1c066ae47bf51eba6494613" id="r_ad09814d6c1c066ae47bf51eba6494613"><td class="memItemLeft" align="right" valign="top"><a class="el" href="#abdb81912e4fcd2547e27c0165affbb99">hll_union_alloc</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad09814d6c1c066ae47bf51eba6494613">operator=</a> (<a class="el" href="#abdb81912e4fcd2547e27c0165affbb99">hll_union_alloc</a> &amp;&amp;other)=default</td></tr>
+<tr class="memdesc:ad09814d6c1c066ae47bf51eba6494613"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move assignment operator.  <br /></td></tr>
 <tr class="memitem:a2afb71f2ef2d82290be4c8eafc08f2a2" id="r_a2afb71f2ef2d82290be4c8eafc08f2a2"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2afb71f2ef2d82290be4c8eafc08f2a2">get_estimate</a> () const</td></tr>
 <tr class="memdesc:a2afb71f2ef2d82290be4c8eafc08f2a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current cardinality estimate.  <br /></td></tr>
 <tr class="memitem:a1d6c3cd1e88796786ea124a7aed3800d" id="r_a1d6c3cd1e88796786ea124a7aed3800d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1d6c3cd1e88796786ea124a7aed3800d">get_composite_estimate</a> () const</td></tr>
@@ -153,10 +161,11 @@ class datasketches::hll_union_alloc&lt; A &gt;</div><p>This performs union opera
 <p>Although the API for this union operator parallels many of the methods of the <em>HllSketch</em>, the behavior of the union operator has some fundamental differences.</p>
 <p>First, the user cannot specify the <a class="el" href="namespacedatasketches.html#a76c1ad9235877691984d49415bb263e4" title="Specifies the target type of HLL sketch to be created.">target_hll_type</a> as an input parameter. Instead, it is specified for the sketch returned with <a class="el" href="#a505bdafe096c4fc8adef4f8438b2da25" title="Returns the result of this union operator with the specified target_hll_type.">get_result</a>.</p>
 <p>Second, the internal effective value of log-base-2 of <em>k</em> for the union operation can change dynamically based on the smallest <em>lg_config_k</em> that the union operation has seen.</p>
+<p>Allocation failures propagate without leaking storage. If an allocation fails while a LIST or SET sketch is merged into a union in LIST or SET mode, the union stays valid and usable, holding the coupons inserted before the failure. Repeating the merge gives the result of an uninterrupted merge. All other updates, copy assignment and reset leave the union unchanged if an allocation fails.</p>
 <p>author Jon Malkin author Lee Rhodes author Kevin Lang </p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="abdb81912e4fcd2547e27c0165affbb99" name="abdb81912e4fcd2547e27c0165affbb99"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abdb81912e4fcd2547e27c0165affbb99">&#9670;&#160;</a></span>hll_union_alloc()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#abdb81912e4fcd2547e27c0165affbb99">&#9670;&#160;</a></span>hll_union_alloc() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -195,7 +204,141 @@ template&lt;typename A&gt; </div>
 
 </div>
 </div>
+<a id="a20eb7e90cb24e16ce8642102ef35efb1" name="a20eb7e90cb24e16ce8642102ef35efb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20eb7e90cb24e16ce8642102ef35efb1">&#9670;&#160;</a></span>hll_union_alloc() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename A = std::allocator&lt;uint8_t&gt;&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">hll_union_alloc </td>
+          <td>(</td>
+          <td class="paramtype">const hll_union_alloc&lt; A &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>that</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel default">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Copy constructor. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">that</td><td>union to be copied </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a0ca7f7fa2c4213b056c8d49554cc8349" name="a0ca7f7fa2c4213b056c8d49554cc8349"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ca7f7fa2c4213b056c8d49554cc8349">&#9670;&#160;</a></span>hll_union_alloc() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename A = std::allocator&lt;uint8_t&gt;&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">hll_union_alloc </td>
+          <td>(</td>
+          <td class="paramtype">hll_union_alloc&lt; A &gt; &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>that</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel default">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Move constructor. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">that</td><td>union to be moved </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="ad0d91b2c9e867f229d30986fb19918e0" name="ad0d91b2c9e867f229d30986fb19918e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0d91b2c9e867f229d30986fb19918e0">&#9670;&#160;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename A = std::allocator&lt;uint8_t&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#abdb81912e4fcd2547e27c0165affbb99">hll_union_alloc</a> &amp; operator= </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="#abdb81912e4fcd2547e27c0165affbb99">hll_union_alloc</a>&lt; A &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Copy assignment operator. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">other</td><td>union to be copied </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>reference to this union </dd></dl>
+
+</div>
+</div>
+<a id="ad09814d6c1c066ae47bf51eba6494613" name="ad09814d6c1c066ae47bf51eba6494613"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad09814d6c1c066ae47bf51eba6494613">&#9670;&#160;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename A = std::allocator&lt;uint8_t&gt;&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#abdb81912e4fcd2547e27c0165affbb99">hll_union_alloc</a> &amp; operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#abdb81912e4fcd2547e27c0165affbb99">hll_union_alloc</a>&lt; A &gt; &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel default">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Move assignment operator. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">other</td><td>union to be moved </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>reference to this union </dd></dl>
+
+</div>
+</div>
 <a id="a2afb71f2ef2d82290be4c8eafc08f2a2" name="a2afb71f2ef2d82290be4c8eafc08f2a2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2afb71f2ef2d82290be4c8eafc08f2a2">&#9670;&#160;</a></span>get_estimate()</h2>
 

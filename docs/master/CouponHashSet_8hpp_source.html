@@ -130,13 +130,20 @@ $(function() {
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>  <span class="keyword">private</span>:</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    <span class="keyword">using </span>ChsAlloc = <span class="keyword">typename</span> std::allocator_traits&lt;A&gt;::template rebind_alloc&lt;CouponHashSet&lt;A&gt;&gt;;</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <span class="keywordtype">bool</span> checkGrowOrPromote();</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keywordtype">void</span> growHashSet(uint8_t tgtLgCoupArrSize);</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>};</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>}</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="preprocessor">#endif </span><span class="comment">/* _COUPONHASHSET_HPP_ */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <span class="keyword">static</span> uint32_t getSerializedArraySize(uint8_t lgK, uint8_t lgArrInts, <span class="keywordtype">bool</span> compact, uint32_t couponCount);</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> checkOccupiedSlots(<span class="keyword">const</span> vector_int&amp; coupons, uint32_t couponCount);</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="preprocessor">#if defined(_MSC_VER)</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    __declspec(noinline)</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#elif defined(__GNUC__) || defined(__clang__)</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    __attribute__((noinline))</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    HllSketchImpl&lt;A&gt;* growOrPromoteWithRollback(uint32_t index);</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="keywordtype">void</span> growHashSet(uint8_t tgtLgCoupArrSize);</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>};</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>}</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span> </div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="preprocessor">#endif </span><span class="comment">/* _COUPONHASHSET_HPP_ */</span><span class="preprocessor"></span></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition</b> binomial_bounds.hpp:38</div></div>
 <div class="ttc" id="anamespacedatasketches_html_a76c1ad9235877691984d49415bb263e4"><div class="ttname"><a href="namespacedatasketches.html#a76c1ad9235877691984d49415bb263e4">datasketches::target_hll_type</a></div><div class="ttdeci">target_hll_type</div><div class="ttdoc">Specifies the target type of HLL sketch to be created.</div><div class="ttdef"><b>Definition</b> hll.hpp:72</div></div>
 </div><!-- fragment --></div><!-- contents -->

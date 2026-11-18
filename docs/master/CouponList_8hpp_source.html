@@ -165,11 +165,19 @@ $(function() {
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    vector_int coupons_;</div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span> </div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keyword">friend</span> <span class="keyword">class </span>HllSketchImplFactory&lt;A&gt;;</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>};</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>}</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span><span class="preprocessor">#endif </span><span class="comment">/* _COUPONLIST_HPP_ */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>  <span class="keyword">private</span>:</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span><span class="preprocessor">#if defined(_MSC_VER)</span></div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    __declspec(noinline)</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span><span class="preprocessor">#elif defined(__GNUC__) || defined(__clang__)</span></div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    __attribute__((noinline))</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    HllSketchImpl&lt;A&gt;* promoteWithRollback(uint32_t index);</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>};</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span> </div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>}</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="preprocessor">#endif </span><span class="comment">/* _COUPONLIST_HPP_ */</span><span class="preprocessor"></span></div>
 <div class="ttc" id="aclassdatasketches_1_1HllSketchImpl_html"><div class="ttname"><a href="classdatasketches_1_1HllSketchImpl.html">datasketches::HllSketchImpl</a></div><div class="ttdoc">This is a high performance implementation of Phillipe Flajolet&#39;s HLL sketch but with significantly im...</div><div class="ttdef"><b>Definition</b> HllSketchImpl.hpp:31</div></div>
 <div class="ttc" id="anamespacedatasketches_html"><div class="ttname"><a href="namespacedatasketches.html">datasketches</a></div><div class="ttdoc">DataSketches namespace.</div><div class="ttdef"><b>Definition</b> binomial_bounds.hpp:38</div></div>
 <div class="ttc" id="anamespacedatasketches_html_a76c1ad9235877691984d49415bb263e4"><div class="ttname"><a href="namespacedatasketches.html#a76c1ad9235877691984d49415bb263e4">datasketches::target_hll_type</a></div><div class="ttdeci">target_hll_type</div><div class="ttdoc">Specifies the target type of HLL sketch to be created.</div><div class="ttdef"><b>Definition</b> hll.hpp:72</div></div>
