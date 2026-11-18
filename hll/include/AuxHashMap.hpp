@@ -32,6 +32,7 @@ template<typename A>
 class AuxHashMap final {
   public:
     AuxHashMap(uint8_t lgAuxArrInts, uint8_t lgConfigK, const A& allocator);
+    AuxHashMap(const AuxHashMap& that, const A& allocator);
     static AuxHashMap* newAuxHashMap(uint8_t lgAuxArrInts, uint8_t lgConfigK, const A& allocator);
     static AuxHashMap* newAuxHashMap(const AuxHashMap<A>& that);
 

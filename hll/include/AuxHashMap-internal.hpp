@@ -36,13 +36,22 @@ entries(1ULL << lgAuxArrInts, 0, allocator)
 {}
 
 template<typename A>
+AuxHashMap<A>::AuxHashMap(const AuxHashMap& that, const A& allocator):
+lgConfigK(that.lgConfigK),
+lgAuxArrInts(that.lgAuxArrInts),
+auxCount(that.auxCount),
+entries(that.entries, allocator)
+{}
+
+template<typename A>
 AuxHashMap<A>* AuxHashMap<A>::newAuxHashMap(uint8_t lgAuxArrInts, uint8_t lgConfigK, const A& allocator) {
-  return new (ahmAlloc(allocator).allocate(1)) AuxHashMap<A>(lgAuxArrInts, lgConfigK, allocator);
+  return HllUtil<A>::template newObject<AuxHashMap<A>>(allocator, lgAuxArrInts, lgConfigK, allocator);
 }
 
 template<typename A>
 AuxHashMap<A>* AuxHashMap<A>::newAuxHashMap(const AuxHashMap& that) {
-  return new (ahmAlloc(that.entries.get_allocator()).allocate(1)) AuxHashMap<A>(that);
+  const A allocator(that.entries.get_allocator());
+  return HllUtil<A>::template newObject<AuxHashMap<A>>(allocator, that, allocator);
 }
 
 template<typename A>
@@ -60,12 +69,14 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
   const uint32_t configKmask = (1 << lgConfigK) - 1;
 
   AuxHashMap<A>* auxHashMap;
+  std::unique_ptr<AuxHashMap<A>, std::function<void(AuxHashMap<A>*)>> aux_ptr(nullptr, make_deleter());
   const uint32_t* auxPtr = static_cast<const uint32_t*>(bytes);
   if (srcCompact) {
     if (len < auxCount * sizeof(int)) {
       throw std::out_of_range("Input array too small to hold AuxHashMap image");
     }
-    auxHashMap = new (ahmAlloc(allocator).allocate(1)) AuxHashMap<A>(lgArrInts, lgConfigK, allocator);
+    auxHashMap = newAuxHashMap(lgArrInts, lgConfigK, allocator);
+    aux_ptr.reset(auxHashMap);
     for (uint32_t i = 0; i < auxCount; ++i) {
       const uint32_t pair = auxPtr[i];
       const uint32_t slotNo = HllUtil<A>::getLow26(pair) & configKmask;
@@ -77,7 +88,8 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
     if (len < itemsToRead * sizeof(uint32_t)) {
       throw std::out_of_range("Input array too small to hold AuxHashMap image");
     }
-    auxHashMap = new (ahmAlloc(allocator).allocate(1)) AuxHashMap<A>(lgArrInts, lgConfigK, allocator);
+    auxHashMap = newAuxHashMap(lgArrInts, lgConfigK, allocator);
+    aux_ptr.reset(auxHashMap);
     for (uint32_t i = 0; i < itemsToRead; ++i) {
       const uint32_t pair = auxPtr[i];
       if (pair == hll_constants::EMPTY) { continue; }
@@ -88,11 +100,10 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(const void* bytes, size_t len,
   }
 
   if (auxHashMap->getAuxCount() != auxCount) {
-    make_deleter()(auxHashMap);
     throw std::invalid_argument("Deserialized AuxHashMap has wrong number of entries");
   }
 
-  return auxHashMap;                                    
+  return aux_ptr.release();
 }
 
 template<typename A>
@@ -106,7 +117,7 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(std::istream& is, uint8_t lgConfigK,
     lgArrInts = lgAuxArrInts;
   }
 
-  AuxHashMap<A>* auxHashMap = new (ahmAlloc(allocator).allocate(1)) AuxHashMap<A>(lgArrInts, lgConfigK, allocator);
+  AuxHashMap<A>* auxHashMap = newAuxHashMap(lgArrInts, lgConfigK, allocator);
   typedef std::unique_ptr<AuxHashMap<A>, std::function<void(AuxHashMap<A>*)>> aux_hash_map_ptr;
   aux_hash_map_ptr aux_ptr(auxHashMap, auxHashMap->make_deleter());
 
@@ -131,7 +142,6 @@ AuxHashMap<A>* AuxHashMap<A>::deserialize(std::istream& is, uint8_t lgConfigK,
   }
 
   if (auxHashMap->getAuxCount() != auxCount) {
-    make_deleter()(auxHashMap);
     throw std::invalid_argument("Deserialized AuxHashMap has wrong number of entries");
   }
 
@@ -149,7 +159,7 @@ std::function<void(AuxHashMap<A>*)> AuxHashMap<A>::make_deleter() {
 
 template<typename A>
 AuxHashMap<A>* AuxHashMap<A>::copy() const {
-  return new (ahmAlloc(entries.get_allocator()).allocate(1)) AuxHashMap<A>(*this);
+  return newAuxHashMap(*this);
 }
 
 template<typename A>
@@ -189,7 +199,13 @@ void AuxHashMap<A>::mustAdd(uint32_t slotNo, uint8_t value) {
   // found empty entry
   entries[~index] = entry_pair;
   ++auxCount;
-  checkGrow();
+  try {
+    checkGrow();
+  } catch (...) {
+    entries[~index] = hll_constants::EMPTY;
+    --auxCount;
+    throw;
+  }
 }
 
 template<typename A>
@@ -224,17 +240,19 @@ void AuxHashMap<A>::checkGrow() {
 template<typename A>
 void AuxHashMap<A>::growAuxSpace() {
   const int configKmask = (1 << lgConfigK) - 1;
-  const int newArrLen = 1 << ++lgAuxArrInts;
+  const uint8_t newLgAuxArrInts = static_cast<uint8_t>(lgAuxArrInts + 1);
+  const int newArrLen = 1 << newLgAuxArrInts;
   vector_int entries_new(newArrLen, 0, entries.get_allocator());
   for (size_t i = 0; i < entries.size(); ++i) {
     const uint32_t fetched = entries[i];
     if (fetched != hll_constants::EMPTY) {
       // find empty in new array
-      const int32_t idx = find(entries_new.data(), lgAuxArrInts, lgConfigK, fetched & configKmask);
+      const int32_t idx = find(entries_new.data(), newLgAuxArrInts, lgConfigK, fetched & configKmask);
       entries_new[~idx] = fetched;
     }
   }
   entries = std::move(entries_new);
+  lgAuxArrInts = newLgAuxArrInts;
 }
 
 //Searches the Aux arr hash table for an empty or a matching slotNo depending on the context.
