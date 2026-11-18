@@ -107,8 +107,8 @@ jobs:
             cxx_standard: "11"
           }
         - {
-            name: "Ubuntu 25.10, GCC 15",
-            image: "ubuntu:25.10",
+            name: "Ubuntu 26.04, GCC 15",
+            image: "ubuntu:26.04",
             test_target: test,
             cc: "gcc-15", cxx: "g++-15",
             packages: "gcc-15 g++-15",
@@ -144,10 +144,10 @@ jobs:
         run: cmake --build build -t install
 
   build-ubuntu-std:
-    name: Standard / Ubuntu 25.10, GCC 15, C++${{ matrix.config.cxx_standard }}
+    name: Standard / Ubuntu 26.04, GCC 15, C++${{ matrix.config.cxx_standard }}
     runs-on: ubuntu-24.04
     container:
-      image: ubuntu:25.10
+      image: ubuntu:26.04
     defaults:
       run:
         shell: bash

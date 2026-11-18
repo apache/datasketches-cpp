@@ -18,6 +18,7 @@
  */
 
 #include <catch2/catch.hpp>
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -345,6 +346,27 @@ TEST_CASE("serialize deserialize bytes many values with buffer", "[tdigest]") {
   REQUIRE(td.get_max_value() == deserialized_td.get_max_value());
   REQUIRE(td.get_rank(500) == deserialized_td.get_rank(500));
   REQUIRE(td.get_quantile(0.5) == deserialized_td.get_quantile(0.5));
+}
+
+TEST_CASE("serialize bytes with header", "[tdigest]") {
+  const unsigned header_size_bytes = 7;
+  auto check = [header_size_bytes](const tdigest<double>& td, bool with_buffer) {
+    auto bytes = td.serialize(header_size_bytes, with_buffer);
+    auto bytes_no_header = td.serialize(0, with_buffer);
+    REQUIRE(bytes.size() == header_size_bytes + bytes_no_header.size());
+    REQUIRE(bytes.size() == header_size_bytes + td.get_serialized_size_bytes(with_buffer));
+    REQUIRE(std::equal(bytes_no_header.begin(), bytes_no_header.end(), bytes.begin() + header_size_bytes));
+    auto deserialized_td = tdigest<double>::deserialize(bytes.data() + header_size_bytes, bytes.size() - header_size_bytes);
+    REQUIRE(td.get_total_weight() == deserialized_td.get_total_weight());
+  };
+  tdigest<double> td(100);
+  check(td, false);
+  td.update(123);
+  check(td, false);
+  check(td, true);
+  for (int i = 0; i < 10000; ++i) td.update(i);
+  check(td, true);
+  check(td, false);
 }
 
 TEST_CASE("serialize deserialize steam and bytes equivalence empty", "[tdigest]") {

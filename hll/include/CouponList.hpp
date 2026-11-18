@@ -85,6 +85,14 @@ class CouponList : public HllSketchImpl<A> {
     vector_int coupons_;
 
     friend class HllSketchImplFactory<A>;
+
+  private:
+#if defined(_MSC_VER)
+    __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+    __attribute__((noinline))
+#endif
+    HllSketchImpl<A>* promoteWithRollback(uint32_t index);
 };
 
 }

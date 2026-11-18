@@ -45,7 +45,7 @@ is_level_zero_sorted_(false),
 n_(0),
 levels_(2, 0, allocator),
 items_(nullptr),
-items_size_(k_),
+items_size_(RESIZE_FACTOR == resize_factor::X1 ? k_ : std::min(k_, kll_constants::DEFAULT_K)),
 min_item_(),
 max_item_(),
 sorted_view_(nullptr)
@@ -54,8 +54,9 @@ sorted_view_(nullptr)
     throw std::invalid_argument("K must be >= " + std::to_string(kll_constants::MIN_K) + " and <= "
         + std::to_string(kll_constants::MAX_K) + ": " + std::to_string(k));
   }
-  levels_[0] = levels_[1] = k;
-  items_ = allocator_.allocate(items_size_);
+  levels_[0] = levels_[1] = items_size_;
+  // items_ is allocated by the first update or merge: many sketches (e.g. per-group aggregation states)
+  // stay empty or are only ever merged into
 }
 
 template<typename T, typename C, typename A>
@@ -75,8 +76,7 @@ min_item_(other.min_item_),
 max_item_(other.max_item_),
 sorted_view_(nullptr)
 {
-  items_ = allocator_.allocate(items_size_);
-  for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
+  copy_items(other);
 }
 
 template<typename T, typename C, typename A>
@@ -171,8 +171,7 @@ sorted_view_(nullptr)
     std::is_constructible<T, TT>::value,
     "Type converting constructor requires new type to be constructible from existing type"
   );
-  items_ = allocator_.allocate(items_size_);
-  for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
+  copy_items(other);
   check_sorting();
 }
 
@@ -180,9 +179,17 @@ template<typename T, typename C, typename A>
 template<typename FwdT>
 void kll_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_item(item)) { return; }
+  allocate_items(); // first, so that a failure leaves the sketch unchanged
   update_min_max(static_cast<const T&>(item)); // min and max are always copies
-  const uint32_t index = internal_update();
-  new (&items_[index]) T(std::forward<FwdT>(item));
+  if (levels_[0] == 0) {
+    // item can refer into items_, and internal_update() can destroy it
+    T copy(std::forward<FwdT>(item));
+    const uint32_t index = internal_update();
+    new (&items_[index]) T(std::move(copy));
+  } else {
+    const uint32_t index = internal_update();
+    new (&items_[index]) T(std::forward<FwdT>(item));
+  }
   reset_sorted_view();
 }
 
@@ -198,8 +205,46 @@ void kll_sketch<T, C, A>::update_min_max(const T& item) {
 }
 
 template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::reserve() {
+  if (items_ == nullptr) {
+    // nothing is stored yet, so the buffer can start at its full size
+    items_ = allocator_.allocate(k_);
+    items_size_ = k_;
+    levels_[0] = levels_[1] = k_;
+  } else if (num_levels_ == 1 && items_size_ < k_) {
+    grow_items(k_); // the buffer is still growing: grow it to its full size in one step
+    reset_sorted_view(); // the cached view points into the old buffer
+  }
+}
+
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::allocate_items() {
+  if (items_ == nullptr) items_ = allocator_.allocate(items_size_);
+}
+
+template<typename T, typename C, typename A>
+template<typename O>
+void kll_sketch<T, C, A>::copy_items(const O& other) {
+  if (other.items_ == nullptr) return;
+  allocate_items();
+  for (auto i = levels_[0]; i < levels_[num_levels_]; ++i) new (&items_[i]) T(other.items_[i]);
+}
+
+template<typename T, typename C, typename A>
+T* kll_sketch<T, C, A>::item_ptr(uint32_t index) const {
+  return items_ == nullptr ? nullptr : items_ + index;
+}
+
+template<typename T, typename C, typename A>
 uint32_t kll_sketch<T, C, A>::internal_update() {
-  if (levels_[0] == 0) { compress_while_updating(); }
+  allocate_items();
+  if (levels_[0] == 0) {
+    if (items_size_ < k_) {
+      grow_items(std::min<uint32_t>(items_size_ << static_cast<uint8_t>(RESIZE_FACTOR), k_));
+    } else {
+      compress_while_updating();
+    }
+  }
   n_++;
   is_level_zero_sorted_ = false;
   return --levels_[0];
@@ -208,10 +253,12 @@ uint32_t kll_sketch<T, C, A>::internal_update() {
 template<typename T, typename C, typename A>
 template<typename FwdSk>
 void kll_sketch<T, C, A>::merge(FwdSk&& other) {
+  if (this == &other) { throw std::invalid_argument("A sketch cannot merge with itself."); }
   if (other.is_empty()) { return; }
   if (m_ != other.m_) {
     throw std::invalid_argument("incompatible M: " + std::to_string(m_) + " and " + std::to_string(other.m_));
   }
+  allocate_items(); // the higher levels are merged into items_ even if other's level zero is empty
   if (is_empty()) {
     min_item_.emplace(conditional_forward<FwdSk>(*other.min_item_));
     max_item_.emplace(conditional_forward<FwdSk>(*other.max_item_));
@@ -389,7 +436,11 @@ void kll_sketch<T, C, A>::serialize(std::ostream& os, const SerDe& sd) const {
     write(os, min_k_);
     write(os, num_levels_);
     write(os, unused);
-    write(os, levels_.data(), sizeof(levels_[0]) * num_levels_);
+    if (num_levels_ == 1 && items_size_ < k_) {
+      write(os, levels_[0] + (k_ - items_size_));
+    } else {
+      write(os, levels_.data(), sizeof(levels_[0]) * num_levels_);
+    }
     sd.serialize(os, &*min_item_, 1);
     sd.serialize(os, &*max_item_, 1);
   }
@@ -425,7 +476,11 @@ auto kll_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& sd)
       ptr += copy_to_mem(min_k_, ptr);
       ptr += copy_to_mem(num_levels_, ptr);
       ptr += sizeof(uint8_t); // unused
-      ptr += copy_to_mem(levels_.data(), ptr, sizeof(levels_[0]) * num_levels_);
+      if (num_levels_ == 1 && items_size_ < k_) {
+        ptr += copy_to_mem(levels_[0] + (k_ - items_size_), ptr);
+      } else {
+        ptr += copy_to_mem(levels_.data(), ptr, sizeof(levels_[0]) * num_levels_);
+      }
       ptr += sd.serialize(ptr, end_ptr - ptr, &*min_item_, 1);
       ptr += sd.serialize(ptr, end_ptr - ptr, &*max_item_, 1);
     }
@@ -450,6 +505,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   const auto m = read<uint8_t>(is);
   read<uint8_t>(is); // skip unused byte
 
+  check_k(k);
   check_m(m);
   check_preamble_ints(preamble_ints, flags_byte);
   check_serial_version(serial_version);
@@ -472,6 +528,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
     min_k = read<uint16_t>(is);
     num_levels = read<uint8_t>(is);
     read<uint8_t>(is); // skip unused byte
+    check_num_levels(num_levels);
   }
   vector_u32 levels(num_levels + 1, 0, allocator);
   const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));
@@ -480,8 +537,10 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   } else {
     // the last integer in levels_ is not serialized because it can be derived
     read(is, levels.data(), sizeof(levels[0]) * num_levels);
+    if (!is.good()) throw std::runtime_error("error reading from std::istream");
   }
   levels[num_levels] = capacity;
+  check_levels(levels);
   optional<T> min_item;
   optional<T> max_item;
   if (!is_single_item) {
@@ -537,6 +596,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   ptr += copy_from_mem(ptr, m);
   ptr += sizeof(uint8_t); // skip unused byte
 
+  check_k(k);
   check_m(m);
   check_preamble_ints(preamble_ints, flags_byte);
   check_serial_version(serial_version);
@@ -560,6 +620,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     ptr += copy_from_mem(ptr, min_k);
     ptr += copy_from_mem(ptr, num_levels);
     ptr += sizeof(uint8_t); // skip unused byte
+    check_num_levels(num_levels);
   }
   vector_u32 levels(num_levels + 1, 0, allocator);
   const uint32_t capacity(kll_helper::compute_total_capacity(k, m, num_levels));
@@ -567,9 +628,11 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     levels[0] = capacity - 1;
   } else {
     // the last integer in levels_ is not serialized because it can be derived
+    ensure_minimum_memory(size, (ptr - static_cast<const char*>(bytes)) + sizeof(levels[0]) * num_levels);
     ptr += copy_from_mem(ptr, levels.data(), sizeof(levels[0]) * num_levels);
   }
   levels[num_levels] = capacity;
+  check_levels(levels);
   optional<T> min_item;
   optional<T> max_item;
   if (!is_single_item) {
@@ -745,10 +808,24 @@ void kll_sketch<T, C, A>::add_empty_top_level_to_completely_full_sketch() {
   levels_[num_levels_] = new_total_cap; // initialize the new "extra" index at the top
 }
 
+// Grows the items buffer of a one-level sketch when it is full and smaller than k.
+// Compaction starts only when the buffer is full at k items, so growing does not change the result.
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::grow_items(uint32_t new_size) {
+  const uint32_t delta = new_size - items_size_;
+  T* new_items = allocator_.allocate(new_size);
+  kll_helper::move_construct<T>(items_, levels_[0], levels_[1], new_items, levels_[0] + delta, true);
+  allocator_.deallocate(items_, items_size_);
+  items_ = new_items;
+  items_size_ = new_size;
+  levels_[0] += delta;
+  levels_[1] += delta;
+}
+
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::sort_level_zero() {
   if (!is_level_zero_sorted_) {
-    std::sort(items_ + levels_[0], items_ + levels_[1], comparator_);
+    std::sort(item_ptr(levels_[0]), item_ptr(levels_[1]), comparator_);
     is_level_zero_sorted_ = true;
   }
 }
@@ -757,8 +834,8 @@ template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::check_sorting() const {
   // not checking level 0
   for (uint8_t level = 1; level < num_levels_; ++level) {
-    const auto from = items_ + levels_[level];
-    const auto to = items_ + levels_[level + 1];
+    const auto from = item_ptr(levels_[level]);
+    const auto to = item_ptr(levels_[level + 1]);
     if (!std::is_sorted(from, to, comparator_)) {
       throw std::logic_error("levels must be sorted");
     }
@@ -769,12 +846,14 @@ template<typename T, typename C, typename A>
 quantiles_sorted_view<T, C, A> kll_sketch<T, C, A>::get_sorted_view() const {
   const_cast<kll_sketch*>(this)->sort_level_zero(); // allow this side effect
   quantiles_sorted_view<T, C, A> view(get_num_retained(), comparator_, allocator_);
+  if (is_empty()) return view;
+  if (!is_min_retained()) view.add_min(*min_item_);
   for (uint8_t level = 0; level < num_levels_; ++level) {
-    const auto from = items_ + levels_[level];
-    const auto to = items_ + levels_[level + 1]; // exclusive
+    const auto from = item_ptr(levels_[level]);
+    const auto to = item_ptr(levels_[level + 1]); // exclusive
     view.add(from, to, 1ULL << level);
   }
-  view.convert_to_cummulative();
+  view.convert_to_cummulative(*max_item_);
   return view;
 }
 
@@ -792,26 +871,44 @@ void kll_sketch<T, C, A>::merge_higher_levels(O&& other, uint64_t final_n) {
 
   const uint8_t provisional_num_levels = std::max(num_levels_, other.num_levels_);
 
+  // Allocate everything the merge needs before any item is moved out of this sketch,
+  // so that an allocation failure leaves this sketch valid.
+  // The level sizes after compression depend only on the level sizes before it.
+  worklevels[0] = 0;
+  worklevels[1] = safe_level_size(0); // the level zero items of other were already inserted into this
+  for (uint8_t lvl = 1; lvl < provisional_num_levels; lvl++) {
+    worklevels[lvl + 1] = worklevels[lvl] + safe_level_size(lvl) + other.safe_level_size(lvl);
+  }
+  const kll_helper::compress_result predicted = kll_helper::predict_compress(k_, m_, provisional_num_levels,
+      worklevels.data(), outlevels.data());
+  // ub can sometimes be much bigger
+  if (predicted.final_num_levels > ub) throw std::logic_error("merge error");
+  auto new_items_deleter = [&predicted, &alloc](T* ptr) { alloc.deallocate(ptr, predicted.final_capacity); }; // holds no items
+  std::unique_ptr<T, decltype(new_items_deleter)> new_items(
+      predicted.final_capacity != items_size_ ? allocator_.allocate(predicted.final_capacity) : nullptr, new_items_deleter);
+  const size_t new_levels_size = predicted.final_num_levels + 1;
+  levels_.reserve(new_levels_size);
+
   populate_work_arrays(std::forward<O>(other), workbuf.get(), worklevels.data(), provisional_num_levels);
 
   const kll_helper::compress_result result = kll_helper::general_compress<T, C>(k_, m_, provisional_num_levels, workbuf.get(),
       worklevels.data(), outlevels.data(), is_level_zero_sorted_);
-
-  // ub can sometimes be much bigger
-  if (result.final_num_levels > ub) throw std::logic_error("merge error");
+  if (result.final_num_levels != predicted.final_num_levels || result.final_capacity != predicted.final_capacity
+      || result.final_num_items != predicted.final_num_items) {
+    throw std::logic_error("merge error: compression does not match the prediction");
+  }
 
   // now we need to transfer the results back into "this" sketch
-  if (result.final_capacity != items_size_) {
+  if (new_items) {
     allocator_.deallocate(items_, items_size_);
     items_size_ = result.final_capacity;
-    items_ = allocator_.allocate(items_size_);
+    items_ = new_items.release();
   }
   const uint32_t free_space_at_bottom = result.final_capacity - result.final_num_items;
   kll_helper::move_construct<T>(workbuf.get(), outlevels[0], outlevels[0] + result.final_num_items, items_, free_space_at_bottom, true);
 
-  const size_t new_levels_size = result.final_num_levels + 1;
   if (levels_.size() < new_levels_size) {
-    levels_.resize(new_levels_size);
+    levels_.resize(new_levels_size); // within the reserved capacity
   }
   const uint32_t offset = free_space_at_bottom - outlevels[0];
   for (uint8_t lvl = 0; lvl < levels_.size(); lvl++) { // includes the "extra" index
@@ -868,6 +965,27 @@ uint32_t kll_sketch<T, C, A>::get_num_retained_above_level_zero() const {
 }
 
 template<typename T, typename C, typename A>
+bool kll_sketch<T, C, A>::is_min_retained() const {
+  for (uint8_t level = 0; level < num_levels_; ++level) {
+    const bool level_is_nonempty = levels_[level] < levels_[level + 1];
+    if (level_is_nonempty) { // the if exists to skip a potentially expensive comparator run
+      // min_item_ is the smallest item of the stream, so min_item_ <= item,
+      // and !(min_item_ < item) means that item == min_item_
+      if (!comparator_(*min_item_, items_[levels_[level]])) return true;
+    }
+  }
+  return false;
+}
+
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::check_k(uint16_t k) {
+  if (k < kll_constants::MIN_K) {
+    throw std::invalid_argument("Possible corruption: K must be >= " + std::to_string(kll_constants::MIN_K)
+        + ": " + std::to_string(k));
+  }
+}
+
+template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::check_m(uint8_t m) {
   if (m != kll_constants::DEFAULT_M) {
     throw std::invalid_argument("Possible corruption: M must be " + std::to_string(kll_constants::DEFAULT_M)
@@ -909,6 +1027,25 @@ void kll_sketch<T, C, A>::check_family_id(uint8_t family_id) {
   }
 }
 
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::check_num_levels(uint8_t num_levels) {
+  if (num_levels == 0) {
+    throw std::invalid_argument("Possible corruption: number of levels must be > 0");
+  }
+}
+
+// The last entry is the capacity. Each level must start at or after the previous one,
+// so every level lies within the items buffer.
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::check_levels(const vector_u32& levels) {
+  for (size_t i = 1; i < levels.size(); ++i) {
+    if (levels[i - 1] > levels[i]) {
+      throw std::invalid_argument("Possible corruption: levels[" + std::to_string(i - 1) + "] = "
+          + std::to_string(levels[i - 1]) + " > levels[" + std::to_string(i) + "] = " + std::to_string(levels[i]));
+    }
+  }
+}
+
 template <typename T, typename C, typename A>
 string<A> kll_sketch<T, C, A>::to_string(bool print_levels, bool print_items) const {
   // Using a temporary stream for implementation here does not comply with AllocatorAwareContainer requirements.
@@ -925,7 +1062,8 @@ string<A> kll_sketch<T, C, A>::to_string(bool print_levels, bool print_items) co
   os << "   Estimation mode: " << (is_estimation_mode() ? "true" : "false") << std::endl;
   os << "   Levels         : " << (unsigned int) num_levels_ << std::endl;
   os << "   Sorted         : " << (is_level_zero_sorted_ ? "true" : "false") << std::endl;
-  os << "   Capacity items : " << items_size_ << std::endl;
+  // a buffer still growing to k items shows the capacity of a full one
+  os << "   Capacity items : " << std::max<uint32_t>(items_size_, k_) << std::endl;
   os << "   Retained items : " << get_num_retained() << std::endl;
   if (!is_empty()) {
     os << "   Min item      : " << *min_item_ << std::endl;

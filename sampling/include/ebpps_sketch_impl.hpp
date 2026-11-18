@@ -202,7 +202,7 @@ void ebpps_sketch<T, A>::merge(const ebpps_sketch<T, A>& sk) {
     // need to swap this with sk to merge, so make a copy, swap,
     // and use that to merge
     ebpps_sketch sk_copy(sk);
-    swap(*this, sk_copy);
+    std::swap(*this, sk_copy);
     internal_merge(sk_copy);
   } else {
     internal_merge(sk);
@@ -269,6 +269,7 @@ void ebpps_sketch<T, A>::internal_merge(O&& sk) {
   // avoid numeric issues by setting cumulative weight to the
   // pre-computed value
   cumulative_wt_ = final_cum_wt;
+  wt_max_ = new_wt_max;
   n_ = new_n;
 }
 

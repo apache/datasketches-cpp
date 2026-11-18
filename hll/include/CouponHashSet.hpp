@@ -50,7 +50,14 @@ class CouponHashSet : public CouponList<A> {
 
   private:
     using ChsAlloc = typename std::allocator_traits<A>::template rebind_alloc<CouponHashSet<A>>;
-    bool checkGrowOrPromote();
+    static uint32_t getSerializedArraySize(uint8_t lgK, uint8_t lgArrInts, bool compact, uint32_t couponCount);
+    static void checkOccupiedSlots(const vector_int& coupons, uint32_t couponCount);
+#if defined(_MSC_VER)
+    __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+    __attribute__((noinline))
+#endif
+    HllSketchImpl<A>* growOrPromoteWithRollback(uint32_t index);
     void growHashSet(uint8_t tgtLgCoupArrSize);
 };
 

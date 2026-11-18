@@ -531,6 +531,7 @@ auto quantiles_sketch<T, C, A>::deserialize(const void* bytes, size_t size, cons
 
   if (serial_version == 1) {
     uint64_t unused_long;
+    ensure_minimum_memory(end_ptr - ptr, sizeof(unused_long));
     ptr += copy_from_mem(ptr, unused_long); // no longer used
   }
 

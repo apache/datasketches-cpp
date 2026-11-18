@@ -15,7 +15,7 @@ env:
 jobs:
   hardening-test:
     name: C++17 with libc++ Hardening Mode
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     
     steps:
       - name: Checkout
@@ -26,16 +26,14 @@ jobs:
       
       - name: Install LLVM and libc++
         run: |
-          # Install LLVM/Clang with libc++
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
+          # Install LLVM/Clang with libc++ from the Ubuntu archive
           sudo apt-get update
-          sudo apt-get install -y clang-18 libc++-18-dev libc++abi-18-dev
+          sudo apt-get install -y clang-22 libc++-22-dev libc++abi-22-dev
           
       - name: Configure with C++17 and libc++ hardening
         env:
-          CC: clang-18
-          CXX: clang++-18
+          CC: clang-22
+          CXX: clang++-22
         run: |
           cmake -B build -S . \
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \

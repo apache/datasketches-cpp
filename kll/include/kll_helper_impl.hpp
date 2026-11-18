@@ -185,6 +185,41 @@ void kll_helper::merge_sorted_arrays(const T* buf_a, uint32_t start_a, uint32_t 
   if (a != lim_a || b != lim_b) throw std::logic_error("inconsistent state");
 }
 
+// Mirrors the level loop of general_compress() on the level sizes only.
+kll_helper::compress_result kll_helper::predict_compress(uint16_t k, uint8_t m, uint8_t num_levels_in,
+    const uint32_t* in_levels, uint32_t* level_sizes)
+{
+  if (num_levels_in == 0) { throw std::invalid_argument("num_levels_in == 0"); }
+  for (uint8_t level = 0; level < num_levels_in; ++level) {
+    level_sizes[level] = in_levels[level + 1] - in_levels[level];
+  }
+  uint8_t current_num_levels = num_levels_in;
+  uint32_t current_item_count = in_levels[num_levels_in] - in_levels[0];
+  uint32_t target_item_count = compute_total_capacity(k, m, current_num_levels);
+  uint8_t current_level = 0;
+  while (true) {
+    if (current_level == (current_num_levels - 1)) level_sizes[current_level + 1] = 0;
+    const uint32_t raw_pop = level_sizes[current_level];
+    if ((current_item_count >= target_item_count) && (raw_pop >= level_capacity(k, current_num_levels, current_level, m))) {
+      // compaction: half of the even part moves up a level, and the other half is discarded
+      const uint32_t half_adj_pop = (raw_pop - (raw_pop & 1)) / 2;
+      current_item_count -= half_adj_pop;
+      level_sizes[current_level + 1] += half_adj_pop;
+      if (current_level == (current_num_levels - 1)) {
+        current_num_levels++;
+        target_item_count += level_capacity(k, current_num_levels, 0, m);
+      }
+    }
+    if (current_level == (current_num_levels - 1)) break;
+    current_level++;
+  }
+  compress_result result;
+  result.final_num_levels = current_num_levels;
+  result.final_capacity = target_item_count;
+  result.final_num_items = current_item_count;
+  return result;
+}
+
 /*
  * Here is what we do for each level:
  * If it does not need to be compacted, then simply copy it over.

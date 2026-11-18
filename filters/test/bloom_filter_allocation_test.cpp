@@ -72,4 +72,28 @@ TEST_CASE("bloom filter allocation test", "[bloom_filter][test_type]") {
   REQUIRE(test_allocator_net_allocations == 0);
 }
 
+TEST_CASE("bloom filter: truncated stream frees bit array", "[bloom_filter][test_type]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    auto bf = bloom_filter_test_alloc::builder::create_by_accuracy(1000, 0.01, 12345, alloc(0));
+    for (int i = 0; i < 100; ++i) bf.update(i);
+
+    std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+    bf.serialize(ss);
+    std::string serialized = ss.str();
+    serialized.resize(serialized.size() - 8);
+
+    // bf is dirty, so num_bits_set validation is skipped and only the stream check catches truncation
+    std::istringstream is(serialized, std::ios::in | std::ios::binary);
+    REQUIRE_THROWS_AS(bloom_filter_test_alloc::deserialize(is, alloc(0)), std::runtime_error);
+
+    std::istringstream is_throwing(serialized, std::ios::in | std::ios::binary);
+    is_throwing.exceptions(std::ios::failbit | std::ios::badbit);
+    REQUIRE_THROWS_AS(bloom_filter_test_alloc::deserialize(is_throwing, alloc(0)), std::ios_base::failure);
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
 }

@@ -25,6 +25,26 @@
 
 #include <sstream>
 
+// An allocator outside the datasketches namespace, as an application's would be: argument-dependent
+// lookup finds no swap() in its namespace.
+namespace ebpps_test_alloc {
+
+template<typename T>
+struct plain_allocator {
+  using value_type = T;
+  plain_allocator() = default;
+  template<typename U>
+  plain_allocator(const plain_allocator<U>&) {}
+  T* allocate(std::size_t n) { return static_cast<T*>(::operator new(n * sizeof(T))); }
+  void deallocate(T* p, std::size_t) { ::operator delete(p); }
+};
+template<typename T, typename U>
+bool operator==(const plain_allocator<T>&, const plain_allocator<U>&) { return true; }
+template<typename T, typename U>
+bool operator!=(const plain_allocator<T>&, const plain_allocator<U>&) { return false; }
+
+} // namespace ebpps_test_alloc
+
 namespace datasketches {
 
 using ebpps_test_sketch = ebpps_sketch<test_type, test_allocator<test_type>>;
@@ -93,4 +113,17 @@ TEST_CASE( "ebpps merge", "[ebpps_sketch][test_type]") {
   REQUIRE(test_allocator_net_allocations == 0);
 }
 
+TEST_CASE("ebpps merge heavier sketch by const reference with an application allocator", "[ebpps_sketch]") {
+  using sketch = ebpps_sketch<int, ebpps_test_alloc::plain_allocator<int>>;
+  sketch light(5);
+  sketch heavy(5);
+  for (int i = 0; i < 10; ++i) light.update(i);
+  for (int i = 0; i < 100; ++i) heavy.update(i, 2.0);
+  const sketch& heavy_ref = heavy;
+  light.merge(heavy_ref);
+  REQUIRE(light.get_n() == 110);
+  REQUIRE(light.get_cumulative_weight() == Approx(210.0));
+  REQUIRE(heavy.get_n() == 100);
 }
+
+} // namespace datasketches

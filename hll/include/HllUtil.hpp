@@ -27,8 +27,11 @@
 #include "ceiling_power_of_2.hpp"
 
 #include <cmath>
+#include <memory>
+#include <new>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace datasketches {
 
@@ -136,7 +139,24 @@ public:
   static uint8_t simpleIntLog2(uint32_t n); // n must be power of 2
   static uint8_t computeLgArrInts(hll_mode mode, uint32_t count, uint8_t lgConfigK);
   static double getRelErr(bool upperBound, bool unioned, uint8_t lgConfigK, uint8_t numStdDev);
+
+  template<typename T, typename... Args>
+  static T* newObject(const A& allocator, Args&&... args);
 };
+
+template<typename A>
+template<typename T, typename... Args>
+inline T* HllUtil<A>::newObject(const A& allocator, Args&&... args) {
+  using Alloc = typename std::allocator_traits<A>::template rebind_alloc<T>;
+  Alloc alloc(allocator);
+  auto ptr = alloc.allocate(1);
+  try {
+    return new (ptr) T(std::forward<Args>(args)...);
+  } catch (...) {
+    alloc.deallocate(ptr, 1);
+    throw;
+  }
+}
 
 template<typename A>
 inline uint32_t HllUtil<A>::coupon(const uint64_t hash[]) {

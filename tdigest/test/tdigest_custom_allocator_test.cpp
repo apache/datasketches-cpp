@@ -40,4 +40,33 @@ TEST_CASE("tdigest custom allocator", "[tdigest]") {
   REQUIRE(test_allocator_net_allocations == 0);
 }
 
+TEST_CASE("tdigest custom allocator: buffers grow as they fill", "[tdigest]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    tdigest_d empty(100, alloc_d(0));
+    REQUIRE(test_allocator_total_bytes == 0); // nothing reserved up front
+
+    tdigest_d small(100, alloc_d(0));
+    for (int i = 0; i < 3; ++i) small.update(static_cast<double>(i));
+    // a few values take a small buffer, not room for 4 * (2k + fudge) values
+    REQUIRE(test_allocator_total_bytes <= static_cast<long long>(8 * sizeof(double)));
+    REQUIRE(small.get_total_weight() == 3);
+    REQUIRE(small.get_quantile(0.5) == 1.0);
+
+    // a digest built through the growing buffers gives the same result as before
+    tdigest_d grown(100, alloc_d(0));
+    tdigest<double> reference(100);
+    for (int i = 0; i < 100000; ++i) {
+      grown.update(static_cast<double>(i % 7919));
+      reference.update(static_cast<double>(i % 7919));
+    }
+    for (double rank: {0.01, 0.25, 0.5, 0.75, 0.99}) {
+      REQUIRE(grown.get_quantile(rank) == reference.get_quantile(rank));
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
 } /* namespace datasketches */

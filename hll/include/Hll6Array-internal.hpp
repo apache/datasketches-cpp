@@ -66,9 +66,7 @@ std::function<void(HllSketchImpl<A>*)> Hll6Array<A>::get_deleter() const {
 
 template<typename A>
 Hll6Array<A>* Hll6Array<A>::copy() const {
-  using Hll6Alloc = typename std::allocator_traits<A>::template rebind_alloc<Hll6Array<A>>;
-  Hll6Alloc hll6Alloc(this->getAllocator());
-  return new (hll6Alloc.allocate(1)) Hll6Array<A>(*this);
+  return HllUtil<A>::template newObject<Hll6Array<A>>(this->getAllocator(), *this);
 }
 
 template<typename A>

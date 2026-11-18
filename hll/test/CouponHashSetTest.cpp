@@ -22,13 +22,32 @@
 #include "HllUtil.hpp"
 
 #include <catch2/catch.hpp>
+#include <cstring>
+#include <limits>
 #include <ostream>
+#include <sstream>
 #include <cmath>
 #include <string>
 #include <exception>
 #include <stdexcept>
 
 namespace datasketches {
+
+static hll_sketch::vector_bytes make_updatable_set(uint8_t lg_k, int count) {
+  hll_sketch sketch(lg_k);
+  for (int i = 0; i < count; ++i) sketch.update(i);
+  return sketch.serialize_updatable();
+}
+
+static void set_serialized_count(hll_sketch::vector_bytes& image, uint32_t count) {
+  std::memcpy(image.data() + hll_constants::HASH_SET_COUNT_INT, &count, sizeof(count));
+}
+
+static hll_sketch deserialize_set(const hll_sketch::vector_bytes& image, bool stream) {
+  if (!stream) return hll_sketch::deserialize(image.data(), image.size());
+  std::istringstream input(std::string(image.begin(), image.end()));
+  return hll_sketch::deserialize(input);
+}
 
 TEST_CASE("coupon hash set: check corrupt bytearray", "[coupon_hash_set]") {
   uint8_t lgK = 8;
@@ -127,5 +146,73 @@ TEST_CASE("coupon hash set: check corrupt stream", "[coupon_hash_set]") {
   ss.put((char)tmp);
 }
 
+TEST_CASE("coupon hash set: validates updatable tables", "[coupon_hash_set]") {
+  const bool stream = GENERATE(false, true);
+  CAPTURE(stream);
+  auto image = make_updatable_set(8, 24);
+
+  SECTION("rejects a table larger than the precision allows") {
+    image[hll_constants::LG_ARR_BYTE] = 6;
+    image.resize(hll_constants::HASH_SET_INT_ARR_START + 64 * sizeof(uint32_t), 0);
+    REQUIRE_THROWS_AS(deserialize_set(image, stream), std::invalid_argument);
+  }
+  SECTION("rejects too many occupied slots for the declared count") {
+    set_serialized_count(image, 23);
+    REQUIRE_THROWS_AS(deserialize_set(image, stream), std::invalid_argument);
+  }
+  SECTION("rejects too few occupied slots for the declared count") {
+    image = make_updatable_set(8, 23);
+    set_serialized_count(image, 24);
+    REQUIRE_THROWS_AS(deserialize_set(image, stream), std::invalid_argument);
+  }
+  SECTION("rejects a count above the table load limit before reading the table") {
+    image[hll_constants::LG_K_BYTE] = 9;
+    set_serialized_count(image, 25);
+    image.resize(hll_constants::HASH_SET_INT_ARR_START);
+    REQUIRE_THROWS_AS(deserialize_set(image, stream), std::invalid_argument);
+  }
+}
+
+TEST_CASE("coupon hash set: rejects excessive legacy count", "[coupon_hash_set]") {
+  const bool stream = GENERATE(false, true);
+  CAPTURE(stream);
+  auto image = make_updatable_set(8, 24);
+  image[hll_constants::LG_ARR_BYTE] = 0;
+  set_serialized_count(image, std::numeric_limits<uint32_t>::max());
+  REQUIRE_THROWS_AS(deserialize_set(image, stream), std::invalid_argument);
+}
+
+TEST_CASE("coupon hash set: restores valid updatable tables", "[coupon_hash_set]") {
+  const bool stream = GENERATE(false, true);
+  CAPTURE(stream);
+  SECTION("at exactly 75 percent occupancy") {
+    const auto image = make_updatable_set(8, 24);
+    REQUIRE(deserialize_set(image, stream).serialize_updatable() == image);
+  }
+  SECTION("with a missing size exponent in a grown table") {
+    const auto image = make_updatable_set(9, 25);
+    auto legacy_image = image;
+    legacy_image[hll_constants::LG_ARR_BYTE] = 0;
+    REQUIRE(deserialize_set(legacy_image, stream).serialize_updatable() == image);
+  }
+}
+
+TEST_CASE("coupon hash set: reports truncated stream reads", "[coupon_hash_set]") {
+  auto image = make_updatable_set(8, 24);
+  SECTION("header") {
+    image.resize(hll_constants::MODE_BYTE);
+  }
+  SECTION("coupon count") {
+    image.resize(hll_constants::HASH_SET_INT_ARR_START - 1);
+  }
+  SECTION("updatable table") {
+    image.resize(hll_constants::HASH_SET_INT_ARR_START + sizeof(uint32_t));
+  }
+  SECTION("compact coupon") {
+    image = deserialize_set(image, false).serialize_compact();
+    image.pop_back();
+  }
+  REQUIRE_THROWS_AS(deserialize_set(image, true), std::runtime_error);
+}
 
 } // namespace datasketches

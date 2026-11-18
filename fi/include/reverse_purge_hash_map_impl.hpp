@@ -353,8 +353,9 @@ V reverse_purge_hash_map<K, V, H, E, A>::purge() {
   const uint32_t limit = std::min(MAX_SAMPLE_SIZE, num_active_);
   uint32_t num_samples = 0;
   uint32_t i = 0;
-  AllocV av(allocator_);
-  V* samples = av.allocate(limit);
+  // A temporary of at most MAX_SAMPLE_SIZE values: on the stack rather than from the allocator, which need not be
+  // able to give memory back (e.g. an arena)
+  V samples[MAX_SAMPLE_SIZE];
   while (num_samples < limit) {
     if (is_active(i)) {
       samples[num_samples++] = values_[i];
@@ -363,7 +364,6 @@ V reverse_purge_hash_map<K, V, H, E, A>::purge() {
   }
   std::nth_element(samples, samples+ (num_samples / 2), samples + num_samples);
   const V median = samples[num_samples / 2];
-  av.deallocate(samples, limit);
   subtract_and_keep_positive_only(median);
   return median;
 }

@@ -56,7 +56,21 @@ class Hll4Array final : public HllArray<A> {
   private:
     void internalCouponUpdate(uint32_t coupon);
     void internalHll4Update(uint32_t slotNo, uint8_t newVal);
-    void shiftToBiggerCurMin();
+    // Keep auxiliary updates off the ordinary register path.
+#if defined(_MSC_VER)
+    __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+    __attribute__((noinline))
+#endif
+    void internalHll4UpdateAux(uint32_t slotNo, uint8_t newVal, uint8_t rawStoredOldValue);
+    // Keep first-map allocation off the inlined update path.
+#if defined(_MSC_VER)
+    __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+    __attribute__((noinline))
+#endif
+    void createAuxHashMap(uint32_t slotNo, uint8_t value);
+    void shiftToBiggerCurMin(uint32_t slotNo, uint8_t newVal);
 
     AuxHashMap<A>* auxHashMap_;
 };
