@@ -297,20 +297,24 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   const uint32_t num_longs = read<uint32_t>(is); // sized in java longs
   read<uint32_t>(is); // unused
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
+  // num_longs is 32 bits, so widen it before shifting: in 32 bits, num_longs << 3 and
+  // num_longs << 6 can overflow, for example to 0
+  const uint64_t num_bytes = static_cast<uint64_t>(num_longs) << 3;
+  const uint64_t num_bits = static_cast<uint64_t>(num_longs) << 6;
 
   // if empty, stop reading
   if (is_empty) {
-    return bloom_filter_alloc<A>(num_longs << 6, num_hashes, seed, allocator);
+    return bloom_filter_alloc<A>(num_bits, num_hashes, seed, allocator);
   }
-  // a non-empty filter has at least one long, which keeps capacity_bits_ positive
-  if (num_longs == 0) {
-    throw std::invalid_argument("Possible corruption: non-empty filter with a bit array of 0 longs");
+  // a non-empty filter has a bit array: this keeps capacity_bits_ positive,
+  // and keeps allocate() from being called with 0
+  if (num_bytes == 0) {
+    throw std::invalid_argument("Possible corruption: non-empty filter with an empty bit array");
   }
 
   const uint64_t raw_num_bits_set = read<uint64_t>(is);
 
   // allocate memory
-  const uint64_t num_bytes = num_longs << 3;
   AllocUint8 alloc(allocator);
   uint8_t* bit_array = alloc.allocate(num_bytes);
 
@@ -326,7 +330,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::deserialize(std::istream& is, const
   }
 
   // pass to constructor
-  return bloom_filter_alloc<A>(seed, num_hashes, false, true, false, num_longs << 6, num_bits_set, bit_array, nullptr, allocator);
+  return bloom_filter_alloc<A>(seed, num_hashes, false, true, false, num_bits, num_bits_set, bit_array, nullptr, allocator);
 }
 
 template<typename A>
@@ -381,22 +385,26 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
   uint32_t num_longs;
   ptr += copy_from_mem(ptr, num_longs); // sized in java longs
   ptr += sizeof(uint32_t); // unused 32 bits follow
+  // num_longs is 32 bits, so widen it before shifting: in 32 bits, num_longs << 3 and
+  // num_longs << 6 can overflow, for example to 0
+  const uint64_t num_bytes = static_cast<uint64_t>(num_longs) << 3;
+  const uint64_t num_bits = static_cast<uint64_t>(num_longs) << 6;
 
   // if empty, stop reading
   if (wrap && is_empty && !read_only) {
     throw std::invalid_argument("Cannot wrap an empty filter for writing");
   } else if (is_empty) {
-    return bloom_filter_alloc<A>(num_longs << 6, num_hashes, seed, allocator);
+    return bloom_filter_alloc<A>(num_bits, num_hashes, seed, allocator);
   }
-  // a non-empty filter has at least one long, which keeps capacity_bits_ positive
-  if (num_longs == 0) {
-    throw std::invalid_argument("Possible corruption: non-empty filter with a bit array of 0 longs");
+  // a non-empty filter has a bit array: this keeps capacity_bits_ positive,
+  // and keeps allocate() from being called with 0
+  if (num_bytes == 0) {
+    throw std::invalid_argument("Possible corruption: non-empty filter with an empty bit array");
   }
 
   uint64_t raw_num_bits_set;
   ptr += copy_from_mem(ptr, raw_num_bits_set);
 
-  const uint64_t num_bytes = num_longs << 3;
   ensure_minimum_memory(end_ptr - ptr, num_bytes);
   const uint64_t num_bits_set = validate_bloom_filter_num_bits_set(
     raw_num_bits_set, const_cast<uint8_t*>(ptr), num_bytes, DIRTY_BITS_VALUE);
@@ -415,7 +423,7 @@ bloom_filter_alloc<A> bloom_filter_alloc<A>::internal_deserialize_or_wrap(void* 
   }
 
   // pass to constructor -- !wrap == is_owned_
-  return bloom_filter_alloc<A>(seed, num_hashes, false, !wrap, read_only, num_longs << 6, num_bits_set, bit_array, memory, allocator);
+  return bloom_filter_alloc<A>(seed, num_hashes, false, !wrap, read_only, num_bits, num_bits_set, bit_array, memory, allocator);
 }
 
 template<typename A>
