@@ -212,23 +212,41 @@ template<typename T, typename C, typename A>
 template<typename FwdT>
 void quantiles_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_item(item)) { return; }
-  if (is_empty()) {
-    min_item_.emplace(item);
-    max_item_.emplace(item);
-  } else {
-    if (comparator_(item, *min_item_)) *min_item_ = item;
-    if (comparator_(*max_item_, item)) *max_item_ = item;
+  // compare and copy first, but change nothing until the item has been fully processed,
+  // so that an exception leaves the sketch as it was
+  const bool is_new_min = is_empty() || comparator_(item, *min_item_);
+  const bool is_new_max = is_empty() || comparator_(*max_item_, item);
+  optional<T> new_min;
+  optional<T> new_max;
+  if (is_new_min) new_min.emplace(item);
+  if (is_new_max) new_max.emplace(item);
+  reset_sorted_view();
+  try {
+    insert_base(std::forward<FwdT>(item));
+  } catch (...) {
+    trim_levels();
+    throw;
   }
+  if (is_new_min) min_item_ = std::move(new_min);
+  if (is_new_max) max_item_ = std::move(new_max);
+}
 
+template<typename T, typename C, typename A>
+template<typename FwdT>
+void quantiles_sketch<T, C, A>::insert_base(FwdT&& item) {
+  // allocate first
   // if exceed capacity, grow until size 2k -- assumes eager processing
   if (base_buffer_.size() + 1 > base_buffer_.capacity()) grow_base_buffer();
+  const bool fills_base_buffer = base_buffer_.size() + 1 == 2 * k_;
+  if (fills_base_buffer) grow_levels_if_needed(n_ + 1); // make sure there will be enough levels for the propagation
 
-  base_buffer_.push_back(std::forward<FwdT>(item));
+  base_buffer_.push_back(std::forward<FwdT>(item)); // a failed copy leaves the base buffer as it was
+  if (fills_base_buffer) {
+    process_full_base_buffer(n_ + 1);
+  } else if (base_buffer_.size() > 1) {
+    is_base_buffer_sorted_ = false;
+  }
   ++n_;
-
-  if (base_buffer_.size() > 1) is_base_buffer_sorted_ = false;
-  if (base_buffer_.size() == 2 * k_) process_full_base_buffer();
-  reset_sorted_view();
 }
 
 template<typename T, typename C, typename A>
@@ -236,12 +254,25 @@ template<typename FwdSk>
 void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
   if (other.is_empty()) {
     return; // nothing to do
-  } else if (!other.is_estimation_mode()) {
+  }
+  reset_sorted_view();
+  try {
+    merge_unchecked(std::forward<FwdSk>(other));
+  } catch (...) {
+    trim_levels(); // a failed merge can leave levels added for the items it did not merge
+    throw;
+  }
+}
+
+template<typename T, typename C, typename A>
+template<typename FwdSk>
+void quantiles_sketch<T, C, A>::merge_unchecked(FwdSk&& other) {
+  if (!other.is_estimation_mode()) {
     // other is exact, stream in regardless of k
-    for (auto item : other.base_buffer_) {
+    reserve_for_merge(*this, n_ + other.n_, other.n_); // allocate first, so that a failure changes nothing
+    for (auto& item : other.base_buffer_) {
       update(conditional_forward<FwdSk>(item));
     }
-    reset_sorted_view();
     return;
   }
 
@@ -259,18 +290,18 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
   } else {
     // exact or empty
     quantiles_sketch sk_copy(std::forward<FwdSk>(other));
-    if (k_ <= other.get_k()) {
+    if (k_ <= sk_copy.get_k()) {
       if (!is_empty()) {
-        for (uint16_t i = 0; i < base_buffer_.size(); ++i) {
-          sk_copy.update(std::move(base_buffer_[i]));
-        }
+        // allocate first, so that no item is moved out of this sketch unless the merge succeeds
+        reserve_for_merge(sk_copy, sk_copy.get_n() + n_, base_buffer_.size());
+        merge_min_max(sk_copy, std::move(*this));
+        for (auto& item : base_buffer_) sk_copy.insert_base(std::move(item));
       }
     } else { // k_ > other.get_k()
       downsampling_merge(sk_copy, std::move(*this));
     }
     *this = std::move(sk_copy);
   }
-  reset_sorted_view();
 }
 
 template<typename T, typename C, typename A>
@@ -889,10 +920,8 @@ void quantiles_sketch<T, C, A>::grow_base_buffer() {
 }
 
 template<typename T, typename C, typename A>
-void quantiles_sketch<T, C, A>::process_full_base_buffer() {
-  // make sure there will be enough levels for the propagation
-  grow_levels_if_needed(); // note: n_ was already incremented by update() before this
-
+void quantiles_sketch<T, C, A>::process_full_base_buffer(uint64_t new_n) {
+  // the levels were grown by the caller: from here on, only moves and comparisons
   std::sort(base_buffer_.begin(), base_buffer_.end(), comparator_);
   in_place_propagate_carry(0,
                            levels_[0], // unused here, but 0 is guaranteed to exist
@@ -900,26 +929,62 @@ void quantiles_sketch<T, C, A>::process_full_base_buffer() {
                            true, *this);
   base_buffer_.clear();
   is_base_buffer_sorted_ = true;
-  if (n_ / (2 * k_) != bit_pattern_) {
-    throw std::logic_error("Internal error: n / 2k (" + std::to_string(n_ / 2 * k_)
+  if (new_n / (2 * k_) != bit_pattern_) {
+    throw std::logic_error("Internal error: n / 2k (" + std::to_string(new_n / (2 * k_))
       + " != bit_pattern " + std::to_string(bit_pattern_));
   }
 }
 
 template<typename T, typename C, typename A>
-bool quantiles_sketch<T, C, A>::grow_levels_if_needed() {
+bool quantiles_sketch<T, C, A>::grow_levels_if_needed(uint64_t n) {
+  const uint8_t levels_needed = compute_levels_needed(k_, n);
+  const bool grow = levels_needed > levels_.size(); // levels_needed == 0 is possible during merges
+  if (grow) {
+    levels_.reserve(levels_needed);
+    while (levels_.size() < levels_needed) {
+      Level empty_level(allocator_);
+      empty_level.reserve(k_);
+      levels_.push_back(std::move(empty_level));
+    }
+  }
+  // Growing levels_ copies the levels instead of moving them if moving a level can throw,
+  // as it can with some allocators, and a copy of an empty level has no capacity.
+  // Every level needs capacity k, since zip_buffer() fills a level without allocating.
+  // This also completes a previous call that failed here.
+  for (auto& level : levels_) {
+    if (level.capacity() < k_) level.reserve(k_);
+  }
+  return grow;
+}
+
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::trim_levels() {
   const uint8_t levels_needed = compute_levels_needed(k_, n_);
-  if (levels_needed == 0)
-    return false; // don't need levels and might have small base buffer. Possible during merges.
+  while (levels_.size() > levels_needed) levels_.pop_back();
+}
 
-  // from here on, assume full size base buffer (2k) and at least one additional level
-  if (levels_needed <= levels_.size())
-    return false;
+template<typename T, typename C, typename A>
+void quantiles_sketch<T, C, A>::reserve_for_merge(quantiles_sketch& tgt, uint64_t new_n, uint64_t num_base_items) {
+  // the base buffer grows only as far as the merge needs; a full base buffer has capacity 2k
+  const uint64_t base_capacity = std::min<uint64_t>(2 * tgt.k_, tgt.base_buffer_.size() + num_base_items);
+  if (tgt.base_buffer_.capacity() < base_capacity) tgt.base_buffer_.reserve(static_cast<size_t>(base_capacity));
+  tgt.grow_levels_if_needed(new_n);
+}
 
-  Level empty_level(allocator_);
-  empty_level.reserve(k_);
-  levels_.push_back(std::move(empty_level));
-  return true;
+template<typename T, typename C, typename A>
+template<typename FwdSk>
+void quantiles_sketch<T, C, A>::merge_min_max(quantiles_sketch& tgt, FwdSk&& src) {
+  // can't just check is_empty() since min and max might not have been set if
+  // there were no base buffer items added via update()
+  const bool is_new_min = !tgt.min_item_ || tgt.comparator_(*src.min_item_, *tgt.min_item_);
+  const bool is_new_max = !tgt.max_item_ || tgt.comparator_(*tgt.max_item_, *src.max_item_);
+  // copy first, so that a failed copy leaves tgt as it was
+  optional<T> new_min;
+  optional<T> new_max;
+  if (is_new_min) new_min.emplace(conditional_forward<FwdSk>(*src.min_item_));
+  if (is_new_max) new_max.emplace(conditional_forward<FwdSk>(*src.max_item_));
+  if (is_new_min) tgt.min_item_ = std::move(new_min);
+  if (is_new_max) tgt.max_item_ = std::move(new_max);
 }
 
 template<typename T, typename C, typename A>
@@ -939,8 +1004,14 @@ void quantiles_sketch<T, C, A>::in_place_propagate_carry(uint8_t starting_level,
     zip_buffer(buf_size_2k, sketch.levels_[ending_level]);
   } else {
     // merge_into version of computation
-    for (uint16_t i = 0; i < k; ++i) {
-      sketch.levels_[ending_level].push_back(conditional_forward<FwdV>(buf_size_k[i]));
+    // the ending level is empty, so a failed copy can be undone by clearing it
+    try {
+      for (uint16_t i = 0; i < k; ++i) {
+        sketch.levels_[ending_level].push_back(conditional_forward<FwdV>(buf_size_k[i]));
+      }
+    } catch (...) {
+      sketch.levels_[ending_level].clear();
+      throw;
     }
   }
 
@@ -1015,7 +1086,6 @@ void quantiles_sketch<T, C, A>::merge_two_size_k_buffers(Level& src_1, Level& sr
   auto end1 = src_1.end(), end2 = src_2.end();
   auto it1 = src_1.begin(), it2 = src_2.begin();
   
-  // TODO: probably actually doing copies given Level&?
   while (it1 != end1 && it2 != end2) {
     if (comparator(*it1, *it2)) {
       dst.push_back(std::move(*it1++));
@@ -1025,13 +1095,16 @@ void quantiles_sketch<T, C, A>::merge_two_size_k_buffers(Level& src_1, Level& sr
   }
 
   if (it1 != end1) {
-    dst.insert(dst.end(), it1, end1);
+    dst.insert(dst.end(), std::make_move_iterator(it1), std::make_move_iterator(end1));
   } else {
     if (it2 == end2) { throw std::logic_error("it2 unexpectedly already at end of range"); }
-    dst.insert(dst.end(), it2, end2);
+    dst.insert(dst.end(), std::make_move_iterator(it2), std::make_move_iterator(end2));
   }
 }
 
+// Both merges allocate everything first, so that an allocation failure leaves tgt unchanged.
+// After that, a copy of an item from a const src is the only thing that can throw,
+// and n is advanced with each step, so that tgt stays valid if one does.
 template<typename T, typename C, typename A>
 template<typename FwdSk>
 void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch& tgt, FwdSk&& src) {
@@ -1042,26 +1115,17 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch& tgt, FwdSk&& sr
     return;
   }
 
-  uint64_t new_n = src.get_n() + tgt.get_n();
-
-  // move items from src's base buffer
-  for (uint16_t i = 0; i < src.base_buffer_.size(); ++i) {
-    tgt.update(conditional_forward<FwdSk>(src.base_buffer_[i]));
-  }
-
-  // check (after moving raw items) if we need to extend levels array
-  uint8_t levels_needed = compute_levels_needed(tgt.get_k(), new_n);
-  if (levels_needed > tgt.levels_.size()) {
-    tgt.levels_.reserve(levels_needed);
-    while (tgt.levels_.size() < levels_needed) {
-      Level empty_level(tgt.allocator_);
-      empty_level.reserve(tgt.get_k());
-      tgt.levels_.push_back(std::move(empty_level));
-    }
-  }
-
+  const uint64_t new_n = src.get_n() + tgt.get_n();
+  reserve_for_merge(tgt, new_n, src.base_buffer_.size());
   Level scratch_buf(tgt.allocator_);
   scratch_buf.reserve(2 * tgt.get_k());
+
+  merge_min_max(tgt, std::forward<FwdSk>(src));
+
+  // move items from src's base buffer
+  for (auto& item : src.base_buffer_) {
+    tgt.insert_base(conditional_forward<FwdSk>(item));
+  }
 
   uint64_t src_pattern = src.bit_pattern_;
   for (uint8_t src_lvl = 0; src_pattern != 0; ++src_lvl, src_pattern >>= 1) {
@@ -1070,30 +1134,13 @@ void quantiles_sketch<T, C, A>::standard_merge(quantiles_sketch& tgt, FwdSk&& sr
 
       // propagate-carry
       in_place_propagate_carry(src_lvl,
-                               src.levels_[src_lvl], scratch_buf,
+                               conditional_forward<FwdSk>(src.levels_[src_lvl]), scratch_buf,
                                false, tgt);
-      // update n_ at the end
+      tgt.n_ += static_cast<uint64_t>(2 * tgt.get_k()) << src_lvl;
     }
   }
-  tgt.n_ = new_n;
-  if ((tgt.get_n() / (2 * tgt.get_k())) != tgt.bit_pattern_) {
+  if (tgt.n_ != new_n || (tgt.get_n() / (2 * tgt.get_k())) != tgt.bit_pattern_) {
     throw std::logic_error("Failed internal consistency check after standard_merge()");
-  }
-
-  // update min and max items
-  // can't just check is_empty() since min and max might not have been set if
-  // there were no base buffer items added via update()
-  if (!tgt.min_item_) {
-    tgt.min_item_.emplace(conditional_forward<FwdSk>(*src.min_item_));
-  } else {
-    if (tgt.comparator_(*src.min_item_, *tgt.min_item_))
-      *tgt.min_item_ = conditional_forward<FwdSk>(*src.min_item_);
-  }
-  if (!tgt.max_item_) {
-    tgt.max_item_.emplace(conditional_forward<FwdSk>(*src.max_item_));
-  } else {
-    if (tgt.comparator_(*tgt.max_item_, *src.max_item_))
-      *tgt.max_item_ = conditional_forward<FwdSk>(*src.max_item_);
   }
 }
 
@@ -1111,28 +1158,18 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch& tgt, FwdSk&
   const uint8_t lg_sample_factor = count_trailing_zeros_in_u32(downsample_factor);
 
   const uint64_t new_n = src.get_n() + tgt.get_n();
-
-  // move items from src's base buffer
-  for (uint16_t i = 0; i < src.base_buffer_.size(); ++i) {
-    tgt.update(conditional_forward<FwdSk>(src.base_buffer_[i]));
-  }
-
-  // check (after moving raw items) if we need to extend levels array
-  const uint8_t levels_needed = compute_levels_needed(tgt.get_k(), new_n);
-  if (levels_needed > tgt.levels_.size()) {
-    tgt.levels_.reserve(levels_needed);
-    while (tgt.levels_.size() < levels_needed) {
-      Level empty_level(tgt.allocator_);
-      empty_level.reserve(tgt.get_k());
-      tgt.levels_.push_back(std::move(empty_level));
-    }
-  }
-
+  reserve_for_merge(tgt, new_n, src.base_buffer_.size());
   Level down_buf(tgt.allocator_);
   down_buf.reserve(tgt.get_k());
-
   Level scratch_buf(tgt.allocator_);
   scratch_buf.reserve(2 * tgt.get_k());
+
+  merge_min_max(tgt, std::forward<FwdSk>(src));
+
+  // move items from src's base buffer
+  for (auto& item : src.base_buffer_) {
+    tgt.insert_base(conditional_forward<FwdSk>(item));
+  }
 
   uint64_t src_pattern = src.bit_pattern_;
   for (uint8_t src_lvl = 0; src_pattern != 0; ++src_lvl, src_pattern >>= 1) {
@@ -1140,35 +1177,18 @@ void quantiles_sketch<T, C, A>::downsampling_merge(quantiles_sketch& tgt, FwdSk&
       down_buf.clear();
       scratch_buf.clear();
 
-      // zip with stride, leaving input buffer intact
-      zip_buffer_with_stride(src.levels_[src_lvl], down_buf, downsample_factor);
+      // zip with stride; a failed copy changes only down_buf
+      zip_buffer_with_stride(conditional_forward<FwdSk>(src.levels_[src_lvl]), down_buf, downsample_factor);
 
       // propagate-carry
       in_place_propagate_carry(src_lvl + lg_sample_factor,
-                               down_buf, scratch_buf,
+                               std::move(down_buf), scratch_buf,
                                false, tgt);
-      // update n_ at the end
+      tgt.n_ += static_cast<uint64_t>(2 * tgt.get_k()) << (src_lvl + lg_sample_factor);
     }
   }
-  tgt.n_ = new_n;
-  if ((tgt.get_n() / (2 * tgt.get_k())) != tgt.bit_pattern_) {
+  if (tgt.n_ != new_n || (tgt.get_n() / (2 * tgt.get_k())) != tgt.bit_pattern_) {
     throw std::logic_error("Failed internal consistency check after downsampling_merge()");
-  }
-
-  // update min and max items
-  // can't just check is_empty() since min and max might not have been set if
-  // there were no base buffer items added via update()
-  if (!tgt.min_item_) {
-    tgt.min_item_.emplace(conditional_forward<FwdSk>(*src.min_item_));
-  } else {
-    if (tgt.comparator_(*src.min_item_, *tgt.min_item_))
-      *tgt.min_item_ = conditional_forward<FwdSk>(*src.min_item_);
-  }
-  if (!tgt.max_item_) {
-    tgt.max_item_.emplace(conditional_forward<FwdSk>(*src.max_item_));
-  } else {
-    if (tgt.comparator_(*tgt.max_item_, *src.max_item_))
-      *tgt.max_item_ = conditional_forward<FwdSk>(*src.max_item_);
   }
 }
 
