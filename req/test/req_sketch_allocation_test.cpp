@@ -18,6 +18,7 @@
  */
 
 #include <catch2/catch.hpp>
+#include <algorithm>
 #include <new>
 #include <sstream>
 #include <string>
@@ -80,13 +81,17 @@ std::vector<uint8_t> bytes(const sketch_type& sketch) {
 // the sketch must be consistent: the weights of the retained items add up to n
 void check_consistent(const sketch_type& sketch) {
   uint64_t total_weight = 0;
+  uint64_t max_weight = 0;
   uint32_t num_items = 0;
   for (const auto pair: sketch) {
     total_weight += pair.second;
+    max_weight = std::max(max_weight, pair.second);
     ++num_items;
   }
   REQUIRE(total_weight == sketch.get_n());
   REQUIRE(num_items == sketch.get_num_retained());
+  // no empty level is left above level zero
+  REQUIRE(sketch.is_estimation_mode() == (max_weight > 1));
 }
 
 // the sketch must still work: query it, update it, merge into it, and round-trip it

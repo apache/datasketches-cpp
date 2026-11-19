@@ -479,6 +479,8 @@ private:
   void restore_counts();
   void compress();
   void compress_levels();
+  // removes the levels above the given number that hold no items, after a failed merge or compression
+  void remove_empty_levels_above(size_t num_levels);
 
   static double get_rank_lb(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);
   static double get_rank_ub(uint16_t k, uint8_t num_levels, double rank, uint8_t num_std_dev, uint64_t n, bool hra);

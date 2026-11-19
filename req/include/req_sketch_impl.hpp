@@ -210,8 +210,7 @@ void req_sketch<T, C, A>::merge(FwdSk&& other) {
       compactors_[i].merge(conditional_forward<FwdSk>(other.compactors_[i]));
     }
   } catch (...) {
-    // remove the levels added for this merge that received no items
-    while (compactors_.size() > num_levels && compactors_.back().get_num_items() == 0) compactors_.pop_back();
+    remove_empty_levels_above(num_levels);
     restore_counts(); // some levels may be merged already
     throw;
   }
@@ -656,12 +655,19 @@ void req_sketch<T, C, A>::restore_counts() {
 
 template<typename T, typename C, typename A>
 void req_sketch<T, C, A>::compress() {
+  const size_t num_levels = compactors_.size();
   try {
     compress_levels();
   } catch (...) {
+    remove_empty_levels_above(num_levels); // a level can be added, and then the compaction into it fail
     restore_counts(); // a compactor can fail to grow after a compaction moved its items
     throw;
   }
+}
+
+template<typename T, typename C, typename A>
+void req_sketch<T, C, A>::remove_empty_levels_above(size_t num_levels) {
+  while (compactors_.size() > num_levels && compactors_.back().get_num_items() == 0) compactors_.pop_back();
 }
 
 template<typename T, typename C, typename A>
