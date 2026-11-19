@@ -23,9 +23,10 @@ var searchData=
   ['tuple_5fintersection_3c_20array_2c_20policy_2c_20typename_20array_3a_3aallocator_5ftype_20_3e_20',['tuple_intersection&lt; Array, Policy, typename Array::allocator_type &gt;',['../classdatasketches_1_1tuple__intersection.html',1,'datasketches']]],
   ['tuple_5fsketch_21',['tuple_sketch',['../classdatasketches_1_1tuple__sketch.html',1,'datasketches']]],
   ['tuple_5fsketch_3c_20array_2c_20typename_20array_3a_3aallocator_5ftype_20_3e_22',['tuple_sketch&lt; Array, typename Array::allocator_type &gt;',['../classdatasketches_1_1tuple__sketch.html',1,'datasketches']]],
-  ['tuple_5fsketch_3c_20summary_2c_20allocator_20_3e_23',['tuple_sketch&lt; Summary, Allocator &gt;',['../classdatasketches_1_1tuple__sketch.html',1,'datasketches']]],
-  ['tuple_5fsketch_3c_20summary_2c_20std_3a_3aallocator_3c_20summary_20_3e_20_3e_24',['tuple_sketch&lt; Summary, std::allocator&lt; Summary &gt; &gt;',['../classdatasketches_1_1tuple__sketch.html',1,'datasketches']]],
-  ['tuple_5funion_25',['tuple_union',['../classdatasketches_1_1tuple__union.html',1,'datasketches']]],
-  ['tuple_5funion_3c_20array_2c_20default_5farray_5ftuple_5funion_5fpolicy_3c_20array_20_3e_2c_20typename_20array_3a_3aallocator_5ftype_20_3e_26',['tuple_union&lt; Array, default_array_tuple_union_policy&lt; Array &gt;, typename Array::allocator_type &gt;',['../classdatasketches_1_1tuple__union.html',1,'datasketches']]],
-  ['tuple_5funion_3c_20array_2c_20policy_2c_20allocator_20_3e_27',['tuple_union&lt; Array, Policy, Allocator &gt;',['../classdatasketches_1_1tuple__union.html',1,'datasketches']]]
+  ['tuple_5fsketch_3c_20array_5fof_5fstrings_2c_20std_3a_3aallocator_3c_20array_5fof_5fstrings_20_3e_20_3e_23',['tuple_sketch&lt; array_of_strings, std::allocator&lt; array_of_strings &gt; &gt;',['../classdatasketches_1_1tuple__sketch.html',1,'datasketches']]],
+  ['tuple_5fsketch_3c_20summary_2c_20allocator_20_3e_24',['tuple_sketch&lt; Summary, Allocator &gt;',['../classdatasketches_1_1tuple__sketch.html',1,'datasketches']]],
+  ['tuple_5fsketch_3c_20summary_2c_20std_3a_3aallocator_3c_20summary_20_3e_20_3e_25',['tuple_sketch&lt; Summary, std::allocator&lt; Summary &gt; &gt;',['../classdatasketches_1_1tuple__sketch.html',1,'datasketches']]],
+  ['tuple_5funion_26',['tuple_union',['../classdatasketches_1_1tuple__union.html',1,'datasketches']]],
+  ['tuple_5funion_3c_20array_2c_20default_5farray_5ftuple_5funion_5fpolicy_3c_20array_20_3e_2c_20typename_20array_3a_3aallocator_5ftype_20_3e_27',['tuple_union&lt; Array, default_array_tuple_union_policy&lt; Array &gt;, typename Array::allocator_type &gt;',['../classdatasketches_1_1tuple__union.html',1,'datasketches']]],
+  ['tuple_5funion_3c_20array_2c_20policy_2c_20allocator_20_3e_28',['tuple_union&lt; Array, Policy, Allocator &gt;',['../classdatasketches_1_1tuple__union.html',1,'datasketches']]]
 ];
