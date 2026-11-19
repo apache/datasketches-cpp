@@ -1059,6 +1059,7 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
   }
 
   SECTION("weighted update: estimation mode") {
+    random_utils::random_bit.seed(11); // deterministic when this section runs alone
     kll_float_sketch sketch(200, std::less<float>(), 0);
     const int n = 10000;
     std::vector<uint64_t> weights(n);
@@ -1085,6 +1086,41 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sketch2.get_n() == sketch.get_n());
     REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
     REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
+  }
+
+  SECTION("weighted update: n is capped at 2^63 - 1") {
+    kll_float_sketch sketch(8, std::less<float>(), 0);
+    for (int i = 0; i < 4; ++i) sketch.update(static_cast<float>(i), kll_constants::MAX_WEIGHT);
+    const uint64_t n = sketch.get_n();
+    REQUIRE(n == 4 * kll_constants::MAX_WEIGHT);
+    const uint32_t num_retained = sketch.get_num_retained();
+    REQUIRE_THROWS_AS(sketch.update(10.0f, kll_constants::MAX_WEIGHT), std::overflow_error);
+    REQUIRE(sketch.get_n() == n);
+    REQUIRE(sketch.get_num_retained() == num_retained);
+    REQUIRE(sketch.get_max_item() == 3);
+    sketch.update(10.0f, kll_constants::MAX_N - n);
+    REQUIRE(sketch.get_n() == kll_constants::MAX_N);
+    REQUIRE(sketch.get_max_item() == 10);
+    REQUIRE_THROWS_AS(sketch.update(11.0f), std::overflow_error);
+    REQUIRE_THROWS_AS(sketch.update(11.0f, 2), std::overflow_error);
+    REQUIRE(sketch.get_n() == kll_constants::MAX_N);
+    REQUIRE(sketch.get_max_item() == 10);
+  }
+
+  SECTION("merge: n is capped at 2^63 - 1") {
+    kll_float_sketch sketch(8, std::less<float>(), 0);
+    for (int i = 0; i < 4; ++i) sketch.update(static_cast<float>(i), kll_constants::MAX_WEIGHT);
+    const uint64_t n = sketch.get_n();
+    kll_float_sketch too_big(8, std::less<float>(), 0);
+    too_big.update(10.0f, kll_constants::MAX_WEIGHT);
+    REQUIRE_THROWS_AS(sketch.merge(too_big), std::overflow_error);
+    REQUIRE(sketch.get_n() == n);
+    REQUIRE(sketch.get_max_item() == 3);
+    kll_float_sketch fits(8, std::less<float>(), 0);
+    fits.update(10.0f, kll_constants::MAX_N - n);
+    sketch.merge(fits);
+    REQUIRE(sketch.get_n() == kll_constants::MAX_N);
+    REQUIRE(sketch.get_max_item() == 10);
   }
 
   SECTION("weighted update: strings") {
@@ -1518,6 +1554,34 @@ TEST_CASE("kll sketch: update with aliased item during buffer growth", "[kll_ske
     }
   }
   REQUIRE(count == 2);
+}
+
+namespace {
+
+// a comparator that can't be default-constructed: the sketch must use its own comparator everywhere
+struct ordered_by {
+  bool descending;
+  explicit ordered_by(bool d): descending(d) {}
+  bool operator()(int a, int b) const { return descending ? b < a : a < b; }
+};
+
+} // namespace
+
+TEST_CASE("kll sketch: compaction and merge use the sketch's comparator", "[kll_sketch]") {
+  kll_sketch<int, ordered_by> sketch(8, ordered_by(true));
+  kll_sketch<int, ordered_by> other(8, ordered_by(true));
+  for (int i = 0; i < 1000; ++i) {
+    sketch.update(i);
+    other.update(i + 1000);
+  }
+  sketch.merge(other);
+  REQUIRE(sketch.get_n() == 2000);
+  REQUIRE(sketch.get_min_item() == 1999); // first in descending order
+  REQUIRE(sketch.get_max_item() == 0);
+  // the converting constructor checks that every level above zero is sorted by the comparator
+  const kll_sketch<int, ordered_by> copy(sketch, ordered_by(true));
+  REQUIRE(copy.get_n() == 2000);
+  REQUIRE(sketch.get_rank(1000) == Approx(0.5).margin(RANK_EPS_FOR_K_200 * 10));
 }
 
 } /* namespace datasketches */
