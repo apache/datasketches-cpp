@@ -127,6 +127,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a49bb19e78f36fb72b8496cd6cff71fec" id="r_a49bb19e78f36fb72b8496cd6cff71fec"><td class="memTemplParams" colspan="2">template&lt;typename FwdSk&gt; </td></tr>
 <tr class="memitem:a49bb19e78f36fb72b8496cd6cff71fec template"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a49bb19e78f36fb72b8496cd6cff71fec">merge</a> (FwdSk &amp;&amp;other)</td></tr>
 <tr class="memdesc:a49bb19e78f36fb72b8496cd6cff71fec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Merges another sketch into this one.  <br /></td></tr>
+<tr class="memitem:a0754e2def4850bd8bf73f69b6f476973" id="r_a0754e2def4850bd8bf73f69b6f476973"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0754e2def4850bd8bf73f69b6f476973">reserve</a> ()</td></tr>
+<tr class="memdesc:a0754e2def4850bd8bf73f69b6f476973"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates storage for items now, rather than on the first update or merge.  <br /></td></tr>
 <tr class="memitem:af2fa890815acf3a1418ea8eee466075c" id="r_af2fa890815acf3a1418ea8eee466075c"><td class="memItemLeft" align="right" valign="top">const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af2fa890815acf3a1418ea8eee466075c">get_min_item</a> () const</td></tr>
 <tr class="memdesc:af2fa890815acf3a1418ea8eee466075c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the min item of the stream.  <br /></td></tr>
 <tr class="memitem:a687ed2123bdc7e67fbda0c081e3acf21" id="r_a687ed2123bdc7e67fbda0c081e3acf21"><td class="memItemLeft" align="right" valign="top">const T &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a687ed2123bdc7e67fbda0c081e3acf21">get_max_item</a> () const</td></tr>
@@ -207,6 +209,7 @@ The Python prototype only implemented a comparison criterion of "INCLUSIVE". Thi
 <li>
 This implementation provides extensive debug visibility into the operation of the sketch with two levels of detail output. This is not only useful for debugging, but is a powerful tool to help users understand how the sketch works. </li>
 </ul>
+<p>Memory allocation: a new sketch does not allocate storage for items until it first needs it, on the first update or the first merge of a non-empty sketch. Sketches that stay empty use little memory. As a result, the first update or merge can throw std::bad_alloc while allocating this storage, rather than the constructor. If the first update fails this way, the sketch is unchanged and can still be used. Call <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for items now, rather than on the first update or merge.">reserve()</a> right after construction to allocate the storage up front.</p>
 </div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Member Typedef Documentation</h2>
 <a id="a4c80d2361c940f99df9f850615c2dcbe" name="a4c80d2361c940f99df9f850615c2dcbe"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4c80d2361c940f99df9f850615c2dcbe">&#9670;&#160;</a></span>quantile_return_type</h2>
@@ -279,7 +282,7 @@ template&lt;typename T, typename Comparator = std::less&lt;T&gt;, typename Alloc
 </dl>
 <dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
-    <tr><td class="paramname">std::invalid_argument</td><td>if k is greater than 1024 </td></tr>
+    <tr><td class="paramname">std::invalid_argument</td><td>if k is greater than 1024 Storage for items is allocated on first use, see <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for items now, rather than on the first update or merge.">reserve()</a>. </td></tr>
   </table>
   </dd>
 </dl>
@@ -605,7 +608,7 @@ template&lt;typename FwdT&gt; </div>
 </div><div class="memdoc">
 
 <p>Updates this sketch with the given data item. </p>
-<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). The first update allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for items now, rather than on the first update or merge.">reserve()</a> or a merge already did. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>from a stream of items </td></tr>
   </table>
@@ -634,9 +637,36 @@ template&lt;typename FwdSk&gt; </div>
 </div><div class="memdoc">
 
 <p>Merges another sketch into this one. </p>
-<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. The first merge of a non-empty sketch allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for items now, rather than on the first update or merge.">reserve()</a> or an update already did. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">other</td><td>sketch to merge into this one </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a0754e2def4850bd8bf73f69b6f476973" name="a0754e2def4850bd8bf73f69b6f476973"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0754e2def4850bd8bf73f69b6f476973">&#9670;&#160;</a></span>reserve()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, typename C, typename A&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void reserve </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Allocates storage for items now, rather than on the first update or merge. </p>
+<p>Call this right after construction if allocation failures should happen here, or if the first update should not pay for the allocation. Does nothing if the storage is already allocated. </p><dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::bad_alloc</td><td>if the allocation fails, in which case the sketch is unchanged </td></tr>
   </table>
   </dd>
 </dl>
