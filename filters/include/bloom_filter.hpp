@@ -621,7 +621,7 @@ private:
   bool is_dirty_;
   bool is_owned_; // if true, data is not owned by filter AND memory_ holds the entire filter not just the bit array
   bool is_read_only_; // if true, filter is read-only
-  uint64_t capacity_bits_;
+  uint64_t capacity_bits_; // a positive multiple of 64, so the bit array is never empty
   uint64_t num_bits_set_;
   uint8_t* bit_array_;  // data backing bit_array_, regardless of ownership
   uint8_t* memory_; // if wrapped, pointer to the start of the filter, otherwise nullptr

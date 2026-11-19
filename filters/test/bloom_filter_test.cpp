@@ -443,4 +443,43 @@ TEST_CASE("bloom_filter: truncated empty stream is rejected", "[bloom_filter]") 
   }
 }
 
+TEST_CASE("bloom_filter: image with zero bit array length is rejected", "[bloom_filter]") {
+  const size_t num_longs_offset = 16;
+  const size_t num_bits_set_offset = 24;
+
+  auto bf = bloom_filter::builder::create_by_size(64, 3);
+  bf.update("apple");
+  auto bytes = bf.serialize();
+  // a non-empty image whose bit array has 0 longs, with a count of bits set consistent with that
+  const uint32_t num_longs = 0;
+  const uint64_t num_bits_set = 0;
+  std::memcpy(bytes.data() + num_longs_offset, &num_longs, sizeof(num_longs));
+  std::memcpy(bytes.data() + num_bits_set_offset, &num_bits_set, sizeof(num_bits_set));
+
+  REQUIRE_THROWS_AS(bloom_filter::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+  REQUIRE_THROWS_AS(bloom_filter::wrap(bytes.data(), bytes.size()), std::invalid_argument);
+  REQUIRE_THROWS_AS(bloom_filter::writable_wrap(bytes.data(), bytes.size()), std::invalid_argument);
+
+  const std::string serialized(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  std::istringstream is(serialized, std::ios::in | std::ios::binary);
+  REQUIRE_THROWS_AS(bloom_filter::deserialize(is), std::invalid_argument);
+
+  // an empty image with 0 longs is rejected too
+  auto empty_bytes = bloom_filter::builder::create_by_size(64, 3).serialize();
+  std::memcpy(empty_bytes.data() + num_longs_offset, &num_longs, sizeof(num_longs));
+  REQUIRE_THROWS_AS(bloom_filter::deserialize(empty_bytes.data(), empty_bytes.size()), std::invalid_argument);
+  REQUIRE_THROWS_AS(bloom_filter::wrap(empty_bytes.data(), empty_bytes.size()), std::invalid_argument);
+  const std::string empty_serialized(reinterpret_cast<const char*>(empty_bytes.data()), empty_bytes.size());
+  std::istringstream empty_is(empty_serialized, std::ios::in | std::ios::binary);
+  REQUIRE_THROWS_AS(bloom_filter::deserialize(empty_is), std::invalid_argument);
+}
+
+TEST_CASE("bloom_filter: capacity is rounded up to a multiple of 64 bits", "[bloom_filter]") {
+  // so the bit array of a filter is never shorter than 8 bytes
+  REQUIRE(bloom_filter::builder::create_by_size(1, 3).get_capacity() == 64);
+  REQUIRE(bloom_filter::builder::create_by_size(63, 3).get_capacity() == 64);
+  REQUIRE(bloom_filter::builder::create_by_size(64, 3).get_capacity() == 64);
+  REQUIRE(bloom_filter::builder::create_by_size(65, 3).get_capacity() == 128);
+}
+
 } // namespace datasketches
