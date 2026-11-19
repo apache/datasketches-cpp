@@ -109,6 +109,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5200c74c52ee0f76d0d34c1ca6aec65c" id="r_a5200c74c52ee0f76d0d34c1ca6aec65c"><td class="memTemplParams" colspan="2">template&lt;typename FwdT&gt; </td></tr>
 <tr class="memitem:a5200c74c52ee0f76d0d34c1ca6aec65c template"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5200c74c52ee0f76d0d34c1ca6aec65c">update</a> (FwdT &amp;&amp;item)</td></tr>
 <tr class="memdesc:a5200c74c52ee0f76d0d34c1ca6aec65c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates this sketch with the given data item.  <br /></td></tr>
+<tr class="memitem:a0ab7c1b037553ba889cdb3616ab942f4" id="r_a0ab7c1b037553ba889cdb3616ab942f4"><td class="memTemplParams" colspan="2">template&lt;typename FwdT&gt; </td></tr>
+<tr class="memitem:a0ab7c1b037553ba889cdb3616ab942f4 template"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0ab7c1b037553ba889cdb3616ab942f4">update</a> (FwdT &amp;&amp;item, uint64_t weight)</td></tr>
+<tr class="memdesc:a0ab7c1b037553ba889cdb3616ab942f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates this sketch with the given data item repeated the given number of times.  <br /></td></tr>
 <tr class="memitem:a49bb19e78f36fb72b8496cd6cff71fec" id="r_a49bb19e78f36fb72b8496cd6cff71fec"><td class="memTemplParams" colspan="2">template&lt;typename FwdSk&gt; </td></tr>
 <tr class="memitem:a49bb19e78f36fb72b8496cd6cff71fec template"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a49bb19e78f36fb72b8496cd6cff71fec">merge</a> (FwdSk &amp;&amp;other)</td></tr>
 <tr class="memdesc:a49bb19e78f36fb72b8496cd6cff71fec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Merges another sketch into this one.  <br /></td></tr>
@@ -444,7 +447,7 @@ template&lt;typename T, typename C, typename A&gt; </div>
 </div>
 </div>
 <a id="a5200c74c52ee0f76d0d34c1ca6aec65c" name="a5200c74c52ee0f76d0d34c1ca6aec65c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5200c74c52ee0f76d0d34c1ca6aec65c">&#9670;&#160;</a></span>update()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5200c74c52ee0f76d0d34c1ca6aec65c">&#9670;&#160;</a></span>update() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -466,6 +469,46 @@ template&lt;typename FwdT&gt; </div>
 <p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). The first update allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a> or a merge already did. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>from a stream of items </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a0ab7c1b037553ba889cdb3616ab942f4" name="a0ab7c1b037553ba889cdb3616ab942f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ab7c1b037553ba889cdb3616ab942f4">&#9670;&#160;</a></span>update() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, typename C, typename A&gt; </div>
+<div class="memtemplate">
+template&lt;typename FwdT&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void update </td>
+          <td>(</td>
+          <td class="paramtype">FwdT &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>item</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>weight</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Updates this sketch with the given data item repeated the given number of times. </p>
+<p>The result is equivalent to calling update(item) weight times, at a cost that grows with the logarithm of the weight rather than with the weight itself. If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). The first update allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a> or a merge already did. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">item</td><td>from a stream of items </td></tr>
+    <tr><td class="paramname">weight</td><td>number of times the item is repeated, from 1 to <a class="el" href="namespacedatasketches_1_1kll__constants.html#aa43799bb5b6f68b48051ef607affe1ea" title="maximum weight of a weighted update, the same as in datasketches-java">kll_constants::MAX_WEIGHT</a> (2^61 - 1) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::invalid_argument</td><td>if the weight is 0 or greater than <a class="el" href="namespacedatasketches_1_1kll__constants.html#aa43799bb5b6f68b48051ef607affe1ea" title="maximum weight of a weighted update, the same as in datasketches-java">kll_constants::MAX_WEIGHT</a> </td></tr>
   </table>
   </dd>
 </dl>
