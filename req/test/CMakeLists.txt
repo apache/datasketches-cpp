@@ -39,6 +39,7 @@ target_sources(req_test
   PRIVATE
     req_sketch_test.cpp
     req_sketch_custom_type_test.cpp
+    req_sketch_allocation_test.cpp
 )
 
 if (SERDE_COMPAT)

@@ -82,4 +82,29 @@ TEST_CASE("optional conversion", "[common]") {
   REQUIRE(*opt_d == static_cast<double>(*opt_f));
 }
 
+// counts live instances
+struct counted {
+  static int live;
+  int val;
+  counted(int v): val(v) { ++live; }
+  counted(const counted& other): val(other.val) { ++live; }
+  ~counted() { --live; }
+};
+int counted::live = 0;
+
+TEST_CASE("optional emplace replaces the current value", "[common]") {
+  {
+    optional<counted> opt;
+    opt.emplace(1);
+    REQUIRE(counted::live == 1);
+    opt.emplace(2); // destroys the first value
+    REQUIRE(counted::live == 1);
+    REQUIRE(opt->val == 2);
+    opt.reset();
+    REQUIRE(counted::live == 0);
+    opt.emplace(3);
+  }
+  REQUIRE(counted::live == 0);
+}
+
 } /* namespace datasketches */

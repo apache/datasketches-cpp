@@ -114,6 +114,7 @@ public:
 
   template<typename... Args>
   void emplace(Args&&... args) noexcept(std::is_nothrow_constructible<T, Args...>::value) {
+    reset(); // destroys the current value, if any, as std::optional::emplace does
     new (&value_) T(args...);
     initialized_ = true;
   }
