@@ -194,6 +194,70 @@ void kll_sketch<T, C, A>::update(FwdT&& item) {
 }
 
 template<typename T, typename C, typename A>
+template<typename FwdT>
+void kll_sketch<T, C, A>::update(FwdT&& item, uint64_t weight) {
+  if (!check_update_item(item)) { return; }
+  if (weight == 0) throw std::invalid_argument("weight must be at least 1");
+  if (weight > kll_constants::MAX_WEIGHT) {
+    throw std::invalid_argument("weight must be less than 2^61: " + std::to_string(weight));
+  }
+  if (weight == 1) {
+    update(std::forward<FwdT>(item));
+    return;
+  }
+  allocate_items(); // first, so that a failure leaves the sketch unchanged
+  reset_sorted_view(); // before any change, so that a failed copy can't leave a stale view
+  if (weight < levels_[0]) { // fits into level zero without compaction
+    update_min_max(static_cast<const T&>(item));
+    // construct each copy before counting it, so that a failed copy leaves a valid sketch
+    for (uint64_t i = 1; i < weight; ++i) {
+      new (&items_[levels_[0] - 1]) T(static_cast<const T&>(item));
+      internal_update();
+    }
+    new (&items_[levels_[0] - 1]) T(std::forward<FwdT>(item));
+    internal_update();
+  } else {
+    merge(kll_sketch(k_, static_cast<const T&>(item), weight, comparator_, allocator_));
+  }
+}
+
+// An item at level h carries weight 2^h, so one copy of the item at each level
+// whose bit is set in the weight is an exact sketch of that many copies.
+// The weight is less than 2^61, so this needs at most 61 levels.
+template<typename T, typename C, typename A>
+kll_sketch<T, C, A>::kll_sketch(uint16_t k, const T& item, uint64_t weight, const C& comparator, const A& allocator):
+comparator_(comparator),
+allocator_(allocator),
+k_(k),
+m_(kll_constants::DEFAULT_M),
+min_k_(k),
+num_levels_(static_cast<uint8_t>(64 - count_leading_zeros_in_u64(weight))),
+is_level_zero_sorted_(true),
+n_(weight),
+levels_(num_levels_ + 1, 0, allocator),
+items_(nullptr),
+items_size_(0),
+min_item_(item),
+max_item_(item),
+sorted_view_(nullptr)
+{
+  for (uint8_t level = 0; level < num_levels_; ++level) {
+    levels_[level + 1] = levels_[level] + static_cast<uint32_t>((weight >> level) & 1);
+  }
+  items_size_ = levels_[num_levels_];
+  items_ = allocator_.allocate(items_size_);
+  // the destructor doesn't run if a constructor throws, so release the items here
+  uint32_t num_constructed = 0;
+  try {
+    for (; num_constructed < items_size_; ++num_constructed) new (&items_[num_constructed]) T(item);
+  } catch (...) {
+    for (uint32_t i = 0; i < num_constructed; ++i) items_[i].~T();
+    allocator_.deallocate(items_, items_size_);
+    throw;
+  }
+}
+
+template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::update_min_max(const T& item) {
   if (is_empty()) {
     min_item_.emplace(item);
@@ -271,7 +335,7 @@ void kll_sketch<T, C, A>::merge(FwdSk&& other) {
     const uint32_t index = internal_update();
     new (&items_[index]) T(conditional_forward<FwdSk>(other.items_[i]));
   }
-  if (other.num_levels_ >= 2) { merge_higher_levels(other, final_n); }
+  if (other.num_levels_ >= 2) { merge_higher_levels(std::forward<FwdSk>(other), final_n); }
   n_ = final_n;
   if (other.is_estimation_mode()) { min_k_ = std::min(min_k_, other.min_k_); }
   assert_correct_total_weight();
@@ -1149,7 +1213,13 @@ void kll_sketch<T, C, A>::reset_sorted_view() {
 template<typename T, typename C, typename A>
 kll_sketch<T, C, A>::const_iterator::const_iterator(const T* items, const uint32_t* levels, const uint8_t num_levels):
 items(items), levels(levels), num_levels(num_levels), index(items == nullptr ? levels[num_levels] : levels[0]), level(items == nullptr ? num_levels : 0), weight(1)
-{}
+{
+  // start at the first non-empty level: level zero can be empty after a merge
+  while (level < num_levels && levels[level] == levels[level + 1]) {
+    ++level;
+    weight *= 2;
+  }
+}
 
 template<typename T, typename C, typename A>
 typename kll_sketch<T, C, A>::const_iterator& kll_sketch<T, C, A>::const_iterator::operator++() {

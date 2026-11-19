@@ -39,8 +39,9 @@ uint8_t kll_helper::floor_of_log2_of_fraction(uint64_t numer, uint64_t denom) {
   if (denom > numer) { return 0; }
   uint8_t count = 0;
   while (true) {
+    // denom * 2 > numer, without overflowing denom
+    if (denom > (numer >> 1)) { return count; }
     denom <<= 1;
-    if (denom > numer) { return count; }
     count++;
   }
 }

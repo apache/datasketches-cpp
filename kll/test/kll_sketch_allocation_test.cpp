@@ -19,7 +19,9 @@
 
 #include <catch2/catch.hpp>
 #include <new>
+#include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <kll_sketch.hpp>
 #include <test_allocator.hpp>
@@ -221,6 +223,117 @@ TEST_CASE("kll sketch allocation: failure at each allocation of the updates", "[
         check_usable(sketch, control);
       }
       control.disarm();
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+TEST_CASE("kll sketch allocation: failed first weighted update leaves the sketch unchanged", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    allocation_control control;
+    const failing_allocator<std::string> alloc(control);
+    const kll_string_failing_sketch fresh(200, std::less<std::string>(), alloc);
+    for (const uint64_t weight: {uint64_t(10), uint64_t(1000)}) { // copies into level zero, and a merge
+      kll_string_failing_sketch sketch(200, std::less<std::string>(), alloc);
+      control.arm(0);
+      REQUIRE_THROWS_AS(sketch.update(item(1), weight), std::bad_alloc);
+      check_empty(sketch, fresh);
+      control.disarm();
+      sketch.update(item(2), weight);
+      REQUIRE(sketch.get_n() == weight);
+      REQUIRE(sketch.get_min_item() == item(2));
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+// Fail each allocation made by a stream of weighted updates in turn: the sketch must stay valid and usable.
+TEST_CASE("kll sketch allocation: failure at each allocation of the weighted updates", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    allocation_control control;
+    const failing_allocator<std::string> alloc(control);
+    const kll_string_failing_sketch fresh(8, std::less<std::string>(), alloc);
+    bool completed = false;
+    for (long fail_at = 0; !completed; ++fail_at) {
+      kll_string_failing_sketch sketch(8, std::less<std::string>(), alloc);
+      control.arm(fail_at);
+      try {
+        for (int i = 0; i < 300; ++i) sketch.update(item(i), static_cast<uint64_t>(i % 7) * 100 + 1);
+        completed = true;
+        REQUIRE(fail_at > 0);
+      } catch (const std::bad_alloc&) {
+        if (fail_at == 0) check_empty(sketch, fresh);
+        check_usable(sketch, control);
+      }
+      control.disarm();
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+namespace {
+
+long copies_allowed = -1; // copies left before a copy throws; negative means no limit
+
+// An item whose copy constructor throws once copies_allowed runs out.
+// Each item owns memory from test_allocator, so an item that is never destroyed shows up as a leak.
+struct fragile_item {
+  int* value;
+  explicit fragile_item(int v): value(test_allocator<int>(0).allocate(1)) { *value = v; }
+  fragile_item(const fragile_item& other): value(nullptr) {
+    if (copies_allowed == 0) throw std::runtime_error("copy failed");
+    if (copies_allowed > 0) --copies_allowed;
+    value = test_allocator<int>(0).allocate(1);
+    *value = *other.value;
+  }
+  fragile_item(fragile_item&& other) noexcept: value(other.value) { other.value = nullptr; }
+  fragile_item& operator=(fragile_item other) noexcept { std::swap(value, other.value); return *this; }
+  ~fragile_item() { if (value != nullptr) test_allocator<int>(0).deallocate(value, 1); }
+};
+
+struct fragile_less {
+  bool operator()(const fragile_item& a, const fragile_item& b) const { return *a.value < *b.value; }
+};
+
+using kll_fragile_sketch = kll_sketch<fragile_item, fragile_less, test_allocator<fragile_item>>;
+
+} // namespace
+
+// Fail each item copy made by a weighted update in turn: nothing may leak,
+// and the sketch must stay usable, with no stale sorted view.
+TEST_CASE("kll sketch allocation: failure at each item copy of a weighted update", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  for (const uint64_t weight: {uint64_t(10), uint64_t(1000)}) { // copies into level zero, and a merge
+    CAPTURE(weight);
+    bool completed = false;
+    for (long fail_at = 0; !completed; ++fail_at) {
+      CAPTURE(fail_at);
+      kll_fragile_sketch sketch(200, fragile_less(), test_allocator<fragile_item>(0));
+      for (int i = 0; i < 5; ++i) sketch.update(fragile_item(i));
+      const fragile_item probe(2);
+      const double rank_before = sketch.get_rank(probe); // caches a sorted view
+      REQUIRE(rank_before > 0);
+      copies_allowed = fail_at;
+      try {
+        sketch.update(fragile_item(100), weight);
+        completed = true;
+      } catch (const std::runtime_error&) {}
+      copies_allowed = -1;
+      REQUIRE(sketch.get_n() >= 5);
+      REQUIRE(sketch.get_n() <= 5 + weight);
+      // a copy of the sketch builds its sorted view from the current items
+      const kll_fragile_sketch copy(sketch);
+      REQUIRE(sketch.get_rank(probe) == copy.get_rank(probe));
+      sketch.update(fragile_item(-1));
+      REQUIRE(*sketch.get_min_item().value == -1);
     }
   }
   REQUIRE(test_allocator_total_bytes == 0);

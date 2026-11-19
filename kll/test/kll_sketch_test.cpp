@@ -340,10 +340,13 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("stream serialize deserialize empty") {
     kll_float_sketch sketch(200, std::less<float>(), 0);
+    const long long empty_bytes = test_allocator_total_bytes;
     std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
     sketch.serialize(s);
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch.get_serialized_size_bytes());
+    const long long bytes_before = test_allocator_total_bytes;
     auto sketch2 = kll_float_sketch::deserialize(s, serde<float>(), std::less<float>(), 0);
+    REQUIRE(test_allocator_total_bytes - bytes_before == empty_bytes); // no item storage, like a new sketch
     REQUIRE(static_cast<size_t>(s.tellp()) == sketch2.get_serialized_size_bytes());
     REQUIRE(s.tellg() == s.tellp());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
@@ -358,8 +361,11 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
 
   SECTION("bytes serialize deserialize empty") {
     kll_float_sketch sketch(200, std::less<float>(), 0);
+    const long long empty_bytes = test_allocator_total_bytes;
     auto bytes = sketch.serialize();
+    const long long bytes_before = test_allocator_total_bytes;
     auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), std::less<float>(), 0);
+    REQUIRE(test_allocator_total_bytes - bytes_before == empty_bytes); // no item storage, like a new sketch
     REQUIRE(bytes.size() == sketch.get_serialized_size_bytes());
     REQUIRE(sketch2.is_empty() == sketch.is_empty());
     REQUIRE(sketch2.is_estimation_mode() == sketch.is_estimation_mode());
@@ -539,6 +545,9 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(kll_helper::floor_of_log2_of_fraction(6, 2) == 1);
     REQUIRE(kll_helper::floor_of_log2_of_fraction(7, 2) == 1);
     REQUIRE(kll_helper::floor_of_log2_of_fraction(8, 2) == 2);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(1ULL << 63, 1) == 63);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(std::numeric_limits<uint64_t>::max(), 1) == 63);
+    REQUIRE(kll_helper::floor_of_log2_of_fraction(std::numeric_limits<uint64_t>::max(), 3) == 62);
   }
 
   SECTION("out of order split points, float") {
@@ -937,10 +946,181 @@ TEST_CASE("kll sketch", "[kll_sketch]") {
     REQUIRE(sb.get_n() == 3);
   }
 
+  SECTION("weighted update: zero weight") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    REQUIRE_THROWS_AS(sketch.update(1.0f, 0), std::invalid_argument);
+    REQUIRE(sketch.is_empty());
+  }
+
+  SECTION("weighted update: NaN") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    sketch.update(std::numeric_limits<float>::quiet_NaN(), 1000);
+    REQUIRE(sketch.is_empty());
+  }
+
+  SECTION("weighted update: same as repeated updates in exact mode") {
+    kll_float_sketch weighted(200, std::less<float>(), 0);
+    kll_float_sketch repeated(200, std::less<float>(), 0);
+    for (int i = 1; i <= 15; ++i) {
+      weighted.update(static_cast<float>(i), i);
+      for (int j = 0; j < i; ++j) repeated.update(static_cast<float>(i));
+    }
+    REQUIRE(weighted.get_n() == repeated.get_n());
+    REQUIRE(weighted.get_num_retained() == repeated.get_num_retained());
+    REQUIRE_FALSE(weighted.is_estimation_mode());
+    for (int i = 0; i <= 16; ++i) {
+      REQUIRE(weighted.get_rank(static_cast<float>(i)) == repeated.get_rank(static_cast<float>(i)));
+      REQUIRE(weighted.get_rank(static_cast<float>(i), false) == repeated.get_rank(static_cast<float>(i), false));
+    }
+  }
+
+  SECTION("weighted update: one item with large weight") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    const uint64_t weight = (1ULL << 40) + 12345;
+    sketch.update(7.0f, weight);
+    REQUIRE(sketch.get_n() == weight);
+    REQUIRE(sketch.get_num_retained() == 7); // number of bits set in the weight
+    REQUIRE(sketch.get_min_item() == 7.0f);
+    REQUIRE(sketch.get_max_item() == 7.0f);
+    REQUIRE(sketch.get_rank(7.0f) == 1);
+    REQUIRE(sketch.get_rank(7.0f, false) == 0);
+    REQUIRE(sketch.get_quantile(0.5) == 7.0f);
+
+    uint64_t total_weight = 0;
+    for (auto pair: sketch) total_weight += pair.second;
+    REQUIRE(total_weight == weight);
+  }
+
+  SECTION("weighted update: maximum weight") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    sketch.update(1.0f);
+    sketch.update(2.0f, kll_constants::MAX_WEIGHT);
+    REQUIRE(sketch.get_n() == kll_constants::MAX_WEIGHT + 1);
+    REQUIRE(sketch.get_min_item() == 1.0f);
+    REQUIRE(sketch.get_max_item() == 2.0f);
+    REQUIRE(sketch.get_quantile(0.5) == 2.0f);
+
+    uint64_t total_weight = 0;
+    for (auto pair: sketch) total_weight += pair.second;
+    REQUIRE(total_weight == sketch.get_n());
+
+    auto bytes = sketch.serialize();
+    auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), std::less<float>(), 0);
+    REQUIRE(sketch2.get_n() == sketch.get_n());
+    REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+  }
+
+  SECTION("weighted update: weight above the maximum throws") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    sketch.update(1.0f, 5);
+    const auto bytes = sketch.serialize();
+    REQUIRE_THROWS_AS(sketch.update(2.0f, kll_constants::MAX_WEIGHT + 1), std::invalid_argument);
+    REQUIRE_THROWS_AS(sketch.update(2.0f, std::numeric_limits<uint64_t>::max()), std::invalid_argument);
+    REQUIRE(sketch.serialize() == bytes);
+  }
+
+  SECTION("weighted update: weight 1 is a plain update") {
+    kll_float_sketch weighted(8, std::less<float>(), 0);
+    kll_float_sketch plain(8, std::less<float>(), 0);
+    random_utils::random_bit.seed(7);
+    for (int i = 0; i < 1000; ++i) weighted.update(static_cast<float>(i), 1);
+    random_utils::random_bit.seed(7);
+    for (int i = 0; i < 1000; ++i) plain.update(static_cast<float>(i));
+    REQUIRE(weighted.serialize() == plain.serialize());
+  }
+
+  SECTION("weighted update: first update of a new sketch, both paths") {
+    // small weight: copies into level zero of the storage that this update allocates
+    kll_float_sketch small(200, std::less<float>(), 0);
+    small.update(3.0f, 10);
+    REQUIRE(small.get_n() == 10);
+    REQUIRE(small.get_num_retained() == 10);
+    REQUIRE(small.get_min_item() == 3.0f);
+    // large weight: merges an exact sketch of the item
+    kll_float_sketch large(200, std::less<float>(), 0);
+    large.update(3.0f, 1000);
+    REQUIRE(large.get_n() == 1000);
+    REQUIRE(large.get_max_item() == 3.0f);
+    uint64_t total_weight = 0;
+    for (auto pair: large) total_weight += pair.second;
+    REQUIRE(total_weight == 1000);
+  }
+
+  SECTION("weighted update: large weights into a full sketch") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    for (int i = 0; i < 1000; ++i) sketch.update(static_cast<float>(i));
+    sketch.update(-1.0f, 1000);
+    sketch.update(2000.0f, 3000);
+    REQUIRE(sketch.get_n() == 5000);
+    REQUIRE(sketch.get_min_item() == -1.0f);
+    REQUIRE(sketch.get_max_item() == 2000.0f);
+    REQUIRE(sketch.get_rank(-1.0f) == Approx(0.2).margin(RANK_EPS_FOR_K_200));
+    REQUIRE(sketch.get_rank(2000.0f, false) == Approx(0.4).margin(RANK_EPS_FOR_K_200));
+  }
+
+  SECTION("weighted update: estimation mode") {
+    kll_float_sketch sketch(200, std::less<float>(), 0);
+    const int n = 10000;
+    std::vector<uint64_t> weights(n);
+    uint64_t total = 0;
+    for (int i = 0; i < n; ++i) {
+      weights[i] = static_cast<uint64_t>(i % 13) * 1000 + 1;
+      total += weights[i];
+      sketch.update(static_cast<float>(i), weights[i]);
+    }
+    REQUIRE(sketch.get_n() == total);
+    REQUIRE(sketch.is_estimation_mode());
+    REQUIRE(sketch.get_min_item() == 0);
+    REQUIRE(sketch.get_max_item() == n - 1);
+
+    uint64_t weight_below = 0;
+    for (int i = 0; i < n; ++i) {
+      const double true_rank = static_cast<double>(weight_below) / total;
+      REQUIRE(sketch.get_rank(static_cast<float>(i), false) == Approx(true_rank).margin(RANK_EPS_FOR_K_200));
+      weight_below += weights[i];
+    }
+
+    auto bytes = sketch.serialize();
+    auto sketch2 = kll_float_sketch::deserialize(bytes.data(), bytes.size(), serde<float>(), std::less<float>(), 0);
+    REQUIRE(sketch2.get_n() == sketch.get_n());
+    REQUIRE(sketch2.get_num_retained() == sketch.get_num_retained());
+    REQUIRE(sketch2.get_quantile(0.5) == sketch.get_quantile(0.5));
+  }
+
+  SECTION("weighted update: strings") {
+    kll_string_sketch sketch(200, std::less<std::string>(), 0);
+    sketch.update(std::string("b"), 3);
+    const std::string a("a");
+    sketch.update(a, 1000);
+    sketch.update(std::string("c"), 1ULL << 20);
+    REQUIRE(sketch.get_n() == 3 + 1000 + (1ULL << 20));
+    REQUIRE(sketch.get_min_item() == "a");
+    REQUIRE(sketch.get_max_item() == "c");
+    REQUIRE(sketch.get_rank("a") == Approx(1000.0 / sketch.get_n()).margin(RANK_EPS_FOR_K_200));
+  }
+
   // cleanup
   REQUIRE(test_allocator_total_bytes == 0);
 }
 
+
+TEST_CASE("kll sketch: iterator weights when level zero is empty", "[kll_sketch]") {
+  // merges can leave level zero empty; the iterator must still give each item the weight of its level
+  bool found_empty_level_zero = false;
+  for (int trial = 0; trial < 50; ++trial) {
+    kll_float_sketch target(8, std::less<float>(), 0);
+    for (int j = 0; j < 1 + trial % 5; ++j) {
+      kll_float_sketch sketch(8, std::less<float>(), 0);
+      for (int i = 0; i < 10 + (trial * 37 + j * 11) % 300; ++i) sketch.update(static_cast<float>(i));
+      target.merge(sketch);
+    }
+    uint64_t total_weight = 0;
+    for (const auto pair: target) total_weight += pair.second;
+    REQUIRE(total_weight == target.get_n());
+    if (target.to_string(true, false).find("   0: 8, 0\n") != std::string::npos) found_empty_level_zero = true;
+  }
+  REQUIRE(found_empty_level_zero);
+}
 
 TEST_CASE("kll sketch: deserialize rejects inconsistent levels", "[kll_sketch]") {
   using vector_bytes = kll_sketch<int>::vector_bytes;
