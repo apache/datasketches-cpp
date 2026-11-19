@@ -206,6 +206,7 @@ void kll_sketch<T, C, A>::update(FwdT&& item, uint64_t weight) {
     return;
   }
   allocate_items(); // first, so that a failure leaves the sketch unchanged
+  reset_sorted_view(); // before any change, so that a failed copy can't leave a stale view
   if (weight < levels_[0]) { // fits into level zero without compaction
     update_min_max(static_cast<const T&>(item));
     // construct each copy before counting it, so that a failed copy leaves a valid sketch
@@ -215,7 +216,6 @@ void kll_sketch<T, C, A>::update(FwdT&& item, uint64_t weight) {
     }
     new (&items_[levels_[0] - 1]) T(std::forward<FwdT>(item));
     internal_update();
-    reset_sorted_view();
   } else {
     merge(kll_sketch(k_, static_cast<const T&>(item), weight, comparator_, allocator_));
   }
@@ -246,7 +246,15 @@ sorted_view_(nullptr)
   }
   items_size_ = levels_[num_levels_];
   items_ = allocator_.allocate(items_size_);
-  for (uint32_t i = 0; i < items_size_; ++i) new (&items_[i]) T(item);
+  // the destructor doesn't run if a constructor throws, so release the items here
+  uint32_t num_constructed = 0;
+  try {
+    for (; num_constructed < items_size_; ++num_constructed) new (&items_[num_constructed]) T(item);
+  } catch (...) {
+    for (uint32_t i = 0; i < num_constructed; ++i) items_[i].~T();
+    allocator_.deallocate(items_, items_size_);
+    throw;
+  }
 }
 
 template<typename T, typename C, typename A>
@@ -313,7 +321,7 @@ void kll_sketch<T, C, A>::merge(FwdSk&& other) {
     const uint32_t index = internal_update();
     new (&items_[index]) T(conditional_forward<FwdSk>(other.items_[i]));
   }
-  if (other.num_levels_ >= 2) { merge_higher_levels(other, final_n); }
+  if (other.num_levels_ >= 2) { merge_higher_levels(std::forward<FwdSk>(other), final_n); }
   n_ = final_n;
   if (other.is_estimation_mode()) { min_k_ = std::min(min_k_, other.min_k_); }
   assert_correct_total_weight();
