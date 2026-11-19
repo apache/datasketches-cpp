@@ -197,6 +197,11 @@ public:
    * If cross-language portability is required, callers should ensure that
    * the input string uses a compatible encoding (valid UTF-8).
    * The first update allocates storage for items, unless reserve() or a merge already did.
+   * If an allocation or a copy of the item throws before the item is added, the sketch is unchanged.
+   * If a compaction that follows fails to allocate, the item stays added, the sketch stays valid,
+   * and later updates compact it.
+   * If the comparator throws while items are sorted or merged, or does not impose a consistent
+   * total order, the state of the sketch is undefined.
    * @param item from a stream of items
    */
   template<typename FwdT>
@@ -208,6 +213,8 @@ public:
    * both sketches were built using compatible string encodings.
    * The first merge of a non-empty sketch allocates storage for items,
    * unless reserve() or an update already did.
+   * If an allocation or a copy of an item throws, this sketch stays valid and usable, but may hold part of other.
+   * If the comparator throws while items are sorted or merged, the state of this sketch is undefined.
    * @param other sketch to merge into this one
    */
   template<typename FwdSk>

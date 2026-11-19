@@ -763,4 +763,33 @@ TEST_CASE("req compactor: section growth stops at minimum section size", "[req_c
   }
 }
 
+namespace {
+
+// a comparator that can't be default-constructed: the sketch must use its own comparator everywhere
+struct ordered_by {
+  bool descending;
+  explicit ordered_by(bool d): descending(d) {}
+  bool operator()(int a, int b) const { return descending ? b < a : a < b; }
+};
+
+} // namespace
+
+TEST_CASE("req sketch: compaction and merge use the sketch's comparator", "[req_sketch]") {
+  req_sketch<int, ordered_by> sketch(12, true, ordered_by(true));
+  req_sketch<int, ordered_by> other(12, true, ordered_by(true));
+  for (int i = 0; i < 1000; ++i) {
+    sketch.update(i);
+    other.update(i + 1000);
+  }
+  sketch.merge(other);
+  REQUIRE(sketch.get_n() == 2000);
+  REQUIRE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_min_item() == 1999); // first in descending order
+  REQUIRE(sketch.get_max_item() == 0);
+  // the converting constructor checks that the sorted levels are sorted by the comparator
+  const req_sketch<int, ordered_by> copy(sketch, ordered_by(true));
+  REQUIRE(copy.get_n() == 2000);
+  REQUIRE(sketch.get_rank(1000) == Approx(0.5).margin(0.05));
+}
+
 } /* namespace datasketches */

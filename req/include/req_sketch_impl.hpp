@@ -174,17 +174,20 @@ template<typename FwdT>
 void req_sketch<T, C, A>::update(FwdT&& item) {
   if (!check_update_item(item)) { return; }
   compactors_[0].reserve(); // first, so that a failure leaves the sketch unchanged
-  if (is_empty()) {
-    min_item_.emplace(item);
-    max_item_.emplace(item);
-  } else {
-    if (comparator_(item, *min_item_)) *min_item_ = item;
-    if (comparator_(*max_item_, item)) *max_item_ = item;
-  }
+  // compare and copy first, but change nothing until the item is in level zero,
+  // so that an exception leaves the sketch as it was
+  const bool is_new_min = is_empty() || comparator_(item, *min_item_);
+  const bool is_new_max = is_empty() || comparator_(*max_item_, item);
+  optional<T> new_min;
+  optional<T> new_max;
+  if (is_new_min) new_min = optional<T>(static_cast<const T&>(item));
+  if (is_new_max) new_max = optional<T>(static_cast<const T&>(item));
+  reset_sorted_view();
   compactors_[0].append(std::forward<FwdT>(item));
+  if (is_new_min) min_item_ = std::move(new_min);
+  if (is_new_max) max_item_ = std::move(new_max);
   ++num_retained_;
   ++n_;
-  reset_sorted_view();
   if (num_retained_ >= max_nom_size_) compress();
 }
 
@@ -198,13 +201,15 @@ void req_sketch<T, C, A>::merge(FwdSk&& other) {
   try {
     // grow until this has at least as many compactors as other
     while (get_num_levels() < other.get_num_levels()) grow();
-    if (is_empty()) {
-      min_item_.emplace(conditional_forward<FwdSk>(*other.min_item_));
-      max_item_.emplace(conditional_forward<FwdSk>(*other.max_item_));
-    } else {
-      if (comparator_(*other.min_item_, *min_item_)) *min_item_ = conditional_forward<FwdSk>(*other.min_item_);
-      if (comparator_(*max_item_, *other.max_item_)) *max_item_ = conditional_forward<FwdSk>(*other.max_item_);
-    }
+    // compare and copy first, so that a failed copy leaves min and max as they were
+    const bool is_new_min = is_empty() || comparator_(*other.min_item_, *min_item_);
+    const bool is_new_max = is_empty() || comparator_(*max_item_, *other.max_item_);
+    optional<T> new_min;
+    optional<T> new_max;
+    if (is_new_min) new_min = optional<T>(conditional_forward<FwdSk>(*other.min_item_));
+    if (is_new_max) new_max = optional<T>(conditional_forward<FwdSk>(*other.max_item_));
+    if (is_new_min) min_item_ = std::move(new_min);
+    if (is_new_max) max_item_ = std::move(new_max);
     // merge the items in all height compactors
     for (size_t i = 0; i < other.get_num_levels(); ++i) {
       compactors_[i].merge(conditional_forward<FwdSk>(other.compactors_[i]));

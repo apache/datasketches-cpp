@@ -50,9 +50,34 @@ items_(nullptr) // allocated on first use, see reserve()
 
 template<typename T, typename C, typename A>
 req_compactor<T, C, A>::~req_compactor() {
+  destroy_items();
+}
+
+template<typename T, typename C, typename A>
+void req_compactor<T, C, A>::destroy_items() {
   if (items_ != nullptr) {
     for (auto it = begin(); it != end(); ++it) (*it).~T();
     allocator_.deallocate(items_, capacity_);
+    items_ = nullptr;
+  }
+}
+
+template<typename T, typename C, typename A>
+template<typename O>
+void req_compactor<T, C, A>::copy_items(const O& other) {
+  if (other.items_ == nullptr) return;
+  items_ = allocator_.allocate(capacity_);
+  const uint32_t from = hra_ ? capacity_ - num_items_ : 0;
+  const uint32_t to = hra_ ? capacity_ : num_items_;
+  uint32_t i = from;
+  try {
+    for (; i < to; ++i) new (items_ + i) T(other.items_[i]);
+  } catch (...) {
+    // the destructor doesn't run if a constructor throws, so release the items here
+    for (uint32_t j = from; j < i; ++j) items_[j].~T();
+    allocator_.deallocate(items_, capacity_);
+    items_ = nullptr;
+    throw;
   }
 }
 
@@ -72,12 +97,7 @@ num_items_(other.num_items_),
 capacity_(other.capacity_),
 items_(nullptr)
 {
-  if (other.items_ != nullptr) {
-    items_ = allocator_.allocate(capacity_);
-    const uint32_t from = hra_ ? capacity_ - num_items_ : 0;
-    const uint32_t to = hra_ ? capacity_ : num_items_;
-    for (uint32_t i = from; i < to; ++i) new (items_ + i) T(other.items_[i]);
-  }
+  copy_items(other);
 }
 
 template<typename T, typename C, typename A>
@@ -155,14 +175,10 @@ num_items_(other.num_items_),
 capacity_(other.capacity_),
 items_(nullptr)
 {
-  if (other.items_ != nullptr) {
-    items_ = allocator_.allocate(capacity_);
-    const uint32_t from = hra_ ? capacity_ - num_items_ : 0;
-    const uint32_t to = hra_ ? capacity_ : num_items_;
-    for (uint32_t i = from; i < to; ++i) new (items_ + i) T(other.items_[i]);
-    if (sorted_ && !std::is_sorted(items_ + from, items_ + to, comparator_)) {
-      throw std::logic_error("items must be sorted");
-    }
+  copy_items(other);
+  if (sorted_ && !std::is_sorted(begin(), end(), comparator_)) {
+    destroy_items(); // the destructor doesn't run if a constructor throws
+    throw std::logic_error("items must be sorted");
   }
 }
 
@@ -256,18 +272,42 @@ template<typename FwdC>
 void req_compactor<T, C, A>::merge(FwdC&& other) {
   // TODO: swap if other is larger?
   if (lg_weight_ != other.lg_weight_) throw std::logic_error("weight mismatch");
-  state_ |= other.state_;
-  while (ensure_enough_sections()) {}
-  ensure_space(other.get_num_items());
+  const uint32_t num = other.get_num_items();
+  // the sections once the states are combined
+  const uint64_t new_state = state_ | other.state_;
+  sections new_sections = get_sections();
+  bool more_sections = false;
+  while (next_sections(new_state, new_sections)) more_sections = true;
+
+  // allocate first, so that a failure changes nothing:
+  // the capacity the sections and the items need, grown the same way as before this was done up front
+  uint32_t new_capacity = capacity_;
+  if (more_sections && new_capacity < 2 * new_sections.nom_capacity()) new_capacity = 2 * new_sections.nom_capacity();
+  if (num > 0) {
+    if (new_capacity == 0) new_capacity = 2 * new_sections.nom_capacity(); // as reserve() would
+    if (num_items_ + num > new_capacity) new_capacity = num_items_ + num + new_sections.nom_capacity();
+  }
+  if (new_capacity != capacity_) grow(new_capacity);
+
+  // copy (or move) the items of other into the free space; if a copy throws, destroy the copies
+  T* from = hra_ ? begin() - num : end();
+  uint32_t i = 0;
+  try {
+    auto other_it = other.begin();
+    for (; i < num; ++i, ++other_it) new (from + i) T(conditional_forward<FwdC>(*other_it));
+  } catch (...) {
+    for (uint32_t j = 0; j < i; ++j) from[j].~T();
+    throw;
+  }
+
+  // nothing below allocates or copies
+  state_ = new_state;
+  if (more_sections) set_sections(new_sections);
   sort();
-  auto offset = hra_ ? capacity_ - num_items_ : num_items_;
-  auto from = hra_ ? begin() - other.get_num_items() : end();
-  auto to = from + other.get_num_items();
-  auto other_it = other.begin();
-  for (auto it = from; it != to; ++it, ++other_it) new (it) T(conditional_forward<FwdC>(*other_it));
-  if (!other.sorted_) std::sort(from, to, comparator_);
-  if (num_items_ > 0) std::inplace_merge(hra_ ? from : begin(), items_ + offset, hra_ ? end() : to, C());
-  num_items_ += other.get_num_items();
+  if (!other.sorted_) std::sort(from, from + num, comparator_);
+  const auto offset = hra_ ? capacity_ - num_items_ : num_items_;
+  if (num_items_ > 0) std::inplace_merge(hra_ ? from : begin(), items_ + offset, hra_ ? end() : from + num, comparator_);
+  num_items_ += num;
 }
 
 template<typename T, typename C, typename A>
@@ -285,12 +325,18 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& nex
   const uint32_t secs_to_compact = std::min<uint32_t>(count_trailing_zeros_in_u64(~state_) + 1, num_sections_);
   auto compaction_range = compute_compaction_range(secs_to_compact);
   if (compaction_range.second - compaction_range.first < 2) throw std::logic_error("compaction range error");
+  const auto num = (compaction_range.second - compaction_range.first) / 2;
+
+  // allocate first, so that a failure changes nothing: space in the next level,
+  // and the growth that more sections need once the state advances
+  next.ensure_space(num);
+  sections new_sections = get_sections();
+  const bool more_sections = next_sections(state_ + 1, new_sections);
+  if (more_sections && capacity_ < 2 * new_sections.nom_capacity()) grow(2 * new_sections.nom_capacity());
 
   if ((state_ & 1) == 1) { coin_ = !coin_; } // for odd flip coin;
   else { coin_ = random_utils::random_bit(); } // random coin flip
 
-  const auto num = (compaction_range.second - compaction_range.first) / 2;
-  next.ensure_space(num);
   auto next_middle = hra_ ? next.begin() : next.end();
   auto next_empty = hra_ ? next.begin() - num : next.end();
   promote_evens_or_odds(begin() + compaction_range.first, begin() + compaction_range.second, coin_, next_empty);
@@ -300,7 +346,7 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& nex
   num_items_ -= compaction_range.second - compaction_range.first;
 
   ++state_;
-  ensure_enough_sections();
+  if (more_sections) set_sections(new_sections);
   return std::pair<uint32_t, uint32_t>(
     num,
     get_nom_capacity() - starting_nom_capacity
@@ -308,16 +354,27 @@ std::pair<uint32_t, uint32_t> req_compactor<T, C, A>::compact(req_compactor& nex
 }
 
 template<typename T, typename C, typename A>
-bool req_compactor<T, C, A>::ensure_enough_sections() {
-  const float ssr = section_size_raw_ / sqrtf(2);
+auto req_compactor<T, C, A>::get_sections() const -> sections {
+  return sections{section_size_raw_, section_size_, num_sections_};
+}
+
+template<typename T, typename C, typename A>
+void req_compactor<T, C, A>::set_sections(const sections& s) {
+  section_size_raw_ = s.size_raw;
+  section_size_ = s.size;
+  num_sections_ = s.num;
+}
+
+template<typename T, typename C, typename A>
+bool req_compactor<T, C, A>::next_sections(uint64_t state, sections& s) {
+  const float ssr = s.size_raw / sqrtf(2);
   const uint32_t ne = nearest_even(ssr);
-  if (state_ >= static_cast<uint64_t>(1ULL << (num_sections_ - 1))
-      && section_size_ > req_constants::MIN_K
+  if (state >= static_cast<uint64_t>(1ULL << (s.num - 1))
+      && s.size > req_constants::MIN_K
       && ne >= req_constants::MIN_K) {
-    section_size_raw_ = ssr;
-    section_size_ = ne;
-    num_sections_ <<= 1;
-    if (capacity_ < 2 * get_nom_capacity()) grow(2 * get_nom_capacity());
+    s.size_raw = ssr;
+    s.size = ne;
+    s.num <<= 1;
     return true;
   }
   return false;
