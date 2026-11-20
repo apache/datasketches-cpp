@@ -1218,6 +1218,13 @@ TEST_CASE("kll sketch: deserialize rejects inconsistent levels", "[kll_sketch]")
     check_rejected(bytes);
   }
 
+  SECTION("n below the number of retained items") {
+    auto bytes = three_levels.serialize();
+    const uint64_t n = three_levels.get_num_retained() - 1;
+    std::memcpy(bytes.data() + n_offset, &n, sizeof(n));
+    check_rejected(bytes);
+  }
+
   SECTION("n of 2^63 - 1 is accepted") {
     auto bytes = three_levels.serialize();
     const uint64_t n = kll_constants::MAX_N;

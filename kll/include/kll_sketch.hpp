@@ -674,7 +674,7 @@ class kll_sketch {
     static void check_serial_version(uint8_t serial_version);
     static void check_family_id(uint8_t family_id);
     static void check_num_levels(uint8_t num_levels);
-    static void check_n(uint64_t n);
+    static void check_n(uint64_t n, uint32_t num_retained);
     static void check_levels(const vector_u32& levels);
 
     void check_sorting() const;
