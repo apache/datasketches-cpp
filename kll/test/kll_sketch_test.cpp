@@ -1161,6 +1161,7 @@ TEST_CASE("kll sketch: iterator weights when level zero is empty", "[kll_sketch]
 TEST_CASE("kll sketch: deserialize rejects inconsistent levels", "[kll_sketch]") {
   using vector_bytes = kll_sketch<int>::vector_bytes;
   const size_t k_offset = 4;
+  const size_t n_offset = 8;
   const size_t num_levels_offset = 18;
   const size_t levels_offset = 20;
   auto put_u32 = [](vector_bytes& bytes, size_t offset, uint32_t value) {
@@ -1201,6 +1202,37 @@ TEST_CASE("kll sketch: deserialize rejects inconsistent levels", "[kll_sketch]")
     REQUIRE(get_u32(bytes, levels_offset) > 0);
     put_u32(bytes, levels_offset + sizeof(uint32_t), 0);
     check_rejected(bytes);
+  }
+
+  SECTION("n above 2^63 - 1") {
+    auto bytes = three_levels.serialize();
+    const uint64_t n = kll_constants::MAX_N + 1;
+    std::memcpy(bytes.data() + n_offset, &n, sizeof(n));
+    check_rejected(bytes);
+  }
+
+  SECTION("n of zero") {
+    auto bytes = three_levels.serialize();
+    const uint64_t n = 0;
+    std::memcpy(bytes.data() + n_offset, &n, sizeof(n));
+    check_rejected(bytes);
+  }
+
+  SECTION("n below the number of retained items") {
+    auto bytes = three_levels.serialize();
+    const uint64_t n = three_levels.get_num_retained() - 1;
+    std::memcpy(bytes.data() + n_offset, &n, sizeof(n));
+    check_rejected(bytes);
+  }
+
+  SECTION("n of 2^63 - 1 is accepted") {
+    auto bytes = three_levels.serialize();
+    const uint64_t n = kll_constants::MAX_N;
+    std::memcpy(bytes.data() + n_offset, &n, sizeof(n));
+    REQUIRE(kll_sketch<int>::deserialize(bytes.data(), bytes.size()).get_n() == n);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE(kll_sketch<int>::deserialize(s).get_n() == n);
   }
 
   SECTION("zero levels") {
