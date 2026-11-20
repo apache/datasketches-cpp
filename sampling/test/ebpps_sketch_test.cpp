@@ -301,4 +301,15 @@ TEST_CASE("ebpps sketch: merge keeps the max weight", "[ebpps_sketch]") {
   REQUIRE(sk4.get_c() == Approx(ref.get_c()).margin(EPS));
 }
 
+TEST_CASE("ebpps sketch: serialize with header", "[ebpps_sketch]") {
+  auto sk = create_unweighted_sketch(10, 25);
+  const size_t body_size = sk.get_serialized_size_bytes();
+  for (unsigned header_size : {0u, 1u, 8u, 13u}) {
+    auto bytes = sk.serialize(header_size);
+    REQUIRE(bytes.size() == header_size + body_size);
+    auto sk2 = ebpps_sketch<int>::deserialize(bytes.data() + header_size, bytes.size() - header_size);
+    check_if_equal(sk, sk2);
+  }
+}
+
 }

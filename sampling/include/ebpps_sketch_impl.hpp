@@ -331,7 +331,7 @@ auto ebpps_sketch<T,A>::serialize(unsigned header_size_bytes, const SerDe& sd) c
   const size_t size = header_size_bytes + (prelongs << 3) + sample_.get_serialized_size_bytes(sd);
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  const uint8_t* end_ptr = ptr + size;
+  const uint8_t* end_ptr = bytes.data() + size;
 
   uint8_t flags = 0;
   if (is_empty()) {
