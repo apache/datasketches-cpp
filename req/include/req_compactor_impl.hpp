@@ -465,7 +465,7 @@ void req_compactor<T, C, A>::serialize(std::ostream& os, const S& serde) const {
   const uint16_t padding = 0;
   write(os, padding);
   write(os, num_items_);
-  serde.serialize(os, begin(), num_items_);
+  if (num_items_ > 0) serde.serialize(os, begin(), num_items_); // an empty compactor may have no storage
 }
 
 template<typename T, typename C, typename A>
@@ -480,7 +480,7 @@ size_t req_compactor<T, C, A>::serialize(void* dst, size_t capacity, const S& se
   const uint16_t padding = 0;
   ptr += copy_to_mem(padding, ptr);
   ptr += copy_to_mem(num_items_, ptr);
-  ptr += serde.serialize(ptr, end_ptr - ptr, begin(), num_items_);
+  if (num_items_ > 0) ptr += serde.serialize(ptr, end_ptr - ptr, begin(), num_items_); // an empty compactor may have no storage
   return ptr - static_cast<uint8_t*>(dst);
 }
 
