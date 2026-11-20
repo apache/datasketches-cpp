@@ -129,7 +129,8 @@ void kll_helper::randomly_halve_up(T* buf, uint32_t start, uint32_t length) {
 // assumes that destination has initialized objects
 // does not destroy the originals after the move
 template <typename T, typename C>
-void kll_helper::merge_sorted_arrays(T* buf, uint32_t start_a, uint32_t len_a, uint32_t start_b, uint32_t len_b, uint32_t start_c) {
+void kll_helper::merge_sorted_arrays(T* buf, uint32_t start_a, uint32_t len_a, uint32_t start_b, uint32_t len_b, uint32_t start_c,
+    const C& comparator) {
   const uint32_t len_c = len_a + len_b;
   const uint32_t lim_a = start_a + len_a;
   const uint32_t lim_b = start_b + len_b;
@@ -145,7 +146,7 @@ void kll_helper::merge_sorted_arrays(T* buf, uint32_t start_a, uint32_t len_a, u
     } else if (b == lim_b) {
       if (a != c) buf[c] = std::move(buf[a]);
       a++;
-    } else if (C()(buf[a], buf[b])) {
+    } else if (comparator(buf[a], buf[b])) {
       if (a != c) buf[c] = std::move(buf[a]);
       a++;
     } else {
@@ -156,34 +157,26 @@ void kll_helper::merge_sorted_arrays(T* buf, uint32_t start_a, uint32_t len_a, u
   if (a != lim_a || b != lim_b) throw std::logic_error("inconsistent state");
 }
 
-// this version is to merge from two different buffers into a third buffer
-// initializes objects is the destination buffer
-// moves objects from buf_a and destroys the originals
-// copies objects from buf_b
+// Merges into the gap in front of the items of b, which are already in the destination.
+// Every destination slot before the next item of b holds no object: it was either empty,
+// or its item was moved out and destroyed. Once a runs out, the rest of b is in place.
 template <typename T, typename C>
-void kll_helper::merge_sorted_arrays(const T* buf_a, uint32_t start_a, uint32_t len_a, const T* buf_b, uint32_t start_b, uint32_t len_b, T* buf_c, uint32_t start_c) {
-  const uint32_t len_c = len_a + len_b;
+void kll_helper::merge_sorted_arrays_into_gap(T* buf_a, uint32_t start_a, uint32_t len_a, T* buf_c, uint32_t start_c, uint32_t len_b,
+    const C& comparator) {
   const uint32_t lim_a = start_a + len_a;
-  const uint32_t lim_b = start_b + len_b;
-  const uint32_t lim_c = start_c + len_c;
-
+  const uint32_t lim_b = start_c + len_a + len_b;
   uint32_t a = start_a;
-  uint32_t b = start_b;
-
-  for (uint32_t c = start_c; c < lim_c; c++) {
-    if (a == lim_a) {
-      new (&buf_c[c]) T(buf_b[b++]);
-    } else if (b == lim_b) {
-      new (&buf_c[c]) T(std::move(buf_a[a]));
-      buf_a[a++].~T();
-    } else if (C()(buf_a[a], buf_b[b])) {
-      new (&buf_c[c]) T(std::move(buf_a[a]));
+  uint32_t b = start_c + len_a;
+  uint32_t c = start_c;
+  while (a < lim_a) {
+    if (b == lim_b || comparator(buf_a[a], buf_c[b])) {
+      new (&buf_c[c++]) T(std::move(buf_a[a]));
       buf_a[a++].~T();
     } else {
-      new (&buf_c[c]) T(buf_b[b++]);
+      new (&buf_c[c++]) T(std::move(buf_c[b]));
+      buf_c[b++].~T();
     }
   }
-  if (a != lim_a || b != lim_b) throw std::logic_error("inconsistent state");
 }
 
 // Mirrors the level loop of general_compress() on the level sizes only.
@@ -240,7 +233,7 @@ kll_helper::compress_result kll_helper::predict_compress(uint16_t k, uint8_t m, 
  */
 template <typename T, typename C>
 kll_helper::compress_result kll_helper::general_compress(uint16_t k, uint8_t m, uint8_t num_levels_in, T* items,
-        uint32_t* in_levels, uint32_t* out_levels, bool is_level_zero_sorted)
+        uint32_t* in_levels, uint32_t* out_levels, bool is_level_zero_sorted, const C& comparator)
 {
   if (num_levels_in == 0) { throw std::invalid_argument("num_levels_in == 0"); } // things are too weird if zero levels are allowed
   const uint32_t starting_item_count = in_levels[num_levels_in] - in_levels[0];
@@ -289,14 +282,14 @@ kll_helper::compress_result kll_helper::general_compress(uint16_t k, uint8_t m, 
 
       // level zero might not be sorted, so we must sort it if we wish to compact it
       if ((current_level == 0) && !is_level_zero_sorted) {
-        std::sort(items + adj_beg, items + adj_beg + adj_pop, C());
+        std::sort(items + adj_beg, items + adj_beg + adj_pop, comparator);
       }
 
       if (pop_above == 0) { // Level above is empty, so halve up
         randomly_halve_up(items, adj_beg, adj_pop);
       } else { // Level above is nonempty, so halve down, then merge up
         randomly_halve_down(items, adj_beg, adj_pop);
-        merge_sorted_arrays<T, C>(items, adj_beg, half_adj_pop, raw_lim, pop_above, adj_beg + half_adj_pop);
+        merge_sorted_arrays<T, C>(items, adj_beg, half_adj_pop, raw_lim, pop_above, adj_beg + half_adj_pop, comparator);
       }
 
       // track the fact that we just eliminated some data

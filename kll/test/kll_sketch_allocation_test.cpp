@@ -306,35 +306,135 @@ using kll_fragile_sketch = kll_sketch<fragile_item, fragile_less, test_allocator
 
 } // namespace
 
+namespace {
+
+// the total weight of the retained items, which must equal n
+template<typename S>
+uint64_t total_weight(const S& sketch) {
+  uint64_t total = 0;
+  for (const auto pair: sketch) total += pair.second;
+  return total;
+}
+
+} // namespace
+
 // Fail each item copy made by a weighted update in turn: nothing may leak,
 // and the sketch must stay usable, with no stale sorted view.
 TEST_CASE("kll sketch allocation: failure at each item copy of a weighted update", "[kll_sketch]") {
   test_allocator_total_bytes = 0;
   test_allocator_net_allocations = 0;
-  for (const uint64_t weight: {uint64_t(10), uint64_t(1000)}) { // copies into level zero, and a merge
-    CAPTURE(weight);
+  struct config { uint16_t k; int num_updates; uint64_t weight; };
+  for (const config c: {
+      config{200, 5, 10}, // copies into level zero
+      config{200, 5, 1000}, // a merge into a sketch with one level
+      config{8, 9, 18}, // a merge into a sketch with items at the same levels
+  }) {
+    CAPTURE(c.k, c.num_updates, c.weight);
     bool completed = false;
     for (long fail_at = 0; !completed; ++fail_at) {
       CAPTURE(fail_at);
-      kll_fragile_sketch sketch(200, fragile_less(), test_allocator<fragile_item>(0));
-      for (int i = 0; i < 5; ++i) sketch.update(fragile_item(i));
+      kll_fragile_sketch sketch(c.k, fragile_less(), test_allocator<fragile_item>(0));
+      for (int i = 0; i < c.num_updates; ++i) sketch.update(fragile_item(i));
       const fragile_item probe(2);
       const double rank_before = sketch.get_rank(probe); // caches a sorted view
       REQUIRE(rank_before > 0);
       copies_allowed = fail_at;
       try {
-        sketch.update(fragile_item(100), weight);
+        sketch.update(fragile_item(100), c.weight);
         completed = true;
       } catch (const std::runtime_error&) {}
       copies_allowed = -1;
-      REQUIRE(sketch.get_n() >= 5);
-      REQUIRE(sketch.get_n() <= 5 + weight);
+      REQUIRE(sketch.get_n() >= static_cast<uint64_t>(c.num_updates));
+      REQUIRE(sketch.get_n() <= c.num_updates + c.weight);
+      REQUIRE(total_weight(sketch) == sketch.get_n());
       // a copy of the sketch builds its sorted view from the current items
       const kll_fragile_sketch copy(sketch);
       REQUIRE(sketch.get_rank(probe) == copy.get_rank(probe));
       sketch.update(fragile_item(-1));
       REQUIRE(*sketch.get_min_item().value == -1);
     }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+// Fail each item copy made by merging from a const sketch in turn, with both sketches
+// in estimation mode and holding items at the same levels.
+TEST_CASE("kll sketch allocation: failure at each item copy of a merge", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    kll_fragile_sketch other(8, fragile_less(), test_allocator<fragile_item>(0));
+    for (int i = 0; i < 50; ++i) other.update(fragile_item(2 * i + 1));
+    REQUIRE(other.is_estimation_mode());
+    const fragile_item probe(50);
+    const double other_rank = other.get_rank(probe);
+    bool completed = false;
+    for (long fail_at = 0; !completed; ++fail_at) {
+      CAPTURE(fail_at);
+      kll_fragile_sketch sketch(8, fragile_less(), test_allocator<fragile_item>(0));
+      for (int i = 0; i < 50; ++i) sketch.update(fragile_item(2 * i));
+      const uint64_t n_before = sketch.get_n();
+      const double rank_before = sketch.get_rank(probe); // caches a sorted view
+      REQUIRE(rank_before > 0);
+      copies_allowed = fail_at;
+      try {
+        sketch.merge(other);
+        completed = true;
+      } catch (const std::runtime_error&) {}
+      copies_allowed = -1;
+      REQUIRE(sketch.get_n() >= n_before);
+      REQUIRE(sketch.get_n() <= n_before + other.get_n());
+      if (completed) REQUIRE(sketch.get_n() == n_before + other.get_n());
+      REQUIRE(total_weight(sketch) == sketch.get_n());
+      const kll_fragile_sketch copy(sketch);
+      REQUIRE(sketch.get_rank(probe) == copy.get_rank(probe));
+      REQUIRE(other.get_n() == 50);
+      REQUIRE(other.get_rank(probe) == other_rank);
+      // the sketch stays usable
+      sketch.update(fragile_item(-1));
+      sketch.merge(other);
+      REQUIRE(total_weight(sketch) == sketch.get_n());
+      REQUIRE(*sketch.get_min_item().value == -1);
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+TEST_CASE("kll sketch allocation: failure at each item copy of the copy constructor", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    kll_fragile_sketch sketch(8, fragile_less(), test_allocator<fragile_item>(0));
+    for (int i = 0; i < 50; ++i) sketch.update(fragile_item(i));
+    bool completed = false;
+    for (long fail_at = 0; !completed; ++fail_at) {
+      CAPTURE(fail_at);
+      copies_allowed = fail_at;
+      try {
+        const kll_fragile_sketch copy(sketch);
+        completed = true;
+        copies_allowed = -1;
+        REQUIRE(copy.get_n() == sketch.get_n());
+        REQUIRE(copy.get_num_retained() == sketch.get_num_retained());
+      } catch (const std::runtime_error&) {}
+      copies_allowed = -1;
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+TEST_CASE("kll sketch allocation: converting constructor that rejects the order releases the items", "[kll_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    kll_sketch<double, std::less<double>, test_allocator<double>> sketch(8, std::less<double>(), test_allocator<double>(0));
+    for (int i = 0; i < 100; ++i) sketch.update(i);
+    REQUIRE(sketch.is_estimation_mode());
+    using descending_sketch = kll_sketch<double, std::greater<double>, test_allocator<double>>;
+    REQUIRE_THROWS_AS(descending_sketch(sketch, std::greater<double>(), test_allocator<double>(0)), std::logic_error);
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);

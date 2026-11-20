@@ -41,6 +41,8 @@ namespace kll_constants {
   const uint16_t MAX_K = (1 << 16) - 1;
   /// maximum weight of a weighted update, the same as in datasketches-java
   const uint64_t MAX_WEIGHT = (1ULL << 61) - 1;
+  /// maximum stream length n, the largest signed 64-bit integer, as in datasketches-java
+  const uint64_t MAX_N = (1ULL << 63) - 1;
 }
 
 /**
@@ -246,13 +248,16 @@ class kll_sketch {
      * the input string uses a compatible encoding (valid UTF-8).
      * The first update allocates storage for items, unless reserve() or a merge already did.
      * @param item from a stream of items
+     * @throw std::overflow_error if n would exceed kll_constants::MAX_N, in which case the sketch is unchanged
      */
     template<typename FwdT>
     void update(FwdT&& item);
 
     /**
      * Updates this sketch with the given data item repeated the given number of times.
-     * The result is equivalent to calling update(item) weight times, at a cost that grows
+     * The result is equivalent to calling update(item) weight times.
+     * If the weight is less than the free space in level zero, the item is copied into level zero
+     * weight times. Otherwise a sketch of the weighted item is merged in, at a cost that grows
      * with the logarithm of the weight rather than with the weight itself.
      * If cross-language portability is required, callers should ensure that
      * the input string uses a compatible encoding (valid UTF-8).
@@ -260,6 +265,7 @@ class kll_sketch {
      * @param item from a stream of items
      * @param weight number of times the item is repeated, from 1 to kll_constants::MAX_WEIGHT (2^61 - 1)
      * @throw std::invalid_argument if the weight is 0 or greater than kll_constants::MAX_WEIGHT
+     * @throw std::overflow_error if n would exceed kll_constants::MAX_N, in which case the sketch is unchanged
      */
     template<typename FwdT>
     void update(FwdT&& item, uint64_t weight);
@@ -271,7 +277,10 @@ class kll_sketch {
      * If other is this sketch, this throws std::invalid_argument.
      * The first merge of a non-empty sketch allocates storage for items,
      * unless reserve() or an update already did.
+     * If copying an item throws, this sketch stays valid and usable, but may hold part of other.
+     * The comparator must not throw: if it does, the state of this sketch is undefined.
      * @param other sketch to merge into this one
+     * @throw std::overflow_error if n would exceed kll_constants::MAX_N, in which case the sketch is unchanged
      */
     template<typename FwdSk>
     void merge(FwdSk&& other);
@@ -633,6 +642,12 @@ class kll_sketch {
     // &items_[index], or nullptr without item storage, which makes every item range empty
     inline T* item_ptr(uint32_t index) const;
     inline uint32_t internal_update();
+    // inserts an item into level zero; if constructing it throws, the sketch is unchanged
+    template<typename FwdT> void insert_level_zero(FwdT&& item);
+    // throws std::overflow_error if n_ + increase would exceed kll_constants::MAX_N
+    inline void check_n_increase(uint64_t increase) const;
+    // destroys the items and frees items_, for a constructor that throws
+    void destroy_items();
 
     // The following code is only valid in the special case of exactly reaching capacity while updating.
     // It cannot be used while merging, while reducing k, or anything else.
@@ -646,7 +661,7 @@ class kll_sketch {
     template<typename O> void merge_higher_levels(O&& other, uint64_t final_n);
 
     template<typename FwdSk>
-    void populate_work_arrays(FwdSk&& other, T* workbuf, uint32_t* worklevels, uint8_t provisional_num_levels);
+    void populate_work_arrays(FwdSk&& other, T* workbuf, const uint32_t* worklevels, uint8_t provisional_num_levels);
 
     void assert_correct_total_weight() const;
     uint32_t safe_level_size(uint8_t level) const;
