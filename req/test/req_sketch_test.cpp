@@ -726,6 +726,16 @@ TEST_CASE("req sketch: deserialize rejects inconsistent compactors", "[req_sketc
     check_rejected(bytes);
   }
 
+  SECTION("n is not the total weight") {
+    const size_t n_offset = 8; // after the preamble, in estimation mode
+    for (const int64_t delta: {-1, 1}) {
+      CAPTURE(delta);
+      auto bytes = estimation.serialize();
+      put_value(bytes, n_offset, static_cast<uint64_t>(static_cast<int64_t>(estimation.get_n()) + delta));
+      check_rejected(bytes);
+    }
+  }
+
   SECTION("compactor header beyond the input") {
     auto bytes = estimation.serialize();
     bytes.resize(estimation_compactor + 10);

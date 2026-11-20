@@ -20,6 +20,7 @@
 #ifndef REQ_SKETCH_IMPL_HPP_
 #define REQ_SKETCH_IMPL_HPP_
 
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <type_traits>
@@ -513,6 +514,7 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(std::istream& is, const Ser
           k, static_cast<uint8_t>(i)));
     }
   }
+  if (num_levels > 1) check_n(n, compactors);
   if (num_levels == 1) {
     if (compactors[0].get_num_items() == 0) throw std::invalid_argument("Possible corruption: non-empty sketch with no items");
     const auto begin = compactors[0].begin();
@@ -602,6 +604,7 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
       ptr += pair.second;
     }
   }
+  if (num_levels > 1) check_n(n, compactors);
   if (num_levels == 1) {
     if (compactors[0].get_num_items() == 0) throw std::invalid_argument("Possible corruption: non-empty sketch with no items");
     const auto begin = compactors[0].begin();
@@ -618,6 +621,24 @@ req_sketch<T, C, A> req_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   }
 
   return req_sketch(k, hra, n, std::move(min_item), std::move(max_item), std::move(compactors), comparator);
+}
+
+template<typename T, typename C, typename A>
+void req_sketch<T, C, A>::check_n(uint64_t n, const std::vector<Compactor, AllocCompactor>& compactors) {
+  // compaction keeps the total weight, so it is always n
+  uint64_t total_weight = 0;
+  for (const auto& compactor: compactors) {
+    const uint64_t num_items = compactor.get_num_items();
+    const uint8_t lg_weight = compactor.get_lg_weight();
+    if (num_items > 0 && (lg_weight >= 64 || num_items > ((std::numeric_limits<uint64_t>::max() - total_weight) >> lg_weight))) {
+      throw std::invalid_argument("Possible corruption: the total weight of the retained items overflows");
+    }
+    total_weight += num_items << lg_weight;
+  }
+  if (n != total_weight) {
+    throw std::invalid_argument("Possible corruption: n " + std::to_string(n)
+        + " is not the total weight of the retained items " + std::to_string(total_weight));
+  }
 }
 
 template<typename T, typename C, typename A>
