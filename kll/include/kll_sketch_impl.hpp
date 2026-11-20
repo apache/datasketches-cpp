@@ -624,6 +624,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
     min_k = read<uint16_t>(is);
     num_levels = read<uint8_t>(is);
     read<uint8_t>(is); // skip unused byte
+    check_n(n);
     check_num_levels(num_levels);
   }
   vector_u32 levels(num_levels + 1, 0, allocator);
@@ -716,6 +717,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
     ptr += copy_from_mem(ptr, min_k);
     ptr += copy_from_mem(ptr, num_levels);
     ptr += sizeof(uint8_t); // skip unused byte
+    check_n(n);
     check_num_levels(num_levels);
   }
   vector_u32 levels(num_levels + 1, 0, allocator);
@@ -1132,6 +1134,15 @@ void kll_sketch<T, C, A>::check_family_id(uint8_t family_id) {
   if (family_id != FAMILY) {
     throw std::invalid_argument("Possible corruption: family mismatch: expected "
         + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
+  }
+}
+
+// a sketch that is neither empty nor a single item has n from 1 to kll_constants::MAX_N,
+// the cap that update() and merge() keep
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::check_n(uint64_t n) {
+  if (n == 0 || n > kll_constants::MAX_N) {
+    throw std::invalid_argument("Possible corruption: n must be from 1 to 2^63 - 1: " + std::to_string(n));
   }
 }
 
