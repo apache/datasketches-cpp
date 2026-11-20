@@ -354,8 +354,8 @@ size_t req_sketch<T, C, A>::get_serialized_size_bytes(const SerDe& sd) const {
   if (is_estimation_mode()) {
     size += sizeof(n_) + sizeof(TT) * 2; // min and max
   }
-  if (n_ == 1) {
-    size += sizeof(TT);
+  if (n_ <= req_constants::MIN_K) { // raw items, without a compactor header
+    size += sizeof(TT) * static_cast<size_t>(n_);
   } else {
     for (const auto& compactor: compactors_) size += compactor.get_serialized_size_bytes(sd);
   }
@@ -373,8 +373,8 @@ size_t req_sketch<T, C, A>::get_serialized_size_bytes(const SerDe& sd) const {
     size += sd.size_of_item(*min_item_);
     size += sd.size_of_item(*max_item_);
   }
-  if (n_ == 1) {
-    size += sd.size_of_item(*compactors_[0].begin());
+  if (n_ <= req_constants::MIN_K) { // raw items, without a compactor header
+    for (auto it = compactors_[0].begin(); it != compactors_[0].end(); ++it) size += sd.size_of_item(*it);
   } else {
     for (const auto& compactor: compactors_) size += compactor.get_serialized_size_bytes(sd);
   }
@@ -422,7 +422,7 @@ auto req_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& sd)
   const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  const uint8_t* end_ptr = ptr + size;
+  const uint8_t* end_ptr = bytes.data() + size;
 
   const uint8_t preamble_ints = is_estimation_mode() ? 4 : 2;
   ptr += copy_to_mem(preamble_ints, ptr);

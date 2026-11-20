@@ -226,7 +226,7 @@ auto density_sketch<T, K, A>::serialize(unsigned header_size_bytes) const -> vec
 
   vector_bytes bytes(size, 0, levels_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  const uint8_t* end_ptr = ptr + size;
+  const uint8_t* end_ptr = bytes.data() + size;
   
   ptr += copy_to_mem(preamble_ints, ptr);
   const uint8_t ser_ver = SERIAL_VERSION;

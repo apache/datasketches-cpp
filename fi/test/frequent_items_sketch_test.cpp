@@ -18,11 +18,13 @@
  */
 
 #include <catch2/catch.hpp>
+#include <string>
 #include <sstream>
 #include <fstream>
 #include <stdexcept>
 
 #include "frequent_items_sketch.hpp"
+#include <undersized_serde.hpp>
 
 #ifdef TEST_BINARY_INPUT_PATH
 static std::string testBinaryInputPath = TEST_BINARY_INPUT_PATH;
@@ -433,6 +435,21 @@ TEST_CASE("frequent items: string deserialize single item buffer overrun", "[fre
   sketch.update("a");
   auto bytes = sketch.serialize();
   REQUIRE_THROWS_AS(frequent_items_sketch<std::string>::deserialize(bytes.data(), bytes.size() - 1), std::out_of_range);
+}
+
+TEST_CASE("frequent items sketch: serialize with a header", "[frequent_items_sketch]") {
+  // with a header, the bytes after it round-trip, and the serde is given the true end of the buffer:
+  // one that writes more than it reported must be stopped by its capacity check
+  for (int n: {1, 3, 1000}) {
+    CAPTURE(n);
+    frequent_items_sketch<std::string> sketch(3);
+    for (int i = 0; i < n; ++i) sketch.update(std::to_string(i));
+    const unsigned header_size = 16;
+    const auto bytes = sketch.serialize(header_size);
+    const auto copy = frequent_items_sketch<std::string>::deserialize(bytes.data() + header_size, bytes.size() - header_size);
+    REQUIRE(copy.get_total_weight() == sketch.get_total_weight());
+    REQUIRE_THROWS_AS(sketch.serialize(header_size, undersized_string_serde()), std::out_of_range);
+  }
 }
 
 } /* namespace datasketches */

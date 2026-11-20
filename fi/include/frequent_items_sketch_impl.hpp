@@ -231,7 +231,7 @@ auto frequent_items_sketch<T, W, H, E, A>::serialize(unsigned header_size_bytes,
   const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   vector_bytes bytes(size, 0, map.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  uint8_t* end_ptr = ptr + size;
+  uint8_t* end_ptr = bytes.data() + size;
 
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NONEMPTY;
   ptr += copy_to_mem(preamble_longs, ptr);

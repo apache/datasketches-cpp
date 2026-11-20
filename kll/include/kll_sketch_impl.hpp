@@ -550,7 +550,7 @@ auto kll_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerDe& sd)
   const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  const uint8_t* end_ptr = ptr + size;
+  const uint8_t* end_ptr = bytes.data() + size;
   const uint8_t preamble_ints(is_empty() || is_single_item ? PREAMBLE_INTS_SHORT : PREAMBLE_INTS_FULL);
   ptr += copy_to_mem(preamble_ints, ptr);
   const uint8_t serial_version(is_single_item ? SERIAL_VERSION_2 : SERIAL_VERSION_1);

@@ -46,6 +46,7 @@ target_sources(common_test_lib
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/test_allocator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/undersized_serde.hpp
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/catch_runner.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test_allocator.cpp

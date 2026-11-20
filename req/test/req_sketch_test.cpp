@@ -20,6 +20,7 @@
 #include <catch2/catch.hpp>
 
 #include <req_sketch.hpp>
+#include <undersized_serde.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -442,6 +443,42 @@ TEST_CASE("req sketch: serialize deserialize stream and bytes equivalence", "[re
   REQUIRE(sketch2.get_n() == sketch.get_n());
   REQUIRE(sketch2.get_min_item() == sketch.get_min_item());
   REQUIRE(sketch2.get_max_item() == sketch.get_max_item());
+}
+
+TEST_CASE("req sketch: serialized size of raw items", "[req_sketch]") {
+  // up to 4 items are written without a compactor header, to bytes as to a stream
+  for (int n = 1; n <= 6; ++n) {
+    CAPTURE(n);
+    req_sketch<float> floats(12);
+    req_sketch<std::string> strings(12);
+    for (int i = 0; i < n; ++i) {
+      floats.update(static_cast<float>(i));
+      strings.update(std::to_string(i));
+    }
+    std::stringstream floats_stream(std::ios::in | std::ios::out | std::ios::binary);
+    floats.serialize(floats_stream);
+    REQUIRE(floats.serialize().size() == floats_stream.str().size());
+    REQUIRE(floats.get_serialized_size_bytes() == floats_stream.str().size());
+    std::stringstream strings_stream(std::ios::in | std::ios::out | std::ios::binary);
+    strings.serialize(strings_stream);
+    REQUIRE(strings.serialize().size() == strings_stream.str().size());
+    REQUIRE(strings.get_serialized_size_bytes() == strings_stream.str().size());
+  }
+}
+
+TEST_CASE("req sketch: serialize with a header", "[req_sketch]") {
+  // with a header, the bytes after it round-trip, and the serde is given the true end of the buffer:
+  // one that writes more than it reported must be stopped by its capacity check
+  for (int n: {1, 3, 1000}) {
+    CAPTURE(n);
+    req_sketch<std::string> sketch(12);
+    for (int i = 0; i < n; ++i) sketch.update(std::to_string(i));
+    const unsigned header_size = 16;
+    const auto bytes = sketch.serialize(header_size);
+    const auto copy = req_sketch<std::string>::deserialize(bytes.data() + header_size, bytes.size() - header_size);
+    REQUIRE(copy.get_n() == sketch.get_n());
+    REQUIRE_THROWS_AS(sketch.serialize(header_size, undersized_string_serde()), std::out_of_range);
+  }
 }
 
 TEST_CASE("req sketch: merge into empty", "[req_sketch]") {

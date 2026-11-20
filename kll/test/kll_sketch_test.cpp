@@ -18,6 +18,7 @@
  */
 
 #include <catch2/catch.hpp>
+#include <string>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -28,6 +29,7 @@
 
 #include <kll_sketch.hpp>
 #include <test_allocator.hpp>
+#include <undersized_serde.hpp>
 
 namespace datasketches {
 
@@ -1582,6 +1584,21 @@ TEST_CASE("kll sketch: compaction and merge use the sketch's comparator", "[kll_
   const kll_sketch<int, ordered_by> copy(sketch, ordered_by(true));
   REQUIRE(copy.get_n() == 2000);
   REQUIRE(sketch.get_rank(1000) == Approx(0.5).margin(RANK_EPS_FOR_K_200 * 10));
+}
+
+TEST_CASE("kll sketch: serialize with a header", "[kll_sketch]") {
+  // with a header, the bytes after it round-trip, and the serde is given the true end of the buffer:
+  // one that writes more than it reported must be stopped by its capacity check
+  for (int n: {1, 3, 1000}) {
+    CAPTURE(n);
+    kll_sketch<std::string> sketch(200);
+    for (int i = 0; i < n; ++i) sketch.update(std::to_string(i));
+    const unsigned header_size = 16;
+    const auto bytes = sketch.serialize(header_size);
+    const auto copy = kll_sketch<std::string>::deserialize(bytes.data() + header_size, bytes.size() - header_size);
+    REQUIRE(copy.get_n() == sketch.get_n());
+    REQUIRE_THROWS_AS(sketch.serialize(header_size, undersized_string_serde()), std::out_of_range);
+  }
 }
 
 } /* namespace datasketches */
