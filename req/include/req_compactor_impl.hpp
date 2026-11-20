@@ -176,8 +176,16 @@ capacity_(other.capacity_),
 items_(nullptr)
 {
   copy_items(other);
-  if (sorted_ && !std::is_sorted(begin(), end(), comparator_)) {
-    destroy_items(); // the destructor doesn't run if a constructor throws
+  // the destructor doesn't run if a constructor throws, and the comparator may throw too
+  bool items_sorted = true;
+  try {
+    items_sorted = !sorted_ || std::is_sorted(begin(), end(), comparator_);
+  } catch (...) {
+    destroy_items();
+    throw;
+  }
+  if (!items_sorted) {
+    destroy_items();
     throw std::logic_error("items must be sorted");
   }
 }
@@ -220,9 +228,17 @@ template<typename T, typename C, typename A>
 template<typename FwdT>
 void req_compactor<T, C, A>::append(FwdT&& item) {
   reserve();
-  if (num_items_ == capacity_) grow(capacity_ + get_nom_capacity());
-  const uint32_t i = hra_ ? capacity_ - num_items_ - 1 : num_items_;
-  new (items_ + i) T(std::forward<FwdT>(item));
+  if (num_items_ == capacity_) {
+    // the item may be one of the items of this compactor, which growing destroys,
+    // so build it first; a failed copy then leaves the compactor as it was
+    T copy(std::forward<FwdT>(item));
+    grow(capacity_ + get_nom_capacity());
+    const uint32_t i = hra_ ? capacity_ - num_items_ - 1 : num_items_;
+    new (items_ + i) T(std::move(copy));
+  } else {
+    const uint32_t i = hra_ ? capacity_ - num_items_ - 1 : num_items_;
+    new (items_ + i) T(std::forward<FwdT>(item));
+  }
   ++num_items_;
   if (num_items_ > 1) sorted_ = false;
 }
@@ -273,6 +289,7 @@ void req_compactor<T, C, A>::merge(FwdC&& other) {
   // TODO: swap if other is larger?
   if (lg_weight_ != other.lg_weight_) throw std::logic_error("weight mismatch");
   const uint32_t num = other.get_num_items();
+  const bool other_sorted = other.sorted_;
   // the sections once the states are combined
   const uint64_t new_state = state_ | other.state_;
   sections new_sections = get_sections();
@@ -304,7 +321,7 @@ void req_compactor<T, C, A>::merge(FwdC&& other) {
   state_ = new_state;
   if (more_sections) set_sections(new_sections);
   sort();
-  if (!other.sorted_) std::sort(from, from + num, comparator_);
+  if (!other_sorted) std::sort(from, from + num, comparator_);
   const auto offset = hra_ ? capacity_ - num_items_ : num_items_;
   if (num_items_ > 0) std::inplace_merge(hra_ ? from : begin(), items_ + offset, hra_ ? end() : from + num, comparator_);
   num_items_ += num;
@@ -369,7 +386,8 @@ template<typename T, typename C, typename A>
 bool req_compactor<T, C, A>::next_sections(uint64_t state, sections& s) {
   const float ssr = s.size_raw / sqrtf(2);
   const uint32_t ne = nearest_even(ssr);
-  if (state >= static_cast<uint64_t>(1ULL << (s.num - 1))
+  if (s.num <= 32 // at most 48 sections, so the shift below stays in range
+      && state >= static_cast<uint64_t>(1ULL << (s.num - 1))
       && s.size > req_constants::MIN_K
       && ne >= req_constants::MIN_K) {
     s.size_raw = ssr;
@@ -515,8 +533,9 @@ template<typename S>
 auto req_compactor<T, C, A>::deserialize_items(std::istream& is, const S& serde, const A& allocator, uint32_t num)
 -> std::unique_ptr<T, items_deleter> {
   A alloc(allocator);
-  std::unique_ptr<T, items_deleter> items(alloc.allocate(num), items_deleter(allocator, false, num));
-  serde.deserialize(is, items.get(), num);
+  // an empty compactor has no storage
+  std::unique_ptr<T, items_deleter> items(num > 0 ? alloc.allocate(num) : nullptr, items_deleter(allocator, false, num));
+  if (num > 0) serde.deserialize(is, items.get(), num);
   // serde did not throw, enable destructors
   items.get_deleter().set_destroy(true);
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
@@ -572,8 +591,9 @@ auto req_compactor<T, C, A>::deserialize_items(const void* bytes, size_t size, c
   const char* ptr = static_cast<const char*>(bytes);
   const char* end_ptr = static_cast<const char*>(bytes) + size;
   A alloc(allocator);
-  std::unique_ptr<T, items_deleter> items(alloc.allocate(num), items_deleter(allocator, false, num));
-  ptr += serde.deserialize(ptr, end_ptr - ptr, items.get(), num);
+  // an empty compactor has no storage
+  std::unique_ptr<T, items_deleter> items(num > 0 ? alloc.allocate(num) : nullptr, items_deleter(allocator, false, num));
+  if (num > 0) ptr += serde.deserialize(ptr, end_ptr - ptr, items.get(), num);
   // serde did not throw, enable destructors
   items.get_deleter().set_destroy(true);
   return std::pair<std::unique_ptr<T, items_deleter>, size_t>(

@@ -203,6 +203,7 @@ public:
    * If the comparator throws while items are sorted or merged, or does not impose a consistent
    * total order, the state of the sketch is undefined.
    * @param item from a stream of items
+   * @throw std::overflow_error if n would exceed req_constants::MAX_N, in which case the sketch is unchanged
    */
   template<typename FwdT>
   void update(FwdT&& item);
@@ -213,9 +214,11 @@ public:
    * both sketches were built using compatible string encodings.
    * The first merge of a non-empty sketch allocates storage for items,
    * unless reserve() or an update already did.
+   * A sketch can be merged into itself.
    * If an allocation or a copy of an item throws, this sketch stays valid and usable, but may hold part of other.
    * If the comparator throws while items are sorted or merged, the state of this sketch is undefined.
    * @param other sketch to merge into this one
+   * @throw std::overflow_error if n would exceed req_constants::MAX_N, in which case the sketch is unchanged
    */
   template<typename FwdSk>
   void merge(FwdSk&& other);
@@ -481,6 +484,8 @@ private:
   void grow();
   void update_max_nom_size();
   void update_num_retained();
+  // throws std::overflow_error if n_ + increase would exceed req_constants::MAX_N
+  void check_n_increase(uint64_t increase) const;
   // recomputes n, the number of retained items and the nominal size from the compactors,
   // after an allocation failed partway through an update or a merge
   void restore_counts();
