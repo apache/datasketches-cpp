@@ -495,4 +495,69 @@ TEST_CASE("varopt sketch: estimate subset sum", "[var_opt_sketch]") {
   REQUIRE(summary.estimate < total_weight); // exact mode, so know it must be strictly less
 }
 
+TEST_CASE("varopt sketch: update after deserialize in estimation mode", "[var_opt_sketch]") {
+  const uint32_t k = 10;
+  var_opt_sketch<int> sk(k);
+  double total_weight = 0.0;
+  for (int i = 1; i <= 100; ++i) {
+    sk.update(i, static_cast<double>(i));
+    total_weight += i;
+  }
+  REQUIRE(sk.get_num_samples() == k);
+
+  auto bytes = sk.serialize();
+  auto sk_bytes = var_opt_sketch<int>::deserialize(bytes.data(), bytes.size());
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  sk.serialize(ss);
+  auto sk_stream = var_opt_sketch<int>::deserialize(ss);
+
+  const double light_weight = 0.5;
+  const double heavy_weight = 1e6;
+  total_weight += light_weight + heavy_weight;
+
+  for (var_opt_sketch<int>* d : {&sk_bytes, &sk_stream}) {
+    REQUIRE_NOTHROW(d->update(1000, light_weight));
+    REQUIRE_NOTHROW(d->update(1001, heavy_weight));
+    REQUIRE(d->get_n() == 102);
+    REQUIRE(d->get_num_samples() == k);
+    auto summary = d->estimate_subset_sum([](int) { return true; });
+    REQUIRE(summary.total_sketch_weight == Approx(total_weight).margin(EPS));
+    bool heavy_kept_exactly = false;
+    for (const auto& sample : *d) {
+      if (sample.first == 1001) heavy_kept_exactly = (sample.second == heavy_weight);
+    }
+    REQUIRE(heavy_kept_exactly);
+  }
+}
+
+TEST_CASE("varopt sketch: update after deserialize in exact mode", "[var_opt_sketch]") {
+  const uint32_t k = 10;
+  const uint32_t n = GENERATE(0u, 5u, 10u);
+  var_opt_sketch<int> sk(k);
+  double total_weight = 0.0;
+  for (uint32_t i = 1; i <= n; ++i) {
+    sk.update(static_cast<int>(i), static_cast<double>(i));
+    total_weight += i;
+  }
+  REQUIRE(sk.get_num_samples() == n);
+
+  auto bytes = sk.serialize();
+  auto sk_bytes = var_opt_sketch<int>::deserialize(bytes.data(), bytes.size());
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  sk.serialize(ss);
+  auto sk_stream = var_opt_sketch<int>::deserialize(ss);
+
+  const double weight = 0.5;
+  total_weight += weight;
+  const uint32_t expected_samples = n < k ? n + 1 : k;
+
+  for (var_opt_sketch<int>* d : {&sk_bytes, &sk_stream}) {
+    REQUIRE_NOTHROW(d->update(1000, weight));
+    REQUIRE(d->get_n() == n + 1);
+    REQUIRE(d->get_num_samples() == expected_samples);
+    auto summary = d->estimate_subset_sum([](int) { return true; });
+    REQUIRE(summary.total_sketch_weight == Approx(total_weight).margin(EPS));
+  }
+}
+
 }

@@ -550,7 +550,7 @@ var_opt_sketch<T, A> var_opt_sketch<T, A>::deserialize(const void* bytes, size_t
   ptr += sd.deserialize(ptr, end_ptr - ptr, &(items.get()[h + 1]), r);
   items.get_deleter().set_r(r); // serde didn't throw, so the items are now valid
 
-  return var_opt_sketch(k, h, (r > 0 ? 1 : 0), r, n, total_wt_r, rf, array_size, false,
+  return var_opt_sketch(k, h, 0, r, n, total_wt_r, rf, array_size, false,
                         std::move(items), std::move(weights), num_marks_in_h, std::move(marks), allocator);
 }
 
@@ -635,7 +635,7 @@ var_opt_sketch<T, A> var_opt_sketch<T, A>::deserialize(std::istream& is, const S
   if (!is.good())
     throw std::runtime_error("error reading from std::istream"); 
 
-  return var_opt_sketch(k, h, (r > 0 ? 1 : 0), r, n, total_wt_r, rf, array_size, false,
+  return var_opt_sketch(k, h, 0, r, n, total_wt_r, rf, array_size, false,
                         std::move(items), std::move(weights), num_marks_in_h, std::move(marks), allocator);
 }
 

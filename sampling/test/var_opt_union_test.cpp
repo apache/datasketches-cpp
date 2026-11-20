@@ -317,4 +317,51 @@ TEST_CASE("varopt union: deserialize truncated non-empty preamble", "[var_opt_un
   }
 }
 
+TEST_CASE("varopt union: update after deserialize in estimation mode", "[var_opt_union]") {
+  const uint32_t k = 10;
+  var_opt_union<int> u(k);
+  u.update(create_unweighted_sketch(k, 100));
+  u.update(create_unweighted_sketch(k, 100));
+
+  auto bytes = u.serialize();
+  auto u_bytes = var_opt_union<int>::deserialize(bytes.data(), bytes.size());
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  u.serialize(ss);
+  auto u_stream = var_opt_union<int>::deserialize(ss);
+
+  for (var_opt_union<int>* du : {&u_bytes, &u_stream}) {
+    REQUIRE_NOTHROW(du->update(create_unweighted_sketch(k, 50)));
+    auto result = du->get_result();
+    REQUIRE(result.get_n() == 250);
+    REQUIRE(result.get_num_samples() == k);
+    auto summary = result.estimate_subset_sum([](int) { return true; });
+    REQUIRE(summary.total_sketch_weight == Approx(250.0).margin(EPS));
+  }
+}
+
+TEST_CASE("varopt union: update after deserialize in exact mode", "[var_opt_union]") {
+  const uint32_t k = 10;
+  const uint64_t extra = GENERATE(3u, 10u);
+  var_opt_union<int> u(k);
+  u.update(create_unweighted_sketch(k, 5));
+
+  auto bytes = u.serialize();
+  auto u_bytes = var_opt_union<int>::deserialize(bytes.data(), bytes.size());
+  std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+  u.serialize(ss);
+  auto u_stream = var_opt_union<int>::deserialize(ss);
+
+  const uint64_t total = 5 + extra;
+  const uint32_t expected_samples = total < k ? static_cast<uint32_t>(total) : k;
+
+  for (var_opt_union<int>* du : {&u_bytes, &u_stream}) {
+    REQUIRE_NOTHROW(du->update(create_unweighted_sketch(k, extra)));
+    auto result = du->get_result();
+    REQUIRE(result.get_n() == total);
+    REQUIRE(result.get_num_samples() == expected_samples);
+    auto summary = result.estimate_subset_sum([](int) { return true; });
+    REQUIRE(summary.total_sketch_weight == Approx(static_cast<double>(total)).margin(EPS));
+  }
+}
+
 }
