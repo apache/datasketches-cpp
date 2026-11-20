@@ -255,6 +255,12 @@ void quantiles_sketch<T, C, A>::merge(FwdSk&& other) {
   if (other.is_empty()) {
     return; // nothing to do
   }
+  if (static_cast<const void*>(&other) == static_cast<const void*>(this)) {
+    // merging reads other while it changes this, so merge a copy
+    quantiles_sketch copy(other);
+    merge(std::move(copy));
+    return;
+  }
   reset_sorted_view();
   try {
     merge_unchecked(std::forward<FwdSk>(other));

@@ -969,4 +969,29 @@ TEST_CASE("quantiles sketch: deserialize serial version 1 truncated after min an
   REQUIRE_THROWS_AS(quantiles_sketch<int>::deserialize(bytes.data(), bytes.size()), std::out_of_range);
 }
 
+TEST_CASE("quantiles sketch: merge into itself", "[quantiles_sketch]") {
+  // exact and estimation mode, with a partly filled base buffer
+  for (int n: {5, 100, 1000}) {
+    CAPTURE(n);
+    quantiles_sketch<int> sketch(8);
+    for (int i = 0; i < n; ++i) sketch.update((i * 7919) % 10007);
+    quantiles_sketch<int> expected(sketch);
+    const quantiles_sketch<int> copy(sketch);
+    random_utils::rand.seed(1); random_utils::random_bit.seed(1);
+    expected.merge(copy);
+    const auto expected_bytes = expected.serialize();
+
+    quantiles_sketch<int> lvalue(sketch);
+    random_utils::rand.seed(1); random_utils::random_bit.seed(1);
+    lvalue.merge(lvalue);
+    REQUIRE(lvalue.get_n() == static_cast<uint64_t>(2 * n));
+    REQUIRE(lvalue.serialize() == expected_bytes);
+
+    quantiles_sketch<int> rvalue(sketch);
+    random_utils::rand.seed(1); random_utils::random_bit.seed(1);
+    rvalue.merge(std::move(rvalue));
+    REQUIRE(rvalue.serialize() == expected_bytes);
+  }
+}
+
 } /* namespace datasketches */
