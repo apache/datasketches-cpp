@@ -199,18 +199,21 @@ void frequent_items_sketch<T, W, H, E, A>::serialize(std::ostream& os, const Ser
     write(os, offset);
 
     // copy active items and their weights to use batch serialization;
-    // the vectors release the copies if a copy or the serde throws
-    using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
-    std::vector<W, AllocW> weights(map.get_allocator());
-    weights.reserve(num_items);
-    std::vector<T, A> items(map.get_allocator());
-    items.reserve(num_items);
-    for (auto it: map) {
-      items.push_back(it.first);
-      weights.push_back(it.second);
+    // the vectors release the copies if a copy or the serde throws.
+    // a non-empty sketch can have no active items (e.g. after a purge)
+    if (num_items > 0) {
+      using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
+      std::vector<W, AllocW> weights(map.get_allocator());
+      weights.reserve(num_items);
+      std::vector<T, A> items(map.get_allocator());
+      items.reserve(num_items);
+      for (auto it: map) {
+        items.push_back(it.first);
+        weights.push_back(it.second);
+      }
+      write(os, weights.data(), sizeof(W) * num_items);
+      sd.serialize(os, items.data(), num_items);
     }
-    write(os, weights.data(), sizeof(W) * num_items);
-    sd.serialize(os, items.data(), num_items);
   }
 }
 
@@ -255,19 +258,22 @@ auto frequent_items_sketch<T, W, H, E, A>::serialize(unsigned header_size_bytes,
     ptr += copy_to_mem(offset, ptr);
 
     // copy active items and their weights to use batch serialization;
-    // the vectors release the copies if a copy or the serde throws
-    using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
-    std::vector<W, AllocW> weights(map.get_allocator());
-    weights.reserve(num_items);
-    std::vector<T, A> items(map.get_allocator());
-    items.reserve(num_items);
-    for (auto it: map) {
-      items.push_back(it.first);
-      weights.push_back(it.second);
+    // the vectors release the copies if a copy or the serde throws.
+    // a non-empty sketch can have no active items (e.g. after a purge)
+    if (num_items > 0) {
+      using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
+      std::vector<W, AllocW> weights(map.get_allocator());
+      weights.reserve(num_items);
+      std::vector<T, A> items(map.get_allocator());
+      items.reserve(num_items);
+      for (auto it: map) {
+        items.push_back(it.first);
+        weights.push_back(it.second);
+      }
+      ptr += copy_to_mem(weights.data(), ptr, sizeof(W) * num_items);
+      const size_t bytes_remaining = end_ptr - ptr;
+      ptr += sd.serialize(ptr, bytes_remaining, items.data(), num_items);
     }
-    ptr += copy_to_mem(weights.data(), ptr, sizeof(W) * num_items);
-    const size_t bytes_remaining = end_ptr - ptr;
-    ptr += sd.serialize(ptr, bytes_remaining, items.data(), num_items);
   }
   return bytes;
 }
