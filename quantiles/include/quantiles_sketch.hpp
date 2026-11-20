@@ -213,6 +213,10 @@ public:
    * Updates this sketch with the given data item.
    * If cross-language portability is required, callers should ensure that
    * the input string uses a compatible encoding (valid UTF-8).
+   * If an allocation or a copy of the item throws, or the comparator throws while the item is compared
+   * with the minimum and maximum items, the item is not added and the sketch is unchanged.
+   * If the comparator throws while items are sorted or merged, or does not impose a consistent
+   * total order, the state of the sketch is undefined.
    * @param item from a stream of items
    */
   template<typename FwdT>
@@ -222,6 +226,9 @@ public:
    * Merges another sketch into this one.
    * If sketches contain strings, callers are responsible for ensuring that
    * both sketches were built using compatible string encodings.
+   * If an allocation fails, this sketch is unchanged. If a copy of an item throws, this sketch
+   * stays valid and usable, but may hold part of other. If the comparator throws while items
+   * are sorted or merged, the state of this sketch is undefined.
    * @param other sketch to merge into this one
    */
   template<typename FwdSk>
@@ -532,10 +539,28 @@ private:
       bool is_sorted, const Comparator& comparator = Comparator(), const Allocator& allocator = Allocator());
 
   void grow_base_buffer();
-  void process_full_base_buffer();
+  // adds an item to the base buffer and counts it; if this throws, the sketch is unchanged,
+  // unless the comparator throws
+  template<typename FwdT>
+  void insert_base(FwdT&& item);
+  // the base buffer is full with the new item, which brings n to new_n but is not counted yet
+  void process_full_base_buffer(uint64_t new_n);
 
-  // returns true if size adjusted, else false
-  bool grow_levels_if_needed();
+  // adds the levels needed for n items; returns true if size adjusted, else false
+  bool grow_levels_if_needed(uint64_t n);
+  // removes the empty levels above those that n needs, which a failed update or merge can leave
+  // (the iterator expects no levels above the highest level in use)
+  void trim_levels();
+
+  // allocates everything a merge into tgt that brings it to new_n items, num_base_items of them
+  // through the base buffer, needs, so that the rest of the merge allocates nothing in tgt
+  static void reserve_for_merge(quantiles_sketch& tgt, uint64_t new_n, uint64_t num_base_items);
+  // compares first, then sets the min and max items of tgt to cover src
+  template<typename FwdSk>
+  static void merge_min_max(quantiles_sketch& tgt, FwdSk&& src);
+  // merge() without the cleanup after a failure; other is not empty
+  template<typename FwdSk>
+  void merge_unchecked(FwdSk&& other);
 
   // buffers should be pre-sized to target capacity as appropriate
   template<typename FwdV>

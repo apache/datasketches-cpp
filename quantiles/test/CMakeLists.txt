@@ -38,6 +38,7 @@ add_test(
 target_sources(quantiles_test
   PRIVATE
     quantiles_sketch_test.cpp
+    quantiles_sketch_allocation_test.cpp
     quantiles_compatibility_test.cpp
     kolmogorov_smirnov_test.cpp
 )

@@ -32,3 +32,10 @@ target_sources(density_test
   PRIVATE
     density_sketch_test.cpp
 )
+
+if (GENERATE)
+target_sources(density_test
+  PRIVATE
+    density_sketch_serialize_for_java.cpp
+)
+endif()

@@ -57,14 +57,16 @@ class kll_helper {
     // assumes that destination has initialized objects
     // does not destroy the originals after the move
     template <typename T, typename C>
-    static void merge_sorted_arrays(T* buf, uint32_t start_a, uint32_t len_a, uint32_t start_b, uint32_t len_b, uint32_t start_c);
+    static void merge_sorted_arrays(T* buf, uint32_t start_a, uint32_t len_a, uint32_t start_b, uint32_t len_b, uint32_t start_c,
+        const C& comparator);
 
-    // this version is to merge from two different buffers into a third buffer
-    // initializes objects is the destination buffer
-    // moves objects from buf_a and destroys the originals
-    // copies objects from buf_b
+    // Merges the sorted items buf_a[start_a, start_a + len_a) and the sorted items
+    // buf_c[start_c + len_a, start_c + len_a + len_b) into buf_c[start_c, start_c + len_a + len_b).
+    // The first len_a slots of the destination must hold no objects.
+    // Moves the items and destroys the originals; copies nothing.
     template <typename T, typename C>
-    static void merge_sorted_arrays(const T* buf_a, uint32_t start_a, uint32_t len_a, const T* buf_b, uint32_t start_b, uint32_t len_b, T* buf_c, uint32_t start_c);
+    static void merge_sorted_arrays_into_gap(T* buf_a, uint32_t start_a, uint32_t len_a, T* buf_c, uint32_t start_c, uint32_t len_b,
+        const C& comparator);
 
     struct compress_result {
       uint8_t final_num_levels;
@@ -101,7 +103,7 @@ class kll_helper {
 
     template <typename T, typename C>
     static compress_result general_compress(uint16_t k, uint8_t m, uint8_t num_levels_in, T* items,
-            uint32_t* in_levels, uint32_t* out_levels, bool is_level_zero_sorted);
+            uint32_t* in_levels, uint32_t* out_levels, bool is_level_zero_sorted, const C& comparator);
 
     template<typename T>
     static void copy_construct(const T* src, size_t src_first, size_t src_last, T* dst, size_t dst_first);
