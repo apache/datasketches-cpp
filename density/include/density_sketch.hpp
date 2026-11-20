@@ -201,7 +201,8 @@ private:
   enum flags { RESERVED0, RESERVED1, IS_EMPTY };
   static const uint8_t PREAMBLE_INTS_SHORT = 3;
   static const uint8_t PREAMBLE_INTS_LONG = 6;
-  static const uint8_t FAMILY_ID = 19;
+  static const uint8_t FAMILY_ID = 23;
+  static const uint8_t LEGACY_FAMILY_ID = 19;
   static const uint8_t SERIAL_VERSION = 1;
   static const size_t LEVELS_ARRAY_START = 5;
 
@@ -217,7 +218,7 @@ private:
 
   static void check_k(uint16_t k);
   static void check_serial_version(uint8_t serial_version);
-  static void check_family_id(uint8_t family_id);
+  static void check_family_id(uint8_t family_id, uint8_t serial_version);
   static void check_header_validity(uint8_t preamble_ints, uint8_t flags_byte, uint8_t serial_version);
 
   density_sketch(uint16_t k, uint32_t dim, uint32_t num_retained, uint64_t n, Levels&& levels,
