@@ -482,7 +482,7 @@ template&lt;typename FwdT&gt; </div>
 </div><div class="memdoc">
 
 <p>Updates this sketch with the given data item. </p>
-<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). If an allocation or a copy of the item throws, or the comparator throws while the item is compared with the minimum and maximum items, the item is not added and the sketch is unchanged. If the comparator throws while items are sorted or merged, or does not impose a consistent total order, the state of the sketch is undefined. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>from a stream of items </td></tr>
   </table>
@@ -511,7 +511,7 @@ template&lt;typename FwdSk&gt; </div>
 </div><div class="memdoc">
 
 <p>Merges another sketch into this one. </p>
-<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. If an allocation fails, this sketch is unchanged. If a copy of an item throws, this sketch stays valid and usable, but may hold part of other. If the comparator throws while items are sorted or merged, the state of this sketch is undefined. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">other</td><td>sketch to merge into this one </td></tr>
   </table>
