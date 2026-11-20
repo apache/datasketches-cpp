@@ -472,6 +472,12 @@ template&lt;typename FwdT&gt; </div>
   </table>
   </dd>
 </dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::overflow_error</td><td>if n would exceed <a class="el" href="namespacedatasketches_1_1kll__constants.html#a837f7ac313e0ab012869051ea1aaa468" title="maximum stream length n, the largest signed 64-bit integer, as in datasketches-java">kll_constants::MAX_N</a>, in which case the sketch is unchanged </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -499,7 +505,7 @@ template&lt;typename FwdT&gt; </div>
 </div><div class="memdoc">
 
 <p>Updates this sketch with the given data item repeated the given number of times. </p>
-<p>The result is equivalent to calling update(item) weight times, at a cost that grows with the logarithm of the weight rather than with the weight itself. If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). The first update allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a> or a merge already did. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>The result is equivalent to calling update(item) weight times. If the weight is less than the free space in level zero, the item is copied into level zero weight times. Otherwise a sketch of the weighted item is merged in, at a cost that grows with the logarithm of the weight rather than with the weight itself. If cross-language portability is required, callers should ensure that the input string uses a compatible encoding (valid UTF-8). The first update allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a> or a merge already did. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">item</td><td>from a stream of items </td></tr>
     <tr><td class="paramname">weight</td><td>number of times the item is repeated, from 1 to <a class="el" href="namespacedatasketches_1_1kll__constants.html#aa43799bb5b6f68b48051ef607affe1ea" title="maximum weight of a weighted update, the same as in datasketches-java">kll_constants::MAX_WEIGHT</a> (2^61 - 1) </td></tr>
@@ -509,6 +515,7 @@ template&lt;typename FwdT&gt; </div>
 <dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
     <tr><td class="paramname">std::invalid_argument</td><td>if the weight is 0 or greater than <a class="el" href="namespacedatasketches_1_1kll__constants.html#aa43799bb5b6f68b48051ef607affe1ea" title="maximum weight of a weighted update, the same as in datasketches-java">kll_constants::MAX_WEIGHT</a> </td></tr>
+    <tr><td class="paramname">std::overflow_error</td><td>if n would exceed <a class="el" href="namespacedatasketches_1_1kll__constants.html#a837f7ac313e0ab012869051ea1aaa468" title="maximum stream length n, the largest signed 64-bit integer, as in datasketches-java">kll_constants::MAX_N</a>, in which case the sketch is unchanged </td></tr>
   </table>
   </dd>
 </dl>
@@ -535,9 +542,15 @@ template&lt;typename FwdSk&gt; </div>
 </div><div class="memdoc">
 
 <p>Merges another sketch into this one. </p>
-<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. If other is this sketch, this throws std::invalid_argument. The first merge of a non-empty sketch allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a> or an update already did. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If sketches contain strings, callers are responsible for ensuring that both sketches were built using compatible string encodings. If other is this sketch, this throws std::invalid_argument. The first merge of a non-empty sketch allocates storage for items, unless <a class="el" href="#a0754e2def4850bd8bf73f69b6f476973" title="Allocates storage for k items now, rather than on the first update or merge, or as the buffer grows.">reserve()</a> or an update already did. If copying an item throws, this sketch stays valid and usable, but may hold part of other. The comparator must not throw: if it does, the state of this sketch is undefined. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">other</td><td>sketch to merge into this one </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::overflow_error</td><td>if n would exceed <a class="el" href="namespacedatasketches_1_1kll__constants.html#a837f7ac313e0ab012869051ea1aaa468" title="maximum stream length n, the largest signed 64-bit integer, as in datasketches-java">kll_constants::MAX_N</a>, in which case the sketch is unchanged </td></tr>
   </table>
   </dd>
 </dl>
