@@ -111,6 +111,8 @@ TEST_CASE("custom kernel", "[density_sketch]") {
 TEST_CASE("serialize empty", "[density_sketch]") {
   density_sketch<double> sk(10, 2);
   auto bytes = sk.serialize();
+  REQUIRE(bytes.size() >= 3);
+  REQUIRE(bytes[2] == 23);
   auto sk2 = density_sketch<double>::deserialize(bytes.data(), bytes.size());
   REQUIRE(sk2.is_empty());
   REQUIRE(!sk2.is_estimation_mode());
@@ -121,6 +123,9 @@ TEST_CASE("serialize empty", "[density_sketch]") {
 
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sk.serialize(s);
+  const std::string stream_bytes = s.str();
+  REQUIRE(stream_bytes.size() >= 3);
+  REQUIRE(static_cast<uint8_t>(stream_bytes[2]) == 23);
   auto sk3 = density_sketch<double>::deserialize(s);
   REQUIRE(sk3.is_empty());
   REQUIRE(!sk3.is_estimation_mode());
@@ -143,6 +148,8 @@ TEST_CASE("serialize bytes", "[density_sketch]") {
 
   // exact mode
   auto bytes = sk.serialize();
+  REQUIRE(bytes.size() >= 3);
+  REQUIRE(bytes[2] == 23);
   auto sk2 = density_sketch<double>::deserialize(bytes.data(), bytes.size());
   REQUIRE(!sk2.is_empty());
   REQUIRE(!sk2.is_estimation_mode());
@@ -168,6 +175,8 @@ TEST_CASE("serialize bytes", "[density_sketch]") {
   REQUIRE(sk.is_estimation_mode());
 
   bytes = sk.serialize();
+  REQUIRE(bytes.size() >= 3);
+  REQUIRE(bytes[2] == 23);
   sk2 = density_sketch<double>::deserialize(bytes.data(), bytes.size());
   REQUIRE(!sk2.is_empty());
   REQUIRE(sk2.is_estimation_mode());
@@ -199,6 +208,8 @@ TEST_CASE("serialize stream", "[density_sketch]") {
   // exact mode
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
   sk.serialize(s);
+  REQUIRE(s.str().size() >= 3);
+  REQUIRE(static_cast<uint8_t>(s.str()[2]) == 23);
   auto sk2 = density_sketch<float>::deserialize(s);
   REQUIRE(!sk2.is_empty());
   REQUIRE(!sk2.is_estimation_mode());
@@ -225,6 +236,8 @@ TEST_CASE("serialize stream", "[density_sketch]") {
 
   std::stringstream s2(std::ios::in | std::ios::out | std::ios::binary);
   sk.serialize(s2);
+  REQUIRE(s2.str().size() >= 3);
+  REQUIRE(static_cast<uint8_t>(s2.str()[2]) == 23);
   sk2 = density_sketch<float>::deserialize(s2);
   REQUIRE(!sk2.is_empty());
   REQUIRE(sk2.is_estimation_mode());
@@ -269,6 +282,202 @@ TEST_CASE("density sketch: custom allocator", "[density_sketch]") {
   }
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);
+}
+
+TEST_CASE("density sketch: legacy family id 19 compatibility", "[density_sketch]") {
+  // Legacy empty Density sketch (k = 10, dim = 2, family_id = 19)
+  const std::vector<uint8_t> legacy_empty = {
+    3, 1, 19, 4,
+    10, 0, 0, 0,
+    2, 0, 0, 0
+  };
+  {
+    auto sk = density_sketch<double>::deserialize(legacy_empty.data(), legacy_empty.size());
+    REQUIRE(sk.is_empty());
+    REQUIRE(sk.get_k() == 10);
+    REQUIRE(sk.get_dim() == 2);
+    REQUIRE(sk.get_n() == 0);
+    REQUIRE(sk.get_num_retained() == 0);
+
+    auto upgraded = sk.serialize();
+    REQUIRE(upgraded.size() == legacy_empty.size());
+    REQUIRE(upgraded[2] == 23);
+
+    std::stringstream is(
+      std::string(reinterpret_cast<const char*>(legacy_empty.data()), legacy_empty.size()),
+      std::ios::in | std::ios::out | std::ios::binary
+    );
+    auto sk_stream = density_sketch<double>::deserialize(is);
+    REQUIRE(sk_stream.is_empty());
+    REQUIRE(sk_stream.get_k() == 10);
+    REQUIRE(sk_stream.get_dim() == 2);
+
+    std::stringstream os(std::ios::in | std::ios::out | std::ios::binary);
+    sk_stream.serialize(os);
+    REQUIRE(static_cast<uint8_t>(os.str()[2]) == 23);
+  }
+
+  // Legacy single-point Density sketch (k = 10, dim = 2, point = [1.0, 2.0], family_id = 19)
+  const std::vector<uint8_t> legacy_single = {
+    6, 1, 19, 0,
+    10, 0, 0, 0,
+    2, 0, 0, 0,
+    1, 0, 0, 0,
+    1, 0, 0, 0, 0, 0, 0, 0,
+    1, 0, 0, 0,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x3f,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40
+  };
+  {
+    auto sk = density_sketch<double>::deserialize(legacy_single.data(), legacy_single.size());
+    REQUIRE(!sk.is_empty());
+    REQUIRE(sk.get_k() == 10);
+    REQUIRE(sk.get_dim() == 2);
+    REQUIRE(sk.get_n() == 1);
+    REQUIRE(sk.get_num_retained() == 1);
+    REQUIRE(sk.get_estimate({1.0, 2.0}) == 1.0);
+
+    auto upgraded = sk.serialize();
+    REQUIRE(upgraded.size() == legacy_single.size());
+    REQUIRE(upgraded[2] == 23);
+    upgraded[2] = 19;
+    REQUIRE(upgraded == legacy_single);
+
+    std::stringstream is(
+      std::string(reinterpret_cast<const char*>(legacy_single.data()), legacy_single.size()),
+      std::ios::in | std::ios::out | std::ios::binary
+    );
+    auto sk_stream = density_sketch<double>::deserialize(is);
+    REQUIRE(sk_stream.get_n() == 1);
+    REQUIRE(sk_stream.get_estimate({1.0, 2.0}) == 1.0);
+  }
+
+  // Legacy estimation-mode Density sketch round-trip and re-serialization to family ID 23
+  density_sketch<double> original(10, 3);
+  for (uint32_t i = 0; i < 1031; ++i) {
+    const double val = static_cast<double>(i);
+    original.update(std::vector<double>({val, std::sqrt(val), -val}));
+  }
+  REQUIRE(original.is_estimation_mode());
+
+  auto legacy_bytes = original.serialize();
+  REQUIRE(legacy_bytes[2] == 23);
+  legacy_bytes[2] = 19;
+
+  auto from_bytes = density_sketch<double>::deserialize(legacy_bytes.data(), legacy_bytes.size());
+  REQUIRE(from_bytes.is_estimation_mode());
+  REQUIRE(from_bytes.get_k() == original.get_k());
+  REQUIRE(from_bytes.get_dim() == original.get_dim());
+  REQUIRE(from_bytes.get_n() == original.get_n());
+  REQUIRE(from_bytes.get_num_retained() == original.get_num_retained());
+  REQUIRE(from_bytes.get_estimate({5.0, std::sqrt(5.0), -5.0}) == original.get_estimate({5.0, std::sqrt(5.0), -5.0}));
+  REQUIRE(from_bytes.serialize()[2] == 23);
+
+  std::stringstream legacy_stream(
+    std::string(reinterpret_cast<const char*>(legacy_bytes.data()), legacy_bytes.size()),
+    std::ios::in | std::ios::out | std::ios::binary
+  );
+  auto from_stream = density_sketch<double>::deserialize(legacy_stream);
+  REQUIRE(from_stream.get_n() == original.get_n());
+  REQUIRE(from_stream.get_num_retained() == original.get_num_retained());
+  REQUIRE(from_stream.get_estimate({5.0, std::sqrt(5.0), -5.0}) == original.get_estimate({5.0, std::sqrt(5.0), -5.0}));
+  std::stringstream out_stream(std::ios::in | std::ios::out | std::ios::binary);
+  from_stream.serialize(out_stream);
+  REQUIRE(static_cast<uint8_t>(out_stream.str()[2]) == 23);
+}
+
+TEST_CASE("density sketch: reject invalid family and ebpps headers", "[density_sketch]") {
+  // Unrelated family ID (20 = T-Digest)
+  const std::vector<uint8_t> wrong_family = {
+    3, 1, 20, 4,
+    10, 0, 0, 0,
+    2, 0, 0, 0
+  };
+  REQUIRE_THROWS_AS(
+    density_sketch<double>::deserialize(wrong_family.data(), wrong_family.size()),
+    std::invalid_argument
+  );
+  {
+    std::stringstream is(
+      std::string(reinterpret_cast<const char*>(wrong_family.data()), wrong_family.size()),
+      std::ios::in | std::ios::out | std::ios::binary
+    );
+    REQUIRE_THROWS_AS(density_sketch<double>::deserialize(is), std::invalid_argument);
+  }
+
+  // Empty EBPPS header (preamble_longs = 1, ser_ver = 1, family_id = 19, flags = 4, 8 bytes)
+  const std::vector<uint8_t> ebpps_empty = {
+    1, 1, 19, 4,
+    10, 0, 0, 0
+  };
+  REQUIRE_THROWS_AS(
+    density_sketch<double>::deserialize(ebpps_empty.data(), ebpps_empty.size()),
+    std::out_of_range
+  );
+  {
+    std::stringstream is(
+      std::string(reinterpret_cast<const char*>(ebpps_empty.data()), ebpps_empty.size()),
+      std::ios::in | std::ios::out | std::ios::binary
+    );
+    REQUIRE_THROWS_AS(density_sketch<double>::deserialize(is), std::runtime_error);
+  }
+
+  // Padded empty EBPPS header (preamble_longs = 1, family_id = 19, flags = 4, 12 bytes)
+  const std::vector<uint8_t> ebpps_empty_padded = {
+    1, 1, 19, 4,
+    10, 0, 0, 0,
+    2, 0, 0, 0
+  };
+  REQUIRE_THROWS_AS(
+    density_sketch<double>::deserialize(ebpps_empty_padded.data(), ebpps_empty_padded.size()),
+    std::invalid_argument
+  );
+  {
+    std::stringstream is(
+      std::string(reinterpret_cast<const char*>(ebpps_empty_padded.data()), ebpps_empty_padded.size()),
+      std::ios::in | std::ios::out | std::ios::binary
+    );
+    REQUIRE_THROWS_AS(density_sketch<double>::deserialize(is), std::invalid_argument);
+  }
+
+  // Non-empty EBPPS header (preamble_longs = 5, ser_ver = 1, family_id = 19, flags = 0 / 8)
+  for (uint8_t flags : {uint8_t{0}, uint8_t{8}}) {
+    std::vector<uint8_t> ebpps_non_empty(40, 0);
+    ebpps_non_empty[0] = 5;
+    ebpps_non_empty[1] = 1;
+    ebpps_non_empty[2] = 19;
+    ebpps_non_empty[3] = flags;
+    ebpps_non_empty[4] = 10;
+    REQUIRE_THROWS_AS(
+      density_sketch<double>::deserialize(ebpps_non_empty.data(), ebpps_non_empty.size()),
+      std::invalid_argument
+    );
+    std::stringstream is(
+      std::string(reinterpret_cast<const char*>(ebpps_non_empty.data()), ebpps_non_empty.size()),
+      std::ios::in | std::ios::out | std::ios::binary
+    );
+    REQUIRE_THROWS_AS(density_sketch<double>::deserialize(is), std::invalid_argument);
+  }
+
+  // Unexpected flag bits (bit 3 = 8) must be rejected for both legacy (19) and current (23) IDs
+  for (uint8_t fam : {uint8_t{19}, uint8_t{23}}) {
+    std::vector<uint8_t> bad_flags(24, 0);
+    bad_flags[0] = 6;
+    bad_flags[1] = 1;
+    bad_flags[2] = fam;
+    bad_flags[3] = 8;
+    bad_flags[4] = 10;
+    bad_flags[8] = 2;
+    REQUIRE_THROWS_AS(
+      density_sketch<double>::deserialize(bad_flags.data(), bad_flags.size()),
+      std::invalid_argument
+    );
+    std::stringstream is(
+      std::string(reinterpret_cast<const char*>(bad_flags.data()), bad_flags.size()),
+      std::ios::in | std::ios::out | std::ios::binary
+    );
+    REQUIRE_THROWS_AS(density_sketch<double>::deserialize(is), std::invalid_argument);
+  }
 }
 
 } /* namespace datasketches */

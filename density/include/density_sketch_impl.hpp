@@ -272,12 +272,12 @@ density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(std::istream& is, c
   read<uint16_t>(is); // unused
   const auto dim = read<uint32_t>(is);
 
-  check_k(k); // do we have constraints?
-  check_serial_version(serial_version); // a little redundant with the header check
-  check_family_id(family_id);
-  check_header_validity(preamble_ints, flags_byte, serial_version);
-
   if (!is.good()) throw std::runtime_error("error reading from std::istream");
+  check_serial_version(serial_version);
+  check_family_id(family_id, serial_version);
+  check_header_validity(preamble_ints, flags_byte, serial_version);
+  check_k(k);
+
   const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
   if (is_empty) {
     return density_sketch(k, dim, kernel, allocator);
@@ -330,10 +330,10 @@ density_sketch<T, K, A> density_sketch<T, K, A>::deserialize(const void* bytes, 
   uint32_t dim;
   ptr += copy_from_mem(ptr, dim);
 
-  check_k(k);
-  check_serial_version(serial_version); // a little redundant with the header check
-  check_family_id(family_id);
+  check_serial_version(serial_version);
+  check_family_id(family_id, serial_version);
   check_header_validity(preamble_ints, flags_byte, serial_version);
+  check_k(k);
 
   const bool is_empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
   if (is_empty) {
@@ -392,8 +392,10 @@ void density_sketch<T, K, A>::check_serial_version(uint8_t serial_version) {
 }
 
 template<typename T, typename K, typename A>
-void density_sketch<T, K, A>::check_family_id(uint8_t family_id) {
-  if (family_id == FAMILY_ID)
+void density_sketch<T, K, A>::check_family_id(uint8_t family_id, uint8_t serial_version) {
+  // Earlier releases wrote family ID 19, which collided with EBPPS. Accept it for v1 images;
+  // check_header_validity distinguishes Density (preamble_ints 3 or 6) from EBPPS (1 or 5).
+  if (family_id == FAMILY_ID || (family_id == LEGACY_FAMILY_ID && serial_version == 1))
     return;
   else
     throw std::invalid_argument("Possible corruption. Family id does not indicate density sketch: " + std::to_string(family_id));
@@ -401,17 +403,21 @@ void density_sketch<T, K, A>::check_family_id(uint8_t family_id) {
 
 template<typename T, typename K, typename A>
 void density_sketch<T, K, A>::check_header_validity(uint8_t preamble_ints, uint8_t flags_byte, uint8_t serial_version) {
-  const bool empty = (flags_byte & (1 << flags::IS_EMPTY)) > 0;
+  const uint8_t empty_mask = 1 << flags::IS_EMPTY;
+  const bool valid_flags = (flags_byte & ~empty_mask) == 0;
+  const bool empty = (flags_byte & empty_mask) != 0;
 
-  if ((empty && preamble_ints == PREAMBLE_INTS_SHORT)
-      || (!empty && preamble_ints == PREAMBLE_INTS_LONG))
-      return;
+  if (valid_flags
+      && ((empty && preamble_ints == PREAMBLE_INTS_SHORT)
+          || (!empty && preamble_ints == PREAMBLE_INTS_LONG)))
+    return;
   else {
     std::ostringstream os;
     os << "Possible sketch corruption. Inconsistent state: "
-       << "preamble_ints = " << preamble_ints
+       << "preamble_ints = " << static_cast<unsigned>(preamble_ints)
+       << ", flags = " << static_cast<unsigned>(flags_byte)
        << ", empty = " << (empty ? "true" : "false")
-       << ", serialization_version = " << serial_version;
+       << ", serialization_version = " << static_cast<unsigned>(serial_version);
     throw std::invalid_argument(os.str());
   }
 }
