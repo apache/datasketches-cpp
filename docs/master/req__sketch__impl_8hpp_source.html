@@ -485,8 +485,8 @@ $(function() {
 <div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>  <span class="keywordflow">if</span> (<a class="code hl_function" href="classdatasketches_1_1req__sketch.html#ae95a04b1d7dccb3d9b3f3c3d087aa8e6">is_estimation_mode</a>()) {</div>
 <div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>    size += <span class="keyword">sizeof</span>(n_) + <span class="keyword">sizeof</span>(TT) * 2; <span class="comment">// min and max</span></div>
 <div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>  }</div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>  <span class="keywordflow">if</span> (n_ == 1) {</div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>    size += <span class="keyword">sizeof</span>(TT);</div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>  <span class="keywordflow">if</span> (n_ &lt;= <a class="code hl_variable" href="namespacedatasketches_1_1req__constants.html#ab9f2b631adf46fe04a11814cd1018926">req_constants::MIN_K</a>) { <span class="comment">// raw items, without a compactor header</span></div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>    size += <span class="keyword">sizeof</span>(TT) * <span class="keyword">static_cast&lt;</span><span class="keywordtype">size_t</span><span class="keyword">&gt;</span>(n_);</div>
 <div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; compactor: compactors_) size += compactor.get_serialized_size_bytes(sd);</div>
 <div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>  }</div>
@@ -505,8 +505,8 @@ $(function() {
 <div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>    size += sd.size_of_item(*min_item_);</div>
 <div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>    size += sd.size_of_item(*max_item_);</div>
 <div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>  }</div>
-<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>  <span class="keywordflow">if</span> (n_ == 1) {</div>
-<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>    size += sd.size_of_item(*compactors_[0].begin());</div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>  <span class="keywordflow">if</span> (n_ &lt;= <a class="code hl_variable" href="namespacedatasketches_1_1req__constants.html#ab9f2b631adf46fe04a11814cd1018926">req_constants::MIN_K</a>) { <span class="comment">// raw items, without a compactor header</span></div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> it = compactors_[0].begin(); it != compactors_[0].end(); ++it) size += sd.size_of_item(*it);</div>
 <div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>  } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>    <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; compactor: compactors_) size += compactor.get_serialized_size_bytes(sd);</div>
 <div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>  }</div>
@@ -556,7 +556,7 @@ $(function() {
 <div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>  <span class="keyword">const</span> <span class="keywordtype">size_t</span> size = header_size_bytes + get_serialized_size_bytes(sd);</div>
 <div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span>  vector_bytes bytes(size, 0, allocator_);</div>
 <div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>  uint8_t* ptr = bytes.data() + header_size_bytes;</div>
-<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>  <span class="keyword">const</span> uint8_t* end_ptr = ptr + size;</div>
+<div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>  <span class="keyword">const</span> uint8_t* end_ptr = bytes.data() + size;</div>
 <div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span> </div>
 <div class="line"><a id="l00427" name="l00427"></a><span class="lineno">  427</span>  <span class="keyword">const</span> uint8_t preamble_ints = is_estimation_mode() ? 4 : 2;</div>
 <div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span>  ptr += copy_to_mem(preamble_ints, ptr);</div>
