@@ -24,6 +24,7 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <vector>
 
 #include "memory_operations.hpp"
 
@@ -197,22 +198,22 @@ void frequent_items_sketch<T, W, H, E, A>::serialize(std::ostream& os, const Ser
     write(os, total_weight);
     write(os, offset);
 
-    // copy active items and their weights to use batch serialization
-    using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
-    AllocW aw(map.get_allocator());
-    W* weights = aw.allocate(num_items);
-    A alloc(map.get_allocator());
-    T* items = alloc.allocate(num_items);
-    uint32_t i = 0;
-    for (auto it: map) {
-      new (&items[i]) T(it.first);
-      weights[i++] = it.second;
+    // copy active items and their weights to use batch serialization;
+    // the vectors release the copies if a copy or the serde throws.
+    // a non-empty sketch can have no active items (e.g. after a purge)
+    if (num_items > 0) {
+      using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
+      std::vector<W, AllocW> weights(map.get_allocator());
+      weights.reserve(num_items);
+      std::vector<T, A> items(map.get_allocator());
+      items.reserve(num_items);
+      for (auto it: map) {
+        items.push_back(it.first);
+        weights.push_back(it.second);
+      }
+      write(os, weights.data(), sizeof(W) * num_items);
+      sd.serialize(os, items.data(), num_items);
     }
-    write(os, weights, sizeof(W) * num_items);
-    aw.deallocate(weights, num_items);
-    sd.serialize(os, items, num_items);
-    for (i = 0; i < num_items; i++) items[i].~T();
-    alloc.deallocate(items, num_items);
   }
 }
 
@@ -231,7 +232,7 @@ auto frequent_items_sketch<T, W, H, E, A>::serialize(unsigned header_size_bytes,
   const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   vector_bytes bytes(size, 0, map.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  uint8_t* end_ptr = ptr + size;
+  uint8_t* end_ptr = bytes.data() + size;
 
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_EMPTY : PREAMBLE_LONGS_NONEMPTY;
   ptr += copy_to_mem(preamble_longs, ptr);
@@ -256,23 +257,23 @@ auto frequent_items_sketch<T, W, H, E, A>::serialize(unsigned header_size_bytes,
     ptr += copy_to_mem(total_weight, ptr);
     ptr += copy_to_mem(offset, ptr);
 
-    // copy active items and their weights to use batch serialization
-    using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
-    AllocW aw(map.get_allocator());
-    W* weights = aw.allocate(num_items);
-    A alloc(map.get_allocator());
-    T* items = alloc.allocate(num_items);
-    uint32_t i = 0;
-    for (auto it: map) {
-      new (&items[i]) T(it.first);
-      weights[i++] = it.second;
+    // copy active items and their weights to use batch serialization;
+    // the vectors release the copies if a copy or the serde throws.
+    // a non-empty sketch can have no active items (e.g. after a purge)
+    if (num_items > 0) {
+      using AllocW = typename std::allocator_traits<A>::template rebind_alloc<W>;
+      std::vector<W, AllocW> weights(map.get_allocator());
+      weights.reserve(num_items);
+      std::vector<T, A> items(map.get_allocator());
+      items.reserve(num_items);
+      for (auto it: map) {
+        items.push_back(it.first);
+        weights.push_back(it.second);
+      }
+      ptr += copy_to_mem(weights.data(), ptr, sizeof(W) * num_items);
+      const size_t bytes_remaining = end_ptr - ptr;
+      ptr += sd.serialize(ptr, bytes_remaining, items.data(), num_items);
     }
-    ptr += copy_to_mem(weights, ptr, sizeof(W) * num_items);
-    aw.deallocate(weights, num_items);
-    const size_t bytes_remaining = end_ptr - ptr;
-    ptr += sd.serialize(ptr, bytes_remaining, items, num_items);
-    for (i = 0; i < num_items; i++) items[i].~T();
-    alloc.deallocate(items, num_items);
   }
   return bytes;
 }

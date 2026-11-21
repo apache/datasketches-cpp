@@ -129,4 +129,33 @@ TEST_CASE("frequent items: a purge does not allocate", "[frequent_items_sketch]"
   REQUIRE(s.get_total_weight() == 100000);
 }
 
+namespace {
+
+// a serde whose serialize() always throws
+struct throwing_test_type_serde: test_type_serde {
+  void serialize(std::ostream&, const test_type*, unsigned) const {
+    throw std::runtime_error("serialize failed");
+  }
+  size_t serialize(void*, size_t, const test_type*, unsigned) const {
+    throw std::runtime_error("serialize failed");
+  }
+};
+
+} // namespace
+
+TEST_CASE("frequent items: a serde that throws leaks nothing", "[frequent_items_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    frequent_test_type_sketch sketch(3, frequent_test_type_sketch::LG_MIN_MAP_SIZE, test_type_equal(), 0);
+    for (int i = 0; i < 10; ++i) sketch.update(i);
+    // serialize() copies the items for the serde, and must release the copies when the serde throws
+    REQUIRE_THROWS_AS(sketch.serialize(0, throwing_test_type_serde()), std::runtime_error);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    REQUIRE_THROWS_AS(sketch.serialize(s, throwing_test_type_serde()), std::runtime_error);
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
 } /* namespace datasketches */

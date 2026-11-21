@@ -327,7 +327,7 @@ std::vector<uint8_t, AllocU8<A>> var_opt_sketch<T, A>::serialize(unsigned header
   const size_t size = header_size_bytes + get_serialized_size_bytes(sd);
   std::vector<uint8_t, AllocU8<A>> bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  uint8_t* end_ptr = ptr + size;
+  uint8_t* end_ptr = bytes.data() + size;
 
   bool empty = is_empty();
   uint8_t preLongs = (empty ? PREAMBLE_LONGS_EMPTY

@@ -18,6 +18,7 @@
  */
 
 #include <iostream>
+#include <string>
 #include <tuple>
 #include <stdexcept>
 
@@ -35,6 +36,7 @@ std::ostream& operator<<(std::ostream& os, const three_doubles& tuple) {
 
 #include <catch2/catch.hpp>
 #include <tuple_sketch.hpp>
+#include <undersized_serde.hpp>
 
 namespace datasketches {
 
@@ -428,6 +430,22 @@ TEST_CASE("tuple sketch: deserialize bounds-checks each entry key", "[tuple_sket
   auto bytes = update_sketch.compact().serialize();
   REQUIRE_THROWS_AS(compact_tuple_sketch<double>::deserialize(bytes.data(), bytes.size()),
                     std::out_of_range);
+}
+
+TEST_CASE("tuple sketch: serialize with a header", "[tuple_sketch]") {
+  // with a header, the bytes after it round-trip, and the serde is given the true end of the buffer:
+  // one that writes more than it reported must be stopped by its capacity check
+  for (int n: {1, 3, 1000}) {
+    CAPTURE(n);
+    auto update_sketch = update_tuple_sketch<std::string>::builder().build();
+    for (int i = 0; i < n; ++i) update_sketch.update(i, std::to_string(i));
+    const auto sketch = update_sketch.compact();
+    const unsigned header_size = 16;
+    const auto bytes = sketch.serialize(header_size);
+    const auto copy = compact_tuple_sketch<std::string>::deserialize(bytes.data() + header_size, bytes.size() - header_size);
+    REQUIRE(copy.get_num_retained() == sketch.get_num_retained());
+    REQUIRE_THROWS_AS(sketch.serialize(header_size, undersized_string_serde()), std::out_of_range);
+  }
 }
 
 } /* namespace datasketches */

@@ -353,7 +353,7 @@ auto quantiles_sketch<T, C, A>::serialize(unsigned header_size_bytes, const SerD
   const size_t size = get_serialized_size_bytes(serde) + header_size_bytes;
   vector_bytes bytes(size, 0, allocator_);
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  const uint8_t* end_ptr = ptr + size;
+  const uint8_t* end_ptr = bytes.data() + size;
   
   const uint8_t preamble_longs = is_empty() ? PREAMBLE_LONGS_SHORT : PREAMBLE_LONGS_FULL;
   ptr += copy_to_mem(preamble_longs, ptr);

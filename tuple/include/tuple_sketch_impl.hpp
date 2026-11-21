@@ -441,7 +441,7 @@ auto compact_tuple_sketch<S, A>::serialize(unsigned header_size_bytes, const Ser
       + sizeof(uint64_t) * entries_.size() + get_serialized_size_summaries_bytes(sd);
   vector_bytes bytes(size, 0, entries_.get_allocator());
   uint8_t* ptr = bytes.data() + header_size_bytes;
-  const uint8_t* end_ptr = ptr + size;
+  const uint8_t* end_ptr = bytes.data() + size;
 
   ptr += copy_to_mem(preamble_longs, ptr);
   const uint8_t serial_version = SERIAL_VERSION;

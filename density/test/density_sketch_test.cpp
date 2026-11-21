@@ -480,4 +480,22 @@ TEST_CASE("density sketch: reject invalid family and ebpps headers", "[density_s
   }
 }
 
+TEST_CASE("density sketch: serialize with a header", "[density_sketch]") {
+  // serialize() used to check its output against an end that included the header twice, so it threw
+  for (int n: {0, 1, 1000}) {
+    CAPTURE(n);
+    density_sketch<float> sketch(10, 3);
+    for (int i = 0; i < n; ++i) {
+      const float x = static_cast<float>(i);
+      sketch.update(std::vector<float>({x, x, x}));
+    }
+    const unsigned header_size = 16;
+    const auto bytes = sketch.serialize(header_size);
+    REQUIRE(bytes.size() == header_size + sketch.serialize().size());
+    const auto copy = density_sketch<float>::deserialize(bytes.data() + header_size, bytes.size() - header_size);
+    REQUIRE(copy.get_n() == sketch.get_n());
+    REQUIRE(copy.get_num_retained() == sketch.get_num_retained());
+  }
+}
+
 } /* namespace datasketches */

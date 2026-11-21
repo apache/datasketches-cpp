@@ -18,6 +18,8 @@
  */
 
 #include <catch2/catch.hpp>
+#include <string>
+#include <stdexcept>
 #include <cmath>
 #include <sstream>
 #include <fstream>
@@ -25,6 +27,7 @@
 #include <quantiles_sketch.hpp>
 #include <test_allocator.hpp>
 #include <common_defs.hpp>
+#include <undersized_serde.hpp>
 
 namespace datasketches {
 
@@ -956,6 +959,21 @@ TEST_CASE("quantiles sketch", "[quantiles_sketch]") {
   }
 }
 
+
+TEST_CASE("quantiles sketch: serialize with a header", "[quantiles_sketch]") {
+  // with a header, the bytes after it round-trip, and the serde is given the true end of the buffer:
+  // one that writes more than it reported must be stopped by its capacity check
+  for (int n: {1, 3, 1000}) {
+    CAPTURE(n);
+    quantiles_sketch<std::string> sketch(128);
+    for (int i = 0; i < n; ++i) sketch.update(std::to_string(i));
+    const unsigned header_size = 16;
+    const auto bytes = sketch.serialize(header_size);
+    const auto copy = quantiles_sketch<std::string>::deserialize(bytes.data() + header_size, bytes.size() - header_size);
+    REQUIRE(copy.get_n() == sketch.get_n());
+    REQUIRE_THROWS_AS(sketch.serialize(header_size, undersized_string_serde()), std::out_of_range);
+  }
+}
 
 TEST_CASE("quantiles sketch: deserialize serial version 1 truncated after min and max", "[quantiles_sketch]") {
   quantiles_sketch<int> sketch(16);

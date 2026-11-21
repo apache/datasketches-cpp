@@ -28,6 +28,7 @@
 #include <cmath>
 #include <random>
 #include <stdexcept>
+#include <undersized_serde.hpp>
 
 #ifdef TEST_BINARY_INPUT_PATH
 static std::string testBinaryInputPath = TEST_BINARY_INPUT_PATH;
@@ -557,6 +558,21 @@ TEST_CASE("varopt sketch: update after deserialize in exact mode", "[var_opt_ske
     REQUIRE(d->get_num_samples() == expected_samples);
     auto summary = d->estimate_subset_sum([](int) { return true; });
     REQUIRE(summary.total_sketch_weight == Approx(total_weight).margin(EPS));
+  }
+}
+
+TEST_CASE("varopt sketch: serialize with a header", "[var_opt_sketch]") {
+  // with a header, the bytes after it round-trip, and the serde is given the true end of the buffer:
+  // one that writes more than it reported must be stopped by its capacity check
+  for (int n: {1, 3, 1000}) {
+    CAPTURE(n);
+    var_opt_sketch<std::string> sketch(10);
+    for (int i = 0; i < n; ++i) sketch.update(std::to_string(i));
+    const unsigned header_size = 16;
+    const auto bytes = sketch.serialize(header_size);
+    const auto copy = var_opt_sketch<std::string>::deserialize(bytes.data() + header_size, bytes.size() - header_size);
+    REQUIRE(copy.get_n() == sketch.get_n());
+    REQUIRE_THROWS_AS(sketch.serialize(header_size, undersized_string_serde()), std::out_of_range);
   }
 }
 
