@@ -764,7 +764,7 @@ void req_sketch<T, C, A>::check_k(uint16_t k) {
 template<typename T, typename C, typename A>
 void req_sketch<T, C, A>::check_num_levels(uint8_t num_levels, bool raw_items) {
   // a non-empty sketch has at least one compactor, and raw items fit in one
-  if (num_levels == 0 || (raw_items && num_levels != 1)) {
+  if (num_levels == 0 || num_levels > 64 || (raw_items && num_levels != 1)) {
     throw std::invalid_argument("Possible corruption: number of levels " + std::to_string(num_levels)
         + (raw_items ? " with raw items" : ""));
   }

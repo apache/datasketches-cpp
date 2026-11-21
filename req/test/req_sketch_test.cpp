@@ -754,6 +754,26 @@ TEST_CASE("req sketch: deserialize rejects inconsistent compactors", "[req_sketc
     check_rejected(bytes);
   }
 
+  SECTION("too many levels") {
+    auto with_levels = [&](uint8_t levels) -> vector_bytes {
+      auto bytes = estimation.serialize();
+      std::vector<uint8_t> header(bytes.begin() + estimation_compactor, bytes.begin() + estimation_compactor + items);
+      put_value(header, num_items, static_cast<uint32_t>(0));
+      for (uint8_t h = bytes[num_levels_offset]; h < levels; ++h) {
+        put_value(header, lg_weight, h);
+        bytes.insert(bytes.end(), header.begin(), header.end());
+      }
+      bytes[num_levels_offset] = levels;
+      return bytes;
+    };
+    const auto bytes = with_levels(64);
+    REQUIRE(req_sketch<float>::deserialize(bytes.data(), bytes.size()).get_n() == estimation.get_n());
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE(req_sketch<float>::deserialize(s).get_n() == estimation.get_n());
+    check_rejected(with_levels(65));
+  }
+
   SECTION("no items") {
     auto bytes = exact.serialize();
     put_value(bytes, exact_compactor + num_items, static_cast<uint32_t>(0));
