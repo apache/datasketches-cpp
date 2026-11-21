@@ -226,6 +226,7 @@ public:
    * Merges another sketch into this one.
    * If sketches contain strings, callers are responsible for ensuring that
    * both sketches were built using compatible string encodings.
+   * A sketch can be merged into itself.
    * If an allocation fails, this sketch is unchanged. If a copy of an item throws, this sketch
    * stays valid and usable, but may hold part of other. If the comparator throws while items
    * are sorted or merged, the state of this sketch is undefined.

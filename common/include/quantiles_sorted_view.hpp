@@ -196,21 +196,21 @@ private:
   static inline Entry make_dummy_entry(uint64_t weight) { return Entry(nullptr, weight); }
 
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
-  static inline void check_split_points(const T* items, uint32_t size) {
+  inline void check_split_points(const T* items, uint32_t size) const {
     for (uint32_t i = 0; i < size ; i++) {
       if (std::isnan(items[i])) {
         throw std::invalid_argument("Values must not be NaN");
       }
-      if ((i < (size - 1)) && !(Comparator()(items[i], items[i + 1]))) {
+      if ((i < (size - 1)) && !(comparator_(items[i], items[i + 1]))) {
         throw std::invalid_argument("Values must be unique and monotonically increasing");
       }
     }
   }
 
   template<typename TT = T, typename std::enable_if<!std::is_floating_point<TT>::value, int>::type = 0>
-  static inline void check_split_points(const T* items, uint32_t size) {
+  inline void check_split_points(const T* items, uint32_t size) const {
     for (uint32_t i = 0; i < size ; i++) {
-      if ((i < (size - 1)) && !(Comparator()(items[i], items[i + 1]))) {
+      if ((i < (size - 1)) && !(comparator_(items[i], items[i + 1]))) {
         throw std::invalid_argument("Items must be unique and monotonically increasing");
       }
     }

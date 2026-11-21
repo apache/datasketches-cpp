@@ -37,6 +37,8 @@ namespace req_constants {
   const uint8_t INIT_NUM_SECTIONS = 3;
   /// multiplier for nominal capacity
   const unsigned MULTIPLIER = 2;
+  /// maximum stream length n, the largest signed 64-bit integer, as in datasketches-java
+  const uint64_t MAX_N = (1ULL << 63) - 1;
 }
 
 } /* namespace datasketches */
