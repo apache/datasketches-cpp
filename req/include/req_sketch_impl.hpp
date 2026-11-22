@@ -629,8 +629,10 @@ void req_sketch<T, C, A>::check_n(uint64_t n, const std::vector<Compactor, Alloc
   uint64_t total_weight = 0;
   for (const auto& compactor: compactors) {
     const uint64_t num_items = compactor.get_num_items();
+    // an empty compactor adds no weight, and its lg_weight can be 64 or more, too large to shift by
+    if (num_items == 0) continue;
     const uint8_t lg_weight = compactor.get_lg_weight();
-    if (num_items > 0 && (lg_weight >= 64 || num_items > ((std::numeric_limits<uint64_t>::max() - total_weight) >> lg_weight))) {
+    if (lg_weight >= 64 || num_items > ((std::numeric_limits<uint64_t>::max() - total_weight) >> lg_weight)) {
       throw std::invalid_argument("Possible corruption: the total weight of the retained items overflows");
     }
     total_weight += num_items << lg_weight;
