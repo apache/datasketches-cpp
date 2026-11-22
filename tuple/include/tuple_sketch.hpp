@@ -644,6 +644,18 @@ protected:
 
   virtual void print_specifics(std::ostringstream& os) const;
 
+  // The MASK selects which bits of the first 8 bytes of an empty serial version 3 image are examined.
+  // The TEST gives the required values of the examined bits; it must lie within the MASK.
+  // Examined: preamble longs 1, serial version 3, family 9, sketch type 1, byte 4 = 0 (unused);
+  //  flags read-only, empty, compact set; big-endian and reserved bits 5, 6, 7 clear.
+  // The ordered flag is ignored: older Java versions wrote empty images without it (flags 0x0e).
+  // The seed hash is ignored: it may be 0 or the seed hash, depending on the writer.
+  // These must stay the same as in Java CompactTupleSketch.
+  static const uint64_t EMPTY_SKETCH_MASK = 0x0000EFFFFFFFFFFFULL;
+  static const uint64_t EMPTY_SKETCH_TEST = 0x00000E0001090301ULL;
+  static_assert((EMPTY_SKETCH_TEST & ~EMPTY_SKETCH_MASK) == 0, "EMPTY_SKETCH_TEST must lie within EMPTY_SKETCH_MASK");
+  static void check_empty_v3(uint64_t pre0);
+
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_union_base;
   template<typename E, typename EK, typename P, typename S, typename CS, typename A> friend class theta_intersection_base;
   template<typename E, typename EK, typename CS, typename A> friend class theta_set_difference_base;
