@@ -67,14 +67,14 @@ If DataSketches has been installed on the host (using an RPM, DEB, "make install
 
 ```cmake
 find_package(DataSketches 3.2 REQUIRED)
-target_link_library(my_dependent_target PUBLIC ${DATASKETCHES_LIB})
+target_link_libraries(my_dependent_target PUBLIC ${DATASKETCHES_LIB})
 ```
 
 When used with find_package, DataSketches exports several variables, including
 
 - `DATASKETCHES_VERSION`: The version number of the datasketches package that was imported.
-- `DATASKETCHES_INCLUDE_DIR`: The directory that should be added to access DataSketches include files. Because CMake automatically includes the interface directories for included target libraries when using `target_link_library`, under normal circumstances, there will be no need to include this directly
-- `DATASKETCHES_LIB`: The name of the DataSketches target to include as a dependency. Projects pulling in DataSketches should reference this with `target_link_library` in order to set up all the correct dependencies and include paths.
+- `DATASKETCHES_INCLUDE_DIR`: The directory that should be added to access DataSketches include files. Because CMake automatically includes the interface directories for included target libraries when using `target_link_libraries`, under normal circumstances, there will be no need to include this directly
+- `DATASKETCHES_LIB`: The name of the DataSketches target to include as a dependency. Projects pulling in DataSketches should reference this with `target_link_libraries` in order to set up all the correct dependencies and include paths.
 
 If you don't have DataSketches installed locally, dependent projects can pull it directly from GitHub using CMake's `ExternalProject` module. The code would look something like this:
 
