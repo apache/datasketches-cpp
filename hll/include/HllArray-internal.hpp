@@ -118,6 +118,7 @@ HllArray<A>* HllArray<A>::newHll(const void* bytes, size_t len, const A& allocat
   if (len < static_cast<size_t>(hll_constants::HLL_BYTE_ARR_START + arrayBytes)) {
     throw std::out_of_range("Input array too small to hold sketch image");
   }
+  if (tgtHllType == HLL_8) { checkHll8Registers(data + hll_constants::HLL_BYTE_ARR_START, arrayBytes); }
 
   double hip, kxq0, kxq1;
   std::memcpy(&hip, data + hll_constants::HIP_ACCUM_DOUBLE, sizeof(double));
@@ -202,7 +203,8 @@ HllArray<A>* HllArray<A>::newHll(std::istream& is, const A& allocator) {
   sketch->putNumAtCurMin(numAtCurMin);
   
   read(is, sketch->hllByteArr_.data(), sketch->getHllByteArrBytes());
-  
+  if (tgtHllType == HLL_8) { checkHll8Registers(sketch->hllByteArr_.data(), sketch->getHllByteArrBytes()); }
+
   if (auxCount > 0) { // necessarily TgtHllType == HLL_4
     uint8_t auxLgIntArrSize = listHeader[4];
     AuxHashMap<A>* auxHashMap = AuxHashMap<A>::deserialize(is, lgK, auxCount, auxLgIntArrSize, comapctFlag, allocator);
@@ -505,6 +507,16 @@ template<typename A>
 uint32_t HllArray<A>::hll6ArrBytes(uint8_t lgConfigK) {
   const uint32_t numSlots = 1 << lgConfigK;
   return ((numSlots * 3) >> 2) + 1;
+}
+
+template<typename A>
+void HllArray<A>::checkHll8Registers(const uint8_t* registers, uint32_t numRegisters) {
+  for (uint32_t i = 0; i < numRegisters; ++i) {
+    if (registers[i] > hll_constants::VAL_MASK_6) {
+      throw std::invalid_argument("Possible corruption: HLL_8 register " + std::to_string(i) + " has value "
+          + std::to_string(registers[i]) + ", above " + std::to_string(hll_constants::VAL_MASK_6));
+    }
+  }
 }
 
 template<typename A>

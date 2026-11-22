@@ -138,6 +138,29 @@ TEST_CASE("hll array: check corrupt bytearray", "[hll_array]") {
   REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes, 3), std::out_of_range);
 }
 
+TEST_CASE("hll array: rejects an HLL_8 register above 63", "[hll_array]") {
+  hll_sketch sk(10, HLL_8);
+  for (int i = 0; i < 10000; ++i) sk.update(i);
+  REQUIRE(sk.get_estimate() > 0);
+  for (bool compact: {true, false}) {
+    CAPTURE(compact);
+    auto bytes = compact ? sk.serialize_compact() : sk.serialize_updatable();
+    REQUIRE(hll_sketch::deserialize(bytes.data(), bytes.size()).get_estimate() == sk.get_estimate());
+    // the registers are at the end of an HLL_8 image
+    for (uint8_t value: {64, 200, 255}) {
+      CAPTURE(value);
+      bytes.back() = value;
+      REQUIRE_THROWS_AS(hll_sketch::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+      std::stringstream ss(std::ios::in | std::ios::out | std::ios::binary);
+      ss.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+      REQUIRE_THROWS_AS(hll_sketch::deserialize(ss), std::invalid_argument);
+    }
+    // 63 is the largest valid value
+    bytes.back() = 63;
+    REQUIRE_NOTHROW(hll_sketch::deserialize(bytes.data(), bytes.size()));
+  }
+}
+
 TEST_CASE("hll array: check corrupt stream", "[hll_array]") {
   uint8_t lgK = 6;
   hll_sketch sk1(lgK);
