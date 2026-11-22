@@ -30,7 +30,7 @@ namespace datasketches {
 //    for (int col = 0; col < 8; col++) {
 //      const uint8_t bit = (byte >> col) & 1;
 //      if (bit == 0) { // note the inverted logic
-//        sum += INVERSE_POWERS_OF_2[col + 1]; // note the "+1"
+//        sum += inv_pow2(col + 1); // note the "+1"
 //      }
 //    }
 //    kxp_byte_table[byte] = sum;

@@ -27,7 +27,7 @@
 #include "CubicInterpolation.hpp"
 #include "CompositeInterpolationXTable.hpp"
 #include "CouponList.hpp"
-#include "inv_pow2_table.hpp"
+#include "inv_pow2.hpp"
 #include <cstring>
 #include <cmath>
 #include <stdexcept>
@@ -550,10 +550,10 @@ void HllArray<A>::hipAndKxQIncrementalUpdate(uint8_t oldValue, uint8_t newValue)
   // update hip BEFORE updating kxq
   if (!oooFlag_) { hipAccum_ += configK / (kxq0_ + kxq1_); }
   // update kxq0 and kxq1; subtract first, then add
-  if (oldValue < 32) { kxq0_ -= INVERSE_POWERS_OF_2[oldValue]; }
-  else               { kxq1_ -= INVERSE_POWERS_OF_2[oldValue]; }
-  if (newValue < 32) { kxq0_ += INVERSE_POWERS_OF_2[newValue]; }
-  else               { kxq1_ += INVERSE_POWERS_OF_2[newValue]; }
+  if (oldValue < 32) { kxq0_ -= inv_pow2(oldValue); }
+  else               { kxq1_ -= inv_pow2(oldValue); }
+  if (newValue < 32) { kxq0_ += inv_pow2(newValue); }
+  else               { kxq1_ += inv_pow2(newValue); }
 }
 
 /**
@@ -618,8 +618,8 @@ void HllArray<A>::check_rebuild_kxq_cur_min() {
   while (it != end) {
     uint8_t v = HllUtil<A>::getValue(*it);
     if (v > 0) {
-      if (v < 32) { kxq0 += INVERSE_POWERS_OF_2[v] - 1.0; }
-      else        { kxq1 += INVERSE_POWERS_OF_2[v] - 1.0; }
+      if (v < 32) { kxq0 += inv_pow2(v) - 1.0; }
+      else        { kxq1 += inv_pow2(v) - 1.0; }
     } else {
       ++num_zeros;
     }

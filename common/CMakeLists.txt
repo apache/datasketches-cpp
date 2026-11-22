@@ -41,7 +41,7 @@ install(FILES
       include/conditional_forward.hpp
       include/count_zeros.hpp
       include/fdlibm_log.hpp
-      include/inv_pow2_table.hpp
+      include/inv_pow2.hpp
       include/kolmogorov_smirnov_impl.hpp
       include/kolmogorov_smirnov.hpp
 			include/memory_operations.hpp
