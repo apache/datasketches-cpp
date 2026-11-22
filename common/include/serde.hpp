@@ -161,7 +161,6 @@ struct serde<std::string> {
   /// @copydoc serde::deserialize
   void deserialize(std::istream& is, std::string* items, unsigned num) const {
     unsigned i = 0;
-    bool failure = false;
     try {
       for (; i < num; i++) {
         uint32_t length;
@@ -176,14 +175,18 @@ struct serde<std::string> {
         new (&items[i]) std::string(std::move(str));
       }
     } catch (std::istream::failure&) {
-      failure = true;
-    }
-    if (failure || !is.good()) {
-      // clean up what we've already allocated
+      // the stream sets its state before throwing, so this is reported below
+    } catch (...) {
       for (unsigned j = 0; j < i; ++j) {
         items[j].~basic_string();
       }
-      throw std::runtime_error("error reading from std::istream at item " + std::to_string(i)); 
+      throw;
+    }
+    if (!is.good()) {
+      for (unsigned j = 0; j < i; ++j) {
+        items[j].~basic_string();
+      }
+      throw std::runtime_error("error reading from std::istream at item " + std::to_string(i));
     }
   }
 
