@@ -115,12 +115,12 @@ Supported Platforms</h1>
 </div><!-- fragment --><p>The DataSketches project can be included in other projects' CMakeLists.txt files in one of two ways.</p>
 <p>If DataSketches has been installed on the host (using an RPM, DEB, "make install" into /usr/local, or some way, then CMake's <span class="tt">find_package</span> command can be used like this:</p>
 <div class="fragment"><div class="line">find_package(DataSketches 3.2 REQUIRED)</div>
-<div class="line">target_link_library(my_dependent_target PUBLIC ${DATASKETCHES_LIB})</div>
+<div class="line">target_link_libraries(my_dependent_target PUBLIC ${DATASKETCHES_LIB})</div>
 </div><!-- fragment --><p>When used with find_package, DataSketches exports several variables, including</p>
 <ul>
 <li><span class="tt">DATASKETCHES_VERSION</span>: The version number of the datasketches package that was imported.</li>
-<li><span class="tt">DATASKETCHES_INCLUDE_DIR</span>: The directory that should be added to access DataSketches include files. Because CMake automatically includes the interface directories for included target libraries when using <span class="tt">target_link_library</span>, under normal circumstances, there will be no need to include this directly</li>
-<li><span class="tt">DATASKETCHES_LIB</span>: The name of the DataSketches target to include as a dependency. Projects pulling in DataSketches should reference this with <span class="tt">target_link_library</span> in order to set up all the correct dependencies and include paths.</li>
+<li><span class="tt">DATASKETCHES_INCLUDE_DIR</span>: The directory that should be added to access DataSketches include files. Because CMake automatically includes the interface directories for included target libraries when using <span class="tt">target_link_libraries</span>, under normal circumstances, there will be no need to include this directly</li>
+<li><span class="tt">DATASKETCHES_LIB</span>: The name of the DataSketches target to include as a dependency. Projects pulling in DataSketches should reference this with <span class="tt">target_link_libraries</span> in order to set up all the correct dependencies and include paths.</li>
 </ul>
 <p>If you don't have DataSketches installed locally, dependent projects can pull it directly from GitHub using CMake's <span class="tt">ExternalProject</span> module. The code would look something like this:</p>
 <div class="fragment"><div class="line">cmake_policy(SET CMP0097 NEW)</div>
