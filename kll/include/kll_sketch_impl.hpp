@@ -637,6 +637,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(std::istream& is, const Ser
   }
   levels[num_levels] = capacity;
   check_levels(levels);
+  check_n(n, levels[num_levels] - levels[0]);
   optional<T> min_item;
   optional<T> max_item;
   if (!is_single_item) {
@@ -729,6 +730,7 @@ kll_sketch<T, C, A> kll_sketch<T, C, A>::deserialize(const void* bytes, size_t s
   }
   levels[num_levels] = capacity;
   check_levels(levels);
+  check_n(n, levels[num_levels] - levels[0]);
   optional<T> min_item;
   optional<T> max_item;
   if (!is_single_item) {
@@ -1132,6 +1134,23 @@ void kll_sketch<T, C, A>::check_family_id(uint8_t family_id) {
   if (family_id != FAMILY) {
     throw std::invalid_argument("Possible corruption: family mismatch: expected "
         + std::to_string(FAMILY) + ", got " + std::to_string(family_id));
+  }
+}
+
+// a sketch that is not empty retains at least one item, has n from 1 to kll_constants::MAX_N,
+// the cap that update() and merge() keep, and has n at least as large as the number of retained items,
+// each of which has a weight of at least 1
+template<typename T, typename C, typename A>
+void kll_sketch<T, C, A>::check_n(uint64_t n, uint32_t num_retained) {
+  if (num_retained == 0) {
+    throw std::invalid_argument("Possible corruption: a sketch that is not empty retains no items");
+  }
+  if (n == 0 || n > kll_constants::MAX_N) {
+    throw std::invalid_argument("Possible corruption: n must be from 1 to 2^63 - 1: " + std::to_string(n));
+  }
+  if (n < num_retained) {
+    throw std::invalid_argument("Possible corruption: n " + std::to_string(n)
+        + " is less than the number of retained items " + std::to_string(num_retained));
   }
 }
 
