@@ -1137,10 +1137,14 @@ void kll_sketch<T, C, A>::check_family_id(uint8_t family_id) {
   }
 }
 
-// a sketch that is not empty has n from 1 to kll_constants::MAX_N, the cap that update() and merge() keep,
-// and at least as large as the number of retained items, each of which has a weight of at least 1
+// a sketch that is not empty retains at least one item, has n from 1 to kll_constants::MAX_N,
+// the cap that update() and merge() keep, and has n at least as large as the number of retained items,
+// each of which has a weight of at least 1
 template<typename T, typename C, typename A>
 void kll_sketch<T, C, A>::check_n(uint64_t n, uint32_t num_retained) {
+  if (num_retained == 0) {
+    throw std::invalid_argument("Possible corruption: a sketch that is not empty retains no items");
+  }
   if (n == 0 || n > kll_constants::MAX_N) {
     throw std::invalid_argument("Possible corruption: n must be from 1 to 2^63 - 1: " + std::to_string(n));
   }
