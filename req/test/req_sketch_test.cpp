@@ -783,6 +783,32 @@ TEST_CASE("req sketch: deserialize rejects inconsistent compactors", "[req_sketc
     check_rejected(bytes);
   }
 
+  SECTION("n is not the total weight") {
+    const size_t n_offset = 8; // after the preamble, in estimation mode
+    for (const int64_t delta: {-1, 1}) {
+      CAPTURE(delta);
+      auto bytes = estimation.serialize();
+      put_value(bytes, n_offset, static_cast<uint64_t>(static_cast<int64_t>(estimation.get_n()) + delta));
+      check_rejected(bytes);
+    }
+  }
+
+  SECTION("empty compactors above level 63") {
+    // append empty compactors up to level 65, so the weight check reaches levels whose weight can't be shifted
+    auto bytes = estimation.serialize();
+    const uint8_t levels = bytes[num_levels_offset];
+    vector_bytes header(bytes.begin() + estimation_compactor, bytes.begin() + estimation_compactor + items);
+    put_value(header, num_items, static_cast<uint32_t>(0));
+    for (uint8_t level = levels; level < 66; ++level) {
+      put_value(header, lg_weight, level);
+      bytes.insert(bytes.end(), header.begin(), header.end());
+    }
+    bytes[num_levels_offset] = 66;
+    const size_t n_offset = 8; // after the preamble, in estimation mode
+    put_value(bytes, n_offset, estimation.get_n() + 1);
+    check_rejected(bytes);
+  }
+
   SECTION("compactor header beyond the input") {
     auto bytes = estimation.serialize();
     bytes.resize(estimation_compactor + 10);

@@ -496,6 +496,8 @@ private:
   static void check_num_levels(uint8_t num_levels, bool raw_items);
   static void check_serial_version(uint8_t serial_version);
   static void check_family_id(uint8_t family_id);
+  // in estimation mode, n is stored and must be the total weight of the retained items
+  static void check_n(uint64_t n, const std::vector<Compactor, AllocCompactor>& compactors);
 
   template<typename TT = T, typename std::enable_if<std::is_floating_point<TT>::value, int>::type = 0>
   static inline bool check_update_item(const TT& item) {
