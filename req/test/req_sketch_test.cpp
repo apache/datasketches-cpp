@@ -838,7 +838,24 @@ TEST_CASE("req sketch: n is capped at 2^63 - 1", "[req_sketch]") {
   const size_t n_offset = 8; // after the preamble, in estimation mode
   req_sketch<float> sketch(12);
   for (int i = 0; i < 1000; ++i) sketch.update(static_cast<float>(i));
+  // an empty level zero and one item in each of levels 1 to 62: the total weight is 2^63 - 2
+  const size_t num_levels_offset = 6;
+  const size_t compactor_offset = 8 + 8 + 2 * sizeof(float); // after the preamble, n, min and max
+  const size_t lg_weight_offset = 12; // in the compactor header
+  const size_t num_items_offset = 16;
+  const size_t header_size = 20;
   auto bytes = sketch.serialize();
+  bytes.resize(compactor_offset + header_size);
+  req_sketch<float>::vector_bytes compactor(bytes.begin() + compactor_offset, bytes.end());
+  put_value(bytes, compactor_offset + num_items_offset, static_cast<uint32_t>(0));
+  put_value(compactor, num_items_offset, static_cast<uint32_t>(1));
+  compactor.resize(header_size + sizeof(float));
+  put_value(compactor, header_size, 500.0f);
+  for (uint8_t level = 1; level < 63; ++level) {
+    put_value(compactor, lg_weight_offset, level);
+    bytes.insert(bytes.end(), compactor.begin(), compactor.end());
+  }
+  bytes[num_levels_offset] = 63;
   put_value(bytes, n_offset, req_constants::MAX_N - 1);
   auto big = req_sketch<float>::deserialize(bytes.data(), bytes.size());
   REQUIRE(big.get_n() == req_constants::MAX_N - 1);
