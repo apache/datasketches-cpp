@@ -107,7 +107,7 @@ $(function() {
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &quot;cpc_confidence.hpp&quot;</span></div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#include &quot;kxp_byte_lookup.hpp&quot;</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &quot;inv_pow2_table.hpp&quot;</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &quot;inv_pow2.hpp&quot;</span></div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &quot;cpc_util.hpp&quot;</span></div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="preprocessor">#include &quot;icon_estimator.hpp&quot;</span></div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="preprocessor">#include &quot;serde.hpp&quot;</span></div>
@@ -388,7 +388,7 @@ $(function() {
 <div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>  <span class="keyword">const</span> uint8_t col = row_col &amp; 63;</div>
 <div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>  <span class="keyword">const</span> <span class="keywordtype">double</span> one_over_p = <span class="keyword">static_cast&lt;</span><span class="keywordtype">double</span><span class="keyword">&gt;</span>(k) / kxp;</div>
 <div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>  hip_est_accum += one_over_p;</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>  kxp -= INVERSE_POWERS_OF_2[col + 1]; <span class="comment">// notice the &quot;+1&quot;</span></div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>  kxp -= inv_pow2(col + 1); <span class="comment">// notice the &quot;+1&quot;</span></div>
 <div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>}</div>
 <div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span> </div>
 <div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span><span class="comment">// In terms of flavor, this promotes SPARSE to HYBRID</span></div>
@@ -492,7 +492,7 @@ $(function() {
 <div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span> </div>
 <div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>  <span class="keywordtype">double</span> total = 0.0;</div>
 <div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 7; j &gt;= 0; j--) { <span class="comment">// the reverse order is important</span></div>
-<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> factor = INVERSE_POWERS_OF_2[8 * j]; <span class="comment">// pow (256.0, (-1.0 * ((double) j)));</span></div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>    <span class="keyword">const</span> <span class="keywordtype">double</span> factor = inv_pow2(8 * j); <span class="comment">// pow (256.0, (-1.0 * ((double) j)));</span></div>
 <div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>    total += factor * byte_sums[j];</div>
 <div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>  }</div>
 <div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span> </div>

@@ -107,7 +107,7 @@ $(function() {
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &quot;CubicInterpolation.hpp&quot;</span></div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &quot;CompositeInterpolationXTable.hpp&quot;</span></div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#include &quot;CouponList.hpp&quot;</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &quot;inv_pow2_table.hpp&quot;</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &quot;inv_pow2.hpp&quot;</span></div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &lt;cstring&gt;</span></div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="preprocessor">#include &lt;cmath&gt;</span></div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="preprocessor">#include &lt;stdexcept&gt;</span></div>
@@ -637,10 +637,10 @@ $(function() {
 <div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>  <span class="comment">// update hip BEFORE updating kxq</span></div>
 <div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>  <span class="keywordflow">if</span> (!oooFlag_) { hipAccum_ += configK / (kxq0_ + kxq1_); }</div>
 <div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>  <span class="comment">// update kxq0 and kxq1; subtract first, then add</span></div>
-<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>  <span class="keywordflow">if</span> (oldValue &lt; 32) { kxq0_ -= INVERSE_POWERS_OF_2[oldValue]; }</div>
-<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>  <span class="keywordflow">else</span>               { kxq1_ -= INVERSE_POWERS_OF_2[oldValue]; }</div>
-<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span>  <span class="keywordflow">if</span> (newValue &lt; 32) { kxq0_ += INVERSE_POWERS_OF_2[newValue]; }</div>
-<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>  <span class="keywordflow">else</span>               { kxq1_ += INVERSE_POWERS_OF_2[newValue]; }</div>
+<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>  <span class="keywordflow">if</span> (oldValue &lt; 32) { kxq0_ -= inv_pow2(oldValue); }</div>
+<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>  <span class="keywordflow">else</span>               { kxq1_ -= inv_pow2(oldValue); }</div>
+<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span>  <span class="keywordflow">if</span> (newValue &lt; 32) { kxq0_ += inv_pow2(newValue); }</div>
+<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>  <span class="keywordflow">else</span>               { kxq1_ += inv_pow2(newValue); }</div>
 <div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>}</div>
 <div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span></div>
 <div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span><span class="comment">//In C: again-two-registers.c hhb_get_improved_linear_counting_estimate L1274</span></div>
@@ -700,8 +700,8 @@ $(function() {
 <div class="line"><a id="l00630" name="l00630"></a><span class="lineno">  630</span>  <span class="keywordflow">while</span> (it != end) {</div>
 <div class="line"><a id="l00631" name="l00631"></a><span class="lineno">  631</span>    uint8_t v = HllUtil&lt;A&gt;::getValue(*it);</div>
 <div class="line"><a id="l00632" name="l00632"></a><span class="lineno">  632</span>    <span class="keywordflow">if</span> (v &gt; 0) {</div>
-<div class="line"><a id="l00633" name="l00633"></a><span class="lineno">  633</span>      <span class="keywordflow">if</span> (v &lt; 32) { kxq0 += INVERSE_POWERS_OF_2[v] - 1.0; }</div>
-<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span>      <span class="keywordflow">else</span>        { kxq1 += INVERSE_POWERS_OF_2[v] - 1.0; }</div>
+<div class="line"><a id="l00633" name="l00633"></a><span class="lineno">  633</span>      <span class="keywordflow">if</span> (v &lt; 32) { kxq0 += inv_pow2(v) - 1.0; }</div>
+<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span>      <span class="keywordflow">else</span>        { kxq1 += inv_pow2(v) - 1.0; }</div>
 <div class="line"><a id="l00635" name="l00635"></a><span class="lineno">  635</span>    } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l00636" name="l00636"></a><span class="lineno">  636</span>      ++num_zeros;</div>
 <div class="line"><a id="l00637" name="l00637"></a><span class="lineno">  637</span>    }</div>
