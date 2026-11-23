@@ -482,7 +482,7 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
   const auto serial_version = read<uint8_t>(is);
   const auto family = read<uint8_t>(is);
   const auto type = read<uint8_t>(is);
-  read<uint8_t>(is); // unused
+  const auto unused = read<uint8_t>(is);
   const auto flags_byte = read<uint8_t>(is);
   const auto seed_hash = read<uint16_t>(is);
   if (serial_version != SERIAL_VERSION && serial_version != SERIAL_VERSION_LEGACY) {
@@ -496,6 +496,12 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(std::istream&
   }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+  if (is_empty && serial_version == SERIAL_VERSION) {
+    check_empty_v3(static_cast<uint64_t>(preamble_longs) | static_cast<uint64_t>(serial_version) << 8
+        | static_cast<uint64_t>(family) << 16 | static_cast<uint64_t>(type) << 24
+        | static_cast<uint64_t>(unused) << 32 | static_cast<uint64_t>(flags_byte) << 40
+        | static_cast<uint64_t>(seed_hash) << 48);
+  }
 
   uint64_t theta = theta_constants::MAX_THETA;
   uint32_t num_entries = 0;
@@ -557,6 +563,11 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   }
   const bool is_empty = flags_byte & (1 << flags::IS_EMPTY);
   if (!is_empty) checker<true>::check_seed_hash(seed_hash, compute_seed_hash(seed));
+  if (is_empty && serial_version == SERIAL_VERSION) {
+    uint64_t pre0;
+    copy_from_mem(base, pre0);
+    check_empty_v3(pre0);
+  }
 
   uint64_t theta = theta_constants::MAX_THETA;
   uint32_t num_entries = 0;
@@ -592,6 +603,16 @@ compact_tuple_sketch<S, A> compact_tuple_sketch<S, A>::deserialize(const void* b
   }
   const bool is_ordered = flags_byte & (1 << flags::IS_ORDERED);
   return compact_tuple_sketch(is_empty, is_ordered, seed_hash, theta, std::move(entries));
+}
+
+template<typename S, typename A>
+void compact_tuple_sketch<S, A>::check_empty_v3(uint64_t pre0) {
+  const uint64_t masked = pre0 & EMPTY_SKETCH_MASK;
+  if (masked != EMPTY_SKETCH_TEST) {
+    std::stringstream s;
+    s << "empty compact tuple sketch preamble does not match: 0x" << std::hex << masked;
+    throw std::invalid_argument(s.str());
+  }
 }
 
 template<typename S, typename A>

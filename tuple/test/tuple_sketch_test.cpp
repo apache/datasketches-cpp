@@ -132,6 +132,69 @@ TEST_CASE("tuple sketch float: empty", "[tuple_sketch]") {
   REQUIRE(update_sketch.compact(false).is_ordered());
 }
 
+TEST_CASE("tuple sketch: deserialize checks empty images strictly", "[tuple_sketch]") {
+  using sketch_type = compact_tuple_sketch<float>;
+  using vector_bytes = sketch_type::vector_bytes;
+  const size_t serial_version_byte = 1;
+  const size_t type_byte = 3;
+  const size_t unused_byte = 4;
+  const size_t flags_byte = 5;
+  const size_t seed_hash_offset = 6;
+  const vector_bytes empty = update_tuple_sketch<float>::builder().build().compact().serialize();
+  REQUIRE(empty.size() == 8);
+  REQUIRE(empty[flags_byte] == 0x1e);
+
+  auto deserialize_both = [](const vector_bytes& bytes) {
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE(sketch_type::deserialize(s).is_empty());
+    REQUIRE(sketch_type::deserialize(bytes.data(), bytes.size()).is_empty());
+  };
+  auto check_rejected = [](const vector_bytes& bytes) {
+    REQUIRE_THROWS_AS(sketch_type::deserialize(bytes.data(), bytes.size()), std::invalid_argument);
+    std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    REQUIRE_THROWS_AS(sketch_type::deserialize(s), std::invalid_argument);
+  };
+
+  SECTION("accepted") {
+    deserialize_both(empty);
+    // without the ordered flag, as older Java versions wrote
+    auto bytes = empty;
+    bytes[flags_byte] = 0x0e;
+    deserialize_both(bytes);
+    // any seed hash
+    bytes = empty;
+    bytes[seed_hash_offset] = 0xcc;
+    bytes[seed_hash_offset + 1] = 0x93;
+    deserialize_both(bytes);
+    // serial version 1 images are not checked
+    bytes = empty;
+    bytes[serial_version_byte] = 1;
+    bytes[unused_byte] = 1;
+    deserialize_both(bytes);
+  }
+
+  SECTION("rejected") {
+    auto bytes = empty;
+    bytes[0] = 2; // preamble longs
+    check_rejected(bytes);
+    bytes = empty;
+    bytes[type_byte] = 5; // legacy sketch type
+    check_rejected(bytes);
+    bytes = empty;
+    bytes[unused_byte] = 1;
+    check_rejected(bytes);
+    // read-only or compact flag missing, big-endian or a reserved flag set
+    for (uint8_t flags: {0x1c, 0x16, 0x1f, 0x3e, 0x5e, 0x9e}) {
+      CAPTURE(static_cast<int>(flags));
+      bytes = empty;
+      bytes[flags_byte] = flags;
+      check_rejected(bytes);
+    }
+  }
+}
+
 TEST_CASE("tuple sketch: single item", "[tuple_sketch]") {
   auto update_sketch = update_tuple_sketch<float>::builder().build();
   update_sketch.update(1, 1.0f);
