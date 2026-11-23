@@ -632,7 +632,7 @@ $(function() {
 <div class="line"><a id="l00482" name="l00482"></a><span class="lineno">  482</span>  <span class="keyword">const</span> <span class="keyword">auto</span> serial_version = read&lt;uint8_t&gt;(is);</div>
 <div class="line"><a id="l00483" name="l00483"></a><span class="lineno">  483</span>  <span class="keyword">const</span> <span class="keyword">auto</span> family = read&lt;uint8_t&gt;(is);</div>
 <div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span>  <span class="keyword">const</span> <span class="keyword">auto</span> type = read&lt;uint8_t&gt;(is);</div>
-<div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span>  read&lt;uint8_t&gt;(is); <span class="comment">// unused</span></div>
+<div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span>  <span class="keyword">const</span> <span class="keyword">auto</span> unused = read&lt;uint8_t&gt;(is);</div>
 <div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>  <span class="keyword">const</span> <span class="keyword">auto</span> flags_byte = read&lt;uint8_t&gt;(is);</div>
 <div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>  <span class="keyword">const</span> <span class="keyword">auto</span> seed_hash = read&lt;uint16_t&gt;(is);</div>
 <div class="foldopen" id="foldopen00488" data-start="{" data-end="}">
@@ -647,153 +647,174 @@ $(function() {
 <div class="line"><a id="l00496" name="l00496"></a><span class="lineno">  496</span>  }</div>
 <div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> is_empty = flags_byte &amp; (1 &lt;&lt; flags::IS_EMPTY);</div>
 <div class="line"><a id="l00498" name="l00498"></a><span class="lineno">  498</span>  <span class="keywordflow">if</span> (!is_empty) checker&lt;true&gt;::check_seed_hash(seed_hash, compute_seed_hash(seed));</div>
-<div class="line"><a id="l00499" name="l00499"></a><span class="lineno">  499</span> </div>
-<div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span>  uint64_t theta = <a class="code hl_variable" href="namespacedatasketches_1_1theta__constants.html#ae3243c6bd90c8d8577c32b86100d97ad">theta_constants::MAX_THETA</a>;</div>
-<div class="line"><a id="l00501" name="l00501"></a><span class="lineno">  501</span>  uint32_t num_entries = 0;</div>
-<div class="line"><a id="l00502" name="l00502"></a><span class="lineno">  502</span>  <span class="keywordflow">if</span> (!is_empty) {</div>
-<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>    <span class="keywordflow">if</span> (preamble_longs == 1) {</div>
-<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span>      num_entries = 1;</div>
-<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>      num_entries = read&lt;uint32_t&gt;(is);</div>
-<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>      read&lt;uint32_t&gt;(is); <span class="comment">// unused</span></div>
-<div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span>      <span class="keywordflow">if</span> (preamble_longs &gt; 2) {</div>
-<div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span>        theta = read&lt;uint64_t&gt;(is);</div>
-<div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span>      }</div>
-<div class="line"><a id="l00511" name="l00511"></a><span class="lineno">  511</span>    }</div>
-<div class="line"><a id="l00512" name="l00512"></a><span class="lineno">  512</span>  }</div>
-<div class="line"><a id="l00513" name="l00513"></a><span class="lineno">  513</span>  A alloc(allocator);</div>
-<div class="line"><a id="l00514" name="l00514"></a><span class="lineno">  514</span>  std::vector&lt;Entry, AllocEntry&gt; entries(alloc);</div>
-<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>  <span class="keywordflow">if</span> (!is_empty) {</div>
-<div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span>    entries.reserve(num_entries);</div>
-<div class="line"><a id="l00517" name="l00517"></a><span class="lineno">  517</span>    std::unique_ptr&lt;S, deleter_of_summaries&gt; summary(alloc.allocate(1), deleter_of_summaries(1, <span class="keyword">false</span>, allocator));</div>
-<div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_entries; ++i) {</div>
-<div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>      <span class="keyword">const</span> <span class="keyword">auto</span> key = read&lt;uint64_t&gt;(is);</div>
-<div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span>      sd.deserialize(is, summary.get(), 1);</div>
-<div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span>      entries.emplace_back(key, std::move(*summary));</div>
-<div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span>      (*summary).~S();</div>
-<div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span>    }</div>
-<div class="line"><a id="l00524" name="l00524"></a><span class="lineno">  524</span>  }</div>
-<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span>  <span class="keywordflow">if</span> (!is.good()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;error reading from std::istream&quot;</span>);</div>
+<div class="line"><a id="l00499" name="l00499"></a><span class="lineno">  499</span>  <span class="keywordflow">if</span> (is_empty &amp;&amp; serial_version == SERIAL_VERSION) {</div>
+<div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span>    check_empty_v3(<span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(preamble_longs) | <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(serial_version) &lt;&lt; 8</div>
+<div class="line"><a id="l00501" name="l00501"></a><span class="lineno">  501</span>        | <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(family) &lt;&lt; 16 | <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(type) &lt;&lt; 24</div>
+<div class="line"><a id="l00502" name="l00502"></a><span class="lineno">  502</span>        | <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(unused) &lt;&lt; 32 | <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(flags_byte) &lt;&lt; 40</div>
+<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span>        | <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(seed_hash) &lt;&lt; 48);</div>
+<div class="line"><a id="l00504" name="l00504"></a><span class="lineno">  504</span>  }</div>
+<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span> </div>
+<div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>  uint64_t theta = <a class="code hl_variable" href="namespacedatasketches_1_1theta__constants.html#ae3243c6bd90c8d8577c32b86100d97ad">theta_constants::MAX_THETA</a>;</div>
+<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>  uint32_t num_entries = 0;</div>
+<div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span>  <span class="keywordflow">if</span> (!is_empty) {</div>
+<div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span>    <span class="keywordflow">if</span> (preamble_longs == 1) {</div>
+<div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span>      num_entries = 1;</div>
+<div class="line"><a id="l00511" name="l00511"></a><span class="lineno">  511</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00512" name="l00512"></a><span class="lineno">  512</span>      num_entries = read&lt;uint32_t&gt;(is);</div>
+<div class="line"><a id="l00513" name="l00513"></a><span class="lineno">  513</span>      read&lt;uint32_t&gt;(is); <span class="comment">// unused</span></div>
+<div class="line"><a id="l00514" name="l00514"></a><span class="lineno">  514</span>      <span class="keywordflow">if</span> (preamble_longs &gt; 2) {</div>
+<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>        theta = read&lt;uint64_t&gt;(is);</div>
+<div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span>      }</div>
+<div class="line"><a id="l00517" name="l00517"></a><span class="lineno">  517</span>    }</div>
+<div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span>  }</div>
+<div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>  A alloc(allocator);</div>
+<div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span>  std::vector&lt;Entry, AllocEntry&gt; entries(alloc);</div>
+<div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span>  <span class="keywordflow">if</span> (!is_empty) {</div>
+<div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span>    entries.reserve(num_entries);</div>
+<div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span>    std::unique_ptr&lt;S, deleter_of_summaries&gt; summary(alloc.allocate(1), deleter_of_summaries(1, <span class="keyword">false</span>, allocator));</div>
+<div class="line"><a id="l00524" name="l00524"></a><span class="lineno">  524</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_entries; ++i) {</div>
+<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span>      <span class="keyword">const</span> <span class="keyword">auto</span> key = read&lt;uint64_t&gt;(is);</div>
 <div class="foldopen" id="foldopen00526" data-start="{" data-end="}">
-<div class="line"><a id="l00526" name="l00526"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a9d85cf47c4ecd0580ec623c42006dd1b">  526</a></span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">is_ordered</a> = flags_byte &amp; (1 &lt;&lt; flags::IS_ORDERED);</div>
+<div class="line"><a id="l00526" name="l00526"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a9d85cf47c4ecd0580ec623c42006dd1b">  526</a></span>      sd.deserialize(is, summary.get(), 1);</div>
 <div class="foldopen" id="foldopen00527" data-start="{" data-end="}">
-<div class="line"><a id="l00527" name="l00527"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">  527</a></span>  <span class="keywordflow">return</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a919843136e9bb921acd40bfea4ed5aef">compact_tuple_sketch</a>(<a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>, <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">is_ordered</a>, seed_hash, theta, std::move(entries));</div>
+<div class="line"><a id="l00527" name="l00527"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">  527</a></span>      entries.emplace_back(key, std::move(*summary));</div>
 <div class="foldopen" id="foldopen00528" data-start="{" data-end="}">
-<div class="line"><a id="l00528" name="l00528"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">  528</a></span>}</div>
+<div class="line"><a id="l00528" name="l00528"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">  528</a></span>      (*summary).~S();</div>
 <div class="foldopen" id="foldopen00529" data-start="{" data-end="}">
-<div class="line"><a id="l00529" name="l00529"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a2b072fe55377eb51a6ee477827fc3b95">  529</a></span> </div>
+<div class="line"><a id="l00529" name="l00529"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a2b072fe55377eb51a6ee477827fc3b95">  529</a></span>    }</div>
 <div class="foldopen" id="foldopen00530" data-start="{" data-end="}">
-<div class="line"><a id="l00530" name="l00530"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a31fa76458d81a17dbebfcb828e531f14">  530</a></span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00530" name="l00530"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a31fa76458d81a17dbebfcb828e531f14">  530</a></span>  }</div>
 <div class="foldopen" id="foldopen00531" data-start="{" data-end="}">
-<div class="line"><a id="l00531" name="l00531"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a6f69b50bc13da11d255d0e583e2376ba">  531</a></span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> SerDe&gt;</div>
-<div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span><a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a919843136e9bb921acd40bfea4ed5aef">compact_tuple_sketch&lt;S, A&gt;</a> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#aa4654837acac56f89e5c083198374eda">compact_tuple_sketch&lt;S, A&gt;::deserialize</a>(<span class="keyword">const</span> <span class="keywordtype">void</span>* bytes, <span class="keywordtype">size_t</span> size, uint64_t seed, <span class="keyword">const</span> SerDe&amp; sd, <span class="keyword">const</span> A&amp; allocator) {</div>
-<div class="line"><a id="l00533" name="l00533"></a><span class="lineno">  533</span>  ensure_minimum_memory(size, 8);</div>
-<div class="line"><a id="l00534" name="l00534"></a><span class="lineno">  534</span>  <span class="keyword">const</span> <span class="keywordtype">char</span>* ptr = <span class="keyword">static_cast&lt;</span><span class="keyword">const </span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(bytes);</div>
-<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span>  <span class="keyword">const</span> <span class="keywordtype">char</span>* base = ptr;</div>
-<div class="line"><a id="l00536" name="l00536"></a><span class="lineno">  536</span>  uint8_t preamble_longs;</div>
-<div class="line"><a id="l00537" name="l00537"></a><span class="lineno">  537</span>  ptr += copy_from_mem(ptr, preamble_longs);</div>
-<div class="line"><a id="l00538" name="l00538"></a><span class="lineno">  538</span>  uint8_t serial_version;</div>
-<div class="line"><a id="l00539" name="l00539"></a><span class="lineno">  539</span>  ptr += copy_from_mem(ptr, serial_version);</div>
-<div class="line"><a id="l00540" name="l00540"></a><span class="lineno">  540</span>  uint8_t family;</div>
-<div class="line"><a id="l00541" name="l00541"></a><span class="lineno">  541</span>  ptr += copy_from_mem(ptr, family);</div>
-<div class="line"><a id="l00542" name="l00542"></a><span class="lineno">  542</span>  uint8_t type;</div>
-<div class="line"><a id="l00543" name="l00543"></a><span class="lineno">  543</span>  ptr += copy_from_mem(ptr, type);</div>
-<div class="line"><a id="l00544" name="l00544"></a><span class="lineno">  544</span>  ptr += <span class="keyword">sizeof</span>(uint8_t); <span class="comment">// unused</span></div>
-<div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span>  uint8_t flags_byte;</div>
-<div class="line"><a id="l00546" name="l00546"></a><span class="lineno">  546</span>  ptr += copy_from_mem(ptr, flags_byte);</div>
-<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span>  uint16_t seed_hash;</div>
-<div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span>  ptr += copy_from_mem(ptr, seed_hash);</div>
-<div class="line"><a id="l00549" name="l00549"></a><span class="lineno">  549</span>  <span class="keywordflow">if</span> (serial_version != SERIAL_VERSION &amp;&amp; serial_version != SERIAL_VERSION_LEGACY) {</div>
-<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;serial version mismatch: expected &quot;</span> + std::to_string(SERIAL_VERSION) + <span class="stringliteral">&quot; or &quot;</span></div>
-<div class="line"><a id="l00551" name="l00551"></a><span class="lineno">  551</span>        + std::to_string(SERIAL_VERSION_LEGACY) + <span class="stringliteral">&quot;, actual &quot;</span> + std::to_string(serial_version));</div>
-<div class="line"><a id="l00552" name="l00552"></a><span class="lineno">  552</span>  }</div>
-<div class="line"><a id="l00553" name="l00553"></a><span class="lineno">  553</span>  checker&lt;true&gt;::check_sketch_family(family, SKETCH_FAMILY);</div>
-<div class="line"><a id="l00554" name="l00554"></a><span class="lineno">  554</span>  <span class="keywordflow">if</span> (type != SKETCH_TYPE &amp;&amp; type != SKETCH_TYPE_LEGACY) {</div>
-<div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;sketch type mismatch: expected &quot;</span> + std::to_string(SKETCH_TYPE) + <span class="stringliteral">&quot; or &quot;</span></div>
-<div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span>        + std::to_string(SKETCH_TYPE_LEGACY) + <span class="stringliteral">&quot;, actual &quot;</span> + std::to_string(type));</div>
-<div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span>  }</div>
-<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a> = flags_byte &amp; (1 &lt;&lt; flags::IS_EMPTY);</div>
-<div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>  <span class="keywordflow">if</span> (!<a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>) checker&lt;true&gt;::check_seed_hash(seed_hash, compute_seed_hash(seed));</div>
-<div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span> </div>
-<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>  uint64_t theta = <a class="code hl_variable" href="namespacedatasketches_1_1theta__constants.html#ae3243c6bd90c8d8577c32b86100d97ad">theta_constants::MAX_THETA</a>;</div>
-<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>  uint32_t num_entries = 0;</div>
-<div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span> </div>
-<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>  <span class="keywordflow">if</span> (!<a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>) {</div>
-<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>    <span class="keywordflow">if</span> (preamble_longs == 1) {</div>
-<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>      num_entries = 1;</div>
-<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>      ensure_minimum_memory(size, 8); <span class="comment">// read the first prelong before this method</span></div>
-<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>      ptr += copy_from_mem(ptr, num_entries);</div>
-<div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span>      ptr += <span class="keyword">sizeof</span>(uint32_t); <span class="comment">// unused</span></div>
-<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span>      <span class="keywordflow">if</span> (preamble_longs &gt; 2) {</div>
-<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span>        ensure_minimum_memory(size, (preamble_longs - 1) &lt;&lt; 3);</div>
-<div class="line"><a id="l00573" name="l00573"></a><span class="lineno">  573</span>        ptr += copy_from_mem(ptr, theta);</div>
-<div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span>      }</div>
-<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span>    }</div>
-<div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span>  }</div>
-<div class="line"><a id="l00577" name="l00577"></a><span class="lineno">  577</span>  <span class="keyword">const</span> <span class="keywordtype">size_t</span> keys_size_bytes = <span class="keyword">sizeof</span>(uint64_t) * num_entries;</div>
-<div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span>  ensure_minimum_memory(size, ptr - base + keys_size_bytes);</div>
-<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span>  A alloc(allocator);</div>
-<div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span>  std::vector&lt;Entry, AllocEntry&gt; entries(alloc);</div>
-<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>  <span class="keywordflow">if</span> (!<a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>) {</div>
-<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span>    entries.reserve(num_entries);</div>
-<div class="line"><a id="l00583" name="l00583"></a><span class="lineno">  583</span>    std::unique_ptr&lt;S, deleter_of_summaries&gt; summary(alloc.allocate(1), deleter_of_summaries(1, <span class="keyword">false</span>, allocator));</div>
-<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_entries; ++i) {</div>
-<div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span>      uint64_t key;</div>
-<div class="line"><a id="l00586" name="l00586"></a><span class="lineno">  586</span>      ensure_minimum_memory(base + size - ptr, <span class="keyword">sizeof</span>(uint64_t));</div>
-<div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span>      ptr += copy_from_mem(ptr, key);</div>
-<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span>      ptr += sd.deserialize(ptr, base + size - ptr, summary.get(), 1);</div>
-<div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span>      entries.emplace_back(key, std::move(*summary));</div>
-<div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span>      (*summary).~S();</div>
-<div class="line"><a id="l00591" name="l00591"></a><span class="lineno">  591</span>    }</div>
-<div class="line"><a id="l00592" name="l00592"></a><span class="lineno">  592</span>  }</div>
-<div class="line"><a id="l00593" name="l00593"></a><span class="lineno">  593</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">is_ordered</a> = flags_byte &amp; (1 &lt;&lt; flags::IS_ORDERED);</div>
-<div class="line"><a id="l00594" name="l00594"></a><span class="lineno">  594</span>  <span class="keywordflow">return</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a919843136e9bb921acd40bfea4ed5aef">compact_tuple_sketch</a>(<a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>, <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">is_ordered</a>, seed_hash, theta, std::move(entries));</div>
-<div class="line"><a id="l00595" name="l00595"></a><span class="lineno">  595</span>}</div>
-<div class="line"><a id="l00596" name="l00596"></a><span class="lineno">  596</span> </div>
-<div class="line"><a id="l00597" name="l00597"></a><span class="lineno">  597</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00598" name="l00598"></a><span class="lineno">  598</span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a50ecf97008068a253fbe8e484c4b73cc">compact_tuple_sketch&lt;S, A&gt;::begin</a>() -&gt; iterator {</div>
-<div class="line"><a id="l00599" name="l00599"></a><span class="lineno">  599</span>  <span class="keywordflow">return</span> iterator(entries_.data(), <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(entries_.size()), 0);</div>
-<div class="line"><a id="l00600" name="l00600"></a><span class="lineno">  600</span>}</div>
-<div class="line"><a id="l00601" name="l00601"></a><span class="lineno">  601</span> </div>
-<div class="line"><a id="l00602" name="l00602"></a><span class="lineno">  602</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00603" name="l00603"></a><span class="lineno">  603</span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a876b60564ad601d92339187b91866394">compact_tuple_sketch&lt;S, A&gt;::end</a>() -&gt; iterator {</div>
-<div class="line"><a id="l00604" name="l00604"></a><span class="lineno">  604</span>  <span class="keywordflow">return</span> iterator(<span class="keyword">nullptr</span>, 0, <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(entries_.size()));</div>
-<div class="line"><a id="l00605" name="l00605"></a><span class="lineno">  605</span>}</div>
-<div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span> </div>
-<div class="line"><a id="l00607" name="l00607"></a><span class="lineno">  607</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00608" name="l00608"></a><span class="lineno">  608</span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a50ecf97008068a253fbe8e484c4b73cc">compact_tuple_sketch&lt;S, A&gt;::begin</a>() const -&gt; const_iterator {</div>
-<div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span>  <span class="keywordflow">return</span> const_iterator(entries_.data(), <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(entries_.size()), 0);</div>
-<div class="line"><a id="l00610" name="l00610"></a><span class="lineno">  610</span>}</div>
-<div class="line"><a id="l00611" name="l00611"></a><span class="lineno">  611</span> </div>
-<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a876b60564ad601d92339187b91866394">compact_tuple_sketch&lt;S, A&gt;::end</a>() const -&gt; const_iterator {</div>
-<div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span>  <span class="keywordflow">return</span> const_iterator(<span class="keyword">nullptr</span>, 0, <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(entries_.size()));</div>
-<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>}</div>
-<div class="line"><a id="l00616" name="l00616"></a><span class="lineno">  616</span> </div>
-<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00618" name="l00618"></a><span class="lineno">  618</span><span class="keywordtype">void</span> compact_tuple_sketch&lt;S, A&gt;::print_specifics(std::ostringstream&amp;)<span class="keyword"> const </span>{}</div>
-<div class="line"><a id="l00619" name="l00619"></a><span class="lineno">  619</span> </div>
-<div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span><span class="comment">// builder</span></div>
-<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span> </div>
-<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> D, <span class="keyword">typename</span> P, <span class="keyword">typename</span> A&gt;</div>
-<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span>tuple_base_builder&lt;D, P, A&gt;::tuple_base_builder(<span class="keyword">const</span> P&amp; policy, <span class="keyword">const</span> A&amp; allocator):</div>
-<div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span><a class="code hl_class" href="classdatasketches_1_1theta__base__builder.html">theta_base_builder</a>&lt;D, A&gt;(allocator), policy_(policy) {}</div>
-<div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span> </div>
-<div class="line"><a id="l00626" name="l00626"></a><span class="lineno">  626</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> U, <span class="keyword">typename</span> P, <span class="keyword">typename</span> A&gt;</div>
-<div class="foldopen" id="foldopen00627" data-start="{" data-end="}">
-<div class="line"><a id="l00627" name="l00627"></a><span class="lineno"><a class="line" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a4939c16cc8f9c221b2f796eda6db7a81">  627</a></span><a class="code hl_function" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a4939c16cc8f9c221b2f796eda6db7a81">update_tuple_sketch&lt;S, U, P, A&gt;::builder::builder</a>(<span class="keyword">const</span> P&amp; policy, <span class="keyword">const</span> A&amp; allocator):</div>
-<div class="line"><a id="l00628" name="l00628"></a><span class="lineno">  628</span>tuple_base_builder&lt;<a class="code hl_function" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a4939c16cc8f9c221b2f796eda6db7a81">builder</a>, P, A&gt;(policy, allocator) {}</div>
+<div class="line"><a id="l00531" name="l00531"></a><span class="lineno"><a class="line" href="classdatasketches_1_1compact__tuple__sketch.html#a6f69b50bc13da11d255d0e583e2376ba">  531</a></span>  <span class="keywordflow">if</span> (!is.good()) <span class="keywordflow">throw</span> std::runtime_error(<span class="stringliteral">&quot;error reading from std::istream&quot;</span>);</div>
+<div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">is_ordered</a> = flags_byte &amp; (1 &lt;&lt; flags::IS_ORDERED);</div>
+<div class="line"><a id="l00533" name="l00533"></a><span class="lineno">  533</span>  <span class="keywordflow">return</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a919843136e9bb921acd40bfea4ed5aef">compact_tuple_sketch</a>(<a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5a2b7a58dc85678d08752945ff655362">is_empty</a>, <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a5f5b393314c0c1819f79b73232a506e8">is_ordered</a>, seed_hash, theta, std::move(entries));</div>
+<div class="line"><a id="l00534" name="l00534"></a><span class="lineno">  534</span>}</div>
+<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span> </div>
+<div class="line"><a id="l00536" name="l00536"></a><span class="lineno">  536</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00537" name="l00537"></a><span class="lineno">  537</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> SerDe&gt;</div>
+<div class="line"><a id="l00538" name="l00538"></a><span class="lineno">  538</span><a class="code hl_class" href="classdatasketches_1_1compact__tuple__sketch.html">compact_tuple_sketch&lt;S, A&gt;</a> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#aa4654837acac56f89e5c083198374eda">compact_tuple_sketch&lt;S, A&gt;::deserialize</a>(<span class="keyword">const</span> <span class="keywordtype">void</span>* bytes, <span class="keywordtype">size_t</span> size, uint64_t seed, <span class="keyword">const</span> SerDe&amp; sd, <span class="keyword">const</span> A&amp; allocator) {</div>
+<div class="line"><a id="l00539" name="l00539"></a><span class="lineno">  539</span>  ensure_minimum_memory(size, 8);</div>
+<div class="line"><a id="l00540" name="l00540"></a><span class="lineno">  540</span>  <span class="keyword">const</span> <span class="keywordtype">char</span>* ptr = <span class="keyword">static_cast&lt;</span><span class="keyword">const </span><span class="keywordtype">char</span>*<span class="keyword">&gt;</span>(bytes);</div>
+<div class="line"><a id="l00541" name="l00541"></a><span class="lineno">  541</span>  <span class="keyword">const</span> <span class="keywordtype">char</span>* base = ptr;</div>
+<div class="line"><a id="l00542" name="l00542"></a><span class="lineno">  542</span>  uint8_t preamble_longs;</div>
+<div class="line"><a id="l00543" name="l00543"></a><span class="lineno">  543</span>  ptr += copy_from_mem(ptr, preamble_longs);</div>
+<div class="line"><a id="l00544" name="l00544"></a><span class="lineno">  544</span>  uint8_t serial_version;</div>
+<div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span>  ptr += copy_from_mem(ptr, serial_version);</div>
+<div class="line"><a id="l00546" name="l00546"></a><span class="lineno">  546</span>  uint8_t family;</div>
+<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span>  ptr += copy_from_mem(ptr, family);</div>
+<div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span>  uint8_t type;</div>
+<div class="line"><a id="l00549" name="l00549"></a><span class="lineno">  549</span>  ptr += copy_from_mem(ptr, type);</div>
+<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>  ptr += <span class="keyword">sizeof</span>(uint8_t); <span class="comment">// unused</span></div>
+<div class="line"><a id="l00551" name="l00551"></a><span class="lineno">  551</span>  uint8_t flags_byte;</div>
+<div class="line"><a id="l00552" name="l00552"></a><span class="lineno">  552</span>  ptr += copy_from_mem(ptr, flags_byte);</div>
+<div class="line"><a id="l00553" name="l00553"></a><span class="lineno">  553</span>  uint16_t seed_hash;</div>
+<div class="line"><a id="l00554" name="l00554"></a><span class="lineno">  554</span>  ptr += copy_from_mem(ptr, seed_hash);</div>
+<div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span>  <span class="keywordflow">if</span> (serial_version != SERIAL_VERSION &amp;&amp; serial_version != SERIAL_VERSION_LEGACY) {</div>
+<div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;serial version mismatch: expected &quot;</span> + std::to_string(SERIAL_VERSION) + <span class="stringliteral">&quot; or &quot;</span></div>
+<div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span>        + std::to_string(SERIAL_VERSION_LEGACY) + <span class="stringliteral">&quot;, actual &quot;</span> + std::to_string(serial_version));</div>
+<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>  }</div>
+<div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>  checker&lt;true&gt;::check_sketch_family(family, SKETCH_FAMILY);</div>
+<div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span>  <span class="keywordflow">if</span> (type != SKETCH_TYPE &amp;&amp; type != SKETCH_TYPE_LEGACY) {</div>
+<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>    <span class="keywordflow">throw</span> std::invalid_argument(<span class="stringliteral">&quot;sketch type mismatch: expected &quot;</span> + std::to_string(SKETCH_TYPE) + <span class="stringliteral">&quot; or &quot;</span></div>
+<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>        + std::to_string(SKETCH_TYPE_LEGACY) + <span class="stringliteral">&quot;, actual &quot;</span> + std::to_string(type));</div>
+<div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>  }</div>
+<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> is_empty = flags_byte &amp; (1 &lt;&lt; flags::IS_EMPTY);</div>
+<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>  <span class="keywordflow">if</span> (!is_empty) checker&lt;true&gt;::check_seed_hash(seed_hash, compute_seed_hash(seed));</div>
+<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>  <span class="keywordflow">if</span> (is_empty &amp;&amp; serial_version == SERIAL_VERSION) {</div>
+<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span>    uint64_t pre0;</div>
+<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>    copy_from_mem(base, pre0);</div>
+<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>    check_empty_v3(pre0);</div>
+<div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span>  }</div>
+<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span> </div>
+<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span>  uint64_t theta = <a class="code hl_variable" href="namespacedatasketches_1_1theta__constants.html#ae3243c6bd90c8d8577c32b86100d97ad">theta_constants::MAX_THETA</a>;</div>
+<div class="line"><a id="l00573" name="l00573"></a><span class="lineno">  573</span>  uint32_t num_entries = 0;</div>
+<div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span> </div>
+<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span>  <span class="keywordflow">if</span> (!is_empty) {</div>
+<div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span>    <span class="keywordflow">if</span> (preamble_longs == 1) {</div>
+<div class="line"><a id="l00577" name="l00577"></a><span class="lineno">  577</span>      num_entries = 1;</div>
+<div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span>      ensure_minimum_memory(size, 8); <span class="comment">// read the first prelong before this method</span></div>
+<div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span>      ptr += copy_from_mem(ptr, num_entries);</div>
+<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>      ptr += <span class="keyword">sizeof</span>(uint32_t); <span class="comment">// unused</span></div>
+<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span>      <span class="keywordflow">if</span> (preamble_longs &gt; 2) {</div>
+<div class="line"><a id="l00583" name="l00583"></a><span class="lineno">  583</span>        ensure_minimum_memory(size, (preamble_longs - 1) &lt;&lt; 3);</div>
+<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span>        ptr += copy_from_mem(ptr, theta);</div>
+<div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span>      }</div>
+<div class="line"><a id="l00586" name="l00586"></a><span class="lineno">  586</span>    }</div>
+<div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span>  }</div>
+<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span>  <span class="keyword">const</span> <span class="keywordtype">size_t</span> keys_size_bytes = <span class="keyword">sizeof</span>(uint64_t) * num_entries;</div>
+<div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span>  ensure_minimum_memory(size, ptr - base + keys_size_bytes);</div>
+<div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span>  A alloc(allocator);</div>
+<div class="line"><a id="l00591" name="l00591"></a><span class="lineno">  591</span>  std::vector&lt;Entry, AllocEntry&gt; entries(alloc);</div>
+<div class="line"><a id="l00592" name="l00592"></a><span class="lineno">  592</span>  <span class="keywordflow">if</span> (!is_empty) {</div>
+<div class="line"><a id="l00593" name="l00593"></a><span class="lineno">  593</span>    entries.reserve(num_entries);</div>
+<div class="line"><a id="l00594" name="l00594"></a><span class="lineno">  594</span>    std::unique_ptr&lt;S, deleter_of_summaries&gt; summary(alloc.allocate(1), deleter_of_summaries(1, <span class="keyword">false</span>, allocator));</div>
+<div class="line"><a id="l00595" name="l00595"></a><span class="lineno">  595</span>    <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_entries; ++i) {</div>
+<div class="line"><a id="l00596" name="l00596"></a><span class="lineno">  596</span>      uint64_t key;</div>
+<div class="line"><a id="l00597" name="l00597"></a><span class="lineno">  597</span>      ensure_minimum_memory(base + size - ptr, <span class="keyword">sizeof</span>(uint64_t));</div>
+<div class="line"><a id="l00598" name="l00598"></a><span class="lineno">  598</span>      ptr += copy_from_mem(ptr, key);</div>
+<div class="line"><a id="l00599" name="l00599"></a><span class="lineno">  599</span>      ptr += sd.deserialize(ptr, base + size - ptr, summary.get(), 1);</div>
+<div class="line"><a id="l00600" name="l00600"></a><span class="lineno">  600</span>      entries.emplace_back(key, std::move(*summary));</div>
+<div class="line"><a id="l00601" name="l00601"></a><span class="lineno">  601</span>      (*summary).~S();</div>
+<div class="line"><a id="l00602" name="l00602"></a><span class="lineno">  602</span>    }</div>
+<div class="line"><a id="l00603" name="l00603"></a><span class="lineno">  603</span>  }</div>
+<div class="line"><a id="l00604" name="l00604"></a><span class="lineno">  604</span>  <span class="keyword">const</span> <span class="keywordtype">bool</span> is_ordered = flags_byte &amp; (1 &lt;&lt; flags::IS_ORDERED);</div>
+<div class="line"><a id="l00605" name="l00605"></a><span class="lineno">  605</span>  <span class="keywordflow">return</span> <a class="code hl_class" href="classdatasketches_1_1compact__tuple__sketch.html">compact_tuple_sketch</a>(is_empty, is_ordered, seed_hash, theta, std::move(entries));</div>
+<div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span>}</div>
+<div class="line"><a id="l00607" name="l00607"></a><span class="lineno">  607</span> </div>
+<div class="line"><a id="l00608" name="l00608"></a><span class="lineno">  608</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span><span class="keywordtype">void</span> compact_tuple_sketch&lt;S, A&gt;::check_empty_v3(uint64_t pre0) {</div>
+<div class="line"><a id="l00610" name="l00610"></a><span class="lineno">  610</span>  <span class="keyword">const</span> uint64_t masked = pre0 &amp; EMPTY_SKETCH_MASK;</div>
+<div class="line"><a id="l00611" name="l00611"></a><span class="lineno">  611</span>  <span class="keywordflow">if</span> (masked != EMPTY_SKETCH_TEST) {</div>
+<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span>    std::stringstream s;</div>
+<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span>    s &lt;&lt; <span class="stringliteral">&quot;empty compact tuple sketch preamble does not match: 0x&quot;</span> &lt;&lt; std::hex &lt;&lt; masked;</div>
+<div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span>    <span class="keywordflow">throw</span> std::invalid_argument(s.str());</div>
+<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>  }</div>
+<div class="line"><a id="l00616" name="l00616"></a><span class="lineno">  616</span>}</div>
+<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span> </div>
+<div class="line"><a id="l00618" name="l00618"></a><span class="lineno">  618</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00619" name="l00619"></a><span class="lineno">  619</span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a50ecf97008068a253fbe8e484c4b73cc">compact_tuple_sketch&lt;S, A&gt;::begin</a>() -&gt; iterator {</div>
+<div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span>  <span class="keywordflow">return</span> iterator(entries_.data(), <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(entries_.size()), 0);</div>
+<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span>}</div>
+<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span> </div>
+<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a876b60564ad601d92339187b91866394">compact_tuple_sketch&lt;S, A&gt;::end</a>() -&gt; iterator {</div>
+<div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span>  <span class="keywordflow">return</span> iterator(<span class="keyword">nullptr</span>, 0, <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(entries_.size()));</div>
+<div class="line"><a id="l00626" name="l00626"></a><span class="lineno">  626</span>}</div>
+<div class="line"><a id="l00627" name="l00627"></a><span class="lineno">  627</span> </div>
+<div class="line"><a id="l00628" name="l00628"></a><span class="lineno">  628</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00629" name="l00629"></a><span class="lineno">  629</span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a50ecf97008068a253fbe8e484c4b73cc">compact_tuple_sketch&lt;S, A&gt;::begin</a>() const -&gt; const_iterator {</div>
+<div class="line"><a id="l00630" name="l00630"></a><span class="lineno">  630</span>  <span class="keywordflow">return</span> const_iterator(entries_.data(), <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(entries_.size()), 0);</div>
+<div class="line"><a id="l00631" name="l00631"></a><span class="lineno">  631</span>}</div>
+<div class="line"><a id="l00632" name="l00632"></a><span class="lineno">  632</span> </div>
+<div class="line"><a id="l00633" name="l00633"></a><span class="lineno">  633</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1compact__tuple__sketch.html#a876b60564ad601d92339187b91866394">compact_tuple_sketch&lt;S, A&gt;::end</a>() const -&gt; const_iterator {</div>
+<div class="line"><a id="l00635" name="l00635"></a><span class="lineno">  635</span>  <span class="keywordflow">return</span> const_iterator(<span class="keyword">nullptr</span>, 0, <span class="keyword">static_cast&lt;</span>uint32_t<span class="keyword">&gt;</span>(entries_.size()));</div>
+<div class="line"><a id="l00636" name="l00636"></a><span class="lineno">  636</span>}</div>
+<div class="line"><a id="l00637" name="l00637"></a><span class="lineno">  637</span> </div>
+<div class="line"><a id="l00638" name="l00638"></a><span class="lineno">  638</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00639" name="l00639"></a><span class="lineno">  639</span><span class="keywordtype">void</span> compact_tuple_sketch&lt;S, A&gt;::print_specifics(std::ostringstream&amp;)<span class="keyword"> const </span>{}</div>
+<div class="line"><a id="l00640" name="l00640"></a><span class="lineno">  640</span> </div>
+<div class="line"><a id="l00641" name="l00641"></a><span class="lineno">  641</span><span class="comment">// builder</span></div>
+<div class="line"><a id="l00642" name="l00642"></a><span class="lineno">  642</span> </div>
+<div class="line"><a id="l00643" name="l00643"></a><span class="lineno">  643</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> D, <span class="keyword">typename</span> P, <span class="keyword">typename</span> A&gt;</div>
+<div class="line"><a id="l00644" name="l00644"></a><span class="lineno">  644</span>tuple_base_builder&lt;D, P, A&gt;::tuple_base_builder(<span class="keyword">const</span> P&amp; policy, <span class="keyword">const</span> A&amp; allocator):</div>
+<div class="line"><a id="l00645" name="l00645"></a><span class="lineno">  645</span><a class="code hl_class" href="classdatasketches_1_1theta__base__builder.html">theta_base_builder</a>&lt;D, A&gt;(allocator), policy_(policy) {}</div>
+<div class="line"><a id="l00646" name="l00646"></a><span class="lineno">  646</span> </div>
+<div class="line"><a id="l00647" name="l00647"></a><span class="lineno">  647</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> U, <span class="keyword">typename</span> P, <span class="keyword">typename</span> A&gt;</div>
+<div class="foldopen" id="foldopen00648" data-start="{" data-end="}">
+<div class="line"><a id="l00648" name="l00648"></a><span class="lineno"><a class="line" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a4939c16cc8f9c221b2f796eda6db7a81">  648</a></span><a class="code hl_function" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a4939c16cc8f9c221b2f796eda6db7a81">update_tuple_sketch&lt;S, U, P, A&gt;::builder::builder</a>(<span class="keyword">const</span> P&amp; policy, <span class="keyword">const</span> A&amp; allocator):</div>
+<div class="line"><a id="l00649" name="l00649"></a><span class="lineno">  649</span>tuple_base_builder&lt;<a class="code hl_function" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a4939c16cc8f9c221b2f796eda6db7a81">builder</a>, P, A&gt;(policy, allocator) {}</div>
 </div>
-<div class="line"><a id="l00629" name="l00629"></a><span class="lineno">  629</span> </div>
-<div class="line"><a id="l00630" name="l00630"></a><span class="lineno">  630</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> U, <span class="keyword">typename</span> P, <span class="keyword">typename</span> A&gt;</div>
-<div class="foldopen" id="foldopen00631" data-start="{" data-end="}">
-<div class="line"><a id="l00631" name="l00631"></a><span class="lineno"><a class="line" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a5641adbacdefd99f6833e1c8de16be43">  631</a></span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a5641adbacdefd99f6833e1c8de16be43">update_tuple_sketch&lt;S, U, P, A&gt;::builder::build</a>() const -&gt; update_tuple_sketch {</div>
-<div class="line"><a id="l00632" name="l00632"></a><span class="lineno">  632</span>  <span class="keywordflow">return</span> update_tuple_sketch(this-&gt;starting_lg_size(), this-&gt;lg_k_, this-&gt;rf_, this-&gt;p_, this-&gt;starting_theta(), this-&gt;seed_, this-&gt;policy_, this-&gt;allocator_);</div>
-<div class="line"><a id="l00633" name="l00633"></a><span class="lineno">  633</span>}</div>
+<div class="line"><a id="l00650" name="l00650"></a><span class="lineno">  650</span> </div>
+<div class="line"><a id="l00651" name="l00651"></a><span class="lineno">  651</span><span class="keyword">template</span>&lt;<span class="keyword">typename</span> S, <span class="keyword">typename</span> U, <span class="keyword">typename</span> P, <span class="keyword">typename</span> A&gt;</div>
+<div class="foldopen" id="foldopen00652" data-start="{" data-end="}">
+<div class="line"><a id="l00652" name="l00652"></a><span class="lineno"><a class="line" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a5641adbacdefd99f6833e1c8de16be43">  652</a></span><span class="keyword">auto</span> <a class="code hl_function" href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a5641adbacdefd99f6833e1c8de16be43">update_tuple_sketch&lt;S, U, P, A&gt;::builder::build</a>() const -&gt; update_tuple_sketch {</div>
+<div class="line"><a id="l00653" name="l00653"></a><span class="lineno">  653</span>  <span class="keywordflow">return</span> update_tuple_sketch(this-&gt;starting_lg_size(), this-&gt;lg_k_, this-&gt;rf_, this-&gt;p_, this-&gt;starting_theta(), this-&gt;seed_, this-&gt;policy_, this-&gt;allocator_);</div>
+<div class="line"><a id="l00654" name="l00654"></a><span class="lineno">  654</span>}</div>
 </div>
-<div class="line"><a id="l00634" name="l00634"></a><span class="lineno">  634</span> </div>
-<div class="line"><a id="l00635" name="l00635"></a><span class="lineno">  635</span>} <span class="comment">/* namespace datasketches */</span></div>
+<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span> </div>
+<div class="line"><a id="l00656" name="l00656"></a><span class="lineno">  656</span>} <span class="comment">/* namespace datasketches */</span></div>
 </div>
 </div>
 </div>
@@ -849,8 +870,8 @@ $(function() {
 <div class="ttc" id="aclassdatasketches_1_1tuple__sketch_html_ad1d91335a83907ae2ef026786e12ba0c"><div class="ttname"><a href="classdatasketches_1_1tuple__sketch.html#ad1d91335a83907ae2ef026786e12ba0c">datasketches::tuple_sketch::begin</a></div><div class="ttdeci">virtual iterator begin()=0</div><div class="ttdoc">Iterator over entries in this sketch.</div></div>
 <div class="ttc" id="aclassdatasketches_1_1tuple__sketch_html_ae95a04b1d7dccb3d9b3f3c3d087aa8e6"><div class="ttname"><a href="classdatasketches_1_1tuple__sketch.html#ae95a04b1d7dccb3d9b3f3c3d087aa8e6">datasketches::tuple_sketch::is_estimation_mode</a></div><div class="ttdeci">bool is_estimation_mode() const</div><div class="ttdef"><b>Definition</b> tuple_sketch_impl.hpp:29</div></div>
 <div class="ttc" id="aclassdatasketches_1_1tuple__sketch_html_aef2e47ecd9c33fc2a6a9e905a2a0516a"><div class="ttname"><a href="classdatasketches_1_1tuple__sketch.html#aef2e47ecd9c33fc2a6a9e905a2a0516a">datasketches::tuple_sketch::get_theta64</a></div><div class="ttdeci">virtual uint64_t get_theta64() const =0</div></div>
-<div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_1_1builder_html_a4939c16cc8f9c221b2f796eda6db7a81"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a4939c16cc8f9c221b2f796eda6db7a81">datasketches::update_tuple_sketch::builder::builder</a></div><div class="ttdeci">builder(const P &amp;policy=P(), const A &amp;allocator=A())</div><div class="ttdoc">Constructor Creates and instance of the builder with default parameters.</div><div class="ttdef"><b>Definition</b> tuple_sketch_impl.hpp:627</div></div>
-<div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_1_1builder_html_a5641adbacdefd99f6833e1c8de16be43"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a5641adbacdefd99f6833e1c8de16be43">datasketches::update_tuple_sketch::builder::build</a></div><div class="ttdeci">update_tuple_sketch&lt; S, U, P, A &gt; build() const</div><div class="ttdoc">This is to create an instance of the sketch with predefined parameters.</div><div class="ttdef"><b>Definition</b> tuple_sketch_impl.hpp:631</div></div>
+<div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_1_1builder_html_a4939c16cc8f9c221b2f796eda6db7a81"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a4939c16cc8f9c221b2f796eda6db7a81">datasketches::update_tuple_sketch::builder::builder</a></div><div class="ttdeci">builder(const P &amp;policy=P(), const A &amp;allocator=A())</div><div class="ttdoc">Constructor Creates and instance of the builder with default parameters.</div><div class="ttdef"><b>Definition</b> tuple_sketch_impl.hpp:648</div></div>
+<div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_1_1builder_html_a5641adbacdefd99f6833e1c8de16be43"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch_1_1builder.html#a5641adbacdefd99f6833e1c8de16be43">datasketches::update_tuple_sketch::builder::build</a></div><div class="ttdeci">update_tuple_sketch&lt; S, U, P, A &gt; build() const</div><div class="ttdoc">This is to create an instance of the sketch with predefined parameters.</div><div class="ttdef"><b>Definition</b> tuple_sketch_impl.hpp:652</div></div>
 <div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_html_a2530819bf71653396d5e76c5fc856165"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch.html#a2530819bf71653396d5e76c5fc856165">datasketches::update_tuple_sketch::filter</a></div><div class="ttdeci">compact_tuple_sketch&lt; Summary, Allocator &gt; filter(const Predicate &amp;predicate) const</div><div class="ttdoc">Produces a Compact Tuple sketch from this sketch by applying a given predicate to each entry.</div></div>
 <div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_html_a268ae12a22c9f97b84833e4c39fb2278"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch.html#a268ae12a22c9f97b84833e4c39fb2278">datasketches::update_tuple_sketch::trim</a></div><div class="ttdeci">void trim()</div><div class="ttdoc">Remove retained entries in excess of the nominal size k (if any).</div><div class="ttdef"><b>Definition</b> tuple_sketch_impl.hpp:227</div></div>
 <div class="ttc" id="aclassdatasketches_1_1update__tuple__sketch_html_a2b072fe55377eb51a6ee477827fc3b95"><div class="ttname"><a href="classdatasketches_1_1update__tuple__sketch.html#a2b072fe55377eb51a6ee477827fc3b95">datasketches::update_tuple_sketch::get_theta64</a></div><div class="ttdeci">virtual uint64_t get_theta64() const</div><div class="ttdef"><b>Definition</b> tuple_sketch_impl.hpp:120</div></div>
