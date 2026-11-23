@@ -27,7 +27,7 @@
 
 #include "cpc_confidence.hpp"
 #include "kxp_byte_lookup.hpp"
-#include "inv_pow2_table.hpp"
+#include "inv_pow2.hpp"
 #include "cpc_util.hpp"
 #include "icon_estimator.hpp"
 #include "serde.hpp"
@@ -268,7 +268,7 @@ void cpc_sketch_alloc<A>::update_hip(uint32_t row_col) {
   const uint8_t col = row_col & 63;
   const double one_over_p = static_cast<double>(k) / kxp;
   hip_est_accum += one_over_p;
-  kxp -= INVERSE_POWERS_OF_2[col + 1]; // notice the "+1"
+  kxp -= inv_pow2(col + 1); // notice the "+1"
 }
 
 // In terms of flavor, this promotes SPARSE to HYBRID
@@ -372,7 +372,7 @@ void cpc_sketch_alloc<A>::refresh_kxp(const uint64_t* bit_matrix) {
 
   double total = 0.0;
   for (int j = 7; j >= 0; j--) { // the reverse order is important
-    const double factor = INVERSE_POWERS_OF_2[8 * j]; // pow (256.0, (-1.0 * ((double) j)));
+    const double factor = inv_pow2(8 * j); // pow (256.0, (-1.0 * ((double) j)));
     total += factor * byte_sums[j];
   }
 
