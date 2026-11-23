@@ -87,6 +87,9 @@ class HllArray : public HllSketchImpl<A> {
     static uint32_t hll6ArrBytes(uint8_t lgConfigK);
     static uint32_t hll8ArrBytes(uint8_t lgConfigK);
 
+    // an HLL_8 register holds a value from 0 to 63
+    static void checkHll8Registers(const uint8_t* registers, uint32_t numRegisters);
+
     virtual AuxHashMap<A>* getAuxHashMap() const;
 
     void setRebuildKxqCurminFlag(bool rebuild);
