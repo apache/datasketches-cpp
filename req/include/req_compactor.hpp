@@ -119,7 +119,23 @@ private:
   uint32_t capacity_; // 0 while items_ is nullptr
   T* items_; // nullptr until first use, see reserve()
 
-  bool ensure_enough_sections();
+  // the section parameters, which change as the state advances
+  struct sections {
+    float size_raw;
+    uint32_t size;
+    uint8_t num;
+    uint32_t nom_capacity() const { return req_constants::MULTIPLIER * num * size; }
+  };
+  sections get_sections() const;
+  void set_sections(const sections& s);
+  // one step of the section schedule for the given state: halves the section size (by sqrt(2)) and doubles
+  // the number of sections once the state reaches 2^(num - 1); returns false if the sections stay as they are
+  static bool next_sections(uint64_t state, sections& s);
+  // destroys the items and frees the storage
+  void destroy_items();
+  // allocates storage and copies the items of other, for a constructor; releases both if a copy throws
+  template<typename O>
+  void copy_items(const O& other);
   std::pair<uint32_t, uint32_t> compute_compaction_range(uint32_t secs_to_compact) const;
   void grow(uint32_t new_capacity);
   void ensure_space(uint32_t num);

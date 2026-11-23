@@ -21,7 +21,9 @@
 #include <algorithm>
 #include <new>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <req_sketch.hpp>
@@ -94,6 +96,16 @@ void check_consistent(const sketch_type& sketch) {
   REQUIRE(sketch.is_estimation_mode() == (max_weight > 1));
 }
 
+// min and max must survive a round trip, which in exact mode derives them from the items
+void check_min_max_round_trip(const sketch_type& sketch, allocation_control& control) {
+  if (sketch.is_empty()) return;
+  const auto b = sketch.serialize();
+  const auto copy = sketch_type::deserialize(b.data(), b.size(), serde<std::string>(),
+      std::less<std::string>(), failing_allocator<std::string>(control));
+  REQUIRE(copy.get_min_item() == sketch.get_min_item());
+  REQUIRE(copy.get_max_item() == sketch.get_max_item());
+}
+
 // the sketch must still work: query it, update it, merge into it, and round-trip it
 void check_usable(sketch_type& sketch, allocation_control& control) {
   control.disarm();
@@ -111,6 +123,66 @@ void check_usable(sketch_type& sketch, allocation_control& control) {
       std::less<std::string>(), failing_allocator<std::string>(control));
   REQUIRE(copy.get_n() == sketch.get_n());
   REQUIRE(copy.get_num_retained() == sketch.get_num_retained());
+}
+
+
+using compactor_type = req_compactor<double, std::less<double>, failing_allocator<double>>;
+
+std::vector<uint8_t> bytes(const compactor_type& compactor) {
+  std::vector<uint8_t> b(compactor.get_serialized_size_bytes(serde<double>()));
+  compactor.serialize(b.data(), b.size(), serde<double>());
+  return b;
+}
+
+long copies_allowed = -1; // copies left before a copy throws; negative means no limit
+
+// An item whose copy constructor throws once copies_allowed runs out.
+// Each item owns memory from test_allocator, so an item that is never destroyed shows up as a leak.
+struct fragile_item {
+  int* value;
+  explicit fragile_item(int v): value(test_allocator<int>(0).allocate(1)) { *value = v; }
+  fragile_item(const fragile_item& other): value(nullptr) {
+    if (copies_allowed == 0) throw std::runtime_error("copy failed");
+    if (copies_allowed > 0) --copies_allowed;
+    value = test_allocator<int>(0).allocate(1);
+    *value = *other.value;
+  }
+  fragile_item(fragile_item&& other) noexcept: value(other.value) { other.value = nullptr; }
+  fragile_item& operator=(const fragile_item& other) {
+    fragile_item copy(other);
+    std::swap(value, copy.value);
+    return *this;
+  }
+  fragile_item& operator=(fragile_item&& other) noexcept { std::swap(value, other.value); return *this; }
+  ~fragile_item() { if (value != nullptr) test_allocator<int>(0).deallocate(value, 1); }
+};
+
+struct fragile_less {
+  bool operator()(const fragile_item& a, const fragile_item& b) const { return *a.value < *b.value; }
+};
+
+using fragile_sketch = req_sketch<fragile_item, fragile_less, test_allocator<fragile_item>>;
+
+fragile_sketch make_fragile_sketch(int first, int count, bool hra) {
+  fragile_sketch sketch(K, hra, fragile_less(), test_allocator<fragile_item>(0));
+  for (int i = first; i < first + count; ++i) sketch.update(fragile_item((i * 7919) % 10007));
+  return sketch;
+}
+
+// the retained items must account for n, and every item must be a live object
+void check_consistent(const fragile_sketch& sketch) {
+  uint64_t total_weight = 0;
+  uint32_t num_items = 0;
+  for (const auto pair: sketch) {
+    REQUIRE(pair.first.value != nullptr);
+    total_weight += pair.second;
+    ++num_items;
+  }
+  REQUIRE(total_weight == sketch.get_n());
+  REQUIRE(num_items == sketch.get_num_retained());
+  if (!sketch.is_empty()) {
+    REQUIRE(*sketch.get_min_item().value <= *sketch.get_max_item().value);
+  }
 }
 
 } // namespace
@@ -325,6 +397,8 @@ TEST_CASE("req sketch allocation: failure at each allocation of a merge", "[req_
           for (long fail_at = 0; ; ++fail_at) {
             sketch_type target = make_sketch(0, target_n, control, hra);
             const bool was_estimation_mode = target.is_estimation_mode();
+            const std::string min_before = target.is_empty() ? "" : target.get_min_item();
+            const std::string max_before = target.is_empty() ? "" : target.get_max_item();
             control.arm(fail_at);
             try {
               target.merge(source);
@@ -340,7 +414,14 @@ TEST_CASE("req sketch allocation: failure at each allocation of a merge", "[req_
               // the target has the same levels as before
               if (target.get_n() == static_cast<uint64_t>(target_n)) {
                 REQUIRE(target.is_estimation_mode() == was_estimation_mode);
+                // and min and max are as they were
+                REQUIRE(target.is_empty() == (target_n == 0));
+                if (target_n > 0) {
+                  REQUIRE(target.get_min_item() == min_before);
+                  REQUIRE(target.get_max_item() == max_before);
+                }
               }
+              check_min_max_round_trip(target, control);
               check_usable(target, control);
             }
           }
@@ -352,5 +433,239 @@ TEST_CASE("req sketch allocation: failure at each allocation of a merge", "[req_
   REQUIRE(test_allocator_total_bytes == 0);
   REQUIRE(test_allocator_net_allocations == 0);
 }
+
+// A compaction that fails to allocate must change neither compactor, and must draw no random bit,
+// so that compacting again gives what the compaction would have given without the failure.
+TEST_CASE("req compactor allocation: a failed compaction changes nothing", "[req_sketch]") {
+  allocation_control control;
+  long failures_tested = 0;
+  for (bool hra: {true, false}) {
+    CAPTURE(hra);
+    random_utils::random_bit.seed(3);
+    compactor_type level0(hra, 0, K, std::less<double>(), failing_allocator<double>(control));
+    compactor_type level1(hra, 1, K, std::less<double>(), failing_allocator<double>(control));
+    int value = 0;
+    // enough compactions to reach both coin cases and a change of the sections
+    for (int round = 0; round < 12; ++round) {
+      CAPTURE(round);
+      while (level0.get_num_items() < level0.get_nom_capacity()) level0.append(static_cast<double>((value++ * 7919) % 10007));
+      level0.sort();
+      const compactor_type level0_before(level0);
+      const compactor_type level1_before(level1);
+      const auto bits_before = random_utils::random_bit;
+      bool completed = false;
+      for (long fail_at = 0; !completed; ++fail_at) {
+        CAPTURE(fail_at);
+        control.arm(fail_at);
+        try {
+          level0.compact(level1);
+          completed = true;
+        } catch (const std::bad_alloc&) {
+          ++failures_tested;
+        }
+        control.disarm();
+        if (!completed) {
+          REQUIRE(bytes(level0) == bytes(level0_before));
+          REQUIRE(bytes(level1) == bytes(level1_before));
+          REQUIRE(random_utils::random_bit == bits_before);
+        }
+      }
+      // the same as the compaction without failures, from the same random state
+      const auto bits_after = random_utils::random_bit;
+      compactor_type expected0(level0_before);
+      compactor_type expected1(level1_before);
+      random_utils::random_bit = bits_before;
+      expected0.compact(expected1);
+      REQUIRE(random_utils::random_bit == bits_after);
+      REQUIRE(bytes(level0) == bytes(expected0));
+      REQUIRE(bytes(level1) == bytes(expected1));
+    }
+  }
+  REQUIRE(failures_tested > 0);
+}
+
+// Fail each item copy made by the updates in turn: a failed update must leave the sketch as it was.
+TEST_CASE("req sketch allocation: failure at each item copy of the updates", "[req_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  for (bool hra: {true, false}) {
+    CAPTURE(hra);
+    fragile_sketch sketch(K, hra, fragile_less(), test_allocator<fragile_item>(0));
+    for (int i = 0; i < 300; ++i) {
+      const fragile_item item((i * 7919) % 10007);
+      const uint64_t n_before = sketch.get_n();
+      const uint32_t num_retained_before = sketch.get_num_retained();
+      const int min_before = sketch.is_empty() ? 0 : *sketch.get_min_item().value;
+      const int max_before = sketch.is_empty() ? 0 : *sketch.get_max_item().value;
+      bool completed = false;
+      for (long fail_at = 0; !completed; ++fail_at) {
+        CAPTURE(i, fail_at);
+        copies_allowed = fail_at;
+        try {
+          sketch.update(item);
+          completed = true;
+        } catch (const std::runtime_error&) {}
+        copies_allowed = -1;
+        if (!completed) {
+          REQUIRE(sketch.get_n() == n_before);
+          REQUIRE(sketch.get_num_retained() == num_retained_before);
+          if (n_before > 0) {
+            REQUIRE(*sketch.get_min_item().value == min_before);
+            REQUIRE(*sketch.get_max_item().value == max_before);
+          }
+        }
+        check_consistent(sketch);
+      }
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+// Fail each item copy made by merging from a const sketch in turn: the target must stay valid and usable.
+TEST_CASE("req sketch allocation: failure at each item copy of a merge", "[req_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  for (bool hra: {true, false}) {
+    for (int target_n: {0, 5, 1000}) {
+      for (int source_n: {5, 1000}) {
+        CAPTURE(hra, target_n, source_n);
+        const fragile_sketch source = make_fragile_sketch(100000, source_n, hra);
+        bool completed = false;
+        for (long fail_at = 0; !completed; ++fail_at) {
+          CAPTURE(fail_at);
+          fragile_sketch target = make_fragile_sketch(0, target_n, hra);
+          const int min_before = target.is_empty() ? 0 : *target.get_min_item().value;
+          const int max_before = target.is_empty() ? 0 : *target.get_max_item().value;
+          copies_allowed = fail_at;
+          try {
+            target.merge(source);
+            completed = true;
+          } catch (const std::runtime_error&) {}
+          copies_allowed = -1;
+          if (target.get_n() == static_cast<uint64_t>(target_n)) { // nothing merged
+            REQUIRE(target.is_empty() == (target_n == 0));
+            if (target_n > 0) {
+              REQUIRE(*target.get_min_item().value == min_before);
+              REQUIRE(*target.get_max_item().value == max_before);
+            }
+          }
+          REQUIRE(target.get_n() >= static_cast<uint64_t>(target_n));
+          REQUIRE(target.get_n() <= static_cast<uint64_t>(target_n + source_n));
+          if (completed) REQUIRE(target.get_n() == static_cast<uint64_t>(target_n + source_n));
+          check_consistent(target);
+          check_consistent(source);
+          REQUIRE(source.get_n() == static_cast<uint64_t>(source_n));
+          // the target stays usable
+          target.merge(source);
+          target.update(fragile_item(-1));
+          check_consistent(target);
+          REQUIRE(*target.get_min_item().value == -1);
+        }
+      }
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+TEST_CASE("req sketch allocation: failure at each item copy of the copy constructor", "[req_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  for (bool hra: {true, false}) {
+    const fragile_sketch sketch = make_fragile_sketch(0, 1000, hra);
+    bool completed = false;
+    for (long fail_at = 0; !completed; ++fail_at) {
+      CAPTURE(hra, fail_at);
+      copies_allowed = fail_at;
+      try {
+        const fragile_sketch copy(sketch);
+        completed = true;
+        copies_allowed = -1;
+        REQUIRE(copy.get_n() == sketch.get_n());
+        REQUIRE(copy.get_num_retained() == sketch.get_num_retained());
+      } catch (const std::runtime_error&) {}
+      copies_allowed = -1;
+    }
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+TEST_CASE("req sketch allocation: converting constructor that rejects the order releases the items", "[req_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    req_double_test_sketch sketch(K, true, std::less<double>(), test_allocator<double>(0));
+    for (int i = 0; i < 1000; ++i) sketch.update(i);
+    REQUIRE(sketch.is_estimation_mode());
+    using descending_sketch = req_sketch<double, std::greater<double>, test_allocator<double>>;
+    REQUIRE_THROWS_AS(descending_sketch(sketch, std::greater<double>(), test_allocator<double>(0)), std::logic_error);
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+namespace {
+
+long comparisons_allowed = -1; // comparisons left before one throws; negative means no limit
+
+struct throwing_greater {
+  bool operator()(double a, double b) const {
+    if (comparisons_allowed == 0) throw std::runtime_error("comparison failed");
+    if (comparisons_allowed > 0) --comparisons_allowed;
+    return a > b;
+  }
+};
+
+} // namespace
+
+TEST_CASE("req sketch allocation: converting constructor whose comparator throws releases the items", "[req_sketch]") {
+  test_allocator_total_bytes = 0;
+  test_allocator_net_allocations = 0;
+  {
+    req_sketch<double, std::greater<double>, test_allocator<double>> sketch(K, true, std::greater<double>(),
+        test_allocator<double>(0));
+    for (int i = 0; i < 1000; ++i) sketch.update(i);
+    REQUIRE(sketch.is_estimation_mode());
+    using target_sketch = req_sketch<double, throwing_greater, test_allocator<double>>;
+    long failures_tested = 0;
+    bool completed = false;
+    for (long fail_at = 0; !completed; ++fail_at) {
+      CAPTURE(fail_at);
+      comparisons_allowed = fail_at;
+      try {
+        const target_sketch copy(sketch, throwing_greater(), test_allocator<double>(0));
+        completed = true;
+        comparisons_allowed = -1;
+        REQUIRE(copy.get_n() == sketch.get_n());
+      } catch (const std::runtime_error&) {
+        ++failures_tested;
+      }
+      comparisons_allowed = -1;
+    }
+    REQUIRE(failures_tested > 0);
+  }
+  REQUIRE(test_allocator_total_bytes == 0);
+  REQUIRE(test_allocator_net_allocations == 0);
+}
+
+TEST_CASE("req compactor allocation: deserializing an empty compactor allocates no item storage", "[req_sketch]") {
+  allocation_control control;
+  const compactor_type empty(true, 0, K, std::less<double>(), failing_allocator<double>(control));
+  const auto b = bytes(empty);
+  control.arm(0); // any allocation throws
+  const auto result = compactor_type::deserialize(b.data(), b.size(), serde<double>(), std::less<double>(),
+      failing_allocator<double>(control), true, true, K, 0);
+  std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
+  s.write(reinterpret_cast<const char*>(b.data()), b.size());
+  const auto from_stream = compactor_type::deserialize(s, serde<double>(), std::less<double>(),
+      failing_allocator<double>(control), true, true, K, 0);
+  control.disarm();
+  REQUIRE(result.first.get_num_items() == 0);
+  REQUIRE(result.second == b.size());
+  REQUIRE(from_stream.get_num_items() == 0);
+}
+
 
 } /* namespace datasketches */

@@ -27,6 +27,8 @@
 #include <cstring>
 #include <limits>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace datasketches {
 
@@ -818,11 +820,10 @@ TEST_CASE("req sketch: deserialize rejects inconsistent compactors", "[req_sketc
 
 using req_compactor_float = req_compactor<float, std::less<float>, std::allocator<float>>;
 
-static req_compactor_float make_compactor_with_state(uint16_t k, uint64_t state) {
+static req_compactor_float make_compactor_with_state(uint16_t k, uint64_t state, float section_size_raw,
+    uint8_t num_sections) {
   std::stringstream s(std::ios::in | std::ios::out | std::ios::binary);
-  const float section_size_raw = k; // not used by merge
   const uint8_t lg_weight = 0;
-  const uint8_t num_sections = req_constants::INIT_NUM_SECTIONS;
   const uint16_t padding = 0;
   const uint32_t num_items = 0;
   s.write(reinterpret_cast<const char*>(&state), sizeof(state));
@@ -835,6 +836,10 @@ static req_compactor_float make_compactor_with_state(uint16_t k, uint64_t state)
       k, 0);
 }
 
+static req_compactor_float make_compactor_with_state(uint16_t k, uint64_t state) {
+  return make_compactor_with_state(k, state, k, req_constants::INIT_NUM_SECTIONS); // the section size is not used by merge
+}
+
 TEST_CASE("req compactor: section growth stops at minimum section size", "[req_compactor]") {
   const uint16_t ks[] = {6, 12, 14};
   const uint32_t expected_nom_capacities[] = {48, 192, 192};
@@ -844,6 +849,154 @@ TEST_CASE("req compactor: section growth stops at minimum section size", "[req_c
     INFO("k=" << ks[i]);
     CHECK(c.get_nom_capacity() == expected_nom_capacities[i]);
   }
+}
+
+TEST_CASE("req compactor: the number of sections stops at 48", "[req_compactor]") {
+  // 48 sections of 256 is where k = 1024 gets after four doublings; with a state of 2^47 or more,
+  // another doubling would give 96 sections, which deserialize rejects, and 1 << 95 after that
+  req_compactor_float c = make_compactor_with_state(1024, 1ULL << 47, 256, 48);
+  REQUIRE(c.get_nom_capacity() == 2 * 48 * 256);
+  c.merge(make_compactor_with_state(1024, 0));
+  REQUIRE(c.get_nom_capacity() == 2 * 48 * 256);
+}
+
+TEST_CASE("req sketch: merge into itself", "[req_sketch]") {
+  for (bool hra: {true, false}) {
+    for (int n: {2, 50, 1000}) {
+      CAPTURE(hra, n);
+      req_sketch<int> sketch(12, hra);
+      for (int i = 0; i < n; ++i) sketch.update((i * 7919) % 10007); // level zero is not sorted
+      req_sketch<int> expected(sketch);
+      const req_sketch<int> copy(sketch);
+      random_utils::rand.seed(1); random_utils::random_bit.seed(1);
+      expected.merge(copy);
+      const auto expected_bytes = expected.serialize();
+
+      req_sketch<int> lvalue(sketch);
+      random_utils::rand.seed(1); random_utils::random_bit.seed(1);
+      lvalue.merge(lvalue);
+      REQUIRE(lvalue.serialize() == expected_bytes);
+
+      req_sketch<int> rvalue(sketch);
+      random_utils::rand.seed(1); random_utils::random_bit.seed(1);
+      rvalue.merge(std::move(rvalue));
+      REQUIRE(rvalue.serialize() == expected_bytes);
+    }
+  }
+  // level zero, unsorted before the merge, must be sorted after it
+  req_sketch<int> sketch(12, true);
+  sketch.update(5);
+  sketch.update(1);
+  sketch.merge(sketch);
+  std::vector<int> items;
+  for (const auto pair: sketch) items.push_back(pair.first);
+  REQUIRE(items == std::vector<int>({1, 1, 5, 5}));
+}
+
+TEST_CASE("req sketch: update with an item of the sketch after deserialize", "[req_sketch]") {
+  // after deserialize, level zero is full, so the update must not grow it before copying the item
+  for (bool hra: {true, false}) {
+    for (int n: {50, 1000}) {
+      CAPTURE(hra, n);
+      req_sketch<std::string> sketch(12, hra);
+      for (int i = 0; i < n; ++i) sketch.update(std::string(64, 'a') + std::to_string(i));
+      const auto bytes = sketch.serialize();
+      auto copy = req_sketch<std::string>::deserialize(bytes.data(), bytes.size());
+      const std::string expected = (*copy.begin()).first;
+      auto count_expected = [&copy, &expected]() {
+        int count = 0;
+        for (const auto pair: copy) if (pair.first == expected) ++count;
+        return count;
+      };
+      const int count_before = count_expected();
+      copy.update((*copy.begin()).first);
+      REQUIRE(copy.get_n() == static_cast<uint64_t>(n + 1));
+      // the item added is a copy of the item, not of what growing left in its place
+      REQUIRE(count_expected() == count_before + 1);
+    }
+  }
+}
+
+TEST_CASE("req sketch: n is capped at 2^63 - 1", "[req_sketch]") {
+  const size_t n_offset = 8; // after the preamble, in estimation mode
+  req_sketch<float> sketch(12);
+  for (int i = 0; i < 1000; ++i) sketch.update(static_cast<float>(i));
+  // an empty level zero and one item in each of levels 1 to 62: the total weight is 2^63 - 2
+  const size_t num_levels_offset = 6;
+  const size_t compactor_offset = 8 + 8 + 2 * sizeof(float); // after the preamble, n, min and max
+  const size_t lg_weight_offset = 12; // in the compactor header
+  const size_t num_items_offset = 16;
+  const size_t header_size = 20;
+  auto bytes = sketch.serialize();
+  bytes.resize(compactor_offset + header_size);
+  req_sketch<float>::vector_bytes compactor(bytes.begin() + compactor_offset, bytes.end());
+  put_value(bytes, compactor_offset + num_items_offset, static_cast<uint32_t>(0));
+  put_value(compactor, num_items_offset, static_cast<uint32_t>(1));
+  compactor.resize(header_size + sizeof(float));
+  put_value(compactor, header_size, 500.0f);
+  for (uint8_t level = 1; level < 63; ++level) {
+    put_value(compactor, lg_weight_offset, level);
+    bytes.insert(bytes.end(), compactor.begin(), compactor.end());
+  }
+  bytes[num_levels_offset] = 63;
+  put_value(bytes, n_offset, req_constants::MAX_N - 1);
+  auto big = req_sketch<float>::deserialize(bytes.data(), bytes.size());
+  REQUIRE(big.get_n() == req_constants::MAX_N - 1);
+
+  SECTION("update") {
+    big.update(1.0f);
+    REQUIRE(big.get_n() == req_constants::MAX_N);
+    const auto before = big.serialize();
+    REQUIRE_THROWS_AS(big.update(2.0f), std::overflow_error);
+    REQUIRE(big.serialize() == before);
+  }
+
+  SECTION("merge") {
+    const auto before = big.serialize();
+    REQUIRE_THROWS_AS(big.merge(sketch), std::overflow_error);
+    REQUIRE(big.serialize() == before);
+    REQUIRE_THROWS_AS(sketch.merge(big), std::overflow_error);
+    REQUIRE(sketch.get_n() == 1000);
+  }
+}
+
+namespace {
+
+// a comparator that can't be default-constructed: the sketch must use its own comparator everywhere
+struct ordered_by {
+  bool descending;
+  explicit ordered_by(bool d): descending(d) {}
+  bool operator()(int a, int b) const { return descending ? b < a : a < b; }
+};
+
+} // namespace
+
+TEST_CASE("req sketch: compaction and merge use the sketch's comparator", "[req_sketch]") {
+  req_sketch<int, ordered_by> sketch(12, true, ordered_by(true));
+  req_sketch<int, ordered_by> other(12, true, ordered_by(true));
+  for (int i = 0; i < 1000; ++i) {
+    sketch.update(i);
+    other.update(i + 1000);
+  }
+  sketch.merge(other);
+  REQUIRE(sketch.get_n() == 2000);
+  REQUIRE(sketch.is_estimation_mode());
+  REQUIRE(sketch.get_min_item() == 1999); // first in descending order
+  REQUIRE(sketch.get_max_item() == 0);
+  // the converting constructor checks that the sorted levels are sorted by the comparator
+  const req_sketch<int, ordered_by> copy(sketch, ordered_by(true));
+  REQUIRE(copy.get_n() == 2000);
+  REQUIRE(sketch.get_rank(1000) == Approx(0.5).margin(0.05));
+  // split points are checked with the sketch's comparator: descending here
+  const int split_points[] = {1500, 500};
+  const auto cdf = sketch.get_CDF(split_points, 2);
+  REQUIRE(cdf.size() == 3);
+  REQUIRE(cdf[0] == Approx(0.25).margin(0.05));
+  REQUIRE(cdf[1] == Approx(0.75).margin(0.05));
+  const auto pmf = sketch.get_PMF(split_points, 2);
+  REQUIRE(pmf[1] == Approx(0.5).margin(0.05));
+  const int ascending[] = {500, 1500};
+  REQUIRE_THROWS_AS(sketch.get_CDF(ascending, 2), std::invalid_argument);
 }
 
 } /* namespace datasketches */
