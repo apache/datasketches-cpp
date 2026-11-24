@@ -161,7 +161,6 @@ struct serde<std::string> {
   /// @copydoc serde::deserialize
   void deserialize(std::istream& is, std::string* items, unsigned num) const {
     unsigned i = 0;
-    bool failure = false;
     try {
       for (; i < num; i++) {
         uint32_t length;
@@ -176,14 +175,18 @@ struct serde<std::string> {
         new (&items[i]) std::string(std::move(str));
       }
     } catch (std::istream::failure&) {
-      failure = true;
-    }
-    if (failure || !is.good()) {
-      // clean up what we've already allocated
+      // the stream sets its state before throwing, so this is reported below
+    } catch (...) {
       for (unsigned j = 0; j < i; ++j) {
         items[j].~basic_string();
       }
-      throw std::runtime_error("error reading from std::istream at item " + std::to_string(i)); 
+      throw;
+    }
+    if (!is.good()) {
+      for (unsigned j = 0; j < i; ++j) {
+        items[j].~basic_string();
+      }
+      throw std::runtime_error("error reading from std::istream at item " + std::to_string(i));
     }
   }
 
@@ -208,25 +211,32 @@ struct serde<std::string> {
     size_t bytes_read = 0;
     unsigned i = 0;
     bool failure = false;
-    for (; i < num && !failure; ++i) {
-      uint32_t length;
-      if (bytes_read + sizeof(length) > capacity) {
-        bytes_read += sizeof(length); // we'll use this to report the error
-        failure = true;
-        break;
-      }
-      memcpy(&length, ptr, sizeof(length));
-      ptr = static_cast<const char*>(ptr) + sizeof(uint32_t);
-      bytes_read += sizeof(length);
+    try {
+      for (; i < num && !failure; ++i) {
+        uint32_t length;
+        if (bytes_read + sizeof(length) > capacity) {
+          bytes_read += sizeof(length); // we'll use this to report the error
+          failure = true;
+          break;
+        }
+        memcpy(&length, ptr, sizeof(length));
+        ptr = static_cast<const char*>(ptr) + sizeof(uint32_t);
+        bytes_read += sizeof(length);
 
-      if (bytes_read + length > capacity) {
-        bytes_read += length; // we'll use this to report the error
-        failure = true;
-        break;
+        if (bytes_read + length > capacity) {
+          bytes_read += length; // we'll use this to report the error
+          failure = true;
+          break;
+        }
+        new (&items[i]) std::string(static_cast<const char*>(ptr), length);
+        ptr = static_cast<const char*>(ptr) + length;
+        bytes_read += length;
       }
-      new (&items[i]) std::string(static_cast<const char*>(ptr), length);
-      ptr = static_cast<const char*>(ptr) + length;
-      bytes_read += length;
+    } catch (...) {
+      for (unsigned j = 0; j < i; ++j) {
+        items[j].~basic_string();
+      }
+      throw;
     }
 
     if (failure) {
